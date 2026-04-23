@@ -9,10 +9,10 @@ Runs as a native desktop app on macOS and Windows — no browser required.
 ## Installing
 
 ### Mac
-Download `DTM_Vehicle_Builder.dmg` from the [latest Actions build](https://github.com/dtmseth/DTM_Vehicle_Builder/actions), open it, drag the app to Applications.
+[Download DTM_Vehicle_Builder.dmg](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/download/latest/DTM_Vehicle_Builder.dmg) — open it, drag the app to Applications.
 
 ### Windows
-Download `DTM_Vehicle_Builder_Setup.exe` from the [latest Actions build](https://github.com/dtmseth/DTM_Vehicle_Builder/actions) and run it.
+[Download DTM_Vehicle_Builder_Setup.exe](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/download/latest/DTM_Vehicle_Builder_Setup.exe) — run the installer.
 
 ---
 
