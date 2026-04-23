@@ -30,6 +30,7 @@ CONFIG_ROUTES = {
     "/api/manifest": "asset_manifest.json",
     "/api/parts-library": "parts_library.json",
     "/api/workbook-rules": "workbook_rules.json",
+    "/api/app-settings": "app_settings.json",
 }
 
 
@@ -49,6 +50,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(load_config(CONFIG_ROUTES[path], self.paths))
         elif path == "/api/template/info":
             self._api(self._handle_template_info())
+        elif path == "/api/template/pick-folder":
+            self._api(self._handle_pick_folder())
         elif path == "/api/assets/list":
             self._api(self._handle_assets_list())
         elif path.startswith("/assets/"):
@@ -73,6 +76,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/template/generate": self._handle_template_generate,
             "/api/parts-library/save": lambda b: self._save_json("parts_library.json", b),
             "/api/workbook-rules/save": lambda b: self._save_json("workbook_rules.json", b),
+            "/api/app-settings/save": lambda b: self._save_json("app_settings.json", b),
         }
         handler = routes.get(path)
         if handler:
@@ -224,19 +228,54 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
+    def _get_template_path(self) -> Path:
+        settings = load_config("app_settings.json", self.paths) or {}
+        save_dir = settings.get("template_save_dir", "")
+        if save_dir and Path(save_dir).is_dir():
+            return Path(save_dir) / "build_sheet_template_v2.xlsx"
+        return self.paths.workspace_dir / "build_sheet_template_v2.xlsx"
+
     def _handle_template_info(self) -> dict:
-        p = self.paths.workspace_dir / "build_sheet_template_v2.xlsx"
+        p = self._get_template_path()
         if p.exists():
-            return {"ok": True, "exists": True, "mtime": p.stat().st_mtime}
-        return {"ok": True, "exists": False, "mtime": None}
+            return {"ok": True, "exists": True, "mtime": p.stat().st_mtime, "path": str(p)}
+        return {"ok": True, "exists": False, "mtime": None, "path": str(p)}
 
     def _handle_template_generate(self, body: dict) -> dict:
         try:
-            out_path = build_template(self.paths)
+            out_path = build_template(self.paths, out_path=self._get_template_path())
             return {"ok": True, "path": str(out_path), "filename": out_path.name}
         except Exception as exc:
             import traceback
             return {"ok": False, "error": str(exc), "detail": traceback.format_exc()}
+
+    def _handle_pick_folder(self) -> dict:
+        try:
+            if sys.platform == "darwin":
+                r = subprocess.run(
+                    ["osascript", "-e", "POSIX path of (choose folder)"],
+                    capture_output=True, text=True, timeout=60,
+                )
+                path = r.stdout.strip()
+            elif sys.platform == "win32":
+                ps = (
+                    "Add-Type -AssemblyName System.Windows.Forms;"
+                    "$f=New-Object System.Windows.Forms.FolderBrowserDialog;"
+                    "[void]$f.ShowDialog();"
+                    "Write-Output $f.SelectedPath"
+                )
+                r = subprocess.run(
+                    ["powershell", "-Command", ps],
+                    capture_output=True, text=True, timeout=60,
+                )
+                path = r.stdout.strip()
+            else:
+                return {"ok": False, "error": "Folder picker not supported on this platform"}
+            if not path:
+                return {"ok": False, "error": "Cancelled"}
+            return {"ok": True, "path": path}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
 
 
 class _ReuseHTTPServer(HTTPServer):
