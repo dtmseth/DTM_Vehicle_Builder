@@ -37,11 +37,18 @@ def _user_workspace_root() -> Path:
     return base / "dtm-vehicle-builder"
 
 
-PROJECT_ROOT = DEV_PROJECT_ROOT if _is_dev_checkout() else _user_workspace_root()
-WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _is_dev_checkout() else PROJECT_ROOT
-WORKSPACE_CONFIG_DIR = WORKSPACE_DIR / "config"
-WORKSPACE_ASSETS_DIR = WORKSPACE_DIR / "assets"
-WORKSPACE_INPUT_DIR = WORKSPACE_DIR / "input"
+_DEV = _is_dev_checkout()
+
+PROJECT_ROOT = DEV_PROJECT_ROOT if _DEV else _user_workspace_root()
+WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _DEV else PROJECT_ROOT
+
+# In dev mode the GUI writes directly to the source tree so every config
+# and asset change is immediately visible to git — no manual syncing needed.
+# In the bundled app these point into the user's Application Support folder.
+WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _DEV else WORKSPACE_DIR / "config"
+WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"
+
+WORKSPACE_INPUT_DIR  = WORKSPACE_DIR / "input"
 WORKSPACE_OUTPUT_DIR = WORKSPACE_DIR / "output"
 
 
@@ -70,30 +77,34 @@ def ensure_workspace() -> AppPaths:
               paths.workspace_input_dir, paths.workspace_output_dir):
         d.mkdir(parents=True, exist_ok=True)
 
-    if not DEFAULT_CONFIG_DIR.exists():
-        _log.error("Bundled config directory not found: %s", DEFAULT_CONFIG_DIR)
-    else:
-        for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
-            dest = paths.workspace_config_dir / source.name
-            if not dest.exists() or _md5(source) != _md5(dest):
-                try:
-                    shutil.copyfile(source, dest)
-                except Exception:
-                    _log.exception("Failed to copy config %s", source.name)
-
-    if not any(paths.workspace_assets_dir.iterdir()):
-        if not ASSETS_DIR.exists():
-            _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
+    # In dev mode workspace_config_dir IS DEFAULT_CONFIG_DIR — no copying needed.
+    if paths.workspace_config_dir != DEFAULT_CONFIG_DIR:
+        if not DEFAULT_CONFIG_DIR.exists():
+            _log.error("Bundled config directory not found: %s", DEFAULT_CONFIG_DIR)
         else:
-            for source in sorted(ASSETS_DIR.rglob("*")):
-                if source.is_dir() or source.name.startswith("."):
-                    continue
-                rel = source.relative_to(ASSETS_DIR)
-                dest = paths.workspace_assets_dir / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                try:
-                    shutil.copyfile(source, dest)
-                except Exception:
-                    _log.exception("Failed to copy asset %s", rel)
+            for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
+                dest = paths.workspace_config_dir / source.name
+                if not dest.exists() or _md5(source) != _md5(dest):
+                    try:
+                        shutil.copyfile(source, dest)
+                    except Exception:
+                        _log.exception("Failed to copy config %s", source.name)
+
+    # In dev mode workspace_assets_dir IS ASSETS_DIR — no copying needed.
+    if paths.workspace_assets_dir != ASSETS_DIR:
+        if not any(paths.workspace_assets_dir.iterdir()):
+            if not ASSETS_DIR.exists():
+                _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
+            else:
+                for source in sorted(ASSETS_DIR.rglob("*")):
+                    if source.is_dir() or source.name.startswith("."):
+                        continue
+                    rel = source.relative_to(ASSETS_DIR)
+                    dest = paths.workspace_assets_dir / rel
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        shutil.copyfile(source, dest)
+                    except Exception:
+                        _log.exception("Failed to copy asset %s", rel)
 
     return paths
