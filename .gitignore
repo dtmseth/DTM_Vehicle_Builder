@@ -1,0 +1,15 @@
+.venv/
+.claude/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+workspace/output/
+workspace/input/
+workspace/assets/
+workspace/config/
+workspace/build_sheet_template_v2.xlsx
+
+dist/
+build/
+*.egg-info/

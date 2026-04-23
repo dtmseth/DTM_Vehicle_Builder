@@ -1,0 +1,2669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DTM Vehicle Builder</title>
+  <style>
+    :root{--navy:#1E2761;--navy2:#161d4d;--gold:#C8A951;--bg:#eef0f6;--card:#fff;--border:#d0d4e8;
+      --text:#1a1a2e;--muted:#6b7280;--green:#1a9e5c;--yellow:#b45309;--red:#c0392b;--radius:10px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* header */
+    .app-header{background:var(--navy);display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+    .header-brand{display:flex;align-items:center;gap:12px;padding:14px 24px;flex-shrink:0}
+    .logo-badge{width:38px;height:38px;background:var(--gold);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:var(--navy);letter-spacing:-.5px}
+    .header-brand h1{color:#fff;font-size:17px;font-weight:700;line-height:1.2}
+    .header-brand p{color:rgba(255,255,255,.55);font-size:11px}
+    .header-tabs{display:flex;align-items:flex-end;gap:2px;padding:0 8px}
+    .htab{padding:12px 20px 11px;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:.15s;white-space:nowrap}
+    .htab:hover{color:#fff}
+    .htab.active{color:#fff;border-bottom-color:var(--gold)}
+
+    /* layout */
+    .main-content{max-width:960px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px}
+
+    /* card */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--navy);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--navy);display:flex;align-items:center;justify-content:space-between}
+
+    /* settings sub-tabs */
+    .stab-bar{display:flex;gap:4px;background:#f0f2fa;border-radius:8px;padding:4px;margin-bottom:18px}
+    .stab{flex:1;padding:8px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;border-radius:6px;cursor:pointer;transition:.15s}
+    .stab:hover{color:var(--navy)}
+    .stab.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+    /* buttons */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s}
+    .btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy2)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .btn-secondary{background:#f0f2fa;color:var(--navy);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--navy)}
+    .btn-danger{background:#fdecea;color:var(--red);border:1px solid #f5b7b1}.btn-danger:hover{background:#fbdcda}
+    .btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:#b8952e}
+    .btn-sm{padding:5px 10px;font-size:12px}
+    .btn-block{width:100%;justify-content:center;padding:13px}
+
+    /* form */
+    .form-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+    .form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:120px}
+    .form-group label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:#fff;transition:.15s;font-family:inherit}
+    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,39,97,.1)}
+    .form-group textarea{resize:vertical;min-height:70px}
+    .field-hint{font-size:11px;color:var(--muted);margin-top:2px}
+
+    /* generate tab */
+    #drop-zone{border:2px dashed var(--border);border-radius:8px;padding:36px 20px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+    #drop-zone:hover,#drop-zone.drag-over{border-color:var(--navy);background:#f0f2fa}
+    #drop-zone .dz-icon{font-size:38px;margin-bottom:10px}
+    #drop-zone h3{font-size:15px;color:var(--navy);margin-bottom:5px}
+    #drop-zone p{font-size:12px;color:var(--muted)}
+    #drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    #file-loaded{display:none;align-items:center;gap:12px;background:#f0f4ff;border:1.5px solid #c7cfe8;border-radius:8px;padding:14px 18px}
+    .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 18px}
+    .info-item label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+    .info-item span{font-size:13px;font-weight:500}
+    .info-item span.empty{color:var(--muted);font-style:italic;font-weight:400}
+    .parts-tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .parts-tbl th{text-align:left;padding:7px 8px;background:#f5f6fa;font-weight:700;color:var(--navy);border-bottom:1px solid var(--border)}
+    .parts-tbl td{padding:6px 8px;border-bottom:1px solid #f0f1f5;vertical-align:top}
+    .badge{display:inline-block;padding:2px 7px;border-radius:11px;font-size:10px;font-weight:700}
+    .badge-on{background:#e0f5eb;color:#1a7d46}.badge-off{background:#fce8e8;color:#a02020}
+    .badge-light{background:#e8f0fe;color:#1a4090}.badge-equip{background:#fef0e0;color:#924a00}
+    .badge-bar{background:#f0e8fe;color:#5c1a90}.badge-none{background:#f0f0f0;color:#555}
+    .spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .result-banner{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:8px;margin-bottom:14px;font-weight:600}
+    .result-banner.success{background:#e6f9f1;border:1.5px solid #a3dfc0;color:var(--green)}
+    .result-banner.error{background:#fdecea;border:1.5px solid #f5b7b1;color:var(--red)}
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .stat-box{text-align:center;padding:12px;border-radius:8px;background:#f5f6fa;border:1px solid var(--border)}
+    .stat-box .num{font-size:26px;font-weight:800;color:var(--navy)}
+    .stat-box .lbl{font-size:11px;color:var(--muted)}
+    .warn-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+    .warn-item{padding:7px 10px;border-radius:6px;font-size:12px;display:flex;gap:7px;background:#fff8e8;border-left:3px solid #f0a500;color:#7a5000}
+    .output-row{display:flex;align-items:center;gap:12px;background:#f5f6fa;border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:10px}
+    .log-box{background:#0f1420;color:#d4e0ff;border-radius:8px;padding:14px;font-family:"SF Mono","Fira Mono",monospace;font-size:11px;line-height:1.7;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+
+    /* ══ PLACEMENTS ══ */
+    .placements-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .vehicle-select-wrap{display:flex;align-items:center;gap:8px}
+    .vehicle-select-wrap label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .vehicle-select-wrap select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;color:var(--navy)}
+    .view-pill-bar{display:flex;gap:6px;flex-wrap:wrap}
+    .view-pill{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--muted);transition:.15s}
+    .view-pill.active{background:var(--navy);border-color:var(--navy);color:#fff}
+    /* canvas: full width above list */
+    .canvas-wrap{width:100%;margin-bottom:14px;position:relative}
+    #vehicle-canvas{width:100%;height:auto;display:block;border-radius:8px;cursor:crosshair;border:1px solid var(--border);background:#f5f6fa}
+    .canvas-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
+    /* below canvas: 2-col */
+    .placement-cols{display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start}
+    .location-list{display:flex;flex-direction:column;gap:5px;max-height:340px;overflow-y:auto;padding-right:2px}
+    .location-row{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;transition:.15s}
+    .location-row.selected{border-color:var(--navy);background:#f0f2fa}
+    .location-row .loc-name{flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .location-row .loc-coords{font-size:10px;color:var(--muted);white-space:nowrap}
+    .loc-list-actions{display:flex;gap:6px;margin-top:8px}
+    .location-edit-panel{background:#f8f9ff;border:1px solid var(--border);border-radius:8px;padding:14px}
+    .coord-row{display:grid;grid-template-columns:16px 1fr 62px;gap:8px;align-items:center;margin-bottom:10px}
+    .coord-row label{font-size:11px;font-weight:700;color:var(--muted)}
+    .coord-row input[type=range]{width:100%;cursor:pointer}
+    .coord-row input[type=number]{padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:center}
+    .unsaved-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:none;margin-left:4px}
+
+    /* size rules */
+    .size-tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .size-tbl th{text-align:left;padding:8px 10px;background:#f5f6fa;font-weight:700;color:var(--navy);border-bottom:1px solid var(--border)}
+    .size-tbl td{padding:6px 6px;border-bottom:1px solid #f0f1f5;vertical-align:middle}
+    .size-tbl input,.size-tbl select{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;width:100%}
+    .sp-rect{background:var(--navy);border-radius:2px;transition:.2s}
+
+    /* wizard */
+    .wizard-steps{display:flex;margin-bottom:22px}
+    .wstep{flex:1;text-align:center;padding:9px 4px;border-bottom:3px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);transition:.2s}
+    .wstep.active{color:var(--navy);border-bottom-color:var(--navy)}
+    .wstep.done{color:var(--green);border-bottom-color:var(--green)}
+    .wstep-num{display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--border);color:#fff;font-size:11px;font-weight:900;line-height:20px;text-align:center;margin-right:4px;transition:.2s}
+    .wstep.active .wstep-num{background:var(--navy)}
+    .wstep.done .wstep-num{background:var(--green)}
+    .wizard-panel{display:none}.wizard-panel.active{display:block}
+    .rk-options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+    .rk-card{border:2px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:.15s}
+    .rk-card:hover{border-color:var(--navy)}.rk-card.selected{border-color:var(--navy);background:#f0f2fa}
+    .rk-card .rk-icon{font-size:24px;margin-bottom:4px}
+    .rk-card .rk-label{font-size:12px;font-weight:700;color:var(--navy)}
+    .rk-card .rk-desc{font-size:10px;color:var(--muted);margin-top:2px}
+    .view-checks{display:flex;gap:8px;flex-wrap:wrap}
+    .view-check-label{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+    .view-check-label input{display:none}
+    .view-check-label.checked{background:var(--navy);border-color:var(--navy);color:#fff}
+    .compat-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
+    .compat-chip input{display:none}
+    .compat-chip.checked{background:var(--navy);border-color:var(--navy);color:#fff}
+    .loc-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 10px;background:#e8f0fe;color:#1a4090;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+    .loc-chip-rm{background:none;border:none;cursor:pointer;font-size:10px;color:#1a4090;opacity:.6;padding:0;line-height:1}
+    .loc-chip-rm:hover{opacity:1}
+    .upload-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:18px 10px;text-align:center;cursor:pointer;transition:.15s;position:relative;min-height:90px}
+    .upload-zone:hover{border-color:var(--navy);background:#f8f9ff}
+    .upload-zone.has-file{border-color:var(--green);background:#f0fbf5}
+    .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .upload-zone .uz-icon{font-size:20px;margin-bottom:4px}
+    .upload-zone .uz-label{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px}
+    .upload-zone .uz-hint{font-size:10px;color:var(--muted)}
+    .upload-zone .uz-thumb{width:70px;height:44px;object-fit:contain;border-radius:4px;margin-top:6px;display:none}
+    .review-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0f1f5}
+    .review-row:last-child{border-bottom:none}
+    .review-key{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);min-width:130px}
+    .review-val{font-size:13px}
+    .review-file{display:inline-flex;align-items:center;gap:4px;background:#f0f5ff;border:1px solid #c7d4f5;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:600;color:var(--navy)}
+
+    /* catalog */
+    .catalog-search{padding:8px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;width:100%;margin-bottom:12px}
+    .catalog-tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .catalog-tbl th{text-align:left;padding:8px 10px;background:#f5f6fa;font-weight:700;color:var(--navy);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+    .catalog-tbl td{padding:7px 10px;border-bottom:1px solid #f0f1f5;vertical-align:top}
+    .catalog-tbl tr:hover td{background:#fafbff}
+    .catalog-scroll{max-height:480px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+    .view-chips{display:flex;gap:3px;flex-wrap:wrap}
+    .chip{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;background:#e8f0fe;color:#1a4090}
+
+    /* vehicles tab */
+    .vehicle-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+    .vehicle-card{border:1.5px solid var(--border);border-radius:8px;padding:14px;text-align:center;background:#fff}
+    .vehicle-card .vc-name{font-size:15px;font-weight:700;color:var(--navy)}
+    .vehicle-card .vc-views{font-size:11px;color:var(--muted);margin-top:3px}
+    .vehicle-img-upload-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+
+    /* modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+    .modal-overlay.open{display:flex}
+    .modal{background:#fff;border-radius:12px;padding:26px;width:640px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+    .modal-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid var(--navy);display:flex;align-items:center;justify-content:space-between}
+    .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:0 4px}
+    .modal-close:hover{color:var(--text)}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+    .modal-section{margin-top:16px;padding-top:14px;border-top:1px solid #eef0f6}
+    .modal-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin-bottom:12px}
+    .existing-img-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+    .existing-img-cell{text-align:center}
+    .existing-img-cell img{width:100%;height:50px;object-fit:contain;border-radius:4px;border:1px solid var(--border);background:#f5f6fa}
+    .existing-img-cell .eic-label{font-size:10px;color:var(--muted);margin-top:3px}
+    .existing-img-cell .eic-missing{width:100%;height:50px;border:1px dashed var(--border);border-radius:4px;background:#f9f9f9;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)}
+
+    /* toast */
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200;transform:translateY(80px);opacity:0;transition:.3s}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.success{background:var(--green)}.toast.error{background:var(--red)}
+
+    /* ── per-view size editor in parts-modal ─────────────────────── */
+    .pm-view-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+    .pm-view-row:last-child{border-bottom:none}
+    .pm-view-thumb{width:80px;min-width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;
+      position:relative;background:var(--bg);font-size:18px}
+    .pm-view-thumb.has-file{border-style:solid;border-color:var(--navy)}
+    .pm-view-thumb img{max-width:100%;max-height:100%;object-fit:contain;display:none}
+    .pm-view-thumb.has-file img{display:block}
+    .pm-view-thumb input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .pm-view-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:2px 4px}
+    .pm-size-panel{display:flex;flex-direction:column;gap:6px;min-width:150px}
+    .pm-size-panel label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+    .pm-size-row{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+    .pm-size-row input{width:62px;padding:4px 6px;font-size:12px}
+    .pm-car-preview{flex:1;position:relative;max-width:320px;min-height:50px;
+      border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#f5f5f5;display:none}
+    .pm-car-preview.visible{display:block}
+    .pm-car-preview img.car-bg{width:100%;display:block;opacity:0.9}
+    .pm-car-preview .part-overlay{position:absolute;background:rgba(201,168,76,.75);
+      border:1.5px solid var(--gold);box-shadow:0 0 6px rgba(201,168,76,.5);
+      transform:translate(-50%,-50%);pointer-events:none}
+    .pm-car-preview .scale-note{position:absolute;bottom:3px;right:5px;font-size:9px;
+      color:rgba(0,0,0,.45);background:rgba(255,255,255,.7);padding:1px 4px;border-radius:3px}
+
+    /* ── size-def per-view editor in Sizes tab ──────────────────── */
+    .sd-view-sub td{background:#f8f9fc;padding:4px 6px 4px 20px}
+    .sd-view-sub input{width:60px;font-size:11px;padding:3px 5px}
+    .sd-expand-btn{font-size:10px;padding:3px 8px}
+    .sd-view-badge{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);
+      background:#e8eaf2;padding:1px 5px;border-radius:3px;letter-spacing:.03em}
+
+    /* add-loc-modal */
+    #add-loc-modal .modal{width:520px}
+    .alm-tabs{display:flex;gap:0;border-bottom:2px solid var(--navy);margin-bottom:16px}
+    .alm-tab{padding:7px 18px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;text-transform:uppercase;letter-spacing:.05em}
+    .alm-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+    .alm-panel{display:none}.alm-panel.active{display:block}
+    .alm-search{width:100%;margin-bottom:8px}
+    .alm-import-list{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+    .alm-import-item{padding:7px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f1f5}
+    .alm-import-item:last-child{border-bottom:none}
+    .alm-import-item:hover{background:#f0f4ff;color:var(--navy)}
+    .alm-empty{padding:18px;text-align:center;color:var(--muted);font-size:12px}
+    .alm-pt-list{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-top:6px}
+    .alm-pt-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px}
+    .alm-pt-item input[type=checkbox]{accent-color:var(--navy)}
+
+    footer{text-align:center;padding:18px;font-size:11px;color:var(--muted)}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-brand">
+    <div class="logo-badge">DTM</div>
+    <div><h1>Build Sheet Generator</h1><p>v7 · DTM Technologies</p></div>
+  </div>
+  <div class="header-tabs">
+    <button class="htab active" data-tab="generate">⚡ Generate</button>
+    <button class="htab" data-tab="settings">⚙️ Settings</button>
+  </div>
+</div>
+
+<!-- ═══════════ GENERATE TAB ═══════════ -->
+<div id="tab-generate" class="main-content">
+  <div class="card">
+    <div class="card-title">Input Workbook</div>
+    <div id="drop-zone">
+      <input type="file" accept=".xlsx" id="file-input" />
+      <div class="dz-icon">📂</div>
+      <h3>Drop your Build Sheet here</h3>
+      <p>or click to browse — .xlsx files</p>
+    </div>
+    <div id="file-loaded">
+      <div style="font-size:28px">📊</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="fname"></div>
+        <div style="font-size:12px;color:var(--muted)" id="fsize"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-clear">✕ Change</button>
+    </div>
+  </div>
+  <div class="card" id="card-proj" hidden>
+    <div class="card-title">Project Details</div>
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+  <div class="card" id="card-parts" hidden>
+    <div class="card-title">Parts (<span id="parts-count">0</span>)</div>
+    <table class="parts-tbl">
+      <thead><tr><th>Part</th><th>Location</th><th>Color</th><th>Qty</th><th>Incl.</th></tr></thead>
+      <tbody id="parts-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <button class="btn btn-primary btn-block" id="btn-generate" disabled>
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-label">⚡ Generate Build Sheet</span>
+    </button>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+      Regenerate <strong>build_sheet_template_v2.xlsx</strong> from current config —
+      updates location dropdowns, manufacturer list, and part structure.
+      The original template is left untouched.
+    </p>
+    <button class="btn btn-secondary" id="btn-regen-template" style="width:100%">
+      <span class="spinner" id="spinner-tpl" style="display:none"></span>
+      <span id="tpl-label">🔄 Regenerate Workbook Template</span>
+    </button>
+    <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+  </div>
+  <div class="card" id="card-results" hidden>
+    <div class="card-title">Results</div>
+    <div id="result-banner" class="result-banner success">
+      <span id="banner-icon" style="font-size:22px">✅</span>
+      <div style="flex:1">
+        <div id="banner-msg" style="font-weight:700"></div>
+        <div id="banner-sub" style="font-weight:400;font-size:12px;opacity:.75;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="stat-parts">—</div><div class="lbl">Parts</div></div>
+      <div class="stat-box"><div class="num" id="stat-pl">—</div><div class="lbl">Placements</div></div>
+      <div class="stat-box"><div class="num" id="stat-warn" style="color:var(--yellow)">—</div><div class="lbl">Warnings</div></div>
+    </div>
+  </div>
+  <div class="card" id="card-warns" hidden>
+    <div class="card-title">Warnings</div>
+    <ul class="warn-list" id="warn-list"></ul>
+  </div>
+  <div class="card" id="card-output" hidden>
+    <div class="card-title">Output File</div>
+    <div class="output-row">
+      <span style="font-size:24px">📑</span>
+      <div style="flex:1;overflow:hidden">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="out-name"></div>
+        <div style="font-size:11px;color:var(--muted);word-break:break-all" id="out-path"></div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" id="btn-open">Open in PowerPoint ↗</button>
+  </div>
+  <div class="card" id="card-log" hidden>
+    <div class="card-title">Log</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+  <div id="reset-row" hidden>
+    <button class="btn btn-secondary btn-block" id="btn-reset">↩ Start Over</button>
+  </div>
+</div>
+
+
+<!-- ═══════════ SETTINGS TAB ═══════════ -->
+<div id="tab-settings" class="main-content" hidden>
+  <div class="stab-bar">
+    <button class="stab active" data-stab="placements">📍 Placements</button>
+    <button class="stab" data-stab="sizes">📐 Size Rules</button>
+    <button class="stab" data-stab="addpart">➕ Add Part Type</button>
+    <button class="stab" data-stab="catalog">📋 Part Types</button>
+    <button class="stab" data-stab="parts">🔩 Parts Library</button>
+    <button class="stab" data-stab="vehicles">🚗 Vehicles</button>
+  </div>
+
+  <!-- ── PLACEMENTS ── -->
+  <div id="stab-placements">
+    <div class="card">
+      <div class="card-title">
+        Vehicle Layout — Placements
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="unsaved-dot" id="placements-dirty-dot"></span>
+          <button class="btn btn-primary btn-sm" id="btn-save-layouts">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- vehicle + view selectors -->
+      <div class="placements-header">
+        <div class="vehicle-select-wrap">
+          <label>Vehicle</label>
+          <select id="vehicle-selector"></select>
+        </div>
+        <div class="view-pill-bar" id="view-pills">
+          <button class="view-pill active" data-view="front">Front</button>
+          <button class="view-pill" data-view="side">Side</button>
+          <button class="view-pill" data-view="top">Top</button>
+          <button class="view-pill" data-view="rear">Rear</button>
+        </div>
+      </div>
+
+      <!-- LARGE CANVAS – full width above the list -->
+      <div class="canvas-wrap">
+        <canvas id="vehicle-canvas" width="700" height="460"></canvas>
+      </div>
+      <div class="canvas-hint">Click on the diagram to move the selected location (gold dot) · All other locations shown in navy</div>
+
+      <!-- Two-column layout below canvas -->
+      <div class="placement-cols" style="margin-top:14px">
+        <!-- Left: location list -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Locations</div>
+          <div class="location-list" id="location-list"></div>
+          <div class="loc-list-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="btn-add-location">+ Add Location</button>
+          </div>
+        </div>
+        <!-- Right: edit panel -->
+        <div>
+          <div id="loc-edit-panel" hidden>
+            <div class="location-edit-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="font-size:13px;font-weight:700;color:var(--navy)" id="loc-edit-title"></div>
+                <button class="btn btn-danger btn-sm" id="btn-delete-location">🗑 Delete</button>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Location Name</label>
+                  <input id="loc-name-input" type="text" />
+                </div>
+              </div>
+              <div class="coord-row">
+                <label>X</label>
+                <input type="range" id="loc-x-range" min="0" max="1" step="0.005" />
+                <input type="number" id="loc-x-num" min="0" max="1" step="0.005" />
+              </div>
+              <div class="coord-row">
+                <label>Y</label>
+                <input type="range" id="loc-y-range" min="0" max="1" step="0.005" />
+                <input type="number" id="loc-y-num" min="0" max="1" step="0.005" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Orientation</label>
+                  <select id="loc-orient">
+                    <option value="h">Horizontal (h)</option>
+                    <option value="v">Vertical (v)</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Pattern</label>
+                  <select id="loc-pattern">
+                    <option value="single">Single</option>
+                    <option value="mirror">Mirror</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </div>
+                <div class="form-group" style="max-width:80px">
+                  <label>Slots</label>
+                  <input type="number" id="loc-slots" min="1" max="8" />
+                </div>
+              </div>
+              <!-- Spacing row — only relevant for horizontal / mirror multi-slot -->
+              <div id="loc-spacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  Slot Spacing
+                  <span style="font-weight:400;text-transform:none;font-size:10px">(relative to image width — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">sp</label>
+                  <input type="range" id="loc-spacing-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="loc-spacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="loc-empty-hint" style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">
+            ← Click a location to edit
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIZE RULES ── -->
+  <div id="stab-sizes" hidden>
+    <div class="card">
+      <div class="card-title">Size Class Definitions
+        <button class="btn btn-primary btn-sm" id="btn-save-sizes">Save Changes</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Named size profiles used by the light renderer — one set of dimensions per view. Click <strong>▼ Views</strong> to edit per-view W×H. Vertical-orientation sizes are swapped automatically.</p>
+      <table class="size-tbl">
+        <thead><tr><th style="width:12%">ID</th><th style="width:22%">Label</th><th style="width:18%">Views</th><th style="width:20%">Aspect Ratio</th><th style="width:12%">Front Preview</th><th style="width:10%"></th></tr></thead>
+        <tbody id="size-defs-tbody"></tbody>
+      </table>
+      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-def">+ Add Size Class</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Part Number → Size Class Rules
+        <span style="font-size:11px;font-weight:400;color:var(--muted)">first match wins</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Maps part number substrings (case-insensitive) to a size class ID.</p>
+      <table class="size-tbl">
+        <thead><tr><th style="width:42%">Part Number Contains</th><th style="width:28%">Size Class</th><th style="width:20%">Preview</th><th style="width:10%"></th></tr></thead>
+        <tbody id="size-rules-tbody"></tbody>
+      </table>
+      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-rule">+ Add Rule</button></div>
+    </div>
+  </div>
+
+  <!-- ── ADD PART ── -->
+  <div id="stab-addpart" hidden>
+    <div class="card">
+      <div class="card-title">Add New Part</div>
+      <div class="wizard-steps">
+        <div class="wstep active" data-step="1"><span class="wstep-num">1</span>Basic Info</div>
+        <div class="wstep" data-step="2"><span class="wstep-num">2</span>Diagram</div>
+        <div class="wstep" data-step="3"><span class="wstep-num">3</span>Images</div>
+        <div class="wstep" data-step="4"><span class="wstep-num">4</span>Review</div>
+      </div>
+      <!-- Step 1 -->
+      <div class="wizard-panel active" id="wstep-1">
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>Part Name <span style="color:var(--red)">*</span></label>
+            <input id="wp-display-name" type="text" placeholder="e.g. Forward Warning 1" />
+            <div class="field-hint">Must match the "Part" column in xlsx (case-insensitive)</div>
+          </div>
+          <div class="form-group">
+            <label>Part ID</label>
+            <input id="wp-part-id" type="text" placeholder="auto from name" />
+            <div class="field-hint">Short slug, no spaces</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="wp-category">
+              <option value="warning_light">Warning Light</option>
+              <option value="scene_light">Scene Light</option>
+              <option value="light_bar">Light Bar</option>
+              <option value="equipment">Equipment</option>
+              <option value="audio">Audio</option>
+              <option value="vehicle_system">Vehicle System</option>
+              <option value="equipment_note">Equipment (list only)</option>
+              <option value="appearance_note">Appearance (list only)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:2">
+            <label>Template Section <span style="color:var(--red)">*</span></label>
+            <select id="wp-template-section"></select>
+            <div class="field-hint">Which section this row appears in on the build sheet</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Render Kind</div>
+        <div class="rk-options">
+          <div class="rk-card selected" data-rk="light"><div class="rk-icon">💡</div><div class="rk-label">Light</div><div class="rk-desc">Color token icons</div></div>
+          <div class="rk-card" data-rk="equipment"><div class="rk-icon">🔩</div><div class="rk-label">Equipment</div><div class="rk-desc">Custom PNG per view</div></div>
+          <div class="rk-card" data-rk="bar"><div class="rk-icon">📏</div><div class="rk-label">Light Bar</div><div class="rk-desc">Wide bar asset</div></div>
+          <div class="rk-card" data-rk="none"><div class="rk-icon">📋</div><div class="rk-label">List Only</div><div class="rk-desc">No diagram icon</div></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+          <button class="btn btn-primary" id="wbtn-1-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="wizard-panel" id="wstep-2">
+        <div class="form-row" style="margin-bottom:14px;align-items:center">
+          <div style="font-size:14px;font-weight:600">Diagram Status: <span id="wp-diagram-status">Yes</span></div>
+        </div>
+        <div id="diagram-options-empty" hidden style="font-size:12px;color:var(--muted);margin-bottom:14px">List-only parts do not render on the vehicle diagram.</div>
+        <div id="diagram-options">
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Views</label>
+            <div class="view-checks" id="wp-views">
+              <label class="view-check-label checked" data-view="front"><input type="checkbox" value="front" checked />Front</label>
+              <label class="view-check-label" data-view="side"><input type="checkbox" value="side" />Side</label>
+              <label class="view-check-label" data-view="top"><input type="checkbox" value="top" />Top</label>
+              <label class="view-check-label" data-view="rear"><input type="checkbox" value="rear" />Rear</label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Default Location Key</label>
+              <select id="wp-location-key"><option value="">— none —</option></select>
+            </div>
+            <div class="form-group">
+              <label>Quantity Policy</label>
+              <select id="wp-qty-policy">
+                <option value="location_slots">Location slots</option>
+                <option value="single_per_line">Single per line</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" id="asset-key-row">
+            <div class="form-group">
+              <label>Asset Key</label>
+              <input id="wp-asset-key" type="text" placeholder="e.g. spotlight" />
+              <div class="field-hint">Slug used for image filenames</div>
+            </div>
+            <div class="form-group">
+              <label>Default Color Profile</label>
+              <select id="wp-color-profile">
+                <option value="std_duo_rb_w">Standard R/B (std_duo_rb_w)</option>
+                <option value="duo_r_b">Red and Blue Split</option>
+                <option value="single_red">Single Red</option>
+                <option value="single_blue">Single Blue</option>
+                <option value="single_white">Single White</option>
+                <option value="single_amber">Single Amber</option>
+                <option value="">None</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-2-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-2-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="wizard-panel" id="wstep-3">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px" id="step3-hint">Upload PNG images for each view. Any view can be skipped.</p>
+        <div class="upload-grid" id="upload-grid"></div>
+        <div id="step3-naming-hint" style="margin-top:12px;background:#f5f6fa;border-radius:7px;padding:10px 12px;font-size:11px;color:var(--muted);font-family:monospace"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-3-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-3-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 4 -->
+      <div class="wizard-panel" id="wstep-4">
+        <div id="review-grid"></div>
+        <div id="wizard-result" hidden style="margin-top:14px"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-4-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-4-save">✓ Create Part</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CATALOG (Part Types) ── -->
+  <div id="stab-catalog" hidden>
+    <div class="card">
+      <div class="card-title">Part Types
+        <button class="btn btn-secondary btn-sm" id="btn-reload-catalog">↺ Reload</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">These are the <em>slot types</em> in the build sheet (Forward Warning 1, Radar, etc.). To manage actual purchasable parts, use the <strong>Parts Library</strong> tab.</p>
+      <input class="catalog-search" id="catalog-search" type="text" placeholder="Search part types…" />
+      <div class="catalog-scroll">
+        <table class="catalog-tbl">
+          <thead><tr><th>Display Name</th><th>Category</th><th>Kind</th><th>Diagram</th><th>Views</th><th></th></tr></thead>
+          <tbody id="catalog-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTS LIBRARY ── -->
+  <div id="stab-parts" hidden>
+    <div class="card">
+      <div class="card-title">Parts Library
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" id="btn-reload-parts">↺ Reload</button>
+          <button class="btn btn-primary btn-sm" id="btn-add-part-lib">+ Add Part</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Actual purchasable parts. Each part links to one or more Part Types it can fill, has its own size rule and per-view images.</p>
+      <input class="catalog-search" id="lib-search" type="text" placeholder="Search by name, manufacturer, model…" />
+      <div class="catalog-scroll">
+        <table class="catalog-tbl" id="lib-tbl">
+          <thead><tr><th>Part / Manufacturer</th><th>Model #</th><th>Compatible Types</th><th>Size Rule</th><th>Images</th><th></th></tr></thead>
+          <tbody id="lib-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VEHICLES ── -->
+  <div id="stab-vehicles" hidden>
+    <div class="card">
+      <div class="card-title">Vehicle Types</div>
+      <div class="vehicle-cards" id="vehicle-cards"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Add New Vehicle Type</div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:220px">
+          <label>Vehicle Type ID <span style="color:var(--red)">*</span></label>
+          <input id="new-vehicle-id" type="text" placeholder="e.g. DURANGO" style="text-transform:uppercase" />
+          <div class="field-hint">Must match VehicleType detected from the xlsx (e.g. DURANGO, TAHOE)</div>
+        </div>
+        <div class="form-group" style="max-width:260px">
+          <label>Preset Layout</label>
+          <select id="vehicle-preset"></select>
+          <div class="field-hint">Optionally clone placements from an existing vehicle type</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px">View Images (PNG, optional — can add later)</div>
+      <div class="vehicle-img-upload-grid" id="vehicle-img-grid">
+        <!-- filled by JS for front/side/top/rear -->
+      </div>
+      <button class="btn btn-primary" id="btn-create-vehicle">+ Create Vehicle Type</button>
+    </div>
+  </div>
+</div><!-- end tab-settings -->
+
+
+<!-- ══ EDIT PART MODAL ══ -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Part <button class="modal-close" id="modal-close">✕</button></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Display Name</label><input id="m-display-name" type="text" />
+      </div>
+      <div class="form-group">
+        <label>Part ID</label><input id="m-part-id" type="text" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="m-category">
+          <option value="warning_light">Warning Light</option><option value="scene_light">Scene Light</option>
+          <option value="light_bar">Light Bar</option><option value="equipment">Equipment</option>
+          <option value="audio">Audio</option><option value="vehicle_system">Vehicle System</option>
+          <option value="equipment_note">Equipment (list only)</option><option value="appearance_note">Appearance (list only)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Render Kind</label>
+        <select id="m-render-kind" onchange="onModalRenderKindChange()">
+          <option value="light">light</option><option value="equipment">equipment</option>
+          <option value="bar">bar</option><option value="none">none</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Asset Key</label><input id="m-asset-key" type="text" placeholder="only for equipment/bar" />
+      </div>
+      <div class="form-group">
+        <label>Default Color Profile</label>
+        <select id="m-color-profile">
+          <option value="">none</option><option value="std_duo_rb_w">std_duo_rb_w</option>
+          <option value="duo_r_b">duo_r_b</option><option value="single_red">single_red</option>
+          <option value="single_blue">single_blue</option><option value="single_white">single_white</option>
+          <option value="single_amber">single_amber</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Diagram Status</label>
+        <div id="m-diagram-status" style="height:38px;border:1px solid var(--border);border-radius:8px;background:#f5f6fa;display:flex;align-items:center;padding:0 12px;font-weight:600;color:var(--navy)">Yes</div>
+      </div>
+      <div class="form-group">
+        <label>Qty Policy</label>
+        <select id="m-qty-policy">
+          <option value="location_slots">location_slots</option>
+          <option value="single_per_line">single_per_line</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Default Views (comma-separated)</label>
+      <input id="m-views" type="text" placeholder="front, side, top, rear" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Default Location Key</label>
+        <input id="m-location-key" type="text" placeholder="e.g. ROOF LIGHT BAR" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Aliases (one per line)</label>
+      <textarea id="m-aliases" placeholder="Alternate Part Name&#10;Another Name"></textarea>
+    </div>
+
+    <!-- Location options for this part type -->
+    <div class="modal-section" id="modal-locs-section">
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Allowed Locations <span style="font-weight:400;font-size:10px;color:var(--muted)">(dropdown options in the Location column of the build sheet)</span></span>
+      </div>
+      <div id="modal-loc-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+      <div style="display:flex;gap:6px">
+        <input id="modal-loc-input" type="text" placeholder="Type a location and press Enter" style="flex:1" list="modal-loc-suggestions" />
+        <datalist id="modal-loc-suggestions"></datalist>
+        <button class="btn btn-secondary btn-sm" id="btn-modal-add-loc">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Images section — only shown for equipment/bar -->
+    <div class="modal-section" id="modal-images-section">
+      <div class="modal-section-title">Per-View Images &amp; Render Size
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">saved to asset manifest · overrides parts library images</span>
+      </div>
+      <div id="modal-images-grid"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-modal-delete">Delete Part</button>
+      <button class="btn btn-secondary" id="btn-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="btn-modal-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PARTS LIBRARY MODAL ══ -->
+<div class="modal-overlay" id="parts-modal">
+  <div class="modal" style="width:700px">
+    <div class="modal-title">
+      <span id="parts-modal-title">Add Part</span>
+      <button class="modal-close" id="parts-modal-close">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Display Name <span style="color:var(--red)">*</span></label>
+        <input id="pm-name" type="text" placeholder="e.g. Whelen ION" />
+      </div>
+      <div class="form-group">
+        <label>Part ID</label>
+        <input id="pm-id" type="text" placeholder="auto-generated" />
+        <div class="field-hint">Unique slug, no spaces</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Category</label>
+        <select id="pm-category"></select>
+      </div>
+      <div class="form-group">
+        <label>Size Rule</label>
+        <select id="pm-size-rule"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Manufacturer</label>
+        <input id="pm-manufacturer" type="text" placeholder="e.g. WHELEN" />
+      </div>
+      <div class="form-group">
+        <label>Model Number</label>
+        <input id="pm-model" type="text" placeholder="e.g. ION" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Compatible Part Types <span style="font-weight:400;color:var(--muted)">(select all that apply)</span></label>
+      <div id="pm-compat-types" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;padding:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:4px">
+      <label>Notes</label>
+      <input id="pm-notes" type="text" placeholder="Optional notes" />
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Per-View Images &amp; Render Size
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">equipment / bar parts — lights use the Size Rule above</span>
+      </div>
+      <div id="pm-images-grid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="pm-delete" style="display:none">Delete</button>
+      <button class="btn btn-secondary" id="pm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="pm-save">Save Part</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>DTM Vehicle Builder v7 · local server on port 7655</footer>
+
+<!-- ══ ADD LOCATION MODAL ══ -->
+<div class="modal-overlay" id="add-loc-modal">
+  <div class="modal">
+    <div class="modal-title">Add Location <button class="modal-close" id="alm-close">✕</button></div>
+
+    <div class="alm-tabs">
+      <button class="alm-tab active" id="alm-tab-import" onclick="almSwitchTab('import')">Import Existing</button>
+      <button class="alm-tab" id="alm-tab-create" onclick="almSwitchTab('create')">Create New</button>
+    </div>
+
+    <!-- TAB: Import Existing -->
+    <div class="alm-panel active" id="alm-panel-import">
+      <input class="alm-search" type="text" id="alm-import-search" placeholder="Search locations…" oninput="almFilterImport(this.value)" />
+      <div class="alm-import-list" id="alm-import-list"></div>
+    </div>
+
+    <!-- TAB: Create New -->
+    <div class="alm-panel" id="alm-panel-create">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Location Name</label>
+        <input id="alm-new-name" type="text" placeholder="e.g. PUSH BUMPER" oninput="this.value=this.value.toUpperCase()" />
+      </div>
+      <div class="modal-section-title" style="margin-bottom:4px">Assign to Part Types</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Check each part type that should have this location in its dropdown.</div>
+      <div class="alm-pt-list" id="alm-pt-list"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="alm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="alm-confirm" style="display:none">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+const api = (path, body) =>
+  fetch(path, body !== undefined
+    ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}
+    : undefined
+  ).then(r => r.json());
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const fmt = b => b<1024?b+"B":b<1048576?(b/1024).toFixed(1)+"KB":(b/1048576).toFixed(1)+"MB";
+const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+
+function show(id){$(id).removeAttribute("hidden")}
+function hide(id){$(id).setAttribute("hidden","")}
+function toast(msg, type=""){
+  const t=$("toast"); t.textContent=msg;
+  t.className="toast show"+(type?" "+type:"");
+  setTimeout(()=>t.className="toast",2800);
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB ROUTING
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll(".htab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".htab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const t = btn.dataset.tab;
+    $("tab-generate").hidden = t!=="generate";
+    $("tab-settings").hidden = t!=="settings";
+    if (t==="settings") initSettings();
+  });
+});
+
+document.querySelectorAll(".stab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".stab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["placements","sizes","addpart","catalog","parts","vehicles"].forEach(s =>
+      $("stab-"+s).hidden = s!==btn.dataset.stab
+    );
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// GENERATE TAB
+// ═══════════════════════════════════════════════════════
+let fileB64=null, fileName=null;
+
+const dz=$("drop-zone");
+dz.addEventListener("dragover", e=>{e.preventDefault();dz.classList.add("drag-over")});
+dz.addEventListener("dragleave", ()=>dz.classList.remove("drag-over"));
+dz.addEventListener("drop", e=>{e.preventDefault();dz.classList.remove("drag-over");handleFile(e.dataTransfer.files[0])});
+$("file-input").addEventListener("change", e=>handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.endsWith(".xlsx")){alert("Please select an .xlsx file.");return;}
+  fileName=file.name; $("fname").textContent=file.name; $("fsize").textContent=fmt(file.size);
+  dz.hidden=true; $("file-loaded").style.display="flex";
+  const reader=new FileReader();
+  reader.onload = async e => {
+    fileB64=e.target.result.split(",")[1];
+    logLine("Parsing workbook…");
+    const res=await api("/parse",{filename:fileName,data:fileB64});
+    if (res.ok) {
+      renderInfo(res.info); renderParts(res.parts);
+      show("card-proj"); show("card-parts");
+      $("btn-generate").disabled=false;
+      logLine("Parsed — "+res.parts.length+" parts found.");
+    } else logLine("Parse error: "+res.error);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderInfo(info) {
+  const pairs=[["Agency",info.Agency],["Project ID",info.ProjectID],["Quote #",info.QuoteNumber],
+    ["Sales Rep",info.SalesRep],["Vehicle",info.VehicleType],["Contact",info.PrimaryContact],
+    ["Phone",info.Phone],["Email",info.Email]];
+  $("info-grid").innerHTML=pairs.map(([l,v])=>
+    `<div class="info-item"><label>${l}</label><span class="${v?"":"empty"}">${v||"—"}</span></div>`
+  ).join("");
+}
+
+function renderParts(parts) {
+  $("parts-count").textContent=parts.length;
+  $("parts-tbody").innerHTML=parts.map(p=>
+    `<tr><td style="font-weight:500">${esc(p.name)}</td>
+     <td style="color:var(--muted)">${esc(p.location||"—")}</td>
+     <td>${esc(p.color||"—")}</td><td>${p.qty||"—"}</td>
+     <td><span class="badge ${p.include?"badge-on":"badge-off"}">${p.include?"Yes":"No"}</span></td></tr>`
+  ).join("");
+}
+
+$("btn-clear").addEventListener("click", ()=>{
+  fileB64=null;fileName=null; $("file-input").value="";
+  $("file-loaded").style.display="none"; dz.hidden=false;
+  hide("card-proj");hide("card-parts");hide("card-results");
+  hide("card-warns");hide("card-output");hide("card-log");hide("reset-row");
+  $("log-box").textContent=""; $("btn-generate").disabled=true;
+});
+
+$("btn-generate").addEventListener("click", async ()=>{
+  if(!fileB64)return;
+  $("btn-generate").disabled=true; $("spinner").style.display="block";
+  $("btn-label").textContent="Generating…";
+  hide("card-results");hide("card-warns");hide("card-output");hide("reset-row");
+  logLine("Starting generation…");
+  const res=await api("/generate",{filename:fileName,data:fileB64});
+  if(res.log) res.log.split("\n").forEach(l=>logLine(l));
+  if(res.ok){
+    $("result-banner").className="result-banner success";
+    $("banner-icon").textContent="✅"; $("banner-msg").textContent="Build sheet generated successfully";
+    $("banner-sub").textContent=res.output_name;
+    $("stat-parts").textContent=res.parts_count; $("stat-pl").textContent=res.placements_count;
+    $("stat-warn").textContent=res.warnings_count;
+    $("stat-warn").style.color=res.warnings_count===0?"var(--green)":"var(--yellow)";
+    show("card-results");
+    if(res.all_warnings?.length){
+      $("warn-list").innerHTML=res.all_warnings.map(w=>`<li class="warn-item">⚠️ ${esc(w)}</li>`).join("");
+      show("card-warns");
+    }
+    $("out-name").textContent=res.output_name; $("out-path").textContent=res.output_path;
+    window._outputPath=res.output_path; show("card-output");
+  } else {
+    $("result-banner").className="result-banner error";
+    $("banner-icon").textContent="❌"; $("banner-msg").textContent="Generation failed";
+    $("banner-sub").textContent=res.error||"Unknown error"; show("card-results");
+  }
+  $("spinner").style.display="none"; $("btn-label").textContent="⚡ Generate Build Sheet";
+  $("btn-generate").disabled=false; show("reset-row");
+});
+
+// Workbook template regeneration
+$("btn-regen-template").addEventListener("click", async ()=>{
+  $("btn-regen-template").disabled=true;
+  $("spinner-tpl").style.display="inline-block";
+  $("tpl-label").textContent="Generating…";
+  $("tpl-result").style.display="none";
+  try {
+    const res = await api("/api/template/generate", {});
+    const el = $("tpl-result");
+    el.style.display="block";
+    if(res.ok){
+      el.style.background="var(--green,#e8f5e9)"; el.style.color="#1b5e20";
+      el.textContent=`✅ Saved: ${res.filename}`;
+    } else {
+      el.style.background="#fdecea"; el.style.color="#b71c1c";
+      el.textContent=`❌ ${res.error}`;
+    }
+  } catch(e){
+    const el=$("tpl-result");
+    el.style.display="block"; el.style.background="#fdecea"; el.style.color="#b71c1c";
+    el.textContent=`❌ ${e.message}`;
+  }
+  $("spinner-tpl").style.display="none";
+  $("tpl-label").textContent="🔄 Regenerate Workbook Template";
+  $("btn-regen-template").disabled=false;
+});
+
+$("btn-open").addEventListener("click", ()=>api("/open",{path:window._outputPath}));
+$("btn-reset").addEventListener("click", ()=>location.reload());
+
+function logLine(msg){show("card-log"); $("log-box").textContent+=msg+"\n"; $("log-box").scrollTop=$("log-box").scrollHeight;}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS — init
+// ═══════════════════════════════════════════════════════
+let _layouts=null, _manifest=null, _catalog=null, _workbookRules=null;
+let _activeVehicle="PIU", _activeView="front";
+let _selectedLocKey=null, _locsDirty=false;
+const _uploadedImages={};  // view → {filename, b64, dataUrl}
+const _modalUploadedImages={};  // view → {filename, b64, dataUrl}
+const _modalDeletedViews=new Set();  // views marked for deletion from the active asset manifest bucket
+
+function partTypeAssetBucket(renderKind){
+  return renderKind==="bar"?"bar_assets":"equipment_assets";
+}
+
+function partTypeUploadFolder(renderKind){
+  return renderKind==="bar"?"lights":"equipment";
+}
+
+function getPartTypeAssetMap(renderKind){
+  const bucket=partTypeAssetBucket(renderKind);
+  if(!_manifest[bucket]) _manifest[bucket]={};
+  return _manifest[bucket];
+}
+
+function isDiagramConfigured(renderKind, views){
+  return renderKind!=="none" && (views||[]).length>0;
+}
+
+function deriveDiagramFlag(part){
+  return isDiagramConfigured(part?.render_kind||"none", part?.default_views||[]);
+}
+
+function refreshSharedUi(){
+  populateLocationDropdown();
+  renderCatalog($("catalog-search")?.value||"");
+  renderPartsLibrary($("lib-search")?.value||"");
+  if($("vehicle-cards")) renderVehicleCards();
+  if($("vehicle-preset")) buildVehiclePresetOptions();
+  if($("vehicle-selector")) populateVehicleSelector();
+
+  if($("add-loc-modal")?.classList.contains("open")){
+    almBuildImportList($("alm-import-search")?.value||"");
+    almBuildPartTypeList();
+  }
+
+  if($("edit-modal")?.classList.contains("open")){
+    buildModalLocSection($("m-display-name")?.value?.trim()||"");
+  }
+
+  if($("parts-modal")?.classList.contains("open")){
+    const selectedTypes=[...$("pm-compat-types").querySelectorAll("input:checked")].map(cb=>cb.value);
+    populatePmCategory($("pm-category")?.value||"");
+    populatePmCompatTypes(selectedTypes);
+  }
+}
+
+async function initSettings(){
+  if(!_layouts)       _layouts       = await api("/api/layouts");
+  if(!_manifest)      _manifest      = await api("/api/manifest");
+  if(!_catalog)       _catalog       = await api("/api/catalog");
+  if(!_workbookRules) _workbookRules = await api("/api/workbook-rules");
+  populateVehicleSelector();
+  initPlacements();
+  initSizeRules();
+  populateLocationDropdown();
+  renderCatalog();
+  initVehiclesTab();
+  populateTemplateSectionSelect();
+  syncWizardDiagramUi();
+  await loadPartsLibrary();
+}
+
+function populateTemplateSectionSelect(){
+  const sections = (_workbookRules?.template_sections || []).map(s => s.label);
+  const sel = $("wp-template-section");
+  if(!sel) return;
+  sel.innerHTML = sections.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════
+// PLACEMENTS
+// ═══════════════════════════════════════════════════════
+const CW=700, CH=460;  // canvas logical pixels
+
+function populateVehicleSelector(){
+  const sel=$("vehicle-selector");
+  const vehicles=Object.keys(_layouts?.vehicles||{});
+  if(!_activeVehicle || !vehicles.includes(_activeVehicle)) _activeVehicle=vehicles[0]||"";
+  sel.innerHTML=vehicles.map(v=>`<option value="${esc(v)}" ${v===_activeVehicle?"selected":""}>${esc(v)}</option>`).join("");
+  sel.onchange=e=>{_activeVehicle=e.target.value; _selectedLocKey=null; hide("loc-edit-panel"); show("loc-empty-hint"); renderLocationList(); loadVehicleCanvas();};
+}
+
+function getViewLocations(){
+  return _layouts?.vehicles?.[_activeVehicle]?.views?.[_activeView]?.locations || {};
+}
+function setViewLocations(locs){
+  if(!_layouts.vehicles[_activeVehicle]?.views?.[_activeView]) return;
+  _layouts.vehicles[_activeVehicle].views[_activeView].locations=locs;
+  _locsDirty=true; $("placements-dirty-dot").style.display="inline-block";
+}
+
+function allKnownLocationNames(){
+  const all=new Set();
+  Object.values(_layouts?.vehicles||{}).forEach(v=>
+    Object.values(v.views||{}).forEach(view=>
+      Object.keys(view.locations||{}).forEach(loc=>all.add(loc))
+    )
+  );
+  Object.values(_workbookRules?.part_rules||{}).forEach(rule=>
+    (rule.locations||[]).forEach(loc=>all.add(loc))
+  );
+  return [...all].sort();
+}
+
+function allWorkbookPartTypeNames(){
+  const names=[];
+  const seen=new Set();
+  (_workbookRules?.template_sections||[]).forEach(section=>{
+    (section.parts||[]).forEach(part=>{
+      const name=(part?.name||"").trim();
+      if(name&&!seen.has(name)){
+        seen.add(name);
+        names.push(name);
+      }
+    });
+  });
+  return names;
+}
+
+function initPlacements(){
+  document.querySelectorAll(".view-pill").forEach(p=>{
+    p.addEventListener("click",()=>{
+      document.querySelectorAll(".view-pill").forEach(x=>x.classList.remove("active"));
+      p.classList.add("active"); _activeView=p.dataset.view;
+      _selectedLocKey=null; hide("loc-edit-panel"); show("loc-empty-hint");
+      renderLocationList(); loadVehicleCanvas();
+    });
+  });
+  renderLocationList();
+  loadVehicleCanvas();
+}
+
+let _vehicleImg=new Image(), _imgLoaded=false;
+
+function loadVehicleCanvas(){
+  const canvas=$("vehicle-canvas");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,CW,CH); ctx.fillStyle="#f0f2fa"; ctx.fillRect(0,0,CW,CH);
+  _imgLoaded=false;
+  _vehicleImg=new Image();
+  _vehicleImg.onload=()=>{_imgLoaded=true; drawCanvas();};
+  _vehicleImg.onerror=()=>{
+    ctx.fillStyle="#eef0f6"; ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle="#aab"; ctx.font="14px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(`No image: assets/vehicles/${_activeVehicle}_${_activeView}.png`, CW/2, CH/2);
+    drawDots(ctx,[0,0,CW,CH]);
+  };
+  _vehicleImg.src=`/assets/vehicles/${_activeVehicle}_${_activeView}.png`;
+
+  canvas.onclick=e=>{
+    if(!_selectedLocKey)return;
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=CW/rect.width, scaleY=CH/rect.height;
+    const px=(e.clientX-rect.left)*scaleX, py=(e.clientY-rect.top)*scaleY;
+    const box=getImageBox();
+    const x=Math.round(((px-box[0])/box[2])*1000)/1000;
+    const y=Math.round(((py-box[1])/box[3])*1000)/1000;
+    updateLocCoord(_selectedLocKey,"x",Math.max(0,Math.min(1,x)));
+    updateLocCoord(_selectedLocKey,"y",Math.max(0,Math.min(1,y)));
+    syncEditPanel(); renderLocationList(); drawCanvas();
+  };
+}
+
+function getImageBox(){
+  if(!_imgLoaded||!_vehicleImg.naturalWidth) return [0,0,CW,CH];
+  const iw=_vehicleImg.naturalWidth, ih=_vehicleImg.naturalHeight;
+  const scale=Math.min(CW/iw, CH/ih);
+  const dw=iw*scale, dh=ih*scale;
+  return [(CW-dw)/2, (CH-dh)/2, dw, dh];
+}
+
+function drawCanvas(){
+  const canvas=$("vehicle-canvas"), ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,CW,CH); ctx.fillStyle="#f0f2fa"; ctx.fillRect(0,0,CW,CH);
+  const box=getImageBox();
+  if(_imgLoaded) ctx.drawImage(_vehicleImg,box[0],box[1],box[2],box[3]);
+  drawDots(ctx,box);
+}
+
+// ── multi-dot positioning ────────────────────────────────────────
+function getSlotPositions(loc, box){
+  const [bl,bt,bw,bh]=box;
+  const baseCx = bl + loc.x * bw;
+  const baseCy = bt + loc.y * bh;
+  const pattern = loc.pattern || "single";
+  const slotCount = loc.slot_count || 1;
+
+  if(slotCount<=1 || pattern==="single") return [[baseCx,baseCy]];
+
+  // use saved spacing if set, otherwise ~6% of image width per slot gap
+  const spacing = (loc.spacing && loc.spacing > 0) ? bw * loc.spacing : bw * 0.06;
+
+  if(pattern==="horizontal"){
+    const totalW = spacing*(slotCount-1);
+    const startX = baseCx - totalW/2;
+    return Array.from({length:slotCount}, (_,i) => [startX+i*spacing, baseCy]);
+  }
+
+  if(pattern==="mirror"){
+    const centerX = bl + 0.5*bw;
+    const offsetX = Math.abs(baseCx - centerX);
+    if(slotCount===2) return [[centerX-offsetX,baseCy],[centerX+offsetX,baseCy]];
+    const half=Math.floor(slotCount/2);
+    const positions=[];
+    for(let i=0;i<half;i++){
+      const off=offsetX+i*spacing;
+      positions.push([centerX-off,baseCy]);
+      positions.push([centerX+off,baseCy]);
+    }
+    return positions;
+  }
+
+  return [[baseCx,baseCy]];
+}
+
+function drawDots(ctx, box){
+  const locs=getViewLocations();
+  Object.entries(locs).forEach(([name,loc])=>{
+    const selected=(name===_selectedLocKey);
+    const positions=getSlotPositions(loc, box);
+    positions.forEach(([cx,cy],idx)=>{
+      ctx.beginPath();
+      ctx.arc(cx,cy,selected?7:4,0,Math.PI*2);
+      ctx.fillStyle=selected?"#C8A951":"rgba(30,39,97,0.72)";
+      ctx.fill();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=1.5; ctx.stroke();
+      // small index numbers on multi-slot
+      if(positions.length>1){
+        ctx.fillStyle=selected?"#1E2761":"#fff";
+        ctx.font="bold 8px sans-serif"; ctx.textAlign="center";
+        ctx.fillText(idx+1, cx, cy+3);
+      }
+    });
+    if(selected && positions.length){
+      const [cx,cy]=positions[Math.floor(positions.length/2)];
+      ctx.fillStyle="rgba(255,255,255,0.93)";
+      ctx.font="bold 10px sans-serif"; ctx.textAlign="center";
+      const label=name.length>18?name.slice(0,17)+"…":name;
+      ctx.fillText(label, cx, cy-12);
+    }
+  });
+}
+
+function renderLocationList(){
+  const locs=getViewLocations();
+  $("location-list").innerHTML=Object.entries(locs).map(([name,loc])=>{
+    const sc=loc.slot_count||1, pat=loc.pattern||"single";
+    const countHint=sc>1?` ×${sc}`:"";
+    return `<div class="location-row ${name===_selectedLocKey?"selected":""}" data-key="${esc(name)}">
+      <div class="loc-name" title="${esc(name)}">${esc(name)}</div>
+      <div class="loc-coords">${loc.x.toFixed(2)},${loc.y.toFixed(2)}${countHint}</div>
+    </div>`;
+  }).join("");
+  $("location-list").querySelectorAll(".location-row").forEach(row=>{
+    row.addEventListener("click",()=>{
+      _selectedLocKey=row.dataset.key;
+      renderLocationList(); showEditPanel(_selectedLocKey);
+      hide("loc-empty-hint"); show("loc-edit-panel");
+      drawCanvas();
+    });
+  });
+}
+
+function showEditPanel(key){
+  const loc=getViewLocations()[key]; if(!loc)return;
+  $("loc-edit-title").textContent=key;
+  $("loc-name-input").value=key;
+  $("loc-x-range").value=loc.x; $("loc-x-num").value=loc.x;
+  $("loc-y-range").value=loc.y; $("loc-y-num").value=loc.y;
+  $("loc-orient").value=loc.orientation||"h";
+  $("loc-pattern").value=loc.pattern||"single";
+  $("loc-slots").value=loc.slot_count||1;
+  const sp=loc.spacing||0;
+  $("loc-spacing-range").value=sp; $("loc-spacing-num").value=sp;
+  updateSpacingRowVisibility(loc.pattern||"single", loc.slot_count||1);
+}
+
+function updateSpacingRowVisibility(pattern, slots){
+  const show=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
+  $("loc-spacing-row").hidden=!show;
+}
+
+function syncEditPanel(){
+  const loc=getViewLocations()[_selectedLocKey]; if(!loc)return;
+  $("loc-x-range").value=loc.x; $("loc-x-num").value=loc.x;
+  $("loc-y-range").value=loc.y; $("loc-y-num").value=loc.y;
+}
+
+function updateLocCoord(key,axis,value){
+  const locs=getViewLocations();
+  if(locs[key]){locs[key][axis]=value; setViewLocations(locs);}
+}
+
+["x","y"].forEach(axis=>{
+  $(`loc-${axis}-range`).addEventListener("input",e=>{
+    const v=parseFloat(e.target.value);
+    $(`loc-${axis}-num`).value=v;
+    updateLocCoord(_selectedLocKey,axis,v);
+    renderLocationList(); drawCanvas();
+  });
+  $(`loc-${axis}-num`).addEventListener("input",e=>{
+    const v=Math.max(0,Math.min(1,parseFloat(e.target.value)||0));
+    $(`loc-${axis}-range`).value=v;
+    updateLocCoord(_selectedLocKey,axis,v);
+    renderLocationList(); drawCanvas();
+  });
+});
+
+["orient","pattern","slots"].forEach(field=>{
+  $(`loc-${field}`).addEventListener("change",e=>{
+    const locs=getViewLocations();
+    if(!_selectedLocKey||!locs[_selectedLocKey])return;
+    const key={"orient":"orientation","pattern":"pattern","slots":"slot_count"}[field];
+    locs[_selectedLocKey][key]=field==="slots"?parseInt(e.target.value):e.target.value;
+    setViewLocations(locs);
+    // Update spacing row visibility whenever pattern or slot count changes
+    updateSpacingRowVisibility(locs[_selectedLocKey].pattern||"single", locs[_selectedLocKey].slot_count||1);
+    renderLocationList(); drawCanvas();
+  });
+});
+
+// Spacing slider
+$("loc-spacing-range").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  $("loc-spacing-num").value=v;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){
+    locs[_selectedLocKey].spacing=v>0?v:null;
+    setViewLocations(locs);
+    drawCanvas();
+  }
+});
+$("loc-spacing-num").addEventListener("input",e=>{
+  const v=Math.max(0,Math.min(0.30,parseFloat(e.target.value)||0));
+  $("loc-spacing-range").value=v;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){
+    locs[_selectedLocKey].spacing=v>0?v:null;
+    setViewLocations(locs);
+    drawCanvas();
+  }
+});
+
+$("loc-name-input").addEventListener("blur",e=>{
+  const newName=e.target.value.trim().toUpperCase();
+  if(!newName||newName===_selectedLocKey)return;
+  const locs=getViewLocations();
+  if(!locs[_selectedLocKey])return;
+  const rebuilt={};
+  Object.entries(locs).forEach(([k,v])=>{rebuilt[k===_selectedLocKey?newName:k]=v;});
+  setViewLocations(rebuilt);
+  _selectedLocKey=newName;
+  renderLocationList(); $("loc-edit-title").textContent=newName;
+});
+
+$("btn-add-location").addEventListener("click",()=>{ openAddLocModal(); });
+
+// ─── Add Location Modal ──────────────────────────────────────────────────────
+let _almTab="import";
+
+function openAddLocModal(){
+  _almTab="import";
+  almSwitchTab("import");
+  almBuildImportList("");
+  almBuildPartTypeList();
+  $("alm-new-name").value="";
+  $("alm-import-search").value="";
+  $("add-loc-modal").classList.add("open");
+}
+
+function almSwitchTab(tab){
+  _almTab=tab;
+  $("alm-tab-import").classList.toggle("active", tab==="import");
+  $("alm-tab-create").classList.toggle("active", tab==="create");
+  $("alm-panel-import").classList.toggle("active", tab==="import");
+  $("alm-panel-create").classList.toggle("active", tab==="create");
+  $("alm-confirm").style.display = tab==="create" ? "" : "none";
+}
+
+function almBuildImportList(filter){
+  const currentLocs=new Set(Object.keys(getViewLocations()));
+  let importable=allKnownLocationNames().filter(l=>!currentLocs.has(l));
+  if(filter) importable=importable.filter(l=>l.toLowerCase().includes(filter.toLowerCase()));
+  const el=$("alm-import-list");
+  if(!importable.length){
+    el.innerHTML=`<div class="alm-empty">No importable locations found.</div>`;
+    return;
+  }
+  el.innerHTML=importable.map(l=>
+    `<div class="alm-import-item" data-loc="${esc(l)}">${esc(l)}</div>`
+  ).join("");
+  el.querySelectorAll(".alm-import-item").forEach(item=>{
+    item.addEventListener("click",()=>almImportLocation(item.dataset.loc));
+  });
+}
+
+function almFilterImport(val){ almBuildImportList(val); }
+
+function almBuildPartTypeList(){
+  const types=allWorkbookPartTypeNames();
+  const el=$("alm-pt-list");
+  if(!types.length){
+    el.innerHTML=`<div class="alm-empty">No part types found.</div>`;
+    return;
+  }
+  el.innerHTML=types.map((name,i)=>`
+    <label class="alm-pt-item">
+      <input type="checkbox" value="${esc(name)}" id="alm-pt-${i}" />
+      ${esc(name)}
+    </label>
+  `).join("");
+}
+
+function almImportLocation(name){
+  const locs=getViewLocations();
+  if(locs[name]){ toast(`"${name}" already in this view`,"error"); return; }
+  locs[name]={x:0.5,y:0.5,units:"relative_image",orientation:"h",slot_count:1,pattern:"single"};
+  setViewLocations(locs);
+  _selectedLocKey=name;
+  renderLocationList(); showEditPanel(name);
+  hide("loc-empty-hint"); show("loc-edit-panel"); drawCanvas();
+  $("add-loc-modal").classList.remove("open");
+  toast(`Imported "${name}"`,"success");
+}
+
+$("alm-confirm").addEventListener("click", async()=>{
+  const name=$("alm-new-name").value.trim().toUpperCase();
+  if(!name){ toast("Enter a location name","error"); return; }
+  const locs=getViewLocations();
+  if(locs[name]){ toast(`"${name}" already exists in this view`,"error"); return; }
+
+  // 1. Add location to current view
+  locs[name]={x:0.5,y:0.5,units:"relative_image",orientation:"h",slot_count:1,pattern:"single"};
+  setViewLocations(locs);
+
+  // 2. Assign to checked part types in workbook rules
+  const checked=[...$("alm-pt-list").querySelectorAll("input[type=checkbox]:checked")].map(c=>c.value);
+  if(checked.length){
+    if(!_workbookRules.part_rules) _workbookRules.part_rules={};
+    checked.forEach(partLabel=>{
+      if(!_workbookRules.part_rules[partLabel]) _workbookRules.part_rules[partLabel]={};
+      const existing=_workbookRules.part_rules[partLabel].locations||[];
+      if(!existing.includes(name)){
+        _workbookRules.part_rules[partLabel].locations=[...existing,name];
+      }
+    });
+  }
+
+  // 3. Save layouts
+  const layoutRes=await api("/api/layouts/save",_layouts);
+  if(!layoutRes.ok){ toast("Layout save failed: "+layoutRes.error,"error"); return; }
+
+  // 4. Save workbook rules (if any part types were checked)
+  if(checked.length){
+    const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+    if(!wrRes.ok){ toast("Rules save failed: "+wrRes.error,"error"); return; }
+  }
+
+  // 5. Close modal, refresh UI, open edit panel
+  $("add-loc-modal").classList.remove("open");
+  _selectedLocKey=name;
+  refreshSharedUi();
+  renderLocationList(); showEditPanel(name);
+  hide("loc-empty-hint"); show("loc-edit-panel"); drawCanvas();
+  toast(`Location "${name}" created!`,"success");
+});
+
+$("alm-close").addEventListener("click",()=>$("add-loc-modal").classList.remove("open"));
+$("alm-cancel").addEventListener("click",()=>$("add-loc-modal").classList.remove("open"));
+$("add-loc-modal").addEventListener("click",e=>{if(e.target===$("add-loc-modal"))$("add-loc-modal").classList.remove("open");});
+
+$("btn-delete-location").addEventListener("click",()=>{
+  if(!_selectedLocKey||!confirm(`Delete "${_selectedLocKey}"?`))return;
+  const locs=getViewLocations();
+  delete locs[_selectedLocKey]; setViewLocations(locs);
+  _selectedLocKey=null; hide("loc-edit-panel"); show("loc-empty-hint");
+  renderLocationList(); drawCanvas();
+});
+
+$("btn-save-layouts").addEventListener("click", async()=>{
+  const res=await api("/api/layouts/save",_layouts);
+  if(res.ok){_locsDirty=false; $("placements-dirty-dot").style.display="none"; refreshSharedUi(); toast("Layout saved!","success");}
+  else toast("Save failed: "+res.error,"error");
+});
+
+// ═══════════════════════════════════════════════════════
+// SIZE RULES
+// ═══════════════════════════════════════════════════════
+const SIZE_CLASSES=["sm","md","lg","long","tracer","rd","sq"];
+const SIZE_PX={sm:[36,9],md:[48,24],lg:[72,57],long:[72,9],tracer:[56,9],rd:[16,16],sq:[12,12]};
+
+function initSizeRules(){ renderSizeDefs(); renderSizeRules(); }
+
+function renderSizeDefs(){
+  const defs=_manifest?.size_rule_definitions||{};
+  $("size-defs-tbody").innerHTML=Object.entries(defs).map(([id,d])=>sizeDefRow(id,d)).join("");
+  bindSizeDefEvents();
+}
+
+function sizeDefRow(id,d){
+  const VLIST=["front","rear","side","top"];
+  const views=d.views||{};
+  // Use front view as preview reference; fall back to legacy fields
+  const fv=views.front||{w:d.width_in||0.3,h:d.height_in||0.3};
+  const pw=Math.min(Math.round(fv.w*96),80);
+  const ph=Math.min(Math.round(fv.h*96),40);
+  // Sub-rows for per-view editing (hidden by default)
+  const subRows=VLIST.map(v=>{
+    const vd=views[v]||{w:fv.w,h:fv.h};
+    const vpw=Math.min(Math.round(vd.w*96),80);
+    const vph=Math.min(Math.round(vd.h*96),40);
+    return `<tr class="sd-view-sub" data-view="${v}" style="display:none">
+      <td colspan="2" style="padding-left:28px">
+        <span class="sd-view-badge">${v}</span>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px">
+          W <input class="sd-vw" data-view="${v}" type="number" value="${vd.w}" step="0.001" min="0.01" max="8" />
+          H <input class="sd-vh" data-view="${v}" type="number" value="${vd.h}" step="0.001" min="0.01" max="4" />
+        </div>
+      </td>
+      <td></td>
+      <td><div class="sp-rect sd-view-preview" style="width:${vpw}px;height:${vph}px"></div></td>
+      <td></td>
+    </tr>`;
+  }).join("");
+  return `<tr class="sd-main-row">
+    <td><input class="sd-id" value="${esc(id)}" type="text" style="width:70px" /></td>
+    <td><input class="sd-label" value="${esc(d.label||'')}" type="text" /></td>
+    <td><button class="btn btn-secondary btn-sm sd-expand-btn">▼ Views</button></td>
+    <td><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="sd-ar" ${d.maintain_aspect_ratio?"checked":""}> Maintain</label></td>
+    <td><div class="sp-rect sd-preview" style="width:${pw}px;height:${ph}px"></div></td>
+    <td><button class="btn btn-danger btn-sm sd-del">✕</button></td>
+  </tr>${subRows}`;
+}
+
+function bindSizeDefEvents(){
+  // Expand/collapse per-view sub-rows
+  $("size-defs-tbody").querySelectorAll(".sd-expand-btn").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const mainRow=e.target.closest("tr");
+      let sib=mainRow.nextElementSibling;
+      while(sib&&sib.classList.contains("sd-view-sub")){
+        const hidden=sib.style.display==="none";
+        sib.style.display=hidden?"":"none";
+        sib=sib.nextElementSibling;
+      }
+      btn.textContent=btn.textContent.startsWith("▼")?"▲ Views":"▼ Views";
+    });
+  });
+  // Live preview for per-view size inputs
+  $("size-defs-tbody").querySelectorAll(".sd-vw,.sd-vh").forEach(inp=>{
+    inp.addEventListener("input",e=>{
+      const row=e.target.closest("tr");
+      const w=parseFloat(row.querySelector(".sd-vw")?.value)||0.1;
+      const h=parseFloat(row.querySelector(".sd-vh")?.value)||0.1;
+      const prev=row.querySelector(".sd-view-preview");
+      if(prev){prev.style.width=Math.min(Math.round(w*96),80)+"px";prev.style.height=Math.min(Math.round(h*96),40)+"px";}
+      // Also update the main row front preview if this is the front view
+      if(row.dataset.view==="front"){
+        const mainPrev=row.previousElementSibling?.querySelector(".sd-preview");
+        if(mainPrev){mainPrev.style.width=Math.min(Math.round(w*96),80)+"px";mainPrev.style.height=Math.min(Math.round(h*96),40)+"px";}
+      }
+    });
+  });
+  $("size-defs-tbody").querySelectorAll(".sd-del").forEach(b=>{
+    b.addEventListener("click",e=>{
+      // Remove main row + 4 view sub-rows
+      const mainRow=e.target.closest("tr");
+      let sib=mainRow.nextElementSibling;
+      while(sib&&sib.classList.contains("sd-view-sub")){
+        const next=sib.nextElementSibling;
+        sib.remove();
+        sib=next;
+      }
+      mainRow.remove();
+    });
+  });
+}
+
+$("btn-add-size-def").addEventListener("click",()=>{
+  const newDef={label:"New Size",maintain_aspect_ratio:false,
+    views:{front:{w:0.3,h:0.15},rear:{w:0.3,h:0.15},side:{w:0.2,h:0.1},top:{w:0.2,h:0.1}}};
+  $("size-defs-tbody").insertAdjacentHTML("beforeend",sizeDefRow("new",newDef));
+  bindSizeDefEvents();
+});
+
+function renderSizeRules(){
+  const rules=_manifest?.part_number_size_rules||{};
+  $("size-rules-tbody").innerHTML=Object.entries(rules).map(([pn,sc])=>sizeRuleRow(pn,sc)).join("");
+  bindSizeRuleEvents();
+}
+
+function sizeRuleRow(pn,sc){
+  const opts=SIZE_CLASSES.map(s=>`<option value="${s}" ${s===sc?"selected":""}>${s}</option>`).join("");
+  const [pw,ph]=SIZE_PX[sc]||[20,8];
+  return `<tr><td><input class="sr-pn" value="${esc(pn)}" type="text" /></td>
+    <td><select class="sr-sc">${opts}</select></td>
+    <td><div style="display:flex;align-items:center"><div class="sp-rect" style="width:${pw}px;height:${ph}px"></div></div></td>
+    <td><button class="btn btn-danger btn-sm sr-del">✕</button></td></tr>`;
+}
+
+function bindSizeRuleEvents(){
+  $("size-rules-tbody").querySelectorAll(".sr-sc").forEach(sel=>{
+    sel.addEventListener("change",e=>{
+      const r=e.target.closest("tr"), rect=r.querySelector(".sp-rect");
+      const [pw,ph]=SIZE_PX[e.target.value]||[20,8];
+      rect.style.width=pw+"px"; rect.style.height=ph+"px";
+    });
+  });
+  $("size-rules-tbody").querySelectorAll(".sr-del").forEach(b=>b.addEventListener("click",e=>e.target.closest("tr").remove()));
+}
+
+$("btn-add-size-rule").addEventListener("click",()=>{
+  $("size-rules-tbody").insertAdjacentHTML("beforeend",sizeRuleRow("","sm"));
+  bindSizeRuleEvents();
+});
+
+$("btn-save-sizes").addEventListener("click",async()=>{
+  const rules={};
+  $("size-rules-tbody").querySelectorAll("tr").forEach(row=>{
+    const pn=row.querySelector(".sr-pn")?.value?.trim();
+    const sc=row.querySelector(".sr-sc")?.value;
+    if(pn&&sc) rules[pn]=sc;
+  });
+  const defs={};
+  $("size-defs-tbody").querySelectorAll(".sd-main-row").forEach(mainRow=>{
+    const id=mainRow.querySelector(".sd-id")?.value?.trim();
+    const label=mainRow.querySelector(".sd-label")?.value?.trim();
+    const ar=mainRow.querySelector(".sd-ar")?.checked||false;
+    if(!id) return;
+    const views={};
+    let sib=mainRow.nextElementSibling;
+    while(sib&&sib.classList.contains("sd-view-sub")){
+      const v=sib.dataset.view;
+      const w=parseFloat(sib.querySelector(".sd-vw")?.value)||0;
+      const h=parseFloat(sib.querySelector(".sd-vh")?.value)||0;
+      if(v&&w&&h) views[v]={w,h};
+      sib=sib.nextElementSibling;
+    }
+    defs[id]={label:label||id,maintain_aspect_ratio:ar,views};
+  });
+  _manifest.part_number_size_rules=rules;
+  _manifest.size_rule_definitions=defs;
+  const res=await api("/api/manifest/save",_manifest);
+  if(res.ok) toast("Size rules saved!","success"); else toast("Save failed: "+res.error,"error");
+});
+
+// ═══════════════════════════════════════════════════════
+// ADD PART WIZARD
+// ═══════════════════════════════════════════════════════
+let _wizardStep=1, _renderKind="light", _wizardViews=["front"];
+
+function setWizardStep(n){
+  _wizardStep=n;
+  document.querySelectorAll(".wstep").forEach(s=>{
+    const sn=parseInt(s.dataset.step);
+    s.classList.toggle("active",sn===n); s.classList.toggle("done",sn<n);
+  });
+  document.querySelectorAll(".wizard-panel").forEach(p=>p.classList.toggle("active",p.id===`wstep-${n}`));
+}
+
+function syncWizardDiagramUi(){
+  const enabled=_renderKind!=="none";
+  const diag=isDiagramConfigured(_renderKind, _wizardViews);
+  $("diagram-options").hidden=!enabled;
+  $("diagram-options-empty").hidden=enabled;
+  $("wp-diagram-status").textContent=diag?"Yes":"No";
+}
+
+document.querySelectorAll(".rk-card").forEach(card=>{
+  card.addEventListener("click",()=>{
+    document.querySelectorAll(".rk-card").forEach(c=>c.classList.remove("selected"));
+    card.classList.add("selected"); _renderKind=card.dataset.rk;
+    syncWizardDiagramUi();
+  });
+});
+
+$("wp-display-name").addEventListener("input",e=>{
+  const id=slugify(e.target.value).replace(/-/g,"_");
+  $("wp-part-id").value=id; $("wp-asset-key").value=id;
+});
+
+document.querySelectorAll(".view-check-label").forEach(label=>{
+  label.addEventListener("click",()=>{
+    const cb=label.querySelector("input"); cb.checked=!cb.checked;
+    label.classList.toggle("checked",cb.checked);
+    _wizardViews=[...document.querySelectorAll(".view-check-label.checked")].map(l=>l.dataset.view);
+    syncWizardDiagramUi();
+  });
+});
+
+$("wbtn-1-next").addEventListener("click",()=>{
+  if(!$("wp-display-name").value.trim()){toast("Part name is required","error");return;}
+  $("asset-key-row").hidden=!["equipment","bar"].includes(_renderKind);
+  $("wp-color-profile").closest(".form-group").hidden=(_renderKind!=="light");
+  syncWizardDiagramUi();
+  setWizardStep(2);
+});
+$("wbtn-2-next").addEventListener("click",()=>{
+  if(["equipment","bar"].includes(_renderKind)&&_renderKind!=="none"&&_wizardViews.length){buildUploadGrid();setWizardStep(3);}
+  else{buildReview();setWizardStep(4);}
+});
+$("wbtn-2-back").addEventListener("click",()=>setWizardStep(1));
+$("wbtn-3-next").addEventListener("click",()=>{buildReview();setWizardStep(4);});
+$("wbtn-3-back").addEventListener("click",()=>setWizardStep(2));
+$("wbtn-4-back").addEventListener("click",()=>["equipment","bar"].includes(_renderKind)?setWizardStep(3):setWizardStep(2));
+
+function buildUploadGrid(){
+  const views=_wizardViews.length?_wizardViews:["front","side","top","rear"];
+  const assetKey=$("wp-asset-key").value.trim()||slugify($("wp-display-name").value);
+  $("upload-grid").innerHTML=views.map(view=>{
+    const fname=`${assetKey}_${view}.png`;
+    return `<div class="upload-zone ${_uploadedImages[view]?"has-file":""}" id="uz-${view}">
+      <input type="file" accept="image/*" data-view="${view}" class="uz-input" />
+      <div class="uz-icon">🖼️</div>
+      <div class="uz-label">${view.charAt(0).toUpperCase()+view.slice(1)} View</div>
+      <div class="uz-hint"><code>${fname}</code></div>
+      <img class="uz-thumb" id="uz-prev-${view}" ${_uploadedImages[view]?`src="${_uploadedImages[view].dataUrl}" style="display:block"`:""}/>
+    </div>`;
+  }).join("");
+  $("upload-grid").querySelectorAll(".uz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file)return;
+      const view=e.target.dataset.view;
+      const assetKey2=$("wp-asset-key").value.trim()||slugify($("wp-display-name").value);
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _uploadedImages[view]={filename:`${assetKey2}_${view}.png`,b64,dataUrl:ev.target.result};
+        const prev=$(`uz-prev-${view}`); prev.src=ev.target.result; prev.style.display="block";
+        $(`uz-${view}`).classList.add("has-file");
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+  $("step3-naming-hint").textContent=views.map(v=>`equipment/${assetKey}_${v}.png`).join("\n");
+}
+
+function buildReview(){
+  const name=$("wp-display-name").value.trim();
+  const partId=$("wp-part-id").value.trim()||slugify(name).replace(/-/g,"_");
+  const rows=[
+    ["Display Name",esc(name)],["Part ID",esc(partId)],
+    ["Category",esc($("wp-category").value)],["Render Kind",esc(_renderKind)],
+    ["On Diagram",isDiagramConfigured(_renderKind,_wizardViews)?"Yes":"No"],
+    _wizardViews.length?["Views",_wizardViews.join(", ")]:null,
+    $("wp-location-key").value?["Default Location",esc($("wp-location-key").value)]:null,
+    $("wp-asset-key").value?["Asset Key",esc($("wp-asset-key").value)]:null,
+    $("wp-color-profile").value?["Color Profile",esc($("wp-color-profile").value)]:null,
+    Object.keys(_uploadedImages).length?["Images",Object.entries(_uploadedImages).map(([v,d])=>`<span class="review-file">📎 ${esc(d.filename)}</span>`).join(" ")]:null,
+  ].filter(Boolean);
+  $("review-grid").innerHTML=rows.map(([k,v])=>
+    `<div class="review-row"><div class="review-key">${k}</div><div class="review-val">${v}</div></div>`
+  ).join("");
+}
+
+$("wbtn-4-save").addEventListener("click", async()=>{
+  const btn=$("wbtn-4-save"); btn.disabled=true; btn.textContent="Saving…";
+  const resultDiv=$("wizard-result");
+  try{
+    const name=$("wp-display-name").value.trim();
+    const partId=$("wp-part-id").value.trim()||slugify(name).replace(/-/g,"_");
+    const assetKey=$("wp-asset-key").value.trim()||partId;
+    const rk=_renderKind;
+    const views=rk==="none"?[]:[..._wizardViews];
+    const diag=isDiagramConfigured(rk, views);
+    const assetFolder=partTypeUploadFolder(rk);
+    for(const [view,img] of Object.entries(_uploadedImages)){
+      const res=await api("/api/assets/upload",{folder:assetFolder,filename:img.filename,data:img.b64});
+      if(!res.ok) throw new Error("Image upload failed: "+res.error);
+    }
+    if(["equipment","bar"].includes(rk)&&Object.keys(_uploadedImages).length){
+      const assetMap=getPartTypeAssetMap(rk);
+      const viewMap={};
+      Object.entries(_uploadedImages).forEach(([view,img])=>{viewMap[view]=`${assetFolder}/${img.filename}`;});
+      assetMap[assetKey]=viewMap;
+      const mRes=await api("/api/manifest/save",_manifest);
+      if(!mRes.ok) throw new Error("Manifest save failed: "+mRes.error);
+    }
+    const newPart={part_id:partId,display_name:name,category:$("wp-category").value,render_kind:rk,diagram:diag,default_views:views};
+    if(rk!=="none"){
+      newPart.render_quantity_policy=$("wp-qty-policy").value;
+      if($("wp-location-key").value) newPart.default_location_key=$("wp-location-key").value;
+      if(assetKey&&["equipment","bar"].includes(rk)) newPart.asset_key=assetKey;
+      if($("wp-color-profile").value&&rk==="light") newPart.default_color_profile=$("wp-color-profile").value;
+    }
+    _catalog.parts=(_catalog.parts||[]).filter(p=>p.part_id!==partId);
+    _catalog.parts.push(newPart);
+    const cRes=await api("/api/catalog/save",_catalog);
+    if(!cRes.ok) throw new Error("Catalog save failed: "+cRes.error);
+
+    // Add to workbook_rules template_sections so it appears in the generated template
+    const targetSection=$("wp-template-section").value;
+    if(targetSection&&_workbookRules?.template_sections){
+      const sec=_workbookRules.template_sections.find(s=>s.label===targetSection);
+      if(sec){
+        // Only add if not already present
+        if(!sec.parts.find(p=>p.name===name)){
+          sec.parts.push({name,sub:false});
+          const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+          if(!wrRes.ok) throw new Error("Workbook rules save failed: "+wrRes.error);
+        }
+      }
+    }
+
+    refreshSharedUi();
+    show("wizard-result");
+    resultDiv.innerHTML=`<div class="result-banner success">✅ <span style="font-weight:700">"${esc(name)}" created!</span> It will appear on the next generated build sheet.</div>`;
+    toast("Part created!","success");
+    setTimeout(()=>{
+      setWizardStep(1); $("wp-display-name").value=""; $("wp-part-id").value=""; $("wp-asset-key").value="";
+      document.querySelectorAll(".rk-card").forEach(c=>c.classList.remove("selected"));
+      document.querySelector('.rk-card[data-rk="light"]').classList.add("selected");
+      _renderKind="light"; _wizardViews=["front"];
+      syncWizardDiagramUi();
+      Object.keys(_uploadedImages).forEach(k=>delete _uploadedImages[k]);
+      hide("wizard-result");
+    },2500);
+  }catch(err){
+    show("wizard-result");
+    resultDiv.innerHTML=`<div class="result-banner error">❌ ${esc(String(err))}</div>`;
+    toast("Error: "+err,"error");
+  }
+  btn.disabled=false; btn.textContent="✓ Create Part";
+});
+
+// ═══════════════════════════════════════════════════════
+// PARTS CATALOG
+// ═══════════════════════════════════════════════════════
+const KIND_BADGE={light:"badge-light",equipment:"badge-equip",bar:"badge-bar",none:"badge-none"};
+
+function renderCatalog(filter=""){
+  const parts=(_catalog?.parts||[]).filter(p=>
+    !filter||p.display_name.toLowerCase().includes(filter.toLowerCase())||
+    p.part_id.toLowerCase().includes(filter.toLowerCase())
+  );
+  $("catalog-tbody").innerHTML=parts.map(p=>`
+    <tr>
+      <td style="font-weight:600">${esc(p.display_name)}</td>
+      <td style="color:var(--muted);font-size:11px">${esc(p.category||"")}</td>
+      <td><span class="badge ${KIND_BADGE[p.render_kind]||"badge-none"}">${esc(p.render_kind||"none")}</span></td>
+      <td><span class="badge ${deriveDiagramFlag(p)?"badge-on":"badge-off"}">${deriveDiagramFlag(p)?"Yes":"No"}</span></td>
+      <td><div class="view-chips">${(p.default_views||[]).map(v=>`<span class="chip">${v}</span>`).join("")}</div></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="openEditModal('${esc(p.part_id)}')">Edit</button></td>
+    </tr>`).join("");
+}
+
+$("catalog-search").addEventListener("input",e=>renderCatalog(e.target.value));
+$("btn-reload-catalog").addEventListener("click", async()=>{
+  _catalog=await api("/api/catalog"); renderCatalog($("catalog-search").value); toast("Reloaded","success");
+});
+
+// ═══════════════════════════════════════════════════════
+// EDIT PART MODAL (with images section)
+// ═══════════════════════════════════════════════════════
+let _editingPartId=null;
+
+function syncModalDiagramStatus(){
+  const rk=$("m-render-kind").value;
+  const views=$("m-views").value.split(",").map(s=>s.trim()).filter(Boolean);
+  $("m-diagram-status").textContent=isDiagramConfigured(rk, views)?"Yes":"No";
+}
+
+function onModalRenderKindChange(){
+  const rk=$("m-render-kind").value;
+  $("modal-images-section").hidden=!["equipment","bar"].includes(rk);
+  if(!$("modal-images-section").hidden) buildModalImageSection();
+  syncModalDiagramStatus();
+}
+
+function buildModalImageSection(){
+  const assetKey=$("m-asset-key").value.trim()||$("m-part-id").value.trim();
+  const allViews=["front","side","top","rear"];
+  const assetMap=getPartTypeAssetMap($("m-render-kind").value);
+  // Read existing sizes from catalog entry
+  const catalogPart=(_catalog?.parts||[]).find(p=>p.part_id===_editingPartId);
+  const existingSizes=catalogPart?.size_per_view||{};
+
+  $("modal-images-grid").innerHTML=allViews.map(view=>{
+    const manifestPath=assetKey&&assetMap?.[assetKey]?.[view]
+      ?"/assets/"+assetMap[assetKey][view]:null;
+    const upld=_modalUploadedImages[view];
+    const deleted=_modalDeletedViews.has(view);
+    const hasImg=!deleted&&!!(manifestPath||upld);
+    const sz=existingSizes[view]||{};
+    const carSrc=`/assets/vehicles/PIU_${view}.png`;
+    return `<div class="pm-view-row" data-view="${view}">
+      <div class="pm-view-thumb ${hasImg?"has-file":""}" id="muz-${view}" title="Click to upload ${view} image">
+        <input type="file" accept="image/*" data-view="${view}" class="muz-input" />
+        <img id="muz-prev-${view}"
+          ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+        ${!hasImg?'<span>🖼️</span>':""}
+        <div class="pm-view-label">${view}</div>
+      </div>
+      <div class="pm-size-panel" id="modal-vs-${view}" ${hasImg?"":"style='display:none'"}>
+        <label>Render size (inches)</label>
+        <div class="pm-size-row">
+          <span>W</span>
+          <input type="number" id="modal-vw-${view}" class="modal-vw" data-view="${view}"
+            value="${sz.w||""}" step="0.01" min="0.01" max="8" placeholder="—" />
+          <span style="margin:0 2px">×</span>
+          <span>H</span>
+          <input type="number" id="modal-vh-${view}" class="modal-vh" data-view="${view}"
+            value="${sz.h||""}" step="0.01" min="0.01" max="6" placeholder="—" />
+        </div>
+        <button class="btn btn-danger btn-sm modal-del-view" data-view="${view}" style="margin-top:6px;width:fit-content">🗑 Remove image</button>
+      </div>
+      <div class="pm-car-preview ${hasImg&&sz.w&&sz.h?"visible":""}" id="modal-preview-${view}">
+        <img class="car-bg" src="${carSrc}" onerror="this.src=''" />
+        <div class="part-overlay" id="modal-pov-${view}" style="${buildOverlayStyle(sz.w||0,sz.h||0,PM_PREVIEW_ANCHORS[view]||PM_PREVIEW_ANCHORS.front)}"></div>
+        <span class="scale-note">~${PM_PREVIEW_SCALE}px/in</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Upload inputs
+  $("modal-images-grid").querySelectorAll(".muz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const view=e.target.dataset.view;
+      const ak=$("m-asset-key").value.trim()||$("m-part-id").value.trim();
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _modalUploadedImages[view]={filename:`${ak}_${view}.png`,b64,dataUrl:ev.target.result};
+        _modalDeletedViews.delete(view);
+        $(`muz-prev-${view}`).src=ev.target.result;
+        $(`muz-${view}`).classList.add("has-file");
+        $(`modal-vs-${view}`).style.display="";
+        updateModalCarPreview(view);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // Size input live preview
+  $("modal-images-grid").querySelectorAll(".modal-vw,.modal-vh").forEach(inp=>{
+    inp.addEventListener("input",e=>updateModalCarPreview(e.target.dataset.view));
+  });
+
+  // Delete buttons
+  $("modal-images-grid").querySelectorAll(".modal-del-view").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const view=e.target.dataset.view;
+      _modalDeletedViews.add(view);
+      delete _modalUploadedImages[view];
+      const thumb=$(`muz-${view}`);
+      thumb.classList.remove("has-file");
+      const img=$(`muz-prev-${view}`); if(img){img.src="";img.style.display="none";}
+      const sp=$(`modal-vs-${view}`); if(sp) sp.style.display="none";
+      const pv=$(`modal-preview-${view}`); if(pv) pv.classList.remove("visible");
+    });
+  });
+}
+
+function updateModalCarPreview(view){
+  const w=parseFloat($(`modal-vw-${view}`)?.value)||0;
+  const h=parseFloat($(`modal-vh-${view}`)?.value)||0;
+  const preview=$(`modal-preview-${view}`);
+  const overlay=$(`modal-pov-${view}`);
+  if(!preview||!overlay) return;
+  const anchor=PM_PREVIEW_ANCHORS[view]||PM_PREVIEW_ANCHORS.front;
+  if(w&&h){
+    preview.classList.add("visible");
+    overlay.style.cssText=buildOverlayStyle(w,h,anchor);
+  } else {
+    overlay.style.display="none";
+  }
+}
+
+function openEditModal(partId){
+  const p=(_catalog?.parts||[]).find(x=>x.part_id===partId); if(!p)return;
+  _editingPartId=partId;
+  Object.keys(_modalUploadedImages).forEach(k=>delete _modalUploadedImages[k]);
+  _modalDeletedViews.clear();
+  $("m-display-name").value=p.display_name||"";
+  $("m-part-id").value=p.part_id||"";
+  $("m-category").value=p.category||"equipment_note";
+  $("m-render-kind").value=p.render_kind||"none";
+  $("m-asset-key").value=p.asset_key||"";
+  $("m-color-profile").value=p.default_color_profile||"";
+  $("m-qty-policy").value=p.render_quantity_policy||"location_slots";
+  $("m-views").value=(p.default_views||[]).join(", ");
+  $("m-location-key").value=p.default_location_key||"";
+  $("m-aliases").value=(p.aliases||[]).join("\n");
+  syncModalDiagramStatus();
+  buildModalLocSection(p.display_name);
+  const showImgs=["equipment","bar"].includes(p.render_kind||"none");
+  $("modal-images-section").hidden=!showImgs;
+  if(showImgs) buildModalImageSection();
+  $("edit-modal").classList.add("open");
+}
+
+// ── Location chips for part-type edit modal ──────────────────────────────────
+function _allKnownLocations(){
+  return allKnownLocationNames();
+}
+
+function buildModalLocSection(partDisplayName){
+  const existing=(_workbookRules?.part_rules?.[partDisplayName]?.locations)||[];
+  $("modal-loc-input").value="";
+  renderLocChips(existing);
+  // Populate datalist with all known locations not already assigned
+  const all=_allKnownLocations();
+  $("modal-loc-suggestions").innerHTML=all.map(l=>`<option value="${esc(l)}">`).join("");
+}
+
+function renderLocChips(locs){
+  $("modal-loc-chips").innerHTML=locs.map(l=>
+    `<span class="loc-chip">${esc(l)}<button class="loc-chip-rm" data-loc="${esc(l)}" title="Remove">✕</button></span>`
+  ).join("");
+  $("modal-loc-chips").querySelectorAll(".loc-chip-rm").forEach(btn=>
+    btn.addEventListener("click",()=>{
+      const remaining=getCurrentModalLocs().filter(x=>x!==btn.dataset.loc);
+      renderLocChips(remaining);
+    })
+  );
+}
+
+function getCurrentModalLocs(){
+  return [...$("modal-loc-chips").querySelectorAll(".loc-chip-rm")].map(b=>b.dataset.loc);
+}
+
+function addModalLoc(){
+  const val=$("modal-loc-input").value.trim().toUpperCase();
+  if(!val)return;
+  const current=getCurrentModalLocs();
+  if(!current.includes(val)) renderLocChips([...current,val]);
+  $("modal-loc-input").value="";
+}
+
+$("btn-modal-add-loc").addEventListener("click",addModalLoc);
+$("modal-loc-input").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addModalLoc();}});
+
+$("modal-close").addEventListener("click",()=>$("edit-modal").classList.remove("open"));
+$("btn-modal-cancel").addEventListener("click",()=>$("edit-modal").classList.remove("open"));
+$("edit-modal").addEventListener("click",e=>{if(e.target===$("edit-modal"))$("edit-modal").classList.remove("open");});
+
+$("m-asset-key").addEventListener("blur",()=>{
+  const rk=$("m-render-kind").value;
+  if(["equipment","bar"].includes(rk)&&!$("modal-images-section").hidden) buildModalImageSection();
+});
+$("m-views").addEventListener("input",syncModalDiagramStatus);
+
+$("btn-modal-save").addEventListener("click", async()=>{
+  const btn=$("btn-modal-save"); btn.disabled=true; btn.textContent="Saving…";
+  try{
+    const assetKey=$("m-asset-key").value.trim();
+    const rk=$("m-render-kind").value;
+    // Upload new images + apply deletions to the correct manifest asset bucket
+    if(["equipment","bar"].includes(rk)){
+      const assetMap=getPartTypeAssetMap(rk);
+      const assetFolder=partTypeUploadFolder(rk);
+      const viewMap={...(assetMap[assetKey]||{})};
+      // Apply deletions
+      _modalDeletedViews.forEach(v=>delete viewMap[v]);
+      // Upload new
+      for(const [view,img] of Object.entries(_modalUploadedImages)){
+        const res=await api("/api/assets/upload",{folder:assetFolder,filename:img.filename,data:img.b64});
+        if(!res.ok) throw new Error("Upload failed: "+res.error);
+        viewMap[view]=`${assetFolder}/${img.filename}`;
+      }
+      assetMap[assetKey]=viewMap;
+      await api("/api/manifest/save",_manifest);
+    }
+    // Collect per-view render sizes
+    const size_per_view={};
+    ["front","side","top","rear"].forEach(v=>{
+      const w=parseFloat($(`modal-vw-${v}`)?.value)||0;
+      const h=parseFloat($(`modal-vh-${v}`)?.value)||0;
+      if(w&&h) size_per_view[v]={w,h};
+    });
+    const views=rk==="none"?[]:$("m-views").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const aliases=$("m-aliases").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    const diag=isDiagramConfigured(rk, views);
+    const updated={
+      part_id:$("m-part-id").value.trim(),
+      display_name:$("m-display-name").value.trim(),
+      category:$("m-category").value,
+      render_kind:rk,
+      diagram:diag,
+      default_views:views,
+    };
+    if(assetKey) updated.asset_key=assetKey;
+    if($("m-color-profile").value) updated.default_color_profile=$("m-color-profile").value;
+    if($("m-location-key").value.trim()) updated.default_location_key=$("m-location-key").value.trim();
+    if(rk!=="none") updated.render_quantity_policy=$("m-qty-policy").value;
+    if(aliases.length) updated.aliases=aliases;
+    if(Object.keys(size_per_view).length) updated.size_per_view=size_per_view;
+    const idx=_catalog.parts.findIndex(p=>p.part_id===_editingPartId);
+    if(idx>=0) _catalog.parts[idx]=updated; else _catalog.parts.push(updated);
+    const res=await api("/api/catalog/save",_catalog);
+    if(!res.ok) throw new Error(res.error);
+
+    // Save location assignments back to workbook_rules part_rules
+    const displayName=updated.display_name;
+    const newLocs=getCurrentModalLocs();
+    if(_workbookRules){
+      if(!_workbookRules.part_rules) _workbookRules.part_rules={};
+      if(!_workbookRules.part_rules[displayName]) _workbookRules.part_rules[displayName]={};
+      _workbookRules.part_rules[displayName].locations=newLocs;
+      // If name changed, migrate the old key
+      const oldPart=_catalog.parts.find(p=>p.part_id===_editingPartId);
+      if(oldPart&&oldPart.display_name!==displayName&&_workbookRules.part_rules[oldPart.display_name]){
+        _workbookRules.part_rules[displayName]={
+          ..._workbookRules.part_rules[oldPart.display_name],
+          locations:newLocs
+        };
+        delete _workbookRules.part_rules[oldPart.display_name];
+      }
+      const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+      if(!wrRes.ok) throw new Error("Workbook rules save failed: "+wrRes.error);
+    }
+
+    refreshSharedUi();
+    toast("Part saved!","success"); $("edit-modal").classList.remove("open");
+  }catch(err){toast("Save failed: "+err,"error");}
+  btn.disabled=false; btn.textContent="Save Changes";
+});
+
+$("btn-modal-delete").addEventListener("click", async()=>{
+  if(!confirm("Delete this part from the catalog?"))return;
+  const deletedPart = _catalog.parts.find(p=>p.part_id===_editingPartId);
+  const deletedName = deletedPart?.display_name;
+  _catalog.parts=_catalog.parts.filter(p=>p.part_id!==_editingPartId);
+  const res=await api("/api/catalog/save",_catalog);
+  if(!res.ok){toast("Delete failed: "+res.error,"error");return;}
+
+  // Remove from template_sections so it no longer appears in generated template
+  if(deletedName&&_workbookRules?.template_sections){
+    _workbookRules.template_sections.forEach(sec=>{
+      sec.parts=sec.parts.filter(p=>p.name!==deletedName);
+    });
+    await api("/api/workbook-rules/save",_workbookRules);
+  }
+
+  refreshSharedUi();
+  toast("Part deleted","success");
+  $("edit-modal").classList.remove("open");
+});
+
+// ═══════════════════════════════════════════════════════
+// PARTS LIBRARY
+// ═══════════════════════════════════════════════════════
+let _partsLib=null, _editingPartLibId=null;
+const _pmUploadedImages={};
+const _pmDeletedViews=new Set();  // views marked for deletion from parts_library images
+
+async function loadPartsLibrary(){
+  _partsLib=await api("/api/parts-library");
+  renderPartsLibrary($("lib-search").value);
+}
+
+function getPartsCategories(){
+  const cats=[];
+  (_partsLib?.parts||[]).forEach(p=>{if(p.category&&!cats.includes(p.category))cats.push(p.category);});
+  return cats;
+}
+
+function populatePmCategory(selected){
+  const cats=getPartsCategories();
+  $("pm-category").innerHTML=cats.map(c=>`<option value="${esc(c)}" ${c===selected?"selected":""}>${esc(c)}</option>`).join("");
+  if(selected) $("pm-category").value=selected;
+}
+
+function populatePmSizeRule(){
+  const defs=_manifest?.size_rule_definitions||{};
+  $("pm-size-rule").innerHTML='<option value="">— none —</option>'+
+    Object.entries(defs).map(([id,d])=>`<option value="${esc(id)}">${esc(d.label||id)}</option>`).join("");
+}
+
+function populatePmCompatTypes(selectedTypes){
+  const types=(_catalog?.parts||[]).map(p=>p.display_name||p.part_id).sort();
+  $("pm-compat-types").innerHTML=types.map(t=>{
+    const checked=(selectedTypes||[]).includes(t);
+    return `<label class="compat-chip ${checked?"checked":""}"><input type="checkbox" value="${esc(t)}" ${checked?"checked":""}> ${esc(t)}</label>`;
+  }).join("");
+  $("pm-compat-types").querySelectorAll(".compat-chip").forEach(label=>{
+    label.addEventListener("click",()=>{
+      const cb=label.querySelector("input"); cb.checked=!cb.checked;
+      label.classList.toggle("checked",cb.checked);
+    });
+  });
+}
+
+function renderPartsLibrary(filter=""){
+  const lc=filter.toLowerCase();
+  const parts=(_partsLib?.parts||[]).filter(p=>
+    !filter||
+    (p.display_name||"").toLowerCase().includes(lc)||
+    (p.manufacturer||"").toLowerCase().includes(lc)||
+    (p.model_number||"").toLowerCase().includes(lc)||
+    (p.category||"").toLowerCase().includes(lc)
+  );
+  const defs=_manifest?.size_rule_definitions||{};
+  if(!parts.length){
+    $("lib-tbody").innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No parts found.</td></tr>`;
+    return;
+  }
+  // Group by category, preserving order
+  const groups=[];
+  const seen=new Map();
+  parts.forEach(p=>{
+    const cat=p.category||"OTHER";
+    if(!seen.has(cat)){seen.set(cat,[]);groups.push(cat);}
+    seen.get(cat).push(p);
+  });
+  const rows=[];
+  groups.forEach(cat=>{
+    rows.push(`<tr><td colspan="7" style="background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:5px 10px">${esc(cat)}</td></tr>`);
+    seen.get(cat).forEach(p=>{
+      const szViews=Object.keys(p.size_per_view||{});
+      const sizeLabel=szViews.length
+        ?szViews.map(v=>{const s=p.size_per_view[v];return `${v}:${s.w}"×${s.h}"`}).join(", ")
+        :p.size_rule_id?(defs[p.size_rule_id]?.label||p.size_rule_id):"—";
+      const imgCount=Object.keys(p.images||{}).length;
+      const compat=(p.compatible_types||[]).slice(0,2).map(t=>`<span class="chip">${esc(t)}</span>`).join("");
+      const more=(p.compatible_types||[]).length>2?`<span class="chip">+${(p.compatible_types||[]).length-2}</span>`:"";
+      const mfg=p.manufacturer?`<span style="font-weight:600">${esc(p.manufacturer)}</span> `:"";
+      rows.push(`<tr>
+        <td>${mfg}${esc(p.display_name||"")}</td>
+        <td style="color:var(--muted);font-size:11px">${esc(p.model_number||"—")}</td>
+        <td><div class="view-chips">${compat}${more}</div></td>
+        <td>${esc(sizeLabel)}</td>
+        <td>${imgCount>0?`<span class="badge badge-on">${imgCount} view${imgCount!==1?"s":""}</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openPartsModal('${esc(p.part_id)}')">Edit</button></td>
+      </tr>`);
+    });
+  });
+  $("lib-tbody").innerHTML=rows.join("");
+}
+
+$("lib-search").addEventListener("input",e=>renderPartsLibrary(e.target.value));
+$("btn-reload-parts").addEventListener("click",async()=>{await loadPartsLibrary();toast("Reloaded","success");});
+$("btn-add-part-lib").addEventListener("click",()=>openPartsModal(null));
+
+function openPartsModal(partId){
+  _editingPartLibId=partId;
+  Object.keys(_pmUploadedImages).forEach(k=>delete _pmUploadedImages[k]);
+  _pmDeletedViews.clear();
+  const p=partId?(_partsLib?.parts||[]).find(x=>x.part_id===partId):null;
+  $("parts-modal-title").textContent=p?"Edit Part":"Add Part";
+  $("pm-delete").style.display=p?"inline-flex":"none";
+  $("pm-name").value=p?.display_name||"";
+  $("pm-id").value=p?.part_id||"";
+  $("pm-manufacturer").value=p?.manufacturer||"";
+  $("pm-model").value=p?.model_number||"";
+  $("pm-notes").value=p?.notes||"";
+  populatePmCategory(p?.category||"");
+  populatePmSizeRule();
+  $("pm-size-rule").value=p?.size_rule_id||"";
+  populatePmCompatTypes(p?.compatible_types||[]);
+  buildPmImageGrid(p);
+  $("parts-modal").classList.add("open");
+}
+
+// Scale factor: 50px per inch for the car preview overlay
+const PM_PREVIEW_SCALE = 50;
+// Default anchor positions (center %) for placing the part overlay on the car preview
+const PM_PREVIEW_ANCHORS = {
+  front:{cx:50,cy:68}, rear:{cx:50,cy:55}, side:{cx:38,cy:50}, top:{cx:50,cy:50}
+};
+
+function buildPmImageGrid(p){
+  const views=["front","side","top","rear"];
+  const existingSizes=p?.size_per_view||{};
+  $("pm-images-grid").innerHTML=views.map(view=>{
+    const existing=p?.images?.[view];
+    const imgUrl=existing?"/assets/"+existing:null;
+    const upld=_pmUploadedImages[view];
+    const hasImg=!!(imgUrl||upld);
+    const sz=existingSizes[view]||{};
+    const carSrc=`/assets/vehicles/PIU_${view}.png`;
+    const partSrc=upld?.dataUrl||(imgUrl||"");
+    return `<div class="pm-view-row" data-view="${view}">
+      <!-- thumbnail / upload trigger -->
+      <div class="pm-view-thumb ${hasImg?"has-file":""}" id="pmuz-${view}" title="Click to upload ${view} image">
+        <input type="file" accept="image/*" data-view="${view}" class="pmuz-input" />
+        <img id="pmuz-prev-${view}" ${upld?`src="${upld.dataUrl}"`:imgUrl?`src="${imgUrl}" onerror="this.style.display='none'"`:""} />
+        ${!hasImg?"<span>🖼️</span>":""}
+        <div class="pm-view-label">${view}</div>
+      </div>
+      <!-- size inputs — only visible when image present -->
+      <div class="pm-size-panel" id="pmvs-${view}" ${hasImg?"":"style='display:none'"}>
+        <label>Render size (inches)</label>
+        <div class="pm-size-row">
+          <span>W</span>
+          <input type="number" id="pmvw-${view}" class="pmvw" data-view="${view}"
+            value="${sz.w||""}" step="0.01" min="0.01" max="8" placeholder="—" />
+          <span style="margin:0 2px">×</span>
+          <span>H</span>
+          <input type="number" id="pmvh-${view}" class="pmvh" data-view="${view}"
+            value="${sz.h||""}" step="0.01" min="0.01" max="6" placeholder="—" />
+        </div>
+        <button class="btn btn-danger btn-sm pm-del-view" data-view="${view}" style="margin-top:6px;width:fit-content">🗑 Remove image</button>
+      </div>
+      <!-- car preview overlay — visible when image + size both present -->
+      <div class="pm-car-preview ${hasImg&&sz.w&&sz.h?"visible":""}" id="pmpreview-${view}">
+        <img class="car-bg" src="${carSrc}" onerror="this.src=''" />
+        <div class="part-overlay" id="pmpov-${view}" style="${buildOverlayStyle(sz.w||0,sz.h||0,PM_PREVIEW_ANCHORS[view]||PM_PREVIEW_ANCHORS.front)}"></div>
+        <span class="scale-note">~${PM_PREVIEW_SCALE}px/in</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Wire upload inputs
+  $("pm-images-grid").querySelectorAll(".pmuz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const view=e.target.dataset.view;
+      const mfg=($("pm-manufacturer").value||"part").toLowerCase().replace(/\s+/g,"_");
+      const mdl=($("pm-model").value||"unknown").toLowerCase().replace(/\s+/g,"_");
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _pmUploadedImages[view]={filename:`${mfg}_${mdl}_${view}.png`,b64,dataUrl:ev.target.result};
+        const prevImg=$(`pmuz-prev-${view}`);
+        prevImg.src=ev.target.result;
+        $(`pmuz-${view}`).classList.add("has-file");
+        $(`pmvs-${view}`).style.display="";
+        updateCarPreview(view);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // Wire size inputs → live preview update
+  $("pm-images-grid").querySelectorAll(".pmvw,.pmvh").forEach(inp=>{
+    inp.addEventListener("input",e=>updateCarPreview(e.target.dataset.view));
+  });
+
+  // Wire delete buttons
+  $("pm-images-grid").querySelectorAll(".pm-del-view").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const view=e.target.dataset.view;
+      _pmDeletedViews.add(view);
+      delete _pmUploadedImages[view];
+      const thumb=$(`pmuz-${view}`);
+      thumb.classList.remove("has-file");
+      const img=$(`pmuz-prev-${view}`); if(img){img.src="";img.style.display="none";}
+      const sp=$(`pmvs-${view}`); if(sp) sp.style.display="none";
+      const pv=$(`pmpreview-${view}`); if(pv) pv.classList.remove("visible");
+    });
+  });
+}
+
+function buildOverlayStyle(w,h,anchor){
+  if(!w||!h) return "display:none";
+  const wpx=Math.round(w*PM_PREVIEW_SCALE);
+  const hpx=Math.round(h*PM_PREVIEW_SCALE);
+  return `width:${wpx}px;height:${hpx}px;left:${anchor.cx}%;top:${anchor.cy}%`;
+}
+
+function updateCarPreview(view){
+  const w=parseFloat($(`pmvw-${view}`)?.value)||0;
+  const h=parseFloat($(`pmvh-${view}`)?.value)||0;
+  const preview=$(`pmpreview-${view}`);
+  const overlay=$(`pmpov-${view}`);
+  if(!preview||!overlay) return;
+  const anchor=PM_PREVIEW_ANCHORS[view]||PM_PREVIEW_ANCHORS.front;
+  if(w&&h){
+    preview.classList.add("visible");
+    overlay.style.cssText=buildOverlayStyle(w,h,anchor);
+  } else {
+    overlay.style.display="none";
+  }
+}
+
+$("pm-name").addEventListener("input",e=>{
+  if(!_editingPartLibId) $("pm-id").value=slugify(e.target.value).replace(/-/g,"_");
+});
+
+$("parts-modal-close").addEventListener("click",()=>$("parts-modal").classList.remove("open"));
+$("pm-cancel").addEventListener("click",()=>$("parts-modal").classList.remove("open"));
+$("parts-modal").addEventListener("click",e=>{if(e.target===$("parts-modal"))$("parts-modal").classList.remove("open");});
+
+$("pm-save").addEventListener("click",async()=>{
+  const btn=$("pm-save"); btn.disabled=true; btn.textContent="Saving…";
+  try{
+    const name=$("pm-name").value.trim();
+    if(!name) throw new Error("Display Name is required");
+    const partId=$("pm-id").value.trim()||slugify(name).replace(/-/g,"_");
+    const sizeRuleId=$("pm-size-rule").value||null;
+    const compatTypes=[...$("pm-compat-types").querySelectorAll("input:checked")].map(cb=>cb.value);
+    const images=_editingPartLibId
+      ?{...((_partsLib?.parts||[]).find(p=>p.part_id===_editingPartLibId)?.images||{})}
+      :{};
+    // Apply deletions
+    _pmDeletedViews.forEach(v=>delete images[v]);
+    // Upload new images
+    for(const [view,img] of Object.entries(_pmUploadedImages)){
+      const res=await api("/api/assets/upload",{folder:"lights",filename:img.filename,data:img.b64});
+      if(!res.ok) throw new Error("Image upload failed: "+res.error);
+      images[view]="lights/"+img.filename;
+    }
+    // Collect per-view render sizes (only where both W and H are filled)
+    const size_per_view={};
+    ["front","side","top","rear"].forEach(v=>{
+      const w=parseFloat($(`pmvw-${v}`)?.value)||0;
+      const h=parseFloat($(`pmvh-${v}`)?.value)||0;
+      if(w&&h) size_per_view[v]={w,h};
+    });
+    const entry={part_id:partId,display_name:name,
+      category:$("pm-category").value||"OTHER",
+      manufacturer:$("pm-manufacturer").value.trim(),
+      model_number:$("pm-model").value.trim(),
+      compatible_types:compatTypes,images};
+    if(sizeRuleId) entry.size_rule_id=sizeRuleId;
+    if(Object.keys(size_per_view).length) entry.size_per_view=size_per_view;
+    const notes=$("pm-notes").value.trim();
+    if(notes) entry.notes=notes;
+    if(!_partsLib) _partsLib={version:"1.0",parts:[]};
+    _partsLib.parts=(_partsLib.parts||[]).filter(p=>p.part_id!==partId);
+    _partsLib.parts.push(entry);
+    const res=await api("/api/parts-library/save",_partsLib);
+    if(!res.ok) throw new Error(res.error);
+    refreshSharedUi();
+    toast("Part saved!","success");
+    $("parts-modal").classList.remove("open");
+  }catch(err){toast("Save failed: "+err,"error");}
+  btn.disabled=false; btn.textContent="Save Part";
+});
+
+$("pm-delete").addEventListener("click",async()=>{
+  if(!_editingPartLibId||!confirm("Delete this part from the library?"))return;
+  _partsLib.parts=(_partsLib.parts||[]).filter(p=>p.part_id!==_editingPartLibId);
+  const res=await api("/api/parts-library/save",_partsLib);
+  if(res.ok){refreshSharedUi();toast("Deleted","success");$("parts-modal").classList.remove("open");}
+  else toast("Delete failed: "+res.error,"error");
+});
+
+// ═══════════════════════════════════════════════════════
+// VEHICLES TAB
+// ═══════════════════════════════════════════════════════
+const VIEWS_ORDER=["front","side","top","rear"];
+const _vehicleUploadedImages={};  // view → {filename, b64}
+
+function initVehiclesTab(){
+  buildVehiclePresetOptions();
+  renderVehicleCards();
+  buildVehicleImgUploadGrid();
+}
+
+function buildVehiclePresetOptions(){
+  const sel=$("vehicle-preset");
+  if(!sel) return;
+  const vehicles=Object.keys(_layouts?.vehicles||{});
+  const current=sel.value;
+  sel.innerHTML=`<option value="">Start Empty</option>`+
+    vehicles.map(id=>`<option value="${esc(id)}">${esc(id)}</option>`).join("");
+  if(current==="" || vehicles.includes(current)) sel.value=current;
+  else if(vehicles.includes("PIU")) sel.value="PIU";
+}
+
+function renderVehicleCards(){
+  const vehicles=_layouts?.vehicles||{};
+  $("vehicle-cards").innerHTML=Object.entries(vehicles).map(([id,v])=>{
+    const viewCount=Object.keys(v.views||{}).length;
+    const locCount=Object.values(v.views||{}).reduce((a,view)=>a+Object.keys(view.locations||{}).length,0);
+    return `<div class="vehicle-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div class="vc-name">${esc(id)}</div>
+        <button class="btn btn-danger btn-sm vehicle-delete-btn" data-vehicle="${esc(id)}">Delete</button>
+      </div>
+      <div class="vc-views">${viewCount} view${viewCount!==1?"s":""} · ${locCount} locations</div>
+    </div>`;
+  }).join("");
+  $("vehicle-cards").querySelectorAll(".vehicle-delete-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>deleteVehicleType(btn.dataset.vehicle));
+  });
+}
+
+function blankVehicleLayout(){
+  return {
+    views:{
+      front:{coord_space:"relative_image",side_roles:{negative_x:"passenger",positive_x:"driver"},locations:{}},
+      side:{coord_space:"relative_image",default_slot_role:"driver",locations:{}},
+      top:{coord_space:"relative_image",locations:{}},
+      rear:{coord_space:"relative_image",side_roles:{negative_x:"driver",positive_x:"passenger"},locations:{}},
+    }
+  };
+}
+
+function cloneVehiclePreset(presetId){
+  const source=_layouts?.vehicles?.[presetId];
+  return source ? JSON.parse(JSON.stringify(source)) : blankVehicleLayout();
+}
+
+async function deleteVehicleType(vehicleId){
+  const vehicles=Object.keys(_layouts?.vehicles||{});
+  if(vehicles.length<=1){toast("At least one vehicle type must remain","error");return;}
+  if(!confirm(`Delete vehicle type "${vehicleId}"?`)) return;
+
+  try{
+    await Promise.all(
+      VIEWS_ORDER.map(view=>api("/api/assets/delete",{folder:"vehicles",filename:`${vehicleId}_${view}.png`}))
+    );
+    delete _layouts.vehicles[vehicleId];
+    const res=await api("/api/layouts/save",_layouts);
+    if(!res.ok) throw new Error(res.error);
+
+    if(_activeVehicle===vehicleId){
+      _activeVehicle=Object.keys(_layouts.vehicles)[0]||"";
+      _selectedLocKey=null;
+      hide("loc-edit-panel");
+      show("loc-empty-hint");
+      renderLocationList();
+      loadVehicleCanvas();
+    }
+
+    if($("vehicle-preset").value===vehicleId) $("vehicle-preset").value="";
+    refreshSharedUi();
+    toast(`${vehicleId} deleted`,"success");
+  }catch(err){
+    toast("Delete failed: "+err,"error");
+  }
+}
+
+function buildVehicleImgUploadGrid(){
+  $("vehicle-img-grid").innerHTML=VIEWS_ORDER.map(view=>{
+    return `<div class="upload-zone ${_vehicleUploadedImages[view]?"has-file":""}" id="vuz-${view}">
+      <input type="file" accept="image/*" data-view="${view}" class="vuz-input" />
+      <div class="uz-icon">🖼️</div>
+      <div class="uz-label">${view.charAt(0).toUpperCase()+view.slice(1)}</div>
+      <div class="uz-hint">PNG recommended</div>
+      <img class="uz-thumb" id="vuz-prev-${view}" ${_vehicleUploadedImages[view]?`src="${_vehicleUploadedImages[view].dataUrl}" style="display:block"`:""}/>
+    </div>`;
+  }).join("");
+  $("vehicle-img-grid").querySelectorAll(".vuz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file)return;
+      const view=e.target.dataset.view;
+      const vid=$("new-vehicle-id").value.trim().toUpperCase()||"VEHICLE";
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _vehicleUploadedImages[view]={filename:`${vid}_${view}.${file.name.split(".").pop()}`,b64,dataUrl:ev.target.result};
+        const prev=$(`vuz-prev-${view}`); prev.src=ev.target.result; prev.style.display="block";
+        $(`vuz-${view}`).classList.add("has-file");
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+// Auto-update filenames when the vehicle ID changes
+$("new-vehicle-id").addEventListener("blur",()=>buildVehicleImgUploadGrid());
+
+$("btn-create-vehicle").addEventListener("click", async()=>{
+  const vid=$("new-vehicle-id").value.trim().toUpperCase();
+  if(!vid){toast("Vehicle ID is required","error");return;}
+  if(_layouts.vehicles[vid]){toast(`${vid} already exists`,"error");return;}
+  const presetId=$("vehicle-preset").value.trim();
+
+  const btn=$("btn-create-vehicle"); btn.disabled=true; btn.textContent="Creating…";
+  try{
+    // Upload any images
+    for(const [view,img] of Object.entries(_vehicleUploadedImages)){
+      const res=await api("/api/assets/upload",{folder:"vehicles",filename:`${vid}_${view}.png`,data:img.b64});
+      if(!res.ok) throw new Error("Image upload failed: "+res.error);
+    }
+    // Add vehicle to layouts
+    _layouts.vehicles[vid]=cloneVehiclePreset(presetId);
+    const res=await api("/api/layouts/save",_layouts);
+    if(!res.ok) throw new Error(res.error);
+
+    toast(`${vid} created!`,"success");
+    $("new-vehicle-id").value="";
+    $("vehicle-preset").value=Object.keys(_layouts.vehicles).includes("PIU")?"PIU":"";
+    Object.keys(_vehicleUploadedImages).forEach(k=>delete _vehicleUploadedImages[k]);
+    buildVehicleImgUploadGrid();
+    refreshSharedUi();
+  }catch(err){toast("Error: "+err,"error");}
+  btn.disabled=false; btn.textContent="+ Create Vehicle Type";
+});
+
+// ═══════════════════════════════════════════════════════
+// LOCATION DROPDOWN (wizard)
+// ═══════════════════════════════════════════════════════
+function populateLocationDropdown(){
+  $("wp-location-key").innerHTML='<option value="">— none —</option>'+
+    allKnownLocationNames().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded", async()=>{
+  try{const s=await api("/status"); if(s.existing_file) logLine("Found input: "+s.existing_file);}catch(e){}
+});
+</script>
+
+
+</body>
+</html>

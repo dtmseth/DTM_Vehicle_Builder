@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(html|json|pptx|xlsx\\)$\")",
+      "Bash(.venv/bin/python -)",
+      "Bash(.venv/bin/python -m pip install \"pywebview>=5.0,<6\" -q)",
+      "Bash(.venv/bin/python -m dtm_buildsheet)",
+      "Bash(kill 86705)",
+      "Bash(kill 89823)",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(.venv/bin/python -c \"import webview; print\\(webview.__version__\\); print\\(webview.guilib\\)\")",
+      "Bash(kill 89885)",
+      "Bash(.venv/bin/python -c \"import webview; print\\(dir\\(webview\\)\\)\")",
+      "Bash(.venv/bin/pip show *)",
+      "Bash(.venv/bin/python -c \"import webview; print\\(webview.guilib\\)\")",
+      "Bash(.venv/bin/python -c \"from webview.platforms.cocoa import BrowserView; print\\('cocoa ok'\\)\")",
+      "Bash(.venv/bin/python)",
+      "Bash(.venv/lib/python3*/site-packages/webview/__init__.py)",
+      "Bash(.venv/bin/python --version)",
+      "Bash(xargs kill *)",
+      "Bash(sips -g pixelWidth -g pixelHeight packaging/icons/app.icns)",
+      "Bash(.venv/bin/python -m pip install -e \".[packaging]\" -q)",
+      "Bash(.venv/bin/python -m PyInstaller --clean \"packaging/pyinstaller/DTM_BuildSheet.spec\")",
+      "Bash(.venv/bin/python -m PyInstaller -y \"packaging/pyinstaller/DTM_BuildSheet.spec\")",
+      "Bash(file \"dist/DTM Build Sheet.app/Contents/Resources/\"*.icns)",
+      "Bash(chmod +x /Users/skreev/Desktop/DTM_BuildSheet_POC_v7/Build_Mac_App.command)",
+      "Bash(file \"dist/DTM Vehicle Builder.app/Contents/Resources/\"*.icns)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
