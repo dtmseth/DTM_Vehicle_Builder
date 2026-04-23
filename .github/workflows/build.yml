@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install -e ".[packaging]"
+
+      - name: Build app
+        run: python -m PyInstaller -y packaging/pyinstaller/DTM_VehicleBuilder.spec
+
+      - name: Create DMG
+        run: |
+          mkdir -p /tmp/dmg_staging
+          cp -r "dist/DTM Vehicle Builder.app" /tmp/dmg_staging/
+          ln -s /Applications /tmp/dmg_staging/Applications
+          hdiutil create \
+            -volname "DTM Vehicle Builder" \
+            -srcfolder /tmp/dmg_staging \
+            -ov -format UDZO \
+            "dist/DTM_Vehicle_Builder.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DTM-Vehicle-Builder-Mac
+          path: dist/DTM_Vehicle_Builder.dmg
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install -e ".[packaging]"
+
+      - name: Build app
+        run: python -m PyInstaller -y packaging/pyinstaller/DTM_VehicleBuilder.spec
+
+      - name: Build installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging/windows/installer.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DTM-Vehicle-Builder-Windows
+          path: dist/DTM_Vehicle_Builder_Setup.exe

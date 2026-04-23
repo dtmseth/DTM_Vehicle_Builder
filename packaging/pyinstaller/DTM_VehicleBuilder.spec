@@ -14,11 +14,11 @@ WIN_ICON = ICON_DIR / "app.ico"
 datas = collect_data_files("dtm_buildsheet")
 hiddenimports = collect_submodules("dtm_buildsheet")
 
-icon_path = None
-if MAC_ICON.exists():
-    icon_path = str(MAC_ICON)
-elif WIN_ICON.exists():
-    icon_path = str(WIN_ICON)
+import sys as _sys
+if _sys.platform == 'darwin':
+    icon_path = str(MAC_ICON) if MAC_ICON.exists() else None
+else:
+    icon_path = str(WIN_ICON) if WIN_ICON.exists() else None
 
 a = Analysis(
     [str(ROOT / "packaging" / "pyinstaller" / "launch_gui.py")],
