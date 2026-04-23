@@ -111,6 +111,9 @@
     .coord-row input[type=range]{width:100%;cursor:pointer}
     .coord-row input[type=number]{padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:center}
     .unsaved-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:none;margin-left:4px}
+    .loc-used-pill{display:inline-flex;align-items:center;gap:4px;background:#e8f0fe;color:var(--navy);font-size:12px;font-weight:500;padding:3px 5px 3px 10px;border-radius:12px;white-space:nowrap}
+    .loc-used-pill .pill-remove{background:none;border:none;cursor:pointer;color:#c0392b;font-size:15px;line-height:1;padding:1px 4px;border-radius:50%;transition:background .15s,color .15s}
+    .loc-used-pill .pill-remove:hover{background:#c0392b;color:#fff}
 
     /* size rules */
     .size-tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -298,19 +301,6 @@
       <span id="btn-label">⚡ Generate Build Sheet</span>
     </button>
   </div>
-  <div class="card">
-    <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
-    <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-      Regenerate <strong>build_sheet_template_v2.xlsx</strong> from current config —
-      updates location dropdowns, manufacturer list, and part structure.
-      The original template is left untouched.
-    </p>
-    <button class="btn btn-secondary" id="btn-regen-template" style="width:100%">
-      <span class="spinner" id="spinner-tpl" style="display:none"></span>
-      <span id="tpl-label">🔄 Regenerate Workbook Template</span>
-    </button>
-    <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
-  </div>
   <div class="card" id="card-results" hidden>
     <div class="card-title">Results</div>
     <div id="result-banner" class="result-banner success">
@@ -360,6 +350,7 @@
     <button class="stab" data-stab="catalog">📋 Part Types</button>
     <button class="stab" data-stab="parts">🔩 Parts Library</button>
     <button class="stab" data-stab="vehicles">🚗 Vehicles</button>
+    <button class="stab" data-stab="tools">🔧 Tools</button>
   </div>
 
   <!-- ── PLACEMENTS ── -->
@@ -459,6 +450,15 @@
                   <label style="font-size:10px">sp</label>
                   <input type="range" id="loc-spacing-range" min="0" max="0.30" step="0.005" />
                   <input type="number" id="loc-spacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <!-- Part types that reference this location -->
+              <div id="loc-used-by-row" style="margin-top:12px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Used By</div>
+                <div id="loc-used-by-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                <div id="loc-used-by-add" style="display:flex;gap:6px;margin-top:8px;align-items:center">
+                  <select id="loc-used-by-select" style="flex:1;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:#fff"></select>
+                  <button class="btn btn-primary btn-sm" id="loc-used-by-btn-add">+ Add</button>
                 </div>
               </div>
             </div>
@@ -692,6 +692,22 @@
       <button class="btn btn-primary" id="btn-create-vehicle">+ Create Vehicle Type</button>
     </div>
   </div>
+
+  <!-- ── TOOLS ── -->
+  <div id="stab-tools" hidden>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+        The template is regenerated automatically after every config save.
+        Use this to manually rebuild it — for example, if the template file was deleted or you need to force a refresh.
+      </p>
+      <button class="btn btn-secondary" id="btn-regen-template" style="width:100%">
+        <span class="spinner" id="spinner-tpl" style="display:none"></span>
+        <span id="tpl-label">🔄 Regenerate Workbook Template</span>
+      </button>
+      <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+    </div>
+  </div>
 </div><!-- end tab-settings -->
 
 
@@ -903,6 +919,38 @@ const api = (path, body) =>
     : undefined
   ).then(r => r.json());
 
+// ── TEMPLATE AUTO-REGEN ────────────────────────────────────────────────────
+// template_builder.py reads three configs: workbook_rules.json,
+// parts_library.json, and vehicle_layouts.json. Any save to these endpoints
+// should go through apiSave() so the template stays in sync automatically.
+//
+// If you add a new feature whose save endpoint feeds template_builder.py,
+// add that endpoint string to TEMPLATE_REGEN_ENDPOINTS below.
+const TEMPLATE_REGEN_ENDPOINTS = new Set([
+  "/api/workbook-rules/save",
+  "/api/parts-library/save",
+  "/api/layouts/save",
+]);
+
+async function apiSave(endpoint, data){
+  const res = await api(endpoint, data);
+  if(res?.ok && TEMPLATE_REGEN_ENDPOINTS.has(endpoint)) autoRegenTemplate();
+  return res;
+}
+
+let _regenDebounceTimer = null;
+function autoRegenTemplate(){
+  clearTimeout(_regenDebounceTimer);
+  _regenDebounceTimer = setTimeout(async ()=>{
+    try {
+      const res = await api("/api/template/generate", {});
+      if(!res.ok) toast("Template regen failed: " + res.error, "error");
+    } catch(e){
+      toast("Template regen failed: " + e.message, "error");
+    }
+  }, 500);
+}
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const fmt = b => b<1024?b+"B":b<1048576?(b/1024).toFixed(1)+"KB":(b/1048576).toFixed(1)+"MB";
@@ -934,7 +982,7 @@ document.querySelectorAll(".stab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".stab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    ["placements","sizes","addpart","catalog","parts","vehicles"].forEach(s =>
+    ["placements","sizes","addpart","catalog","parts","vehicles","tools"].forEach(s =>
       $("stab-"+s).hidden = s!==btn.dataset.stab
     );
   });
@@ -1346,7 +1394,62 @@ function showEditPanel(key){
   const sp=loc.spacing||0;
   $("loc-spacing-range").value=sp; $("loc-spacing-num").value=sp;
   updateSpacingRowVisibility(loc.pattern||"single", loc.slot_count||1);
+  renderLocUsedBy(key);
 }
+
+function renderLocUsedBy(key){
+  if(!key) return;
+  const users=Object.entries(_workbookRules?.part_rules||{})
+    .filter(([,rule])=>(rule.locations||[]).includes(key))
+    .map(([name])=>name);
+  const list=$("loc-used-by-list");
+  if(users.length){
+    list.innerHTML=users.map(n=>`<span class="loc-used-pill">
+      ${esc(n)}<button type="button" class="pill-remove" data-part="${esc(n)}" title="Remove">×</button>
+    </span>`).join("");
+  } else {
+    list.innerHTML=`<span style="color:var(--muted);font-size:12px;font-style:italic">None</span>`;
+  }
+  const allTypes=allWorkbookPartTypeNames();
+  const available=allTypes.filter(n=>!users.includes(n));
+  const addRow=$("loc-used-by-add");
+  const sel=$("loc-used-by-select");
+  if(available.length){
+    sel.innerHTML=available.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    addRow.hidden=false;
+  } else {
+    addRow.hidden=true;
+  }
+}
+
+$("loc-used-by-list").addEventListener("click", async e=>{
+  const btn=e.target.closest(".pill-remove"); if(!btn) return;
+  const partName=btn.dataset.part;
+  const key=_selectedLocKey; if(!key||!partName) return;
+  if(!confirm(`Remove "${key}" from "${partName}"?`)) return;
+  if(!_workbookRules?.part_rules?.[partName]) return;
+  _workbookRules.part_rules[partName].locations=
+    (_workbookRules.part_rules[partName].locations||[]).filter(l=>l!==key);
+  const res=await apiSave("/api/workbook-rules/save",_workbookRules);
+  if(!res.ok){ toast("Save failed: "+res.error,"error"); return; }
+  renderLocUsedBy(key);
+  toast(`Removed from "${partName}"`,"success");
+});
+
+$("loc-used-by-btn-add").addEventListener("click", async()=>{
+  const key=_selectedLocKey; if(!key) return;
+  const partName=$("loc-used-by-select").value; if(!partName) return;
+  if(!_workbookRules.part_rules) _workbookRules.part_rules={};
+  if(!_workbookRules.part_rules[partName]) _workbookRules.part_rules[partName]={};
+  const existing=_workbookRules.part_rules[partName].locations||[];
+  if(!existing.includes(key)){
+    _workbookRules.part_rules[partName].locations=[...existing,key];
+    const res=await apiSave("/api/workbook-rules/save",_workbookRules);
+    if(!res.ok){ toast("Save failed: "+res.error,"error"); return; }
+  }
+  renderLocUsedBy(key);
+  toast(`Added to "${partName}"`,"success");
+});
 
 function updateSpacingRowVisibility(pattern, slots){
   const show=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
@@ -1520,12 +1623,12 @@ $("alm-confirm").addEventListener("click", async()=>{
   }
 
   // 3. Save layouts
-  const layoutRes=await api("/api/layouts/save",_layouts);
+  const layoutRes=await apiSave("/api/layouts/save",_layouts);
   if(!layoutRes.ok){ toast("Layout save failed: "+layoutRes.error,"error"); return; }
 
   // 4. Save workbook rules (if any part types were checked)
   if(checked.length){
-    const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+    const wrRes=await apiSave("/api/workbook-rules/save",_workbookRules);
     if(!wrRes.ok){ toast("Rules save failed: "+wrRes.error,"error"); return; }
   }
 
@@ -1551,7 +1654,7 @@ $("btn-delete-location").addEventListener("click",()=>{
 });
 
 $("btn-save-layouts").addEventListener("click", async()=>{
-  const res=await api("/api/layouts/save",_layouts);
+  const res=await apiSave("/api/layouts/save",_layouts);
   if(res.ok){_locsDirty=false; $("placements-dirty-dot").style.display="none"; refreshSharedUi(); toast("Layout saved!","success");}
   else toast("Save failed: "+res.error,"error");
 });
@@ -1871,7 +1974,7 @@ $("wbtn-4-save").addEventListener("click", async()=>{
         // Only add if not already present
         if(!sec.parts.find(p=>p.name===name)){
           sec.parts.push({name,sub:false});
-          const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+          const wrRes=await apiSave("/api/workbook-rules/save",_workbookRules);
           if(!wrRes.ok) throw new Error("Workbook rules save failed: "+wrRes.error);
         }
       }
@@ -2182,7 +2285,7 @@ $("btn-modal-save").addEventListener("click", async()=>{
         };
         delete _workbookRules.part_rules[oldPart.display_name];
       }
-      const wrRes=await api("/api/workbook-rules/save",_workbookRules);
+      const wrRes=await apiSave("/api/workbook-rules/save",_workbookRules);
       if(!wrRes.ok) throw new Error("Workbook rules save failed: "+wrRes.error);
     }
 
@@ -2205,7 +2308,7 @@ $("btn-modal-delete").addEventListener("click", async()=>{
     _workbookRules.template_sections.forEach(sec=>{
       sec.parts=sec.parts.filter(p=>p.name!==deletedName);
     });
-    await api("/api/workbook-rules/save",_workbookRules);
+    await apiSave("/api/workbook-rules/save",_workbookRules);
   }
 
   refreshSharedUi();
@@ -2486,7 +2589,7 @@ $("pm-save").addEventListener("click",async()=>{
     if(!_partsLib) _partsLib={version:"1.0",parts:[]};
     _partsLib.parts=(_partsLib.parts||[]).filter(p=>p.part_id!==partId);
     _partsLib.parts.push(entry);
-    const res=await api("/api/parts-library/save",_partsLib);
+    const res=await apiSave("/api/parts-library/save",_partsLib);
     if(!res.ok) throw new Error(res.error);
     refreshSharedUi();
     toast("Part saved!","success");
@@ -2498,7 +2601,7 @@ $("pm-save").addEventListener("click",async()=>{
 $("pm-delete").addEventListener("click",async()=>{
   if(!_editingPartLibId||!confirm("Delete this part from the library?"))return;
   _partsLib.parts=(_partsLib.parts||[]).filter(p=>p.part_id!==_editingPartLibId);
-  const res=await api("/api/parts-library/save",_partsLib);
+  const res=await apiSave("/api/parts-library/save",_partsLib);
   if(res.ok){refreshSharedUi();toast("Deleted","success");$("parts-modal").classList.remove("open");}
   else toast("Delete failed: "+res.error,"error");
 });
@@ -2570,7 +2673,7 @@ async function deleteVehicleType(vehicleId){
       VIEWS_ORDER.map(view=>api("/api/assets/delete",{folder:"vehicles",filename:`${vehicleId}_${view}.png`}))
     );
     delete _layouts.vehicles[vehicleId];
-    const res=await api("/api/layouts/save",_layouts);
+    const res=await apiSave("/api/layouts/save",_layouts);
     if(!res.ok) throw new Error(res.error);
 
     if(_activeVehicle===vehicleId){
@@ -2635,7 +2738,7 @@ $("btn-create-vehicle").addEventListener("click", async()=>{
     }
     // Add vehicle to layouts
     _layouts.vehicles[vid]=cloneVehiclePreset(presetId);
-    const res=await api("/api/layouts/save",_layouts);
+    const res=await apiSave("/api/layouts/save",_layouts);
     if(!res.ok) throw new Error(res.error);
 
     toast(`${vid} created!`,"success");

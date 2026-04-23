@@ -104,6 +104,20 @@ dependencies = [lxml, openpyxl, Pillow, python-pptx, pywebview]
 [packaging] extras = [pyinstaller, pyinstaller-hooks-contrib]
 ```
 
+## Workbook template auto-regen
+
+`template_builder.py` reads three config files to build the Excel input template:
+
+| Config file | What it provides |
+|-------------|-----------------|
+| `workbook_rules.json` | Section/part structure, per-part location dropdowns |
+| `parts_library.json` | Manufacturer and model number dropdowns |
+| `vehicle_layouts.json` | Full set of location names across all vehicles/views |
+
+**Any save to these files must go through `apiSave()` instead of `api()` in `gui_ui.html`.** `apiSave()` calls `autoRegenTemplate()` (debounced 500 ms) after every successful save, keeping the template in sync without a manual step.
+
+The set of trigger endpoints lives in `TEMPLATE_REGEN_ENDPOINTS` near the top of the `<script>` block. **If you add a new feature whose save endpoint feeds `template_builder.py` (e.g. a manufacturer-rules endpoint, a new section of `workbook_rules`), add that endpoint string to `TEMPLATE_REGEN_ENDPOINTS`.** The manual "Regenerate" button remains in Settings → Tools as a recovery option if the template file is deleted.
+
 ## Gotchas
 - **Python package name** is still `dtm_buildsheet` / `dtm-buildsheet` — only the *app* name changed to "DTM Vehicle Builder". Don't rename the `src/dtm_buildsheet/` directory without updating all imports.
 - **ICNS must be real ICNS** — the source icon was a PNG renamed to `.icns`. It was converted properly via `iconutil`. Don't replace it with a raw PNG or PyInstaller will silently fall back to the Python icon.
