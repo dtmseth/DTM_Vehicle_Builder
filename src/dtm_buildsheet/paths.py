@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import shutil
@@ -59,6 +60,10 @@ class AppPaths:
     samples_dir: Path = SAMPLES_DIR
 
 
+def _md5(path: Path) -> str:
+    return hashlib.md5(path.read_bytes()).hexdigest()
+
+
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
@@ -70,7 +75,7 @@ def ensure_workspace() -> AppPaths:
     else:
         for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
             dest = paths.workspace_config_dir / source.name
-            if not dest.exists():
+            if not dest.exists() or _md5(source) != _md5(dest):
                 try:
                     shutil.copyfile(source, dest)
                 except Exception:
