@@ -47,6 +47,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(self._handle_status())
         elif path in CONFIG_ROUTES:
             self._api(load_config(CONFIG_ROUTES[path], self.paths))
+        elif path == "/api/template/info":
+            self._api(self._handle_template_info())
         elif path == "/api/assets/list":
             self._api(self._handle_assets_list())
         elif path.startswith("/assets/"):
@@ -221,6 +223,12 @@ class Handler(BaseHTTPRequestHandler):
             return {"ok": True}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
+
+    def _handle_template_info(self) -> dict:
+        p = self.paths.workspace_dir / "build_sheet_template_v2.xlsx"
+        if p.exists():
+            return {"ok": True, "exists": True, "mtime": p.stat().st_mtime}
+        return {"ok": True, "exists": False, "mtime": None}
 
     def _handle_template_generate(self, body: dict) -> dict:
         try:

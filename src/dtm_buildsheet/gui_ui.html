@@ -706,6 +706,7 @@
         <span id="tpl-label">🔄 Regenerate Workbook Template</span>
       </button>
       <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      <div id="tpl-last-updated" style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center"></div>
     </div>
   </div>
 </div><!-- end tab-settings -->
@@ -944,11 +945,36 @@ function autoRegenTemplate(){
   _regenDebounceTimer = setTimeout(async ()=>{
     try {
       const res = await api("/api/template/generate", {});
-      if(!res.ok) toast("Template regen failed: " + res.error, "error");
+      if(res.ok) loadTemplateInfo();
+      else toast("Template regen failed: " + res.error, "error");
     } catch(e){
       toast("Template regen failed: " + e.message, "error");
     }
   }, 500);
+}
+
+function relativeTime(ms){
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if(s < 10)  return "just now";
+  if(s < 60)  return s + "s ago";
+  const m = Math.floor(s / 60);
+  if(m < 60)  return m + "m ago";
+  const h = Math.floor(m / 60);
+  if(h < 24)  return h + "h ago";
+  return Math.floor(h / 24) + "d ago";
+}
+
+async function loadTemplateInfo(){
+  const el = $("tpl-last-updated"); if(!el) return;
+  try {
+    const res = await api("/api/template/info");
+    if(res.exists && res.mtime){
+      el.textContent = "Last updated: " + relativeTime(res.mtime * 1000);
+    } else {
+      el.textContent = "Template file not found";
+      el.style.color = "#b71c1c";
+    }
+  } catch(e){ el.textContent = ""; }
 }
 
 const $ = id => document.getElementById(id);
@@ -985,6 +1011,7 @@ document.querySelectorAll(".stab").forEach(btn => {
     ["placements","sizes","addpart","catalog","parts","vehicles","tools"].forEach(s =>
       $("stab-"+s).hidden = s!==btn.dataset.stab
     );
+    if(btn.dataset.stab === "tools") loadTemplateInfo();
   });
 });
 
@@ -1090,6 +1117,7 @@ $("btn-regen-template").addEventListener("click", async ()=>{
     if(res.ok){
       el.style.background="var(--green,#e8f5e9)"; el.style.color="#1b5e20";
       el.textContent=`✅ Saved: ${res.filename}`;
+      loadTemplateInfo();
     } else {
       el.style.background="#fdecea"; el.style.color="#b71c1c";
       el.textContent=`❌ ${res.error}`;
