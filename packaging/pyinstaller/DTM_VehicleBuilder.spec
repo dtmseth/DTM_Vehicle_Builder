@@ -12,6 +12,16 @@ MAC_ICON = ICON_DIR / "app.icns"
 WIN_ICON = ICON_DIR / "app.ico"
 
 datas = collect_data_files("dtm_buildsheet")
+
+# Explicitly bundle resources so they're always present regardless of
+# how collect_data_files resolves the editable install in CI.
+_res = ROOT / "src" / "dtm_buildsheet" / "resources"
+_ui  = ROOT / "src" / "dtm_buildsheet" / "gui_ui.html"
+if _res.exists():
+    datas += [( str(_res), "dtm_buildsheet/resources" )]
+if _ui.exists():
+    datas += [( str(_ui), "dtm_buildsheet" )]
+
 hiddenimports = collect_submodules("dtm_buildsheet")
 
 import sys as _sys

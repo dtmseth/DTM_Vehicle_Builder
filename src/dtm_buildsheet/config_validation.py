@@ -11,6 +11,7 @@ REQUIRED_CONFIG_FILES = {
     "asset_manifest.json",
     "parts_library.json",
     "workbook_rules.json",
+    "app_settings.json",
 }
 
 
@@ -64,5 +65,7 @@ def validate_config_payload(filename: str, data: object) -> dict:
     elif filename == "workbook_rules.json":
         if "template_sections" not in normalized:
             raise ValueError("workbook_rules.json must contain 'template_sections'")
+    elif filename == "app_settings.json":
+        normalized.setdefault("template_save_dir", "")
 
     return normalized

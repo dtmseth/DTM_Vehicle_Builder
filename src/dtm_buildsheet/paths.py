@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 
 PACKAGE_DIR = Path(__file__).resolve().parent
@@ -58,24 +61,34 @@ class AppPaths:
 
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
-    paths.workspace_dir.mkdir(parents=True, exist_ok=True)
-    paths.workspace_config_dir.mkdir(parents=True, exist_ok=True)
-    paths.workspace_assets_dir.mkdir(parents=True, exist_ok=True)
-    paths.workspace_input_dir.mkdir(parents=True, exist_ok=True)
-    paths.workspace_output_dir.mkdir(parents=True, exist_ok=True)
+    for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
+              paths.workspace_input_dir, paths.workspace_output_dir):
+        d.mkdir(parents=True, exist_ok=True)
 
-    for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
-        dest = paths.workspace_config_dir / source.name
-        if not dest.exists():
-            shutil.copyfile(source, dest)
+    if not DEFAULT_CONFIG_DIR.exists():
+        _log.error("Bundled config directory not found: %s", DEFAULT_CONFIG_DIR)
+    else:
+        for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
+            dest = paths.workspace_config_dir / source.name
+            if not dest.exists():
+                try:
+                    shutil.copyfile(source, dest)
+                except Exception:
+                    _log.exception("Failed to copy config %s", source.name)
 
     if not any(paths.workspace_assets_dir.iterdir()):
-        for source in sorted(ASSETS_DIR.rglob("*")):
-            if source.is_dir() or source.name.startswith("."):
-                continue
-            rel = source.relative_to(ASSETS_DIR)
-            dest = paths.workspace_assets_dir / rel
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, dest)
+        if not ASSETS_DIR.exists():
+            _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
+        else:
+            for source in sorted(ASSETS_DIR.rglob("*")):
+                if source.is_dir() or source.name.startswith("."):
+                    continue
+                rel = source.relative_to(ASSETS_DIR)
+                dest = paths.workspace_assets_dir / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copyfile(source, dest)
+                except Exception:
+                    _log.exception("Failed to copy asset %s", rel)
 
     return paths
