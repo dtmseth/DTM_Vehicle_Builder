@@ -318,7 +318,7 @@ def _build_notes_sheet(wb: Workbook):
 
 
 # ── public entry point ─────────────────────────────────────────────────────────
-def build_template(paths: AppPaths | None = None) -> Path:
+def build_template(paths: AppPaths | None = None, out_path: Path | None = None) -> Path:
     active_paths = paths or ensure_workspace()
     cfg = _load_configs(active_paths)
 
@@ -343,7 +343,8 @@ def build_template(paths: AppPaths | None = None) -> Path:
     _apply_validations(ws, data_rows, cfg)
     _build_notes_sheet(wb)
 
-    out_path = active_paths.workspace_dir / "build_sheet_template_v2.xlsx"
+    if out_path is None:
+        out_path = active_paths.workspace_dir / "build_sheet_template_v2.xlsx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)
     return out_path

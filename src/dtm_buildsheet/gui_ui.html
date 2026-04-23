@@ -701,6 +701,14 @@
         The template is regenerated automatically after every config save.
         Use this to manually rebuild it — for example, if the template file was deleted or you need to force a refresh.
       </p>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Save To</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div id="tpl-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          <button class="btn btn-secondary btn-sm" id="btn-pick-save-dir">📁 Browse</button>
+          <button class="btn btn-secondary btn-sm" id="btn-clear-save-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
+        </div>
+      </div>
       <button class="btn btn-secondary" id="btn-regen-template" style="width:100%">
         <span class="spinner" id="spinner-tpl" style="display:none"></span>
         <span id="tpl-label">🔄 Regenerate Workbook Template</span>
@@ -966,10 +974,12 @@ function relativeTime(ms){
 
 async function loadTemplateInfo(){
   const el = $("tpl-last-updated"); if(!el) return;
+  updateSaveToDisplay();
   try {
     const res = await api("/api/template/info");
     if(res.exists && res.mtime){
       el.textContent = "Last updated: " + relativeTime(res.mtime * 1000);
+      el.style.color = "var(--muted)";
     } else {
       el.textContent = "Template file not found";
       el.style.color = "#b71c1c";
@@ -1135,12 +1145,38 @@ $("btn-regen-template").addEventListener("click", async ()=>{
 $("btn-open").addEventListener("click", ()=>api("/open",{path:window._outputPath}));
 $("btn-reset").addEventListener("click", ()=>location.reload());
 
+// ── Save-To folder picker ─────────────────────────────────────────────────
+function updateSaveToDisplay(){
+  const el=$("tpl-save-dir"); if(!el) return;
+  const dir=(_appSettings||{}).template_save_dir||"";
+  if(dir){ el.textContent=dir; el.title=dir; el.style.color="var(--navy)"; }
+  else   { el.textContent="Default (workspace folder)"; el.title=""; el.style.color="var(--muted)"; }
+}
+
+$("btn-pick-save-dir").addEventListener("click", async()=>{
+  const res=await api("/api/template/pick-folder");
+  if(!res.ok) return;
+  if(!_appSettings) _appSettings={};
+  _appSettings.template_save_dir=res.path;
+  await api("/api/app-settings/save",_appSettings);
+  updateSaveToDisplay();
+  autoRegenTemplate();
+});
+
+$("btn-clear-save-dir").addEventListener("click", async()=>{
+  if(!_appSettings) _appSettings={};
+  delete _appSettings.template_save_dir;
+  await api("/api/app-settings/save",_appSettings);
+  updateSaveToDisplay();
+  autoRegenTemplate();
+});
+
 function logLine(msg){show("card-log"); $("log-box").textContent+=msg+"\n"; $("log-box").scrollTop=$("log-box").scrollHeight;}
 
 // ═══════════════════════════════════════════════════════
 // SETTINGS — init
 // ═══════════════════════════════════════════════════════
-let _layouts=null, _manifest=null, _catalog=null, _workbookRules=null;
+let _layouts=null, _manifest=null, _catalog=null, _workbookRules=null, _appSettings=null;
 let _activeVehicle="PIU", _activeView="front";
 let _selectedLocKey=null, _locsDirty=false;
 const _uploadedImages={};  // view → {filename, b64, dataUrl}
@@ -1198,6 +1234,7 @@ async function initSettings(){
   if(!_manifest)      _manifest      = await api("/api/manifest");
   if(!_catalog)       _catalog       = await api("/api/catalog");
   if(!_workbookRules) _workbookRules = await api("/api/workbook-rules");
+  if(!_appSettings)   _appSettings   = await api("/api/app-settings");
   populateVehicleSelector();
   initPlacements();
   initSizeRules();
@@ -1679,6 +1716,8 @@ $("btn-delete-location").addEventListener("click",()=>{
   delete locs[_selectedLocKey]; setViewLocations(locs);
   _selectedLocKey=null; hide("loc-edit-panel"); show("loc-empty-hint");
   renderLocationList(); drawCanvas();
+  const listEl=$("location-list");
+  listEl.scrollTop=Math.min(listEl.scrollTop, Math.max(0, listEl.scrollHeight-listEl.clientHeight));
 });
 
 $("btn-save-layouts").addEventListener("click", async()=>{
