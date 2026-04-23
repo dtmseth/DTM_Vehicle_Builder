@@ -10,6 +10,8 @@ env:
 jobs:
   build-mac:
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -39,8 +41,18 @@ jobs:
           name: DTM-Vehicle-Builder-Mac
           path: dist/DTM_Vehicle_Builder.dmg
 
+      - name: Publish to latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          prerelease: true
+          files: dist/DTM_Vehicle_Builder.dmg
+
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -62,3 +74,11 @@ jobs:
         with:
           name: DTM-Vehicle-Builder-Windows
           path: dist/DTM_Vehicle_Builder_Setup.exe
+
+      - name: Publish to latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          prerelease: true
+          files: dist/DTM_Vehicle_Builder_Setup.exe
