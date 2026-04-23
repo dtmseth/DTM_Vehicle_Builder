@@ -500,9 +500,9 @@
       "locations": [
         "IN LIGHT BAR",
         "UPPER WINDSHIELD",
-        "ON DASH",
         "IN GRILL",
-        "SPECIFY LOCATION"
+        "SPECIFY LOCATION",
+        "CENTER OF DASH"
       ],
       "lens": [
         "STANDARD LENSE",
@@ -3325,5 +3325,6 @@
       "label": "QUESTIONS / ADDITIONAL NOTES",
       "parts": []
     }
-  ]
+  ],
+  "schema_version": 1
 }
