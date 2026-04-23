@@ -1,57 +1,83 @@
-# DTM Build Sheet v7
+# DTM Vehicle Builder
 
-DTM Build Sheet v7 is the cleaned-up app-first rebuild of the original v5 one-off workspace.
+Generates PowerPoint build sheets for police and emergency vehicles. Upload an Excel workbook, configure parts and layout, export a finished `.pptx`.
 
-The GUI is the primary product surface.
-The workbook parser, planning pipeline, and PowerPoint renderer now live in a Python package under `src/dtm_buildsheet`, while editable user data lives in `workspace/`.
+Runs as a native desktop app on macOS and Windows — no browser required.
 
-## Layout
+---
 
-- `src/dtm_buildsheet/`
-  The application package, GUI server, generation pipeline, templates, and bundled defaults.
-- `workspace/`
-  User-editable config, uploaded workbooks, generated outputs, and mutable asset copies.
-- `samples/`
-  Sample input workbooks kept out of the live workspace.
-- `docs/`
-  Project and packaging notes.
+## Installing
 
-## Getting Started
+### Mac
+Download `DTM_Vehicle_Builder.dmg` from the [latest Actions build](https://github.com/dtmseth/DTM_Vehicle_Builder/actions), open it, drag the app to Applications.
 
+### Windows
+Download `DTM_Vehicle_Builder_Setup.exe` from the [latest Actions build](https://github.com/dtmseth/DTM_Vehicle_Builder/actions) and run it.
+
+---
+
+## Running from source
+
+**Mac:**
 ```bash
-cd /Users/skreev/Desktop/DTM_BuildSheet_POC_v7
-./Setup_DTM_VehicleBuilder.command
-./Launch_DTM_VehicleBuilder.command
+double-click Setup_DTM_VehicleBuilder.command    # first time only
+double-click Launch_DTM_VehicleBuilder.command
 ```
 
-The first launch will copy default config and assets into `workspace/`.
+**Windows:**
+```bat
+double-click Setup_DTM_VehicleBuilder.bat        # first time only
+double-click Launch_DTM_VehicleBuilder.bat
+```
+
+The first launch copies default configs and assets into your workspace folder.
+
+---
+
+## Repo layout
+
+```
+src/dtm_buildsheet/       Python package — server, pipeline, bundled resources
+workspace/                User data — configs, inputs, outputs, assets (git-ignored)
+samples/                  Sample input workbooks
+packaging/
+  pyinstaller/            PyInstaller spec + entrypoint
+  windows/                Inno Setup installer script
+  icons/                  app.icns (Mac), app.ico (Windows)
+docs/                     Architecture, pipeline, and packaging notes
+.github/workflows/        CI — builds Mac .dmg and Windows .exe on every push to main
+```
+
+---
+
+## Building the app
+
+**Mac** — double-click `Build_Mac_App.command`, or:
+```bash
+bash packaging/build_macos.sh
+# output: dist/DTM Vehicle Builder.app
+```
+
+**Windows:**
+```powershell
+.\packaging\build_windows.ps1
+# output: dist\DTM Vehicle Builder\  +  dist\DTM_Vehicle_Builder_Setup.exe
+```
+
+**CI** — both are built automatically on every push to `main`. Download artifacts from the [Actions tab](https://github.com/dtmseth/DTM_Vehicle_Builder/actions).
+
+---
 
 ## Development
 
 ```bash
-cd /Users/skreev/Desktop/DTM_BuildSheet_POC_v7
 python3 -m venv .venv
 .venv/bin/pip install -e .
-.venv/bin/python -m dtm_buildsheet
+.venv/bin/python -m dtm_buildsheet        # GUI
+.venv/bin/python -m dtm_buildsheet.generator_cli /path/to/workbook.xlsx  # CLI
 ```
 
-CLI generation remains available for verification:
-
+If the app fails to launch with "Port 7655 is already in use", a previous instance is still running:
 ```bash
-.venv/bin/python -m dtm_buildsheet.generator_cli /path/to/workbook.xlsx
+lsof -ti :7655 | xargs kill
 ```
-
-## Packaging Direction
-
-This repo is now structured so it can later be packaged as a desktop application:
-
-- Python code is in a package instead of loose scripts.
-- GUI resources are bundled with the package.
-- Mutable files are separated from shipped app resources.
-- `pyproject.toml` is the source of truth for dependencies and entry points.
-
-The likely next packaging step is:
-
-1. Build and stabilize the GUI-only workflow.
-2. Add a thin desktop shell for macOS and Windows.
-3. Bundle with a Python app packager such as PyInstaller or Briefcase.
