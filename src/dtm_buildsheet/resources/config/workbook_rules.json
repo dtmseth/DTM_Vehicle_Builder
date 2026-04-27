@@ -661,7 +661,7 @@
         "SPECIFY MFG"
       ]
     },
-    "Interior Light Bar": {
+    "Front Interior Light Bar": {
       "_row": 41,
       "manufacturer": [
         "WHELEN",
@@ -2674,6 +2674,15 @@
         "COMPLETE SQUAD HARNESS",
         "SPECIFY MODEL"
       ]
+    },
+    "2-Lamp Tracer": {
+      "locations": []
+    },
+    "5-Lamp Tracer": {
+      "locations": []
+    },
+    "6-Lamp Tracer": {
+      "locations": []
     }
   },
   "template_sections": [
@@ -2850,7 +2859,7 @@
           "sub": false
         },
         {
-          "name": "Interior Light Bar",
+          "name": "Front Interior Light Bar",
           "sub": false
         },
         {
@@ -2900,15 +2909,6 @@
         },
         {
           "name": "Tail Light Flasher",
-          "sub": false
-        }
-      ]
-    },
-    {
-      "label": "REAR INTERIOR",
-      "parts": [
-        {
-          "name": "Rear Interior Light Bar",
           "sub": false
         }
       ]

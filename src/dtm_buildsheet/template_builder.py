@@ -81,12 +81,15 @@ def _load_configs(paths: AppPaths) -> dict:
         for loc_name in view.get("locations", {}).keys()
     })
 
+    vehicle_types: list[str] = sorted(layouts.get("vehicles", {}).keys())
+
     return {
         "template_sections": template_sections,
         "part_rules":        part_rules,
         "mfg_map":           {k: sorted(v) for k, v in mfg_map.items()},
         "mdl_map":           {k: sorted(v) for k, v in mdl_map.items()},
         "all_locations":     all_locations,
+        "vehicle_types":     vehicle_types,
     }
 
 
@@ -151,7 +154,7 @@ def _inline_dv(options: list[str], allow_blank=True) -> DataValidation | None:
 
 
 # ── sheet builders ─────────────────────────────────────────────────────────────
-def _write_header_section(ws, row_start: int) -> int:
+def _write_header_section(ws, row_start: int, vehicle_types: list[str] | None = None) -> int:
     navy_fill  = _fill(_NAVY)
     gold_fill  = _fill(_GOLD)
     value_fill = _fill(_LIGHT_GRAY)
@@ -188,7 +191,14 @@ def _write_header_section(ws, row_start: int) -> int:
     _info_row(3, "AGENCY / DEPT:", "SALES REP:")
     _info_row(4, "PRIMARY CONTACT:", "QUOTE / ESTIMATE #:")
     _info_row(5, "PHONE:", "ADDITIONAL INFO:")
-    _info_row(6, "EMAIL:")
+    _info_row(6, "EMAIL:", "VEHICLE TYPE:")
+
+    # Vehicle type dropdown on H6
+    if vehicle_types:
+        vt_dv = _inline_dv(vehicle_types)
+        if vt_dv:
+            ws.add_data_validation(vt_dv)
+            vt_dv.add(ws.cell(row=6, column=8))
 
     for col, label, end_col in [(1,"NEW VEHICLE",6),(7,"EXISTING VEHICLE",11)]:
         c = ws.cell(row=7, column=col, value=label)
@@ -337,7 +347,7 @@ def build_template(paths: AppPaths | None = None, out_path: Path | None = None) 
 
     ws.freeze_panes = "A15"
 
-    _write_header_section(ws, row_start=1)
+    _write_header_section(ws, row_start=1, vehicle_types=cfg["vehicle_types"])
     _write_col_headers(ws, row=14)
     data_rows = _write_part_rows(ws, row_start=15, template_sections=cfg["template_sections"])
     _apply_validations(ws, data_rows, cfg)

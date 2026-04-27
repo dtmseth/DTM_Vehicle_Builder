@@ -100,8 +100,15 @@ def _view_side_role(view_config: dict, direction: str) -> str:
     return view_config.get("side_roles", {}).get(direction, "center")
 
 
-def _build_slot_roles(pattern: str, slot_count: int, view_config: dict) -> list[str]:
+def _build_slot_roles(pattern: str, slot_count: int, view_config: dict, forced_side: str = "", uniform_color: bool = False) -> list[str]:
+    # uniform_color=True: all lamps in the group should share the same color token.
+    # Use a sentinel role "uniform" that won't match any profile slot_token, so
+    # _resolve_color_token always falls through to the profile's "default" token.
+    if uniform_color and slot_count > 1:
+        return ["uniform"] * slot_count
     if slot_count <= 1 or pattern == "single":
+        if forced_side:
+            return [forced_side]
         return [view_config.get("default_slot_role", "center")]
     if pattern == "mirror":
         if slot_count == 2:
@@ -125,6 +132,8 @@ def _build_slot_roles(pattern: str, slot_count: int, view_config: dict) -> list[
             else:
                 roles.append("center")
         return roles
+    if pattern == "vertical":
+        return [f"slot_{index + 1}" for index in range(slot_count)]
     return [f"slot_{index + 1}" for index in range(slot_count)]
 
 
@@ -177,12 +186,53 @@ def _resolve_asset_path(
     return ""
 
 
+def _apply_co_part_rules(spec: dict, present_part_names: set[str]) -> dict:
+    """Return overrides dict from co_part_rules (pattern, side, asset_key)."""
+    overrides: dict = {}
+    for rule in spec.get("co_part_rules", []):
+        co = rule.get("co_part", "")
+        present = co in present_part_names
+        branch = rule.get("if_present" if present else "if_absent", {})
+        overrides.update(branch)
+    return overrides
+
+
+def _apply_quantity_rules(spec: dict, ordered_quantity: int) -> dict:
+    """Return overrides dict from quantity_rules (pattern, slot_count, slot_indices)."""
+    for rule in spec.get("quantity_rules", []):
+        if rule.get("qty") == ordered_quantity:
+            return dict(rule)
+    return {}
+
+
+def _location_from_dict(loc_dict: dict, view_config: dict) -> dict:
+    """Normalise a location/fixture entry, reading h_spacing with spacing fallback."""
+    loc = dict(loc_dict)
+    # Silent migration: support both h_spacing and legacy spacing key
+    if "h_spacing" not in loc and "spacing" in loc:
+        loc["h_spacing"] = loc.pop("spacing")
+    elif "spacing" in loc:
+        loc.pop("spacing")  # drop alias if h_spacing already present
+    if "units" not in loc:
+        loc["units"] = view_config.get("coord_space", "relative_image")
+    return loc
+
+
 def build_plan(project, config: ConfigBundle) -> BuildPlan:
     manifest = config.asset_manifest
     layouts = config.vehicle_layouts.get("vehicles", {})
     vehicle_type = project.info.get("VehicleType", "PIU")
     vehicle = layouts.get(vehicle_type, {})
     view_map = vehicle.get("views", {})
+    fixtures_map = vehicle.get("fixtures", {})  # keyed by part_id
+
+    # Pre-pass: collect names of all included parts for co_part_rules
+    present_part_names: set[str] = set()
+    for part in project.parts:
+        if part.include:
+            present_part_names.add(part.name.strip())
+            # also add canonical upper for fuzzy matching
+            present_part_names.add(canonical_name(part.name).strip().upper())
 
     planned_parts: list[PlannedPart] = []
     warnings: list[str] = []
@@ -207,6 +257,17 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             warnings.append(f"Unmapped part: {part.name}")
             continue
 
+        # Model-based remap: if the part's model/part# field matches a model_remaps entry,
+        # switch to the target spec (e.g. "Forward Warning 2" + model "2 LAMP TRACER" → tracer_2lamp)
+        if part.part_number and spec.get("model_remaps"):
+            model_key = canonical_name(part.part_number).strip().upper()
+            remapped_id = spec["model_remaps"].get(model_key)
+            if remapped_id and remapped_id in config.parts_by_id:
+                spec = config.parts_by_id[remapped_id]
+
+        # Resolve accessory_of — build present-name set checks for parent parts
+        accessory_parents = spec.get("accessory_of")  # list[str] or None
+
         planned = PlannedPart(
             part_id=spec["part_id"],
             part_name=part.name,
@@ -214,6 +275,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             render_kind=spec["render_kind"],
             on_diagram=False,
             raw=part,
+            accessory_of=accessory_parents[0] if isinstance(accessory_parents, list) and accessory_parents else accessory_parents if isinstance(accessory_parents, str) else None,
         )
 
         if spec["render_kind"] == "none":
@@ -234,58 +296,131 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         catalog_size_per_view: dict = spec.get("size_per_view", {})
         merged_size_per_view = {**lib_size_per_view, **catalog_size_per_view}
 
+        is_fixture = bool(spec.get("is_fixture"))
+
+        # Resolve co_part_rules overrides once per part (view-agnostic)
+        co_overrides = _apply_co_part_rules(spec, present_part_names)
+
+        # skip:true in an override branch means "don't render this part at all"
+        if co_overrides.get("skip"):
+            continue
+
+        # Effective asset_key after co_part_rules
+        effective_asset_key = co_overrides.get("asset_key", spec.get("asset_key", ""))
+
         for view in default_views:
             view_config = view_map.get(view, {})
-            location_key = canonical_name(part.location or spec.get("default_location_key", "")).strip().upper()
-            if not location_key:
-                planned.warnings.append(f"{view}: no location supplied for {part.name}")
-                continue
 
-            location = view_config.get("locations", {}).get(location_key)
-            if location is None:
-                planned.warnings.append(f"{view}: location '{location_key}' not found")
-                continue
+            # ── Fixture path ──
+            if is_fixture:
+                fixture_entry = fixtures_map.get(spec["part_id"], {}).get(view)
+                if fixture_entry is None:
+                    planned.warnings.append(f"{view}: no fixture coords for '{part.name}' in vehicle '{vehicle_type}'")
+                    continue
+                location = _location_from_dict(fixture_entry, view_config)
+                location_key = f"FIXTURE:{spec['part_id'].upper()}"
+            else:
+                # ── Normal location path ──
+                location_key = canonical_name(part.location or spec.get("default_location_key", "")).strip().upper()
+                if not location_key:
+                    planned.warnings.append(f"{view}: no location supplied for {part.name}")
+                    continue
+                raw_loc = view_config.get("locations", {}).get(location_key)
+                if raw_loc is None:
+                    planned.warnings.append(f"{view}: location '{location_key}' not found")
+                    continue
+                location = _location_from_dict(raw_loc, view_config)
 
             quantity_policy = spec.get("render_quantity_policy", "location_slots")
             slot_count = int(location.get("slot_count", 1))
+
             if quantity_policy == "single_per_line":
                 slot_count = 1
+            elif quantity_policy == "quantity_as_slots":
+                slot_count = max(1, part.quantity or 1)
 
-            slot_roles = _build_slot_roles(location.get("pattern", "single"), slot_count, view_config)
+            # Apply quantity_rules overrides
+            qty_overrides = _apply_quantity_rules(spec, part.quantity)
+            if qty_overrides.get("slot_count"):
+                slot_count = int(qty_overrides["slot_count"])
+            slot_indices: list[int] | None = qty_overrides.get("slot_indices")
+
+            # Determine effective pattern (co_part_rules > qty_rules > location)
+            effective_pattern = co_overrides.get("pattern", qty_overrides.get("pattern", location.get("pattern", "single")))
+            forced_side = co_overrides.get("side", "")
+            # forced_side means "place exactly one icon on this side"
+            if forced_side:
+                slot_count = 1
+
+            # location_asset_rules: location-keyed image override (only for non-fixture)
+            loc_asset_rules = spec.get("location_asset_rules", {})
+            if not is_fixture and location_key in loc_asset_rules:
+                effective_asset_key = loc_asset_rules[location_key]
+
+            slot_roles = _build_slot_roles(
+                effective_pattern, slot_count, view_config, forced_side,
+                uniform_color=bool(spec.get("group_shapes", False)),
+            )
+
+            # If slot_indices, trim slot_roles and slot_count to those indices
+            if slot_indices:
+                slot_roles = [slot_roles[i] for i in slot_indices if i < len(slot_roles)]
+                slot_count = len(slot_roles)
+
+            original_location_pattern = location.get("pattern", "single")
+            # When a co_part_rule forces "single" on a mirror location (no forced_side),
+            # snap x to 0.5 so the lone icon renders at center, not at the mirror's offset.
+            anchor_x = (
+                0.5
+                if effective_pattern == "single"
+                and original_location_pattern == "mirror"
+                and not forced_side
+                else location["x"]
+            )
+
             placement = PlannedPlacement(
                 part_id=spec["part_id"],
                 part_name=part.name,
                 view=view,
                 location_key=location_key,
                 render_kind=spec["render_kind"],
-                asset_key=spec.get("asset_key", ""),
+                asset_key=effective_asset_key,
                 size_class=size_class,
                 color_profile=profile_id,
                 quantity_policy=quantity_policy,
                 ordered_quantity=part.quantity,
                 location_slot_count=int(location.get("slot_count", 1)),
                 anchor={
-                    "x": location["x"],
+                    "x": anchor_x,
                     "y": location["y"],
                     "units": location.get("units", view_config.get("coord_space", "relative_image")),
                 },
-                pattern=location.get("pattern", "single"),
-                spacing=location.get("spacing") or None,
+                pattern=effective_pattern,
+                h_spacing=location.get("h_spacing") or None,
+                v_spacing=location.get("v_spacing") or None,
+                h_spacing_units=location.get("h_spacing_units", "relative_image"),
                 size_override=merged_size_per_view.get(view) or None,
+                rotation=float(location.get("rotation", 0)),
+                flip_h=bool(location.get("flip_h", False)),
+                flip_v=bool(location.get("flip_v", False)),
+                flip_mirrored_h=bool(location.get("flip_mirrored_h", False)),
+                behind_vehicle=bool(location.get("behind_vehicle", False)),
+                group_shapes=(quantity_policy == "quantity_as_slots" or bool(spec.get("group_shapes", False))),
+                is_fixture=is_fixture,
             )
 
             if quantity_policy == "location_slots":
                 if part.quantity and part.quantity != placement.location_slot_count:
                     placement.warnings.append(f"Qty {part.quantity} differs from location slot count {placement.location_slot_count}")
             elif quantity_policy == "single_per_line" and part.quantity > 1:
-                placement.warnings.append(f"Qty {part.quantity} is recorded but this part currently renders once per line item")
+                placement.warnings.append(f"Qty {part.quantity} is recorded but this part renders once per line item")
 
             orientation = location.get("orientation", "h")
             for index, slot_role in enumerate(slot_roles, start=1):
                 color_token = _resolve_color_token(profile_id, raw_color_token, slot_role, part, manifest)
                 asset_path = _resolve_asset_path(
                     render_kind=spec["render_kind"],
-                    asset_key=spec.get("asset_key", ""),
+                    asset_key=effective_asset_key,
                     view=view,
                     orientation=orientation,
                     color_token=color_token,

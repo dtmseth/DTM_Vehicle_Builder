@@ -132,13 +132,14 @@ def fill_overview(slide, project):
 
 
 def place_vehicle_image(slide, vehicle_type, view):
+    """Return (picture_shape | None, img_box | None). Box is (left, top, w, h) in EMU."""
     slot = find_shape(slide, "VEHICLE_IMAGE_SLOT")
     if not slot:
-        return None
+        return None, None
     slot_left, slot_top, slot_w, slot_h = slot_geometry(slot)
     png = ensure_workspace().workspace_assets_dir / "vehicles" / f"{vehicle_type}_{view}.png"
     if not png.exists():
-        return (slot_left, slot_top, slot_w, slot_h)
+        return None, (slot_left, slot_top, slot_w, slot_h)
 
     from PIL import Image as PILImage
 
@@ -160,10 +161,10 @@ def place_vehicle_image(slide, vehicle_type, view):
 
     pic = slide.shapes.add_picture(str(png), final_left, final_top, width=final_w, height=final_h)
     _lock_picture_position(pic)
-    return (final_left, final_top, final_w, final_h)
+    return pic, (final_left, final_top, final_w, final_h)
 
 
-def place_legend(slide, placed, unplaced):
+def place_legend(slide, placed, unplaced, accessory_map: dict | None = None):
     slot = find_shape(slide, "LEGEND_SLOT")
     if not slot:
         return
@@ -192,6 +193,10 @@ def place_legend(slide, placed, unplaced):
         r.font.color.rgb = DTM_GRAY
         return
 
+    acc = accessory_map or {}
+    # Track which accessories have been nested so they don't appear standalone
+    nested_accessories: set[str] = set()
+
     for part in placed:
         p = tf.add_paragraph()
         run = p.add_run()
@@ -210,6 +215,15 @@ def place_legend(slide, placed, unplaced):
             note_run.font.size = Pt(8)
             note_run.font.italic = True
             note_run.font.color.rgb = DTM_GRAY
+        # Inline accessories for this part
+        for acc_name in acc.get(part.name, []):
+            nested_accessories.add(acc_name)
+            acc_p = tf.add_paragraph()
+            acc_r = acc_p.add_run()
+            acc_r.text = f"  + {acc_name}"
+            acc_r.font.size = Pt(8)
+            acc_r.font.italic = True
+            acc_r.font.color.rgb = DTM_GRAY
 
     if unplaced:
         p = tf.add_paragraph()
