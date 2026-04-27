@@ -55,8 +55,17 @@ class PlannedPlacement:
     location_slot_count: int
     anchor: dict[str, Any]
     pattern: str
-    spacing: float | None = None  # relative to image width (0.0–1.0); None = auto
+    h_spacing: float | None = None        # spacing value; units depend on h_spacing_units
+    v_spacing: float | None = None        # spacing value; units depend on h_spacing_units
+    h_spacing_units: str = "relative_image"  # "relative_image" (fraction of vehicle img w) | "icon_width" (fraction of icon w)
     size_override: dict[str, float] | None = None  # {"w": inches, "h": inches} per-view override
+    rotation: float = 0.0            # degrees clockwise applied to every icon at this location
+    flip_h: bool = False             # horizontal flip applied to every icon
+    flip_v: bool = False             # vertical flip applied to every icon
+    flip_mirrored_h: bool = False    # flip-H the passenger/positive-x instances in a mirror pattern
+    behind_vehicle: bool = False     # render icons behind the vehicle image layer
+    group_shapes: bool = False       # group all icons for this placement in the PPTX
+    is_fixture: bool = False         # resolved from vehicle fixtures, not user-supplied location
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -69,6 +78,7 @@ class PlannedPart:
     render_kind: str
     on_diagram: bool
     raw: PartInput
+    accessory_of: str | None = None  # parent part name; accessory appears nested in legend
     placements: list[PlannedPlacement] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 

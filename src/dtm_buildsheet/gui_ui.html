@@ -345,6 +345,7 @@
 <div id="tab-settings" class="main-content" hidden>
   <div class="stab-bar">
     <button class="stab active" data-stab="placements">📍 Placements</button>
+    <button class="stab" data-stab="fixtures">🏗 Fixtures</button>
     <button class="stab" data-stab="sizes">📐 Size Rules</button>
     <button class="stab" data-stab="addpart">➕ Add Part Type</button>
     <button class="stab" data-stab="catalog">📋 Part Types</button>
@@ -440,16 +441,63 @@
                   <input type="number" id="loc-slots" min="1" max="8" />
                 </div>
               </div>
-              <!-- Spacing row — only relevant for horizontal / mirror multi-slot -->
+              <!-- H-Spacing row — only relevant for horizontal / mirror multi-slot -->
               <div id="loc-spacing-row" hidden>
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
-                  Slot Spacing
+                  H Spacing
                   <span style="font-weight:400;text-transform:none;font-size:10px">(relative to image width — 0 = auto)</span>
                 </div>
                 <div class="coord-row">
-                  <label style="font-size:10px">sp</label>
+                  <label style="font-size:10px">H</label>
                   <input type="range" id="loc-spacing-range" min="0" max="0.30" step="0.005" />
                   <input type="number" id="loc-spacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <!-- V-Spacing row — only relevant for vertical / grid patterns -->
+              <div id="loc-vspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  V Spacing
+                  <span style="font-weight:400;text-transform:none;font-size:10px">(relative to image height — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">V</label>
+                  <input type="range" id="loc-vspacing-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="loc-vspacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <!-- Rotation + flip flags -->
+              <div style="margin-top:10px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Transforms</div>
+                <div class="form-row" style="align-items:flex-end;gap:8px">
+                  <div class="form-group" style="flex:1">
+                    <label>Rotation (°)</label>
+                    <input type="number" id="loc-rotation" min="-360" max="360" step="1" value="0" style="width:100%" />
+                  </div>
+                  <div class="form-group" style="flex:1">
+                    <label>Quick-set</label>
+                    <select id="loc-rotation-preset">
+                      <option value="">—</option>
+                      <option value="0">0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-h"> Flip H
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-v"> Flip V
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-mirrored-h"> Flip Mirrored H
+                    <span style="color:var(--muted);font-size:10px">(passenger side)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-behind-vehicle"> Behind Vehicle
+                  </label>
                 </div>
               </div>
               <!-- Part types that reference this location -->
@@ -465,6 +513,153 @@
           </div>
           <div id="loc-empty-hint" style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">
             ← Click a location to edit
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FIXTURES ── -->
+  <div id="stab-fixtures" hidden>
+    <div class="card">
+      <div class="card-title">
+        Vehicle Fixtures — Structural Parts
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="unsaved-dot" id="fixtures-dirty-dot"></span>
+          <button class="btn btn-primary btn-sm" id="btn-save-fixtures">Save Changes</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Parts marked <strong>is_fixture</strong> (push bumper, light bars, etc.) are positioned here once per vehicle — no location dropdown needed in the build sheet.</p>
+
+      <div class="placements-header">
+        <div class="vehicle-select-wrap">
+          <label>Vehicle</label>
+          <select id="fixture-vehicle-selector"></select>
+        </div>
+        <div class="view-pill-bar" id="fixture-view-pills">
+          <button class="view-pill active" data-view="front">Front</button>
+          <button class="view-pill" data-view="side">Side</button>
+          <button class="view-pill" data-view="top">Top</button>
+          <button class="view-pill" data-view="rear">Rear</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="fixture-canvas" width="700" height="460"></canvas>
+      </div>
+      <div class="canvas-hint">Click on the diagram to move the selected fixture (gold dot) · Other fixtures shown in navy · Grey = no image configured for this part+view</div>
+
+      <div class="placement-cols" style="margin-top:14px">
+        <!-- Left: fixture list -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Fixture Parts</div>
+          <div class="location-list" id="fixture-list"></div>
+          <div class="loc-list-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="btn-add-fixture">+ Add Fixture</button>
+          </div>
+        </div>
+        <!-- Right: edit panel -->
+        <div>
+          <div id="fixture-edit-panel" hidden>
+            <div class="location-edit-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--navy)" id="fixture-edit-title"></div>
+                  <div style="font-size:11px;color:var(--muted)" id="fixture-edit-hint">No position saved for this view — values below will be created on save.</div>
+                </div>
+                <button class="btn btn-danger btn-sm" id="btn-delete-fixture">🗑 Delete</button>
+              </div>
+              <div class="coord-row">
+                <label>X</label>
+                <input type="range" id="fix-x-range" min="-0.1" max="1.1" step="0.005" />
+                <input type="number" id="fix-x-num" min="-0.1" max="1.1" step="0.005" />
+              </div>
+              <div class="coord-row">
+                <label>Y</label>
+                <input type="range" id="fix-y-range" min="-0.1" max="1.1" step="0.005" />
+                <input type="number" id="fix-y-num" min="-0.1" max="1.1" step="0.005" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Orientation</label>
+                  <select id="fix-orient">
+                    <option value="h">Horizontal (h)</option>
+                    <option value="v">Vertical (v)</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Pattern</label>
+                  <select id="fix-pattern">
+                    <option value="single">Single</option>
+                    <option value="mirror">Mirror</option>
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                  </select>
+                </div>
+                <div class="form-group" style="max-width:80px">
+                  <label>Slots</label>
+                  <input type="number" id="fix-slots" min="1" max="8" />
+                </div>
+              </div>
+              <div id="fix-hspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  H Spacing <span style="font-weight:400;text-transform:none;font-size:10px">(rel. image width — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">H</label>
+                  <input type="range" id="fix-hsp-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="fix-hsp-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <div id="fix-vspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  V Spacing <span style="font-weight:400;text-transform:none;font-size:10px">(rel. image height — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">V</label>
+                  <input type="range" id="fix-vsp-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="fix-vsp-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <div style="margin-top:10px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Transforms</div>
+                <div class="form-row" style="align-items:flex-end;gap:8px">
+                  <div class="form-group" style="flex:1">
+                    <label>Rotation (°)</label>
+                    <input type="number" id="fix-rotation" min="-360" max="360" step="1" value="0" style="width:100%" />
+                  </div>
+                  <div class="form-group" style="flex:1">
+                    <label>Quick-set</label>
+                    <select id="fix-rotation-preset">
+                      <option value="">—</option>
+                      <option value="0">0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-h"> Flip H
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-v"> Flip V
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-mirrored-h"> Flip Mirrored H
+                    <span style="color:var(--muted);font-size:10px">(passenger side)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-behind-vehicle"> Behind Vehicle
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="fixture-empty-hint" style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">
+            ← Click a fixture part to edit its position for this view
           </div>
         </div>
       </div>
@@ -792,6 +987,40 @@
       <textarea id="m-aliases" placeholder="Alternate Part Name&#10;Another Name"></textarea>
     </div>
 
+    <!-- Accessory / sub-part grouping -->
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Accessory Of <span style="font-weight:400;font-size:10px;color:var(--muted)">(parent part name — this part nests under it in the legend)</span></label>
+      <input id="m-accessory-of" type="text" placeholder="e.g. Siren Speaker 1" list="m-accessory-suggestions" />
+      <datalist id="m-accessory-suggestions"></datalist>
+    </div>
+
+    <!-- Co-part rules -->
+    <div class="modal-section" id="modal-copart-section">
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Co-Part Rules <span style="font-weight:400;font-size:10px;color:var(--muted)">(change layout or image when another part is present/absent)</span></span>
+        <button class="btn btn-secondary btn-sm" id="btn-add-copart-rule">+ Rule</button>
+      </div>
+      <table id="copart-rules-table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="color:var(--muted);text-align:left">
+            <th style="padding:3px 6px;width:22%">If this part exists…</th>
+            <th style="padding:3px 6px;width:37%">If Present → override</th>
+            <th style="padding:3px 6px;width:37%">If Absent → override</th>
+            <th style="width:28px"></th>
+          </tr>
+        </thead>
+        <tbody id="copart-rules-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Alternate asset images for co-part rules -->
+    <div class="modal-section" id="modal-alt-images-section" hidden>
+      <div class="modal-section-title">Alternate Asset Images
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">upload images for asset keys referenced in co-part rules above · same render size applies</span>
+      </div>
+      <div id="modal-alt-images-grid"></div>
+    </div>
+
     <!-- Location options for this part type -->
     <div class="modal-section" id="modal-locs-section">
       <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center">
@@ -811,6 +1040,14 @@
         <span style="font-weight:400;font-size:10px;color:var(--muted)">saved to asset manifest · overrides parts library images</span>
       </div>
       <div id="modal-images-grid"></div>
+    </div>
+
+    <!-- Sizes section — only shown for light/none render kinds (no image upload needed) -->
+    <div class="modal-section" id="modal-sizes-section" hidden>
+      <div class="modal-section-title">Render Size (inches per view)
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">overrides catalog size_per_view defaults</span>
+      </div>
+      <div id="modal-sizes-grid"></div>
     </div>
 
     <div class="modal-actions">
@@ -918,6 +1155,19 @@
   </div>
 </div>
 
+<!-- ── Add Fixture Modal ── -->
+<div class="modal-overlay" id="add-fixture-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Add Fixture Part <button class="modal-close" id="afm-close">✕</button></div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Select a part from the catalog to add as a fixture for <strong id="afm-vehicle-label"></strong>. The part will be marked <code>is_fixture</code> and its position can be set per-view below.</p>
+    <input class="alm-search" type="text" id="afm-search" placeholder="Search parts…" oninput="afmFilter(this.value)" />
+    <div class="alm-import-list" id="afm-part-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="afm-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // UTILITIES
@@ -1018,10 +1268,11 @@ document.querySelectorAll(".stab").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".stab").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    ["placements","sizes","addpart","catalog","parts","vehicles","tools"].forEach(s =>
+    ["placements","fixtures","sizes","addpart","catalog","parts","vehicles","tools"].forEach(s =>
       $("stab-"+s).hidden = s!==btn.dataset.stab
     );
     if(btn.dataset.stab === "tools") loadTemplateInfo();
+    if(btn.dataset.stab === "fixtures") initFixtures();
   });
 });
 
@@ -1182,6 +1433,9 @@ let _selectedLocKey=null, _locsDirty=false;
 const _uploadedImages={};  // view → {filename, b64, dataUrl}
 const _modalUploadedImages={};  // view → {filename, b64, dataUrl}
 const _modalDeletedViews=new Set();  // views marked for deletion from the active asset manifest bucket
+const _altUploadedImages={};   // "assetKey:view" → {filename, b64, dataUrl}
+const _altDeletedViews={};     // assetKey → Set<view>
+const _viewAspectRatios={};   // view → w/h ratio (equipment/bar only, for locked AR)
 
 function partTypeAssetBucket(renderKind){
   return renderKind==="bar"?"bar_assets":"equipment_assets";
@@ -1212,6 +1466,7 @@ function refreshSharedUi(){
   if($("vehicle-cards")) renderVehicleCards();
   if($("vehicle-preset")) buildVehiclePresetOptions();
   if($("vehicle-selector")) populateVehicleSelector();
+  if($("fixture-vehicle-selector")) populateFixtureVehicleSelector();
 
   if($("add-loc-modal")?.classList.contains("open")){
     almBuildImportList($("alm-import-search")?.value||"");
@@ -1373,8 +1628,9 @@ function getSlotPositions(loc, box){
 
   if(slotCount<=1 || pattern==="single") return [[baseCx,baseCy]];
 
-  // use saved spacing if set, otherwise ~6% of image width per slot gap
-  const spacing = (loc.spacing && loc.spacing > 0) ? bw * loc.spacing : bw * 0.06;
+  // use saved h_spacing (or legacy spacing) if set, otherwise ~6% of image width per slot gap
+  const rawSpacing = loc.h_spacing ?? loc.spacing;
+  const spacing = (rawSpacing && rawSpacing > 0) ? bw * rawSpacing : bw * 0.06;
 
   if(pattern==="horizontal"){
     const totalW = spacing*(slotCount-1);
@@ -1404,12 +1660,31 @@ function drawDots(ctx, box){
   Object.entries(locs).forEach(([name,loc])=>{
     const selected=(name===_selectedLocKey);
     const positions=getSlotPositions(loc, box);
+    const baseRot=loc.rotation||0;
+    const isMirror=(loc.pattern||"single")==="mirror";
     positions.forEach(([cx,cy],idx)=>{
+      const rot=isMirror&&idx%2===1?((360-baseRot)%360):baseRot;
+      const r=selected?7:4;
       ctx.beginPath();
-      ctx.arc(cx,cy,selected?7:4,0,Math.PI*2);
+      ctx.arc(cx,cy,r,0,Math.PI*2);
       ctx.fillStyle=selected?"#C8A951":"rgba(30,39,97,0.72)";
       ctx.fill();
       ctx.strokeStyle="#fff"; ctx.lineWidth=1.5; ctx.stroke();
+      // rotation indicator: X where horizontal arm is longer
+      const rad=rot*Math.PI/180;
+      const longArm=r+5, shortArm=r+1;
+      ctx.strokeStyle=selected?"#C8A951":"rgba(255,255,255,0.9)";
+      ctx.lineWidth=selected?2:1.5;
+      // horizontal arm (rotation axis)
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(rad)*longArm, cy+Math.sin(rad)*longArm);
+      ctx.lineTo(cx-Math.cos(rad)*longArm, cy-Math.sin(rad)*longArm);
+      ctx.stroke();
+      // vertical arm (shorter, perpendicular)
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(rad+Math.PI/2)*shortArm, cy+Math.sin(rad+Math.PI/2)*shortArm);
+      ctx.lineTo(cx-Math.cos(rad+Math.PI/2)*shortArm, cy-Math.sin(rad+Math.PI/2)*shortArm);
+      ctx.stroke();
       // small index numbers on multi-slot
       if(positions.length>1){
         ctx.fillStyle=selected?"#1E2761":"#fff";
@@ -1456,8 +1731,18 @@ function showEditPanel(key){
   $("loc-orient").value=loc.orientation||"h";
   $("loc-pattern").value=loc.pattern||"single";
   $("loc-slots").value=loc.slot_count||1;
-  const sp=loc.spacing||0;
-  $("loc-spacing-range").value=sp; $("loc-spacing-num").value=sp;
+  // h_spacing with legacy spacing fallback
+  const hsp=loc.h_spacing??loc.spacing??0;
+  $("loc-spacing-range").value=hsp; $("loc-spacing-num").value=hsp;
+  const vsp=loc.v_spacing??0;
+  $("loc-vspacing-range").value=vsp; $("loc-vspacing-num").value=vsp;
+  // new geometry fields
+  const rot=loc.rotation??0;
+  $("loc-rotation").value=rot; $("loc-rotation-preset").value="";
+  $("loc-flip-h").checked=!!loc.flip_h;
+  $("loc-flip-v").checked=!!loc.flip_v;
+  $("loc-flip-mirrored-h").checked=!!loc.flip_mirrored_h;
+  $("loc-behind-vehicle").checked=!!loc.behind_vehicle;
   updateSpacingRowVisibility(loc.pattern||"single", loc.slot_count||1);
   renderLocUsedBy(key);
 }
@@ -1517,8 +1802,10 @@ $("loc-used-by-btn-add").addEventListener("click", async()=>{
 });
 
 function updateSpacingRowVisibility(pattern, slots){
-  const show=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
-  $("loc-spacing-row").hidden=!show;
+  const showH=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
+  const showV=(pattern==="vertical"&&slots>1);
+  $("loc-spacing-row").hidden=!showH;
+  $("loc-vspacing-row").hidden=!showV;
 }
 
 function syncEditPanel(){
@@ -1566,7 +1853,8 @@ $("loc-spacing-range").addEventListener("input",e=>{
   $("loc-spacing-num").value=v;
   const locs=getViewLocations();
   if(_selectedLocKey&&locs[_selectedLocKey]){
-    locs[_selectedLocKey].spacing=v>0?v:null;
+    locs[_selectedLocKey].h_spacing=v>0?v:null;
+    delete locs[_selectedLocKey].spacing; // remove legacy key
     setViewLocations(locs);
     drawCanvas();
   }
@@ -1576,10 +1864,49 @@ $("loc-spacing-num").addEventListener("input",e=>{
   $("loc-spacing-range").value=v;
   const locs=getViewLocations();
   if(_selectedLocKey&&locs[_selectedLocKey]){
-    locs[_selectedLocKey].spacing=v>0?v:null;
+    locs[_selectedLocKey].h_spacing=v>0?v:null;
+    delete locs[_selectedLocKey].spacing;
     setViewLocations(locs);
     drawCanvas();
   }
+});
+$("loc-vspacing-range").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value);
+  $("loc-vspacing-num").value=v;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){locs[_selectedLocKey].v_spacing=v>0?v:null;setViewLocations(locs);}
+});
+$("loc-vspacing-num").addEventListener("input",e=>{
+  const v=Math.max(0,Math.min(0.30,parseFloat(e.target.value)||0));
+  $("loc-vspacing-range").value=v;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){locs[_selectedLocKey].v_spacing=v>0?v:null;setViewLocations(locs);}
+});
+$("loc-rotation").addEventListener("input",e=>{
+  const v=parseFloat(e.target.value)||0;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){locs[_selectedLocKey].rotation=v||undefined;setViewLocations(locs);}
+  drawCanvas();
+});
+$("loc-rotation-preset").addEventListener("change",e=>{
+  if(e.target.value==="")return;
+  const v=parseFloat(e.target.value);
+  $("loc-rotation").value=v;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){locs[_selectedLocKey].rotation=v||undefined;setViewLocations(locs);}
+  drawCanvas();
+});
+["flip-h","flip-v","flip-mirrored-h","behind-vehicle"].forEach(flag=>{
+  $(`loc-${flag}`).addEventListener("change",e=>{
+    const key=flag.replace(/-/g,"_"); // flip_h, flip_v, flip_mirrored_h, behind_vehicle
+    const locs=getViewLocations();
+    if(_selectedLocKey&&locs[_selectedLocKey]){
+      if(e.target.checked) locs[_selectedLocKey][key]=true;
+      else delete locs[_selectedLocKey][key];
+      setViewLocations(locs);
+    }
+    drawCanvas();
+  });
 });
 
 $("loc-name-input").addEventListener("blur",e=>{
@@ -2107,8 +2434,13 @@ function syncModalDiagramStatus(){
 
 function onModalRenderKindChange(){
   const rk=$("m-render-kind").value;
-  $("modal-images-section").hidden=!["equipment","bar"].includes(rk);
+  const showImgs=["equipment","bar"].includes(rk);
+  const showSizes=["light","none"].includes(rk);
+  $("modal-images-section").hidden=!showImgs;
   if(!$("modal-images-section").hidden) buildModalImageSection();
+  $("modal-sizes-section").hidden=!showSizes;
+  if(!$("modal-sizes-section").hidden) buildModalSizeSection();
+  buildAltImageSection();
   syncModalDiagramStatus();
 }
 
@@ -2157,6 +2489,23 @@ function buildModalImageSection(){
     </div>`;
   }).join("");
 
+  // For equipment/bar: detect aspect ratio from existing manifest images
+  const isEquip=["equipment","bar"].includes($("m-render-kind").value);
+  if(isEquip){
+    const assetKeyNow=$("m-asset-key").value.trim()||$("m-part-id").value.trim();
+    allViews.forEach(view=>{
+      const mPath=assetKeyNow&&assetMap?.[assetKeyNow]?.[view]?"/assets/"+assetMap[assetKeyNow][view]:null;
+      if(mPath&&!_viewAspectRatios[view]){
+        const probe=new Image();
+        probe.onload=()=>{
+          if(probe.naturalWidth&&probe.naturalHeight)
+            _viewAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
+        };
+        probe.src=mPath;
+      }
+    });
+  }
+
   // Upload inputs
   $("modal-images-grid").querySelectorAll(".muz-input").forEach(inp=>{
     inp.addEventListener("change",e=>{
@@ -2171,15 +2520,45 @@ function buildModalImageSection(){
         $(`muz-prev-${view}`).src=ev.target.result;
         $(`muz-${view}`).classList.add("has-file");
         $(`modal-vs-${view}`).style.display="";
+        // Detect and store aspect ratio from uploaded image
+        if(["equipment","bar"].includes($("m-render-kind").value)){
+          const probe=new Image();
+          probe.onload=()=>{
+            if(probe.naturalWidth&&probe.naturalHeight){
+              _viewAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
+              // Auto-fill H from existing W (or vice versa) once ratio is known
+              const wEl=$(`modal-vw-${view}`); const hEl=$(`modal-vh-${view}`);
+              if(wEl&&hEl){
+                const w=parseFloat(wEl.value);
+                if(w>0) hEl.value=(w/_viewAspectRatios[view]).toFixed(2);
+              }
+              updateModalCarPreview(view);
+            }
+          };
+          probe.src=ev.target.result;
+        }
         updateModalCarPreview(view);
       };
       reader.readAsDataURL(file);
     });
   });
 
-  // Size input live preview
+  // Size input live preview — lock aspect ratio for equipment/bar
   $("modal-images-grid").querySelectorAll(".modal-vw,.modal-vh").forEach(inp=>{
-    inp.addEventListener("input",e=>updateModalCarPreview(e.target.dataset.view));
+    inp.addEventListener("input",e=>{
+      const view=e.target.dataset.view;
+      if(["equipment","bar"].includes($("m-render-kind").value)&&_viewAspectRatios[view]){
+        const ratio=_viewAspectRatios[view];
+        if(e.target.classList.contains("modal-vw")){
+          const w=parseFloat(e.target.value);
+          if(w>0&&$(`modal-vh-${view}`)) $(`modal-vh-${view}`).value=(w/ratio).toFixed(2);
+        } else {
+          const h=parseFloat(e.target.value);
+          if(h>0&&$(`modal-vw-${view}`)) $(`modal-vw-${view}`).value=(h*ratio).toFixed(2);
+        }
+      }
+      updateModalCarPreview(view);
+    });
   });
 
   // Delete buttons
@@ -2217,6 +2596,9 @@ function openEditModal(partId){
   _editingPartId=partId;
   Object.keys(_modalUploadedImages).forEach(k=>delete _modalUploadedImages[k]);
   _modalDeletedViews.clear();
+  Object.keys(_altUploadedImages).forEach(k=>delete _altUploadedImages[k]);
+  Object.keys(_altDeletedViews).forEach(k=>delete _altDeletedViews[k]);
+  Object.keys(_viewAspectRatios).forEach(k=>delete _viewAspectRatios[k]);
   $("m-display-name").value=p.display_name||"";
   $("m-part-id").value=p.part_id||"";
   $("m-category").value=p.category||"equipment_note";
@@ -2229,9 +2611,20 @@ function openEditModal(partId){
   $("m-aliases").value=(p.aliases||[]).join("\n");
   syncModalDiagramStatus();
   buildModalLocSection(p.display_name);
+  // accessory_of
+  const accOf=p.accessory_of;
+  $("m-accessory-of").value=Array.isArray(accOf)?accOf.join(", "):(accOf||"");
+  // populate accessory suggestions from all part display names
+  $("m-accessory-suggestions").innerHTML=(_catalog?.parts||[])
+    .map(x=>`<option value="${esc(x.display_name)}">`).join("");
+  // co_part_rules
+  buildCopartRulesTable(p.co_part_rules||[]);
   const showImgs=["equipment","bar"].includes(p.render_kind||"none");
+  const showSizes=["light","none"].includes(p.render_kind||"none");
   $("modal-images-section").hidden=!showImgs;
   if(showImgs) buildModalImageSection();
+  $("modal-sizes-section").hidden=!showSizes;
+  if(showSizes) buildModalSizeSection();
   $("edit-modal").classList.add("open");
 }
 
@@ -2277,6 +2670,218 @@ $("btn-modal-add-loc").addEventListener("click",addModalLoc);
 $("modal-loc-input").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addModalLoc();}});
 
 $("modal-close").addEventListener("click",()=>$("edit-modal").classList.remove("open"));
+// ── Co-Part Rules table ──────────────────────────────────────────────────────
+function _cprOverrideFields(prefix, obj){
+  const skip=!!(obj&&obj.skip);
+  const pat=(obj&&obj.pattern)||"";
+  const side=(obj&&obj.side)||"";
+  const asset=(obj&&obj.asset_key)||"";
+  return `<div style="display:flex;flex-direction:column;gap:2px">
+    <div style="display:flex;gap:4px;align-items:center">
+      <input type="checkbox" class="${prefix}-skip" id="${prefix}-skip-cb" ${skip?"checked":""} style="margin:0" />
+      <label for="${prefix}-skip-cb" style="font-size:11px;color:var(--danger,#c0392b);font-weight:600;cursor:pointer">Don't render</label>
+    </div>
+    <div style="display:flex;gap:3px;align-items:center">
+      <span style="color:var(--muted);width:42px;font-size:10px;flex-shrink:0">Pattern</span>
+      <select class="${prefix}-pattern" style="flex:1;font-size:11px;padding:1px 2px">
+        <option value="">—</option>
+        <option value="single"${pat==="single"?" selected":""}>single</option>
+        <option value="mirror"${pat==="mirror"?" selected":""}>mirror</option>
+        <option value="horizontal"${pat==="horizontal"?" selected":""}>horizontal</option>
+        <option value="vertical"${pat==="vertical"?" selected":""}>vertical</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:3px;align-items:center">
+      <span style="color:var(--muted);width:42px;font-size:10px;flex-shrink:0">Side</span>
+      <select class="${prefix}-side" style="flex:1;font-size:11px;padding:1px 2px">
+        <option value="">—</option>
+        <option value="driver"${side==="driver"?" selected":""}>driver</option>
+        <option value="passenger"${side==="passenger"?" selected":""}>passenger</option>
+        <option value="center"${side==="center"?" selected":""}>center</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:3px;align-items:center">
+      <span style="color:var(--muted);width:42px;font-size:10px;flex-shrink:0">Asset</span>
+      <input type="text" class="${prefix}-asset" value="${esc(asset)}" placeholder="asset_key" style="flex:1;font-size:11px;padding:1px 3px" />
+    </div>
+  </div>`;
+}
+
+function buildCopartRulesTable(rules){
+  const tbody=$("copart-rules-tbody");
+  tbody.innerHTML="";
+  const partNames=(_catalog?.parts||[]).map(p=>p.display_name||p.part_id).filter(Boolean);
+  const datalistId="cpr-copart-list";
+  if(!document.getElementById(datalistId)){
+    const dl=document.createElement("datalist");
+    dl.id=datalistId;
+    partNames.forEach(n=>{const o=document.createElement("option");o.value=n;dl.appendChild(o);});
+    document.body.appendChild(dl);
+  }
+  (rules||[]).forEach((rule,i)=>{
+    const tr=document.createElement("tr");
+    tr.style.borderTop="1px solid var(--border)";
+    tr.innerHTML=`
+      <td style="padding:4px"><input type="text" class="cpr-copart" list="${datalistId}" value="${esc(rule.co_part||"")}" placeholder="part display name" style="width:100%;font-size:11px" /></td>
+      <td style="padding:4px">${_cprOverrideFields("cpr-present",rule.if_present)}</td>
+      <td style="padding:4px">${_cprOverrideFields("cpr-absent",rule.if_absent)}</td>
+      <td style="padding:4px;text-align:center;vertical-align:top"><button class="btn btn-danger btn-sm cpr-del" data-idx="${i}" style="padding:2px 6px">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll(".cpr-del").forEach(btn=>btn.addEventListener("click",()=>{
+    const rows=[...tbody.querySelectorAll("tr")];
+    rows[parseInt(btn.dataset.idx)]?.remove();
+    buildAltImageSection();
+  }));
+  buildAltImageSection();
+}
+
+function buildModalSizeSection(){
+  const allViews=["front","side","top","rear"];
+  const catalogPart=(_catalog?.parts||[]).find(p=>p.part_id===_editingPartId);
+  const existingSizes=catalogPart?.size_per_view||{};
+  $("modal-sizes-grid").innerHTML=allViews.map(view=>{
+    const sz=existingSizes[view]||{};
+    return `<div class="pm-view-row" data-view="${view}" style="align-items:center;padding:6px 0">
+      <div class="pm-view-label" style="min-width:48px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase">${view}</div>
+      <div class="pm-size-panel" style="display:block;margin-left:10px">
+        <div class="pm-size-row">
+          <span>W</span>
+          <input type="number" id="modal-vw-${view}" class="modal-vw" data-view="${view}"
+            value="${sz.w||""}" step="0.01" min="0.01" max="8" placeholder="—" style="width:64px" />
+          <span style="margin:0 4px">×</span>
+          <span>H</span>
+          <input type="number" id="modal-vh-${view}" class="modal-vh" data-view="${view}"
+            value="${sz.h||""}" step="0.01" min="0.01" max="6" placeholder="—" style="width:64px" />
+          <span style="margin-left:4px;font-size:11px;color:var(--muted)">in</span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function getAltAssetKeys(){
+  const rows=[...$("copart-rules-tbody").querySelectorAll("tr")];
+  const keys=new Set();
+  rows.forEach(tr=>{
+    const p=tr.querySelector(".cpr-present-asset")?.value.trim();
+    const a=tr.querySelector(".cpr-absent-asset")?.value.trim();
+    if(p) keys.add(p);
+    if(a) keys.add(a);
+  });
+  const primary=$("m-asset-key")?.value.trim();
+  if(primary) keys.delete(primary);
+  return [...keys].filter(Boolean);
+}
+
+function buildAltImageSection(){
+  const rk=$("m-render-kind")?.value;
+  const sec=$("modal-alt-images-section");
+  if(!sec) return;
+  if(!["equipment","bar"].includes(rk)){ sec.hidden=true; return; }
+  const altKeys=getAltAssetKeys();
+  sec.hidden=altKeys.length===0;
+  if(!altKeys.length) return;
+  const assetMap=getPartTypeAssetMap(rk);
+  const grid=$("modal-alt-images-grid");
+  grid.innerHTML=altKeys.map(ak=>{
+    const akId=ak.replace(/[^a-z0-9]/gi,"_");
+    const views=["front","side","top","rear"];
+    return `<div style="margin-bottom:14px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px;color:var(--navy);font-family:monospace">${esc(ak)}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${views.map(view=>{
+          const upKey=`${ak}:${view}`;
+          const upld=_altUploadedImages[upKey];
+          const deleted=(_altDeletedViews[ak]||new Set()).has(view);
+          const manifestPath=assetMap?.[ak]?.[view]?"/assets/"+assetMap[ak][view]:null;
+          const hasImg=!deleted&&!!(manifestPath||upld);
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div class="pm-view-thumb ${hasImg?"has-file":""}" id="alt-muz-${akId}-${view}" title="Upload ${view} image for ${esc(ak)}" style="width:72px;height:72px">
+              <input type="file" accept="image/*" class="alt-muz-input" data-alt-key="${esc(ak)}" data-view="${view}" />
+              <img id="alt-muz-prev-${akId}-${view}"
+                ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+              ${!hasImg?'<span style="font-size:18px">🖼️</span>':""}
+            </div>
+            <div style="font-size:10px;color:var(--muted)">${view}</div>
+            ${hasImg?`<button class="btn btn-danger btn-sm alt-del-view" data-alt-key="${esc(ak)}" data-view="${view}" style="font-size:9px;padding:1px 5px">✕</button>`:""}
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }).join("");
+
+  grid.querySelectorAll(".alt-muz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const view=e.target.dataset.view;
+      const ak=e.target.dataset.altKey;
+      const akId=ak.replace(/[^a-z0-9]/gi,"_");
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _altUploadedImages[`${ak}:${view}`]={filename:`${ak}_${view}.png`,b64,dataUrl:ev.target.result};
+        if(!_altDeletedViews[ak]) _altDeletedViews[ak]=new Set();
+        _altDeletedViews[ak].delete(view);
+        const prev=$(`alt-muz-prev-${akId}-${view}`);
+        if(prev) prev.src=ev.target.result;
+        $(`alt-muz-${akId}-${view}`)?.classList.add("has-file");
+        buildAltImageSection();
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  grid.querySelectorAll(".alt-del-view").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      const view=e.target.dataset.view;
+      const ak=e.target.dataset.altKey;
+      if(!_altDeletedViews[ak]) _altDeletedViews[ak]=new Set();
+      _altDeletedViews[ak].add(view);
+      delete _altUploadedImages[`${ak}:${view}`];
+      buildAltImageSection();
+    });
+  });
+}
+
+// Rebuild alt image section when asset key fields in co-part rules change
+$("copart-rules-tbody").addEventListener("blur",e=>{
+  if(e.target.classList.contains("cpr-present-asset")||e.target.classList.contains("cpr-absent-asset")){
+    buildAltImageSection();
+  }
+},true);
+
+function _readCprOverride(tr, prefix){
+  const skip=tr.querySelector(`.${prefix}-skip`)?.checked||false;
+  if(skip) return {skip:true};
+  const pat=tr.querySelector(`.${prefix}-pattern`)?.value||"";
+  const side=tr.querySelector(`.${prefix}-side`)?.value||"";
+  const asset=tr.querySelector(`.${prefix}-asset`)?.value.trim()||"";
+  const obj={};
+  if(pat) obj.pattern=pat;
+  if(side) obj.side=side;
+  if(asset) obj.asset_key=asset;
+  return Object.keys(obj).length?obj:null;
+}
+
+function readCopartRules(){
+  const rows=[...$("copart-rules-tbody").querySelectorAll("tr")];
+  return rows.map(tr=>{
+    const co=tr.querySelector(".cpr-copart").value.trim();
+    const rule={co_part:co};
+    const ip=_readCprOverride(tr,"cpr-present");
+    const ia=_readCprOverride(tr,"cpr-absent");
+    if(ip) rule.if_present=ip;
+    if(ia) rule.if_absent=ia;
+    return rule;
+  }).filter(r=>r.co_part);
+}
+
+$("btn-add-copart-rule").addEventListener("click",()=>{
+  const existing=readCopartRules();
+  buildCopartRulesTable([...existing,{co_part:"",if_present:{},if_absent:{}}]);
+});
+
 $("btn-modal-cancel").addEventListener("click",()=>$("edit-modal").classList.remove("open"));
 $("edit-modal").addEventListener("click",e=>{if(e.target===$("edit-modal"))$("edit-modal").classList.remove("open");});
 
@@ -2305,6 +2910,23 @@ $("btn-modal-save").addEventListener("click", async()=>{
         viewMap[view]=`${assetFolder}/${img.filename}`;
       }
       assetMap[assetKey]=viewMap;
+      // Also save alternate asset images from co-part rules
+      const altKeys=new Set([
+        ...Object.keys(_altUploadedImages).map(k=>k.split(":")[0]),
+        ...Object.keys(_altDeletedViews)
+      ]);
+      for(const ak of altKeys){
+        const altViewMap={...(assetMap[ak]||{})};
+        (_altDeletedViews[ak]||new Set()).forEach(v=>delete altViewMap[v]);
+        for(const [upKey,img] of Object.entries(_altUploadedImages)){
+          const [altKey,view]=upKey.split(":");
+          if(altKey!==ak) continue;
+          const res=await api("/api/assets/upload",{folder:assetFolder,filename:img.filename,data:img.b64});
+          if(!res.ok) throw new Error("Upload failed: "+res.error);
+          altViewMap[view]=`${assetFolder}/${img.filename}`;
+        }
+        assetMap[ak]=altViewMap;
+      }
       await api("/api/manifest/save",_manifest);
     }
     // Collect per-view render sizes
@@ -2331,8 +2953,20 @@ $("btn-modal-save").addEventListener("click", async()=>{
     if(rk!=="none") updated.render_quantity_policy=$("m-qty-policy").value;
     if(aliases.length) updated.aliases=aliases;
     if(Object.keys(size_per_view).length) updated.size_per_view=size_per_view;
+    // accessory_of
+    const accOfRaw=$("m-accessory-of").value.trim();
+    if(accOfRaw){
+      const parts=accOfRaw.split(",").map(s=>s.trim()).filter(Boolean);
+      updated.accessory_of=parts.length===1?parts[0]:parts;
+    }
+    // co_part_rules
+    const cpr=readCopartRules();
+    if(cpr.length) updated.co_part_rules=cpr;
     const idx=_catalog.parts.findIndex(p=>p.part_id===_editingPartId);
-    if(idx>=0) _catalog.parts[idx]=updated; else _catalog.parts.push(updated);
+    // Spread-merge: preserve any catalog fields the modal doesn't expose
+    // (is_fixture, group_shapes, quantity_rules, conditions, model_remaps, etc.)
+    if(idx>=0) _catalog.parts[idx]={..._catalog.parts[idx], ...updated};
+    else _catalog.parts.push(updated);
     const res=await api("/api/catalog/save",_catalog);
     if(!res.ok) throw new Error(res.error);
 
@@ -2817,6 +3451,354 @@ $("btn-create-vehicle").addEventListener("click", async()=>{
   }catch(err){toast("Error: "+err,"error");}
   btn.disabled=false; btn.textContent="+ Create Vehicle Type";
 });
+
+// ═══════════════════════════════════════════════════════
+// FIXTURES EDITOR
+// ═══════════════════════════════════════════════════════
+let _fixtureVehicle="", _fixtureView="front", _selectedFixtureId=null, _fixturesDirty=false, _fixtureLoading=false;
+let _fixtureVehicleImg=new Image(), _fixtureImgLoaded=false;
+
+function getFixtureParts(){
+  // Parts with is_fixture:true from catalog
+  const catalogFixtures=(_catalog?.parts||[]).filter(p=>p.is_fixture);
+  const catalogIds=new Set(catalogFixtures.map(p=>p.part_id));
+  // Also include any parts already in the vehicle's fixtures map (even if not is_fixture)
+  const fixtureMap=getVehicleFixtures();
+  const extraParts=Object.keys(fixtureMap).filter(id=>!catalogIds.has(id)).map(id=>{
+    const catalogPart=(_catalog?.parts||[]).find(p=>p.part_id===id);
+    return {part_id:id, display_name:catalogPart?.display_name||id};
+  });
+  return [...catalogFixtures,...extraParts];
+}
+
+function getVehicleFixtures(){
+  return _layouts?.vehicles?.[_fixtureVehicle]?.fixtures || {};
+}
+
+function getFixtureEntry(partId){
+  return getVehicleFixtures()[partId]?.[_fixtureView] || null;
+}
+
+function setFixtureEntry(partId, entry){
+  if(!_layouts.vehicles[_fixtureVehicle]) return;
+  if(!_layouts.vehicles[_fixtureVehicle].fixtures) _layouts.vehicles[_fixtureVehicle].fixtures={};
+  if(!_layouts.vehicles[_fixtureVehicle].fixtures[partId]) _layouts.vehicles[_fixtureVehicle].fixtures[partId]={};
+  _layouts.vehicles[_fixtureVehicle].fixtures[partId][_fixtureView]=entry;
+  _fixturesDirty=true;
+  $("fixtures-dirty-dot").style.display="inline-block";
+}
+
+function populateFixtureVehicleSelector(){
+  const sel=$("fixture-vehicle-selector");
+  const vehicles=Object.keys(_layouts?.vehicles||{});
+  if(!_fixtureVehicle||!vehicles.includes(_fixtureVehicle)) _fixtureVehicle=vehicles[0]||"";
+  sel.innerHTML=vehicles.map(v=>`<option value="${esc(v)}" ${v===_fixtureVehicle?"selected":""}>${esc(v)}</option>`).join("");
+  sel.onchange=e=>{_fixtureVehicle=e.target.value;_selectedFixtureId=null;renderFixtureList();hide("fixture-edit-panel");show("fixture-empty-hint");loadFixtureCanvas();};
+}
+
+function renderFixtureList(){
+  const parts=getFixtureParts();
+  const fixtures=getVehicleFixtures();
+  $("fixture-list").innerHTML=parts.map(p=>{
+    const hasEntry=!!(fixtures[p.part_id]?.[_fixtureView]);
+    return `<div class="location-row ${p.part_id===_selectedFixtureId?"selected":""}" data-id="${esc(p.part_id)}">
+      <div class="loc-name" title="${esc(p.display_name)}">${esc(p.display_name)}</div>
+      <div class="loc-coords" style="color:${hasEntry?"var(--navy)":"var(--muted)"}">${hasEntry?"configured":"not set"}</div>
+    </div>`;
+  }).join("");
+  $("fixture-list").querySelectorAll(".location-row").forEach(row=>{
+    row.addEventListener("click",()=>{
+      _selectedFixtureId=row.dataset.id;
+      renderFixtureList(); showFixtureEditPanel(_selectedFixtureId);
+      hide("fixture-empty-hint"); show("fixture-edit-panel");
+      drawFixtureCanvas();
+    });
+  });
+}
+
+function updateFixtureSpacingRows(pattern, slots){
+  const showH=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
+  const showV=pattern==="vertical"&&slots>1;
+  $("fix-hspacing-row").hidden=!showH;
+  $("fix-vspacing-row").hidden=!showV;
+}
+
+function showFixtureEditPanel(partId){
+  const parts=getFixtureParts();
+  const p=parts.find(x=>x.part_id===partId); if(!p) return;
+  const entry=getFixtureEntry(partId);
+  const title=`${p.display_name} — ${_fixtureView}`;
+  _fixtureLoading=true;
+  $("fixture-edit-title").textContent=title;
+  $("fixture-edit-hint").hidden=!!entry;
+  const x=entry?.x??0.5, y=entry?.y??0.5;
+  $("fix-x-range").value=x; $("fix-x-num").value=x;
+  $("fix-y-range").value=y; $("fix-y-num").value=y;
+  $("fix-orient").value=entry?.orientation||"h";
+  $("fix-pattern").value=entry?.pattern||"single";
+  $("fix-slots").value=entry?.slot_count||1;
+  const hsp=entry?.h_spacing??entry?.spacing??0;
+  $("fix-hsp-range").value=hsp; $("fix-hsp-num").value=hsp;
+  const vsp=entry?.v_spacing??0;
+  $("fix-vsp-range").value=vsp; $("fix-vsp-num").value=vsp;
+  $("fix-rotation").value=entry?.rotation??0;
+  $("fix-rotation-preset").value="";
+  $("fix-flip-h").checked=!!entry?.flip_h;
+  $("fix-flip-v").checked=!!entry?.flip_v;
+  $("fix-flip-mirrored-h").checked=!!entry?.flip_mirrored_h;
+  $("fix-behind-vehicle").checked=!!entry?.behind_vehicle;
+  updateFixtureSpacingRows(entry?.pattern||"single", entry?.slot_count||1);
+  _fixtureLoading=false;
+}
+
+function _readFixtureEntry(){
+  const pat=$("fix-pattern").value, slots=parseInt($("fix-slots").value)||1;
+  const entry={
+    x:parseFloat($("fix-x-num").value)||0,
+    y:parseFloat($("fix-y-num").value)||0,
+    units:"relative_image",
+    orientation:$("fix-orient").value,
+    slot_count:slots,
+    pattern:pat,
+  };
+  const hsp=parseFloat($("fix-hsp-num").value)||0;
+  if(hsp>0) entry.h_spacing=hsp;
+  const vsp=parseFloat($("fix-vsp-num").value)||0;
+  if(vsp>0) entry.v_spacing=vsp;
+  const rot=parseFloat($("fix-rotation").value)||0;
+  if(rot) entry.rotation=rot;
+  if($("fix-flip-h").checked) entry.flip_h=true;
+  if($("fix-flip-v").checked) entry.flip_v=true;
+  if($("fix-flip-mirrored-h").checked) entry.flip_mirrored_h=true;
+  if($("fix-behind-vehicle").checked) entry.behind_vehicle=true;
+  return entry;
+}
+
+function _saveCurrentFixture(){
+  if(!_selectedFixtureId||_fixtureLoading) return;
+  // Merge over the existing entry so fields the UI doesn't expose
+  // (h_spacing_units, etc.) are preserved rather than dropped.
+  const existing=getVehicleFixtures()[_selectedFixtureId]?.[_fixtureView]||{};
+  setFixtureEntry(_selectedFixtureId, {...existing, ..._readFixtureEntry()});
+  renderFixtureList();
+}
+
+// Fixture canvas
+function loadFixtureCanvas(){
+  const canvas=$("fixture-canvas"), ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,700,460); ctx.fillStyle="#f0f2fa"; ctx.fillRect(0,0,700,460);
+  _fixtureImgLoaded=false;
+  _fixtureVehicleImg=new Image();
+  _fixtureVehicleImg.onload=()=>{_fixtureImgLoaded=true;drawFixtureCanvas();};
+  _fixtureVehicleImg.onerror=()=>{
+    ctx.fillStyle="#eef0f6";ctx.fillRect(0,0,700,460);
+    ctx.fillStyle="#aab";ctx.font="14px sans-serif";ctx.textAlign="center";
+    ctx.fillText(`No image: assets/vehicles/${_fixtureVehicle}_${_fixtureView}.png`,350,230);
+    drawFixtureDots(ctx,[0,0,700,460]);
+  };
+  _fixtureVehicleImg.src=`/assets/vehicles/${_fixtureVehicle}_${_fixtureView}.png`;
+  canvas.onclick=e=>{
+    if(!_selectedFixtureId)return;
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=700/rect.width,scaleY=460/rect.height;
+    const px=(e.clientX-rect.left)*scaleX,py=(e.clientY-rect.top)*scaleY;
+    const box=_getFixtureImageBox();
+    const x=Math.round(((px-box[0])/box[2])*1000)/1000;
+    const y=Math.round(((py-box[1])/box[3])*1000)/1000;
+    $("fix-x-num").value=Math.max(-0.1,Math.min(1.1,x));
+    $("fix-x-range").value=$("fix-x-num").value;
+    $("fix-y-num").value=Math.max(-0.1,Math.min(1.1,y));
+    $("fix-y-range").value=$("fix-y-num").value;
+    _saveCurrentFixture();
+    drawFixtureCanvas();
+  };
+}
+
+function _getFixtureImageBox(){
+  if(!_fixtureImgLoaded||!_fixtureVehicleImg.naturalWidth) return [0,0,700,460];
+  const iw=_fixtureVehicleImg.naturalWidth,ih=_fixtureVehicleImg.naturalHeight;
+  const scale=Math.min(700/iw,460/ih);
+  const dw=iw*scale,dh=ih*scale;
+  return [(700-dw)/2,(460-dh)/2,dw,dh];
+}
+
+function drawFixtureCanvas(){
+  const canvas=$("fixture-canvas"),ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,700,460);ctx.fillStyle="#f0f2fa";ctx.fillRect(0,0,700,460);
+  const box=_getFixtureImageBox();
+  if(_fixtureImgLoaded)ctx.drawImage(_fixtureVehicleImg,box[0],box[1],box[2],box[3]);
+  drawFixtureDots(ctx,box);
+}
+
+function drawFixtureDots(ctx,box){
+  const parts=getFixtureParts();
+  const fixtures=getVehicleFixtures();
+  parts.forEach(p=>{
+    const entry=fixtures[p.part_id]?.[_fixtureView];
+    if(!entry)return;
+    const selected=p.part_id===_selectedFixtureId;
+    const cx=box[0]+entry.x*box[2], cy=box[1]+entry.y*box[3];
+    const r=selected?7:4;
+    const rot=(entry.rotation||0)*Math.PI/180;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle=selected?"#C8A951":"rgba(30,39,97,0.72)";
+    ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();
+    // rotation indicator X
+    const longArm=r+5, shortArm=r+1;
+    ctx.strokeStyle=selected?"#C8A951":"rgba(255,255,255,0.9)";
+    ctx.lineWidth=selected?2:1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(rot)*longArm,cy+Math.sin(rot)*longArm);
+    ctx.lineTo(cx-Math.cos(rot)*longArm,cy-Math.sin(rot)*longArm);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(rot+Math.PI/2)*shortArm,cy+Math.sin(rot+Math.PI/2)*shortArm);
+    ctx.lineTo(cx-Math.cos(rot+Math.PI/2)*shortArm,cy-Math.sin(rot+Math.PI/2)*shortArm);
+    ctx.stroke();
+    if(selected){
+      ctx.fillStyle="rgba(255,255,255,0.93)";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
+      ctx.fillText(p.display_name.length>18?p.display_name.slice(0,17)+"…":p.display_name,cx,cy-12);
+    }
+  });
+}
+
+// Wire up fixture field inputs
+["x","y"].forEach(axis=>{
+  $(`fix-${axis}-range`).addEventListener("input",e=>{
+    const v=parseFloat(e.target.value);
+    $(`fix-${axis}-num`).value=v;
+    _saveCurrentFixture();drawFixtureCanvas();
+  });
+  $(`fix-${axis}-num`).addEventListener("input",e=>{
+    const v=parseFloat(e.target.value)||0;
+    $(`fix-${axis}-range`).value=v;
+    _saveCurrentFixture();drawFixtureCanvas();
+  });
+});
+["fix-orient","fix-pattern","fix-slots"].forEach(id=>{
+  $(id).addEventListener("change",()=>{
+    _saveCurrentFixture();
+    updateFixtureSpacingRows($("fix-pattern").value,parseInt($("fix-slots").value)||1);
+    drawFixtureCanvas();
+  });
+});
+["fix-hsp-range","fix-hsp-num","fix-vsp-range","fix-vsp-num",
+ "fix-rotation","fix-flip-h","fix-flip-v","fix-flip-mirrored-h","fix-behind-vehicle"].forEach(id=>{
+  $(id).addEventListener($(id).type==="checkbox"?"change":"input",()=>_saveCurrentFixture());
+});
+$("fix-rotation-preset").addEventListener("change",e=>{
+  if(e.target.value==="")return;
+  $("fix-rotation").value=parseFloat(e.target.value);
+  _saveCurrentFixture();
+});
+document.querySelectorAll("#fixture-view-pills .view-pill").forEach(p=>{
+  p.addEventListener("click",()=>{
+    document.querySelectorAll("#fixture-view-pills .view-pill").forEach(x=>x.classList.remove("active"));
+    p.classList.add("active");
+    _fixtureView=p.dataset.view;
+    renderFixtureList();loadFixtureCanvas();
+    if(_selectedFixtureId){
+      showFixtureEditPanel(_selectedFixtureId);
+      show("fixture-edit-panel");hide("fixture-empty-hint");
+      drawFixtureCanvas();
+    } else {
+      hide("fixture-edit-panel");show("fixture-empty-hint");
+    }
+  });
+});
+$("btn-save-fixtures").addEventListener("click",async()=>{
+  const btn=$("btn-save-fixtures");btn.disabled=true;btn.textContent="Saving…";
+  const res=await apiSave("/api/layouts/save",_layouts);
+  btn.disabled=false;btn.textContent="Save Changes";
+  if(res.ok){_fixturesDirty=false;$("fixtures-dirty-dot").style.display="none";toast("Fixtures saved","success");}
+  else toast("Save failed: "+res.error,"error");
+});
+
+function initFixtures(){
+  populateFixtureVehicleSelector();
+  renderFixtureList();
+  loadFixtureCanvas();
+}
+
+// ─── Add Fixture Modal ───────────────────────────────────────────────────────
+function openAddFixtureModal(){
+  $("afm-vehicle-label").textContent=_fixtureVehicle;
+  afmFilter("");
+  $("afm-search").value="";
+  $("add-fixture-modal").classList.add("open");
+}
+
+function afmFilter(q){
+  const currentIds=new Set(getFixtureParts().map(p=>p.part_id));
+  let parts=(_catalog?.parts||[]).filter(p=>!currentIds.has(p.part_id));
+  if(q) parts=parts.filter(p=>(p.display_name||p.part_id).toLowerCase().includes(q.toLowerCase()));
+  const el=$("afm-part-list");
+  if(!parts.length){ el.innerHTML=`<div class="alm-empty">No parts available to add.</div>`; return; }
+  el.innerHTML=parts.map(p=>
+    `<div class="alm-import-item" data-id="${esc(p.part_id)}">${esc(p.display_name||p.part_id)} <span style="font-size:10px;color:var(--muted)">${esc(p.part_id)}</span></div>`
+  ).join("");
+  el.querySelectorAll(".alm-import-item").forEach(item=>{
+    item.addEventListener("click",()=>addFixturePart(item.dataset.id));
+  });
+}
+
+async function addFixturePart(partId){
+  // Mark is_fixture on the catalog part
+  const part=(_catalog?.parts||[]).find(p=>p.part_id===partId);
+  if(!part){ toast("Part not found in catalog","error"); return; }
+  part.is_fixture=true;
+
+  // Add empty entry to vehicle fixtures map
+  if(!_layouts.vehicles[_fixtureVehicle]) return;
+  if(!_layouts.vehicles[_fixtureVehicle].fixtures) _layouts.vehicles[_fixtureVehicle].fixtures={};
+  if(!_layouts.vehicles[_fixtureVehicle].fixtures[partId]) _layouts.vehicles[_fixtureVehicle].fixtures[partId]={};
+
+  // Save catalog and layouts
+  const catRes=await api("/api/catalog/save",_catalog);
+  if(!catRes.ok){ part.is_fixture=false; toast("Catalog save failed: "+(catRes.error||""),"error"); return; }
+  const layRes=await apiSave("/api/layouts/save",_layouts);
+  if(!layRes.ok){ toast("Layout save failed: "+(layRes.error||""),"error"); return; }
+
+  _selectedFixtureId=partId;
+  $("add-fixture-modal").classList.remove("open");
+  renderFixtureList();
+  showFixtureEditPanel(partId);
+  hide("fixture-empty-hint"); show("fixture-edit-panel");
+  drawFixtureCanvas();
+  toast(`Added "${part.display_name||partId}" as fixture`,"success");
+}
+
+// ─── Delete Fixture ──────────────────────────────────────────────────────────
+async function deleteFixturePart(){
+  if(!_selectedFixtureId) return;
+  const part=getFixtureParts().find(p=>p.part_id===_selectedFixtureId);
+  const label=part?.display_name||_selectedFixtureId;
+  if(!confirm(`Remove "${label}" from fixtures for ${_fixtureVehicle}?`)) return;
+
+  // Remove from vehicle fixtures map
+  const fixtures=_layouts.vehicles[_fixtureVehicle]?.fixtures;
+  if(fixtures) delete fixtures[_selectedFixtureId];
+
+  // Clear is_fixture on catalog part (if it was set via this page)
+  const catalogPart=(_catalog?.parts||[]).find(p=>p.part_id===_selectedFixtureId);
+  if(catalogPart) catalogPart.is_fixture=false;
+
+  const catRes=await api("/api/catalog/save",_catalog);
+  if(!catRes.ok){ toast("Catalog save failed: "+(catRes.error||""),"error"); return; }
+  const layRes=await apiSave("/api/layouts/save",_layouts);
+  if(!layRes.ok){ toast("Layout save failed: "+(layRes.error||""),"error"); return; }
+
+  _selectedFixtureId=null;
+  hide("fixture-edit-panel"); show("fixture-empty-hint");
+  renderFixtureList(); drawFixtureCanvas();
+  toast(`Removed "${label}" from fixtures`,"success");
+}
+
+$("btn-add-fixture").addEventListener("click",()=>openAddFixtureModal());
+$("btn-delete-fixture").addEventListener("click",()=>deleteFixturePart());
+$("afm-close").addEventListener("click",()=>$("add-fixture-modal").classList.remove("open"));
+$("afm-cancel").addEventListener("click",()=>$("add-fixture-modal").classList.remove("open"));
+$("add-fixture-modal").addEventListener("click",e=>{if(e.target===$("add-fixture-modal"))$("add-fixture-modal").classList.remove("open");});
 
 // ═══════════════════════════════════════════════════════
 // LOCATION DROPDOWN (wizard)
