@@ -69,19 +69,19 @@ def _parse_project_info(ws) -> dict:
 
     new_vehicle: dict[str, str] = {}
     existing_vehicle: dict[str, str] = {}
-    in_new = False
-    in_existing = False
+    # Track column indices where section headers appear so labels in the same
+    # row can be routed to the correct vehicle dict based on column position.
+    new_vehicle_col: int | None = None
+    existing_vehicle_col: int | None = None
 
     for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row, 60), values_only=False):
         for cell in row:
             value = _s(cell.value)
             if value == "NEW VEHICLE":
-                in_new = True
-                in_existing = False
+                new_vehicle_col = cell.column
                 continue
             if value == "EXISTING VEHICLE":
-                in_existing = True
-                in_new = False
+                existing_vehicle_col = cell.column
                 continue
             if value in label_map:
                 for next_cell in row[cell.column:]:
@@ -92,13 +92,19 @@ def _parse_project_info(ws) -> dict:
                 continue
             if value.rstrip(":") + ":" in vehicle_fields or value in vehicle_fields:
                 field_name = value.rstrip(":")
+                # Route to existing_vehicle when the label column falls within
+                # the existing-vehicle section (at or past its header column).
+                is_existing = (
+                    existing_vehicle_col is not None
+                    and cell.column >= existing_vehicle_col
+                )
                 for next_cell in row[cell.column:]:
                     next_value = _s(next_cell.value)
                     if next_value and next_value != value:
-                        if in_new or not in_existing:
-                            new_vehicle[field_name] = next_value
-                        if in_existing:
+                        if is_existing:
                             existing_vehicle[field_name] = next_value
+                        else:
+                            new_vehicle[field_name] = next_value
                         break
 
     info["NewVehicle"] = new_vehicle

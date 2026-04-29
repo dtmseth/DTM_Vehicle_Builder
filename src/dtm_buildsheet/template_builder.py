@@ -97,11 +97,15 @@ def _build_row_options(part_name: str, cfg: dict) -> dict:
     """Return per-field dropdown lists for a single part-type row."""
     rule = cfg["part_rules"].get(part_name, {})
 
-    # Workbook rules are the authoritative dropdown source; parts library is only fallback.
-    mfgs = rule.get("manufacturer", []) or cfg["mfg_map"].get(part_name) or []
+    # Workbook rules are authoritative; parts_library entries for this type are merged in
+    # so new library additions appear in dropdowns without requiring a manual part_rules edit.
+    rule_mfgs  = rule.get("manufacturer", []) or []
+    lib_mfgs   = cfg["mfg_map"].get(part_name) or []
+    mfgs = rule_mfgs + [m for m in lib_mfgs if m not in set(rule_mfgs)]
 
-    # Workbook rules are the authoritative dropdown source; parts library is only fallback.
-    models = rule.get("models", []) or cfg["mdl_map"].get(part_name) or []
+    rule_models = rule.get("models", []) or []
+    lib_models  = cfg["mdl_map"].get(part_name) or []
+    models = rule_models + [m for m in lib_models if m not in set(rule_models)]
 
     # Locations: per-part-type from workbook_rules part_rules (XML-derived + GUI-editable)
     locs = rule.get("locations", [])

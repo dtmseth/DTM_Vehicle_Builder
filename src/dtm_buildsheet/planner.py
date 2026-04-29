@@ -165,14 +165,12 @@ def _resolve_asset_path(
     fallback_images: dict | None = None,
 ) -> str:
     if render_kind == "equipment":
-        if not asset_key:
-            return ""
-        return asset_manifest.get("equipment_assets", {}).get(asset_key, {}).get(view, "") or (fallback_images or {}).get(view, "")
+        manifest_path = asset_manifest.get("equipment_assets", {}).get(asset_key, {}).get(view, "") if asset_key else ""
+        return manifest_path or (fallback_images or {}).get(view, "")
 
     if render_kind == "bar":
-        if not asset_key:
-            return ""
-        return asset_manifest.get("bar_assets", {}).get(asset_key, {}).get(view, "") or (fallback_images or {}).get(view, "")
+        manifest_path = asset_manifest.get("bar_assets", {}).get(asset_key, {}).get(view, "") if asset_key else ""
+        return manifest_path or (fallback_images or {}).get(view, "")
 
     if render_kind == "light" and color_token:
         if color_token in ("single", "duo", "trio"):
@@ -233,6 +231,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             present_part_names.add(part.name.strip())
             # also add canonical upper for fuzzy matching
             present_part_names.add(canonical_name(part.name).strip().upper())
+            # also add specific model/part# so co_part_rules can target e.g. "PB5" not just "Pit Bar"
+            if part.part_number:
+                present_part_names.add(part.part_number.strip())
+                present_part_names.add(canonical_name(part.part_number).strip().upper())
 
     planned_parts: list[PlannedPart] = []
     warnings: list[str] = []
@@ -305,8 +307,9 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         if co_overrides.get("skip"):
             continue
 
-        # Effective asset_key after co_part_rules
-        effective_asset_key = co_overrides.get("asset_key", spec.get("asset_key", ""))
+        # Effective asset_key after co_part_rules; fall back to part_id so images
+        # uploaded via the modal (which defaults to part_id as the manifest key) are found.
+        effective_asset_key = co_overrides.get("asset_key", spec.get("asset_key") or spec.get("part_id", ""))
 
         for view in default_views:
             view_config = view_map.get(view, {})
@@ -362,8 +365,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 uniform_color=bool(spec.get("group_shapes", False)),
             )
 
-            # If slot_indices, trim slot_roles and slot_count to those indices
+            # If slot_indices, trim slot_roles to those indices, keeping full count for position calc
+            position_slot_count: int | None = None
             if slot_indices:
+                position_slot_count = slot_count
                 slot_roles = [slot_roles[i] for i in slot_indices if i < len(slot_roles)]
                 slot_count = len(slot_roles)
 
@@ -407,6 +412,8 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 behind_vehicle=bool(location.get("behind_vehicle", False)),
                 group_shapes=(quantity_policy == "quantity_as_slots" or bool(spec.get("group_shapes", False))),
                 is_fixture=is_fixture,
+                slot_indices=slot_indices or None,
+                position_slot_count=position_slot_count,
             )
 
             if quantity_policy == "location_slots":

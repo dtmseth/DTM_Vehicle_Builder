@@ -66,6 +66,8 @@ class PlannedPlacement:
     behind_vehicle: bool = False     # render icons behind the vehicle image layer
     group_shapes: bool = False       # group all icons for this placement in the PPTX
     is_fixture: bool = False         # resolved from vehicle fixtures, not user-supplied location
+    slot_indices: list[int] | None = None       # when set, positions are picked from a full position_slot_count array
+    position_slot_count: int | None = None      # full slot count used to generate positions when slot_indices is active
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 

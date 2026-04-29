@@ -2,61 +2,6 @@
   "version": "1.0",
   "parts": [
     {
-      "part_id": "hdx",
-      "display_name": "HDX",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "HDX",
-      "compatible_types": [
-        "Push Bumper"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "pb400",
-      "display_name": "PB400",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "PB400",
-      "compatible_types": [
-        "Push Bumper"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "pb450l",
-      "display_name": "PB450L",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "PB450L",
-      "compatible_types": [
-        "Push Bumper"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "pb6",
-      "display_name": "PB6",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "PB6",
-      "compatible_types": [
-        "Wing Wraps"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "pb8",
-      "display_name": "PB8",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "PB8",
-      "compatible_types": [
-        "Wing Wraps"
-      ],
-      "images": {}
-    },
-    {
       "part_id": "wing_wraps",
       "display_name": "WING WRAPS",
       "category": "PUSH BUMPER / FRONT STRUCTURE",
@@ -2145,6 +2090,122 @@
         "Siren Speaker 2"
       ],
       "images": {}
+    },
+    {
+      "part_id": "pb9",
+      "display_name": "PB9",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB9",
+      "compatible_types": [
+        "Pit Bar"
+      ],
+      "images": {}
+    },
+    {
+      "part_id": "pb5",
+      "display_name": "PB5",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB5",
+      "compatible_types": [
+        "Pit Bar"
+      ],
+      "images": {
+        "side": "lights/setina_pb5_side.png"
+      }
+    },
+    {
+      "part_id": "pb6",
+      "display_name": "PB6",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB6",
+      "compatible_types": [
+        "Wing Wraps"
+      ],
+      "images": {
+        "side": "lights/setina_pb6_side.png"
+      }
+    },
+    {
+      "part_id": "pb8",
+      "display_name": "PB8",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB8",
+      "compatible_types": [
+        "Wing Wraps"
+      ],
+      "images": {}
+    },
+    {
+      "part_id": "pb400",
+      "display_name": "PB400",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB400",
+      "compatible_types": [
+        "Push Bumper"
+      ],
+      "images": {
+        "front": "lights/part_pb400_front.png",
+        "side": "lights/part_pb400_side.png",
+        "top": "lights/part_pb400_top.png"
+      }
+    },
+    {
+      "part_id": "pb450l",
+      "display_name": "PB450L",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB450L",
+      "compatible_types": [
+        "Push Bumper"
+      ],
+      "images": {
+        "front": "lights/setina_pb450l_front.png",
+        "side": "lights/setina_pb450l_side.png",
+        "top": "lights/setina_pb450l_top.png"
+      }
+    },
+    {
+      "part_id": "hdx",
+      "display_name": "HDX",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "",
+      "model_number": "HDX",
+      "compatible_types": [
+        "Push Bumper"
+      ],
+      "images": {
+        "front": "lights/part_hdx_front.png"
+      }
+    },
+    {
+      "part_id": "pb10",
+      "display_name": "PB10",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "SETINA",
+      "model_number": "PB10",
+      "compatible_types": [
+        "Wing Wraps"
+      ],
+      "images": {
+        "side": "lights/setina_pb10_side.png",
+        "front": "lights/setina_pb10_front.png"
+      },
+      "size_per_view": {
+        "front": {
+          "w": 1.9,
+          "h": 2.1
+        },
+        "side": {
+          "w": 1.95,
+          "h": 1.6
+        }
+      }
     }
-  ]
+  ],
+  "schema_version": 1
 }

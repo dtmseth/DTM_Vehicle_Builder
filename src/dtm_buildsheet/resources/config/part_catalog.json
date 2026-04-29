@@ -20,7 +20,13 @@
       },
       "aliases": [
         "Push Bumper"
-      ]
+      ],
+      "size_per_view": {
+        "front": {
+          "w": 2.75,
+          "h": 2.52
+        }
+      }
     },
     {
       "part_id": "pit_bar",
@@ -39,14 +45,15 @@
       },
       "aliases": [
         "Pit Bar"
-      ]
+      ],
+      "accessory_of": "Push Bumper"
     },
     {
       "part_id": "wing_wraps",
       "display_name": "Wing Wraps",
       "category": "equipment",
       "render_kind": "equipment",
-      "is_fixture": false,
+      "is_fixture": true,
       "diagram": true,
       "default_views": [
         "front",
@@ -58,7 +65,8 @@
       },
       "aliases": [
         "Wing Wraps"
-      ]
+      ],
+      "accessory_of": "Push Bumper"
     },
     {
       "part_id": "wire_covers",
@@ -87,6 +95,13 @@
         "front"
       ],
       "render_quantity_policy": "quantity_as_slots",
+      "quantity_rules": [
+        {
+          "qty": 2,
+          "slot_count": 4,
+          "slot_indices": [0, 3]
+        }
+      ],
       "default_color_profile": "std_duo_rb_w",
       "conditions": {
         "template_section": "FRONT WARNING LIGHTS"
@@ -128,6 +143,13 @@
         "front"
       ],
       "render_quantity_policy": "quantity_as_slots",
+      "quantity_rules": [
+        {
+          "qty": 2,
+          "slot_count": 4,
+          "slot_indices": [0, 3]
+        }
+      ],
       "default_color_profile": "std_duo_rb_w",
       "conditions": {
         "template_section": "FRONT WARNING LIGHTS"

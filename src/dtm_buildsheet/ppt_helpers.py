@@ -238,32 +238,37 @@ def add_slide_footer_bar(slide, footer_text: str) -> None:
 
 
 def update_slide_header_footer(slide, title: str, subtitle: str = "", footer: str = "") -> None:
-    """Write into TextBox 1, 2, and 5/4 that live on the template view/notes slides."""
-    for shape in slide.shapes:
-        if shape.name not in ("TextBox 1", "TextBox 2", "TextBox 5", "TextBox 4"):
-            continue
-        try:
-            tf = shape.text_frame
-            tf.clear()
-        except Exception:
-            continue
-        p = tf.paragraphs[0]
-        r = p.add_run()
-        if shape.name == "TextBox 1":
-            r.text = title
-            r.font.size = Pt(11)
-            r.font.bold = True
-            r.font.color.rgb = _WHITE
-        elif shape.name == "TextBox 2":
-            r.text = subtitle
-            r.font.size = Pt(8)
-            r.font.color.rgb = RGBColor(0xCC, 0xCC, 0xFF)
-        else:
-            # TextBox 5 / 4 — the sticky footer bar on template slides
-            r.text = footer
-            r.font.size = Pt(10)
-            r.font.bold = True
-            r.font.color.rgb = _WHITE
+    """Replace the template header shapes with a full-width navy header band.
+
+    The template's TextBox 1 has no fill (transparent), so white text would be
+    invisible against the white slide background.  We delete TextBox 1/2 and
+    create a fresh navy header that matches the cover/manifest slide style.
+    TextBox 4/5 (footer) are left for add_slide_footer_bar() to replace.
+    """
+    for name in ("TextBox 1", "TextBox 2"):
+        shape = find_shape(slide, name)
+        if shape:
+            shape._element.getparent().remove(shape._element)
+
+    hdr = slide.shapes.add_textbox(0, 0, SLIDE_W_EMU, Inches(0.95))
+    hdr.name = "DTM_SLIDE_HEADER"  # avoid collision with add_slide_footer_bar deletions
+    hdr.fill.solid()
+    hdr.fill.fore_color.rgb = DTM_NAVY
+    tf = hdr.text_frame
+    tf.margin_left = Inches(0.3)
+    tf.margin_top  = Inches(0.24)
+    p = tf.paragraphs[0]
+    r = p.add_run()
+    r.text           = title
+    r.font.size      = Pt(11)
+    r.font.bold      = True
+    r.font.color.rgb = _WHITE
+    if subtitle:
+        p2 = tf.add_paragraph()
+        r2 = p2.add_run()
+        r2.text           = subtitle
+        r2.font.size      = Pt(8)
+        r2.font.color.rgb = RGBColor(0xCC, 0xCC, 0xFF)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -777,8 +782,8 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
     n_cols     = len(MANIFEST_COL_HEADERS)
     col_widths = [Inches(w) for w in MANIFEST_COL_WIDTHS_IN]
 
-    # Strict available height: generous buffer ensures table never touches footer
     avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.40)
+    MAX_DATA_ROWS_PER_PAGE = 13
 
     slides_added = 0
     i = 0
@@ -788,14 +793,19 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
         page_num += 1
         slide_rows: list[tuple] = []
         used_h = MANIFEST_HDR_ROW_H
+        data_rows_on_page = 0
 
         while i < len(all_rows):
             rtype = all_rows[i][0]
             row_h = MANIFEST_SEC_ROW_H if rtype == "section" else MANIFEST_DATA_ROW_H
+            if rtype == "part" and data_rows_on_page >= MAX_DATA_ROWS_PER_PAGE:
+                break
             if used_h + row_h > avail_h and slide_rows:
                 break
             slide_rows.append(all_rows[i])
             used_h += row_h
+            if rtype == "part":
+                data_rows_on_page += 1
             i += 1
 
         if not slide_rows:
@@ -919,12 +929,13 @@ def place_vehicle_image(slide, vehicle_type, view):
         return None, None
     slot_left, slot_top, slot_w, slot_h = slot_geometry(slot)
 
-    # Side/top view: move vehicle to bottom so legend grid fits above
+    # Side/top view: move vehicle to bottom so legend grid fits above.
+    # Slot top matches GRID_BOTTOM in place_legend_grid (3.50").
     if view in ("side", "top"):
         slot_left = 0
-        slot_top  = Inches(4.10)
+        slot_top  = Inches(3.50)
         slot_w    = SLIDE_W_EMU
-        slot_h    = SLIDE_H_EMU - Inches(4.10) - FOOTER_H - Inches(0.05)
+        slot_h    = SLIDE_H_EMU - Inches(3.50) - FOOTER_H
 
     png = ensure_workspace().workspace_assets_dir / "vehicles" / f"{vehicle_type}_{view}.png"
     if not png.exists():
@@ -1117,10 +1128,11 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
 # Legend — grid layout for side view (vehicle at bottom, cards at top)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None) -> None:
+def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None,
+                      view: str = "side") -> None:
     """Render part cards in a 4-column grid occupying the top portion of the slide.
 
-    Used for the side view where the vehicle image is moved to the bottom half.
+    Used for side and top view slides where the vehicle image is at the bottom.
     """
     slot = find_shape(slide, "LEGEND_SLOT")
     if slot:
@@ -1128,17 +1140,18 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
 
     GRID_LEFT    = Inches(0.3)
     GRID_TOP     = Inches(0.95)   # flush with header band bottom
-    GRID_BOTTOM  = Inches(3.95)   # vehicle image starts at 4.10", leave small gap
+    GRID_BOTTOM  = Inches(3.50)   # vehicle image starts at 3.50"
     GRID_COLS    = 4
     COL_GAP      = Inches(0.10)
     COL_W        = (SLIDE_W_EMU - GRID_LEFT * 2 - COL_GAP * (GRID_COLS - 1)) / GRID_COLS
     STRIPE_W     = Inches(0.06)
     CARD_GAP_V   = Inches(0.07)
 
+    view_label = view.upper() if view else "SIDE"
     # Section header spanning full width
     count     = len(placed)
     hdr_label = (f"  {count} INSTALLED COMPONENT{'S' if count != 1 else ''}"
-                 if placed else "  SIDE VIEW COMPONENTS")
+                 if placed else f"  {view_label} VIEW COMPONENTS")
     hdr_h = Inches(0.28)
     hdr   = slide.shapes.add_textbox(GRID_LEFT, GRID_TOP,
                                       SLIDE_W_EMU - GRID_LEFT * 2, hdr_h)
@@ -1171,7 +1184,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
         tf = tb.text_frame
         p  = tf.paragraphs[0]
         r  = p.add_run()
-        r.text           = "NO SIDE-VIEW COMPONENTS SPECIFIED"
+        r.text           = f"NO {view_label}-VIEW COMPONENTS SPECIFIED"
         r.font.size      = Pt(9)
         r.font.italic    = True
         r.font.color.rgb = DTM_GRAY
