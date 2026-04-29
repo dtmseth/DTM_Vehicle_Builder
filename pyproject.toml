@@ -21,10 +21,17 @@ packaging = [
   "pyinstaller>=6.0,<7",
   "pyinstaller-hooks-contrib>=2024.0",
 ]
+dev = [
+  "pytest>=9.0",
+]
 
 [project.scripts]
 dtm-buildsheet = "dtm_buildsheet.gui_server:main"
 dtm-buildsheet-generate = "dtm_buildsheet.generator_cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
