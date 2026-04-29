@@ -336,12 +336,20 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 else:
                     v_spacing_emu = h_spacing_emu
 
-                positions = _slot_positions(
-                    placement.pattern, len(placement.instances),
-                    base_cx, base_cy, img_box,
-                    h_spacing_emu, v_spacing_emu,
-                    slot_roles=[inst.slot_role for inst in placement.instances],
-                )
+                if placement.slot_indices and placement.position_slot_count:
+                    all_positions = _slot_positions(
+                        placement.pattern, placement.position_slot_count,
+                        base_cx, base_cy, img_box,
+                        h_spacing_emu, v_spacing_emu,
+                    )
+                    positions = [all_positions[i] for i in placement.slot_indices if i < len(all_positions)]
+                else:
+                    positions = _slot_positions(
+                        placement.pattern, len(placement.instances),
+                        base_cx, base_cy, img_box,
+                        h_spacing_emu, v_spacing_emu,
+                        slot_roles=[inst.slot_role for inst in placement.instances],
+                    )
 
                 placement_shapes: list = []
 
@@ -439,7 +447,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 palette_offset += consumed
 
         if view in ("side", "top"):
-            place_legend_grid(slide, placed_legend, unplaced_legend, accessory_map)
+            place_legend_grid(slide, placed_legend, unplaced_legend, accessory_map, view=view)
         else:
             place_legend(slide, placed_legend, unplaced_legend, accessory_map, view=view)
 

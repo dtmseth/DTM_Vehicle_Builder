@@ -16,7 +16,8 @@
         "PB450L",
         "HDX",
         "SPECIFY MODEL"
-      ]
+      ],
+      "locations": []
     },
     "Pit Bar": {
       "_row": 16,
@@ -34,7 +35,8 @@
         "PB9",
         "PB10",
         "SPECIFY MODEL"
-      ]
+      ],
+      "locations": []
     },
     "Wing Wraps": {
       "_row": 17,
@@ -51,7 +53,8 @@
         "PB6",
         "PB8",
         "SPECIFY MODEL"
-      ]
+      ],
+      "locations": []
     },
     "Wire Covers": {
       "_row": 18,

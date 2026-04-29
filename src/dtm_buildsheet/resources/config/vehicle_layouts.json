@@ -83,8 +83,8 @@
         },
         "pit_bar": {
           "side": {
-            "x": 0.055,
-            "y": 0.66,
+            "x": 0,
+            "y": 0.61,
             "units": "relative_image",
             "orientation": "h",
             "slot_count": 1,
@@ -144,6 +144,32 @@
             "h_spacing": 1,
             "h_spacing_units": "icon_width"
           }
+        },
+        "wing_wraps": {
+          "side": {
+            "x": 0.07,
+            "y": 0.605,
+            "units": "relative_image",
+            "orientation": "h",
+            "slot_count": 1,
+            "pattern": "single",
+            "flip_h": false,
+            "flip_v": false,
+            "flip_mirrored_h": false,
+            "behind_vehicle": false
+          },
+          "front": {
+            "x": 0.84,
+            "y": 0.59,
+            "units": "relative_image",
+            "orientation": "h",
+            "slot_count": 2,
+            "pattern": "mirror",
+            "flip_mirrored_h": true,
+            "flip_v": false,
+            "flip_h": true,
+            "behind_vehicle": false
+          }
         }
       },
       "views": {
@@ -190,12 +216,12 @@
             },
             "TOP TUBE": {
               "x": 0.5,
-              "y": 0.408,
+              "y": 0.435,
               "units": "relative_image",
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "spacing": 0.105
+              "h_spacing": 0.095
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
