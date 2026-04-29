@@ -10,8 +10,14 @@ from dtm_buildsheet.paths import ensure_workspace
 
 
 SAMPLES_DIR = Path(__file__).resolve().parents[1] / "samples" / "input"
-STEARNS_XLS = SAMPLES_DIR / "Stearns_Test_Build.xlsx"
-TEST_BUILD_XLS = SAMPLES_DIR / "Test Build.xlsx"
+
+def _sample_workbooks() -> list[Path]:
+    return sorted(SAMPLES_DIR.glob("*.xlsx"))
+
+# Primary sample — first xlsx found in samples/input/
+_samples = _sample_workbooks()
+PRIMARY_XLS = _samples[0] if _samples else None
+SECONDARY_XLS = _samples[1] if len(_samples) > 1 else PRIMARY_XLS
 
 
 @pytest.fixture(scope="session")
@@ -26,9 +32,9 @@ def config(app_paths):
 
 @pytest.fixture(scope="session")
 def stearns_input():
-    return load_input(STEARNS_XLS)
+    return load_input(PRIMARY_XLS)
 
 
 @pytest.fixture(scope="session")
 def test_build_input():
-    return load_input(TEST_BUILD_XLS)
+    return load_input(SECONDARY_XLS)

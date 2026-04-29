@@ -6,7 +6,7 @@ import pytest
 from dtm_buildsheet.input_reader import load_input
 from dtm_buildsheet.models import PartInput, ProjectInput
 
-from .conftest import STEARNS_XLS, TEST_BUILD_XLS
+from .conftest import PRIMARY_XLS, SECONDARY_XLS
 
 
 # ── both sample files load ─────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ def test_notes_is_list(fixture_name, request):
 # ── load_input is idempotent (second call returns same data) ───────────────────
 
 def test_load_input_idempotent():
-    first = load_input(STEARNS_XLS)
-    second = load_input(STEARNS_XLS)
+    first = load_input(PRIMARY_XLS)
+    second = load_input(PRIMARY_XLS)
     assert first.info["VehicleType"] == second.info["VehicleType"]
     assert len(first.parts) == len(second.parts)
