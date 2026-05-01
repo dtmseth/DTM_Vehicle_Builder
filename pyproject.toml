@@ -42,7 +42,10 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 dtm_buildsheet = [
-  "gui_ui.html",
+  "ui/index.html",
+  "ui/styles.css",
+  "ui/js/*.js",
+  "ui/js/settings/*.js",
   "resources/config/*.json",
   "resources/templates/*.pptx",
   "resources/templates/*.xlsx",

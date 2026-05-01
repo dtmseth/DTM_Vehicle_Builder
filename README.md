@@ -37,14 +37,14 @@ The first launch copies default configs and assets into your workspace folder.
 ## Repo layout
 
 ```
-src/dtm_buildsheet/       Python package — server, pipeline, bundled resources
+src/dtm_buildsheet/       Python package — app server, domain, planning, rendering, UI, resources
 workspace/                User data — configs, inputs, outputs, assets (git-ignored)
 samples/                  Sample input workbooks
 packaging/
   pyinstaller/            PyInstaller spec + entrypoint
   windows/                Inno Setup installer script
   icons/                  app.icns (Mac), app.ico (Windows)
-docs/                     Architecture, pipeline, and packaging notes
+docs/                     Architecture, pipeline, config schema, repo principles, packaging notes
 .github/workflows/        CI — builds Mac .dmg and Windows .exe on every push to main
 ```
 
@@ -75,6 +75,12 @@ python3 -m venv .venv
 .venv/bin/pip install -e .
 .venv/bin/python -m dtm_buildsheet        # GUI
 .venv/bin/python -m dtm_buildsheet.generator_cli /path/to/workbook.xlsx  # CLI
+```
+
+Run automated tests:
+```bash
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest
 ```
 
 If the app fails to launch with "Port 7655 is already in use", a previous instance is still running:

@@ -1,0 +1,395 @@
+# DTM Vehicle Builder — Config File Schemas
+
+Reference for all six JSON configuration files. These files live in `workspace/config/` (editable by the user) and `src/dtm_buildsheet/resources/config/` (bundled defaults).
+
+Last updated: 2026-04-29 (restructure/maintainability branch, Phase 1)
+
+---
+
+## Table of Contents
+
+1. [part_catalog.json](#part_catalogjson)
+2. [vehicle_layouts.json](#vehicle_layoutsjson)
+3. [asset_manifest.json](#asset_manifestjson)
+4. [parts_library.json](#parts_libraryjson)
+5. [workbook_rules.json](#workbook_rulesjson)
+6. [app_settings.json](#app_settingsjson)
+7. [Common Conventions](#common-conventions)
+
+---
+
+## part_catalog.json
+
+Defines every known part type: how it is named, categorized, and rendered. This is the central rules engine.
+
+```
+{
+  "schema_version": 1,
+  "parts": [ <PartSpec>, ... ]
+}
+```
+
+### PartSpec Object
+
+```
+{
+  "part_id":                 <string, required, unique>,
+  "display_name":            <string, required>,
+  "category":                <string, required>,
+  "render_kind":             <string, required>,
+  "default_views":           <list[string], required>,
+
+  "aliases":                 <list[string], optional>,
+  "asset_key":               <string, optional — defaults to part_id>,
+  "is_fixture":              <bool, optional — default false>,
+  "diagram":                 <bool, optional — default true>,
+
+  "render_quantity_policy":  <string, optional>,
+  "quantity_rules":          <list[QuantityRule], optional>,
+  "co_part_rules":           <list[CoPartRule], optional>,
+  "model_remaps":            <dict[string, string], optional>,
+  "location_asset_rules":    <dict[string, string], optional>,
+
+  "accessory_of":            <string or list[string], optional>,
+  "size_per_view":           <dict[view, SizeSpec], optional>,
+  "group_shapes":            <bool, optional — default false>,
+  "default_location_key":    <string, optional>,
+  "default_color_profile":   <string, optional>,
+  "conditions":              <dict, optional — metadata only>
+}
+```
+
+#### category values
+| Value | Meaning |
+|---|---|
+| `"equipment"` | Physical equipment (bumpers, lights, etc.) |
+| `"warning_light"` | Warning/emergency light |
+| `"appearance_note"` | Non-rendered appearance annotation |
+
+#### render_kind values
+| Value | Rendering behavior |
+|---|---|
+| `"equipment"` | Renders a static equipment image |
+| `"light"` | Renders a light icon; filename constructed from color token + orientation |
+| `"bar"` | Renders a light bar image |
+| `"none"` | No icon placed on diagram |
+
+#### render_quantity_policy values
+| Value | Behavior |
+|---|---|
+| `"location_slots"` | slot_count from location definition; mismatch → warning |
+| `"single_per_line"` | Always 1 slot; qty > 1 → warning |
+| `"quantity_as_slots"` | slot_count = max(1, ordered_quantity); sets group_shapes |
+
+### QuantityRule Object
+```
+{
+  "qty":          <int, required — exact ordered_quantity to match>,
+  "pattern":      <string, optional>,
+  "slot_count":   <int, optional>,
+  "slot_indices": <list[int], optional — 1-based; selects subset of position array>
+}
+```
+
+### CoPartRule Object
+```
+{
+  "co_part":    <string, required — display name or part_number of the other part>,
+  "if_present": <CoPartBranch, optional>,
+  "if_absent":  <CoPartBranch, optional>
+}
+```
+
+### CoPartBranch Object
+```
+{
+  "skip":      <bool, optional — if true, suppress this part entirely>,
+  "asset_key": <string, optional — use different equipment image>,
+  "pattern":   <string, optional — override layout pattern>,
+  "side":      <string, optional — force slot role ("driver"|"passenger"|"center")>
+}
+```
+
+### SizeSpec Object
+```
+{ "w": <float, inches>, "h": <float, inches> }
+```
+
+---
+
+## vehicle_layouts.json
+
+Defines, per vehicle type, the fixture coordinates and named location points used to place parts on diagram slides.
+
+```
+{
+  "schema_version": 1,
+  "vehicles": {
+    "<VehicleType>": <VehicleLayout>,
+    ...
+  }
+}
+```
+
+`<VehicleType>` is an uppercase string matching the value returned by `input_reader.detect_vehicle_type()` (e.g., `"PIU"`, `"TAHOE"`).
+
+### VehicleLayout Object
+```
+{
+  "fixtures": {
+    "<part_id>": {
+      "<view>": <LocationPoint>,
+      ...
+    },
+    ...
+  },
+  "views": {
+    "<view>": {
+      "locations": {
+        "<LOCATION_KEY>": <LocationPoint>,
+        ...
+      }
+    },
+    ...
+  }
+}
+```
+
+`<view>` is one of `"front"`, `"side"`, `"top"`, `"rear"`.
+
+`<LOCATION_KEY>` must be UPPERCASE (enforced by validation on save).
+
+### LocationPoint Object
+```
+{
+  "x":               <float, required — normalized 0-1 (anchor left edge of icon array)>,
+  "y":               <float, required — normalized 0-1 (anchor top edge of icon array)>,
+  "units":           <string, required — "relative_image">,
+  "orientation":     <string, required — "h" | "v" | "bar">,
+  "slot_count":      <int, optional — number of positions; default 1>,
+  "pattern":         <string, optional — "single" | "horizontal" | "vertical" | "mirror">,
+  "h_spacing":       <float, optional — gap between icons>,
+  "v_spacing":       <float, optional — gap between icons>,
+  "h_spacing_units": <string, optional — "relative_image" | "icon_width">,
+  "rotation":        <float, optional — degrees clockwise>,
+  "flip_h":          <bool, optional>,
+  "flip_v":          <bool, optional>,
+  "flip_mirrored_h": <bool, optional — flip_h only on mirrored right-side slots>,
+  "behind_vehicle":  <bool, optional — render under vehicle image>,
+  "side_roles": {
+    "negative_x":        <string — role for left-side slots>,
+    "positive_x":        <string — role for right-side slots>,
+    "default_slot_role": <string — fallback role>
+  }
+}
+```
+
+#### Coordinate System
+- `x=0.0` is the left edge of the vehicle image; `x=1.0` is the right edge.
+- `y=0.0` is the top edge; `y=1.0` is the bottom edge.
+- The anchor point `(x, y)` is the top-left of the icon or icon array.
+
+#### Orientation Values
+| Value | Meaning |
+|---|---|
+| `"h"` | Horizontal (standard light icon) |
+| `"v"` | Vertical |
+| `"bar"` | Light bar (uses bar-specific asset) |
+
+---
+
+## asset_manifest.json
+
+Maps asset keys to image files and defines color profile rules for light icons.
+
+```
+{
+  "schema_version": 1,
+
+  "light_icon_rule": <LightIconRule>,
+  "light_color_tokens": [ <string>, ... ],
+
+  "equipment_assets": {
+    "<asset_key>": {
+      "<view>": <string — relative path from workspace_assets_dir>,
+      ...
+    },
+    ...
+  },
+
+  "placeholder_assets": {
+    "<view>": <string — relative path>,
+    ...
+  },
+
+  "color_profiles": {
+    "<profile_id>": <ColorProfile>,
+    ...
+  },
+
+  "legacy_color_aliases": {
+    "<raw_color_string>": <string — color token>,
+    ...
+  },
+
+  "part_number_size_rules": {
+    "<substring_or_exact>": <string — size class prefix, e.g. "sm" | "lg">,
+    ...
+  }
+}
+```
+
+### LightIconRule Object
+```
+{
+  "subfolder":        <string — relative path from workspace_assets_dir>,
+  "filename_pattern": <string — template with {color_token} and {orientation}>
+}
+```
+
+Example: `"sm_{color_token}_{orientation}.png"` → `"sm_red-blue_h.png"`
+
+### ColorProfile Object
+```
+{
+  "label": <string — human-readable label>,
+  "slot_tokens": {
+    "driver":    <string — color token>,
+    "passenger": <string — color token>,
+    "center":    <string — color token>,
+    "default":   <string — color token; fallback for any unmatched role>
+  }
+}
+```
+
+#### Built-in Color Profiles
+| profile_id | Label |
+|---|---|
+| `"legacy_uniform"` | Single uniform color (token comes from `raw_color`) |
+| `"duo_r_b"` | Red/Blue duo |
+| `"std_duo_rb_w"` | Std Duo RB/W |
+| `"duo_ra_ba"` | Red/Amber + Blue/Amber duo |
+| `"specify_palette"` | Specify per-slot (user fills driver/passenger/center fields) |
+| `"custom"` | Per-slot custom (user fills driver/passenger/center fields) |
+| `"none"` | No color mapping; raw_color passed through |
+
+### light_color_tokens
+An exhaustive list of valid color token strings used in light icon filenames. If `raw_color` matches one of these tokens directly, it is treated as `legacy_uniform`.
+
+### legacy_color_aliases
+Maps non-standard color strings (as typed by users) to canonical color tokens. Example: `{"red blue": "red-blue"}`.
+
+### part_number_size_rules
+Maps part number substrings (or exact values) to size class prefixes used in light icon filenames. Lookup tries exact match first, then substring (uppercase). Default size class is `"sm"`.
+
+---
+
+## parts_library.json
+
+Manufacturer and model data for dropdowns in the Excel template.
+
+```
+{
+  "schema_version": 1,
+  "parts": [ <LibraryEntry>, ... ]
+}
+```
+
+### LibraryEntry Object
+```
+{
+  "display_name":      <string — matches part catalog display_name or alias>,
+  "manufacturer":      <string>,
+  "model_number":      <string>,
+  "compatible_types":  <list[string] — display names of compatible part types>,
+  "notes":             <string, optional>
+}
+```
+
+- `model_number` is indexed in `ConfigBundle.parts_lib_by_model` (uppercased).
+- `compatible_types` entries are canonicalized via `canonical_name()` during validation.
+- Library entries are merged into template dropdowns as fallbacks when `workbook_rules.part_rules` does not have a specific entry.
+
+---
+
+## workbook_rules.json
+
+Controls the structure of the Excel input template: which sections and rows appear, and what dropdown options are offered per part type.
+
+```
+{
+  "schema_version": 1,
+  "template_sections": [ <TemplateSection>, ... ],
+  "part_rules": {
+    "<display_name>": <PartRule>,
+    ...
+  }
+}
+```
+
+### TemplateSection Object
+```
+{
+  "section_name": <string — section header row label>,
+  "parts": [ <string — display_name >, ... ]
+}
+```
+
+Sections are written to the template in the order they appear in this list. An empty `template_sections` array causes template generation to fail.
+
+### PartRule Object
+```
+{
+  "_row":          <int, metadata only — not used by code>,
+  "manufacturer":  <list[string]>,
+  "models":        <list[string]>,
+  "locations":     <list[string]>,
+  "colors":        <list[string]>,
+  "quantities":    <list[string | int]>,
+  "lens":          <list[string]>
+}
+```
+
+`part_rules` entries are authoritative. `parts_library` entries are merged as fallback for manufacturers and models. Dropdown option lists are deduplicated after merging.
+
+**Inline dropdown limit**: If the combined string of options exceeds 240 characters, the list is silently truncated. Parts with many variants may lose some options.
+
+---
+
+## app_settings.json
+
+Application-level settings not related to part or vehicle config.
+
+```
+{
+  "schema_version": 1,
+  "template_save_dir": <string — absolute path or "" for default>
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `template_save_dir` | `""` | Directory where generated Excel templates are saved. Empty = workspace/input/ |
+
+---
+
+## Common Conventions
+
+### schema_version
+All config files have a `schema_version` integer. Currently defaults to `1`. Used for future migration support.
+
+### Location Key Casing
+All location keys in `vehicle_layouts.json` must be UPPERCASE. Validation enforces this on save. User input from the Excel workbook is uppercased before lookup.
+
+### canonical_name() and Alias Normalization
+- `display_name` values in `part_catalog.json` are passed through `canonical_name()` during validation, which applies a small set of hard-coded typo corrections.
+- The `display_name` is automatically added to the `aliases` list if not already present.
+
+### Part Lookup
+Parts are looked up by `display_name.upper()` or any alias (uppercased). If a part cannot be found, it is skipped with a warning rather than crashing the pipeline.
+
+### Asset Paths
+All asset paths in the manifest are stored relative to `workspace_assets_dir`. They must not contain `..` segments (asset upload enforces `Path(filename).name`).
+
+### Saving & Validation
+All saves go through `config_validation.py` before writing. Invalid data is rejected with an error response. Saves write with 2-space indentation and a trailing newline.

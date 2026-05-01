@@ -1,0 +1,40 @@
+// ═══════════════════════════════════════════════════════
+// CANVAS UTILITIES (shared by placements + fixtures)
+// ═══════════════════════════════════════════════════════
+
+// ── multi-dot positioning ────────────────────────────────────────
+function getSlotPositions(loc, box){
+  const [bl,bt,bw,bh]=box;
+  const baseCx = bl + loc.x * bw;
+  const baseCy = bt + loc.y * bh;
+  const pattern = loc.pattern || "single";
+  const slotCount = loc.slot_count || 1;
+
+  if(slotCount<=1 || pattern==="single") return [[baseCx,baseCy]];
+
+  // use saved h_spacing (or legacy spacing) if set, otherwise ~6% of image width per slot gap
+  const rawSpacing = loc.h_spacing ?? loc.spacing;
+  const spacing = (rawSpacing && rawSpacing > 0) ? bw * rawSpacing : bw * 0.06;
+
+  if(pattern==="horizontal"){
+    const totalW = spacing*(slotCount-1);
+    const startX = baseCx - totalW/2;
+    return Array.from({length:slotCount}, (_,i) => [startX+i*spacing, baseCy]);
+  }
+
+  if(pattern==="mirror"){
+    const centerX = bl + 0.5*bw;
+    const offsetX = Math.abs(baseCx - centerX);
+    if(slotCount===2) return [[centerX-offsetX,baseCy],[centerX+offsetX,baseCy]];
+    const half=Math.floor(slotCount/2);
+    const positions=[];
+    for(let i=0;i<half;i++){
+      const off=offsetX+i*spacing;
+      positions.push([centerX-off,baseCy]);
+      positions.push([centerX+off,baseCy]);
+    }
+    return positions;
+  }
+
+  return [[baseCx,baseCy]];
+}

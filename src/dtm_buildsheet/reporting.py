@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from .models import BuildPlan, PlannedPart
+from .domain import BuildPlan, PlannedPart
 
 
 def _basename(path_str: str) -> str:

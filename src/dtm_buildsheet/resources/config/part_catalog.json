@@ -99,7 +99,10 @@
         {
           "qty": 2,
           "slot_count": 4,
-          "slot_indices": [0, 3]
+          "slot_indices": [
+            0,
+            3
+          ]
         }
       ],
       "default_color_profile": "std_duo_rb_w",
@@ -147,7 +150,10 @@
         {
           "qty": 2,
           "slot_count": 4,
-          "slot_indices": [0, 3]
+          "slot_indices": [
+            0,
+            3
+          ]
         }
       ],
       "default_color_profile": "std_duo_rb_w",
@@ -2046,7 +2052,13 @@
       },
       "aliases": [
         "Arges"
-      ]
+      ],
+      "size_per_view": {
+        "front": {
+          "w": 0.39,
+          "h": 0.7
+        }
+      }
     },
     {
       "part_id": "arges_controller",

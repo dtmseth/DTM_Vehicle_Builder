@@ -6,6 +6,7 @@ __pycache__/
 
 workspace/output/
 workspace/input/
+workspace/drafts/
 workspace/build_sheet_template_v2.xlsx
 
 dist/

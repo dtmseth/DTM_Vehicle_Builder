@@ -50,6 +50,7 @@ WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"
 
 WORKSPACE_INPUT_DIR  = WORKSPACE_DIR / "input"
 WORKSPACE_OUTPUT_DIR = WORKSPACE_DIR / "output"
+WORKSPACE_DRAFTS_DIR = WORKSPACE_DIR / "drafts"
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class AppPaths:
     workspace_assets_dir: Path = WORKSPACE_ASSETS_DIR
     workspace_input_dir: Path = WORKSPACE_INPUT_DIR
     workspace_output_dir: Path = WORKSPACE_OUTPUT_DIR
+    workspace_drafts_dir: Path = WORKSPACE_DRAFTS_DIR
     samples_dir: Path = SAMPLES_DIR
 
 
@@ -74,7 +76,7 @@ def _md5(path: Path) -> str:
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
-              paths.workspace_input_dir, paths.workspace_output_dir):
+              paths.workspace_input_dir, paths.workspace_output_dir, paths.workspace_drafts_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     # In dev mode workspace_config_dir IS DEFAULT_CONFIG_DIR — no copying needed.

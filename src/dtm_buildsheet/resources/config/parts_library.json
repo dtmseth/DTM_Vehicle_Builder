@@ -2170,19 +2170,6 @@
       }
     },
     {
-      "part_id": "hdx",
-      "display_name": "HDX",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "HDX",
-      "compatible_types": [
-        "Push Bumper"
-      ],
-      "images": {
-        "front": "lights/part_hdx_front.png"
-      }
-    },
-    {
       "part_id": "pb10",
       "display_name": "PB10",
       "category": "PUSH BUMPER / FRONT STRUCTURE",
@@ -2204,6 +2191,19 @@
           "w": 1.95,
           "h": 1.6
         }
+      }
+    },
+    {
+      "part_id": "hdx",
+      "display_name": "HDX",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "",
+      "model_number": "HDX",
+      "compatible_types": [
+        "Push Bumper"
+      ],
+      "images": {
+        "front": "lights/part_hdx_front.png"
       }
     }
   ],

@@ -886,6 +886,29 @@ def get_icon_size(part, icon_type, orient, view, icon_path_str="", paths: AppPat
     return (0.244, 0.085) if orient == "h" else (0.085, 0.244)
 
 
+def icon_size_in_inches(
+    render_kind: str,
+    part_name: str,
+    size_class: str,
+    orientation: str,
+    asset_path: str,
+    view: str,
+    size_override: "dict | None" = None,
+    paths: "AppPaths | None" = None,
+) -> "tuple[float, float]":
+    """Single source of truth for icon sizing — used by both PPTX renderer and preview service.
+
+    Returns (width_inches, height_inches).  size_override, if present, takes
+    precedence over all catalog/manifest lookup.
+    """
+    if size_override and "w" in size_override and "h" in size_override:
+        w, h = float(size_override["w"]), float(size_override["h"])
+        return (h, w) if orientation == "v" else (w, h)
+    from types import SimpleNamespace
+    part = SimpleNamespace(name=part_name, size_class=size_class)
+    return get_icon_size(part, render_kind, orientation, view, asset_path, paths=paths)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Generic shape helpers
 # ─────────────────────────────────────────────────────────────────────────────

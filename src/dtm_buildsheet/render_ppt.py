@@ -9,16 +9,17 @@ from pptx import Presentation
 from pptx.oxml.ns import qn
 from pptx.util import Inches
 
+from .domain.geometry import slot_relative_positions
 from .paths import AppPaths, ensure_workspace
 from .ppt_helpers import (
-    VIEWS,
+    VIEWS as _LEGACY_VIEWS,
     _is_reused,
     _source_label,
     add_parts_manifest_slides,
     add_slide_footer_bar,
     fill_notes,
     fill_overview,
-    get_icon_size,
+    icon_size_in_inches,
     place_legend,
     place_legend_grid,
     place_logo,
@@ -102,39 +103,16 @@ def _position_from_anchor(anchor: dict, img_box):
 
 def _slot_positions(pattern: str, slot_count: int, base_cx, base_cy,
                     img_box, h_spacing, v_spacing=None, slot_roles=None):
-    left, _, width, _ = img_box
-    if slot_count <= 1 or pattern == "single":
-        if pattern == "mirror" and slot_roles:
-            center_x = left + width // 2
-            offset_x = abs(base_cx - center_x)
-            role     = slot_roles[0]
-            if role in ("passenger", "negative_x"):
-                return [(center_x - offset_x, base_cy)]
-            if role in ("driver", "positive_x"):
-                return [(center_x + offset_x, base_cy)]
-        return [(base_cx, base_cy)]
-    if pattern == "horizontal":
-        total_w = h_spacing * (slot_count - 1)
-        start_x = base_cx - total_w // 2
-        return [(start_x + int(i * h_spacing), base_cy) for i in range(slot_count)]
-    if pattern == "vertical":
-        sv      = v_spacing or h_spacing
-        total_h = sv * (slot_count - 1)
-        start_y = base_cy - total_h // 2
-        return [(base_cx, start_y + int(i * sv)) for i in range(slot_count)]
-    if pattern == "mirror":
-        center_x = left + width // 2
-        offset_x = abs(base_cx - center_x)
-        if slot_count == 2:
-            return [(center_x - offset_x, base_cy), (center_x + offset_x, base_cy)]
-        half      = slot_count // 2
-        positions = []
-        for i in range(half):
-            offset = offset_x + int(i * h_spacing)
-            positions.append((center_x - offset, base_cy))
-            positions.append((center_x + offset, base_cy))
-        return positions
-    return [(base_cx, base_cy)]
+    """EMU-space adapter over domain geometry slot_relative_positions."""
+    left, top, width, height = img_box
+    anchor_x = (base_cx - left) / width
+    anchor_y = (base_cy - top) / height
+    h_rel = h_spacing / width
+    v_rel = (v_spacing / height) if v_spacing is not None else None
+    norm = slot_relative_positions(
+        pattern, slot_count, anchor_x, anchor_y, h_rel, v_rel, slot_roles
+    )
+    return [(left + int(nx * width), top + int(ny * height)) for nx, ny in norm]
 
 
 def _apply_shape_transforms(shape, rotation: float, flip_h: bool, flip_v: bool) -> None:
@@ -205,14 +183,18 @@ def _group_shapes(slide, shapes: list) -> None:
 
 def _instance_icon_size(placement, part_size, instance, view: str,
                         paths: AppPaths) -> tuple[float, float]:
-    if placement.size_override and "w" in placement.size_override and "h" in placement.size_override:
-        w = float(placement.size_override["w"])
-        h = float(placement.size_override["h"])
-        if instance.orientation == "v":
-            w, h = h, w
-        return w, h
-    return get_icon_size(part_size, placement.render_kind, instance.orientation,
-                         view, instance.asset_path, paths=paths)
+    w, h = icon_size_in_inches(
+        render_kind=placement.render_kind,
+        part_name=part_size.name,
+        size_class=part_size.size_class,
+        orientation=instance.orientation,
+        asset_path=instance.asset_path,
+        view=view,
+        size_override=placement.size_override,
+        paths=paths,
+    )
+    scale = getattr(placement, "size_scale", 1.0)
+    return w * scale, h * scale
 
 
 def _build_accessory_map(plan) -> dict[str, list[str]]:
@@ -236,17 +218,48 @@ def _move_slides_to_position(prs, start_position: int, count: int) -> None:
         sldIdLst.insert(start_position + idx, elem)
 
 
+def _load_vehicle_view_config(vehicle_type: str, paths) -> tuple[list[str], dict]:
+    """Return (external_view_order, {view_name: view_config}) from vehicle_layouts config.
+
+    Falls back to the legacy hardcoded order if the config is unavailable.
+    """
+    import json
+    try:
+        layouts_path = paths.workspace_config_dir / "vehicle_layouts.json"
+        layouts = json.loads(layouts_path.read_text("utf-8"))
+        vehicle = layouts.get("vehicles", {}).get(vehicle_type, {})
+    except Exception:
+        vehicle = {}
+
+    view_map   = vehicle.get("views", {})
+    view_order = vehicle.get("view_order", list(_LEGACY_VIEWS))
+    external   = [v for v in view_order
+                  if view_map.get(v, {}).get("category", "external") == "external"]
+    return (external or list(_LEGACY_VIEWS)), view_map
+
+
+# The PPTX template has exactly this many view slides (indices 1..N, then notes at N+1)
+_TEMPLATE_VIEW_SLOTS = 4
+
+
 def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     active_paths = paths or ensure_workspace()
     template     = active_paths.templates_dir / "build_sheet_template.pptx"
     project_id   = plan.project.get("ProjectID", "UNKNOWN")
     out_path     = active_paths.workspace_output_dir / f"VehicleBuilder_{project_id}_v7.pptx"
 
+    vehicle_type = plan.project.get("VehicleType", "PIU")
+    external_views, view_map = _load_vehicle_view_config(vehicle_type, active_paths)
+
     shutil.copyfile(template, out_path)
     prs      = Presentation(out_path)
     overview = prs.slides[0]
-    view_slides  = {view: prs.slides[i + 1] for i, view in enumerate(VIEWS)}
-    notes_slide  = prs.slides[5]
+    # Map the first N external views to the template's view slide slots
+    view_slides = {
+        v: prs.slides[i + 1]
+        for i, v in enumerate(external_views[:_TEMPLATE_VIEW_SLOTS])
+    }
+    notes_slide = prs.slides[_TEMPLATE_VIEW_SLOTS + 1]
 
     # ── Shared project metadata ───────────────────────────────────────────────
     project_shim = _project_shim(plan)
@@ -270,23 +283,28 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     # ── View slides ───────────────────────────────────────────────────────────
     accessory_map = _build_accessory_map(plan)
 
-    for view in VIEWS:
-        slide = view_slides[view]
+    for view in external_views:
+        slide = view_slides.get(view)
+        if slide is None:
+            continue  # more external views than template slots; skip extras
+
+        view_cfg      = view_map.get(view, {})
+        legend_layout = view_cfg.get("legend_layout", "standard")
+        logo_position = view_cfg.get("logo_position", "top-right")
+        view_label    = view_cfg.get("label", view.upper())
 
         update_slide_header_footer(
             slide,
-            title    = f"{view.upper()} VIEW — {agency}",
+            title    = f"{view_label.upper()} VIEW — {agency}",
             subtitle = "  |  ".join(filter(None, [veh_line, unit_str])),
         )
         add_slide_footer_bar(slide, footer)
-        if view in ("side", "top"):
+        if logo_position == "bottom":
             place_logo_bottom(slide, active_paths)
         else:
             place_logo(slide, active_paths)
 
-        vehicle_pic_shape, img_box = place_vehicle_image(
-            slide, plan.project.get("VehicleType", "PIU"), view
-        )
+        vehicle_pic_shape, img_box = place_vehicle_image(slide, vehicle_type, view)
         vehicle_pic_element = vehicle_pic_shape._element if vehicle_pic_shape else None
         if img_box is None:
             place_legend(slide, [], [], accessory_map)
@@ -391,7 +409,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     )
                     inst_rot = (
                         (360 - placement.rotation) % 360
-                        if is_right and placement.rotation else placement.rotation
+                        if is_right and placement.rotation != 0 else placement.rotation
                     )
                     _apply_shape_transforms(pic, inst_rot, inst_flip_h, placement.flip_v)
 
@@ -446,7 +464,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
             if consumed:
                 palette_offset += consumed
 
-        if view in ("side", "top"):
+        if legend_layout == "grid":
             place_legend_grid(slide, placed_legend, unplaced_legend, accessory_map, view=view)
         else:
             place_legend(slide, placed_legend, unplaced_legend, accessory_map, view=view)

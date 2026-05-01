@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DTM Vehicle Builder</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-brand">
+    <div class="logo-badge">DTM</div>
+    <div><h1>Build Sheet Generator</h1><p>v7 · DTM Technologies</p></div>
+  </div>
+  <div class="header-tabs">
+    <button class="htab active" data-tab="generate">⚡ Generate</button>
+    <button class="htab" data-tab="settings">⚙️ Settings</button>
+  </div>
+</div>
+
+<!-- ═══════════ GENERATE TAB ═══════════ -->
+<div id="tab-generate" class="main-content">
+  <div class="card">
+    <div class="card-title">Input Workbook</div>
+    <div id="drop-zone">
+      <input type="file" accept=".xlsx" id="file-input" />
+      <div class="dz-icon">📂</div>
+      <h3>Drop your Build Sheet here</h3>
+      <p>or click to browse — .xlsx files</p>
+    </div>
+    <div id="file-loaded">
+      <div style="font-size:28px">📊</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="fname"></div>
+        <div style="font-size:12px;color:var(--muted)" id="fsize"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-clear">✕ Change</button>
+    </div>
+  </div>
+  <div class="card" id="card-proj" hidden>
+    <div class="card-title">Project Details</div>
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+  <div class="card" id="card-parts" hidden>
+    <div class="card-title">Parts (<span id="parts-count">0</span>)</div>
+    <table class="parts-tbl">
+      <thead><tr><th>Part</th><th>Location</th><th>Color</th><th>Qty</th><th>Incl.</th></tr></thead>
+      <tbody id="parts-tbody"></tbody>
+    </table>
+  </div>
+  <!-- ── PREVIEW CARD ── -->
+  <div class="card" id="card-preview" hidden>
+    <div class="card-title">
+      Build Preview
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
+        <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Drag icons to reposition. Click to open the inspector. Changes are pending until you click Apply.</p>
+
+    <!-- toolbar -->
+    <div class="pv-toolbar" id="pv-toolbar">
+      <button class="btn btn-primary btn-sm" id="btn-pv-apply" disabled>
+        Apply Changes <span id="pv-pending-count" class="pv-badge" style="display:none"></span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btn-pv-reset-view">Reset This View</button>
+      <button class="btn btn-secondary btn-sm" id="btn-pv-reset-all">Reset All Views</button>
+    </div>
+
+    <!-- view tabs -->
+    <div class="pv-view-tab-bar" id="pv-view-tabs"></div>
+
+    <!-- canvas container -->
+    <div class="pv-canvas-outer">
+      <div id="pv-canvas-wrap" class="pv-canvas-wrap"></div>
+
+      <!-- override inspector — floats over canvas -->
+      <div id="pv-inspector" class="pv-inspector" hidden>
+        <div class="pv-insp-header">
+          <span id="pv-insp-title" class="pv-insp-title"></span>
+          <button id="pv-insp-close" class="pv-insp-close" title="Close">✕</button>
+        </div>
+
+        <label class="pv-insp-row pv-insp-check">
+          <input type="checkbox" id="pv-insp-visible" checked>
+          <span>Visible</span>
+        </label>
+
+        <div class="pv-insp-row">
+          <span class="pv-insp-lbl">Rotation °</span>
+          <input type="range"  id="pv-insp-rotation" min="-180" max="180" step="1" value="0" class="pv-insp-range">
+          <input type="number" id="pv-insp-rot-num"  min="-180" max="180" step="1" value="0" class="pv-insp-num">
+        </div>
+
+        <div class="pv-insp-row pv-insp-checks">
+          <label><input type="checkbox" id="pv-insp-flip-h"> Flip H</label>
+          <label><input type="checkbox" id="pv-insp-flip-v"> Flip V</label>
+        </div>
+
+        <div class="pv-insp-row">
+          <span class="pv-insp-lbl">Offset X</span>
+          <input type="range"  id="pv-insp-dx"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
+          <input type="number" id="pv-insp-dx-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
+        </div>
+
+        <div class="pv-insp-row">
+          <span class="pv-insp-lbl">Offset Y</span>
+          <input type="range"  id="pv-insp-dy"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
+          <input type="number" id="pv-insp-dy-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
+        </div>
+
+        <div class="pv-insp-row">
+          <span class="pv-insp-lbl">Size ×</span>
+          <input type="range"  id="pv-insp-scale"     min="0.25" max="4" step="0.05" value="1" class="pv-insp-range">
+          <input type="number" id="pv-insp-scale-num" min="0.25" max="4" step="0.05" value="1" class="pv-insp-num">
+        </div>
+
+        <div class="pv-insp-actions">
+          <button class="btn btn-secondary btn-sm" id="pv-insp-reset-part">↩ Reset This Part</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-primary btn-block" id="btn-generate" disabled>
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-label">⚡ Generate Build Sheet</span>
+    </button>
+  </div>
+  <div class="card" id="card-results" hidden>
+    <div class="card-title">Results</div>
+    <div id="result-banner" class="result-banner success">
+      <span id="banner-icon" style="font-size:22px">✅</span>
+      <div style="flex:1">
+        <div id="banner-msg" style="font-weight:700"></div>
+        <div id="banner-sub" style="font-weight:400;font-size:12px;opacity:.75;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="stat-parts">—</div><div class="lbl">Parts</div></div>
+      <div class="stat-box"><div class="num" id="stat-pl">—</div><div class="lbl">Placements</div></div>
+      <div class="stat-box"><div class="num" id="stat-warn" style="color:var(--yellow)">—</div><div class="lbl">Warnings</div></div>
+    </div>
+  </div>
+  <div class="card" id="card-warns" hidden>
+    <div class="card-title">Warnings</div>
+    <ul class="warn-list" id="warn-list"></ul>
+  </div>
+  <div class="card" id="card-output" hidden>
+    <div class="card-title">Output File</div>
+    <div class="output-row">
+      <span style="font-size:24px">📑</span>
+      <div style="flex:1;overflow:hidden">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="out-name"></div>
+        <div style="font-size:11px;color:var(--muted);word-break:break-all" id="out-path"></div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" id="btn-open">Open in PowerPoint ↗</button>
+    <button class="btn btn-block" id="btn-export-pdf" style="margin-top:8px;background:var(--navy);color:#fff">
+      <span id="pdf-spinner" style="display:none;margin-right:4px">⏳</span>
+      <span id="pdf-label">Export PDF</span>
+    </button>
+    <button class="btn btn-gold btn-block" id="btn-open-pdf" style="display:none;margin-top:4px">Open PDF ↗</button>
+    <div id="pdf-status" style="display:none;font-size:13px;margin-top:6px;text-align:center"></div>
+  </div>
+  <div class="card" id="card-log" hidden>
+    <div class="card-title">Log</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+  <div id="reset-row" hidden>
+    <button class="btn btn-secondary btn-block" id="btn-reset">↩ Start Over</button>
+  </div>
+</div>
+
+
+<!-- ═══════════ SETTINGS TAB ═══════════ -->
+<div id="tab-settings" class="main-content" hidden>
+  <div class="stab-bar">
+    <button class="stab active" data-stab="placements">📍 Placements</button>
+    <button class="stab" data-stab="fixtures">🏗 Fixtures</button>
+    <button class="stab" data-stab="sizes">📐 Size Rules</button>
+    <button class="stab" data-stab="addpart">➕ Add Part Type</button>
+    <button class="stab" data-stab="catalog">📋 Part Types</button>
+    <button class="stab" data-stab="parts">🔩 Parts Library</button>
+    <button class="stab" data-stab="vehicles">🚗 Vehicles</button>
+    <button class="stab" data-stab="tools">🔧 Tools</button>
+  </div>
+
+  <!-- ── PLACEMENTS ── -->
+  <div id="stab-placements">
+    <div class="card">
+      <div class="card-title">
+        Vehicle Layout — Placements
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="unsaved-dot" id="placements-dirty-dot"></span>
+          <button class="btn btn-primary btn-sm" id="btn-save-layouts">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- vehicle + view selectors -->
+      <div class="placements-header">
+        <div class="vehicle-select-wrap">
+          <label>Vehicle</label>
+          <select id="vehicle-selector"></select>
+        </div>
+        <div class="view-pill-bar" id="view-pills">
+          <button class="view-pill active" data-view="front">Front</button>
+          <button class="view-pill" data-view="side">Side</button>
+          <button class="view-pill" data-view="top">Top</button>
+          <button class="view-pill" data-view="rear">Rear</button>
+        </div>
+      </div>
+
+      <!-- LARGE CANVAS – full width above the list -->
+      <div class="canvas-wrap">
+        <canvas id="vehicle-canvas" width="700" height="460"></canvas>
+      </div>
+      <div class="canvas-hint">Click on the diagram to move the selected location (gold dot) · All other locations shown in navy</div>
+
+      <!-- Two-column layout below canvas -->
+      <div class="placement-cols" style="margin-top:14px">
+        <!-- Left: location list -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Locations</div>
+          <div class="location-list" id="location-list"></div>
+          <div class="loc-list-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="btn-add-location">+ Add Location</button>
+          </div>
+        </div>
+        <!-- Right: edit panel -->
+        <div>
+          <div id="loc-edit-panel" hidden>
+            <div class="location-edit-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="font-size:13px;font-weight:700;color:var(--navy)" id="loc-edit-title"></div>
+                <button class="btn btn-danger btn-sm" id="btn-delete-location">🗑 Delete</button>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Location Name</label>
+                  <input id="loc-name-input" type="text" />
+                </div>
+              </div>
+              <div class="coord-row">
+                <label>X</label>
+                <input type="range" id="loc-x-range" min="0" max="1" step="0.005" />
+                <input type="number" id="loc-x-num" min="0" max="1" step="0.005" />
+              </div>
+              <div class="coord-row">
+                <label>Y</label>
+                <input type="range" id="loc-y-range" min="0" max="1" step="0.005" />
+                <input type="number" id="loc-y-num" min="0" max="1" step="0.005" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Orientation</label>
+                  <select id="loc-orient">
+                    <option value="h">Horizontal (h)</option>
+                    <option value="v">Vertical (v)</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Pattern</label>
+                  <select id="loc-pattern">
+                    <option value="single">Single</option>
+                    <option value="mirror">Mirror</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </div>
+                <div class="form-group" style="max-width:80px">
+                  <label>Slots</label>
+                  <input type="number" id="loc-slots" min="1" max="8" />
+                </div>
+              </div>
+              <!-- H-Spacing row — only relevant for horizontal / mirror multi-slot -->
+              <div id="loc-spacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  H Spacing
+                  <span style="font-weight:400;text-transform:none;font-size:10px">(relative to image width — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">H</label>
+                  <input type="range" id="loc-spacing-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="loc-spacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <!-- V-Spacing row — only relevant for vertical / grid patterns -->
+              <div id="loc-vspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  V Spacing
+                  <span style="font-weight:400;text-transform:none;font-size:10px">(relative to image height — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">V</label>
+                  <input type="range" id="loc-vspacing-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="loc-vspacing-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <!-- Rotation + flip flags -->
+              <div style="margin-top:10px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Transforms</div>
+                <div class="form-row" style="align-items:flex-end;gap:8px">
+                  <div class="form-group" style="flex:1">
+                    <label>Rotation (°)</label>
+                    <input type="number" id="loc-rotation" min="-360" max="360" step="1" value="0" style="width:100%" />
+                  </div>
+                  <div class="form-group" style="flex:1">
+                    <label>Quick-set</label>
+                    <select id="loc-rotation-preset">
+                      <option value="">—</option>
+                      <option value="0">0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-h"> Flip H
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-v"> Flip V
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-flip-mirrored-h"> Flip Mirrored H
+                    <span style="color:var(--muted);font-size:10px">(passenger side)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="loc-behind-vehicle"> Behind Vehicle
+                  </label>
+                </div>
+              </div>
+              <!-- Part types that reference this location -->
+              <div id="loc-used-by-row" style="margin-top:12px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Used By</div>
+                <div id="loc-used-by-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                <div id="loc-used-by-add" style="display:flex;gap:6px;margin-top:8px;align-items:center">
+                  <select id="loc-used-by-select" style="flex:1;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:#fff"></select>
+                  <button class="btn btn-primary btn-sm" id="loc-used-by-btn-add">+ Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="loc-empty-hint" style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">
+            ← Click a location to edit
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FIXTURES ── -->
+  <div id="stab-fixtures" hidden>
+    <div class="card">
+      <div class="card-title">
+        Vehicle Fixtures — Structural Parts
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="unsaved-dot" id="fixtures-dirty-dot"></span>
+          <button class="btn btn-primary btn-sm" id="btn-save-fixtures">Save Changes</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Parts marked <strong>is_fixture</strong> (push bumper, light bars, etc.) are positioned here once per vehicle — no location dropdown needed in the build sheet.</p>
+
+      <div class="placements-header">
+        <div class="vehicle-select-wrap">
+          <label>Vehicle</label>
+          <select id="fixture-vehicle-selector"></select>
+        </div>
+        <div class="view-pill-bar" id="fixture-view-pills">
+          <button class="view-pill active" data-view="front">Front</button>
+          <button class="view-pill" data-view="side">Side</button>
+          <button class="view-pill" data-view="top">Top</button>
+          <button class="view-pill" data-view="rear">Rear</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="fixture-canvas" width="700" height="460"></canvas>
+      </div>
+      <div class="canvas-hint">Click on the diagram to move the selected fixture (gold dot) · Other fixtures shown in navy · Grey = no image configured for this part+view</div>
+
+      <div class="placement-cols" style="margin-top:14px">
+        <!-- Left: fixture list -->
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Fixture Parts</div>
+          <div class="location-list" id="fixture-list"></div>
+          <div class="loc-list-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" id="btn-add-fixture">+ Add Fixture</button>
+          </div>
+        </div>
+        <!-- Right: edit panel -->
+        <div>
+          <div id="fixture-edit-panel" hidden>
+            <div class="location-edit-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--navy)" id="fixture-edit-title"></div>
+                  <div style="font-size:11px;color:var(--muted)" id="fixture-edit-hint">No position saved for this view — values below will be created on save.</div>
+                </div>
+                <button class="btn btn-danger btn-sm" id="btn-delete-fixture">🗑 Delete</button>
+              </div>
+              <div class="coord-row">
+                <label>X</label>
+                <input type="range" id="fix-x-range" min="-0.1" max="1.1" step="0.005" />
+                <input type="number" id="fix-x-num" min="-0.1" max="1.1" step="0.005" />
+              </div>
+              <div class="coord-row">
+                <label>Y</label>
+                <input type="range" id="fix-y-range" min="-0.1" max="1.1" step="0.005" />
+                <input type="number" id="fix-y-num" min="-0.1" max="1.1" step="0.005" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Orientation</label>
+                  <select id="fix-orient">
+                    <option value="h">Horizontal (h)</option>
+                    <option value="v">Vertical (v)</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Pattern</label>
+                  <select id="fix-pattern">
+                    <option value="single">Single</option>
+                    <option value="mirror">Mirror</option>
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                  </select>
+                </div>
+                <div class="form-group" style="max-width:80px">
+                  <label>Slots</label>
+                  <input type="number" id="fix-slots" min="1" max="8" />
+                </div>
+              </div>
+              <div id="fix-hspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  H Spacing <span style="font-weight:400;text-transform:none;font-size:10px">(rel. image width — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">H</label>
+                  <input type="range" id="fix-hsp-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="fix-hsp-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <div id="fix-vspacing-row" hidden>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">
+                  V Spacing <span style="font-weight:400;text-transform:none;font-size:10px">(rel. image height — 0 = auto)</span>
+                </div>
+                <div class="coord-row">
+                  <label style="font-size:10px">V</label>
+                  <input type="range" id="fix-vsp-range" min="0" max="0.30" step="0.005" />
+                  <input type="number" id="fix-vsp-num" min="0" max="0.30" step="0.005" />
+                </div>
+              </div>
+              <div style="margin-top:10px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Transforms</div>
+                <div class="form-row" style="align-items:flex-end;gap:8px">
+                  <div class="form-group" style="flex:1">
+                    <label>Rotation (°)</label>
+                    <input type="number" id="fix-rotation" min="-360" max="360" step="1" value="0" style="width:100%" />
+                  </div>
+                  <div class="form-group" style="flex:1">
+                    <label>Quick-set</label>
+                    <select id="fix-rotation-preset">
+                      <option value="">—</option>
+                      <option value="0">0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-h"> Flip H
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-v"> Flip V
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-flip-mirrored-h"> Flip Mirrored H
+                    <span style="color:var(--muted);font-size:10px">(passenger side)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" id="fix-behind-vehicle"> Behind Vehicle
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="fixture-empty-hint" style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">
+            ← Click a fixture part to edit its position for this view
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SIZE RULES ── -->
+  <div id="stab-sizes" hidden>
+    <div class="card">
+      <div class="card-title">Size Class Definitions
+        <button class="btn btn-primary btn-sm" id="btn-save-sizes">Save Changes</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Named size profiles used by the light renderer — one set of dimensions per view. Click <strong>▼ Views</strong> to edit per-view W×H. Vertical-orientation sizes are swapped automatically.</p>
+      <table class="size-tbl">
+        <thead><tr><th style="width:12%">ID</th><th style="width:22%">Label</th><th style="width:18%">Views</th><th style="width:20%">Aspect Ratio</th><th style="width:12%">Front Preview</th><th style="width:10%"></th></tr></thead>
+        <tbody id="size-defs-tbody"></tbody>
+      </table>
+      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-def">+ Add Size Class</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Part Number → Size Class Rules
+        <span style="font-size:11px;font-weight:400;color:var(--muted)">first match wins</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Maps part number substrings (case-insensitive) to a size class ID.</p>
+      <table class="size-tbl">
+        <thead><tr><th style="width:42%">Part Number Contains</th><th style="width:28%">Size Class</th><th style="width:20%">Preview</th><th style="width:10%"></th></tr></thead>
+        <tbody id="size-rules-tbody"></tbody>
+      </table>
+      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-rule">+ Add Rule</button></div>
+    </div>
+  </div>
+
+  <!-- ── ADD PART ── -->
+  <div id="stab-addpart" hidden>
+    <div class="card">
+      <div class="card-title">Add New Part</div>
+      <div class="wizard-steps">
+        <div class="wstep active" data-step="1"><span class="wstep-num">1</span>Basic Info</div>
+        <div class="wstep" data-step="2"><span class="wstep-num">2</span>Diagram</div>
+        <div class="wstep" data-step="3"><span class="wstep-num">3</span>Images</div>
+        <div class="wstep" data-step="4"><span class="wstep-num">4</span>Review</div>
+      </div>
+      <!-- Step 1 -->
+      <div class="wizard-panel active" id="wstep-1">
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>Part Name <span style="color:var(--red)">*</span></label>
+            <input id="wp-display-name" type="text" placeholder="e.g. Forward Warning 1" />
+            <div class="field-hint">Must match the "Part" column in xlsx (case-insensitive)</div>
+          </div>
+          <div class="form-group">
+            <label>Part ID</label>
+            <input id="wp-part-id" type="text" placeholder="auto from name" />
+            <div class="field-hint">Short slug, no spaces</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="wp-category">
+              <option value="warning_light">Warning Light</option>
+              <option value="scene_light">Scene Light</option>
+              <option value="light_bar">Light Bar</option>
+              <option value="equipment">Equipment</option>
+              <option value="audio">Audio</option>
+              <option value="vehicle_system">Vehicle System</option>
+              <option value="equipment_note">Equipment (list only)</option>
+              <option value="appearance_note">Appearance (list only)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:2">
+            <label>Template Section <span style="color:var(--red)">*</span></label>
+            <select id="wp-template-section"></select>
+            <div class="field-hint">Which section this row appears in on the build sheet</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Render Kind</div>
+        <div class="rk-options">
+          <div class="rk-card selected" data-rk="light"><div class="rk-icon">💡</div><div class="rk-label">Light</div><div class="rk-desc">Color token icons</div></div>
+          <div class="rk-card" data-rk="equipment"><div class="rk-icon">🔩</div><div class="rk-label">Equipment</div><div class="rk-desc">Custom PNG per view</div></div>
+          <div class="rk-card" data-rk="bar"><div class="rk-icon">📏</div><div class="rk-label">Light Bar</div><div class="rk-desc">Wide bar asset</div></div>
+          <div class="rk-card" data-rk="none"><div class="rk-icon">📋</div><div class="rk-label">List Only</div><div class="rk-desc">No diagram icon</div></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+          <button class="btn btn-primary" id="wbtn-1-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="wizard-panel" id="wstep-2">
+        <div class="form-row" style="margin-bottom:14px;align-items:center">
+          <div style="font-size:14px;font-weight:600">Diagram Status: <span id="wp-diagram-status">Yes</span></div>
+        </div>
+        <div id="diagram-options-empty" hidden style="font-size:12px;color:var(--muted);margin-bottom:14px">List-only parts do not render on the vehicle diagram.</div>
+        <div id="diagram-options">
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Views</label>
+            <div class="view-checks" id="wp-views">
+              <label class="view-check-label checked" data-view="front"><input type="checkbox" value="front" checked />Front</label>
+              <label class="view-check-label" data-view="side"><input type="checkbox" value="side" />Side</label>
+              <label class="view-check-label" data-view="top"><input type="checkbox" value="top" />Top</label>
+              <label class="view-check-label" data-view="rear"><input type="checkbox" value="rear" />Rear</label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Default Location Key</label>
+              <select id="wp-location-key"><option value="">— none —</option></select>
+            </div>
+            <div class="form-group">
+              <label>Quantity Policy</label>
+              <select id="wp-qty-policy">
+                <option value="location_slots">Location slots</option>
+                <option value="single_per_line">Single per line</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" id="asset-key-row">
+            <div class="form-group">
+              <label>Asset Key</label>
+              <input id="wp-asset-key" type="text" placeholder="e.g. spotlight" />
+              <div class="field-hint">Slug used for image filenames</div>
+            </div>
+            <div class="form-group">
+              <label>Default Color Profile</label>
+              <select id="wp-color-profile">
+                <option value="std_duo_rb_w">Standard R/B (std_duo_rb_w)</option>
+                <option value="duo_r_b">Red and Blue Split</option>
+                <option value="single_red">Single Red</option>
+                <option value="single_blue">Single Blue</option>
+                <option value="single_white">Single White</option>
+                <option value="single_amber">Single Amber</option>
+                <option value="">None</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-2-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-2-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="wizard-panel" id="wstep-3">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px" id="step3-hint">Upload PNG images for each view. Any view can be skipped.</p>
+        <div class="upload-grid" id="upload-grid"></div>
+        <div id="step3-naming-hint" style="margin-top:12px;background:#f5f6fa;border-radius:7px;padding:10px 12px;font-size:11px;color:var(--muted);font-family:monospace"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-3-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-3-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 4 -->
+      <div class="wizard-panel" id="wstep-4">
+        <div id="review-grid"></div>
+        <div id="wizard-result" hidden style="margin-top:14px"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:18px">
+          <button class="btn btn-secondary" id="wbtn-4-back">← Back</button>
+          <button class="btn btn-primary" id="wbtn-4-save">✓ Create Part</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CATALOG (Part Types) ── -->
+  <div id="stab-catalog" hidden>
+    <div class="card">
+      <div class="card-title">Part Types
+        <button class="btn btn-secondary btn-sm" id="btn-reload-catalog">↺ Reload</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">These are the <em>slot types</em> in the build sheet (Forward Warning 1, Radar, etc.). To manage actual purchasable parts, use the <strong>Parts Library</strong> tab.</p>
+      <input class="catalog-search" id="catalog-search" type="text" placeholder="Search part types…" />
+      <div class="catalog-scroll">
+        <table class="catalog-tbl">
+          <thead><tr><th>Display Name</th><th>Category</th><th>Kind</th><th>Diagram</th><th>Views</th><th></th></tr></thead>
+          <tbody id="catalog-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTS LIBRARY ── -->
+  <div id="stab-parts" hidden>
+    <div class="card">
+      <div class="card-title">Parts Library
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" id="btn-reload-parts">↺ Reload</button>
+          <button class="btn btn-primary btn-sm" id="btn-add-part-lib">+ Add Part</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Actual purchasable parts. Each part links to one or more Part Types it can fill, has its own size rule and per-view images.</p>
+      <input class="catalog-search" id="lib-search" type="text" placeholder="Search by name, manufacturer, model…" />
+      <div class="catalog-scroll">
+        <table class="catalog-tbl" id="lib-tbl">
+          <thead><tr><th>Part / Manufacturer</th><th>Model #</th><th>Compatible Types</th><th>Size Rule</th><th>Images</th><th></th></tr></thead>
+          <tbody id="lib-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VEHICLES ── -->
+  <div id="stab-vehicles" hidden>
+    <div class="card">
+      <div class="card-title">Vehicle Types</div>
+      <div class="vehicle-cards" id="vehicle-cards"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Add New Vehicle Type</div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:220px">
+          <label>Vehicle Type ID <span style="color:var(--red)">*</span></label>
+          <input id="new-vehicle-id" type="text" placeholder="e.g. DURANGO" style="text-transform:uppercase" />
+          <div class="field-hint">Must match VehicleType detected from the xlsx (e.g. DURANGO, TAHOE)</div>
+        </div>
+        <div class="form-group" style="max-width:260px">
+          <label>Preset Layout</label>
+          <select id="vehicle-preset"></select>
+          <div class="field-hint">Optionally clone placements from an existing vehicle type</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px">View Images (PNG, optional — can add later)</div>
+      <div class="vehicle-img-upload-grid" id="vehicle-img-grid">
+        <!-- filled by JS for front/side/top/rear -->
+      </div>
+      <button class="btn btn-primary" id="btn-create-vehicle">+ Create Vehicle Type</button>
+    </div>
+  </div>
+
+  <!-- ── TOOLS ── -->
+  <div id="stab-tools" hidden>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+        The template is regenerated automatically after every config save.
+        Use this to manually rebuild it — for example, if the template file was deleted or you need to force a refresh.
+      </p>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Save To</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div id="tpl-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          <button class="btn btn-secondary btn-sm" id="btn-pick-save-dir">📁 Browse</button>
+          <button class="btn btn-secondary btn-sm" id="btn-clear-save-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btn-regen-template" style="width:100%">
+        <span class="spinner" id="spinner-tpl" style="display:none"></span>
+        <span id="tpl-label">🔄 Regenerate Workbook Template</span>
+      </button>
+      <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
+      <div id="tpl-last-updated" style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center"></div>
+    </div>
+  </div>
+</div><!-- end tab-settings -->
+
+
+<!-- ══ EDIT PART MODAL ══ -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Part <button class="modal-close" id="modal-close">✕</button></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Display Name</label><input id="m-display-name" type="text" />
+      </div>
+      <div class="form-group">
+        <label>Part ID</label><input id="m-part-id" type="text" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="m-category">
+          <option value="warning_light">Warning Light</option><option value="scene_light">Scene Light</option>
+          <option value="light_bar">Light Bar</option><option value="equipment">Equipment</option>
+          <option value="audio">Audio</option><option value="vehicle_system">Vehicle System</option>
+          <option value="equipment_note">Equipment (list only)</option><option value="appearance_note">Appearance (list only)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Render Kind</label>
+        <select id="m-render-kind" onchange="onModalRenderKindChange()">
+          <option value="light">light</option><option value="equipment">equipment</option>
+          <option value="bar">bar</option><option value="none">none</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Asset Key</label><input id="m-asset-key" type="text" placeholder="only for equipment/bar" />
+      </div>
+      <div class="form-group">
+        <label>Default Color Profile</label>
+        <select id="m-color-profile">
+          <option value="">none</option><option value="std_duo_rb_w">std_duo_rb_w</option>
+          <option value="duo_r_b">duo_r_b</option><option value="single_red">single_red</option>
+          <option value="single_blue">single_blue</option><option value="single_white">single_white</option>
+          <option value="single_amber">single_amber</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Diagram Status</label>
+        <div id="m-diagram-status" style="height:38px;border:1px solid var(--border);border-radius:8px;background:#f5f6fa;display:flex;align-items:center;padding:0 12px;font-weight:600;color:var(--navy)">Yes</div>
+      </div>
+      <div class="form-group">
+        <label>Qty Policy</label>
+        <select id="m-qty-policy">
+          <option value="location_slots">location_slots</option>
+          <option value="single_per_line">single_per_line</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Default Views (comma-separated)</label>
+      <input id="m-views" type="text" placeholder="front, side, top, rear" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Default Location Key</label>
+        <input id="m-location-key" type="text" placeholder="e.g. ROOF LIGHT BAR" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Aliases (one per line)</label>
+      <textarea id="m-aliases" placeholder="Alternate Part Name&#10;Another Name"></textarea>
+    </div>
+
+    <!-- Accessory / sub-part grouping -->
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Accessory Of <span style="font-weight:400;font-size:10px;color:var(--muted)">(parent part name — this part nests under it in the legend)</span></label>
+      <input id="m-accessory-of" type="text" placeholder="e.g. Siren Speaker 1" list="m-accessory-suggestions" />
+      <datalist id="m-accessory-suggestions"></datalist>
+    </div>
+
+    <!-- Co-part rules -->
+    <div class="modal-section" id="modal-copart-section">
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Co-Part Rules <span style="font-weight:400;font-size:10px;color:var(--muted)">(change layout or image when another part is present/absent)</span></span>
+        <button class="btn btn-secondary btn-sm" id="btn-add-copart-rule">+ Rule</button>
+      </div>
+      <table id="copart-rules-table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="color:var(--muted);text-align:left">
+            <th style="padding:3px 6px;width:22%">If this part exists…</th>
+            <th style="padding:3px 6px;width:37%">If Present → override</th>
+            <th style="padding:3px 6px;width:37%">If Absent → override</th>
+            <th style="width:28px"></th>
+          </tr>
+        </thead>
+        <tbody id="copart-rules-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Alternate asset images for co-part rules -->
+    <div class="modal-section" id="modal-alt-images-section" hidden>
+      <div class="modal-section-title">Alternate Asset Images
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">upload images for asset keys referenced in co-part rules above · same render size applies</span>
+      </div>
+      <div id="modal-alt-images-grid"></div>
+    </div>
+
+    <!-- Location options for this part type -->
+    <div class="modal-section" id="modal-locs-section">
+      <div class="modal-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Allowed Locations <span style="font-weight:400;font-size:10px;color:var(--muted)">(dropdown options in the Location column of the build sheet)</span></span>
+      </div>
+      <div id="modal-loc-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+      <div style="display:flex;gap:6px">
+        <input id="modal-loc-input" type="text" placeholder="Type a location and press Enter" style="flex:1" list="modal-loc-suggestions" />
+        <datalist id="modal-loc-suggestions"></datalist>
+        <button class="btn btn-secondary btn-sm" id="btn-modal-add-loc">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Images section — only shown for equipment/bar -->
+    <div class="modal-section" id="modal-images-section">
+      <div class="modal-section-title">Per-View Images &amp; Render Size
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">saved to asset manifest · overrides parts library images</span>
+      </div>
+      <div id="modal-images-grid"></div>
+    </div>
+
+    <!-- Sizes section — only shown for light/none render kinds (no image upload needed) -->
+    <div class="modal-section" id="modal-sizes-section" hidden>
+      <div class="modal-section-title">Render Size (inches per view)
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">overrides catalog size_per_view defaults</span>
+      </div>
+      <div id="modal-sizes-grid"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-modal-delete">Delete Part</button>
+      <button class="btn btn-secondary" id="btn-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="btn-modal-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PARTS LIBRARY MODAL ══ -->
+<div class="modal-overlay" id="parts-modal">
+  <div class="modal" style="width:700px">
+    <div class="modal-title">
+      <span id="parts-modal-title">Add Part</span>
+      <button class="modal-close" id="parts-modal-close">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Display Name <span style="color:var(--red)">*</span></label>
+        <input id="pm-name" type="text" placeholder="e.g. Whelen ION" />
+      </div>
+      <div class="form-group">
+        <label>Part ID</label>
+        <input id="pm-id" type="text" placeholder="auto-generated" />
+        <div class="field-hint">Unique slug, no spaces</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Category</label>
+        <select id="pm-category"></select>
+      </div>
+      <div class="form-group">
+        <label>Size Rule</label>
+        <select id="pm-size-rule"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Manufacturer</label>
+        <input id="pm-manufacturer" type="text" placeholder="e.g. WHELEN" />
+      </div>
+      <div class="form-group">
+        <label>Model Number</label>
+        <input id="pm-model" type="text" placeholder="e.g. ION" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Compatible Part Types <span style="font-weight:400;color:var(--muted)">(select all that apply)</span></label>
+      <div id="pm-compat-types" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;padding:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:4px">
+      <label>Notes</label>
+      <input id="pm-notes" type="text" placeholder="Optional notes" />
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Per-View Images &amp; Render Size
+        <span style="font-weight:400;font-size:10px;color:var(--muted)">equipment / bar parts — lights use the Size Rule above</span>
+      </div>
+      <div id="pm-images-grid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="pm-delete" style="display:none">Delete</button>
+      <button class="btn btn-secondary" id="pm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="pm-save">Save Part</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>DTM Vehicle Builder v7 · local server on port 7655</footer>
+
+<!-- ══ ADD LOCATION MODAL ══ -->
+<div class="modal-overlay" id="add-loc-modal">
+  <div class="modal">
+    <div class="modal-title">Add Location <button class="modal-close" id="alm-close">✕</button></div>
+
+    <div class="alm-tabs">
+      <button class="alm-tab active" id="alm-tab-import" onclick="almSwitchTab('import')">Import Existing</button>
+      <button class="alm-tab" id="alm-tab-create" onclick="almSwitchTab('create')">Create New</button>
+    </div>
+
+    <!-- TAB: Import Existing -->
+    <div class="alm-panel active" id="alm-panel-import">
+      <input class="alm-search" type="text" id="alm-import-search" placeholder="Search locations…" oninput="almFilterImport(this.value)" />
+      <div class="alm-import-list" id="alm-import-list"></div>
+    </div>
+
+    <!-- TAB: Create New -->
+    <div class="alm-panel" id="alm-panel-create">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Location Name</label>
+        <input id="alm-new-name" type="text" placeholder="e.g. PUSH BUMPER" oninput="this.value=this.value.toUpperCase()" />
+      </div>
+      <div class="modal-section-title" style="margin-bottom:4px">Assign to Part Types</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Check each part type that should have this location in its dropdown.</div>
+      <div class="alm-pt-list" id="alm-pt-list"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="alm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="alm-confirm" style="display:none">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Fixture Modal ── -->
+<div class="modal-overlay" id="add-fixture-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Add Fixture Part <button class="modal-close" id="afm-close">✕</button></div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Select a part from the catalog to add as a fixture for <strong id="afm-vehicle-label"></strong>. The part will be marked <code>is_fixture</code> and its position can be set per-view below.</p>
+    <input class="alm-search" type="text" id="afm-search" placeholder="Search parts…" oninput="afmFilter(this.value)" />
+    <div class="alm-import-list" id="afm-part-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="afm-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/js/api.js"></script>
+<script src="/ui/js/state.js"></script>
+<script src="/ui/js/tabs.js"></script>
+<script src="/ui/js/generate_tab.js"></script>
+<script src="/ui/js/canvas.js"></script>
+<script src="/ui/js/preview_canvas.js"></script>
+<script src="/ui/js/settings/placements.js"></script>
+<script src="/ui/js/settings/size_rules.js"></script>
+<script src="/ui/js/settings/part_types.js"></script>
+<script src="/ui/js/settings/parts_library.js"></script>
+<script src="/ui/js/settings/vehicles.js"></script>
+<script src="/ui/js/settings/tools.js"></script>
+<script src="/ui/js/settings/fixtures.js"></script>
+<script src="/ui/js/main.js"></script>
+
+</body>
+</html>

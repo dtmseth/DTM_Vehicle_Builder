@@ -166,7 +166,10 @@
     "Speaker_w_bracket": {
       "front": "equipment/Speaker_w_bracket_front.png"
     },
-    "": {}
+    "": {},
+    "arges": {
+      "front": "equipment/arges_front.png"
+    }
   },
   "part_number_size_rules": {
     "3": "rd",

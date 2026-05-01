@@ -89,6 +89,18 @@
             "orientation": "h",
             "slot_count": 1,
             "pattern": "single"
+          },
+          "front": {
+            "x": 0.5,
+            "y": 0.5,
+            "units": "relative_image",
+            "orientation": "h",
+            "slot_count": 1,
+            "pattern": "single",
+            "flip_h": false,
+            "flip_v": false,
+            "flip_mirrored_h": false,
+            "behind_vehicle": false
           }
         },
         "rear_interior_light_bar": {
@@ -147,7 +159,7 @@
         },
         "wing_wraps": {
           "side": {
-            "x": 0.07,
+            "x": 0.055,
             "y": 0.605,
             "units": "relative_image",
             "orientation": "h",
@@ -174,6 +186,10 @@
       },
       "views": {
         "front": {
+          "label": "Front",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "passenger",
@@ -195,7 +211,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "mirror",
-              "spacing": 0.2
+              "h_spacing": 0.2
             },
             "BEHIND GRILL (CENTER)": {
               "x": 0.5,
@@ -212,7 +228,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "horizontal",
-              "spacing": 0.195
+              "h_spacing": 0.195
             },
             "TOP TUBE": {
               "x": 0.5,
@@ -335,7 +351,7 @@
               "orientation": "h",
               "slot_count": 1,
               "pattern": "horizontal",
-              "spacing": 0.225
+              "h_spacing": 0.225
             },
             "UNDER MIRROR": {
               "x": 0.95,
@@ -468,6 +484,10 @@
           }
         },
         "side": {
+          "label": "Side",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "default_slot_role": "driver",
           "locations": {
@@ -644,6 +664,10 @@
           }
         },
         "top": {
+          "label": "Top",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "locations": {
             "ROOF LIGHT BAR": {
@@ -737,6 +761,10 @@
           }
         },
         "rear": {
+          "label": "Rear",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "driver",
@@ -880,8 +908,41 @@
               "pattern": "single"
             }
           }
+        },
+        "internal.console": {
+          "label": "Console",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.cargo": {
+          "label": "Cargo Area",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.rear_seat": {
+          "label": "Rear Seat",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
         }
-      }
+      },
+      "view_order": [
+        "front",
+        "side",
+        "top",
+        "rear",
+        "internal.console",
+        "internal.cargo",
+        "internal.rear_seat"
+      ]
     },
     "DURANGO": {
       "fixtures": {
@@ -985,6 +1046,10 @@
       },
       "views": {
         "front": {
+          "label": "Front",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "passenger",
@@ -1006,7 +1071,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "horizontal",
-              "spacing": 0.2
+              "h_spacing": 0.2
             },
             "BEHIND GRILL (CENTER)": {
               "x": 0.5,
@@ -1023,7 +1088,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "horizontal",
-              "spacing": 0.195
+              "h_spacing": 0.195
             },
             "TOP TUBE": {
               "x": 0.5,
@@ -1032,7 +1097,7 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "spacing": 0.105
+              "h_spacing": 0.105
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -1147,7 +1212,7 @@
               "orientation": "h",
               "slot_count": 1,
               "pattern": "horizontal",
-              "spacing": 0.225
+              "h_spacing": 0.225
             },
             "UNDER MIRROR": {
               "x": 0.95,
@@ -1280,6 +1345,10 @@
           }
         },
         "side": {
+          "label": "Side",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "default_slot_role": "driver",
           "locations": {
@@ -1454,6 +1523,10 @@
           }
         },
         "top": {
+          "label": "Top",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "locations": {
             "ROOF LIGHT BAR": {
@@ -1547,6 +1620,10 @@
           }
         },
         "rear": {
+          "label": "Rear",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "driver",
@@ -1690,8 +1767,41 @@
               "pattern": "single"
             }
           }
+        },
+        "internal.console": {
+          "label": "Console",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.cargo": {
+          "label": "Cargo Area",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.rear_seat": {
+          "label": "Rear Seat",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
         }
-      }
+      },
+      "view_order": [
+        "front",
+        "side",
+        "top",
+        "rear",
+        "internal.console",
+        "internal.cargo",
+        "internal.rear_seat"
+      ]
     },
     "TAHOE": {
       "fixtures": {
@@ -1840,6 +1950,10 @@
       },
       "views": {
         "front": {
+          "label": "Front",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "passenger",
@@ -1861,7 +1975,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "mirror",
-              "spacing": 0.2
+              "h_spacing": 0.2
             },
             "BEHIND GRILL (CENTER)": {
               "x": 0.5,
@@ -1878,7 +1992,7 @@
               "orientation": "h",
               "slot_count": 2,
               "pattern": "horizontal",
-              "spacing": 0.195
+              "h_spacing": 0.195
             },
             "TOP TUBE": {
               "x": 0.5,
@@ -1887,7 +2001,7 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "spacing": 0.105
+              "h_spacing": 0.105
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -2001,7 +2115,7 @@
               "orientation": "h",
               "slot_count": 1,
               "pattern": "horizontal",
-              "spacing": 0.225
+              "h_spacing": 0.225
             },
             "UNDER MIRROR": {
               "x": 0.95,
@@ -2134,6 +2248,10 @@
           }
         },
         "side": {
+          "label": "Side",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "default_slot_role": "driver",
           "locations": {
@@ -2309,6 +2427,10 @@
           }
         },
         "top": {
+          "label": "Top",
+          "category": "external",
+          "legend_layout": "grid",
+          "logo_position": "bottom",
           "coord_space": "relative_image",
           "locations": {
             "ROOF LIGHT BAR": {
@@ -2402,6 +2524,10 @@
           }
         },
         "rear": {
+          "label": "Rear",
+          "category": "external",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
           "coord_space": "relative_image",
           "side_roles": {
             "negative_x": "driver",
@@ -2545,8 +2671,41 @@
               "pattern": "single"
             }
           }
+        },
+        "internal.console": {
+          "label": "Console",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.cargo": {
+          "label": "Cargo Area",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
+        },
+        "internal.rear_seat": {
+          "label": "Rear Seat",
+          "category": "internal",
+          "legend_layout": "standard",
+          "logo_position": "top-right",
+          "coord_space": "relative_image",
+          "locations": {}
         }
-      }
+      },
+      "view_order": [
+        "front",
+        "side",
+        "top",
+        "rear",
+        "internal.console",
+        "internal.cargo",
+        "internal.rear_seat"
+      ]
     }
   },
   "schema_version": 1
