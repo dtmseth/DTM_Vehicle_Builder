@@ -73,6 +73,22 @@ def _md5(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()
 
 
+def _copy_missing_tree(source_root: Path, dest_root: Path) -> None:
+    """Copy files from source_root to dest_root only when the destination is missing."""
+    for source in sorted(source_root.rglob("*")):
+        if source.is_dir() or source.name.startswith("."):
+            continue
+        rel = source.relative_to(source_root)
+        dest = dest_root / rel
+        if dest.exists():
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            shutil.copyfile(source, dest)
+        except Exception:
+            _log.exception("Failed to copy bundled asset %s", rel)
+
+
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
@@ -94,19 +110,9 @@ def ensure_workspace() -> AppPaths:
 
     # In dev mode workspace_assets_dir IS ASSETS_DIR — no copying needed.
     if paths.workspace_assets_dir != ASSETS_DIR:
-        if not any(paths.workspace_assets_dir.iterdir()):
-            if not ASSETS_DIR.exists():
-                _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
-            else:
-                for source in sorted(ASSETS_DIR.rglob("*")):
-                    if source.is_dir() or source.name.startswith("."):
-                        continue
-                    rel = source.relative_to(ASSETS_DIR)
-                    dest = paths.workspace_assets_dir / rel
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    try:
-                        shutil.copyfile(source, dest)
-                    except Exception:
-                        _log.exception("Failed to copy asset %s", rel)
+        if not ASSETS_DIR.exists():
+            _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
+        else:
+            _copy_missing_tree(ASSETS_DIR, paths.workspace_assets_dir)
 
     return paths
