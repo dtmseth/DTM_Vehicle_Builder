@@ -135,9 +135,7 @@
       "side": "lights/bar_roof_side.png",
       "top": "lights/bar_roof_top.png"
     },
-    "interior-front": {
-      "top": "lights/bar_interior-front_top-front.png"
-    },
+    "interior-front": {},
     "interior-rear": {
       "top": "lights/bar_interior-rear_top-rear.png"
     }
@@ -169,7 +167,8 @@
     "": {},
     "arges": {
       "front": "equipment/arges_front.png"
-    }
+    },
+    "radio_1_antenna_top": {}
   },
   "part_number_size_rules": {
     "3": "rd",

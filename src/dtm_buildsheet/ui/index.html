@@ -83,6 +83,11 @@
           <button id="pv-insp-close" class="pv-insp-close" title="Close">✕</button>
         </div>
 
+        <div class="pv-insp-meta">
+          <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Model</span><span id="pv-insp-model" class="pv-insp-meta-val">—</span></div>
+          <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Location</span><span id="pv-insp-location" class="pv-insp-meta-val">—</span></div>
+        </div>
+
         <label class="pv-insp-row pv-insp-check">
           <input type="checkbox" id="pv-insp-visible" checked>
           <span>Visible</span>
@@ -701,6 +706,32 @@
       <div class="card-title">Vehicle Types</div>
       <div class="vehicle-cards" id="vehicle-cards"></div>
     </div>
+
+    <!-- Edit Vehicle panel (hidden until Edit is clicked) -->
+    <div class="card" id="vehicle-edit-panel" hidden>
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Edit Vehicle: <span id="vehicle-edit-id-label" style="color:var(--navy)"></span></span>
+        <button class="btn btn-secondary btn-sm" id="btn-vehicle-edit-cancel">Cancel</button>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">Replace View Images</div>
+      <div class="vehicle-img-upload-grid" id="vehicle-edit-img-grid"></div>
+
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="max-width:260px;margin:0">
+          <label>Apply Preset Layout</label>
+          <select id="vehicle-edit-preset"></select>
+          <div class="field-hint">Copies locations &amp; fixtures from another vehicle, overwriting this one's layout</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-vehicle-apply-preset" style="margin-bottom:4px">Apply Preset</button>
+        <button class="btn btn-danger btn-sm" id="btn-vehicle-reset-layout" style="margin-bottom:4px">Reset to Empty Layout</button>
+      </div>
+
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" id="btn-vehicle-edit-save">Save Changes</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">Add New Vehicle Type</div>
       <div class="form-row">

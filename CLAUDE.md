@@ -19,26 +19,75 @@ pyproject.toml                     ← package config, deps, entry points
 README.md
 
 src/dtm_buildsheet/                ← the Python package
-  gui_server.py                    ← HTTP server + all API routes (PORT 7655)
-  gui_ui.html                      ← entire frontend (single file)
+  __main__.py                      ← entry point: python -m dtm_buildsheet
+  gui_server.py                    ← compatibility shim → app.server.main()
+  generator.py                     ← orchestrates a full CLI build-sheet run
+  generator_cli.py                 ← CLI entry point
   paths.py                         ← all path logic; dev vs bundled app detection
-  generator.py                     ← orchestrates a full build-sheet run
-  input_reader.py                  ← Excel workbook → Project model
-  planner.py                       ← decides slide layout per vehicle type
-  render_ppt.py                    ← writes the .pptx (output: VehicleBuilder_{id}_v7.pptx)
-  reporting.py                     ← markdown summary alongside the .pptx
-  config_loader.py / config_store.py / config_validation.py
-  models.py                        ← dataclasses: Project, Part, Placement
   naming.py                        ← part/color name normalization
   template_builder.py              ← regenerates the Excel input template
   ppt_helpers.py                   ← python-pptx utilities
+  render_ppt.py                    ← writes the .pptx
+  reporting.py                     ← markdown summary alongside the .pptx
+
+  app/                             ← HTTP server, routes, services
+    server.py                      ← HTTP server on PORT 7655, static UI serving, route dispatch
+    routes/                        ← thin route modules (parse request → call service → return JSON)
+      assets.py / config.py / drafts.py / exports.py
+      generation.py / preview.py / templates.py / validation.py
+    services/                      ← side effects and orchestration
+      asset_service.py / config_service.py / draft_service.py
+      export_service.py / generation_service.py / preview_service.py
+      template_service.py / validation_service.py
+
+  config/                          ← mutable workspace config load/save
+    loader.py / store.py / schemas.py / migrations.py
+
+  domain/                          ← shared dataclasses and geometry
+    plan_models.py                 ← BuildPlan, PlannedPart, PlannedPlacement, PlannedInstance
+    input_models.py                ← ProjectInput, PartInput
+    geometry.py                    ← shared placement math used by preview and PowerPoint
+    rules.py                       ← rule dataclasses
+
+  planning/                        ← ProjectInput → BuildPlan
+    planner.py / asset_resolver.py / color_resolver.py
+    fixture_resolver.py / location_resolver.py
+    override_applier.py / quantity_resolver.py
+
+  rules/                           ← build validation and dependency rule engine
+    engine.py
+
+  inputs/                          ← input adapters
+    excel_reader.py                ← Excel workbook → ProjectInput
+    gui_entry.py                   ← GUI draft → ProjectInput
+    project_drafts.py              ← BuildDraft persistence (workspace/drafts/)
+
+  ui/                              ← browser UI served by the local server
+    index.html                     ← full single-page app markup
+    styles.css                     ← all CSS
+    js/
+      api.js                       ← fetch wrapper, shared utilities
+      main.js                      ← tab wiring, app init
+      state.js                     ← shared UI state
+      tabs.js                      ← tab/stab switching
+      canvas.js                    ← canvas helpers
+      generate_tab.js              ← Generate tab logic, template regen, draft wiring
+      preview_canvas.js            ← build preview canvas, drag-and-drop, inspector, overrides
+      settings/
+        fixtures.js / part_types.js / parts_library.js
+        placements.js / size_rules.js / tools.js / vehicles.js
+
   resources/
     config/*.json                  ← bundled defaults (copied to workspace on first run)
     templates/*.pptx / *.xlsx      ← bundled templates
     assets/**/*.png                ← bundled vehicle/equipment/light images
 
+  # Compatibility shims (thin re-exports; keep until external callers are updated)
+  config_loader.py / config_store.py / config_validation.py
+  input_reader.py / models.py / planner.py
+
 workspace/                         ← mutable user data (git-ignored)
-  config/   input/   output/   assets/
+  config/   input/   output/   assets/   drafts/
 
 packaging/
   pyinstaller/
@@ -54,7 +103,13 @@ packaging/
 .github/workflows/build.yml        ← CI: parallel mac + windows builds, artifacts uploaded
 
 samples/input/                     ← test .xlsx workbooks
-docs/                              ← ARCHITECTURE.md, PACKAGING.md, PIPELINE.md
+tests/                             ← pytest suite (293 tests, 1 skipped)
+docs/
+  ARCHITECTURE.md                  ← runtime shape and design rules
+  REPOSITORY_PRINCIPLES.md        ← engineering philosophy and do/don't rules
+  CONFIG_SCHEMA.md                 ← all seven config file schemas
+  FEATURE_INVENTORY.md             ← every feature and non-obvious rule
+  PACKAGING.md / PIPELINE.md
 ```
 
 ## Key entry points
@@ -67,18 +122,20 @@ docs/                              ← ARCHITECTURE.md, PACKAGING.md, PIPELINE.m
 | `packaging/build_windows.ps1` | Same for Windows (run on Windows machine or via CI) |
 
 ## How the app runs
-`gui_server.py:main()` starts an HTTP server on `127.0.0.1:7655`, then:
+`app/server.py:main()` starts an HTTP server on `127.0.0.1:7655`, then:
 - **With pywebview installed**: server moves to background thread, pywebview opens a native window pointing at `http://localhost:7655` (must own main thread — macOS requirement)
 - **Without pywebview**: falls back to `webbrowser.open()` (dev convenience)
+
+`gui_server.py` is a compatibility shim that re-exports `app.server.main`. All new code should import from `app` directly.
 
 Port conflict on launch = old instance still running. `lsof -ti :7655 | xargs kill` clears it.
 
 ## Workspace vs bundled resources
 `paths.py` detects dev vs bundled via presence of `pyproject.toml`:
-- **Dev**: workspace is `{repo}/workspace/`, resources from `src/dtm_buildsheet/resources/`
+- **Dev**: workspace is `{repo}/workspace/`, config/assets written directly to `src/dtm_buildsheet/resources/` so changes are immediately visible to git
 - **Bundled app**: workspace is `~/Library/Application Support/DTM Vehicle Builder` (Mac) or `%APPDATA%\DTM Vehicle Builder` (Windows)
 
-On first run, bundled default configs/assets are copied into the workspace. User edits live in workspace and are never overwritten.
+On first run, bundled default configs/assets are seeded into the workspace. User edits live in workspace and are never overwritten by a version upgrade.
 
 ## Packaging
 **Mac** (run on Mac):
@@ -114,13 +171,28 @@ dependencies = [lxml, openpyxl, Pillow, python-pptx, pywebview]
 | `parts_library.json` | Manufacturer and model number dropdowns |
 | `vehicle_layouts.json` | Full set of location names across all vehicles/views |
 
-**Any save to these files must go through `apiSave()` instead of `api()` in `gui_ui.html`.** `apiSave()` calls `autoRegenTemplate()` (debounced 500 ms) after every successful save, keeping the template in sync without a manual step.
+**Mechanism**: `app/services/config_service.py` defines `TEMPLATE_REGEN_FILES` (the set of the three filenames above). Whenever `save_config_file()` is called for one of those files, it spins up a background thread to call `template_service.generate_template()` and sets `"template_regen": "triggered"` in the JSON response. The frontend's `apiSave()` in `ui/js/api.js` watches for `res.template_regen` in the response and calls `loadTemplateInfo()` to refresh the template timestamp display.
 
-The set of trigger endpoints lives in `TEMPLATE_REGEN_ENDPOINTS` near the top of the `<script>` block. **If you add a new feature whose save endpoint feeds `template_builder.py` (e.g. a manufacturer-rules endpoint, a new section of `workbook_rules`), add that endpoint string to `TEMPLATE_REGEN_ENDPOINTS`.** The manual "Regenerate" button remains in Settings → Tools as a recovery option if the template file is deleted.
+**If you add a new config file that feeds `template_builder.py`**, add its filename to `TEMPLATE_REGEN_FILES` in `config_service.py`. The manual "Regenerate" button in Settings → Tools calls `/api/template/generate` directly as a recovery option.
+
+## Config files
+Seven JSON config files live in `workspace/config/` (editable) and `src/dtm_buildsheet/resources/config/` (bundled defaults). All schemas are documented in `docs/CONFIG_SCHEMA.md`.
+
+| File | Purpose |
+|------|---------|
+| `part_catalog.json` | Part types, render rules, co-part rules, quantity policies |
+| `vehicle_layouts.json` | Per-vehicle view layouts, location keys, slot positions |
+| `parts_library.json` | Manufacturer and model number dropdowns |
+| `workbook_rules.json` | Excel template structure (sections, parts, dropdowns) |
+| `build_rules.json` | Validation and dependency rules evaluated by `rules/engine.py` |
+| `asset_manifest.json` | Maps asset keys to image filenames |
+| `app_settings.json` | User preferences (template save dir, etc.) |
 
 ## Gotchas
 - **Python package name** is still `dtm_buildsheet` / `dtm-buildsheet` — only the *app* name changed to "DTM Vehicle Builder". Don't rename the `src/dtm_buildsheet/` directory without updating all imports.
+- **Compatibility shims** (`gui_server.py`, `config_loader.py`, `input_reader.py`, `models.py`, `planner.py`) re-export from the new package areas. New internal imports should use `app`, `config`, `domain`, `planning`, `inputs` directly.
 - **ICNS must be real ICNS** — the source icon was a PNG renamed to `.icns`. It was converted properly via `iconutil`. Don't replace it with a raw PNG or PyInstaller will silently fall back to the Python icon.
 - **pywebview owns the main thread** on macOS — the HTTP server must run in a daemon thread when pywebview is active. Don't move `webview.start()` off the main thread.
 - **PyInstaller cannot cross-compile** — Mac builds must run on Mac, Windows builds must run on Windows (CI handles this).
 - **GitHub repo**: `https://github.com/dtmseth/DTM_Vehicle_Builder` — push to `main` triggers both builds.
+- **Placement math is shared** — `domain/geometry.py` is the one source of truth for slot positioning. Preview canvas JS mirrors this logic; if you change it server-side, update the JS too.

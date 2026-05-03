@@ -183,8 +183,9 @@ def _write_header_section(ws, row_start: int, vehicle_types: list[str] | None = 
     def _info_row(row, left_label, right_label=""):
         lc = ws.cell(row=row, column=1, value=left_label)
         lc.font = label_font; lc.fill = gold_fill; lc.alignment = _align(h="right")
-        ws.merge_cells(f"B{row}:F{row}")
-        ws.cell(row=row, column=2).fill = value_fill
+        ws.merge_cells(f"A{row}:B{row}")
+        ws.merge_cells(f"C{row}:F{row}")
+        ws.cell(row=row, column=3).fill = value_fill
         if right_label:
             rc = ws.cell(row=row, column=7, value=right_label)
             rc.font = label_font; rc.fill = gold_fill; rc.alignment = _align(h="right")
@@ -213,11 +214,17 @@ def _write_header_section(ws, row_start: int, vehicle_types: list[str] | None = 
 
     vehicle_fields = ["UNIT ID:","VIN:","YEAR:","MAKE:","MODEL:","SUB MODEL:"]
     for i, field in enumerate(vehicle_fields, start=8):
-        for col_start, merge_range in [(1, f"B{i}:F{i}"), (7, f"H{i}:K{i}")]:
-            c = ws.cell(row=i, column=col_start, value=field)
-            c.font = label_font; c.fill = gold_fill; c.alignment = _align(h="right")
-            ws.merge_cells(merge_range)
-            ws.cell(row=i, column=col_start+1).fill = value_fill
+        # Left side: label spans A:B, value in C:F
+        lc = ws.cell(row=i, column=1, value=field)
+        lc.font = label_font; lc.fill = gold_fill; lc.alignment = _align(h="right")
+        ws.merge_cells(f"A{i}:B{i}")
+        ws.merge_cells(f"C{i}:F{i}")
+        ws.cell(row=i, column=3).fill = value_fill
+        # Right side: label in G, value in H:K
+        rc = ws.cell(row=i, column=7, value=field)
+        rc.font = label_font; rc.fill = gold_fill; rc.alignment = _align(h="right")
+        ws.merge_cells(f"H{i}:K{i}")
+        ws.cell(row=i, column=8).fill = value_fill
         ws.row_dimensions[i].height = 15
 
     return 14

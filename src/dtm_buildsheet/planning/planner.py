@@ -222,11 +222,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             if quantity_policy == "location_slots":
                 if part.quantity and part.quantity != placement.location_slot_count:
                     placement.warnings.append(
-                        f"Qty {part.quantity} differs from location slot count {placement.location_slot_count}"
+                        f"[{part.name}] @ '{location_key}' ({view}): "
+                        f"workbook qty {part.quantity} ≠ location slot count {placement.location_slot_count}"
                     )
             elif quantity_policy == "single_per_line" and part.quantity > 1:
                 placement.warnings.append(
-                    f"Qty {part.quantity} is recorded but this part renders once per line item"
+                    f"[{part.name}] @ '{location_key}' ({view}): "
+                    f"qty {part.quantity} recorded but this part renders once per line item"
                 )
 
             orientation = location.get("orientation", "h")

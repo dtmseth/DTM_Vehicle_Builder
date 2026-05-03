@@ -107,9 +107,13 @@
     .pv-dot-none{background:#aaa}
 
     /* Inspector panel */
-    .pv-inspector{position:absolute;top:10px;right:10px;z-index:20;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;box-shadow:0 4px 20px rgba(0,0,0,.18);width:280px;font-size:12px;max-width:calc(100% - 20px)}
-    .pv-insp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .pv-inspector{position:absolute;top:10px;right:10px;z-index:20;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;box-shadow:0 4px 20px rgba(0,0,0,.18);width:300px;font-size:12px;max-width:calc(100% - 20px)}
+    .pv-insp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .pv-insp-title{font-weight:700;font-size:13px;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .pv-insp-meta{background:#f4f5f9;border-radius:6px;padding:6px 8px;margin-bottom:10px;display:flex;flex-direction:column;gap:3px}
+    .pv-insp-meta-row{display:flex;gap:6px;align-items:baseline;font-size:11px}
+    .pv-insp-meta-lbl{color:var(--muted);font-weight:700;min-width:52px;flex-shrink:0}
+    .pv-insp-meta-val{color:var(--text);word-break:break-all}
     .pv-insp-close{background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);line-height:1;padding:0 2px;flex-shrink:0}
     .pv-insp-close:hover{color:var(--text)}
     .pv-insp-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;min-width:0}
@@ -234,7 +238,7 @@
     /* toast */
     .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200;transform:translateY(80px);opacity:0;transition:.3s}
     .toast.show{transform:translateY(0);opacity:1}
-    .toast.success{background:var(--green)}.toast.error{background:var(--red)}
+    .toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:#1a6091}
 
     /* ── per-view size editor in parts-modal ─────────────────────── */
     .pm-view-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}

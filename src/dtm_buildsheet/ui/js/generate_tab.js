@@ -184,4 +184,8 @@ $("btn-clear-save-dir").addEventListener("click", async()=>{
   autoRegenTemplate();
 });
 
+function autoRegenTemplate() {
+  api("/api/template/generate", {}).then(loadTemplateInfo).catch(() => {});
+}
+
 function logLine(msg){show("card-log"); $("log-box").textContent+=msg+"\n"; $("log-box").scrollTop=$("log-box").scrollHeight;}

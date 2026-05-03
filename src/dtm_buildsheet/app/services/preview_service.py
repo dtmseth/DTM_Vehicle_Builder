@@ -103,22 +103,28 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
             for pl in pp.placements:
                 used_views.add(pl.view)
 
+        # Show ALL external views from the vehicle config so tabs appear even
+        # when a view has no planned parts (e.g. TRAVERSE top view with no roof items).
+        external_view_order = [
+            v for v in view_order
+            if view_meta.get(v, {}).get("category", "external") == "external"
+        ]
+        all_preview_views: set[str] = used_views | set(external_view_order)
+
         # Pre-compute rendered vehicle image dimensions per view (for icon_*_pct)
         rendered_dims: dict[str, tuple[float, float]] = {}
-        for view_name in used_views:
+        for view_name in all_preview_views:
             rendered_dims[view_name] = _rendered_vehicle_size(vehicle_type, view_name, paths)
 
         views: dict = {}
-        for view_name in view_order:
-            if view_name not in used_views:
-                continue
+        for view_name in external_view_order:
             m = view_meta[view_name]
             views[view_name] = {
                 "label":    m["label"],
                 "category": m["category"],
                 "bg_url":   f"/assets/vehicles/{vehicle_type}_{view_name}.png",
             }
-        for view_name in sorted(used_views - set(view_order)):
+        for view_name in sorted(all_preview_views - set(external_view_order)):
             views[view_name] = {
                 "label":    view_name.replace(".", " ").title(),
                 "category": "external",
@@ -194,10 +200,12 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
 
             if placements_out:
                 parts_out.append({
-                    "part_id":    pp.part_id,
-                    "part_name":  pp.part_name,
-                    "render_kind": pp.render_kind,
-                    "placements": placements_out,
+                    "part_id":      pp.part_id,
+                    "part_name":    pp.part_name,
+                    "render_kind":  pp.render_kind,
+                    "manufacturer": getattr(pp.raw, "manufacturer", "") or "",
+                    "part_number":  getattr(pp.raw, "part_number", "") or "",
+                    "placements":   placements_out,
                 })
 
         return {

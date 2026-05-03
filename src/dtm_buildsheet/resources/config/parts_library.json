@@ -365,17 +365,6 @@
       "images": {}
     },
     {
-      "part_id": "avenger_x2",
-      "display_name": "AVENGER X2",
-      "category": "MIRROR & SIDE WARNING LIGHTS",
-      "manufacturer": "",
-      "model_number": "AVENGER X2",
-      "compatible_types": [
-        "Interior Light Bar"
-      ],
-      "images": {}
-    },
-    {
       "part_id": "dtm_extended_cargo_window_bracket",
       "display_name": "DTM EXTENDED CARGO WINDOW BRACKET",
       "category": "MIRROR & SIDE WARNING LIGHTS",
@@ -2205,6 +2194,18 @@
       "images": {
         "front": "lights/part_hdx_front.png"
       }
+    },
+    {
+      "part_id": "avenger_x2",
+      "display_name": "AVENGER X2",
+      "category": "LIGHT BARS",
+      "manufacturer": "",
+      "model_number": "AVENGER X2",
+      "compatible_types": [
+        "Front Interior Light Bar"
+      ],
+      "images": {},
+      "size_rule_id": "long"
     }
   ],
   "schema_version": 1

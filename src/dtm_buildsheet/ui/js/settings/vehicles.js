@@ -2,12 +2,15 @@
 // VEHICLES TAB
 // ═══════════════════════════════════════════════════════
 const VIEWS_ORDER=["front","side","top","rear"];
-const _vehicleUploadedImages={};  // view → {filename, b64}
+const _vehicleUploadedImages={};   // view → {filename, b64, dataUrl}  (Add form)
+const _vehicleEditImages={};       // view → {filename, b64, dataUrl}  (Edit form)
+let   _vehicleEditId=null;         // vehicle ID currently open in edit panel
 
 function initVehiclesTab(){
   buildVehiclePresetOptions();
   renderVehicleCards();
   buildVehicleImgUploadGrid();
+  initVehicleEditPanel();
 }
 
 function buildVehiclePresetOptions(){
@@ -21,6 +24,14 @@ function buildVehiclePresetOptions(){
   else if(vehicles.includes("PIU")) sel.value="PIU";
 }
 
+function buildEditPresetOptions(excludeId){
+  const sel=$("vehicle-edit-preset");
+  if(!sel) return;
+  const vehicles=Object.keys(_layouts?.vehicles||{}).filter(id=>id!==excludeId);
+  sel.innerHTML=`<option value="">— choose preset —</option>`+
+    vehicles.map(id=>`<option value="${esc(id)}">${esc(id)}</option>`).join("");
+}
+
 function renderVehicleCards(){
   const vehicles=_layouts?.vehicles||{};
   $("vehicle-cards").innerHTML=Object.entries(vehicles).map(([id,v])=>{
@@ -29,13 +40,19 @@ function renderVehicleCards(){
     return `<div class="vehicle-card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div class="vc-name">${esc(id)}</div>
-        <button class="btn btn-danger btn-sm vehicle-delete-btn" data-vehicle="${esc(id)}">Delete</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm vehicle-edit-btn" data-vehicle="${esc(id)}">Edit</button>
+          <button class="btn btn-danger btn-sm vehicle-delete-btn" data-vehicle="${esc(id)}">Delete</button>
+        </div>
       </div>
       <div class="vc-views">${viewCount} view${viewCount!==1?"s":""} · ${locCount} locations</div>
     </div>`;
   }).join("");
   $("vehicle-cards").querySelectorAll(".vehicle-delete-btn").forEach(btn=>{
     btn.addEventListener("click",()=>deleteVehicleType(btn.dataset.vehicle));
+  });
+  $("vehicle-cards").querySelectorAll(".vehicle-edit-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>openVehicleEdit(btn.dataset.vehicle));
   });
 }
 
@@ -54,6 +71,106 @@ function cloneVehiclePreset(presetId){
   const source=_layouts?.vehicles?.[presetId];
   return source ? JSON.parse(JSON.stringify(source)) : blankVehicleLayout();
 }
+
+// ── Edit panel ─────────────────────────────────────────
+
+function initVehicleEditPanel(){
+  $("btn-vehicle-edit-cancel").addEventListener("click",closeVehicleEdit);
+  $("btn-vehicle-apply-preset").addEventListener("click",applyPresetToEditVehicle);
+  $("btn-vehicle-reset-layout").addEventListener("click",resetEditVehicleLayout);
+  $("btn-vehicle-edit-save").addEventListener("click",saveVehicleEdit);
+}
+
+function openVehicleEdit(vehicleId){
+  _vehicleEditId=vehicleId;
+  Object.keys(_vehicleEditImages).forEach(k=>delete _vehicleEditImages[k]);
+
+  $("vehicle-edit-id-label").textContent=vehicleId;
+  buildEditPresetOptions(vehicleId);
+  buildVehicleEditImgGrid(vehicleId);
+
+  show("vehicle-edit-panel");
+  $("vehicle-edit-panel").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function closeVehicleEdit(){
+  _vehicleEditId=null;
+  Object.keys(_vehicleEditImages).forEach(k=>delete _vehicleEditImages[k]);
+  hide("vehicle-edit-panel");
+}
+
+function buildVehicleEditImgGrid(vehicleId){
+  $("vehicle-edit-img-grid").innerHTML=VIEWS_ORDER.map(view=>{
+    const existingUrl=`/assets/vehicles/${vehicleId}_${view}.png`;
+    return `<div class="upload-zone" id="veuz-${view}">
+      <input type="file" accept="image/*" data-view="${view}" class="veuz-input" />
+      <div class="uz-icon">🖼️</div>
+      <div class="uz-label">${view.charAt(0).toUpperCase()+view.slice(1)}</div>
+      <div class="uz-hint">Upload to replace</div>
+      <img class="uz-thumb" id="veuz-prev-${view}"
+           src="${existingUrl}" style="display:block"
+           onerror="this.style.display='none'" />
+    </div>`;
+  }).join("");
+  $("vehicle-edit-img-grid").querySelectorAll(".veuz-input").forEach(inp=>{
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file)return;
+      const view=e.target.dataset.view;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        _vehicleEditImages[view]={filename:`${_vehicleEditId}_${view}.${file.name.split(".").pop()}`,b64,dataUrl:ev.target.result};
+        const prev=$(`veuz-prev-${view}`); prev.src=ev.target.result; prev.style.display="block";
+        $(`veuz-${view}`).classList.add("has-file");
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+function applyPresetToEditVehicle(){
+  if(!_vehicleEditId) return;
+  const presetId=$("vehicle-edit-preset").value;
+  if(!presetId){toast("Choose a preset first","error");return;}
+  if(!confirm(`Copy all locations and fixtures from ${presetId} to ${_vehicleEditId}? This replaces the current layout.`)) return;
+  const cloned=cloneVehiclePreset(presetId);
+  _layouts.vehicles[_vehicleEditId].views=cloned.views;
+  if(cloned.fixtures) _layouts.vehicles[_vehicleEditId].fixtures=cloned.fixtures;
+  if(cloned.view_order) _layouts.vehicles[_vehicleEditId].view_order=cloned.view_order;
+  toast(`Preset ${presetId} applied — click Save Changes to write.`,"info");
+}
+
+function resetEditVehicleLayout(){
+  if(!_vehicleEditId) return;
+  if(!confirm(`Reset ${_vehicleEditId} to an empty layout? All locations and fixtures will be removed.`)) return;
+  const blank=blankVehicleLayout();
+  _layouts.vehicles[_vehicleEditId].views=blank.views;
+  delete _layouts.vehicles[_vehicleEditId].fixtures;
+  toast("Layout reset to empty — click Save Changes to write.","info");
+}
+
+async function saveVehicleEdit(){
+  if(!_vehicleEditId) return;
+  const vid=_vehicleEditId;
+  const btn=$("btn-vehicle-edit-save"); btn.disabled=true; btn.textContent="Saving…";
+  try{
+    // Upload any replaced images
+    for(const [view,img] of Object.entries(_vehicleEditImages)){
+      const res=await api("/api/assets/upload",{folder:"vehicles",filename:`${vid}_${view}.png`,data:img.b64});
+      if(!res.ok) throw new Error("Image upload failed: "+res.error);
+    }
+    // Persist layout changes
+    const res=await apiSave("/api/layouts/save",_layouts);
+    if(!res.ok) throw new Error(res.error);
+
+    toast(`${vid} saved!`,"success");
+    closeVehicleEdit();
+    refreshSharedUi();
+  }catch(err){toast("Error: "+err,"error");}
+  btn.disabled=false; btn.textContent="Save Changes";
+}
+
+// ── Delete ──────────────────────────────────────────────
 
 async function deleteVehicleType(vehicleId){
   const vehicles=Object.keys(_layouts?.vehicles||{});
@@ -78,12 +195,15 @@ async function deleteVehicleType(vehicleId){
     }
 
     if($("vehicle-preset").value===vehicleId) $("vehicle-preset").value="";
+    if(_vehicleEditId===vehicleId) closeVehicleEdit();
     refreshSharedUi();
     toast(`${vehicleId} deleted`,"success");
   }catch(err){
     toast("Delete failed: "+err,"error");
   }
 }
+
+// ── Add new vehicle ─────────────────────────────────────
 
 function buildVehicleImgUploadGrid(){
   $("vehicle-img-grid").innerHTML=VIEWS_ORDER.map(view=>{

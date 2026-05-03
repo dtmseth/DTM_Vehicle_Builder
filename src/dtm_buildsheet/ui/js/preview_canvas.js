@@ -179,6 +179,10 @@ function pvRenderPlacement(frame, pp, pl) {
     const slotRole  = inst ? (inst.slot_role || "") : "";
     const assetUrl  = inst ? (inst.asset_url || "") : "";
 
+    // Equipment/bar parts with no image asset are invisible in the PPTX;
+    // skip the dot placeholder so they don't pollute the preview canvas.
+    if (!assetUrl && (pp.render_kind === "equipment" || pp.render_kind === "bar")) return;
+
     // Match render_ppt.py exactly: mirror logic only applies when pattern === "mirror".
     const isMirroredSlot = pl.pattern === "mirror" && (slotRole === "driver" || slotRole === "positive_x");
     const instFlipH = (pl.flip_h || false) !== (isMirroredSlot && (pl.flip_mirrored_h || false));
@@ -220,7 +224,7 @@ function pvRenderPlacement(frame, pp, pl) {
 
     icon.addEventListener("mousedown", e => {
       if (e.button !== 0) return;
-      pvDragStart(e, pl, pp, xPct);
+      pvDragStart(e, pl, pp, xPct, yPct);
     });
 
     frame.appendChild(icon);
@@ -281,7 +285,7 @@ function pvLivePreview() {
 
 // ── drag and drop ─────────────────────────────────────────
 
-function pvDragStart(e, pl, pp, grabbedXPct) {
+function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
   e.preventDefault();
 
   const frame = e.currentTarget.closest(".pv-frame");
@@ -295,24 +299,24 @@ function pvDragStart(e, pl, pp, grabbedXPct) {
   const savedDy   = pendingOv.anchor_dy != null ? pendingOv.anchor_dy : serverDy;
 
   // Invert dx when the grabbed slot and the anchor are on opposite sides of center,
-  // so the grabbed icon always follows the mouse naturally for mirror patterns.
+  // so the grabbed mirror icon always follows the mouse naturally.
   const anchorIsRight  = (pl.anchor?.x || 0) > 0.5;
   const grabbedIsRight = grabbedXPct > 50;
   const invertDx = pl.pattern === "mirror" && (grabbedIsRight !== anchorIsRight);
 
+  // pl.anchor.x is the MERGED anchor (rawBase + savedDx) when a pending override
+  // exists, so stripping savedDx always recovers the true raw base regardless of
+  // whether the pending override was already applied or not.
   _pvDrag = {
     pl, pp, frame,
-    frameRect: frame.getBoundingClientRect(),
-    startX:    e.clientX,
-    startY:    e.clientY,
+    frameRect:   frame.getBoundingClientRect(),
+    startX:      e.clientX,
+    startY:      e.clientY,
     savedDx,
     savedDy,
-    serverDx,
-    serverDy,
     invertDx,
-    // Base anchor = server-baked position minus server override (i.e. the raw base).
-    baseAnchorX: (pl.anchor?.x || 0) - serverDx,
-    baseAnchorY: (pl.anchor?.y || 0) - serverDy,
+    baseAnchorX: (pl.anchor?.x || 0) - savedDx,
+    baseAnchorY: (pl.anchor?.y || 0) - savedDy,
     dxPct: 0,
     dyPct: 0,
   };
@@ -326,7 +330,8 @@ function pvDragStart(e, pl, pp, grabbedXPct) {
 
 function pvDragMove(e) {
   if (!_pvDrag) return;
-  const { frameRect, startX, startY, pl, pp, frame, savedDx, savedDy, invertDx, baseAnchorX, baseAnchorY } = _pvDrag;
+  const { frameRect, startX, startY, pl, pp, frame,
+          savedDx, savedDy, invertDx, baseAnchorX, baseAnchorY } = _pvDrag;
 
   const rawDxPct = (e.clientX - startX) / frameRect.width  * 100;
   const rawDyPct = (e.clientY - startY) / frameRect.height * 100;
@@ -369,7 +374,7 @@ function pvDragEnd(e) {
 
   // < 0.5% movement in both axes = treat as click, open inspector.
   if (Math.abs(dxPct) < 0.5 && Math.abs(dyPct) < 0.5) {
-    pvOpenInspector(drag.pl.override_key, drag.pp.part_name, drag.pl, drag.pp);
+    pvOpenInspector(drag.pl.override_key, drag.pl, drag.pp);
     return;
   }
 
@@ -386,7 +391,7 @@ function pvDragEnd(e) {
 
 // ── inspector ────────────────────────────────────────────
 
-function pvOpenInspector(overrideKey, partName, pl, pp) {
+function pvOpenInspector(overrideKey, pl, pp) {
   _pvInspKey = overrideKey;
   _pvInspPl  = pl;
   _pvInspPp  = pp;
@@ -395,7 +400,17 @@ function pvOpenInspector(overrideKey, partName, pl, pp) {
   const pendingOv = _pvPendingOverrides[overrideKey];
   const ov = pendingOv || pl.override || {};
 
-  $("pv-insp-title").textContent = `${partName} — ${pl.view}${pendingOv ? " ●" : ""}`;
+  pvUpdateInspTitle();
+
+  // Meta info (model, location)
+  const modelEl = $("pv-insp-model");
+  if (modelEl) {
+    const mfr = pp.manufacturer || "";
+    const pn  = pp.part_number  || "";
+    modelEl.textContent = [mfr, pn].filter(Boolean).join(" · ") || "—";
+  }
+  const locEl = $("pv-insp-location");
+  if (locEl) locEl.textContent = pl.location_key || "—";
 
   $("pv-insp-visible").checked  = ov.visible  !== false;
   $("pv-insp-rotation").value   = ov.rotation  ?? pl.rotation  ?? 0;
@@ -447,7 +462,7 @@ async function pvResetThisPart() {
     }
   } else {
     // Nothing saved on server — just re-open inspector with base values.
-    if (pl && pp) pvOpenInspector(key, pp.part_name, pl, pp);
+    if (pl && pp) pvOpenInspector(key, pl, pp);
     pvRenderView(_pvView);
   }
 }

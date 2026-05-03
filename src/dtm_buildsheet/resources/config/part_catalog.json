@@ -671,7 +671,8 @@
       "asset_key": "interior-front",
       "diagram": true,
       "default_views": [
-        "top"
+        "Top",
+        "front"
       ],
       "render_quantity_policy": "single_per_line",
       "default_location_key": "INTERIOR LIGHT BAR (FRONT)",
@@ -860,7 +861,8 @@
       "is_fixture": true,
       "diagram": true,
       "default_views": [
-        "top"
+        "top",
+        "rear"
       ],
       "render_quantity_policy": "single_per_line",
       "conditions": {
@@ -1239,7 +1241,10 @@
       "category": "equipment",
       "render_kind": "equipment",
       "diagram": true,
-      "default_views": [],
+      "default_views": [
+        "Top",
+        "side"
+      ],
       "render_quantity_policy": "location_slots",
       "aliases": [
         "Radio 1 Antenna Top",
