@@ -3006,6 +3006,10 @@
         {
           "name": "Radio Mic Clip 2",
           "sub": true
+        },
+        {
+          "name": "Radio Speaker",
+          "sub": false
         }
       ]
     },

@@ -472,7 +472,8 @@ $("modal-close").addEventListener("click",()=>$("edit-modal").classList.remove("
 // ── Co-Part Rules table ──────────────────────────────────────────────────────
 function _cprOverrideFields(prefix, obj){
   const skip=!!(obj&&obj.skip);
-  const pat=(obj&&obj.pattern)||"";
+  let pat=(obj&&obj.pattern)||"";
+  if(pat==="horizontal") pat="mirror";
   const side=(obj&&obj.side)||"";
   const asset=(obj&&obj.asset_key)||"";
   return `<div style="display:flex;flex-direction:column;gap:2px">
@@ -486,7 +487,6 @@ function _cprOverrideFields(prefix, obj){
         <option value="">—</option>
         <option value="single"${pat==="single"?" selected":""}>single</option>
         <option value="mirror"${pat==="mirror"?" selected":""}>mirror</option>
-        <option value="horizontal"${pat==="horizontal"?" selected":""}>horizontal</option>
         <option value="vertical"${pat==="vertical"?" selected":""}>vertical</option>
       </select>
     </div>
