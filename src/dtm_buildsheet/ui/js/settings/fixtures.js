@@ -63,7 +63,7 @@ function renderFixtureList(){
 }
 
 function updateFixtureSpacingRows(pattern, slots){
-  const showH=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
+  const showH = pattern === "mirror" && slots > 2;
   const showV=pattern==="vertical"&&slots>1;
   $("fix-hspacing-row").hidden=!showH;
   $("fix-vspacing-row").hidden=!showV;

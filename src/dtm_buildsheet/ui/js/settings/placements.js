@@ -255,7 +255,7 @@ $("loc-used-by-btn-add").addEventListener("click", async()=>{
 });
 
 function updateSpacingRowVisibility(pattern, slots){
-  const showH=(pattern==="horizontal"&&slots>1)||(pattern==="mirror"&&slots>2);
+  const showH = pattern === "mirror" && slots > 2;
   const showV=(pattern==="vertical"&&slots>1);
   $("loc-spacing-row").hidden=!showH;
   $("loc-vspacing-row").hidden=!showV;

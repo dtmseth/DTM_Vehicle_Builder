@@ -122,6 +122,10 @@ def slot_relative_positions(
     if pattern == "mirror":
         center = 0.5
         offset = abs(anchor_x - center)
+        # When the anchor is at center (e.g. a co_part_rule forced pattern=mirror
+        # on a location whose x=0.5), fall back to h_spacing/2 so slots don't overlap.
+        if offset < 0.001 and h_spacing:
+            offset = h_spacing / 2
         if slot_count == 2:
             return [(center - offset, anchor_y), (center + offset, anchor_y)]
         half = slot_count // 2

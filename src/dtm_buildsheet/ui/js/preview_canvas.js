@@ -131,8 +131,11 @@ function pvSlotPositions(pl) {
     }
 
     if (pattern === "mirror") {
-      const centerX = 50;
-      const offsetX = Math.abs(baseCx - centerX);
+      const centerX   = 50;
+      const rawOffset = Math.abs(baseCx - centerX);
+      // When the anchor sits exactly at center (e.g. co_part_rule forced pattern=mirror
+      // on a location whose x=0.5), fall back to h_spacing/2 so slots don't overlap.
+      const offsetX   = rawOffset > 0.1 ? rawOffset : spacingPct / 2;
       if (n === 2) return [
         { xPct: centerX - offsetX, yPct: baseCy },
         { xPct: centerX + offsetX, yPct: baseCy },
@@ -183,8 +186,10 @@ function pvRenderPlacement(frame, pp, pl) {
     // skip the dot placeholder so they don't pollute the preview canvas.
     if (!assetUrl && (pp.render_kind === "equipment" || pp.render_kind === "bar")) return;
 
-    // Match render_ppt.py exactly: mirror logic only applies when pattern === "mirror".
-    const isMirroredSlot = pl.pattern === "mirror" && (slotRole === "driver" || slotRole === "positive_x");
+    // Rotation/flip mirroring applies to the right-side slot of both "mirror" and
+    // "horizontal" symmetric placements — matching render_ppt.py exactly.
+    const isSymPattern   = pl.pattern === "mirror" || pl.pattern === "horizontal";
+    const isMirroredSlot = isSymPattern && (slotRole === "driver" || slotRole === "positive_x");
     const instFlipH = (pl.flip_h || false) !== (isMirroredSlot && (pl.flip_mirrored_h || false));
     const instFlipV = pl.flip_v || false;
 
@@ -237,24 +242,31 @@ function pvMergeOverride(pl, ov) {
   // Un-apply the server-baked anchor_dx/dy from pl.anchor, then re-apply the
   // provided override values for client-side rendering without a round-trip.
   const savedOv    = pl.override || {};
-  const savedDx    = savedOv.anchor_dx  || 0;
-  const savedDy    = savedOv.anchor_dy  || 0;
-  const savedScale = savedOv.size_scale || 1;
+  const savedDx    = savedOv.anchor_dx      || 0;
+  const savedDy    = savedOv.anchor_dy      || 0;
+  const savedScale = savedOv.size_scale     || 1;
+  const savedHDelta = savedOv.h_spacing_delta || 0;
 
-  const liveDx    = ov.anchor_dx   ?? 0;
-  const liveDy    = ov.anchor_dy   ?? 0;
-  const liveRot   = ov.rotation    != null ? ov.rotation   : (pl.rotation  ?? 0);
-  const liveFlipH = ov.flip_h      != null ? ov.flip_h     : (pl.flip_h    ?? false);
-  const liveFlipV = ov.flip_v      != null ? ov.flip_v     : (pl.flip_v    ?? false);
-  const liveScale = ov.size_scale  ?? 1;
+  const liveDx     = ov.anchor_dx      ?? 0;
+  const liveDy     = ov.anchor_dy      ?? 0;
+  const liveRot    = ov.rotation    != null ? ov.rotation   : (pl.rotation  ?? 0);
+  const liveFlipH  = ov.flip_h      != null ? ov.flip_h     : (pl.flip_h    ?? false);
+  const liveFlipV  = ov.flip_v      != null ? ov.flip_v     : (pl.flip_v    ?? false);
+  const liveScale  = ov.size_scale     ?? 1;
+  const liveHDelta = ov.h_spacing_delta ?? 0;
 
   const base = pl.anchor || {};
   const baseW = (pl.icon_w_pct || 0.04) / savedScale;
   const baseH = (pl.icon_h_pct || 0.02) / savedScale;
 
+  // Un-bake the server-applied h_spacing_delta and re-apply the live one.
+  const rawHSpacing  = (pl.h_spacing != null ? pl.h_spacing : 0) - savedHDelta;
+  const liveHSpacing = Math.max(rawHSpacing + liveHDelta, 0.001);
+
   return {
     ...pl,
     anchor:     { x: (base.x || 0) - savedDx + liveDx, y: (base.y || 0) - savedDy + liveDy },
+    h_spacing:  liveHSpacing,
     rotation:   liveRot,
     flip_h:     liveFlipH,
     flip_v:     liveFlipV,
@@ -268,7 +280,10 @@ function pvMergeOverride(pl, ov) {
 function pvLivePreview() {
   if (!_pvInspPl || !_pvInspPp || !_pvInspKey) return;
 
+  // Preserve fields (e.g. h_spacing_delta) that the inspector panel doesn't expose.
+  const existing = _pvPendingOverrides[_pvInspKey] || {};
   _pvPendingOverrides[_pvInspKey] = {
+    ...existing,
     visible:    $("pv-insp-visible").checked,
     rotation:   parseFloat($("pv-insp-rot-num").value)   || 0,
     flip_h:     $("pv-insp-flip-h").checked,
@@ -304,6 +319,41 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
   const grabbedIsRight = grabbedXPct > 50;
   const invertDx = pl.pattern === "mirror" && (grabbedIsRight !== anchorIsRight);
 
+  // Detect a symmetric spread placement: any horizontal multi-slot layout with
+  // driver/passenger roles spreads symmetrically around its anchor rather than
+  // translating as a rigid group. Covers 2-slot pairs, 4-slot top-tube grids,
+  // and partial selections (qty-2 outer pair of a 4-slot location).
+  const effectiveSlotCount = pl.slot_count || (pl.instances || []).length || 1;
+  const hasDriverPassenger  = (pl.instances || []).some(
+    i => i.slot_role === "driver" || i.slot_role === "passenger"
+  );
+  const isSymmetric = (
+    pl.pattern === "horizontal" &&
+    effectiveSlotCount >= 2 &&
+    hasDriverPassenger
+  );
+
+  // Baseline h_spacing for symmetric drag (un-bake any already-applied delta).
+  const serverHDelta = pl.override?.h_spacing_delta || 0;
+  const savedHDelta  = pendingOv.h_spacing_delta != null ? pendingOv.h_spacing_delta : serverHDelta;
+  const baseHSpacing = (pl.h_spacing != null ? pl.h_spacing : 0) - savedHDelta;
+
+  // Convert baseHSpacing to percent and compute the grabbed slot's coefficient
+  // (how many h_spacing units from center it sits). The coefficient lets us
+  // correctly scale drag for any slot in an n-slot symmetric grid: inner slots
+  // of a 4-slot placement have coeff ≈ ±0.5, outer slots have coeff ≈ ±1.5.
+  let baseSpacingPct;
+  if (pl.h_spacing_units === "icon_width") {
+    const iconWPct = (pl.icon_w_pct || 0.04) * 100;
+    baseSpacingPct = baseHSpacing > 0 ? iconWPct * baseHSpacing : iconWPct;
+  } else {
+    baseSpacingPct = baseHSpacing > 0 ? baseHSpacing * 100 : 6;
+  }
+  const grabCenterPct = ((pl.anchor?.x || 0) - savedDx) * 100;
+  const grabbedCoeff  = baseSpacingPct > 0.001
+    ? (grabbedXPct - grabCenterPct) / baseSpacingPct
+    : (grabbedXPct >= grabCenterPct ? 0.5 : -0.5);
+
   // pl.anchor.x is the MERGED anchor (rawBase + savedDx) when a pending override
   // exists, so stripping savedDx always recovers the true raw base regardless of
   // whether the pending override was already applied or not.
@@ -319,6 +369,12 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
     baseAnchorY: (pl.anchor?.y || 0) - savedDy,
     dxPct: 0,
     dyPct: 0,
+    isSymmetric,
+    grabbedXPct,
+    savedHDelta,
+    baseHSpacing,
+    baseSpacingPct,
+    grabbedCoeff,
   };
 
   frame.querySelectorAll(`[data-override-key="${pl.override_key}"]`)
@@ -331,7 +387,8 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
 function pvDragMove(e) {
   if (!_pvDrag) return;
   const { frameRect, startX, startY, pl, pp, frame,
-          savedDx, savedDy, invertDx, baseAnchorX, baseAnchorY } = _pvDrag;
+          savedDx, savedDy, invertDx, baseAnchorX, baseAnchorY,
+          isSymmetric, grabbedXPct, baseHSpacing, baseSpacingPct, grabbedCoeff } = _pvDrag;
 
   const rawDxPct = (e.clientX - startX) / frameRect.width  * 100;
   const rawDyPct = (e.clientY - startY) / frameRect.height * 100;
@@ -339,17 +396,47 @@ function pvDragMove(e) {
   _pvDrag.dxPct = rawDxPct;
   _pvDrag.dyPct = rawDyPct;
 
-  // For mirror, invert dx so the grabbed icon follows the mouse naturally.
-  const effectiveDx = savedDx + ((invertDx ? -rawDxPct : rawDxPct) / 100);
-  const effectiveDy = savedDy + (rawDyPct / 100);
+  let livePl;
 
-  const livePl = {
-    ...pl,
-    anchor: { x: baseAnchorX + effectiveDx, y: baseAnchorY + effectiveDy },
-  };
+  if (isSymmetric) {
+    // Symmetric spread in X: grabbed slot moves, its mirror moves equally in
+    // the opposite direction; anchor.x stays fixed, only h_spacing changes.
+    // Standard translation in Y: all slots move together.
+    //
+    // The coefficient (how many h_spacing units the grabbed slot is from center)
+    // scales the spread correctly for both inner (±0.5) and outer (±1.5) slots
+    // of a 4-slot top-tube grid, as well as standard 2-slot pairs (±0.5).
+    const centerPct      = baseAnchorX * 100;
+    const newGrabbedXPct = grabbedXPct + rawDxPct;
+    const absCoeff       = Math.max(Math.abs(grabbedCoeff), 0.1);
+    const newSpacingPct  = Math.max(Math.abs(newGrabbedXPct - centerPct) / absCoeff, 0.5);
 
-  // Remove existing icons and re-render with the live anchor so mirror pairs
-  // recompute their positions correctly (not just translated as a rigid group).
+    let newHSpacing;
+    if (pl.h_spacing_units === "icon_width") {
+      const iconWPct = (pl.icon_w_pct || 0.04) * 100;
+      newHSpacing = newSpacingPct / iconWPct;
+    } else {
+      newHSpacing = newSpacingPct / 100;
+    }
+    newHSpacing = Math.max(newHSpacing, 0.001);
+
+    const effectiveDy = savedDy + (rawDyPct / 100);
+    livePl = {
+      ...pl,
+      h_spacing: newHSpacing,
+      anchor: { ...(pl.anchor || {}), y: baseAnchorY + effectiveDy },
+    };
+  } else {
+    // Standard translation drag: anchor shifts, mirror pairs recompute naturally.
+    const effectiveDx = savedDx + ((invertDx ? -rawDxPct : rawDxPct) / 100);
+    const effectiveDy = savedDy + (rawDyPct / 100);
+    livePl = {
+      ...pl,
+      anchor: { x: baseAnchorX + effectiveDx, y: baseAnchorY + effectiveDy },
+    };
+  }
+
+  // Remove existing icons and re-render with the live placement.
   frame.querySelectorAll(`[data-override-key="${pl.override_key}"]`)
     .forEach(el => el.remove());
   pvRenderPlacement(frame, pp, livePl);
@@ -378,13 +465,38 @@ function pvDragEnd(e) {
     return;
   }
 
-  const effectiveDxFrac = (drag.invertDx ? -dxPct : dxPct) / 100;
-  const newDx = +(drag.savedDx + effectiveDxFrac).toFixed(6);
-  const newDy = +(drag.savedDy + dyPct / 100).toFixed(6);
-
-  // Store in pending (preserve any existing pending values such as rotation/flip).
   const existingPending = _pvPendingOverrides[drag.pl.override_key] || {};
-  _pvPendingOverrides[drag.pl.override_key] = { ...existingPending, anchor_dx: newDx, anchor_dy: newDy };
+
+  if (drag.isSymmetric) {
+    // Recompute final h_spacing using the same coefficient formula as pvDragMove.
+    const centerPct      = drag.baseAnchorX * 100;
+    const newGrabbedXPct = drag.grabbedXPct + dxPct;
+    const absCoeff       = Math.max(Math.abs(drag.grabbedCoeff), 0.1);
+    const newSpacingPct  = Math.max(Math.abs(newGrabbedXPct - centerPct) / absCoeff, 0.5);
+
+    let newHSpacing;
+    if (drag.pl.h_spacing_units === "icon_width") {
+      const iconWPct = (drag.pl.icon_w_pct || 0.04) * 100;
+      newHSpacing = newSpacingPct / iconWPct;
+    } else {
+      newHSpacing = newSpacingPct / 100;
+    }
+    newHSpacing = Math.max(newHSpacing, 0.001);
+
+    const newHDelta = +(newHSpacing - drag.baseHSpacing).toFixed(6);
+    const newDy     = +(drag.savedDy + dyPct / 100).toFixed(6);
+    _pvPendingOverrides[drag.pl.override_key] = {
+      ...existingPending,
+      h_spacing_delta: newHDelta,
+      anchor_dy:       newDy,
+    };
+  } else {
+    const effectiveDxFrac = (drag.invertDx ? -dxPct : dxPct) / 100;
+    const newDx = +(drag.savedDx + effectiveDxFrac).toFixed(6);
+    const newDy = +(drag.savedDy + dyPct / 100).toFixed(6);
+    _pvPendingOverrides[drag.pl.override_key] = { ...existingPending, anchor_dx: newDx, anchor_dy: newDy };
+  }
+
   pvUpdateBadge();
   pvRenderView(_pvView);
 }

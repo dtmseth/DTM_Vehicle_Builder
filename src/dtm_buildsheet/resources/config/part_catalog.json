@@ -2190,6 +2190,19 @@
       "aliases": [
         "Harness"
       ]
+    },
+    {
+      "part_id": "radio_speaker",
+      "display_name": "Radio Speaker",
+      "category": "equipment",
+      "render_kind": "equipment",
+      "diagram": false,
+      "default_views": [],
+      "render_quantity_policy": "single_per_line",
+      "asset_key": "radio_speaker",
+      "aliases": [
+        "Radio Speaker"
+      ]
     }
   ],
   "schema_version": 1

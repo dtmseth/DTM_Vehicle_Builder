@@ -397,16 +397,15 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         width=iw, height=ih,
                     )
 
+                    is_right_slot = instance.slot_role in ("driver", "positive_x")
+                    is_sym_pattern = placement.pattern in ("mirror", "horizontal")
                     is_mirrored = (
                         placement.flip_mirrored_h
-                        and placement.pattern == "mirror"
-                        and instance.slot_role in ("driver", "positive_x")
+                        and is_sym_pattern
+                        and is_right_slot
                     )
                     inst_flip_h = placement.flip_h ^ is_mirrored
-                    is_right    = (
-                        placement.pattern == "mirror"
-                        and instance.slot_role in ("driver", "positive_x")
-                    )
+                    is_right    = is_sym_pattern and is_right_slot
                     inst_rot = (
                         (360 - placement.rotation) % 360
                         if is_right and placement.rotation != 0 else placement.rotation

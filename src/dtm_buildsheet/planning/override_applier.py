@@ -65,6 +65,10 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
                         # No explicit size dict — store the multiplier for the renderer.
                         pl.size_scale = scale
 
+            if "h_spacing_delta" in ov:
+                base = pl.h_spacing if pl.h_spacing is not None else 0.0
+                pl.h_spacing = max(round(base + float(ov["h_spacing_delta"]), 6), 0.001)
+
             kept.append(pl)
         pp.placements = kept
 
