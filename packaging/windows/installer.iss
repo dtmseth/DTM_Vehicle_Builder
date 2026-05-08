@@ -37,3 +37,21 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// On upgrade, wipe the bundled-data directories (config + assets) from the
+// user's AppData workspace so the app re-seeds fresh files on next launch.
+// User output, drafts, and input files are preserved.
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  WorkspaceRoot: String;
+begin
+  if CurStep = ssInstall then
+  begin
+    WorkspaceRoot := ExpandConstant('{userappdata}\DTM Vehicle Builder');
+    if DirExists(WorkspaceRoot + '\config') then
+      DelTree(WorkspaceRoot + '\config', True, True, True);
+    if DirExists(WorkspaceRoot + '\assets') then
+      DelTree(WorkspaceRoot + '\assets', True, True, True);
+  end;
+end;

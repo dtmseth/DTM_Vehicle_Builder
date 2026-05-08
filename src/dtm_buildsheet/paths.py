@@ -74,13 +74,13 @@ def _md5(path: Path) -> str:
 
 
 def _copy_missing_tree(source_root: Path, dest_root: Path) -> None:
-    """Copy files from source_root to dest_root only when the destination is missing."""
+    """Copy files from source_root to dest_root, updating any that have changed."""
     for source in sorted(source_root.rglob("*")):
         if source.is_dir() or source.name.startswith("."):
             continue
         rel = source.relative_to(source_root)
         dest = dest_root / rel
-        if dest.exists():
+        if dest.exists() and _md5(source) == _md5(dest):
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         try:

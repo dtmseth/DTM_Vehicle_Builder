@@ -24,6 +24,18 @@ if _ui.exists():
 
 hiddenimports = collect_submodules("dtm_buildsheet")
 
+# Windows PDF export uses PowerPoint COM via comtypes (runtime import — not
+# detected by static analysis). Must be explicit or the frozen app crashes.
+import sys as _sys2
+if _sys2.platform != "darwin":
+    hiddenimports += [
+        "comtypes",
+        "comtypes.client",
+        "comtypes.server",
+        "comtypes.server.factory",
+        "comtypes.typeinfo",
+    ]
+
 import sys as _sys
 if _sys.platform == 'darwin':
     icon_path = str(MAC_ICON) if MAC_ICON.exists() else None

@@ -21,6 +21,11 @@ packaging = [
   "pyinstaller>=6.0,<7",
   "pyinstaller-hooks-contrib>=2024.0",
 ]
+packaging-win = [
+  "pyinstaller>=6.0,<7",
+  "pyinstaller-hooks-contrib>=2024.0",
+  "comtypes>=1.4",
+]
 dev = [
   "pytest>=9.0",
 ]

@@ -7,7 +7,7 @@ if (!(Test-Path ".venv\Scripts\python.exe")) {
     exit 1
 }
 
-& ".venv\Scripts\python.exe" -m pip install -e ".[packaging]"
+& ".venv\Scripts\python.exe" -m pip install -e ".[packaging-win]"
 & ".venv\Scripts\python.exe" -m PyInstaller --clean "packaging/pyinstaller/DTM_VehicleBuilder.spec"
 
 Write-Host ""
