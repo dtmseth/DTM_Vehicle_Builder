@@ -4,7 +4,6 @@ import base64
 import logging
 import mimetypes
 import subprocess
-import threading
 from pathlib import Path
 
 from ...paths import AppPaths, ASSETS_DIR
@@ -12,16 +11,12 @@ from ...paths import AppPaths, ASSETS_DIR
 _log = logging.getLogger(__name__)
 
 
-def _git_sync(message: str, *paths: Path) -> None:
-    """Stage the given paths, commit, and push — runs in a background thread."""
-    def _run() -> None:
-        try:
-            subprocess.run(["git", "add", "--"] + [str(p) for p in paths], check=True)
-            subprocess.run(["git", "commit", "-m", message], check=True)
-            subprocess.run(["git", "push", "origin", "main"], check=True)
-        except subprocess.CalledProcessError as exc:
-            _log.warning("git sync failed: %s", exc)
-    threading.Thread(target=_run, daemon=True).start()
+def _git_stage(*paths: Path) -> None:
+    """Stage paths so they're included in the next commit."""
+    try:
+        subprocess.run(["git", "add", "--"] + [str(p) for p in paths], check=True)
+    except subprocess.CalledProcessError as exc:
+        _log.warning("git stage failed: %s", exc)
 
 
 def list_assets(paths: AppPaths) -> dict:
@@ -59,7 +54,7 @@ def upload_asset(body: dict, paths: AppPaths) -> dict:
         dest.write_bytes(data)
         rel = str(dest.relative_to(paths.workspace_assets_dir)).replace("\\", "/")
         if paths.workspace_assets_dir == ASSETS_DIR:
-            _git_sync(f"Add asset: {rel}", dest)
+            _git_stage(dest)
         return {"ok": True, "path": rel, "url": f"/assets/{rel}"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
@@ -79,8 +74,7 @@ def delete_asset(body: dict, paths: AppPaths) -> dict:
         if existed:
             target.unlink()
         if existed and paths.workspace_assets_dir == ASSETS_DIR:
-            rel = str(Path(folder) / filename).replace("\\", "/")
-            _git_sync(f"Remove asset: {rel}", target)
+            _git_stage(target)
         return {"ok": True}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
