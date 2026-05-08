@@ -64,6 +64,8 @@ def _parse_project_info(ws) -> dict:
         "QUOTE / ESTIMATE #:": "QuoteNumber",
         "QUOTE/ESTIMATE NUMBER:": "QuoteNumber",
         "ADDITIONAL INFO:": "AdditionalInfo",
+        "BUILD TYPE:": "BuildType",
+        "VEHICLE TYPE:": "BuildType",   # backward compat for old workbooks
     }
     vehicle_fields = {"UNIT ID:", "VIN:", "YEAR:", "MAKE:", "MODEL:", "SUB MODEL:"}
 

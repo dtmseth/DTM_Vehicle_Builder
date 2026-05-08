@@ -797,7 +797,7 @@ $("btn-modal-save").addEventListener("click", async()=>{
     }
     // co_part_rules
     const cpr=readCopartRules();
-    if(cpr.length) updated.co_part_rules=cpr;
+    updated.co_part_rules=cpr;
     const idx=_catalog.parts.findIndex(p=>p.part_id===_editingPartId);
     // Spread-merge: preserve any catalog fields the modal doesn't expose
     // (is_fixture, group_shapes, quantity_rules, conditions, model_remaps, etc.)

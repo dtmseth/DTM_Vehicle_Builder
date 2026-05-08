@@ -65,12 +65,16 @@
             "pattern": "single"
           },
           "side": {
-            "x": -0.005,
-            "y": 0.625,
+            "x": -0.01,
+            "y": 0.61,
             "units": "relative_image",
             "orientation": "h",
             "slot_count": 1,
-            "pattern": "single"
+            "pattern": "single",
+            "flip_h": false,
+            "flip_v": false,
+            "flip_mirrored_h": false,
+            "behind_vehicle": false
           },
           "top": {
             "x": -0.01,
@@ -159,8 +163,8 @@
         },
         "wing_wraps": {
           "side": {
-            "x": 0.055,
-            "y": 0.605,
+            "x": 0.07,
+            "y": 0.6,
             "units": "relative_image",
             "orientation": "h",
             "slot_count": 1,
@@ -171,7 +175,7 @@
             "behind_vehicle": false
           },
           "front": {
-            "x": 0.84,
+            "x": 0.845,
             "y": 0.59,
             "units": "relative_image",
             "orientation": "h",
@@ -198,12 +202,12 @@
           },
           "locations": {
             "TOP OF PUSH BUMPER": {
-              "x": 0.5,
-              "y": 0.59,
+              "x": 0.61,
+              "y": 0.545,
               "units": "relative_image",
               "orientation": "h",
               "slot_count": 2,
-              "pattern": "horizontal",
+              "pattern": "mirror",
               "flip_v": true,
               "h_spacing": 0.12
             },
@@ -289,12 +293,12 @@
               "h_spacing": 0.44
             },
             "PIT BARS": {
-              "x": 0.5,
-              "y": 0.74,
+              "x": 0.115,
+              "y": 0.71,
               "units": "relative_image",
               "orientation": "h",
               "slot_count": 2,
-              "pattern": "horizontal",
+              "pattern": "mirror",
               "h_spacing": 0.73
             },
             "BEHIND OEM BUMPER": {
@@ -335,7 +339,8 @@
               "units": "relative_image",
               "orientation": "bar",
               "slot_count": 1,
-              "pattern": "single"
+              "pattern": "single",
+              "layer": 3
             },
             "UPPER WINDSHIELD": {
               "x": 0.425,
@@ -610,12 +615,14 @@
               "pattern": "single"
             },
             "PIT BARS": {
-              "x": 0.07,
-              "y": 0.755,
+              "x": 0.04,
+              "y": 0.76,
               "units": "relative_image",
               "orientation": "h",
               "slot_count": 1,
-              "pattern": "single"
+              "pattern": "single",
+              "layer": 10,
+              "rotation": 2
             },
             "SPOT LIGHT MOUNT": {
               "x": 0.295,
@@ -812,12 +819,12 @@
               "h_spacing": 0.2
             },
             "LICENSE PLATE BRACKET": {
-              "x": 0.5,
-              "y": 0.37,
+              "x": 0.595,
+              "y": 0.38,
               "units": "relative_image",
               "orientation": "h",
               "slot_count": 2,
-              "pattern": "horizontal",
+              "pattern": "mirror",
               "h_spacing": 0.13
             },
             "ON SPECIFIC BRACKET": {

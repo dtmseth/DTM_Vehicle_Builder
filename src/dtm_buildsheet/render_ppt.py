@@ -45,6 +45,7 @@ def _project_shim(plan) -> SimpleNamespace:
             lens         = raw.lens,
             new_or_used  = raw.new_or_used,
             source       = raw.source,
+            location     = raw.location,
             category     = pp.category or "",
             render_kind  = pp.render_kind or "",
         ))
@@ -182,7 +183,15 @@ def _group_shapes(slide, shapes: list) -> None:
 
 
 def _instance_icon_size(placement, part_size, instance, view: str,
-                        paths: AppPaths) -> tuple[float, float]:
+                        paths: AppPaths,
+                        equip_scale: tuple[float, float] = (1.0, 1.0)) -> tuple[float, float]:
+    """Return (width_inches, height_inches) for one icon instance.
+
+    equip_scale is applied to equipment render_kind icons so they remain
+    proportional to the vehicle image when it has been constrained by a
+    legend panel (the sizes in size_per_view were calibrated for the
+    unconstrained vehicle image).
+    """
     w, h = icon_size_in_inches(
         render_kind=placement.render_kind,
         part_name=part_size.name,
@@ -194,14 +203,24 @@ def _instance_icon_size(placement, part_size, instance, view: str,
         paths=paths,
     )
     scale = getattr(placement, "size_scale", 1.0)
+    # All icons anchored to the vehicle image must scale with it.  equip_scale
+    # is (1.0, 1.0) when the vehicle is unconstrained (side/top views), so this
+    # is a no-op in those cases.  For front/rear views with a legend panel the
+    # vehicle is made smaller; all size_per_view / BAR_SIZES values were
+    # calibrated for the full vehicle image, so every render_kind needs the
+    # same proportional scale-down.
+    w *= equip_scale[0]
+    h *= equip_scale[1]
     return w * scale, h * scale
 
 
-def _build_accessory_map(plan) -> dict[str, list[str]]:
-    acc_map: dict[str, list[str]] = {}
+def _build_accessory_map(plan) -> dict[str, list[tuple[str, str]]]:
+    """Returns {parent_name: [(acc_name, part_number), ...]}."""
+    acc_map: dict[str, list[tuple[str, str]]] = {}
     for pp in plan.planned_parts:
         if pp.accessory_of:
-            acc_map.setdefault(pp.accessory_of, []).append(pp.part_name)
+            pnum = (pp.raw.part_number or "").strip()
+            acc_map.setdefault(pp.accessory_of, []).append((pp.part_name, pnum))
     return acc_map
 
 
@@ -263,9 +282,10 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
 
     # ── Shared project metadata ───────────────────────────────────────────────
     project_shim = _project_shim(plan)
-    new_v    = plan.project.get("NewVehicle",      {})
-    exist_v  = plan.project.get("ExistingVehicle", {})
-    agency   = plan.project.get("Agency", "")
+    new_v      = plan.project.get("NewVehicle",      {})
+    exist_v    = plan.project.get("ExistingVehicle", {})
+    agency     = plan.project.get("Agency", "")
+    build_type = plan.project.get("BuildType", "")
     year     = new_v.get("YEAR",  "") or exist_v.get("YEAR",  "")
     make     = new_v.get("MAKE",  "") or exist_v.get("MAKE",  "")
     model    = (new_v.get("MODEL","") or exist_v.get("MODEL","")
@@ -296,7 +316,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
         update_slide_header_footer(
             slide,
             title    = f"{view_label.upper()} VIEW — {agency}",
-            subtitle = "  |  ".join(filter(None, [veh_line, unit_str])),
+            subtitle = "  |  ".join(filter(None, [build_type, veh_line, unit_str])),
         )
         add_slide_footer_bar(slide, footer)
         if logo_position == "bottom":
@@ -304,14 +324,21 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
         else:
             place_logo(slide, active_paths)
 
-        vehicle_pic_shape, img_box = place_vehicle_image(slide, vehicle_type, view)
+        # For standard-legend views (front/rear) the legend occupies the right
+        # portion of the slide; constrain the vehicle image to leave that room.
+        _LEGEND_LEFT = Inches(5.80)   # legend panel starts here for standard layout
+        veh_max_right = _LEGEND_LEFT if legend_layout != "grid" else None
+        vehicle_pic_shape, img_box, equip_scale = place_vehicle_image(
+            slide, vehicle_type, view, max_right_emu=veh_max_right
+        )
         vehicle_pic_element = vehicle_pic_shape._element if vehicle_pic_shape else None
         if img_box is None:
-            place_legend(slide, [], [], accessory_map)
+            place_legend(slide, [], [], accessory_map, panel_left_emu=_LEGEND_LEFT)
             continue
 
         used_centers: list   = []
         collision            = Inches(0.18)
+        layer_shapes: list   = []   # (shape, layer) for post-render Z-sort
         specify_palettes: list[str] = []
         rendered_part_names: set[str] = set()
 
@@ -333,7 +360,8 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 if placement.render_kind in ("equipment", "bar") and not first_inst.asset_path:
                     continue
 
-                size_w, _ = _instance_icon_size(placement, part_size, first_inst, view, active_paths)
+                size_w, _ = _instance_icon_size(placement, part_size, first_inst, view,
+                                                active_paths, equip_scale)
                 icon_w_emu = Inches(size_w)
 
                 if placement.h_spacing is not None and placement.h_spacing > 0:
@@ -347,7 +375,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 if placement.v_spacing is not None and placement.v_spacing > 0:
                     if placement.h_spacing_units == "icon_width":
                         _, size_h = _instance_icon_size(placement, part_size, first_inst,
-                                                        view, active_paths)
+                                                        view, active_paths, equip_scale)
                         v_spacing_emu = int(Inches(size_h) * placement.v_spacing)
                     else:
                         v_spacing_emu = int(img_box[3] * placement.v_spacing)
@@ -379,12 +407,13 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         continue
 
                     inst_w, inst_h = _instance_icon_size(placement, part_size, instance,
-                                                         view, active_paths)
+                                                         view, active_paths, equip_scale)
                     iw = Inches(inst_w)
                     ih = Inches(inst_h)
 
                     ax, ay = px, py
-                    if not placement.group_shapes:
+                    if (not placement.group_shapes
+                            and placement.render_kind not in ("bar", "equipment")):
                         nudge = Inches(0.30)
                         for ox, oy in used_centers:
                             if abs(ax - ox) < collision and abs(ay - oy) < collision:
@@ -415,47 +444,88 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     if placement.behind_vehicle and vehicle_pic_element is not None:
                         _move_shape_behind(slide, pic, vehicle_pic_element)
 
+                    layer = getattr(placement, "layer", 0)
+                    if layer != 0:
+                        layer_shapes.append((pic, layer))
+
                     placement_shapes.append(pic)
                     rendered_part_names.add(pp.part_name)
 
                 if placement.group_shapes and len(placement_shapes) >= 2:
                     _group_shapes(slide, placement_shapes)
 
+        # ── Layer Z-sort: re-order shapes by layer value ─────────────────────
+        if layer_shapes:
+            sp_tree = slide.shapes._spTree
+            for shape, _ in sorted(
+                [(s, l) for s, l in layer_shapes if l > 0], key=lambda x: x[1]
+            ):
+                sp_tree.remove(shape._element)
+                sp_tree.append(shape._element)
+            for shape, _ in sorted(
+                [(s, l) for s, l in layer_shapes if l < 0], key=lambda x: -x[1]
+            ):
+                _move_shape_behind(slide, shape, vehicle_pic_element)
+
         # ── Build legend items ────────────────────────────────────────────────
-        placed_legend: list = []
+        placed_legend: list   = []
         seen_placed: set[tuple] = set()
+        extra_unrendered: list  = []
+        seen_unrendered: set[tuple] = set()
 
         for pp in plan.planned_parts:
             for pl in pp.placements:
                 if pl.view != view:
                     continue
-                # Skip pure fixture placements — not customer-ordered parts
-                if pl.is_fixture:
-                    continue
-                if (pp.part_name not in rendered_part_names
-                        and pl.color_profile != "specify_palette"):
+                if pl.color_profile == "specify_palette":
                     continue
                 key = (pp.part_name, pl.location_key)
-                if key in seen_placed:
-                    continue
-                seen_placed.add(key)
 
-                raw       = pp.raw
-                reused    = _is_reused(raw)
-                source    = raw.source or ""
-                accessories = accessory_map.get(pp.part_name, [])
-                placed_legend.append(_legend_item(
-                    pp.part_name, pl.location_key, raw.notes, accessories,
-                    manufacturer = raw.manufacturer,
-                    part_number  = raw.part_number,
-                    color        = raw.raw_color,
-                    lens         = raw.lens,
-                    new_or_used  = raw.new_or_used,
-                    source       = source,
-                    is_reused    = reused,
-                ))
+                if pp.part_name in rendered_part_names:
+                    if key in seen_placed:
+                        continue
+                    seen_placed.add(key)
+                    raw         = pp.raw
+                    reused      = _is_reused(raw)
+                    accessories = accessory_map.get(pp.part_name, [])
+                    placed_legend.append(_legend_item(
+                        pp.part_name, raw.location or pl.location_key, raw.notes, accessories,
+                        manufacturer = raw.manufacturer,
+                        part_number  = raw.part_number,
+                        color        = raw.raw_color,
+                        lens         = raw.lens,
+                        new_or_used  = raw.new_or_used,
+                        source       = raw.source or "",
+                        is_reused    = reused,
+                    ))
+                else:
+                    if key in seen_unrendered:
+                        continue
+                    seen_unrendered.add(key)
+                    extra_unrendered.append(_legend_item(
+                        pp.part_name,
+                        pp.raw.location or pl.location_key or "?",
+                        "Not shown on diagram",
+                        manufacturer = pp.raw.manufacturer,
+                        part_number  = pp.raw.part_number,
+                    ))
 
-        unplaced_legend = _unplaced_for_view(plan, view)
+        # Bumper sub-items (pit_bar, wing_wraps) already show under Push Bumper via
+        # the accessory_map; remove their standalone cards to save legend space.
+        _BUMPER_SUB_KWS = {"pit bar", "wing wrap", "wire cover"}
+        placed_legend = [
+            it for it in placed_legend
+            if not any(kw in it.name.lower() for kw in _BUMPER_SUB_KWS)
+        ]
+
+        # Merge warnings from planner + unrendered placements (deduplicate by name)
+        warn_items    = _unplaced_for_view(plan, view)
+        placed_names  = {item.name for item in placed_legend}
+        warn_names    = {item.name for item in warn_items}
+        unplaced_legend = warn_items + [
+            e for e in extra_unrendered
+            if e.name not in placed_names and e.name not in warn_names
+        ]
         palette_offset  = 0
         for cat in specify_palettes:
             consumed = place_specify_palette(slide, cat, img_box,
@@ -466,13 +536,14 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
         if legend_layout == "grid":
             place_legend_grid(slide, placed_legend, unplaced_legend, accessory_map, view=view)
         else:
-            place_legend(slide, placed_legend, unplaced_legend, accessory_map, view=view)
+            place_legend(slide, placed_legend, unplaced_legend, accessory_map,
+                         view=view, panel_left_emu=_LEGEND_LEFT)
 
     # ── Notes slide ───────────────────────────────────────────────────────────
     update_slide_header_footer(
         notes_slide,
         title    = f"BUILD NOTES — {agency}",
-        subtitle = "  |  ".join(filter(None, [veh_line, unit_str])),
+        subtitle = "  |  ".join(filter(None, [build_type, veh_line, unit_str])),
     )
     add_slide_footer_bar(notes_slide, footer)
     place_logo(notes_slide, active_paths)

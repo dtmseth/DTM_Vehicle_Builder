@@ -312,7 +312,7 @@
       "model_number": "6\"\" ROUND",
       "compatible_types": [
         "Front Dome Light",
-        "Rear Seat Cargo Lights:",
+        "Rear Seat Cargo Lights",
         "Cargo Lighting"
       ],
       "images": {}
@@ -360,7 +360,7 @@
       "manufacturer": "",
       "model_number": "AVENGER X1",
       "compatible_types": [
-        "Interior Light Bar"
+        "Front Interior Light Bar"
       ],
       "images": {}
     },
@@ -384,7 +384,7 @@
       "manufacturer": "",
       "model_number": "FST",
       "compatible_types": [
-        "Interior Light Bar"
+        "Front Interior Light Bar"
       ],
       "images": {}
     },
@@ -431,7 +431,7 @@
         "Rear Warning 2",
         "Rear Warning 3",
         "Lower Lift Gate Warning",
-        "Rear Seat Cargo Lights:",
+        "Rear Seat Cargo Lights",
         "Cargo Lighting"
       ],
       "images": {}
@@ -472,7 +472,7 @@
       "manufacturer": "",
       "model_number": "T-IONS W/SHORUD",
       "compatible_types": [
-        "Interior Light Bar"
+        "Front Interior Light Bar"
       ],
       "images": {}
     },
@@ -490,7 +490,7 @@
         "Rear Warning 2",
         "Rear Warning 3",
         "Lower Lift Gate Warning",
-        "Rear Seat Cargo Lights:",
+        "Rear Seat Cargo Lights",
         "Cargo Lighting"
       ],
       "images": {}
@@ -543,7 +543,7 @@
       "manufacturer": "",
       "model_number": "XLP",
       "compatible_types": [
-        "Interior Light Bar",
+        "Front Interior Light Bar",
         "Rear Interior Light Bar"
       ],
       "images": {}
@@ -2008,9 +2008,9 @@
       "manufacturer": "",
       "model_number": "3\"\" ROUND",
       "compatible_types": [
-        "Rear Seat Lights 1:",
-        "Rear Seat Lights 2:",
-        "Rear Seat Cargo Lights:",
+        "Rear Seat Lights 1",
+        "Rear Seat Lights 2",
+        "Rear Seat Cargo Lights",
         "Cargo Lighting"
       ],
       "images": {}
@@ -2077,17 +2077,6 @@
       "compatible_types": [
         "Siren Speaker 1",
         "Siren Speaker 2"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "pb9",
-      "display_name": "PB9",
-      "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "SETINA",
-      "model_number": "PB9",
-      "compatible_types": [
-        "Pit Bar"
       ],
       "images": {}
     },
@@ -2159,6 +2148,29 @@
       }
     },
     {
+      "part_id": "avenger_x2",
+      "display_name": "AVENGER X2",
+      "category": "LIGHT BARS",
+      "manufacturer": "",
+      "model_number": "AVENGER X2",
+      "compatible_types": [
+        "Front Interior Light Bar"
+      ],
+      "images": {},
+      "size_rule_id": "long"
+    },
+    {
+      "part_id": "hdx",
+      "display_name": "HDX",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "",
+      "model_number": "HDX",
+      "compatible_types": [
+        "Push Bumper"
+      ],
+      "images": {}
+    },
+    {
       "part_id": "pb10",
       "display_name": "PB10",
       "category": "PUSH BUMPER / FRONT STRUCTURE",
@@ -2168,8 +2180,8 @@
         "Wing Wraps"
       ],
       "images": {
-        "side": "lights/setina_pb10_side.png",
-        "front": "lights/setina_pb10_front.png"
+        "front": "lights/setina_pb10_front.png",
+        "side": "lights/setina_pb10_side.png"
       },
       "size_per_view": {
         "front": {
@@ -2183,29 +2195,63 @@
       }
     },
     {
-      "part_id": "hdx",
-      "display_name": "HDX",
+      "part_id": "pb9",
+      "display_name": "PB9",
       "category": "PUSH BUMPER / FRONT STRUCTURE",
-      "manufacturer": "",
-      "model_number": "HDX",
+      "manufacturer": "SETINA",
+      "model_number": "PB9",
       "compatible_types": [
-        "Push Bumper"
+        "Pit Bar"
       ],
       "images": {
-        "front": "lights/part_hdx_front.png"
+        "side": "lights/setina_pb9_side.png",
+        "front": "lights/setina_pb9_front.png"
       }
     },
     {
-      "part_id": "avenger_x2",
-      "display_name": "AVENGER X2",
-      "category": "LIGHT BARS",
-      "manufacturer": "",
-      "model_number": "AVENGER X2",
+      "part_id": "push_bumper_elitexd",
+      "display_name": "Push Bumper EliteXD",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "Westin",
+      "model_number": "Push Bumper EliteXD",
       "compatible_types": [
-        "Front Interior Light Bar"
+        "Push Bumper"
       ],
-      "images": {},
-      "size_rule_id": "long"
+      "images": {}
+    },
+    {
+      "part_id": "pit_bar_elitexd",
+      "display_name": "Pit Bar EliteXD",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "Westin",
+      "model_number": "Pit Bar EliteXD",
+      "compatible_types": [
+        "Pit Bar"
+      ],
+      "images": {
+        "front": "lights/westin_unknown_front.png",
+        "side": "lights/westin_pit_bar_elitexd_side.png"
+      }
+    },
+    {
+      "part_id": "wing_wrap_elitexd",
+      "display_name": "Wing Wrap EliteXD",
+      "category": "PUSH BUMPER / FRONT STRUCTURE",
+      "manufacturer": "Westin",
+      "model_number": "WING WRAP EliteXD",
+      "compatible_types": [
+        "Wing Wraps"
+      ],
+      "images": {
+        "front": "lights/westin_wing_wraps_front.png",
+        "side": "lights/westin_wing_wrap_elitexd_side.png"
+      },
+      "size_per_view": {
+        "side": {
+          "w": 1.84,
+          "h": 1.63
+        }
+      }
     }
   ],
   "schema_version": 1

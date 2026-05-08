@@ -158,7 +158,7 @@ def _inline_dv(options: list[str], allow_blank=True) -> DataValidation | None:
 
 
 # ── sheet builders ─────────────────────────────────────────────────────────────
-def _write_header_section(ws, row_start: int, vehicle_types: list[str] | None = None) -> int:
+def _write_header_section(ws, row_start: int) -> int:
     navy_fill  = _fill(_NAVY)
     gold_fill  = _fill(_GOLD)
     value_fill = _fill(_LIGHT_GRAY)
@@ -196,14 +196,14 @@ def _write_header_section(ws, row_start: int, vehicle_types: list[str] | None = 
     _info_row(3, "AGENCY / DEPT:", "SALES REP:")
     _info_row(4, "PRIMARY CONTACT:", "QUOTE / ESTIMATE #:")
     _info_row(5, "PHONE:", "ADDITIONAL INFO:")
-    _info_row(6, "EMAIL:", "VEHICLE TYPE:")
+    _info_row(6, "EMAIL:", "BUILD TYPE:")
 
-    # Vehicle type dropdown on H6
-    if vehicle_types:
-        vt_dv = _inline_dv(vehicle_types)
-        if vt_dv:
-            ws.add_data_validation(vt_dv)
-            vt_dv.add(ws.cell(row=6, column=8))
+    # Build type dropdown on H6
+    build_types = ["Patrol", "Unmarked", "Admin", "K-9"]
+    bt_dv = _inline_dv(build_types)
+    if bt_dv:
+        ws.add_data_validation(bt_dv)
+        bt_dv.add(ws.cell(row=6, column=8))
 
     for col, label, end_col in [(1,"NEW VEHICLE",6),(7,"EXISTING VEHICLE",11)]:
         c = ws.cell(row=7, column=col, value=label)
@@ -358,7 +358,7 @@ def build_template(paths: AppPaths | None = None, out_path: Path | None = None) 
 
     ws.freeze_panes = "A15"
 
-    _write_header_section(ws, row_start=1, vehicle_types=cfg["vehicle_types"])
+    _write_header_section(ws, row_start=1)
     _write_col_headers(ws, row=14)
     data_rows = _write_part_rows(ws, row_start=15, template_sections=cfg["template_sections"])
     _apply_validations(ws, data_rows, cfg)

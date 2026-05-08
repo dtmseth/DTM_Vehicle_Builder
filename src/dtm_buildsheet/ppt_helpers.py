@@ -82,9 +82,9 @@ MANIFEST_COL_WIDTHS_IN = [2.0, 1.3, 1.6, 0.35, 1.2, 1.45, 1.35, 3.08]
 MANIFEST_TABLE_LEFT  = Inches(0.5)
 MANIFEST_TABLE_TOP   = Inches(1.10)
 MANIFEST_TABLE_W     = sum(Inches(w) for w in MANIFEST_COL_WIDTHS_IN)
-MANIFEST_HDR_ROW_H   = Inches(0.28)
-MANIFEST_DATA_ROW_H  = Inches(0.27)
-MANIFEST_SEC_ROW_H   = Inches(0.27)
+MANIFEST_HDR_ROW_H   = Inches(0.34)
+MANIFEST_DATA_ROW_H  = Inches(0.34)
+MANIFEST_SEC_ROW_H   = Inches(0.34)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -109,14 +109,25 @@ def _source_label(part) -> str:
     return "New"
 
 
+def _color_label(part) -> str:
+    """Return color string only (no lens)."""
+    return getattr(part, "color", "").strip()
+
+
+def _lens_label(part) -> str:
+    """Return lens string only (no 'Lens:' prefix — the value already contains 'Lens')."""
+    return getattr(part, "lens", "").strip()
+
+
 def _color_lens_label(part) -> str:
-    color = getattr(part, "color", "").strip()
-    lens  = getattr(part, "lens",  "").strip()
+    """Legacy combined helper used by manifest table. Returns 'Color  /  Lens' string."""
+    color = _color_label(part)
+    lens  = _lens_label(part)
     parts = []
     if color:
         parts.append(color)
     if lens:
-        parts.append(f"Lens: {lens}")
+        parts.append(lens)
     return "  /  ".join(parts)
 
 
@@ -250,13 +261,14 @@ def update_slide_header_footer(slide, title: str, subtitle: str = "", footer: st
         if shape:
             shape._element.getparent().remove(shape._element)
 
-    hdr = slide.shapes.add_textbox(0, 0, SLIDE_W_EMU, Inches(0.95))
+    HDR_H = Inches(0.62)
+    hdr = slide.shapes.add_textbox(0, 0, SLIDE_W_EMU, HDR_H)
     hdr.name = "DTM_SLIDE_HEADER"  # avoid collision with add_slide_footer_bar deletions
     hdr.fill.solid()
     hdr.fill.fore_color.rgb = DTM_NAVY
     tf = hdr.text_frame
     tf.margin_left = Inches(0.3)
-    tf.margin_top  = Inches(0.24)
+    tf.margin_top  = Inches(0.08)
     p = tf.paragraphs[0]
     r = p.add_run()
     r.text           = title
@@ -267,7 +279,7 @@ def update_slide_header_footer(slide, title: str, subtitle: str = "", footer: st
         p2 = tf.add_paragraph()
         r2 = p2.add_run()
         r2.text           = subtitle
-        r2.font.size      = Pt(8)
+        r2.font.size      = Pt(11)
         r2.font.color.rgb = RGBColor(0xCC, 0xCC, 0xFF)
 
 
@@ -293,23 +305,23 @@ def _textbox(slide, left, top, width, height, text, font_size=10,
 
 
 def _kv_block(slide, items: list[tuple[str, str]], left, top, width,
-              line_h: float = 0.21) -> int:
+              line_h: float = 0.26) -> int:
     y = top
     for key, value in items:
         if not value:
             continue
-        box = slide.shapes.add_textbox(left, y, width, Inches(line_h + 0.05))
+        box = slide.shapes.add_textbox(left, y, width, Inches(line_h + 0.06))
         tf  = box.text_frame
         tf.word_wrap = True
         p   = tf.paragraphs[0]
         kr  = p.add_run()
         kr.text           = f"{key}:  "
-        kr.font.size      = Pt(9)
+        kr.font.size      = Pt(10)
         kr.font.bold      = True
         kr.font.color.rgb = DTM_NAVY
         vr  = p.add_run()
         vr.text           = value
-        vr.font.size      = Pt(9)
+        vr.font.size      = Pt(12)
         vr.font.color.rgb = DTM_DARKTEXT
         y += Inches(line_h)
     return y
@@ -362,13 +374,23 @@ def _card_bg(slide, left, top, width, height, color: RGBColor) -> None:
 # Cover slide
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _find_part(parts, *names) -> object | None:
+    """Return the first part whose name matches any of the given names (case-insensitive)."""
+    targets = {n.lower() for n in names}
+    for p in parts:
+        if getattr(p, "name", "").lower() in targets:
+            return p
+    return None
+
+
 def fill_overview(slide, project) -> None:
     info    = project.info
     new_v   = info.get("NewVehicle",      {})
     exist_v = info.get("ExistingVehicle", {})
     parts   = project.parts
 
-    agency    = info.get("Agency",         "—")
+    agency     = info.get("Agency",    "—")
+    build_type = info.get("BuildType", "")
     # Fall back to ExistingVehicle when NewVehicle fields are absent
     year      = new_v.get("YEAR",      "") or exist_v.get("YEAR",      "")
     make      = new_v.get("MAKE",      "") or exist_v.get("MAKE",      "")
@@ -389,6 +411,9 @@ def fill_overview(slide, project) -> None:
             shape._element.getparent().remove(shape._element)
 
     # ── Navy header bar ───────────────────────────────────────────────────────
+    hdr_title = "FLEET VEHICLE SPECIFICATION PACKAGE"
+    if build_type:
+        hdr_title += f"   •   {build_type.upper()}"
     hdr = slide.shapes.add_textbox(0, 0, SLIDE_W_EMU, Inches(0.95))
     hdr.fill.solid()
     hdr.fill.fore_color.rgb = DTM_NAVY
@@ -397,8 +422,8 @@ def fill_overview(slide, project) -> None:
     tf.margin_top  = Inches(0.21)
     p = tf.paragraphs[0]
     r = p.add_run()
-    r.text           = "FLEET VEHICLE SPECIFICATION PACKAGE"
-    r.font.size      = Pt(20)
+    r.text           = hdr_title
+    r.font.size      = Pt(18)
     r.font.bold      = True
     r.font.color.rgb = _WHITE
 
@@ -434,6 +459,8 @@ def fill_overview(slide, project) -> None:
     veh_display = " ".join(filter(None, [year, make, model, sub_model]))
     if unit_id:
         veh_display += f"   |   Unit #{unit_id}"
+    if build_type:
+        veh_display += f"   |   {build_type}"
     _textbox(slide, L, y, Inches(12.0), Inches(0.46),
              veh_display, font_size=24, bold=True,
              color=RGBColor(0x2A, 0x35, 0x80))
@@ -449,20 +476,20 @@ def fill_overview(slide, project) -> None:
     RIGHT_W  = Inches(5.85)
 
     # Left: Quote + Sales info
-    reused_count = sum(1 for p in parts if _is_reused(p))
-    build_type   = "Transfer / Retrofit" if reused_count else "New Installation"
-    _textbox(slide, L, col_top, LEFT_W, Inches(0.22),
-             "QUOTE & SALES INFORMATION", font_size=7, bold=True, color=DTM_NAVY)
-    left_y = col_top + Inches(0.22)
+    reused_count  = sum(1 for p in parts if _is_reused(p))
+    install_type  = "Transfer / Retrofit" if reused_count else "New Installation"
+    _textbox(slide, L, col_top, LEFT_W, Inches(0.25),
+             "QUOTE & SALES INFORMATION", font_size=10, bold=True, color=DTM_NAVY)
+    left_y = col_top + Inches(0.25)
     left_y = _kv_block(slide, [
         ("Sales Rep",    sales_rep),
         ("Quote #",      quote_num),
-        ("Build Type",   build_type),
+        ("Install Type", install_type),
         ("Other Orders", "0"),
     ], L, left_y, LEFT_W)
 
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)
-    card_h = Inches(1.55)
+    card_h = Inches(1.75)
 
     new_year      = new_v.get("YEAR",    "")
     new_make      = new_v.get("MAKE",    "")
@@ -489,15 +516,15 @@ def fill_overview(slide, project) -> None:
     veh_bg.fill.solid()
     veh_bg.fill.fore_color.rgb = _PANEL_BG
     _add_border(veh_bg, TAG_NEW, 1.0)
-    _textbox(slide, RIGHT_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.22),
-             "NEW VEHICLE", font_size=7, bold=True, color=TAG_NEW)
+    _textbox(slide, RIGHT_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.25),
+             "NEW VEHICLE", font_size=10, bold=True, color=TAG_NEW)
     _kv_block(slide, [
         ("Year",    new_year      or "—"),
         ("Make",    new_make      or "—"),
         ("Model",   new_model_str or "—"),
         ("Unit ID", new_unit      or "—"),
         ("VIN",     new_vin       or "—"),
-    ], RIGHT_X + Inches(0.10), col_top + Inches(0.22), CARD_W - Inches(0.2))
+    ], RIGHT_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
 
     # Secondary card: EXISTING VEHICLE (orange theme, only if data present)
     if exist_has_data:
@@ -505,21 +532,26 @@ def fill_overview(slide, project) -> None:
         ex_bg.fill.solid()
         ex_bg.fill.fore_color.rgb = DTM_ORANGE_BG
         _add_border(ex_bg, DTM_ORANGE, 1.0)
-        _textbox(slide, EXIST_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.22),
-                 "EXISTING VEHICLE", font_size=7, bold=True, color=DTM_ORANGE)
+        _textbox(slide, EXIST_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.25),
+                 "EXISTING VEHICLE", font_size=10, bold=True, color=DTM_ORANGE)
         _kv_block(slide, [
             ("Year",    ex_year      or "—"),
             ("Make",    ex_make      or "—"),
             ("Model",   ex_model_str or "—"),
             ("Unit ID", ex_unit      or "—"),
             ("VIN",     ex_vin       or "—"),
-        ], EXIST_X + Inches(0.10), col_top + Inches(0.22), CARD_W - Inches(0.2))
+        ], EXIST_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
 
-    # ── Stats row: number tiles ───────────────────────────────────────────────
-    stats_top = col_top + card_h + Inches(0.18)
+    # ── Stats / tiles row ─────────────────────────────────────────────────────
+    tiles_top = col_top + card_h + Inches(0.18)
 
-    lights_count = sum(1 for p in parts
-                       if getattr(p, "category", "") in MANIFEST_LIGHT_CATS)
+    lights_count = sum(
+        getattr(p, "quantity", 1) or 1
+        for p in parts
+        if getattr(p, "category", "") in {"warning_light", "scene_light"}
+        and getattr(p, "render_kind", "") not in ("bar",)
+        and "tracer" not in getattr(p, "name", "").lower()
+    )
 
     light_brands = sorted({
         getattr(p, "manufacturer", "").strip()
@@ -529,77 +561,174 @@ def fill_overview(slide, project) -> None:
     })
     brands_str = ", ".join(light_brands) if light_brands else "—"
 
-    num_stats = [
-        (str(lights_count), "Lights + Bars",     brands_str, DTM_NAVY,   _PANEL_BG),
-        (str(reused_count), "Reused / Transfer", "",         TAG_REUSED, _REUSED_BG),
-    ]
-    TILE_W   = Inches(2.36)
-    TILE_H   = Inches(0.72)
-    TILE_GAP = Inches(0.10)
+    # --- Cage + Tray combined ---
+    cage_part  = _find_part(parts, "front partition", "partition")
+    cage_value = (getattr(cage_part, "part_number", "") or "—") if cage_part else "—"
+    equip_part = _find_part(parts, "equipment tray")
+    if equip_part:
+        equip_lines = list(filter(None, [
+            getattr(equip_part, "manufacturer", ""),
+            getattr(equip_part, "part_number",  ""),
+            getattr(equip_part, "location",     ""),
+        ]))
+        equip_value = " · ".join(equip_lines) if equip_lines else "—"
+    else:
+        equip_value = "—"
 
-    for i, (num_str, label, sublabel, num_color, bg_color) in enumerate(num_stats):
-        tx = L + i * (TILE_W + TILE_GAP)
-        tb = slide.shapes.add_textbox(tx, stats_top, TILE_W, TILE_H)
+    # --- Lighting System + Camera combined ---
+    light_ctrl = _find_part(parts, "light controller", "lights controller")
+    if light_ctrl:
+        lc_lines = list(filter(None, [
+            getattr(light_ctrl, "manufacturer", ""),
+            getattr(light_ctrl, "part_number",  ""),
+        ]))
+        lighting_value = " · ".join(lc_lines) if lc_lines else "—"
+    else:
+        lighting_value = "—"
+    camera_part = _find_part(parts, "camera dvr", "dvr", "camera system")
+    if camera_part:
+        cam_lines = list(filter(None, [
+            getattr(camera_part, "manufacturer", ""),
+            getattr(camera_part, "part_number",  ""),
+        ]))
+        camera_value = " · ".join(cam_lines) if cam_lines else "—"
+    else:
+        camera_value = ""
+
+    # --- Bumper ---
+    _BUMPER_KEYWORDS = ["push bumper", "pit bar", "wing wrap", "wire cover"]
+    bumper_parts = [p for p in parts
+                    if any(kw in getattr(p, "name", "").lower() for kw in _BUMPER_KEYWORDS)]
+    bumper_mfg   = next((getattr(p, "manufacturer", "") for p in bumper_parts
+                         if getattr(p, "manufacturer", "")), "")
+
+    def _has(keyword: str) -> bool:
+        return any(keyword.lower() in getattr(p, "name", "").lower() for p in bumper_parts)
+
+    # Build bumper inline summary line
+    if not bumper_parts:
+        bumper_summary = "✗  None"
+        bumper_summary_color = DTM_RED
+    else:
+        items_present  = [lbl for lbl, kw in [("Push Bumper","push bumper"),("Pit Bars","pit bar"),
+                                               ("Wing Wraps","wing wrap"),("Wire Covers","wire cover")]
+                          if _has(kw)]
+        items_absent   = [lbl for lbl, kw in [("Push Bumper","push bumper"),("Pit Bars","pit bar"),
+                                               ("Wing Wraps","wing wrap"),("Wire Covers","wire cover")]
+                          if not _has(kw)]
+        bumper_summary       = None
+        bumper_summary_color = DTM_DARKTEXT
+
+    # ── 5-tile row: [Lights] [Reused] [Bumper] [Cage+Tray] [Lighting+Camera] ─
+    SLIDE_USABLE_W = SLIDE_W_EMU - L - Inches(0.45)
+    N_TILES  = 5
+    TILE_GAP = Inches(0.10)
+    TILE_W   = (SLIDE_USABLE_W - TILE_GAP * (N_TILES - 1)) / N_TILES
+
+    def _tile_bg(tx, ty, th, bg_color, border_color):
+        tb = slide.shapes.add_textbox(tx, ty, TILE_W, th)
         tb.fill.solid()
         tb.fill.fore_color.rgb = bg_color
-        _add_border(tb, _LIGHT_GRAY, 0.5)
-        tf = tb.text_frame
-        tf.margin_left   = Inches(0.10)
-        tf.margin_top    = Inches(0.06)
-        tf.margin_bottom = 0
+        _add_border(tb, border_color, 0.5)
+        return tb
+
+    def _tile_label(tf, label, color=DTM_NAVY):
         p = tf.paragraphs[0]
-        nr = p.add_run()
-        nr.text           = num_str
-        nr.font.size      = Pt(24)
-        nr.font.bold      = True
-        nr.font.color.rgb = num_color
-        p2 = tf.add_paragraph()
-        lr = p2.add_run()
-        lr.text           = label
-        lr.font.size      = Pt(7.5)
-        lr.font.color.rgb = DTM_NAVY
-        if sublabel:
-            p3 = tf.add_paragraph()
-            sr = p3.add_run()
-            sr.text           = sublabel
-            sr.font.size      = Pt(6.5)
-            sr.font.italic    = True
-            sr.font.color.rgb = DTM_GRAY
+        r = p.add_run()
+        r.text           = label
+        r.font.size      = Pt(10)
+        r.font.bold      = True
+        r.font.color.rgb = color
+        return tf
 
-    # ── Build scope text tiles ────────────────────────────────────────────────
-    text_top = stats_top + TILE_H + Inches(0.10)
+    def _tile_value(tf, value, font_size=12, bold=False, color=None, italic=False):
+        p = tf.add_paragraph()
+        r = p.add_run()
+        r.text           = value
+        r.font.size      = Pt(font_size)
+        r.font.bold      = bold
+        r.font.italic    = italic
+        r.font.color.rgb = color or DTM_GRAY
 
-    text_cards = [
-        ("Cage Type",     "—"),
-        ("Bumper",        "—"),
-        ("Roof Equipment","—"),
-        ("Equipment Tray","—"),
-    ]
-    TEXT_TILE_W = Inches(2.98)
-    TEXT_TILE_H = Inches(0.72)
-    TEXT_GAP    = Inches(0.10)
+    # Tile 0: Light Heads count
+    tx = L
+    BASE_TILE_H = Inches(1.10)
+    tb = _tile_bg(tx, tiles_top, BASE_TILE_H, _PANEL_BG, _LIGHT_GRAY)
+    tf = tb.text_frame
+    tf.word_wrap   = True
+    tf.margin_left = Inches(0.10)
+    tf.margin_top  = Inches(0.06)
+    p = tf.paragraphs[0]
+    nr = p.add_run()
+    nr.text           = str(lights_count)
+    nr.font.size      = Pt(28)
+    nr.font.bold      = True
+    nr.font.color.rgb = DTM_NAVY
+    _tile_value(tf, "Light Heads", font_size=12, color=DTM_NAVY)
+    if brands_str and brands_str != "—":
+        _tile_value(tf, brands_str, font_size=10, italic=True)
 
-    for i, (card_label, card_value) in enumerate(text_cards):
-        tx = L + i * (TEXT_TILE_W + TEXT_GAP)
-        tb = slide.shapes.add_textbox(tx, text_top, TEXT_TILE_W, TEXT_TILE_H)
-        tb.fill.solid()
-        tb.fill.fore_color.rgb = _PANEL_BG
-        _add_border(tb, _LIGHT_GRAY, 0.5)
-        tf = tb.text_frame
-        tf.margin_left = Inches(0.10)
-        tf.margin_top  = Inches(0.07)
-        p = tf.paragraphs[0]
-        lbl_r = p.add_run()
-        lbl_r.text           = card_label
-        lbl_r.font.size      = Pt(7.5)
-        lbl_r.font.bold      = True
-        lbl_r.font.color.rgb = DTM_NAVY
-        p2 = tf.add_paragraph()
-        val_r = p2.add_run()
-        val_r.text           = card_value
-        val_r.font.size      = Pt(16)
-        val_r.font.bold      = True
-        val_r.font.color.rgb = DTM_GRAY
+    # Tile 1: Reused / Transfer count
+    tx = L + (TILE_W + TILE_GAP)
+    tb = _tile_bg(tx, tiles_top, BASE_TILE_H, _REUSED_BG, _LIGHT_GRAY)
+    tf = tb.text_frame
+    tf.word_wrap   = True
+    tf.margin_left = Inches(0.10)
+    tf.margin_top  = Inches(0.06)
+    p = tf.paragraphs[0]
+    nr = p.add_run()
+    nr.text           = str(reused_count)
+    nr.font.size      = Pt(28)
+    nr.font.bold      = True
+    nr.font.color.rgb = TAG_REUSED
+    _tile_value(tf, "Reused / Transfer", font_size=12, color=DTM_NAVY)
+
+    # Tile 2: Bumper (inline checklist)
+    tx = L + 2 * (TILE_W + TILE_GAP)
+    tb = _tile_bg(tx, tiles_top, BASE_TILE_H, _PANEL_BG, _LIGHT_GRAY)
+    tf = tb.text_frame
+    tf.word_wrap   = True
+    tf.margin_left = Inches(0.10)
+    tf.margin_top  = Inches(0.06)
+    _tile_label(tf, "Bumper")
+    if not bumper_parts:
+        _tile_value(tf, "✗  None", font_size=12, bold=True, color=DTM_RED)
+    else:
+        if bumper_mfg:
+            _tile_value(tf, bumper_mfg, font_size=11)
+        check_line = "  ".join(
+            ("✓" if _has(kw) else "✗") + " " + lbl
+            for lbl, kw in [("Bumper","push bumper"),("Pit Bars","pit bar"),
+                             ("Wings","wing wrap"),("Wire Cvr","wire cover")]
+        )
+        p_chk = tf.add_paragraph()
+        r_chk = p_chk.add_run()
+        r_chk.text           = check_line
+        r_chk.font.size      = Pt(10)
+        r_chk.font.color.rgb = DTM_GRAY
+
+    # Tile 3: Cage Type + Equipment Tray
+    tx = L + 3 * (TILE_W + TILE_GAP)
+    tb = _tile_bg(tx, tiles_top, BASE_TILE_H, _PANEL_BG, _LIGHT_GRAY)
+    tf = tb.text_frame
+    tf.word_wrap   = True
+    tf.margin_left = Inches(0.10)
+    tf.margin_top  = Inches(0.06)
+    _tile_label(tf, "Cage / Tray")
+    _tile_value(tf, f"Cage: {cage_value}", font_size=11)
+    _tile_value(tf, f"Tray: {equip_value}", font_size=11)
+
+    # Tile 4: Lighting System + Camera DVR
+    tx = L + 4 * (TILE_W + TILE_GAP)
+    tb = _tile_bg(tx, tiles_top, BASE_TILE_H, _PANEL_BG, _LIGHT_GRAY)
+    tf = tb.text_frame
+    tf.word_wrap   = True
+    tf.margin_left = Inches(0.10)
+    tf.margin_top  = Inches(0.06)
+    _tile_label(tf, "Lighting / Camera")
+    _tile_value(tf, f"Ctrl: {lighting_value}", font_size=11)
+    if camera_value:
+        _tile_value(tf, f"Cam: {camera_value}", font_size=11)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -680,7 +809,7 @@ def _section_row(table, row_idx: int, label: str) -> None:
     display = f"  ━━━  {label.upper()}  ━━━"
     _fmt_cell(table.cell(row_idx, 0),
               display,
-              font_size=8, bold=True, color=_WHITE, bg=DTM_NAVY,
+              font_size=10, bold=True, color=_WHITE, bg=DTM_NAVY,
               align=PP_ALIGN.CENTER)
     table.rows[row_idx].height = MANIFEST_SEC_ROW_H
 
@@ -711,8 +840,9 @@ def _part_row(table, row_idx: int, part, location: str, alt_bg: bool) -> None:
                      source_color  if is_source else
                      DTM_DARKTEXT)
         cell_bg   = source_bg if is_source else row_bg
+        fs        = 10 if is_name else 12
         _fmt_cell(table.cell(row_idx, c), val,
-                  font_size=8, bold=is_name, color=cell_clr, bg=cell_bg)
+                  font_size=fs, bold=is_name, color=cell_clr, bg=cell_bg)
     table.rows[row_idx].height = MANIFEST_DATA_ROW_H
 
 
@@ -783,7 +913,7 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
     col_widths = [Inches(w) for w in MANIFEST_COL_WIDTHS_IN]
 
     avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.40)
-    MAX_DATA_ROWS_PER_PAGE = 13
+    MAX_DATA_ROWS_PER_PAGE = 10
 
     slides_added = 0
     i = 0
@@ -798,14 +928,13 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
         while i < len(all_rows):
             rtype = all_rows[i][0]
             row_h = MANIFEST_SEC_ROW_H if rtype == "section" else MANIFEST_DATA_ROW_H
-            if rtype == "part" and data_rows_on_page >= MAX_DATA_ROWS_PER_PAGE:
+            if data_rows_on_page >= MAX_DATA_ROWS_PER_PAGE:
                 break
             if used_h + row_h > avail_h and slide_rows:
                 break
             slide_rows.append(all_rows[i])
             used_h += row_h
-            if rtype == "part":
-                data_rows_on_page += 1
+            data_rows_on_page += 1
             i += 1
 
         if not slide_rows:
@@ -829,7 +958,7 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
         table.rows[0].height = MANIFEST_HDR_ROW_H
         for c, hdr in enumerate(MANIFEST_COL_HEADERS):
             _fmt_cell(table.cell(0, c), hdr,
-                      font_size=8, bold=True, color=_WHITE,
+                      font_size=10, bold=True, color=_WHITE,
                       bg=DTM_NAVY, align=PP_ALIGN.CENTER)
 
         part_counter = 0
@@ -941,15 +1070,23 @@ def slot_geometry(shape):
 # Vehicle image
 # ─────────────────────────────────────────────────────────────────────────────
 
-def place_vehicle_image(slide, vehicle_type, view):
-    """Return (picture_shape | None, img_box | None).  img_box is (L,T,W,H) in EMU.
+def place_vehicle_image(slide, vehicle_type, view, max_right_emu=None):
+    """Return (picture_shape | None, img_box | None, equip_scale).
+
+    img_box is (L,T,W,H) in EMU.  equip_scale is (scale_w, scale_h) — the ratio
+    of the constrained vehicle image size to the unconstrained size.  Equipment
+    icons (Push Bumper, Wing Wraps, etc.) whose sizes were calibrated for the
+    unconstrained image should multiply their dimensions by equip_scale so they
+    remain proportionally correct when the vehicle image is made smaller to
+    accommodate a legend panel.
 
     For the side view the vehicle is placed in the bottom ~3" of the slide so
     the legend grid can occupy the top portion.
+    max_right_emu: if set, constrains the vehicle image's right edge.
     """
     slot = find_shape(slide, "VEHICLE_IMAGE_SLOT")
     if not slot:
-        return None, None
+        return None, None, (1.0, 1.0)
     slot_left, slot_top, slot_w, slot_h = slot_geometry(slot)
 
     # Side/top view: move vehicle to bottom so legend grid fits above.
@@ -960,15 +1097,35 @@ def place_vehicle_image(slide, vehicle_type, view):
         slot_w    = SLIDE_W_EMU
         slot_h    = SLIDE_H_EMU - Inches(3.50) - FOOTER_H
 
+    # Remember unconstrained slot width for equipment scale factor
+    unconstrained_slot_w = slot_w
+
+    # Honour caller-supplied right edge limit (e.g. to leave room for a legend panel)
+    if max_right_emu is not None:
+        available_w = max_right_emu - slot_left
+        if available_w > 0:
+            slot_w = min(slot_w, available_w)
+
     png = ensure_workspace().workspace_assets_dir / "vehicles" / f"{vehicle_type}_{view}.png"
     if not png.exists():
-        return None, (slot_left, slot_top, slot_w, slot_h)
+        return None, (slot_left, slot_top, slot_w, slot_h), (1.0, 1.0)
 
     from PIL import Image as PILImage
     with PILImage.open(png) as img:
         img_w, img_h = img.size
 
-    img_ratio  = img_w / img_h
+    img_ratio = img_w / img_h
+
+    # Compute unconstrained final size (reference that size_per_view was calibrated for)
+    uncons_slot_ratio = unconstrained_slot_w / slot_h
+    if img_ratio > uncons_slot_ratio:
+        ref_final_w = float(unconstrained_slot_w)
+        ref_final_h = unconstrained_slot_w / img_ratio
+    else:
+        ref_final_h = float(slot_h)
+        ref_final_w = slot_h * img_ratio
+
+    # Compute constrained final size
     slot_ratio = slot_w / slot_h
     if img_ratio > slot_ratio:
         final_w    = slot_w
@@ -981,10 +1138,102 @@ def place_vehicle_image(slide, vehicle_type, view):
         final_left = slot_left + (slot_w - final_w) // 2
         final_top  = slot_top
 
+    # Scale factor so equipment icons stay proportional to the vehicle image
+    equip_scale = (final_w / ref_final_w, final_h / ref_final_h)
+
     pic = slide.shapes.add_picture(str(png), final_left, final_top,
                                    width=final_w, height=final_h)
     _lock_picture_position(pic)
-    return pic, (final_left, final_top, final_w, final_h)
+    return pic, (final_left, final_top, final_w, final_h), equip_scale
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Legend shared helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _est_wrapped_lines(text: str, inner_w_in: float, pt_size: int = 10) -> int:
+    """Conservative estimate of how many display lines `text` needs.
+
+    Uses an empirical average character width for Calibri mixed-case text, then
+    applies a 0.85 safety factor to account for wide characters and word-wrap
+    boundaries that push partial words to the next line.
+    """
+    if not text:
+        return 0
+    avg_char_w = pt_size * 0.0060          # inches per character at this pt size
+    chars_per_line = max(1, int(inner_w_in / avg_char_w * 0.85))
+    return max(1, -(-len(text) // chars_per_line))  # ceiling division
+
+
+def _badge_label(part) -> tuple[str, object]:
+    """Return (display_text, color) for the status badge on a legend card."""
+    noru   = getattr(part, "new_or_used", "").strip().upper()
+    src    = getattr(part, "source",      "").strip()
+    reused = getattr(part, "is_reused",   False)
+    if noru in ("REUSED", "R"):
+        return "↺ REUSED", TAG_REUSED
+    if noru in ("USED", "U"):
+        return "↺ USED", TAG_REUSED
+    if src or reused:
+        return "↺ REUSED", TAG_REUSED
+    return "■ NEW", TAG_NEW
+
+
+def _legend_headline(part) -> str:
+    """Return the bold headline text for a legend card.
+
+    For most parts the headline is the location (what the user typed in the workbook).
+    Exceptions that keep the part *name* as headline:
+      - Fixture parts (location is empty or starts with "FIXTURE:")
+      - Parts whose name contains "tracer" or "light bar"
+    """
+    name       = getattr(part, "name",     "") or ""
+    name_lower = name.lower()
+    loc        = getattr(part, "location", "") or ""
+    if "tracer" in name_lower or "light bar" in name_lower:
+        return name
+    if not loc or loc.upper().startswith("FIXTURE:"):
+        return name
+    return loc
+
+
+def _card_content_height(part, inner_w_in: float,
+                          acc: dict,
+                          pad_top=None, pad_bot=None,
+                          lh_name=None, lh_spec=None, lh_acc=None,
+                          min_card=None) -> int:
+    """Compute card EMU height for a single part, accounting for text wrapping.
+
+    All Inches() arguments use module defaults when None.
+    """
+    pad_top  = pad_top  if pad_top  is not None else Inches(0.06)
+    pad_bot  = pad_bot  if pad_bot  is not None else Inches(0.04)
+    lh_name  = lh_name  if lh_name  is not None else Inches(0.175)
+    lh_spec  = lh_spec  if lh_spec  is not None else Inches(0.175)
+    lh_acc   = lh_acc   if lh_acc   is not None else Inches(0.165)
+    min_card = min_card if min_card is not None else Inches(0.34)
+
+    badge_text, _ = _badge_label(part)
+    headline = _legend_headline(part) + f"  {badge_text}"
+    h = pad_top + _est_wrapped_lines(headline, inner_w_in, 10) * lh_name
+
+    mfg   = getattr(part, "manufacturer", "") or ""
+    pnum  = getattr(part, "part_number",   "") or ""
+    color = _color_label(part)
+    specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+    if specs:
+        h += _est_wrapped_lines(specs, inner_w_in, 11) * lh_spec
+    lens = _lens_label(part)
+    if lens:
+        h += _est_wrapped_lines(lens, inner_w_in, 11) * lh_spec
+
+    for acc_entry in (acc.get(part.name) or []):
+        acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
+        acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
+        acc_text = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
+        h += _est_wrapped_lines(acc_text, inner_w_in, 10) * lh_acc
+
+    return max(min_card, h + pad_bot)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -992,150 +1241,187 @@ def place_vehicle_image(slide, vehicle_type, view):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
-                 view: str = "") -> None:
+                 view: str = "", panel_left_emu=None) -> None:
+    """Two-column legend panel for front/rear views.
+
+    panel_left_emu: left edge of the legend area in EMU (caller sets this to match
+    whatever right edge was passed to place_vehicle_image).  Defaults to 7.80".
+    """
     slot = find_shape(slide, "LEGEND_SLOT")
     if slot:
         slot._element.getparent().remove(slot._element)
 
-    PANEL_LEFT  = Inches(9.20)
-    PANEL_TOP   = Inches(1.02)
-    PANEL_W     = Inches(4.00)
-    PANEL_H     = SLIDE_H_EMU - PANEL_TOP - FOOTER_H - Inches(0.08)
-    STRIPE_W    = Inches(0.07)
+    PANEL_LEFT  = panel_left_emu if panel_left_emu is not None else Inches(7.80)
+    PANEL_TOP   = Inches(0.66)   # just below the 0.62" header band
+    PANEL_W     = SLIDE_W_EMU - PANEL_LEFT - Inches(0.10)
+    PANEL_H     = SLIDE_H_EMU - PANEL_TOP - FOOTER_H - Inches(0.06)
     BOTTOM_EDGE = PANEL_TOP + PANEL_H
 
-    y = PANEL_TOP
+    N_COLS   = 2
+    COL_GAP  = Inches(0.08)
+    COL_W    = (PANEL_W - COL_GAP * (N_COLS - 1)) / N_COLS
+    STRIPE_W = Inches(0.05)
 
-    # Section header
+    # ── Panel section header ──────────────────────────────────────────────────
     count     = len(placed)
     hdr_label = (f"  {count} INSTALLED COMPONENT{'S' if count != 1 else ''}"
-                 if placed else "  ON THIS VIEW")
-    hdr_h = Inches(0.30)
-    hdr   = slide.shapes.add_textbox(PANEL_LEFT, y, PANEL_W, hdr_h)
+                 if placed else "  COMPONENTS")
+    hdr_h = Inches(0.28)
+    hdr   = slide.shapes.add_textbox(PANEL_LEFT, PANEL_TOP, PANEL_W, hdr_h)
     hdr.fill.solid()
     hdr.fill.fore_color.rgb = DTM_NAVY
     tf = hdr.text_frame
     tf.margin_left = Inches(0.08)
-    tf.margin_top  = Inches(0.07)
+    tf.margin_top  = Inches(0.05)
     p = tf.paragraphs[0]
     r = p.add_run()
     r.text           = hdr_label
-    r.font.size      = Pt(8)
+    r.font.size      = Pt(10)
     r.font.bold      = True
     r.font.color.rgb = _WHITE
-    y += hdr_h + Inches(0.04)
 
-    # Empty state
+    cards_top = PANEL_TOP + hdr_h + Inches(0.04)
+
+    # ── Empty state ───────────────────────────────────────────────────────────
     if not placed and not unplaced:
-        msg = ("NO ROOF-MOUNTED\nCOMPONENTS SPECIFIED"
-               if view.lower() == "top" else "NO COMPONENTS\nON THIS VIEW")
-        tb = slide.shapes.add_textbox(PANEL_LEFT + Inches(0.12), y,
-                                       PANEL_W - Inches(0.2), Inches(0.70))
+        msg = "NO ROOF-MOUNTED COMPONENTS" if view.lower() == "top" else "NO COMPONENTS ON THIS VIEW"
+        tb = slide.shapes.add_textbox(PANEL_LEFT + Inches(0.10), cards_top,
+                                       PANEL_W - Inches(0.20), Inches(0.60))
         tf = tb.text_frame
         tf.word_wrap = True
-        tf.margin_top  = Inches(0.10)
-        tf.margin_left = Inches(0.08)
         p = tf.paragraphs[0]
         r = p.add_run()
-        r.text           = msg
-        r.font.size      = Pt(9)
-        r.font.italic    = True
+        r.text = msg; r.font.size = Pt(12); r.font.italic = True
         r.font.color.rgb = DTM_GRAY
         return
 
-    unplaced_reserve = Inches(1.1) if unplaced else Inches(0.05)
-    avail_cards      = BOTTOM_EDGE - y - unplaced_reserve
-    n_parts          = max(len(placed), 1)
-    CARD_GAP         = Inches(0.03)
-    card_h           = min(Inches(0.68),
-                           max(Inches(0.40),
-                               (avail_cards - CARD_GAP * n_parts) / n_parts))
+    # ── Card geometry ─────────────────────────────────────────────────────────
+    CARD_GAP = Inches(0.05)
+    PAD_TOP  = Inches(0.06)
+    MIN_CARD = Inches(0.34)
 
     acc = accessory_map or {}
-    for part in placed:
-        if y + card_h > BOTTOM_EDGE - unplaced_reserve:
+
+    # Inner column width (in inches) needed by _card_content_height
+    _inner_w_in = float(COL_W - Inches(0.05) - Inches(0.08)) / 914400  # EMU → inches
+
+    card_heights = [
+        _card_content_height(p, _inner_w_in, acc, min_card=MIN_CARD)
+        for p in placed
+    ]
+
+    # Available height per column
+    avail_h = BOTTOM_EDGE - cards_top - (Inches(0.8) if unplaced else Inches(0.06))
+
+    # Distribute cards into 2 columns greedily
+    col_fills  = [0, 0]
+    col_assign = []
+    for h in card_heights:
+        # pick the column with less fill, prefer left on tie
+        c = 0 if col_fills[0] <= col_fills[1] else 1
+        col_assign.append(c)
+        col_fills[c] += h + CARD_GAP
+
+    # If tallest column overflows, scale all heights down uniformly
+    max_fill = max(col_fills) if col_fills else 0
+    if max_fill > avail_h and card_heights:
+        scale        = avail_h / max_fill
+        card_heights = [max(MIN_CARD, h * scale) for h in card_heights]
+        # Recompute fills
+        col_fills = [0, 0]
+        for h, c in zip(card_heights, col_assign):
+            col_fills[c] += h + CARD_GAP
+
+    # Track current y per column
+    col_y = [cards_top, cards_top]
+
+    for part, card_h, col_i in zip(placed, card_heights, col_assign):
+        y   = col_y[col_i]
+        cx  = PANEL_LEFT + col_i * (COL_W + COL_GAP)
+        if y + card_h > BOTTOM_EDGE - (Inches(0.8) if unplaced else Inches(0.06)):
             break
 
         reused       = getattr(part, "is_reused", False)
         stripe_color = TAG_REUSED if reused else TAG_NEW
         bg_color     = _REUSED_BG if reused else _NEW_BG
 
-        _stripe_box(slide, PANEL_LEFT, y, STRIPE_W, card_h - Inches(0.02), stripe_color)
-        _card_bg(slide, PANEL_LEFT + STRIPE_W, y,
-                 PANEL_W - STRIPE_W, card_h - Inches(0.02), bg_color)
+        _stripe_box(slide, cx, y, STRIPE_W, card_h - Inches(0.02), stripe_color)
+        _card_bg(slide, cx + STRIPE_W, y, COL_W - STRIPE_W, card_h - Inches(0.02), bg_color)
 
-        inner_x = PANEL_LEFT + STRIPE_W + Inches(0.06)
-        inner_w = PANEL_W - STRIPE_W - Inches(0.10)
-        tb = slide.shapes.add_textbox(inner_x, y + Inches(0.04),
-                                       inner_w, card_h - Inches(0.04))
+        inner_x = cx + STRIPE_W + Inches(0.05)
+        inner_w = COL_W - STRIPE_W - Inches(0.08)
+        tb = slide.shapes.add_textbox(inner_x, y + PAD_TOP,
+                                       inner_w, card_h - PAD_TOP)
         tf = tb.text_frame
         tf.word_wrap   = True
         tf.margin_top  = 0
         tf.margin_left = 0
 
+        # Line 1: Location (or part name for fixtures/bars/tracers)  ■ NEW / ↺ REUSED
+        badge_text, badge_color = _badge_label(part)
         p  = tf.paragraphs[0]
         nr = p.add_run()
-        nr.text           = part.name
-        nr.font.size      = Pt(8.5)
+        nr.text           = _legend_headline(part)
+        nr.font.size      = Pt(10)
         nr.font.bold      = True
         nr.font.color.rgb = DTM_NAVY
         badge = p.add_run()
-        badge.text           = "   ↺ REUSED" if reused else "   ■ NEW"
-        badge.font.size      = Pt(6.5)
+        badge.text           = f"  {badge_text}"
+        badge.font.size      = Pt(10)
         badge.font.bold      = True
-        badge.font.color.rgb = stripe_color
+        badge.font.color.rgb = badge_color
 
-        mfg  = getattr(part, "manufacturer", "") or ""
-        pnum = getattr(part, "part_number",   "") or ""
-        if mfg or pnum:
+        # Line 2: mfg · part# · color (no lens here)
+        mfg   = getattr(part, "manufacturer", "") or ""
+        pnum  = getattr(part, "part_number",   "") or ""
+        color = _color_label(part)
+        specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+        if specs:
             p2 = tf.add_paragraph()
             r2 = p2.add_run()
-            r2.text           = "  " + "  ·  ".join(filter(None, [mfg, pnum]))
-            r2.font.size      = Pt(7)
+            r2.text           = specs
+            r2.font.size      = Pt(11)
             r2.font.color.rgb = DTM_GRAY
 
-        cl = _color_lens_label(part)
-        if cl:
+        # Line 3: lens on its own line (value already contains "Lens")
+        lens = _lens_label(part)
+        if lens:
             p3 = tf.add_paragraph()
             r3 = p3.add_run()
-            r3.text           = f"  {cl}"
-            r3.font.size      = Pt(7)
+            r3.text           = lens
+            r3.font.size      = Pt(11)
             r3.font.color.rgb = DTM_GRAY
 
-        raw_loc = getattr(part, "location", "") or ""
-        if raw_loc and not raw_loc.upper().startswith("FIXTURE:"):
-            p4 = tf.add_paragraph()
-            r4 = p4.add_run()
-            r4.text           = f"  @ {raw_loc}"
-            r4.font.size      = Pt(7)
-            r4.font.color.rgb = DTM_GRAY
-
-        for acc_name in acc.get(part.name, []):
+        # Line 4+: accessories with part numbers
+        for acc_entry in acc.get(part.name, []):
+            acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
+            acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
             pa = tf.add_paragraph()
             ra = pa.add_run()
-            ra.text           = f"  + {acc_name}"
-            ra.font.size      = Pt(6.5)
+            ra.text           = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
+            ra.font.size      = Pt(10)
             ra.font.italic    = True
             ra.font.color.rgb = DTM_GRAY
 
-        y += card_h + CARD_GAP
+        col_y[col_i] += card_h + CARD_GAP
 
+    # ── "Not shown" box spans full panel width ────────────────────────────────
     if unplaced:
-        y += Inches(0.04)
-        box_h    = Inches(0.22) + len(unplaced) * Inches(0.17)
-        box_h    = min(box_h, BOTTOM_EDGE - y - Inches(0.05))
-        bordered = slide.shapes.add_textbox(PANEL_LEFT, y, PANEL_W, box_h)
+        y_note  = max(col_y) + Inches(0.06)
+        box_h   = Inches(0.26) + len(unplaced) * Inches(0.20)
+        box_h   = min(box_h, BOTTOM_EDGE - y_note - Inches(0.04))
+        bordered = slide.shapes.add_textbox(PANEL_LEFT, y_note, PANEL_W, box_h)
         bordered.fill.solid()
         bordered.fill.fore_color.rgb = RGBColor(0xFF, 0xF3, 0xF0)
         _add_border(bordered, DTM_RED, 0.5)
         tf = bordered.text_frame
         tf.word_wrap   = True
         tf.margin_left = Inches(0.08)
-        tf.margin_top  = Inches(0.05)
+        tf.margin_top  = Inches(0.04)
         p = tf.paragraphs[0]
         r = p.add_run()
         r.text           = "ADDITIONAL COMPONENTS NOT SHOWN"
-        r.font.size      = Pt(7)
+        r.font.size      = Pt(10)
         r.font.bold      = True
         r.font.color.rgb = DTM_RED
         for upart in unplaced:
@@ -1143,7 +1429,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             p2  = tf.add_paragraph()
             r2  = p2.add_run()
             r2.text           = f"  {upart.name}  @  {loc}"
-            r2.font.size      = Pt(7)
+            r2.font.size      = Pt(11)
             r2.font.color.rgb = DTM_RED
 
 
@@ -1162,7 +1448,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
         slot._element.getparent().remove(slot._element)
 
     GRID_LEFT    = Inches(0.3)
-    GRID_TOP     = Inches(0.95)   # flush with header band bottom
+    GRID_TOP     = Inches(0.66)   # flush with 0.62" header band bottom
     GRID_BOTTOM  = Inches(3.50)   # vehicle image starts at 3.50"
     GRID_COLS    = 4
     COL_GAP      = Inches(0.10)
@@ -1175,55 +1461,78 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
     count     = len(placed)
     hdr_label = (f"  {count} INSTALLED COMPONENT{'S' if count != 1 else ''}"
                  if placed else f"  {view_label} VIEW COMPONENTS")
-    hdr_h = Inches(0.28)
+    hdr_h = Inches(0.34)
     hdr   = slide.shapes.add_textbox(GRID_LEFT, GRID_TOP,
                                       SLIDE_W_EMU - GRID_LEFT * 2, hdr_h)
     hdr.fill.solid()
     hdr.fill.fore_color.rgb = DTM_NAVY
     tf = hdr.text_frame
     tf.margin_left = Inches(0.10)
-    tf.margin_top  = Inches(0.06)
+    tf.margin_top  = Inches(0.07)
     p = tf.paragraphs[0]
     r = p.add_run()
     r.text           = hdr_label
-    r.font.size      = Pt(8)
+    r.font.size      = Pt(10)
     r.font.bold      = True
     r.font.color.rgb = _WHITE
 
     card_area_top  = GRID_TOP + hdr_h + Inches(0.06)
     avail_h        = GRID_BOTTOM - card_area_top
-    n_parts        = max(len(placed), 1)
-    n_rows         = max(1, -(-n_parts // GRID_COLS))   # ceiling division
-    card_h         = min(Inches(0.85),
-                         max(Inches(0.45),
-                             (avail_h - CARD_GAP_V * (n_rows - 1)) / n_rows))
-
     acc = accessory_map or {}
-    last_card_bottom = card_area_top  # updated after each rendered card row
+    last_card_bottom = card_area_top
 
     if not placed and not unplaced:
         tb = slide.shapes.add_textbox(GRID_LEFT + Inches(0.12), card_area_top,
-                                       Inches(8), Inches(0.60))
+                                       Inches(8), Inches(0.70))
         tf = tb.text_frame
         p  = tf.paragraphs[0]
         r  = p.add_run()
-        r.text           = f"NO {view_label}-VIEW COMPONENTS SPECIFIED"
-        r.font.size      = Pt(9)
-        r.font.italic    = True
-        r.font.color.rgb = DTM_GRAY
+        r.text = f"NO {view_label}-VIEW COMPONENTS SPECIFIED"
+        r.font.size = Pt(12); r.font.italic = True; r.font.color.rgb = DTM_GRAY
     else:
+        # ── Dynamic per-row card heights ──────────────────────────────────────
+        MIN_CARD  = Inches(0.32)
+        inner_w_in = float(COL_W - STRIPE_W - Inches(0.08)) / 914400  # EMU → inches
+
+        per_card_h = [
+            _card_content_height(p, inner_w_in, acc, min_card=MIN_CARD)
+            for p in placed
+        ]
+
+        # Group into rows; row height = max card height in that row
+        n_rows    = max(1, -(-len(placed) // GRID_COLS))
+        row_heights = []
+        for r_i in range(n_rows):
+            start = r_i * GRID_COLS
+            end   = min(start + GRID_COLS, len(per_card_h))
+            row_heights.append(max(per_card_h[start:end]) if per_card_h[start:end] else MIN_CARD)
+
+        total_h = sum(row_heights) + CARD_GAP_V * (n_rows - 1)
+        if total_h > avail_h and row_heights:
+            scale       = avail_h / total_h
+            row_heights = [max(MIN_CARD, h * scale) for h in row_heights]
+
+        # Row y-offsets
+        row_tops = [card_area_top]
+        for rh in row_heights[:-1]:
+            row_tops.append(row_tops[-1] + rh + CARD_GAP_V)
+
         for i, part in enumerate(placed):
-            col_i = i % GRID_COLS
-            row_i = i // GRID_COLS
-            cx    = GRID_LEFT + col_i * (COL_W + COL_GAP)
-            cy    = card_area_top + row_i * (card_h + CARD_GAP_V)
+            col_i  = i % GRID_COLS
+            row_i  = i // GRID_COLS
+            if row_i >= len(row_heights):
+                break
+            cx     = GRID_LEFT + col_i * (COL_W + COL_GAP)
+            cy     = row_tops[row_i]
+            card_h = row_heights[row_i]
+
             if cy + card_h > GRID_BOTTOM:
                 break
             last_card_bottom = cy + card_h
 
-            reused       = getattr(part, "is_reused", False)
-            stripe_color = TAG_REUSED if reused else TAG_NEW
-            bg_color     = _REUSED_BG if reused else _NEW_BG
+            badge_text, badge_color = _badge_label(part)
+            stripe_color = badge_color
+            bg_color     = _REUSED_BG if stripe_color == TAG_REUSED else _NEW_BG
 
             _stripe_box(slide, cx, cy, STRIPE_W, card_h - Inches(0.02), stripe_color)
             _card_bg(slide, cx + STRIPE_W, cy,
@@ -1238,47 +1547,46 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             tf.margin_top  = 0
             tf.margin_left = 0
 
+            # Line 1: Location (or part name for fixtures/bars/tracers)  ■ NEW / ↺ REUSED
             p  = tf.paragraphs[0]
             nr = p.add_run()
-            nr.text           = part.name
-            nr.font.size      = Pt(8)
-            nr.font.bold      = True
+            nr.text = _legend_headline(part); nr.font.size = Pt(10); nr.font.bold = True
             nr.font.color.rgb = DTM_NAVY
-            badge = p.add_run()
-            badge.text           = "  ↺" if reused else "  ■"
-            badge.font.size      = Pt(7)
-            badge.font.bold      = True
-            badge.font.color.rgb = stripe_color
+            bdg = p.add_run()
+            bdg.text = f"  {badge_text}"; bdg.font.size = Pt(10); bdg.font.bold = True
+            bdg.font.color.rgb = badge_color
 
-            mfg  = getattr(part, "manufacturer", "") or ""
-            pnum = getattr(part, "part_number",   "") or ""
-            if mfg or pnum:
+            # Line 2: mfg · part# · color (no lens)
+            mfg   = getattr(part, "manufacturer", "") or ""
+            pnum  = getattr(part, "part_number",   "") or ""
+            color = _color_label(part)
+            specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+            if specs:
                 p2 = tf.add_paragraph()
                 r2 = p2.add_run()
-                r2.text           = "  " + "  ·  ".join(filter(None, [mfg, pnum]))
-                r2.font.size      = Pt(6.5)
-                r2.font.color.rgb = DTM_GRAY
+                r2.text = specs; r2.font.size = Pt(11); r2.font.color.rgb = DTM_GRAY
 
-            cl = _color_lens_label(part)
-            if cl:
+            # Line 3: lens on its own line (value already contains "Lens")
+            lens = _lens_label(part)
+            if lens:
                 p3 = tf.add_paragraph()
                 r3 = p3.add_run()
-                r3.text           = f"  {cl}"
-                r3.font.size      = Pt(6.5)
-                r3.font.color.rgb = DTM_GRAY
+                r3.text = lens; r3.font.size = Pt(11); r3.font.color.rgb = DTM_GRAY
 
-            for acc_name in acc.get(part.name, []):
+            # Lines 4+: accessories
+            for acc_entry in acc.get(part.name, []):
+                acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
+                acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
                 pa = tf.add_paragraph()
                 ra = pa.add_run()
-                ra.text           = f"  +{acc_name}"
-                ra.font.size      = Pt(6)
-                ra.font.italic    = True
-                ra.font.color.rgb = DTM_GRAY
+                ra.text = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
+                ra.font.size = Pt(10); ra.font.italic = True; ra.font.color.rgb = DTM_GRAY
 
     if unplaced:
         # Place "not shown" note just below the lowest rendered card row
         y_note = last_card_bottom + Inches(0.08)
-        box_h  = Inches(0.20) + len(unplaced) * Inches(0.16)
+        box_h  = Inches(0.26) + len(unplaced) * Inches(0.20)
+        box_h  = min(box_h, GRID_BOTTOM - y_note - Inches(0.04))
         bordered = slide.shapes.add_textbox(GRID_LEFT, y_note,
                                              SLIDE_W_EMU - GRID_LEFT * 2, box_h)
         bordered.fill.solid()
@@ -1291,7 +1599,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
         p = tf.paragraphs[0]
         r = p.add_run()
         r.text           = "ADDITIONAL COMPONENTS NOT SHOWN ON DIAGRAM"
-        r.font.size      = Pt(7)
+        r.font.size      = Pt(10)
         r.font.bold      = True
         r.font.color.rgb = DTM_RED
         for upart in unplaced:
@@ -1299,7 +1607,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             p2  = tf.add_paragraph()
             r2  = p2.add_run()
             r2.text           = f"  {upart.name}  @  {loc}"
-            r2.font.size      = Pt(6.5)
+            r2.font.size      = Pt(11)
             r2.font.color.rgb = DTM_RED
 
 
@@ -1326,7 +1634,7 @@ def place_specify_palette(slide, category: str, img_box, y_offset_emu: int = 0):
     tf  = hdr.text_frame
     r   = tf.paragraphs[0].add_run()
     r.text           = f"Specify {category} — keep one, delete the rest"
-    r.font.size      = Pt(7)
+    r.font.size      = Pt(12)
     r.font.italic    = True
     r.font.color.rgb = DTM_RED
 
@@ -1392,7 +1700,7 @@ def fill_notes(slide, notes) -> None:
         p   = tf.paragraphs[0]
         r   = p.add_run()
         r.text           = section
-        r.font.size      = Pt(9)
+        r.font.size      = Pt(10)
         r.font.bold      = True
         r.font.color.rgb = DTM_NAVY
         y += label_h + Inches(0.06)

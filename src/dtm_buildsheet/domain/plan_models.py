@@ -41,6 +41,7 @@ class PlannedPlacement:
     flip_v: bool = False
     flip_mirrored_h: bool = False
     behind_vehicle: bool = False
+    layer: int = 0
     group_shapes: bool = False
     is_fixture: bool = False
     slot_indices: list[int] | None = None

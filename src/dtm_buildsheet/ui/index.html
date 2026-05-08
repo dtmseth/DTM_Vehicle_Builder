@@ -122,6 +122,11 @@
           <input type="number" id="pv-insp-scale-num" min="0.25" max="4" step="0.05" value="1" class="pv-insp-num">
         </div>
 
+        <div class="pv-insp-row">
+          <span class="pv-insp-lbl">Layer</span>
+          <input type="number" id="pv-insp-layer" min="-10" max="10" step="1" value="0" class="pv-insp-num" style="width:70px" title="Z-order layer. Higher = on top. 0 = default.">
+        </div>
+
         <div class="pv-insp-actions">
           <button class="btn btn-secondary btn-sm" id="pv-insp-reset-part">↩ Reset This Part</button>
         </div>
@@ -337,6 +342,12 @@
                   <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
                     <input type="checkbox" id="loc-behind-vehicle"> Behind Vehicle
                   </label>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+                  <label style="font-size:12px;white-space:nowrap">Layer</label>
+                  <input type="number" id="loc-layer" min="-10" max="10" step="1" value="0"
+                    style="width:60px;font-size:12px;padding:2px 4px;border:1px solid var(--border);border-radius:4px"
+                    title="Z-order layer. Higher = rendered on top. 0 = default.">
                 </div>
               </div>
               <!-- Part types that reference this location -->

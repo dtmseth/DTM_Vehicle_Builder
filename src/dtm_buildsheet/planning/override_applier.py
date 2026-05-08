@@ -17,6 +17,7 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
         anchor_dx (float)   — delta added to anchor.x (relative_image units)
         anchor_dy (float)   — delta added to anchor.y (relative_image units)
         size_scale (float)  — multiplier applied to size_override w/h values
+        layer (int)         — Z-order layer (0 = default, positive = on top, negative = behind)
 
     The original plan is never mutated.
     """
@@ -68,6 +69,9 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
             if "h_spacing_delta" in ov:
                 base = pl.h_spacing if pl.h_spacing is not None else 0.0
                 pl.h_spacing = max(round(base + float(ov["h_spacing_delta"]), 6), 0.001)
+
+            if "layer" in ov:
+                pl.layer = int(ov["layer"])
 
             kept.append(pl)
         pp.placements = kept

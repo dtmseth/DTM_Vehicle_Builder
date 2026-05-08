@@ -206,13 +206,16 @@ function pvRenderPlacement(frame, pp, pl) {
     icon.className = "pv-icon";
     icon.title = `${pp.part_name} — ${pl.location_key}`;
     icon.dataset.overrideKey = pl.override_key;
-    icon.style.cssText = [
+    const layerVal = pl.layer || 0;
+    const cssParts = [
       `left:${xPct.toFixed(3)}%`,
       `top:${yPct.toFixed(3)}%`,
       `width:${wPct.toFixed(3)}%`,
       `height:${hPct.toFixed(3)}%`,
       `transform:${transformParts.join(" ")}`,
-    ].join(";");
+    ];
+    if (layerVal !== 0) cssParts.push(`z-index:${layerVal + 10}`);
+    icon.style.cssText = cssParts.join(";");
 
     if (assetUrl) {
       const img = document.createElement("img");
@@ -263,6 +266,8 @@ function pvMergeOverride(pl, ov) {
   const rawHSpacing  = (pl.h_spacing != null ? pl.h_spacing : 0) - savedHDelta;
   const liveHSpacing = Math.max(rawHSpacing + liveHDelta, 0.001);
 
+  const liveLayer = ov.layer != null ? ov.layer : (pl.layer ?? 0);
+
   return {
     ...pl,
     anchor:     { x: (base.x || 0) - savedDx + liveDx, y: (base.y || 0) - savedDy + liveDy },
@@ -272,6 +277,7 @@ function pvMergeOverride(pl, ov) {
     flip_v:     liveFlipV,
     icon_w_pct: baseW * liveScale,
     icon_h_pct: baseH * liveScale,
+    layer:      liveLayer,
   };
 }
 
@@ -291,6 +297,7 @@ function pvLivePreview() {
     anchor_dx:  parseFloat($("pv-insp-dx-num").value)    || 0,
     anchor_dy:  parseFloat($("pv-insp-dy-num").value)    || 0,
     size_scale: parseFloat($("pv-insp-scale-num").value) || 1,
+    layer:      parseInt($("pv-insp-layer").value)       || 0,
   };
 
   pvUpdateInspTitle();
@@ -535,6 +542,7 @@ function pvOpenInspector(overrideKey, pl, pp) {
   $("pv-insp-dy-num").value     = ov.anchor_dy ?? 0;
   $("pv-insp-scale").value      = ov.size_scale ?? 1;
   $("pv-insp-scale-num").value  = ov.size_scale ?? 1;
+  $("pv-insp-layer").value      = ov.layer ?? pl.layer ?? 0;
 
   show("pv-inspector");
 }
@@ -730,6 +738,7 @@ function pvSyncSlider(sliderId, numId) {
     "pv-insp-dx",       "pv-insp-dx-num",
     "pv-insp-dy",       "pv-insp-dy-num",
     "pv-insp-scale",    "pv-insp-scale-num",
+    "pv-insp-layer",
   ].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener("input", pvLivePreview);

@@ -14,6 +14,13 @@ from .location_resolver import apply_co_part_rules, resolve_normal_location
 from .quantity_resolver import apply_quantity_rules
 
 
+_SUPPRESS_QTY_MISMATCH_LOCATIONS: frozenset[str] = frozenset({
+    "TOP OF PUSH BUMPER",
+    "UNDER PUSH BUMPER",
+    "TOP TUBE",
+})
+
+
 def build_plan(project, config: ConfigBundle) -> BuildPlan:
     manifest = config.asset_manifest
     layouts = config.vehicle_layouts.get("vehicles", {})
@@ -210,6 +217,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 flip_v=bool(location.get("flip_v", False)),
                 flip_mirrored_h=bool(location.get("flip_mirrored_h", False)),
                 behind_vehicle=bool(location.get("behind_vehicle", False)),
+                layer=int(location.get("layer", 0)),
                 group_shapes=(
                     quantity_policy == "quantity_as_slots"
                     or bool(spec.get("group_shapes", False))
@@ -221,10 +229,12 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
             if quantity_policy == "location_slots":
                 if part.quantity and part.quantity != placement.location_slot_count:
-                    placement.warnings.append(
-                        f"[{part.name}] @ '{location_key}' ({view}): "
-                        f"workbook qty {part.quantity} ≠ location slot count {placement.location_slot_count}"
-                    )
+                    is_side_light = view == "side" and spec["render_kind"] in ("light", "bar")
+                    if not is_side_light and location_key not in _SUPPRESS_QTY_MISMATCH_LOCATIONS:
+                        placement.warnings.append(
+                            f"[{part.name}] @ '{location_key}' ({view}): "
+                            f"workbook qty {part.quantity} ≠ location slot count {placement.location_slot_count}"
+                        )
             elif quantity_policy == "single_per_line" and part.quantity > 1:
                 placement.warnings.append(
                     f"[{part.name}] @ '{location_key}' ({view}): "
@@ -255,13 +265,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 if asset_path:
                     asset_file = config.paths.workspace_assets_dir / Path(asset_path)
                     if not asset_file.exists():
-                        instance.warnings.append(f"Missing asset: {asset_path}")
+                        instance.warnings.append(f"Missing asset ({view}): {asset_path}")
                 elif spec["render_kind"] == "equipment":
-                    instance.warnings.append(f"No equipment asset configured for '{part.name}'")
+                    instance.warnings.append(f"No equipment asset configured for '{part.name}' ({view})")
                 elif spec["render_kind"] == "bar":
-                    instance.warnings.append(f"No bar asset configured for '{part.name}'")
+                    instance.warnings.append(f"No bar asset configured for '{part.name}' ({view})")
                 elif spec["render_kind"] != "none":
-                    instance.warnings.append("No asset resolved")
+                    instance.warnings.append(f"No asset resolved for '{part.name}' ({view})")
                 placement.instances.append(instance)
 
             planned.placements.append(placement)

@@ -196,6 +196,7 @@ function showEditPanel(key){
   $("loc-flip-v").checked=!!loc.flip_v;
   $("loc-flip-mirrored-h").checked=!!loc.flip_mirrored_h;
   $("loc-behind-vehicle").checked=!!loc.behind_vehicle;
+  $("loc-layer").value=loc.layer??0;
   updateSpacingRowVisibility(loc.pattern||"single", loc.slot_count||1);
   renderLocUsedBy(key);
 }
@@ -360,6 +361,15 @@ $("loc-rotation-preset").addEventListener("change",e=>{
     }
     drawCanvas();
   });
+});
+$("loc-layer").addEventListener("change",e=>{
+  const v=parseInt(e.target.value)||0;
+  const locs=getViewLocations();
+  if(_selectedLocKey&&locs[_selectedLocKey]){
+    if(v!==0) locs[_selectedLocKey].layer=v;
+    else delete locs[_selectedLocKey].layer;
+    setViewLocations(locs);
+  }
 });
 
 $("loc-name-input").addEventListener("blur",e=>{

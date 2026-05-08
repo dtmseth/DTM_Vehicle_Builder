@@ -25,8 +25,13 @@
         "front": {
           "w": 2.75,
           "h": 2.52
+        },
+        "side": {
+          "w": 0.43,
+          "h": 1.56
         }
-      }
+      },
+      "co_part_rules": []
     },
     {
       "part_id": "pit_bar",
@@ -46,7 +51,15 @@
       "aliases": [
         "Pit Bar"
       ],
-      "accessory_of": "Push Bumper"
+      "accessory_of": "Push Bumper",
+      "co_part_rules": [
+        {
+          "co_part": "Wing Wraps",
+          "if_present": {
+            "skip": true
+          }
+        }
+      ]
     },
     {
       "part_id": "wing_wraps",
@@ -66,7 +79,30 @@
       "aliases": [
         "Wing Wraps"
       ],
-      "accessory_of": "Push Bumper"
+      "accessory_of": "Push Bumper",
+      "co_part_rules": [
+        {
+          "co_part": "PB10",
+          "if_present": {
+            "skip": true
+          }
+        },
+        {
+          "co_part": "PB6"
+        },
+        {
+          "co_part": "PB8",
+          "if_present": {
+            "skip": true
+          }
+        }
+      ],
+      "size_per_view": {
+        "front": {
+          "w": 1.9,
+          "h": 2.18
+        }
+      }
     },
     {
       "part_id": "wire_covers",
@@ -74,16 +110,21 @@
       "category": "appearance_note",
       "render_kind": "none",
       "diagram": false,
-      "default_views": [
-        "front",
-        "side"
-      ],
+      "default_views": [],
       "conditions": {
         "template_section": "PUSH BUMPER / FRONT STRUCTURE"
       },
       "aliases": [
         "Wire Covers"
-      ]
+      ],
+      "size_per_view": {
+        "front": {
+          "w": 1.9,
+          "h": 2.18
+        }
+      },
+      "accessory_of": "Push Bumper",
+      "co_part_rules": []
     },
     {
       "part_id": "forward_warning_1",
@@ -94,7 +135,7 @@
       "default_views": [
         "front"
       ],
-      "render_quantity_policy": "quantity_as_slots",
+      "render_quantity_policy": "location_slots",
       "quantity_rules": [
         {
           "qty": 2,
@@ -117,6 +158,12 @@
         "2-LAMP TRACER": "tracer_2lamp",
         "2LAMP TRACER": "tracer_2lamp",
         "2 LAMP TRACER": "tracer_2lamp"
+      },
+      "size_per_view": {
+        "top": {
+          "w": 0.54,
+          "h": 2.19
+        }
       }
     },
     {
@@ -539,19 +586,27 @@
     {
       "part_id": "opticom",
       "display_name": "Opticom",
-      "category": "vehicle_system",
+      "category": "equipment",
       "render_kind": "equipment",
       "diagram": true,
       "default_views": [
         "front"
       ],
-      "render_quantity_policy": "location_slots",
+      "render_quantity_policy": "single_per_line",
       "conditions": {
         "template_section": "FRONT SPECIALTY"
       },
       "aliases": [
         "Opticom"
-      ]
+      ],
+      "default_color_profile": "single_white",
+      "size_per_view": {
+        "front": {
+          "w": 0.41,
+          "h": 0.14
+        }
+      },
+      "co_part_rules": []
     },
     {
       "part_id": "front_dome_light",
@@ -850,7 +905,13 @@
       },
       "aliases": [
         "Roof Light Bar"
-      ]
+      ],
+      "size_per_view": {
+        "top": {
+          "w": 0.54,
+          "h": 2.19
+        }
+      }
     },
     {
       "part_id": "rear_interior_light_bar",
@@ -888,7 +949,13 @@
       },
       "aliases": [
         "Rear Warning 1"
-      ]
+      ],
+      "size_per_view": {
+        "top": {
+          "w": 0.54,
+          "h": 2.19
+        }
+      }
     },
     {
       "part_id": "rear_warning_bracket_1",
@@ -920,7 +987,13 @@
       },
       "aliases": [
         "Rear Warning 2"
-      ]
+      ],
+      "size_per_view": {
+        "top": {
+          "w": 0.54,
+          "h": 2.19
+        }
+      }
     },
     {
       "part_id": "rear_warning_bracket_2",
@@ -952,7 +1025,13 @@
       },
       "aliases": [
         "Rear Warning 3"
-      ]
+      ],
+      "size_per_view": {
+        "top": {
+          "w": 0.54,
+          "h": 2.19
+        }
+      }
     },
     {
       "part_id": "rear_warning_bracket_3",
@@ -2062,8 +2141,13 @@
         "front": {
           "w": 0.39,
           "h": 0.7
+        },
+        "side": {
+          "w": 0.23,
+          "h": 0.41
         }
-      }
+      },
+      "co_part_rules": []
     },
     {
       "part_id": "arges_controller",
@@ -2193,7 +2277,7 @@
     },
     {
       "part_id": "radio_speaker",
-      "display_name": "Radio Speaker",
+      "display_name": "Radio Speaker 1",
       "category": "equipment",
       "render_kind": "equipment",
       "diagram": false,
@@ -2201,8 +2285,11 @@
       "render_quantity_policy": "single_per_line",
       "asset_key": "radio_speaker",
       "aliases": [
-        "Radio Speaker"
-      ]
+        "Radio Speaker",
+        "Radio Speaker 1"
+      ],
+      "accessory_of": "Radio 1",
+      "co_part_rules": []
     }
   ],
   "schema_version": 1

@@ -142,7 +142,9 @@
   },
   "equipment_assets": {
     "push_bumper": {
-      "front": "equipment/push_bumper_front.png"
+      "front": "equipment/push_bumper_front.png",
+      "top": "equipment/push_bumper_top.png",
+      "side": "equipment/push_bumper_side.png"
     },
     "pit_bar": {},
     "thermal_cam": {
@@ -166,9 +168,23 @@
     },
     "": {},
     "arges": {
-      "front": "equipment/arges_front.png"
+      "front": "equipment/arges_front.png",
+      "side": "equipment/arges_side.png"
     },
-    "radio_1_antenna_top": {}
+    "radio_1_antenna_top": {},
+    "wing_wraps": {
+      "front": "equipment/wing_wraps_front.png"
+    },
+    "Push Bumper alone": {
+      "side": "equipment/Push Bumper alone_side.png"
+    },
+    "Push Bumper Alone": {
+      "side": "equipment/Push Bumper Alone_side.png"
+    },
+    "opticom": {
+      "front": "equipment/opticom_front.png"
+    },
+    "radio_speaker": {}
   },
   "part_number_size_rules": {
     "3": "rd",

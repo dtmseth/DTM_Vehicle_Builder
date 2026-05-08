@@ -193,6 +193,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "flip_mirrored_h":    pl.flip_mirrored_h,
                     "icon_w_pct":         icon_w_pct,
                     "icon_h_pct":         icon_h_pct,
+                    "layer":              pl.layer,
                     "size":               pl.size_override,
                     "instances":          instances_out,
                     "override":           draft.placement_overrides.get(override_key, {}),
