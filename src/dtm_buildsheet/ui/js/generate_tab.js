@@ -9,11 +9,20 @@ dz.addEventListener("dragleave", ()=>dz.classList.remove("drag-over"));
 dz.addEventListener("drop", e=>{e.preventDefault();dz.classList.remove("drag-over");handleFile(e.dataTransfer.files[0])});
 $("file-input").addEventListener("change", e=>handleFile(e.target.files[0]));
 
+function showProjectLoadedState(filename, filesizeStr) {
+  $("fname").textContent = filename;
+  $("fsize").textContent = filesizeStr;
+  dz.hidden = true;
+  $("file-loaded").style.display = "flex";
+  show("card-proj");
+  show("card-parts");
+  $("btn-generate").disabled = false;
+}
+
 function handleFile(file) {
   if (!file) return;
   if (!file.name.endsWith(".xlsx")){alert("Please select an .xlsx file.");return;}
-  fileName=file.name; $("fname").textContent=file.name; $("fsize").textContent=fmt(file.size);
-  dz.hidden=true; $("file-loaded").style.display="flex";
+  fileName=file.name;
   const reader=new FileReader();
   reader.onload = async e => {
     fileB64=e.target.result.split(",")[1];
@@ -22,8 +31,7 @@ function handleFile(file) {
     if (res.ok) {
       _parsedDraftId = res.draft_id || null;
       renderInfo(res.info); renderParts(res.parts);
-      show("card-proj"); show("card-parts");
-      $("btn-generate").disabled=false;
+      showProjectLoadedState(file.name, fmt(file.size));
       logLine("Parsed — "+res.parts.length+" parts found.");
 
       // Show preview card and kick off an initial render
@@ -71,7 +79,7 @@ $("btn-reload-preview").addEventListener("click", ()=>{
 });
 
 $("btn-generate").addEventListener("click", async ()=>{
-  if(!fileB64)return;
+  if(!fileB64 && !_parsedDraftId) return;
   $("btn-generate").disabled=true; $("spinner").style.display="block";
   $("btn-label").textContent="Generating…";
   hide("card-results");hide("card-warns");hide("card-output");hide("reset-row");

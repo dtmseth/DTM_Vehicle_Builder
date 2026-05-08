@@ -3,6 +3,7 @@ from __future__ import annotations
 import traceback
 
 from ...config.loader import load_configs
+from ...domain.geometry import slot_relative_positions
 from ...inputs.project_drafts import draft_to_project_input, load_draft
 from ...paths import AppPaths
 from ...planning.override_applier import apply_overrides
@@ -163,18 +164,48 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 slot_count = len(pl.instances) or 1
                 override_key = f"{pl.part_id}:{pl.view}"
 
-                instances_out = [
-                    {
-                        "slot_index": inst.slot_index,
-                        "slot_role":  inst.slot_role,
+                # Compute per-instance slot positions using the same logic as render_ppt.py.
+                anchor_x = (pl.anchor or {}).get("x", 0.0)
+                anchor_y = (pl.anchor or {}).get("y", 0.0)
+                raw_h_spacing = pl.h_spacing or 0.0
+                if pl.h_spacing_units == "icon_width":
+                    eff_h_spacing = icon_w_pct * raw_h_spacing if raw_h_spacing > 0 else icon_w_pct
+                else:
+                    eff_h_spacing = raw_h_spacing if raw_h_spacing > 0 else 0.06
+
+                if pl.position_slot_count and pl.slot_indices:
+                    all_pos = slot_relative_positions(
+                        pl.pattern, pl.position_slot_count,
+                        anchor_x, anchor_y, eff_h_spacing,
+                    )
+                    positions = [
+                        all_pos[i] if i < len(all_pos) else (anchor_x, anchor_y)
+                        for i in pl.slot_indices
+                    ]
+                else:
+                    positions = slot_relative_positions(
+                        pl.pattern, slot_count, anchor_x, anchor_y, eff_h_spacing,
+                    )
+
+                instances_out = []
+                for idx, inst in enumerate(pl.instances):
+                    ix, iy = positions[idx] if idx < len(positions) else (anchor_x, anchor_y)
+                    # slot_coeff = (x - anchor) / eff_h_spacing — dimensionless slot position
+                    # relative to the anchor. The canvas uses this to apply h_spacing_delta
+                    # without re-deriving spacing geometry client-side.
+                    slot_coeff = round((ix - anchor_x) / eff_h_spacing, 6) if eff_h_spacing > 1e-9 else 0.0
+                    instances_out.append({
+                        "slot_index":  inst.slot_index,
+                        "slot_role":   inst.slot_role,
                         "orientation": inst.orientation,
                         "color_token": inst.color_token,
-                        "asset_url": (
-                            f"/assets/{inst.asset_path}" if inst.asset_path else ""
-                        ),
-                    }
-                    for inst in pl.instances
-                ]
+                        "asset_url":   f"/assets/{inst.asset_path}" if inst.asset_path else "",
+                        "x_pct":       ix,
+                        "y_pct":       iy,
+                        "w_pct":       icon_w_pct,
+                        "h_pct":       icon_h_pct,
+                        "slot_coeff":  slot_coeff,
+                    })
 
                 placements_out.append({
                     "view":               pl.view,

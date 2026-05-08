@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from ..paths import AppPaths, ensure_workspace
+from ..storage.local import LocalStorageProvider
 from .migrations import migrate
 from .schemas import REQUIRED_CONFIG_FILES, validate_config_payload
 
@@ -30,5 +31,5 @@ def save_config(filename: str, data: object, paths: AppPaths | None = None) -> d
     migrated = migrate(filename, data if isinstance(data, dict) else {})
     normalized = validate_config_payload(filename, migrated)
     path = get_config_path(filename, active_paths)
-    path.write_text(json.dumps(normalized, indent=2) + "\n", "utf-8")
+    LocalStorageProvider().write_text(str(path), json.dumps(normalized, indent=2) + "\n")
     return normalized

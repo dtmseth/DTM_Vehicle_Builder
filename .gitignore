@@ -12,3 +12,5 @@ workspace/build_sheet_template_v2.xlsx
 dist/
 build/
 *.egg-info/
+
+full_code.md

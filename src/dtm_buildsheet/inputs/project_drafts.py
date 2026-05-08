@@ -17,6 +17,7 @@ from typing import Any
 
 from ..domain.input_models import PartInput, ProjectInput
 from ..naming import canonical_name, safe_project_id
+from ..storage.local import LocalStorageProvider
 
 
 def _utcnow() -> str:
@@ -180,24 +181,23 @@ def _draft_path(draft_id: str, drafts_dir: Path) -> Path:
 
 def save_draft(draft: BuildDraft, drafts_dir: Path) -> Path:
     """Persist draft to disk; updates updated_at timestamp."""
-    drafts_dir.mkdir(parents=True, exist_ok=True)
     draft.updated_at = _utcnow()
     path = _draft_path(draft.draft_id, drafts_dir)
-    path.write_text(json.dumps(asdict(draft), indent=2), encoding="utf-8")
+    LocalStorageProvider().write_text(str(path), json.dumps(asdict(draft), indent=2))
     return path
 
 
 def load_draft(draft_id: str, drafts_dir: Path) -> BuildDraft:
     """Load a draft by ID; raises FileNotFoundError if not found."""
     path = _draft_path(draft_id, drafts_dir)
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(LocalStorageProvider().read_text(str(path)))
     parts = [DraftPart(**p) for p in data.pop("parts", [])]
     return BuildDraft(parts=parts, **data)
 
 
 def delete_draft(draft_id: str, drafts_dir: Path) -> None:
     """Remove a draft file; raises FileNotFoundError if not found."""
-    _draft_path(draft_id, drafts_dir).unlink()
+    LocalStorageProvider().delete(str(_draft_path(draft_id, drafts_dir)))
 
 
 def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
