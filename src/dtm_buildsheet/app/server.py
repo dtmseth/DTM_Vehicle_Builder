@@ -34,7 +34,7 @@ _MIME_TYPES = {
 
 
 class Handler(BaseHTTPRequestHandler):
-    paths: AppPaths = ensure_workspace()
+    paths: AppPaths = AppPaths()
 
     def log_message(self, fmt, *args):
         pass
@@ -171,6 +171,7 @@ def _port_is_busy(port: int) -> bool:
 
 
 def _setup_logging(workspace_dir: Path) -> None:
+    workspace_dir.mkdir(parents=True, exist_ok=True)
     log_file = workspace_dir / "dtm_buildsheet.log"
     logging.basicConfig(
         level=logging.INFO,
@@ -179,12 +180,16 @@ def _setup_logging(workspace_dir: Path) -> None:
             logging.FileHandler(log_file, encoding="utf-8"),
             logging.StreamHandler(),
         ],
+        force=True,
     )
 
 
 def main(paths: AppPaths | None = None):
+    if paths is None:
+        _setup_logging(AppPaths().workspace_dir)
     active_paths = paths or ensure_workspace()
-    _setup_logging(active_paths.workspace_dir)
+    if paths is not None:
+        _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
 
     if _port_is_busy(PORT):

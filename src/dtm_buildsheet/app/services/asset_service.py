@@ -37,9 +37,22 @@ def serve_asset(rel_path: str, paths: AppPaths) -> tuple[int, bytes, str]:
     """Return (status_code, body, content_type) for a raw asset file request."""
     safe = (paths.workspace_assets_dir / rel_path).resolve()
     root = paths.workspace_assets_dir.resolve()
-    if not safe.is_relative_to(root) or not safe.exists():
-        _log.debug("Asset not found: rel=%s safe=%s root=%s", rel_path, safe, root)
+    is_relative = safe.is_relative_to(root)
+    exists = safe.exists()
+    is_westin_elitexd = "westin_wing_wrap_elitexd_side.png" in rel_path.lower()
+    if not is_relative or not exists:
+        log = _log.warning if is_westin_elitexd else _log.debug
+        log(
+            "Asset not found: rel=%s safe=%s root=%s is_relative=%s exists=%s",
+            rel_path,
+            safe,
+            root,
+            is_relative,
+            exists,
+        )
         return 404, b"Not found", "text/plain"
+    if is_westin_elitexd:
+        _log.info("Serving Wing Wrap EliteXD asset: rel=%s safe=%s", rel_path, safe)
     ctype = mimetypes.guess_type(str(safe))[0] or "application/octet-stream"
     return 200, safe.read_bytes(), ctype
 

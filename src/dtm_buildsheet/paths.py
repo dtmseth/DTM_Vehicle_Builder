@@ -96,6 +96,33 @@ def _copy_missing_tree(source_root: Path, dest_root: Path) -> int:
     return written
 
 
+def _log_westin_elitexd_probe(paths: AppPaths) -> None:
+    rel_asset = Path("lights") / "westin_wing_wrap_elitexd_side.png"
+    bundled_asset = ASSETS_DIR / rel_asset
+    workspace_asset = paths.workspace_assets_dir / rel_asset
+    parts_library = paths.workspace_config_dir / "parts_library.json"
+
+    try:
+        config_has_entry = (
+            parts_library.exists()
+            and "westin_wing_wrap_elitexd_side.png" in parts_library.read_text(encoding="utf-8")
+        )
+    except Exception:
+        _log.exception("Failed to inspect parts_library.json for Wing Wrap EliteXD entry")
+        config_has_entry = False
+
+    _log.info(
+        "Wing Wrap EliteXD probe: bundled_asset=%s bundled_exists=%s "
+        "workspace_asset=%s workspace_exists=%s parts_library=%s parts_library_has_entry=%s",
+        bundled_asset,
+        bundled_asset.exists(),
+        workspace_asset,
+        workspace_asset.exists(),
+        parts_library,
+        config_has_entry,
+    )
+
+
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
@@ -107,13 +134,22 @@ def ensure_workspace() -> AppPaths:
         if not DEFAULT_CONFIG_DIR.exists():
             _log.error("Bundled config directory not found: %s", DEFAULT_CONFIG_DIR)
         else:
+            written = 0
             for source in sorted(DEFAULT_CONFIG_DIR.glob("*.json")):
                 dest = paths.workspace_config_dir / source.name
                 if not dest.exists() or _md5(source) != _md5(dest):
                     try:
                         shutil.copyfile(source, dest)
+                        written += 1
+                        _log.info("Seeded config: %s", source.name)
                     except Exception:
                         _log.exception("Failed to copy config %s", source.name)
+            _log.info(
+                "Config seed summary: wrote=%d source=%s workspace=%s",
+                written,
+                DEFAULT_CONFIG_DIR,
+                paths.workspace_config_dir,
+            )
 
     # In dev mode workspace_assets_dir IS ASSETS_DIR — no copying needed.
     if paths.workspace_assets_dir != ASSETS_DIR:
@@ -121,9 +157,13 @@ def ensure_workspace() -> AppPaths:
             _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
         else:
             n = _copy_missing_tree(ASSETS_DIR, paths.workspace_assets_dir)
-            if n:
-                _log.info("Seeded %d asset(s) from bundle to workspace", n)
-            else:
-                _log.debug("Assets up to date (workspace_assets_dir=%s)", paths.workspace_assets_dir)
+            _log.info(
+                "Asset seed summary: wrote=%d source=%s workspace=%s",
+                n,
+                ASSETS_DIR,
+                paths.workspace_assets_dir,
+            )
+
+    _log_westin_elitexd_probe(paths)
 
     return paths
