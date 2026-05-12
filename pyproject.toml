@@ -54,5 +54,5 @@ dtm_buildsheet = [
   "resources/config/*.json",
   "resources/templates/*.pptx",
   "resources/templates/*.xlsx",
-  "resources/assets/*/*",
+  "resources/assets/**/*",
 ]

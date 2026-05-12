@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import re
+import sys as _sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -10,6 +12,11 @@ APP_NAME = "DTM Vehicle Builder"
 ICON_DIR = ROOT / "packaging" / "icons"
 MAC_ICON = ICON_DIR / "app.icns"
 WIN_ICON = ICON_DIR / "app.ico"
+
+# Read version from pyproject.toml — single source of truth.
+_pyproject = ROOT / "pyproject.toml"
+_version_match = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject.read_text(), re.MULTILINE)
+APP_VERSION = _version_match.group(1) if _version_match else "0.0.0"
 
 datas = collect_data_files("dtm_buildsheet")
 
@@ -26,8 +33,7 @@ hiddenimports = collect_submodules("dtm_buildsheet")
 
 # Windows PDF export uses PowerPoint COM via comtypes (runtime import — not
 # detected by static analysis). Must be explicit or the frozen app crashes.
-import sys as _sys2
-if _sys2.platform != "darwin":
+if _sys.platform != "darwin":
     hiddenimports += [
         "comtypes",
         "comtypes.client",
@@ -36,11 +42,8 @@ if _sys2.platform != "darwin":
         "comtypes.typeinfo",
     ]
 
-import sys as _sys
-if _sys.platform == 'darwin':
-    icon_path = str(MAC_ICON) if MAC_ICON.exists() else None
-else:
-    icon_path = str(WIN_ICON) if WIN_ICON.exists() else None
+icon_path = str(MAC_ICON) if _sys.platform == "darwin" and MAC_ICON.exists() else \
+            str(WIN_ICON) if _sys.platform != "darwin" and WIN_ICON.exists() else None
 
 a = Analysis(
     [str(ROOT / "packaging" / "pyinstaller" / "launch_gui.py")],
@@ -89,6 +92,11 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name=f"{APP_NAME}.app",
-    icon=icon_path if MAC_ICON.exists() else None,
+    icon=icon_path,
     bundle_identifier="com.dtm.vehiclebuilder",
+    info_plist={
+        "CFBundleShortVersionString": APP_VERSION,
+        "CFBundleVersion": APP_VERSION,
+        "NSHighResolutionCapable": True,
+    },
 )

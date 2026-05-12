@@ -23,7 +23,7 @@ jobs:
         run: pip install -e ".[packaging]"
 
       - name: Build app
-        run: python -m PyInstaller -y packaging/pyinstaller/DTM_VehicleBuilder.spec
+        run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
 
       - name: Create DMG
         run: |
@@ -41,14 +41,6 @@ jobs:
           name: DTM-Vehicle-Builder-Mac
           path: dist/DTM_Vehicle_Builder.dmg
 
-      - name: Publish to latest release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: Latest Build
-          prerelease: true
-          files: dist/DTM_Vehicle_Builder.dmg
-
   build-windows:
     runs-on: windows-latest
     permissions:
@@ -63,22 +55,48 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[packaging-win]"
 
+      - name: Read version
+        id: version
+        run: |
+          $v = (Select-String -Path pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches.Groups[1].Value
+          echo "APP_VERSION=$v" >> $env:GITHUB_ENV
+
       - name: Build app
-        run: python -m PyInstaller -y packaging/pyinstaller/DTM_VehicleBuilder.spec
+        run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
 
       - name: Build installer
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging/windows/installer.iss
+        env:
+          APP_VERSION: ${{ env.APP_VERSION }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: DTM-Vehicle-Builder-Windows
           path: dist/DTM_Vehicle_Builder_Setup.exe
 
-      - name: Publish to latest release
+  publish:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: DTM-Vehicle-Builder-Mac
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: DTM-Vehicle-Builder-Windows
+          path: dist
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: Latest Build
           prerelease: true
-          files: dist/DTM_Vehicle_Builder_Setup.exe
+          files: |
+            dist/DTM_Vehicle_Builder.dmg
+            dist/DTM_Vehicle_Builder_Setup.exe
