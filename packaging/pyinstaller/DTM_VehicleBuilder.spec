@@ -45,6 +45,9 @@ if _sys.platform != "darwin":
 icon_path = str(MAC_ICON) if _sys.platform == "darwin" and MAC_ICON.exists() else \
             str(WIN_ICON) if _sys.platform != "darwin" and WIN_ICON.exists() else None
 
+_manifest = ROOT / "packaging" / "windows" / "DTM_VehicleBuilder.manifest"
+manifest_path = str(_manifest) if _sys.platform != "darwin" and _manifest.exists() else None
+
 a = Analysis(
     [str(ROOT / "packaging" / "pyinstaller" / "launch_gui.py")],
     pathex=[str(ROOT / "src")],
@@ -69,7 +72,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -77,6 +80,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_path,
+    manifest=manifest_path,
 )
 
 coll = COLLECT(
@@ -84,7 +88,7 @@ coll = COLLECT(
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name=APP_NAME,
 )
