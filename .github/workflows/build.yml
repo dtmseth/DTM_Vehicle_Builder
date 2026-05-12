@@ -25,16 +25,12 @@ jobs:
       - name: Build app
         run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
 
-      - name: Ad-hoc sign app
-        run: |
-          codesign --deep --force --sign - "dist/DTM Vehicle Builder.app"
-
       - name: Create DMG
         run: |
           mkdir -p /tmp/dmg_staging
           cp -r "dist/DTM Vehicle Builder.app" /tmp/dmg_staging/
-          cp "packaging/macos/Open DTM Vehicle Builder.command" /tmp/dmg_staging/
-          chmod +x "/tmp/dmg_staging/Open DTM Vehicle Builder.command"
+          cp "packaging/macos/OPEN THIS FIRST.command" /tmp/dmg_staging/
+          chmod +x "/tmp/dmg_staging/OPEN THIS FIRST.command"
           ln -s /Applications /tmp/dmg_staging/Applications
           hdiutil create \
             -volname "DTM Vehicle Builder" \
