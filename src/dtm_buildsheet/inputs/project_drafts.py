@@ -74,7 +74,7 @@ class BuildDraft:
     updated_at: str
     vehicle_info: dict[str, Any]
     parts: list[DraftPart] = field(default_factory=list)
-    notes: list[str] = field(default_factory=list)
+    notes: dict[str, list[str]] = field(default_factory=dict)
     placement_overrides: dict[str, Any] = field(default_factory=dict)
     validation_messages: list[str] = field(default_factory=list)
     audit_trail: list[dict[str, Any]] = field(default_factory=list)
@@ -87,7 +87,7 @@ class BuildDraft:
 def new_draft(
     vehicle_info: dict[str, Any] | None = None,
     parts: list[DraftPart] | None = None,
-    notes: list[str] | None = None,
+    notes: dict[str, list[str]] | None = None,
 ) -> BuildDraft:
     now = _utcnow()
     return BuildDraft(
@@ -96,7 +96,7 @@ def new_draft(
         updated_at=now,
         vehicle_info=vehicle_info or {},
         parts=parts or [],
-        notes=notes or [],
+        notes=notes or {},
     )
 
 
@@ -129,7 +129,7 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
         updated_at=now,
         vehicle_info=dict(project.info),
         parts=draft_parts,
-        notes=list(project.notes),
+        notes=dict(project.notes),
     )
 
 
@@ -168,7 +168,7 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
         )
         for dp in draft.parts
     ]
-    return ProjectInput(info=info, parts=parts, notes=list(draft.notes))
+    return ProjectInput(info=info, parts=parts, notes=dict(draft.notes))
 
 
 # ---------------------------------------------------------------------------
@@ -187,11 +187,22 @@ def save_draft(draft: BuildDraft, drafts_dir: Path) -> Path:
     return path
 
 
+def _coerce_notes(raw) -> dict[str, list[str]]:
+    """Migrate old list-of-str notes to the new dict[category, list[str]] format."""
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, list):
+        items = [str(n).strip() for n in raw if n and str(n).strip()]
+        return {"INSTALLATION NOTES": items} if items else {}
+    return {}
+
+
 def load_draft(draft_id: str, drafts_dir: Path) -> BuildDraft:
     """Load a draft by ID; raises FileNotFoundError if not found."""
     path = _draft_path(draft_id, drafts_dir)
     data = json.loads(LocalStorageProvider().read_text(str(path)))
     parts = [DraftPart(**p) for p in data.pop("parts", [])]
+    data["notes"] = _coerce_notes(data.get("notes", {}))
     return BuildDraft(parts=parts, **data)
 
 
@@ -207,6 +218,7 @@ def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             parts = [DraftPart(**p) for p in data.pop("parts", [])]
+            data["notes"] = _coerce_notes(data.get("notes", {}))
             drafts.append(BuildDraft(parts=parts, **data))
         except Exception:
             pass

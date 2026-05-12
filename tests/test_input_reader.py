@@ -96,9 +96,9 @@ def test_parts_quantity_is_int(stearns_input):
 # ── notes ──────────────────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("fixture_name", ["stearns_input", "test_build_input"])
-def test_notes_is_list(fixture_name, request):
+def test_notes_is_dict(fixture_name, request):
     project = request.getfixturevalue(fixture_name)
-    assert isinstance(project.notes, list)
+    assert isinstance(project.notes, dict)
 
 
 # ── load_input is idempotent (second call returns same data) ───────────────────

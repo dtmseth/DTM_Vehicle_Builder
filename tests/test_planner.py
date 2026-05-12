@@ -45,9 +45,9 @@ def test_build_plan_warnings_is_list(stearns_input, config):
     assert isinstance(plan.warnings, list)
 
 
-def test_build_plan_notes_is_list(stearns_input, config):
+def test_build_plan_notes_is_dict(stearns_input, config):
     plan = build_plan(stearns_input, config)
-    assert isinstance(plan.notes, list)
+    assert isinstance(plan.notes, dict)
 
 
 # ── unmapped parts produce warnings, not exceptions ───────────────────────────

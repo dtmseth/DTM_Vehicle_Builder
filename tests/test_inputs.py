@@ -65,7 +65,7 @@ class TestGuiEntry:
                     "quantity": 1,
                 }
             ],
-            "notes": ["Test note"],
+            "notes": {"INSTALLATION NOTES": ["Test note"]},
         }
         data.update(overrides)
         return data
@@ -146,7 +146,7 @@ class TestGuiEntry:
 
     def test_notes_parsed(self):
         project = project_input_from_form(self._minimal_form())
-        assert project.notes == ["Test note"]
+        assert project.notes == {"INSTALLATION NOTES": ["Test note"]}
 
     def test_empty_parts_list(self):
         project = project_input_from_form(self._minimal_form(parts=[]))
@@ -193,7 +193,7 @@ class TestDraftModels:
         assert draft.updated_at
         assert draft.vehicle_info == {}
         assert draft.parts == []
-        assert draft.notes == []
+        assert draft.notes == {}
         assert draft.placement_overrides == {}
         assert draft.validation_messages == []
         assert draft.audit_trail == []
@@ -202,11 +202,11 @@ class TestDraftModels:
         draft = new_draft(
             vehicle_info={"VehicleType": "TAHOE"},
             parts=[DraftPart(name="Light Bar")],
-            notes=["note"],
+            notes={"INSTALLATION NOTES": ["note"]},
         )
         assert draft.vehicle_info["VehicleType"] == "TAHOE"
         assert len(draft.parts) == 1
-        assert draft.notes == ["note"]
+        assert draft.notes == {"INSTALLATION NOTES": ["note"]}
 
     def test_draft_part_defaults(self):
         dp = DraftPart(name="Siren")
@@ -243,7 +243,7 @@ class TestDraftToProjectInput:
                     quantity=1,
                 )
             ],
-            notes=["note"],
+            notes={"INSTALLATION NOTES": ["note"]},
         )
 
     def test_returns_project_input(self):
@@ -265,7 +265,7 @@ class TestDraftToProjectInput:
 
     def test_notes_forwarded(self):
         project = draft_to_project_input(self._make_draft())
-        assert project.notes == ["note"]
+        assert project.notes == {"INSTALLATION NOTES": ["note"]}
 
     def test_missing_vehicle_type_defaults_to_unknown(self):
         draft = new_draft(vehicle_info={})
@@ -294,7 +294,7 @@ class TestDraftPersistence:
         return new_draft(
             vehicle_info={"VehicleType": "PIU", "Agency": "Test PD"},
             parts=[DraftPart(name="Siren", quantity=1)],
-            notes=["Test note"],
+            notes={"INSTALLATION NOTES": ["Test note"]},
         )
 
     def test_save_creates_file(self, tmp_path):
@@ -318,7 +318,7 @@ class TestDraftPersistence:
         assert loaded.vehicle_info == draft.vehicle_info
         assert len(loaded.parts) == 1
         assert loaded.parts[0].name == "Siren"
-        assert loaded.notes == ["Test note"]
+        assert loaded.notes == {"INSTALLATION NOTES": ["Test note"]}
 
     def test_load_not_found_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):

@@ -27,4 +27,4 @@ class PartInput:
 class ProjectInput:
     info: dict[str, Any]
     parts: list[PartInput]
-    notes: list[str]
+    notes: dict[str, list[str]]

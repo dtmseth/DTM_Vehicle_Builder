@@ -197,11 +197,20 @@ def load_input(path: Path) -> ProjectInput:
             )
         )
 
-    notes: list[str] = []
+    notes: dict[str, list[str]] = {}
     if "Notes" in wb.sheetnames:
+        from ..ppt_helpers import NOTES_CATEGORIES
+        _cat_set = {c.upper() for c in NOTES_CATEGORIES}
+        current_cat: str | None = None
         ws_notes = wb["Notes"]
         for row in ws_notes.iter_rows(min_row=2, values_only=True):
-            if row and len(row) > 1 and row[1]:
-                notes.append(_s(row[1]))
+            if not row:
+                continue
+            col_a = _s(row[0]).strip().upper() if row[0] else ""
+            col_b = _s(row[1]).strip() if len(row) > 1 and row[1] else ""
+            if col_a in _cat_set:
+                current_cat = col_a
+            elif col_b and current_cat:
+                notes.setdefault(current_cat, []).append(col_b)
 
     return ProjectInput(info=info, parts=parts, notes=notes)

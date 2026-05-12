@@ -1666,7 +1666,7 @@ def place_specify_palette(slide, category: str, img_box, y_offset_emu: int = 0):
 # Notes slide — structured sections
 # ─────────────────────────────────────────────────────────────────────────────
 
-_NOTES_SECTIONS = [
+NOTES_CATEGORIES = [
     "INSTALLATION NOTES",
     "CUSTOMER REQUESTS",
     "SPECIAL FABRICATION NOTES",
@@ -1675,7 +1675,7 @@ _NOTES_SECTIONS = [
 ]
 
 
-def fill_notes(slide, notes) -> None:
+def fill_notes(slide, notes: dict[str, list[str]]) -> None:
     slot = find_shape(slide, "NOTES_SLOT")
     if not slot:
         return
@@ -1687,7 +1687,15 @@ def fill_notes(slide, notes) -> None:
     line_h  = Inches(0.22)
     placeholder_color = RGBColor(0xAA, 0xAA, 0xAA)
 
-    for sec_idx, section in enumerate(_NOTES_SECTIONS):
+    _placeholders = {
+        "INSTALLATION NOTES":      "No installation notes specified.",
+        "CUSTOMER REQUESTS":       "No customer requests specified.",
+        "SPECIAL FABRICATION NOTES": "No special fabrication notes specified.",
+        "DELIVERY REQUIREMENTS":   "No delivery requirements specified.",
+        "FINAL APPROVALS":         "Pending final inspection sign-off.",
+    }
+
+    for section in NOTES_CATEGORIES:
         if y + label_h > top + height - Inches(0.1):
             break
 
@@ -1705,8 +1713,9 @@ def fill_notes(slide, notes) -> None:
         r.font.color.rgb = DTM_NAVY
         y += label_h + Inches(0.06)
 
-        if sec_idx == 0 and notes:
-            for idx, note in enumerate(notes):
+        section_notes = notes.get(section, []) if isinstance(notes, dict) else []
+        if section_notes:
+            for idx, note in enumerate(section_notes):
                 if y + line_h > top + height - Inches(0.1):
                     break
                 tb  = slide.shapes.add_textbox(left + Inches(0.2), y,
@@ -1725,18 +1734,12 @@ def fill_notes(slide, notes) -> None:
                 br.font.color.rgb = DTM_DARKTEXT
                 y += line_h
         else:
-            placeholder_text = {
-                "CUSTOMER REQUESTS":         "No customer requests specified.",
-                "SPECIAL FABRICATION NOTES": "No special fabrication notes specified.",
-                "DELIVERY REQUIREMENTS":     "No delivery requirements specified.",
-                "FINAL APPROVALS":           "Pending final inspection sign-off.",
-            }.get(section, "No notes specified.")
             tb  = slide.shapes.add_textbox(left + Inches(0.2), y,
                                             width - Inches(0.2), line_h)
             tf2 = tb.text_frame
             p2  = tf2.paragraphs[0]
             r2  = p2.add_run()
-            r2.text           = placeholder_text
+            r2.text           = _placeholders.get(section, "No notes specified.")
             r2.font.size      = Pt(10)
             r2.font.italic    = True
             r2.font.color.rgb = placeholder_color

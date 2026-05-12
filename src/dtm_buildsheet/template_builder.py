@@ -18,6 +18,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 from .config_store import load_config
 from .paths import AppPaths, ensure_workspace
+from .ppt_helpers import NOTES_CATEGORIES
 
 # ── brand colours ──────────────────────────────────────────────────────────────
 _NAVY       = "1E2761"
@@ -323,19 +324,50 @@ def _apply_validations(ws, data_rows: list[tuple[int, str]], cfg: dict):
                     dv.add(ws.cell(row=excel_row, column=FIELD_COL[col_key]))
 
 
+_NOTES_ROWS_PER_CATEGORY = 5
+
+
 def _build_notes_sheet(wb: Workbook):
+    """Write a categorized Notes sheet matching the PPT notes slide sections."""
     ws = wb.create_sheet("Notes")
-    ws.column_dimensions["A"].width = 6
+    ws.column_dimensions["A"].width = 30
     ws.column_dimensions["B"].width = 80
-    header_fill = _fill(_NAVY)
-    for col, label in [(1, "#"), (2, "Note")]:
+
+    navy_fill = _fill(_NAVY)
+    cat_fill  = _fill("ECEEF6")
+    alt_fill  = _fill(_LIGHT_GRAY)
+
+    # Column headers
+    for col, label in [(1, "Category"), (2, "Note")]:
         c = ws.cell(row=1, column=col, value=label)
-        c.font = _font(bold=True, color=_WHITE); c.fill = header_fill
+        c.font = _font(bold=True, color=_WHITE)
+        c.fill = navy_fill
         c.alignment = _align(h="center")
-    for i in range(2, 22):
-        ws.cell(row=i, column=1, value=i-1).alignment = _align(h="center")
-        ws.cell(row=i, column=2).alignment = _align(wrap=True)
-        ws.row_dimensions[i].height = 20
+    ws.row_dimensions[1].height = 18
+
+    current_row = 2
+    for category in NOTES_CATEGORIES:
+        # Category header row — category name in col A, col B empty
+        ca = ws.cell(row=current_row, column=1, value=category)
+        ca.font = _font(bold=True, size=9, color=_NAVY)
+        ca.fill = cat_fill
+        ca.alignment = _align(h="left")
+        cb = ws.cell(row=current_row, column=2)
+        cb.fill = cat_fill
+        ws.row_dimensions[current_row].height = 16
+        current_row += 1
+
+        # Blank input rows
+        for i in range(_NOTES_ROWS_PER_CATEGORY):
+            fill = alt_fill if i % 2 else None
+            for col in (1, 2):
+                cell = ws.cell(row=current_row, column=col)
+                if fill:
+                    cell.fill = fill
+                cell.border = _thin_border()
+                cell.alignment = _align(wrap=True)
+            ws.row_dimensions[current_row].height = 20
+            current_row += 1
 
 
 # ── public entry point ─────────────────────────────────────────────────────────

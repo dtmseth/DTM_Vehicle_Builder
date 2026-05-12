@@ -16,7 +16,7 @@ additional_info   str
 new_vehicle       dict  keys matching vehicle field names (UNIT ID, VIN, …)
 existing_vehicle  dict  same
 parts             list  of part-entry dicts (see PartInput fields)
-notes             list  of str
+notes             dict  category → list of str  (keys match NOTES_CATEGORIES in ppt_helpers)
 """
 from __future__ import annotations
 
@@ -103,5 +103,13 @@ def project_input_from_form(data: dict[str, Any]) -> ProjectInput:
             )
         )
 
-    notes: list[str] = [_s(n) for n in data.get("notes", []) if _s(n)]
+    raw_notes = data.get("notes", {})
+    if isinstance(raw_notes, dict):
+        notes: dict[str, list[str]] = {
+            k: [_s(n) for n in v if _s(n)]
+            for k, v in raw_notes.items()
+            if isinstance(v, list)
+        }
+    else:
+        notes = {}
     return ProjectInput(info=info, parts=parts, notes=notes)
