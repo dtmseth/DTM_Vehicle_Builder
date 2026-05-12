@@ -25,23 +25,21 @@ jobs:
       - name: Build app
         run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
 
-      - name: Create DMG
+      - name: Build PKG installer
         run: |
-          mkdir -p /tmp/dmg_staging
-          cp -r "dist/DTM Vehicle Builder.app" /tmp/dmg_staging/
-          cp "packaging/macos/OPEN THIS FIRST.command" /tmp/dmg_staging/
-          chmod +x "/tmp/dmg_staging/OPEN THIS FIRST.command"
-          ln -s /Applications /tmp/dmg_staging/Applications
-          hdiutil create \
-            -volname "DTM Vehicle Builder" \
-            -srcfolder /tmp/dmg_staging \
-            -ov -format UDZO \
-            "dist/DTM_Vehicle_Builder.dmg"
+          APP_VERSION=$(python -c "import re; print(re.search(r'version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read()).group(1))")
+          mkdir -p /tmp/pkg_root/Applications
+          cp -r "dist/DTM Vehicle Builder.app" "/tmp/pkg_root/Applications/"
+          pkgbuild \
+            --root /tmp/pkg_root \
+            --identifier com.dtm.vehiclebuilder \
+            --version "$APP_VERSION" \
+            "dist/DTM_Vehicle_Builder.pkg"
 
       - uses: actions/upload-artifact@v4
         with:
           name: DTM-Vehicle-Builder-Mac
-          path: dist/DTM_Vehicle_Builder.dmg
+          path: dist/DTM_Vehicle_Builder.pkg
 
   build-windows:
     runs-on: windows-latest
@@ -100,5 +98,5 @@ jobs:
           name: Latest Build
           prerelease: true
           files: |
-            dist/DTM_Vehicle_Builder.dmg
+            dist/DTM_Vehicle_Builder.pkg
             dist/DTM_Vehicle_Builder_Setup.exe
