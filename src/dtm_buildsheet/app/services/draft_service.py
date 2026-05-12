@@ -162,10 +162,14 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                 for inst in pl.instances:
                     all_warnings.extend(inst.warnings)
 
+        from .generation_service import finalize_output
+        export = finalize_output(ppt_path, paths)
+
         return {
             "ok": True,
-            "output_name": ppt_path.name,
-            "output_path": str(ppt_path),
+            "output_name": export["output_name"],
+            "output_path": export["output_path"],
+            "previous_versions": export["previous_versions"],
             "plan_path": str(plan_path),
             "summary_path": str(summary_path),
             "parts_count": len(plan.planned_parts),

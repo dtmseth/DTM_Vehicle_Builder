@@ -135,10 +135,33 @@
   </div>
 
   <div class="card">
+    <div class="card-title" style="margin-bottom:8px">Export Location</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div id="export-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">Default (workspace folder)</div>
+      <button class="btn btn-secondary btn-sm" id="btn-pick-export-dir">📁 Browse</button>
+      <button class="btn btn-secondary btn-sm" id="btn-clear-export-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
     <button class="btn btn-primary btn-block" id="btn-generate" disabled>
       <span class="spinner" id="spinner"></span>
       <span id="btn-label">⚡ Generate Build Sheet</span>
     </button>
+  </div>
+
+  <!-- Previous versions modal (shown after generation when older exports exist) -->
+  <div id="card-prev-versions" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:10px;padding:24px;max-width:430px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+      <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Previous Versions Found</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Older exports of this build sheet were found in the export folder:</div>
+      <ul id="prev-versions-list" style="margin:0 0 18px;padding:0 0 0 18px;font-size:12px;color:var(--navy);word-break:break-all;line-height:1.8"></ul>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" id="btn-delete-prev" style="background:#c0392b;border-color:#c0392b">🗑 Delete previous version(s)</button>
+        <button class="btn btn-secondary" id="btn-keep-prev">Keep both</button>
+      </div>
+      <div id="prev-versions-status" style="display:none;font-size:12px;margin-top:10px;text-align:center"></div>
+    </div>
   </div>
   <div class="card" id="card-results" hidden>
     <div class="card-title">Results</div>

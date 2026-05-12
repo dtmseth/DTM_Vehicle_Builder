@@ -908,17 +908,6 @@
       "images": {}
     },
     {
-      "part_id": "cylinder_style",
-      "display_name": "CYLINDER STYLE",
-      "category": "RADIO & COMMUNICATIONS",
-      "manufacturer": "",
-      "model_number": "CYLINDER STYLE",
-      "compatible_types": [
-        "Radio Antenna Top"
-      ],
-      "images": {}
-    },
-    {
       "part_id": "specity_model",
       "display_name": "SPECITY MODEL",
       "category": "RADIO & COMMUNICATIONS",
@@ -938,17 +927,6 @@
       "compatible_types": [
         "Radio 1",
         "Radio 2"
-      ],
-      "images": {}
-    },
-    {
-      "part_id": "whip_style",
-      "display_name": "WHIP STYLE",
-      "category": "RADIO & COMMUNICATIONS",
-      "manufacturer": "",
-      "model_number": "WHIP STYLE",
-      "compatible_types": [
-        "Radio Antenna Top"
       ],
       "images": {}
     },
@@ -2250,6 +2228,54 @@
         "side": {
           "w": 1.84,
           "h": 1.63
+        }
+      }
+    },
+    {
+      "part_id": "whip_style",
+      "display_name": "WHIP STYLE",
+      "category": "RADIO & COMMUNICATIONS",
+      "manufacturer": "",
+      "model_number": "WHIP STYLE",
+      "compatible_types": [
+        "Radio Antenna Top"
+      ],
+      "images": {
+        "top": "lights/part_whip_style_top.png",
+        "side": "lights/part_whip_style_side.png"
+      },
+      "size_per_view": {
+        "side": {
+          "w": 0.14,
+          "h": 0.43
+        },
+        "top": {
+          "w": 0.12,
+          "h": 0.12
+        }
+      }
+    },
+    {
+      "part_id": "cylinder_style",
+      "display_name": "CYLINDER STYLE",
+      "category": "RADIO & COMMUNICATIONS",
+      "manufacturer": "",
+      "model_number": "CYLINDER STYLE",
+      "compatible_types": [
+        "Radio Antenna Top"
+      ],
+      "images": {
+        "side": "lights/part_cylinder_style_side.png",
+        "top": "lights/part_cylinder_style_top.png"
+      },
+      "size_per_view": {
+        "side": {
+          "w": 0.14,
+          "h": 0.28
+        },
+        "top": {
+          "w": 0.12,
+          "h": 0.12
         }
       }
     }

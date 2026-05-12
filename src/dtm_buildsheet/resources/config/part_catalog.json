@@ -726,7 +726,7 @@
       "asset_key": "interior-front",
       "diagram": true,
       "default_views": [
-        "Top",
+        "top",
         "front"
       ],
       "render_quantity_policy": "single_per_line",
@@ -1321,7 +1321,7 @@
       "render_kind": "equipment",
       "diagram": true,
       "default_views": [
-        "Top",
+        "top",
         "side"
       ],
       "render_quantity_policy": "location_slots",
@@ -1331,7 +1331,8 @@
       ],
       "conditions": {
         "template_section": "RADIO & COMMUNICATIONS"
-      }
+      },
+      "co_part_rules": []
     },
     {
       "part_id": "radio_2",

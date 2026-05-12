@@ -1523,7 +1523,6 @@
       "_row": 95,
       "_sub_item": true,
       "locations": [
-        "REAR LEFT ROOF",
         "LEFT CARGO WINDOW",
         "RIGHT CARGO WINDOW",
         "SPECIFY LOCATION"
@@ -1542,11 +1541,9 @@
         "SPECITY MODEL"
       ],
       "locations": [
-        "ON DASH",
-        "RIGHT SIDE OF CONSOLE",
-        "LEFT SIDE OF CONSOLE",
-        "TOP PLATE OF CONSOLE",
-        "SPECIFY LOCATION"
+        "REAR LEFT ROOF",
+        "LEFT CARGO WINDOW",
+        "RIGHT CARGO WINDOW"
       ]
     },
     "Radio 2": {

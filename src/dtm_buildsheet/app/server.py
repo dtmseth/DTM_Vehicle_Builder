@@ -54,6 +54,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(template_routes.get_info(self.paths))
         elif path == "/api/template/pick-folder":
             self._api(template_routes.get_pick_folder())
+        elif path == "/api/generate/pick-folder":
+            self._api(generation_routes.get_pick_export_folder())
         elif path == "/api/assets/list":
             self._api(asset_routes.get_list(self.paths))
         elif path.startswith("/assets/"):
@@ -82,6 +84,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(generation_routes.post_parse(body, self.paths))
         elif path == "/generate":
             self._api(generation_routes.post_generate(body, self.paths))
+        elif path == "/api/generate/delete-old":
+            self._api(generation_routes.post_delete_old(body, self.paths))
         elif path == "/open":
             self._api(export_routes.post_open(body))
         elif path == "/api/export/pdf":

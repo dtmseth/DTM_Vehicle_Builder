@@ -30,7 +30,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
     layouts = config.vehicle_layouts.get("vehicles", {})
     vehicle_type = project.info.get("VehicleType", "PIU")
     vehicle = layouts.get(vehicle_type, {})
-    view_map = vehicle.get("views", {})
+    view_map = {k.lower(): v for k, v in vehicle.get("views", {}).items()}
     fixtures_map = vehicle.get("fixtures", {})
 
     # Pre-pass: collect names of all included parts for co_part_rules
@@ -132,7 +132,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         )
 
         for view in default_views:
-            view_config = view_map.get(view, {})
+            view_config = view_map.get(view.lower(), {})
 
             if is_fixture:
                 location, location_key = resolve_fixture_entry(

@@ -83,11 +83,15 @@ $("btn-generate").addEventListener("click", async ()=>{
   $("btn-generate").disabled=true; $("spinner").style.display="block";
   $("btn-label").textContent="Generating…";
   hide("card-results");hide("card-warns");hide("card-output");hide("reset-row");
+  $("card-prev-versions").style.display="none";
   logLine("Starting generation…");
   const res = _parsedDraftId
     ? await api("/api/draft/generate", { draft_id: _parsedDraftId })
     : await api("/generate", { filename: fileName, data: fileB64 });
   if(res.log) res.log.split("\n").forEach(l=>logLine(l));
+  $("spinner").style.display="none"; $("btn-label").textContent="⚡ Generate Build Sheet";
+  $("btn-generate").disabled=false; show("reset-row");
+
   if(res.ok){
     $("result-banner").className="result-banner success";
     $("banner-icon").textContent="✅"; $("banner-msg").textContent="Build sheet generated successfully";
@@ -102,13 +106,50 @@ $("btn-generate").addEventListener("click", async ()=>{
     }
     $("out-name").textContent=res.output_name; $("out-path").textContent=res.output_path;
     window._outputPath=res.output_path; show("card-output");
+    showPreviousVersions(res.previous_versions||[]);
   } else {
     $("result-banner").className="result-banner error";
     $("banner-icon").textContent="❌"; $("banner-msg").textContent="Generation failed";
     $("banner-sub").textContent=res.error||"Unknown error"; show("card-results");
   }
-  $("spinner").style.display="none"; $("btn-label").textContent="⚡ Generate Build Sheet";
-  $("btn-generate").disabled=false; show("reset-row");
+});
+
+// ── Previous versions handling ────────────────────────────────────────────
+let _previousVersionPaths=[];
+
+function showPreviousVersions(paths){
+  _previousVersionPaths=paths;
+  if(!paths.length){ $("card-prev-versions").style.display="none"; return; }
+  $("prev-versions-list").innerHTML=paths.map(p=>{
+    const name=p.replace(/.*[/\\]/,"");
+    return `<li title="${esc(p)}">${esc(name)}</li>`;
+  }).join("");
+  $("prev-versions-status").style.display="none";
+  $("btn-delete-prev").disabled=false; $("btn-keep-prev").disabled=false;
+  $("card-prev-versions").style.display="flex";
+}
+
+$("btn-delete-prev").addEventListener("click", async()=>{
+  if(!_previousVersionPaths.length) return;
+  $("btn-delete-prev").disabled=true; $("btn-keep-prev").disabled=true;
+  const res=await api("/api/generate/delete-old",{paths:_previousVersionPaths});
+  const el=$("prev-versions-status");
+  el.style.display="block";
+  if(res.ok && !res.errors?.length){
+    el.style.color="var(--green)";
+    el.textContent=`✅ Deleted ${res.deleted.length} previous version(s)`;
+    _previousVersionPaths=[];
+    setTimeout(()=>{ $("card-prev-versions").style.display="none"; }, 1500);
+  } else {
+    el.style.color="#c0392b";
+    el.textContent="⚠️ "+(res.errors||[]).join(", ");
+    $("btn-delete-prev").disabled=false; $("btn-keep-prev").disabled=false;
+  }
+});
+
+$("btn-keep-prev").addEventListener("click", ()=>{
+  $("card-prev-versions").style.display="none";
+  _previousVersionPaths=[];
 });
 
 // Workbook template regeneration
@@ -156,6 +197,7 @@ $("btn-export-pdf").addEventListener("click", async ()=>{
   if(res.ok){
     el.style.color="var(--green)"; el.textContent="✅ Exported: "+res.pdf_name;
     window._pdfPath=res.pdf_path; $("btn-open-pdf").style.display="block";
+    showPreviousVersions(res.previous_versions||[]);
   } else {
     el.style.color="#c0392b"; el.textContent="❌ "+res.error;
   }
@@ -165,6 +207,30 @@ $("btn-export-pdf").addEventListener("click", async ()=>{
 $("btn-open-pdf").addEventListener("click", ()=>api("/open",{path:window._pdfPath}));
 
 $("btn-reset").addEventListener("click", ()=>location.reload());
+
+// ── Export folder picker (output destination for generated build sheets) ─────
+function updateExportDirDisplay(){
+  const el=$("export-save-dir"); if(!el) return;
+  const dir=(_appSettings||{}).output_save_dir||"";
+  if(dir){ el.textContent=dir; el.title=dir; el.style.color="var(--navy)"; }
+  else   { el.textContent="Default (workspace folder)"; el.title=""; el.style.color="var(--muted)"; }
+}
+
+$("btn-pick-export-dir").addEventListener("click", async()=>{
+  const res=await api("/api/generate/pick-folder");
+  if(!res.ok) return;
+  if(!_appSettings) _appSettings={};
+  _appSettings.output_save_dir=res.path;
+  await api("/api/app-settings/save",_appSettings);
+  updateExportDirDisplay();
+});
+
+$("btn-clear-export-dir").addEventListener("click", async()=>{
+  if(!_appSettings) _appSettings={};
+  delete _appSettings.output_save_dir;
+  await api("/api/app-settings/save",_appSettings);
+  updateExportDirDisplay();
+});
 
 // ── Save-To folder picker ─────────────────────────────────────────────────
 function updateSaveToDisplay(){

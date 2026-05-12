@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import re
 import shutil
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -264,11 +266,32 @@ def _load_vehicle_view_config(vehicle_type: str, paths) -> tuple[list[str], dict
 _TEMPLATE_VIEW_SLOTS = 4
 
 
+def _safe_part(s: str) -> str:
+    """Sanitize a project info value into a safe filename segment."""
+    s = re.sub(r'[\s/\\]+', '_', s.strip())
+    s = re.sub(r'[^\w\-]', '', s)
+    s = re.sub(r'_+', '_', s)
+    return s.strip('_') or 'Unknown'
+
+
+def build_output_filename(project: dict) -> str:
+    """Build a timestamped export filename from project info."""
+    agency = _safe_part(str(project.get("Agency", "") or "Agency"))
+    new_v  = project.get("NewVehicle") or {}
+    old_v  = project.get("ExistingVehicle") or {}
+    unit   = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
+    year   = _safe_part(str(new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
+    now    = datetime.now()
+    hour   = now.hour % 12 or 12
+    ampm   = "AM" if now.hour < 12 else "PM"
+    ts     = now.strftime(f"%b%d_%Y_{hour}-{now.strftime('%M-%S')}{ampm}")
+    return f"{agency}_{unit}_{year}_Updated_{ts}.pptx"
+
+
 def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     active_paths = paths or ensure_workspace()
     template     = active_paths.templates_dir / "build_sheet_template.pptx"
-    project_id   = plan.project.get("ProjectID", "UNKNOWN")
-    out_path     = active_paths.workspace_output_dir / f"VehicleBuilder_{project_id}_v7.pptx"
+    out_path     = active_paths.workspace_output_dir / build_output_filename(plan.project)
 
     vehicle_type = plan.project.get("VehicleType", "PIU")
     external_views, view_map = _load_vehicle_view_config(vehicle_type, active_paths)

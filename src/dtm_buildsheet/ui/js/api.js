@@ -27,6 +27,7 @@ function relativeTime(ms){
 async function loadTemplateInfo(){
   const el = $("tpl-last-updated"); if(!el) return;
   updateSaveToDisplay();
+  updateExportDirDisplay();
   try {
     const res = await api("/api/template/info");
     if(res.exists && res.mtime){

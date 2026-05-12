@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
+    """Find older PDF exports with the same Agency_Unit_Year_Updated_ prefix."""
+    prefix = re.sub(r'_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$', '', pdf_path.stem) + '_'
+    return [
+        str(p) for p in sorted(pdf_path.parent.glob(f"{prefix}*.pdf"))
+        if p.name != pdf_path.name
+    ]
 
 
 # ── LibreOffice discovery ──────────────────────────────────────────────────────
@@ -45,7 +55,8 @@ def _export_via_powerpoint_com(pptx_path: Path, pdf_path: Path) -> dict:
         prs.Close()
         powerpoint.Quit()
         if pdf_path.exists():
-            return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name}
+            return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
+                    "previous_versions": _find_previous_pdf_versions(pdf_path)}
         return {"ok": False, "error": "PDF not created by PowerPoint COM"}
     except Exception as exc:
         return {"ok": False, "error": f"PowerPoint COM failed: {exc}"}
@@ -71,7 +82,8 @@ end tell
             timeout=120,
         )
         if result.returncode == 0 and pdf_path.exists():
-            return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name}
+            return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
+                    "previous_versions": _find_previous_pdf_versions(pdf_path)}
         stderr = result.stderr.decode("utf-8", errors="replace").strip()
         stdout = result.stdout.decode("utf-8", errors="replace").strip()
         msg = stderr or stdout or "AppleScript returned non-zero exit code"
@@ -123,7 +135,8 @@ def export_to_pdf(body: dict) -> dict:
                 timeout=120,
             )
             if result.returncode == 0 and pdf_path.exists():
-                return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name}
+                return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
+                        "previous_versions": _find_previous_pdf_versions(pdf_path)}
             stderr = result.stderr.decode("utf-8", errors="replace").strip()
             if stderr:
                 return {"ok": False, "error": f"LibreOffice conversion failed: {stderr}"}

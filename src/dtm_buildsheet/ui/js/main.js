@@ -11,4 +11,9 @@ function populateLocationDropdown(){
 // ═══════════════════════════════════════════════════════
 window.addEventListener("DOMContentLoaded", async()=>{
   try{const s=await api("/status"); if(s.existing_file) logLine("Found input: "+s.existing_file);}catch(e){}
+  try{
+    const settings=await api("/api/app-settings");
+    if(settings && !_appSettings) _appSettings=settings;
+    updateExportDirDisplay();
+  }catch(e){}
 });
