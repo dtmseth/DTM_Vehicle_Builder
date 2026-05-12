@@ -3,17 +3,56 @@ name: Build
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type (for minor/major releases only)'
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Bump version first, then build from the tagged commit.
+  # The commit message contains [skip ci] so the push-back doesn't re-trigger this workflow.
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: bump
+        run: |
+          pip install bump-my-version
+          BUMP_TYPE="${{ github.event.inputs.bump_type || 'patch' }}"
+          bump-my-version bump "$BUMP_TYPE"
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          git push origin main --follow-tags
+
   build-mac:
+    needs: version
     runs-on: macos-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
@@ -42,11 +81,14 @@ jobs:
           path: dist/DTM_Vehicle_Builder.dmg
 
   build-windows:
+    needs: version
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
@@ -55,11 +97,9 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[packaging-win]"
 
-      - name: Read version
-        id: version
+      - name: Set version env
         run: |
-          $v = (Select-String -Path pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches.Groups[1].Value
-          echo "APP_VERSION=$v" >> $env:GITHUB_ENV
+          echo "APP_VERSION=${{ needs.version.outputs.version }}" >> $env:GITHUB_ENV
 
       - name: Build app
         run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
@@ -68,7 +108,7 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging/windows/installer.iss
         env:
-          APP_VERSION: ${{ env.APP_VERSION }}
+          APP_VERSION: ${{ needs.version.outputs.version }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -76,7 +116,7 @@ jobs:
           path: dist/DTM_Vehicle_Builder_Setup.exe
 
   publish:
-    needs: [build-mac, build-windows]
+    needs: [version, build-mac, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -94,9 +134,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: Latest Build
-          prerelease: true
+          tag_name: v${{ needs.version.outputs.version }}
+          name: DTM Vehicle Builder v${{ needs.version.outputs.version }}
           files: |
             dist/DTM_Vehicle_Builder.dmg
             dist/DTM_Vehicle_Builder_Setup.exe
