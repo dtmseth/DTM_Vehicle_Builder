@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,6 +29,8 @@ from .ppt_helpers import (
     place_vehicle_image,
     update_slide_header_footer,
 )
+
+_log = logging.getLogger(__name__)
 
 
 def _project_shim(plan) -> SimpleNamespace:
@@ -404,6 +407,11 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         continue
                     icon_path = active_paths.workspace_assets_dir / instance.asset_path
                     if not icon_path.exists():
+                        if "wing_wrap_elitexd" in instance.asset_path.lower():
+                            _log.warning(
+                                "Wing Wrap EliteXD render skipped; asset missing: %s",
+                                icon_path,
+                            )
                         continue
 
                     inst_w, inst_h = _instance_icon_size(placement, part_size, instance,
@@ -425,6 +433,17 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         str(icon_path), ax - iw // 2, ay - ih // 2,
                         width=iw, height=ih,
                     )
+                    if "wing_wrap_elitexd" in instance.asset_path.lower():
+                        _log.info(
+                            "Wing Wrap EliteXD picture inserted: path=%s view=%s "
+                            "left=%s top=%s width=%s height=%s",
+                            icon_path,
+                            view,
+                            ax - iw // 2,
+                            ay - ih // 2,
+                            iw,
+                            ih,
+                        )
 
                     is_right_slot = instance.slot_role in ("driver", "positive_x")
                     is_sym_pattern = placement.pattern in ("mirror", "horizontal")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from ..paths import AppPaths, ensure_workspace
@@ -17,6 +18,15 @@ class ConfigBundle:
     parts_by_id: dict[str, dict]
     parts_lib_by_model: dict[str, dict]
     config_warnings: list[str] = field(default_factory=list)
+
+
+def model_lookup_keys(value: str) -> set[str]:
+    raw = (value or "").strip().upper()
+    compact = re.sub(r"[^A-Z0-9]+", "", raw)
+    keys = {raw, compact} if raw else set()
+    if compact.endswith("ELITEXD"):
+        keys.add(compact.removesuffix("ELITEXD") + "ELITE XD")
+    return {key for key in keys if key}
 
 
 def _cross_reference_warnings(
@@ -114,9 +124,8 @@ def load_configs(paths: AppPaths | None = None) -> ConfigBundle:
 
     parts_lib_by_model: dict[str, dict] = {}
     for entry in parts_library.get("parts", []):
-        model = (entry.get("model_number") or "").strip().upper()
-        if model:
-            parts_lib_by_model[model] = entry
+        for key in model_lookup_keys(entry.get("model_number") or ""):
+            parts_lib_by_model[key] = entry
 
     config_warnings = _cross_reference_warnings(
         part_catalog, vehicle_layouts, asset_manifest, active_paths

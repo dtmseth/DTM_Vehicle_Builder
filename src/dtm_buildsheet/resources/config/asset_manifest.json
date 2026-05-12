@@ -173,7 +173,8 @@
     },
     "radio_1_antenna_top": {},
     "wing_wraps": {
-      "front": "equipment/wing_wraps_front.png"
+      "front": "equipment/wing_wraps_front.png",
+      "side": "equipment/westin_wing_wrap_elitexd_side.png"
     },
     "Push Bumper alone": {
       "side": "equipment/Push Bumper alone_side.png"

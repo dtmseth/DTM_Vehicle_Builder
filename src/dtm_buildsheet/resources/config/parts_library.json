@@ -2243,8 +2243,8 @@
         "Wing Wraps"
       ],
       "images": {
-        "front": "lights/westin_wing_wraps_front.png",
-        "side": "lights/westin_wing_wrap_elitexd_side.png"
+        "front": "equipment/wing_wraps_front.png",
+        "side": "equipment/westin_wing_wrap_elitexd_side.png"
       },
       "size_per_view": {
         "side": {

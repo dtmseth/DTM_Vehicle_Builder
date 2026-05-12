@@ -97,9 +97,11 @@ def _copy_missing_tree(source_root: Path, dest_root: Path) -> int:
 
 
 def _log_westin_elitexd_probe(paths: AppPaths) -> None:
-    rel_asset = Path("lights") / "westin_wing_wrap_elitexd_side.png"
+    rel_asset = Path("equipment") / "westin_wing_wrap_elitexd_side.png"
+    legacy_rel_asset = Path("lights") / "westin_wing_wrap_elitexd_side.png"
     bundled_asset = ASSETS_DIR / rel_asset
     workspace_asset = paths.workspace_assets_dir / rel_asset
+    legacy_workspace_asset = paths.workspace_assets_dir / legacy_rel_asset
     parts_library = paths.workspace_config_dir / "parts_library.json"
 
     try:
@@ -113,11 +115,14 @@ def _log_westin_elitexd_probe(paths: AppPaths) -> None:
 
     _log.info(
         "Wing Wrap EliteXD probe: bundled_asset=%s bundled_exists=%s "
-        "workspace_asset=%s workspace_exists=%s parts_library=%s parts_library_has_entry=%s",
+        "workspace_asset=%s workspace_exists=%s legacy_workspace_asset=%s "
+        "legacy_workspace_exists=%s parts_library=%s parts_library_has_entry=%s",
         bundled_asset,
         bundled_asset.exists(),
         workspace_asset,
         workspace_asset.exists(),
+        legacy_workspace_asset,
+        legacy_workspace_asset.exists(),
         parts_library,
         config_has_entry,
     )

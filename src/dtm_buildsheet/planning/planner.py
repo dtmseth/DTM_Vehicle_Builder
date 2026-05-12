@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from ..config_loader import ConfigBundle
+from ..config.loader import model_lookup_keys
 from ..domain import BuildPlan, PlannedPart, PlannedPlacement, RenderInstance, slot_roles
 from ..domain.rules import RuleSeverity
 from ..naming import canonical_name
@@ -12,6 +14,8 @@ from .color_resolver import resolve_color_token, resolve_profile
 from .fixture_resolver import resolve_fixture_entry
 from .location_resolver import apply_co_part_rules, resolve_normal_location
 from .quantity_resolver import apply_quantity_rules
+
+_log = logging.getLogger(__name__)
 
 
 _SUPPRESS_QTY_MISMATCH_LOCATIONS: frozenset[str] = frozenset({
@@ -104,7 +108,14 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
         profile_id, raw_color_token = resolve_profile(part, spec, manifest)
         size_class = size_class_for_part(part.part_number, manifest)
-        lib_entry = config.parts_lib_by_model.get(part.part_number.strip().upper(), {})
+        lib_entry = next(
+            (
+                config.parts_lib_by_model[key]
+                for key in model_lookup_keys(part.part_number)
+                if key in config.parts_lib_by_model
+            ),
+            {},
+        )
         lib_size_per_view: dict = lib_entry.get("size_per_view", {})
         lib_images: dict = lib_entry.get("images", {})
         catalog_size_per_view: dict = spec.get("size_per_view", {})
@@ -255,6 +266,18 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                     asset_manifest=manifest,
                     fallback_images=lib_images,
                 )
+                if "wing wrap" in part.name.lower() or "wing_wrap_elitexd" in asset_path.lower():
+                    _log.info(
+                        "Wing Wrap asset resolution: part=%s part_number=%s view=%s "
+                        "render_kind=%s asset_key=%s lib_images=%s resolved_asset=%s",
+                        part.name,
+                        part.part_number,
+                        view,
+                        spec["render_kind"],
+                        effective_asset_key,
+                        lib_images,
+                        asset_path,
+                    )
                 instance = RenderInstance(
                     slot_index=index,
                     slot_role=slot_role,
