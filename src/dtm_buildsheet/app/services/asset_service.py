@@ -37,7 +37,8 @@ def serve_asset(rel_path: str, paths: AppPaths) -> tuple[int, bytes, str]:
     """Return (status_code, body, content_type) for a raw asset file request."""
     safe = (paths.workspace_assets_dir / rel_path).resolve()
     root = paths.workspace_assets_dir.resolve()
-    if not str(safe).startswith(str(root)) or not safe.exists():
+    if not safe.is_relative_to(root) or not safe.exists():
+        _log.debug("Asset not found: rel=%s safe=%s root=%s", rel_path, safe, root)
         return 404, b"Not found", "text/plain"
     ctype = mimetypes.guess_type(str(safe))[0] or "application/octet-stream"
     return 200, safe.read_bytes(), ctype
@@ -68,7 +69,7 @@ def delete_asset(body: dict, paths: AppPaths) -> dict:
             return {"ok": False, "error": "Missing folder or filename"}
         target = (paths.workspace_assets_dir / folder / filename).resolve()
         assets_root = paths.workspace_assets_dir.resolve()
-        if not str(target).startswith(str(assets_root)):
+        if not target.is_relative_to(assets_root):
             return {"ok": False, "error": "Invalid asset path"}
         existed = target.exists()
         if existed:

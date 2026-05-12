@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import socket
 import threading
 import time
@@ -169,8 +170,21 @@ def _port_is_busy(port: int) -> bool:
         return sock.connect_ex(("127.0.0.1", port)) == 0
 
 
+def _setup_logging(workspace_dir: Path) -> None:
+    log_file = workspace_dir / "dtm_buildsheet.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+    )
+
+
 def main(paths: AppPaths | None = None):
     active_paths = paths or ensure_workspace()
+    _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
 
     if _port_is_busy(PORT):

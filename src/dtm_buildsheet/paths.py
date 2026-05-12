@@ -73,8 +73,12 @@ def _md5(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()
 
 
-def _copy_missing_tree(source_root: Path, dest_root: Path) -> None:
-    """Copy files from source_root to dest_root, updating any that have changed."""
+def _copy_missing_tree(source_root: Path, dest_root: Path) -> int:
+    """Copy files from source_root to dest_root, updating any that have changed.
+
+    Returns the number of files written.
+    """
+    written = 0
     for source in sorted(source_root.rglob("*")):
         if source.is_dir() or source.name.startswith("."):
             continue
@@ -85,8 +89,11 @@ def _copy_missing_tree(source_root: Path, dest_root: Path) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         try:
             shutil.copyfile(source, dest)
+            _log.debug("Seeded asset: %s", rel)
+            written += 1
         except Exception:
             _log.exception("Failed to copy bundled asset %s", rel)
+    return written
 
 
 def ensure_workspace() -> AppPaths:
@@ -113,6 +120,10 @@ def ensure_workspace() -> AppPaths:
         if not ASSETS_DIR.exists():
             _log.error("Bundled assets directory not found: %s", ASSETS_DIR)
         else:
-            _copy_missing_tree(ASSETS_DIR, paths.workspace_assets_dir)
+            n = _copy_missing_tree(ASSETS_DIR, paths.workspace_assets_dir)
+            if n:
+                _log.info("Seeded %d asset(s) from bundle to workspace", n)
+            else:
+                _log.debug("Assets up to date (workspace_assets_dir=%s)", paths.workspace_assets_dir)
 
     return paths
