@@ -481,11 +481,13 @@ def fill_overview(slide, project) -> None:
     _textbox(slide, L, col_top, LEFT_W, Inches(0.25),
              "QUOTE & SALES INFORMATION", font_size=10, bold=True, color=DTM_NAVY)
     left_y = col_top + Inches(0.25)
+    project_total = int(info.get("project_total_units", 0) or 0)
+    other_orders  = str(max(0, project_total - 1)) if project_total > 0 else "0"
     left_y = _kv_block(slide, [
         ("Sales Rep",    sales_rep),
         ("Quote #",      quote_num),
         ("Install Type", install_type),
-        ("Other Orders", "0"),
+        ("Other Orders", other_orders),
     ], L, left_y, LEFT_W)
 
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)

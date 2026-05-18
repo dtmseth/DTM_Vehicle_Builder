@@ -15,5 +15,8 @@ window.addEventListener("DOMContentLoaded", async()=>{
     const settings=await api("/api/app-settings");
     if(settings && !_appSettings) _appSettings=settings;
     updateExportDirDisplay();
+    if (typeof updateProjRootDisplay === "function") updateProjRootDisplay();
   }catch(e){}
+  // All tab-specific scripts are now loaded — open Projects tab as default
+  switchTab("projects");
 });

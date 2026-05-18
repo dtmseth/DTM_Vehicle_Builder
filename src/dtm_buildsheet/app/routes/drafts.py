@@ -4,13 +4,16 @@ import json
 from http.server import BaseHTTPRequestHandler
 
 from ..services.draft_service import (
+    handle_add_part_to_draft,
     handle_delete_draft,
     handle_generate_from_draft,
     handle_get_draft,
     handle_list_drafts,
+    handle_remove_part_from_draft,
     handle_save_draft,
     handle_save_override,
     handle_save_overrides_batch,
+    handle_update_part_in_draft,
 )
 from ...paths import AppPaths
 
@@ -32,6 +35,31 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
     if method == "POST" and path == "/api/draft/generate":
         _json(handler, handle_generate_from_draft(body, paths))
         return True
+
+    # POST /api/draft/{id}/part/{line_id}/update
+    if method == "POST" and path.startswith("/api/draft/") and "/part/" in path and path.endswith("/update"):
+        rest = path[len("/api/draft/"):-len("/update")]
+        if "/part/" in rest:
+            draft_id, line_id = rest.split("/part/", 1)
+            if draft_id and line_id and "/" not in draft_id and "/" not in line_id:
+                _json(handler, handle_update_part_in_draft(draft_id, line_id, body, paths))
+                return True
+
+    # POST /api/draft/{id}/part/{line_id}/delete
+    if method == "POST" and path.startswith("/api/draft/") and "/part/" in path and path.endswith("/delete"):
+        rest = path[len("/api/draft/"):-len("/delete")]
+        if "/part/" in rest:
+            draft_id, line_id = rest.split("/part/", 1)
+            if draft_id and line_id and "/" not in draft_id and "/" not in line_id:
+                _json(handler, handle_remove_part_from_draft(draft_id, line_id, paths))
+                return True
+
+    # POST /api/draft/{id}/part
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/part"):
+        inner = path[len("/api/draft/"):-len("/part")]
+        if inner and "/" not in inner:
+            _json(handler, handle_add_part_to_draft(inner, body, paths))
+            return True
 
     # POST /api/draft/{id}/overrides/batch
     if method == "POST" and path.startswith("/api/draft/") and path.endswith("/overrides/batch"):

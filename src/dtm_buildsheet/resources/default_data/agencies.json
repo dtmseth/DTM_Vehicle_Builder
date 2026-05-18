@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "agencies": [
+    {
+      "agency_id": "92468522-2eb0-4122-8719-87a14e8afb08",
+      "name": "Sauk Rapids Police Department",
+      "contact_name": "Sean Gales",
+      "contact_phone": "3208287782",
+      "contact_email": "",
+      "customer_since": "2008",
+      "created_at": "2026-05-15T19:01:36.519419+00:00",
+      "updated_at": "2026-05-15T19:01:36.519419+00:00"
+    },
+    {
+      "agency_id": "3a94b3a8-ccf2-4b3b-822a-dd482317a1e9",
+      "name": "Saint Cloud Police Department",
+      "contact_name": "Jason",
+      "contact_phone": "",
+      "contact_email": "",
+      "customer_since": "2012",
+      "created_at": "2026-05-15T19:16:35.422506+00:00",
+      "updated_at": "2026-05-15T19:16:35.422506+00:00"
+    },
+    {
+      "agency_id": "7a9e005e-4067-423c-8623-5787280b6a22",
+      "name": "Stearns County Sheriff",
+      "contact_name": "Jerry",
+      "contact_phone": "",
+      "contact_email": "",
+      "customer_since": "2008",
+      "created_at": "2026-05-15T19:28:28.525946+00:00",
+      "updated_at": "2026-05-15T19:28:41.248641+00:00"
+    }
+  ]
+}

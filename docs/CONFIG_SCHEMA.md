@@ -1,8 +1,8 @@
 # DTM Vehicle Builder — Config File Schemas
 
-Reference for all six JSON configuration files. These files live in `workspace/config/` (editable by the user) and `src/dtm_buildsheet/resources/config/` (bundled defaults).
+Reference for all JSON configuration and data files. Config files live in `workspace/config/` (editable) and `src/dtm_buildsheet/resources/config/` (bundled defaults). Workspace data files (agencies, sales reps, projects, presets) live directly in `workspace/` or its sub-directories.
 
-Last updated: 2026-04-29 (restructure/maintainability branch, Phase 1)
+Last updated: 2026-05-18 (Phases 1–5)
 
 ---
 
@@ -14,7 +14,11 @@ Last updated: 2026-04-29 (restructure/maintainability branch, Phase 1)
 4. [parts_library.json](#parts_libraryjson)
 5. [workbook_rules.json](#workbook_rulesjson)
 6. [app_settings.json](#app_settingsjson)
-7. [Common Conventions](#common-conventions)
+7. [project_options.json](#project_optionsjson)
+8. [agencies.json](#agenciesjson)
+9. [sales_reps.json](#sales_repsjson)
+10. [Preset Files](#preset-files)
+11. [Common Conventions](#common-conventions)
 
 ---
 
@@ -370,6 +374,114 @@ Application-level settings not related to part or vehicle config.
 | Key | Default | Description |
 |---|---|---|
 | `template_save_dir` | `""` | Directory where generated Excel templates are saved. Empty = workspace/input/ |
+
+---
+
+## project_options.json
+
+Read-only dropdown option lists used by the project wizard and project editor. Not user-editable through the GUI (changes require editing the JSON directly).
+
+Served at `GET /api/project-options`. The workspace copy (`workspace/config/project_options.json`) takes precedence over the bundled default (`resources/config/project_options.json`).
+
+```
+{
+  "schema_version": 1,
+  "build_types":      <list[string]>,
+  "camera_brands":    <list[string]>,
+  "lighting_brands":  <list[string]>,
+  "bumper_brands":    <list[string]>,
+  "cage_brands":      <list[string]>
+}
+```
+
+---
+
+## agencies.json
+
+Workspace-root file at `workspace/agencies.json`. Not a config file — not versioned in `workspace/config/`.
+
+```
+{
+  "schema_version": 1,
+  "agencies": [ <AgencyRecord>, ... ]
+}
+```
+
+### AgencyRecord Object
+```
+{
+  "agency_id":      <string, UUID — auto-generated>,
+  "name":           <string, required — canonical agency name>,
+  "contact_name":   <string, required on creation>,
+  "contact_info":   <string, required on creation — phone or email>,
+  "customer_since": <string, optional — free-text year>,
+  "created_at":     <string, ISO 8601>,
+  "updated_at":     <string, ISO 8601>
+}
+```
+
+Managed through Settings → Agencies or the project wizard's agency combo. The fuzzy search endpoint normalizes abbreviations before matching (PD → police department, SO → sheriff's office, St. → saint, etc.).
+
+---
+
+## sales_reps.json
+
+Workspace-root file at `workspace/sales_reps.json`. Not a config file.
+
+```
+{
+  "schema_version": 1,
+  "sales_reps": [ <SalesRepRecord>, ... ]
+}
+```
+
+### SalesRepRecord Object
+```
+{
+  "rep_id":     <string, UUID — auto-generated>,
+  "name":       <string, required>,
+  "email":      <string, optional>,
+  "phone":      <string, optional>,
+  "created_at": <string, ISO 8601>,
+  "updated_at": <string, ISO 8601>
+}
+```
+
+Managed through Settings → Sales Reps or the project wizard's sales rep combo.
+
+---
+
+## Preset Files
+
+Individual JSON files in `workspace/presets/` (bundled app) or `src/dtm_buildsheet/resources/presets/` (dev mode).
+
+Each file represents one preset and is named `{preset_id}.json`.
+
+### Preset Object (schema_version 2)
+```
+{
+  "schema_version": 2,
+  "preset_id":     <string, slug-style unique ID>,
+  "label":         <string — auto-generated; see auto-naming rules>,
+  "agency_ids":    <list[string] — [] = universal>,
+  "build_types":   <list[string] — [] = any build type>,
+  "vehicle_types": <list[string] — [] = any vehicle>,
+  "tag":           <string, optional — suffix for General presets>,
+  "parts":         <list[PartInput-like dicts]>
+}
+```
+
+### Auto-Naming Rules
+Label is computed by `preset_service._auto_name()`:
+1. Prefix: first matched agency name, or `"General"` if `agency_ids` is empty.
+2. Append build_type if exactly one value.
+3. Append vehicle_types joined with `/` (e.g. `"PIU/Tahoe"`).
+4. Append `" — {tag}"` if tag is non-empty.
+
+Example: `"St. Cloud PD Patrol PIU/Tahoe"`, `"General Patrol PIU/Tahoe — Fleet23"`.
+
+### v1 Compatibility
+Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `build_types`, or `tag` fields). They behave as universal presets.
 
 ---
 

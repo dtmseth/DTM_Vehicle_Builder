@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Any
 
 from ..domain.input_models import PartInput, ProjectInput
-from ..naming import canonical_name, safe_project_id
+from ..naming import canonical_name, safe_id, safe_project_id
+from ..paths import AppPaths
 from ..storage.local import LocalStorageProvider
 
 
@@ -64,6 +65,7 @@ class DraftPart:
     passenger_color: str = ""
     center_color: str = ""
     placement_overrides: dict[str, Any] = field(default_factory=dict)
+    line_id: str = ""
 
 
 @dataclass
@@ -78,6 +80,7 @@ class BuildDraft:
     placement_overrides: dict[str, Any] = field(default_factory=dict)
     validation_messages: list[str] = field(default_factory=list)
     audit_trail: list[dict[str, Any]] = field(default_factory=list)
+    user_modified: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +93,7 @@ def new_draft(
     notes: dict[str, list[str]] | None = None,
 ) -> BuildDraft:
     now = _utcnow()
-    return BuildDraft(
+    draft = BuildDraft(
         draft_id=str(uuid.uuid4()),
         created_at=now,
         updated_at=now,
@@ -98,6 +101,15 @@ def new_draft(
         parts=parts or [],
         notes=notes or {},
     )
+    _ensure_line_ids(draft)
+    return draft
+
+
+def _ensure_line_ids(draft: BuildDraft) -> None:
+    """Assign stable line IDs to any parts that lack one (e.g. loaded from old JSON)."""
+    for part in draft.parts:
+        if not part.line_id:
+            part.line_id = str(uuid.uuid4())
 
 
 def draft_from_project_input(project: ProjectInput, draft_id: str | None = None) -> BuildDraft:
@@ -120,6 +132,7 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
             driver_color=p.driver_color,
             passenger_color=p.passenger_color,
             center_color=p.center_color,
+            line_id=str(uuid.uuid4()),
         )
         for p in project.parts
     ]
@@ -130,6 +143,42 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
         vehicle_info=dict(project.info),
         parts=draft_parts,
         notes=dict(project.notes),
+    )
+
+
+def find_part_by_line_id(draft: BuildDraft, line_id: str) -> tuple[int, DraftPart] | None:
+    """Return (index, part) for the first part matching line_id, or None."""
+    for i, part in enumerate(draft.parts):
+        if part.line_id == line_id:
+            return i, part
+    return None
+
+
+def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: ARG001
+    """Build a DraftPart from an API request body; coerces field types."""
+    name = _s(body.get("name", ""))
+    include = _bool(body.get("include", True))
+    quantity = max(0, _int(body.get("quantity", 0)))
+    line_id = _s(body.get("line_id", ""))
+
+    return DraftPart(
+        name=name,
+        include=include,
+        new_or_used=_s(body.get("new_or_used", "")),
+        source=_s(body.get("source", "")),
+        manufacturer=_s(body.get("manufacturer", "")),
+        part_number=_s(body.get("part_number", "")),
+        location=_s(body.get("location", "")),
+        raw_color=_s(body.get("raw_color", "")),
+        quantity=quantity,
+        lens=_s(body.get("lens", "")),
+        notes=_s(body.get("notes", "")),
+        explicit_color_profile=_s(body.get("explicit_color_profile", "")),
+        driver_color=_s(body.get("driver_color", "")),
+        passenger_color=_s(body.get("passenger_color", "")),
+        center_color=_s(body.get("center_color", "")),
+        placement_overrides=body.get("placement_overrides") if isinstance(body.get("placement_overrides"), dict) else {},
+        line_id=line_id or str(uuid.uuid4()),
     )
 
 
@@ -181,6 +230,7 @@ def _draft_path(draft_id: str, drafts_dir: Path) -> Path:
 
 def save_draft(draft: BuildDraft, drafts_dir: Path) -> Path:
     """Persist draft to disk; updates updated_at timestamp."""
+    _ensure_line_ids(draft)
     draft.updated_at = _utcnow()
     path = _draft_path(draft.draft_id, drafts_dir)
     LocalStorageProvider().write_text(str(path), json.dumps(asdict(draft), indent=2))
@@ -203,7 +253,9 @@ def load_draft(draft_id: str, drafts_dir: Path) -> BuildDraft:
     data = json.loads(LocalStorageProvider().read_text(str(path)))
     parts = [DraftPart(**p) for p in data.pop("parts", [])]
     data["notes"] = _coerce_notes(data.get("notes", {}))
-    return BuildDraft(parts=parts, **data)
+    draft = BuildDraft(parts=parts, **data)
+    _ensure_line_ids(draft)
+    return draft
 
 
 def delete_draft(draft_id: str, drafts_dir: Path) -> None:
@@ -219,7 +271,9 @@ def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
             data = json.loads(path.read_text(encoding="utf-8"))
             parts = [DraftPart(**p) for p in data.pop("parts", [])]
             data["notes"] = _coerce_notes(data.get("notes", {}))
-            drafts.append(BuildDraft(parts=parts, **data))
+            draft = BuildDraft(parts=parts, **data)
+            _ensure_line_ids(draft)
+            drafts.append(draft)
         except Exception:
             pass
     return drafts

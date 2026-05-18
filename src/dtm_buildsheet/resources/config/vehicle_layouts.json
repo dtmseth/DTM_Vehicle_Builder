@@ -2,6 +2,8 @@
   "version": "5.1",
   "vehicles": {
     "PIU": {
+      "make": "Ford",
+      "model": "Police Interceptor Utility",
       "fixtures": {
         "roof_light_bar": {
           "front": {
@@ -992,6 +994,8 @@
       ]
     },
     "TRAVERSE": {
+      "make": "Chevrolet",
+      "model": "Traverse",
       "fixtures": {
         "roof_light_bar": {
           "front": {
@@ -1957,6 +1961,8 @@
       ]
     },
     "TAHOE": {
+      "make": "Chevrolet",
+      "model": "Tahoe",
       "fixtures": {
         "roof_light_bar": {
           "front": {
@@ -2991,6 +2997,8 @@
       ]
     },
     "DURANGO": {
+      "make": "Dodge",
+      "model": "Durango",
       "fixtures": {
         "roof_light_bar": {
           "front": {
@@ -3992,6 +4000,8 @@
       ]
     },
     "F-150": {
+      "make": "Ford",
+      "model": "F-150",
       "fixtures": {
         "roof_light_bar": {
           "front": {

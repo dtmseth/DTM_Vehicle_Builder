@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "sales_reps": [
+    {
+      "rep_id": "46a02153-cfd5-4198-8bf7-c2fcf5733bdf",
+      "name": "Tyler",
+      "phone": "3202673440",
+      "email": "tyler@dtmfleet.com",
+      "created_at": "2026-05-15T19:44:39.289721+00:00",
+      "updated_at": "2026-05-15T20:00:03.939535+00:00"
+    },
+    {
+      "rep_id": "4ddfc6a3-d2d6-4f58-9084-a24f11e56bc1",
+      "name": "Travis",
+      "phone": "3202662319",
+      "email": "travis@dtmfleet.com",
+      "created_at": "2026-05-15T19:45:15.604200+00:00",
+      "updated_at": "2026-05-15T20:00:34.336335+00:00"
+    },
+    {
+      "rep_id": "3d7753d0-40b5-4130-a7a0-dccd978b692c",
+      "name": "Cody",
+      "phone": "3203335986",
+      "email": "cody@dtmfleet.com",
+      "created_at": "2026-05-15T19:45:20.104332+00:00",
+      "updated_at": "2026-05-15T20:01:08.649698+00:00"
+    }
+  ]
+}

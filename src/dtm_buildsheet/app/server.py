@@ -11,18 +11,30 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from ..paths import AppPaths, ensure_workspace
+from .routes import agencies as agency_routes
+from .routes import sales_reps as sales_rep_routes
 from .routes import assets as asset_routes
 from .routes import config as config_routes
 from .routes import drafts as draft_routes
 from .routes import exports as export_routes
 from .routes import generation as generation_routes
 from .routes import preview as preview_routes
+from .routes import presets as preset_routes
+from .routes import projects as project_routes
 from .routes import templates as template_routes
 from .routes import validation as validation_routes
+from .services.project_options_service import handle_get_project_options
+from .services.template_service import pick_folder as _pick_folder
 
 PORT = 7655
 _UI_FILE = Path(__file__).parent.parent / "ui" / "index.html"
 _UI_DIR = Path(__file__).parent.parent / "ui"
+
+try:
+    from importlib.metadata import version as _pkg_version
+    _APP_VERSION = f"v{_pkg_version('dtm-buildsheet')}"
+except Exception:
+    _APP_VERSION = "dev"
 
 _MIME_TYPES = {
     ".css": "text/css; charset=utf-8",
@@ -67,6 +79,22 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/draft/") or path == "/api/draft/list":
             if not draft_routes.route_drafts(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path == "/api/presets" or path.startswith("/api/presets/"):
+            if not preset_routes.route_presets(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/agencies" or path == "/api/agencies/search":
+            if not agency_routes.route_agencies(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/sales-reps" or path == "/api/sales-reps/search":
+            if not sales_rep_routes.route_sales_reps(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/project-options":
+            self._api(handle_get_project_options(self.paths))
+        elif path == "/api/project/pick-output-root":
+            self._api(_pick_folder())
+        elif path == "/api/projects" or path.startswith("/api/project/"):
+            if not project_routes.route_projects(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith("/ui/"):
             self._serve_static(path[len("/ui/"):])
         elif path == "/favicon.ico":
@@ -87,9 +115,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/generate/delete-old":
             self._api(generation_routes.post_delete_old(body, self.paths))
         elif path == "/open":
-            self._api(export_routes.post_open(body))
+            self._api(export_routes.post_open(body, self.paths))
         elif path == "/api/export/pdf":
-            self._api(export_routes.post_pdf(body))
+            self._api(export_routes.post_pdf(body, self.paths))
         elif path in config_routes.POST_ROUTES:
             self._api(config_routes.post_save(path, body, self.paths))
         elif path == "/api/assets/upload":
@@ -107,6 +135,18 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/draft/"):
             if not draft_routes.route_drafts(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path == "/api/presets/save" or path == "/api/presets/import-workbook" or (path.startswith("/api/presets/") and path.endswith("/clone")):
+            if not preset_routes.route_presets(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/agency/save":
+            if not agency_routes.route_agencies(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/sales-rep/save":
+            if not sales_rep_routes.route_sales_reps(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/project/save" or path.startswith("/api/project/"):
+            if not project_routes.route_projects(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
         else:
             self._send(404, b"Not found", "text/plain")
 
@@ -114,8 +154,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = urlparse(self.path).path
-        if path.startswith("/api/draft/"):
+        if path.startswith("/api/presets/"):
+            if not preset_routes.route_presets(self, "DELETE", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/agency/"):
+            if not agency_routes.route_agencies(self, "DELETE", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/sales-rep/"):
+            if not sales_rep_routes.route_sales_reps(self, "DELETE", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/draft/"):
             if not draft_routes.route_drafts(self, "DELETE", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/project/"):
+            if not project_routes.route_projects(self, "DELETE", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
         else:
             self._send(404, b"Not found", "text/plain")
@@ -128,6 +180,7 @@ class Handler(BaseHTTPRequestHandler):
             if _UI_FILE.exists()
             else f"<h1>UI file not found: {_UI_FILE}</h1>"
         )
+        html = html.replace("{{APP_VERSION}}", _APP_VERSION)
         self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
 
     def _serve_static(self, rel_path: str):

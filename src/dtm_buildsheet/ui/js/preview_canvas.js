@@ -40,6 +40,10 @@ async function pvLoad(draftId) {
   pvSelectView(_pvView in res.views ? _pvView : Object.keys(res.views)[0]);
 }
 
+function pvReload() {
+  if (_pvDraftId) pvLoad(_pvDraftId);
+}
+
 function pvSelectView(viewName) {
   _pvView = viewName;
   document.querySelectorAll(".pv-view-tab").forEach(t =>

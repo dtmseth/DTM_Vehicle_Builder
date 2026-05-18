@@ -3,6 +3,22 @@
 // ═══════════════════════════════════════════════════════
 let _wizardStep=1, _renderKind="light", _wizardViews=["front"];
 
+function openAddPartModal(){
+  setWizardStep(1);
+  $("wp-display-name").value=""; $("wp-part-id").value=""; $("wp-asset-key").value="";
+  document.querySelectorAll(".rk-card").forEach(c=>c.classList.remove("selected"));
+  document.querySelector('.rk-card[data-rk="light"]').classList.add("selected");
+  _renderKind="light"; _wizardViews=["front"];
+  syncWizardDiagramUi();
+  Object.keys(_uploadedImages).forEach(k=>delete _uploadedImages[k]);
+  hide("wizard-result");
+  $("addpart-modal").classList.add("open");
+}
+
+$("btn-add-part-type").addEventListener("click", openAddPartModal);
+$("addpart-modal-close").addEventListener("click", ()=>$("addpart-modal").classList.remove("open"));
+$("addpart-modal").addEventListener("click", e=>{if(e.target===$("addpart-modal"))$("addpart-modal").classList.remove("open");});
+
 function setWizardStep(n){
   _wizardStep=n;
   document.querySelectorAll(".wstep").forEach(s=>{
@@ -161,14 +177,8 @@ $("wbtn-4-save").addEventListener("click", async()=>{
     resultDiv.innerHTML=`<div class="result-banner success">✅ <span style="font-weight:700">"${esc(name)}" created!</span> It will appear on the next generated build sheet.</div>`;
     toast("Part created!","success");
     setTimeout(()=>{
-      setWizardStep(1); $("wp-display-name").value=""; $("wp-part-id").value=""; $("wp-asset-key").value="";
-      document.querySelectorAll(".rk-card").forEach(c=>c.classList.remove("selected"));
-      document.querySelector('.rk-card[data-rk="light"]').classList.add("selected");
-      _renderKind="light"; _wizardViews=["front"];
-      syncWizardDiagramUi();
-      Object.keys(_uploadedImages).forEach(k=>delete _uploadedImages[k]);
-      hide("wizard-result");
-    },2500);
+      $("addpart-modal").classList.remove("open");
+    },1800);
   }catch(err){
     show("wizard-result");
     resultDiv.innerHTML=`<div class="result-banner error">❌ ${esc(String(err))}</div>`;

@@ -2,7 +2,7 @@
 
 This document enumerates every feature and non-obvious rule in the current codebase. It is the reference for contributors who need to understand system behavior without reverse-engineering the source.
 
-Last updated: 2026-04-29 (restructure/maintainability branch, Phase 1)
+Last updated: 2026-05-18 (Phases 1–5: Agency DB, Sales Rep DB, Preset Manager, Project Layout Redesign, Embedded Build Editor)
 
 ---
 
@@ -24,26 +24,31 @@ Last updated: 2026-04-29 (restructure/maintainability branch, Phase 1)
 14. [PowerPoint Output](#powerpoint-output)
 15. [Excel Template Generation](#excel-template-generation)
 16. [Config System](#config-system)
-17. [GUI HTTP Server & API Routes](#gui-http-server--api-routes)
-18. [Asset Upload & Management](#asset-upload--management)
-19. [String Normalization](#string-normalization)
-20. [Warning System](#warning-system)
+17. [Project Manager](#project-manager)
+18. [Agency Database](#agency-database)
+19. [Sales Rep Database](#sales-rep-database)
+20. [Preset Manager](#preset-manager)
+21. [Embedded Build Editor](#embedded-build-editor)
+22. [GUI HTTP Server & API Routes](#gui-http-server--api-routes)
+23. [Asset Upload & Management](#asset-upload--management)
+24. [String Normalization](#string-normalization)
+25. [Warning System](#warning-system)
 
 ---
 
 ## Data Flow Overview
 
 ```
-Excel Workbook (.xlsx)
-        ↓  input_reader.py
-    ProjectInput
-        ↓  planner.py  (consumes ConfigBundle)
-     BuildPlan
-        ↓  render_ppt.py  (consumes AppPaths)
-   Output .pptx + .md summary
+Excel Workbook (.xlsx)          GUI BuildDraft
+        ↓  inputs/excel_reader.py     ↓  inputs/gui_entry.py
+                        ProjectInput
+                                ↓  planning/planner.py
+                             BuildPlan
+                                ↓  render_ppt.py  (consumes AppPaths)
+                        Output .pptx + .md summary
 ```
 
-`ConfigBundle` is assembled by `config_loader.py` from the six JSON config files. The `generator.py` module orchestrates the full pipeline from a file path.
+`config/loader.py` assembles the active workspace config from the JSON config files and passes it to the planner. `generator.py` orchestrates the full pipeline from a file path.
 
 ---
 
@@ -493,6 +498,7 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 | `parts_library.json` | Manufacturer/model dropdown data |
 | `workbook_rules.json` | Excel template sections and per-part dropdown overrides |
 | `app_settings.json` | App-level settings (template save dir, etc.) |
+| `project_options.json` | Project wizard dropdown lists (build types, brands) |
 | `build_rules.json` | Dependency, incompatibility, vehicle/location compatibility, group, and preset rules |
 
 ### Validation (`config/schemas.py`)
@@ -518,6 +524,184 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 
 ---
 
+## Project Manager
+
+**Modules**: `domain/project_models.py`, `inputs/project_entry.py`, `app/services/project_service.py`, `app/routes/projects.py`, `ui/js/projects/` (split UI: `detail_builds.js`, `detail_overview.js`, `detail_edit.js`, `list.js`, `wizard.js`, etc.)
+
+### Project Record Structure
+Projects are stored as individual JSON files in `workspace/projects/{project_id}.json`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `project_id` | str | Derived from agency/quote via `safe_project_id()` |
+| `customer` | CustomerInfo | Agency name + agency_id + sales_rep_id + quote + year + notes |
+| `preferences` | EquipmentPreferences | Lighting, camera, bumper, cage, slick top, notes |
+| `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
+| `export_dir` | str | Empty = default output location; user-configurable |
+| `created_at` / `updated_at` | str | ISO timestamps |
+
+Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id` (links to `workspace/drafts/`) and `output_path` (set when the build sheet is generated).
+
+### Project Detail View (Overview / Edit / Builds)
+The project detail view has three sub-tabs:
+
+- **Overview**: read-only two-column layout (customer info card left, preferences card right), fleet unit groups below.
+- **Edit**: read-only by default; `[✏️ Edit]` button activates edit mode with full input fields. Save stays on the detail view; Cancel discards changes. The 4-step wizard (`#proj-editor`) is only for new projects.
+- **Builds**: per-unit cards with `[Setup Build]`/`[Edit Build]`, `[Generate ▶]` (disabled until draft_id set), and `[Export PDF]` (disabled until output_path set). Bottom row: `[⚡ Generate All]` and `[📄 Export All PDFs]`.
+
+### Create Draft Flow
+`POST /api/project/{project_id}/unit/{unit_id}/create-draft` — creates a new `BuildDraft` from the unit's preset (if assigned) and returns the draft_id. This wires the unit to the draft system. Individual units use a parallel endpoint that includes the `individual_id` segment.
+
+---
+
+## Agency Database
+
+**Modules**: `domain/agency_models.py`, `app/services/agency_service.py`, `app/routes/agencies.py`, `ui/js/settings/agencies.js`
+
+### Storage
+`workspace/agencies.json`:
+```json
+{"schema_version": 1, "agencies": [AgencyRecord, ...]}
+```
+
+### AgencyRecord Fields
+| Field | Notes |
+|---|---|
+| `agency_id` | UUID |
+| `name` | Canonical name, e.g. "St. Cloud PD" |
+| `contact_name` | Required on creation |
+| `contact_info` | Required on creation (phone or email) |
+| `customer_since` | Free text year / best guess |
+| `created_at` / `updated_at` | ISO timestamps |
+
+### Fuzzy Search
+`handle_search_agencies(query, paths)`:
+1. Normalizes query: lowercase, strip punctuation.
+2. Expands abbreviations: `pd` → `police department`, `so` → `sheriff's office`, `st.` → `saint`, `dept` → `department`, etc.
+3. Runs `difflib.get_close_matches(normalized_query, normalized_names, n=5, cutoff=0.6)`.
+4. Returns matches sorted by score.
+
+The project wizard shows a live-search combo for agency. On blur, if matches exist, a suggestion modal appears ("Did you mean…?").
+
+### REST Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/agencies` | List all agencies |
+| GET | `/api/agencies/search?q=…` | Fuzzy search |
+| POST | `/api/agency/save` | Create or update agency |
+| DELETE | `/api/agency/{agency_id}` | Delete agency |
+
+---
+
+## Sales Rep Database
+
+**Modules**: `domain/sales_rep_models.py`, `app/services/sales_rep_service.py`, `app/routes/sales_reps.py`, `ui/js/settings/sales_reps.js`
+
+### Storage
+`workspace/sales_reps.json`:
+```json
+{"schema_version": 1, "sales_reps": [SalesRepRecord, ...]}
+```
+
+### REST Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/sales-reps` | List all sales reps |
+| GET | `/api/sales-reps/search?q=…` | Search by name |
+| POST | `/api/sales-rep/save` | Create or update rep |
+| DELETE | `/api/sales-rep/{rep_id}` | Delete rep |
+
+The project wizard has a live-search combo for sales rep (same pattern as agency). Contact info comes from the agency record; there is no separate contact field on the project.
+
+---
+
+## Preset Manager
+
+**Modules**: `app/services/preset_service.py`, `app/routes/presets.py`, `ui/js/settings/presets_mgr.js`
+
+### Preset Schema (v2)
+Preset JSON files live in `src/dtm_buildsheet/resources/presets/` (dev) or `workspace/presets/` (bundled app).
+
+```json
+{
+  "schema_version": 2,
+  "preset_id": "...",
+  "label": "St. Cloud PD Patrol PIU/Tahoe",
+  "agency_ids": [],     // [] = universal (any agency)
+  "build_types": [],    // [] = any build type
+  "vehicle_types": [],
+  "tag": "",            // optional suffix, shown only for General presets
+  "parts": [...]
+}
+```
+
+### Auto-Naming Logic
+`_auto_name(payload, paths)`:
+- If `agency_ids` non-empty: look up first agency name → prefix.
+- Else: prefix = `"General"`.
+- Append `build_types` value if exactly one.
+- Append vehicle_types joined with `/` (e.g. `"PIU/Tahoe/Durango"`).
+- If tag non-empty: append `" — {tag}"`.
+
+Duplicate detection: if a preset already exists with the same agency + build_type + vehicle_types combination, the API returns a conflict and the UI asks the user to overwrite.
+
+### REST Endpoints
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/presets` | List all presets (bundled + workspace) |
+| GET | `/api/presets/{id}` | Get single preset |
+| GET | `/api/presets/{id}/export-workbook` | Fill blank template with preset parts → downloadable `.xlsx` |
+| POST | `/api/presets/save` | Create or update preset |
+| POST | `/api/presets/import-workbook` | Parse `.xlsx` body → extract parts → return preset payload |
+| POST | `/api/presets/{id}/clone` | Copy with new ID, strip agency_ids |
+| DELETE | `/api/presets/{id}` | Delete workspace preset (cannot delete bundled) |
+
+### Preset Filtering in Project Editor
+`projects_tab.js` filters the preset dropdown by:
+1. `vehicle_types` — compatible with current unit's vehicle model (soft filter: compatible shown first, others grayed).
+2. `agency_ids` — agency-specific presets appear in a separate "Agency Presets" section.
+3. `build_types` — filtered to current unit's build type.
+
+---
+
+## Embedded Build Editor
+
+**Modules**: `ui/js/projects_tab.js` (`_showBuildEditor`, `_hideBuildEditor`), `ui/js/preview_canvas.js` (`pvLoad`, `pvReload`), `ui/js/manifest_editor.js` (`loadDraftManifest`)
+
+### DOM Structure
+`#proj-build-editor` is a sibling of `#proj-list-view`, `#proj-detail-view`, and `#proj-editor` inside `#tab-projects`. It contains:
+- `#pbe-header` — unit context line + "← Back to Project" button
+- `#pbe-preview-section` — preview canvas (reuses `#card-preview`)
+- `#pbe-manifest-section` — manifest editor (reuses `#card-manifest`)
+- `#pbe-footer` — "💾 Save & Return to Project" button
+
+`#card-preview` and `#card-manifest` exist only here — they are not duplicated in Settings → Tools.
+
+### Show/Hide Flow
+**`_showBuildEditor(draftId, unit, project, returnTab)`**:
+1. Hides `#proj-detail-view` (and `#proj-editor` if open).
+2. Shows `#proj-build-editor`.
+3. Populates `#pbe-unit-info` with unit context.
+4. Stores `_pbeReturnProject` and `_pbeReturnTab = "builds"`.
+5. Calls `pvLoad(draftId)` and `loadDraftManifest(draftId)`.
+
+**`_hideBuildEditor()`**:
+1. Hides `#proj-build-editor`, shows `#proj-detail-view`.
+2. Reloads project from API.
+3. Re-renders all three detail tabs (Overview, Edit, Builds).
+4. Calls `_setDetailTab("builds")`.
+
+**`#pbe-save-return` click**:
+1. Calls `saveDraftManifest()` to persist the draft.
+2. Calls `_hideBuildEditor()`.
+
+**Triggering the editor** — from the Builds tab, clicking "Setup Build" or "Edit Build" calls `_showBuildEditor` directly. "Setup Build" first calls the create-draft API to get a `draft_id`.
+
+### pvReload
+`pvReload()` in `preview_canvas.js` reloads using the internally stored `_pvDraftId` — no external state needed.
+
+---
+
 ## GUI HTTP Server & API Routes
 
 **Modules**: `gui_server.py` compatibility shim, `app/server.py`, `app/routes/*`, `app/services/*` — HTTP server on `127.0.0.1:7655`
@@ -537,6 +721,15 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 | `/api/template/pick-folder` | Opens native folder picker dialog |
 | `/api/assets/list` | Lists available workspace asset files |
 | `/api/draft/list` | Lists saved GUI drafts |
+| `/api/agencies` | List all agencies |
+| `/api/agencies/search?q=…` | Fuzzy agency search |
+| `/api/sales-reps` | List all sales reps |
+| `/api/sales-reps/search?q=…` | Sales rep name search |
+| `/api/presets` | List all presets (bundled + workspace) |
+| `/api/presets/{id}` | Get single preset |
+| `/api/presets/{id}/export-workbook` | Download preset as filled `.xlsx` |
+| `/api/projects` | List all projects |
+| `/api/project/{project_id}` | Get single project |
 | `/favicon.ico` | Serves app icon |
 
 ### POST Routes
@@ -557,12 +750,29 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 | `/api/preview/plan` | Build preview data from draft/session state |
 | `/api/export/pdf` | Export generated PPTX to PDF when platform tooling is available |
 | `/api/draft/*` | Save, load, update, or delete GUI drafts |
+| `/api/agency/save` | Create or update agency |
+| `/api/sales-rep/save` | Create or update sales rep |
+| `/api/presets/save` | Create or update preset |
+| `/api/presets/import-workbook` | Parse `.xlsx` body → return preset payload |
+| `/api/presets/{id}/clone` | Clone preset with new ID |
+| `/api/project/save` | Create or update project |
+| `/api/project/{id}/unit/{uid}/create-draft` | Create build draft for a BuildUnit |
+| `/api/project/{id}/unit/{uid}/individual/{iid}/create-draft` | Create build draft for an IndividualUnit |
+| `/api/project/{id}/export-all-pdf` | Export all generated sheets for a project to PDF |
+
+### DELETE Routes
+| Path | Description |
+|---|---|
+| `/api/agency/{agency_id}` | Delete agency |
+| `/api/sales-rep/{rep_id}` | Delete sales rep |
+| `/api/presets/{preset_id}` | Delete workspace preset (cannot delete bundled) |
+| `/api/project/{project_id}` | Delete project |
 
 ### Template Regeneration Trigger
 After saving any config that feeds `template_builder.py`, `app/services/config_service.py` starts template regeneration as a server-side side effect. Adding a new template-feeding config file requires updating `TEMPLATE_REGEN_FILES`.
 
 ### pywebview Integration
-- `gui_server.py:main()` starts the HTTP server.
+- `app/server.py:main()` starts the HTTP server (`gui_server.py` is a compatibility shim that calls it).
 - With pywebview installed: server moves to daemon thread; pywebview opens a native window (must own macOS main thread).
 - Without pywebview: falls back to `webbrowser.open()`.
 
@@ -570,7 +780,7 @@ After saving any config that feeds `template_builder.py`, `app/services/config_s
 
 ## Asset Upload & Management
 
-**Module**: `gui_server.py` → `_handle_asset_upload()`, `_handle_asset_delete()`
+**Module**: `app/services/asset_service.py`, `app/routes/assets.py`
 
 ### Upload
 - Accepts multipart form data with `filename` and `data` (base64 or raw bytes).

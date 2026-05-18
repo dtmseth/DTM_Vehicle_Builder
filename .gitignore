@@ -4,10 +4,10 @@ __pycache__/
 *.py[cod]
 .DS_Store
 
-workspace/output/
-workspace/input/
-workspace/drafts/
-workspace/build_sheet_template_v2.xlsx
+workspace/
+
+# Config file backups written at runtime
+src/dtm_buildsheet/resources/config/history/
 
 dist/
 build/

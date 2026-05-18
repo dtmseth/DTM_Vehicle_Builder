@@ -204,6 +204,7 @@ def _validate_workbook_rules(normalized: dict) -> None:
 def _validate_app_settings(normalized: dict) -> None:
     normalized.setdefault("template_save_dir", "")
     normalized.setdefault("output_save_dir", "")
+    normalized.setdefault("project_output_root", "")
 
 
 _VALID_RULE_SEVERITIES = {"warning", "error"}

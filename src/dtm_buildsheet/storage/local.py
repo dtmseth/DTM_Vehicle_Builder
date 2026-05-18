@@ -26,6 +26,21 @@ class LocalStorageProvider(StorageProvider):
                 pass
             raise
 
+    def write_bytes(self, path: str, data: bytes) -> None:
+        dest = Path(path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(dir=dest.parent)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            os.replace(tmp_name, dest)
+        except Exception:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
+
     def delete(self, path: str) -> None:
         Path(path).unlink()
 

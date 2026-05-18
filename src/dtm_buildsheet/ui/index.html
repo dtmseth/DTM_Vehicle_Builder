@@ -14,199 +14,11 @@
     <div><h1>Build Sheet Generator</h1><p>v7 · DTM Technologies</p></div>
   </div>
   <div class="header-tabs">
-    <button class="htab active" data-tab="generate">⚡ Generate</button>
+    <button class="htab" data-tab="projects">📋 Projects</button>
     <button class="htab" data-tab="settings">⚙️ Settings</button>
   </div>
 </div>
 
-<!-- ═══════════ GENERATE TAB ═══════════ -->
-<div id="tab-generate" class="main-content">
-  <div class="card">
-    <div class="card-title">Input Workbook</div>
-    <div id="drop-zone">
-      <input type="file" accept=".xlsx" id="file-input" />
-      <div class="dz-icon">📂</div>
-      <h3>Drop your Build Sheet here</h3>
-      <p>or click to browse — .xlsx files</p>
-    </div>
-    <div id="file-loaded">
-      <div style="font-size:28px">📊</div>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="fname"></div>
-        <div style="font-size:12px;color:var(--muted)" id="fsize"></div>
-      </div>
-      <button class="btn btn-secondary btn-sm" id="btn-clear">✕ Change</button>
-    </div>
-  </div>
-  <div class="card" id="card-proj" hidden>
-    <div class="card-title">Project Details</div>
-    <div class="info-grid" id="info-grid"></div>
-  </div>
-  <div class="card" id="card-parts" hidden>
-    <div class="card-title">Parts (<span id="parts-count">0</span>)</div>
-    <table class="parts-tbl">
-      <thead><tr><th>Part</th><th>Location</th><th>Color</th><th>Qty</th><th>Incl.</th></tr></thead>
-      <tbody id="parts-tbody"></tbody>
-    </table>
-  </div>
-  <!-- ── PREVIEW CARD ── -->
-  <div class="card" id="card-preview" hidden>
-    <div class="card-title">
-      Build Preview
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
-        <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Drag icons to reposition. Click to open the inspector. Changes are pending until you click Apply.</p>
-
-    <!-- toolbar -->
-    <div class="pv-toolbar" id="pv-toolbar">
-      <button class="btn btn-primary btn-sm" id="btn-pv-apply" disabled>
-        Apply Changes <span id="pv-pending-count" class="pv-badge" style="display:none"></span>
-      </button>
-      <button class="btn btn-secondary btn-sm" id="btn-pv-reset-view">Reset This View</button>
-      <button class="btn btn-secondary btn-sm" id="btn-pv-reset-all">Reset All Views</button>
-    </div>
-
-    <!-- view tabs -->
-    <div class="pv-view-tab-bar" id="pv-view-tabs"></div>
-
-    <!-- canvas container -->
-    <div class="pv-canvas-outer">
-      <div id="pv-canvas-wrap" class="pv-canvas-wrap"></div>
-
-      <!-- override inspector — floats over canvas -->
-      <div id="pv-inspector" class="pv-inspector" hidden>
-        <div class="pv-insp-header">
-          <span id="pv-insp-title" class="pv-insp-title"></span>
-          <button id="pv-insp-close" class="pv-insp-close" title="Close">✕</button>
-        </div>
-
-        <div class="pv-insp-meta">
-          <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Model</span><span id="pv-insp-model" class="pv-insp-meta-val">—</span></div>
-          <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Location</span><span id="pv-insp-location" class="pv-insp-meta-val">—</span></div>
-        </div>
-
-        <label class="pv-insp-row pv-insp-check">
-          <input type="checkbox" id="pv-insp-visible" checked>
-          <span>Visible</span>
-        </label>
-
-        <div class="pv-insp-row">
-          <span class="pv-insp-lbl">Rotation °</span>
-          <input type="range"  id="pv-insp-rotation" min="-180" max="180" step="1" value="0" class="pv-insp-range">
-          <input type="number" id="pv-insp-rot-num"  min="-180" max="180" step="1" value="0" class="pv-insp-num">
-        </div>
-
-        <div class="pv-insp-row pv-insp-checks">
-          <label><input type="checkbox" id="pv-insp-flip-h"> Flip H</label>
-          <label><input type="checkbox" id="pv-insp-flip-v"> Flip V</label>
-        </div>
-
-        <div class="pv-insp-row">
-          <span class="pv-insp-lbl">Offset X</span>
-          <input type="range"  id="pv-insp-dx"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
-          <input type="number" id="pv-insp-dx-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
-        </div>
-
-        <div class="pv-insp-row">
-          <span class="pv-insp-lbl">Offset Y</span>
-          <input type="range"  id="pv-insp-dy"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
-          <input type="number" id="pv-insp-dy-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
-        </div>
-
-        <div class="pv-insp-row">
-          <span class="pv-insp-lbl">Size ×</span>
-          <input type="range"  id="pv-insp-scale"     min="0.25" max="4" step="0.05" value="1" class="pv-insp-range">
-          <input type="number" id="pv-insp-scale-num" min="0.25" max="4" step="0.05" value="1" class="pv-insp-num">
-        </div>
-
-        <div class="pv-insp-row">
-          <span class="pv-insp-lbl">Layer</span>
-          <input type="number" id="pv-insp-layer" min="-10" max="10" step="1" value="0" class="pv-insp-num" style="width:70px" title="Z-order layer. Higher = on top. 0 = default.">
-        </div>
-
-        <div class="pv-insp-actions">
-          <button class="btn btn-secondary btn-sm" id="pv-insp-reset-part">↩ Reset This Part</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title" style="margin-bottom:8px">Export Location</div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <div id="export-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">Default (workspace folder)</div>
-      <button class="btn btn-secondary btn-sm" id="btn-pick-export-dir">📁 Browse</button>
-      <button class="btn btn-secondary btn-sm" id="btn-clear-export-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <button class="btn btn-primary btn-block" id="btn-generate" disabled>
-      <span class="spinner" id="spinner"></span>
-      <span id="btn-label">⚡ Generate Build Sheet</span>
-    </button>
-  </div>
-
-  <!-- Previous versions modal (shown after generation when older exports exist) -->
-  <div id="card-prev-versions" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:10px;padding:24px;max-width:430px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25)">
-      <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Previous Versions Found</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Older exports of this build sheet were found in the export folder:</div>
-      <ul id="prev-versions-list" style="margin:0 0 18px;padding:0 0 0 18px;font-size:12px;color:var(--navy);word-break:break-all;line-height:1.8"></ul>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-primary" id="btn-delete-prev" style="background:#c0392b;border-color:#c0392b">🗑 Delete previous version(s)</button>
-        <button class="btn btn-secondary" id="btn-keep-prev">Keep both</button>
-      </div>
-      <div id="prev-versions-status" style="display:none;font-size:12px;margin-top:10px;text-align:center"></div>
-    </div>
-  </div>
-  <div class="card" id="card-results" hidden>
-    <div class="card-title">Results</div>
-    <div id="result-banner" class="result-banner success">
-      <span id="banner-icon" style="font-size:22px">✅</span>
-      <div style="flex:1">
-        <div id="banner-msg" style="font-weight:700"></div>
-        <div id="banner-sub" style="font-weight:400;font-size:12px;opacity:.75;margin-top:2px"></div>
-      </div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-box"><div class="num" id="stat-parts">—</div><div class="lbl">Parts</div></div>
-      <div class="stat-box"><div class="num" id="stat-pl">—</div><div class="lbl">Placements</div></div>
-      <div class="stat-box"><div class="num" id="stat-warn" style="color:var(--yellow)">—</div><div class="lbl">Warnings</div></div>
-    </div>
-  </div>
-  <div class="card" id="card-warns" hidden>
-    <div class="card-title">Warnings</div>
-    <ul class="warn-list" id="warn-list"></ul>
-  </div>
-  <div class="card" id="card-output" hidden>
-    <div class="card-title">Output File</div>
-    <div class="output-row">
-      <span style="font-size:24px">📑</span>
-      <div style="flex:1;overflow:hidden">
-        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="out-name"></div>
-        <div style="font-size:11px;color:var(--muted);word-break:break-all" id="out-path"></div>
-      </div>
-    </div>
-    <button class="btn btn-gold btn-block" id="btn-open">Open in PowerPoint ↗</button>
-    <button class="btn btn-block" id="btn-export-pdf" style="margin-top:8px;background:var(--navy);color:#fff">
-      <span id="pdf-spinner" style="display:none;margin-right:4px">⏳</span>
-      <span id="pdf-label">Export PDF</span>
-    </button>
-    <button class="btn btn-gold btn-block" id="btn-open-pdf" style="display:none;margin-top:4px">Open PDF ↗</button>
-    <div id="pdf-status" style="display:none;font-size:13px;margin-top:6px;text-align:center"></div>
-  </div>
-  <div class="card" id="card-log" hidden>
-    <div class="card-title">Log</div>
-    <div class="log-box" id="log-box"></div>
-  </div>
-  <div id="reset-row" hidden>
-    <button class="btn btn-secondary btn-block" id="btn-reset">↩ Start Over</button>
-  </div>
-</div>
 
 
 <!-- ═══════════ SETTINGS TAB ═══════════ -->
@@ -215,10 +27,12 @@
     <button class="stab active" data-stab="placements">📍 Placements</button>
     <button class="stab" data-stab="fixtures">🏗 Fixtures</button>
     <button class="stab" data-stab="sizes">📐 Size Rules</button>
-    <button class="stab" data-stab="addpart">➕ Add Part Type</button>
     <button class="stab" data-stab="catalog">📋 Part Types</button>
     <button class="stab" data-stab="parts">🔩 Parts Library</button>
     <button class="stab" data-stab="vehicles">🚗 Vehicles</button>
+    <button class="stab" data-stab="agencies">🏛 Agencies</button>
+    <button class="stab" data-stab="sales-reps">👤 Sales Reps</button>
+    <button class="stab" data-stab="presets">📂 Presets</button>
     <button class="stab" data-stab="tools">🔧 Tools</button>
   </div>
 
@@ -564,16 +378,18 @@
     </div>
   </div>
 
-  <!-- ── ADD PART ── -->
-  <div id="stab-addpart" hidden>
-    <div class="card">
-      <div class="card-title">Add New Part</div>
-      <div class="wizard-steps">
-        <div class="wstep active" data-step="1"><span class="wstep-num">1</span>Basic Info</div>
-        <div class="wstep" data-step="2"><span class="wstep-num">2</span>Diagram</div>
-        <div class="wstep" data-step="3"><span class="wstep-num">3</span>Images</div>
-        <div class="wstep" data-step="4"><span class="wstep-num">4</span>Review</div>
-      </div>
+<!-- ── ADD PART TYPE MODAL ── -->
+<div class="modal-overlay" id="addpart-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-title">Add New Part Type
+      <button class="modal-close" id="addpart-modal-close">✕</button>
+    </div>
+    <div class="wizard-steps">
+      <div class="wstep active" data-step="1"><span class="wstep-num">1</span>Basic Info</div>
+      <div class="wstep" data-step="2"><span class="wstep-num">2</span>Diagram</div>
+      <div class="wstep" data-step="3"><span class="wstep-num">3</span>Images</div>
+      <div class="wstep" data-step="4"><span class="wstep-num">4</span>Review</div>
+    </div>
       <!-- Step 1 -->
       <div class="wizard-panel active" id="wstep-1">
         <div class="form-row">
@@ -692,14 +508,17 @@
           <button class="btn btn-primary" id="wbtn-4-save">✓ Create Part</button>
         </div>
       </div>
-    </div>
-  </div>
+  </div><!-- end modal -->
+</div><!-- end addpart-modal -->
 
   <!-- ── CATALOG (Part Types) ── -->
   <div id="stab-catalog" hidden>
     <div class="card">
       <div class="card-title">Part Types
-        <button class="btn btn-secondary btn-sm" id="btn-reload-catalog">↺ Reload</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" id="btn-reload-catalog">↺ Reload</button>
+          <button class="btn btn-primary btn-sm" id="btn-add-part-type">+ Add Part Type</button>
+        </div>
       </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px">These are the <em>slot types</em> in the build sheet (Forward Warning 1, Radar, etc.). To manage actual purchasable parts, use the <strong>Parts Library</strong> tab.</p>
       <input class="catalog-search" id="catalog-search" type="text" placeholder="Search part types…" />
@@ -786,9 +605,69 @@
     </div>
   </div>
 
+  <!-- ── AGENCIES ── -->
+  <div id="stab-agencies" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Agency Database</span>
+        <button class="btn btn-primary" id="btn-add-agency" style="font-size:12px;padding:4px 12px">+ Add Agency</button>
+      </div>
+      <input type="text" id="agency-search" placeholder="Search agencies…" style="margin-bottom:10px;width:100%;box-sizing:border-box" />
+      <div id="agency-list-container">
+        <p style="font-size:13px;color:var(--muted)">Loading…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SALES REPS ── -->
+  <div id="stab-sales-reps" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Sales Reps</span>
+        <button class="btn btn-primary" id="btn-add-sales-rep" style="font-size:12px;padding:4px 12px">+ Add Rep</button>
+      </div>
+      <input type="text" id="sales-rep-search" placeholder="Search reps…" style="margin-bottom:10px;width:100%;box-sizing:border-box" />
+      <div id="sales-rep-list-container">
+        <p style="font-size:13px;color:var(--muted)">Loading…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRESETS ── -->
+  <div id="stab-presets" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>Presets</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-secondary" id="pm-export-template-btn" style="font-size:12px;padding:4px 12px">Export Blank Template</button>
+          <button class="btn btn-secondary" id="pm-import-btn" style="font-size:12px;padding:4px 12px">⬆ Import from Workbook</button>
+          <input type="file" id="pm-import-input" accept=".xlsx" style="display:none">
+          <button class="btn btn-primary" id="pm-add-btn" style="font-size:12px;padding:4px 12px">+ New Preset</button>
+        </div>
+      </div>
+      <input type="text" id="pm-search" placeholder="Search presets…" style="margin-bottom:10px;width:100%;box-sizing:border-box" />
+      <div id="pm-list-container">
+        <p style="font-size:13px;color:var(--muted)">Loading…</p>
+      </div>
+    </div>
+  </div>
+
   <!-- ── TOOLS ── -->
   <div id="stab-tools" hidden>
     <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Project Output Folder</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+        Root folder where project build sheets are saved. Each project creates a subdirectory named after the agency.
+        Leave blank to use the default Desktop / DTM Projects location.
+      </p>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <div id="proj-output-root-display" class="dir-display" title="">Default (Desktop / DTM Projects)</div>
+        <button class="btn btn-secondary btn-sm" id="btn-pick-proj-root">📁 Browse</button>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-proj-root" title="Reset to default location" style="padding:4px 8px">✕</button>
+      </div>
+      <div id="proj-root-status" style="display:none;font-size:12px;color:var(--green);margin-top:4px"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
       <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
       <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
         The template is regenerated automatically after every config save.
@@ -809,8 +688,478 @@
       <div id="tpl-result" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px"></div>
       <div id="tpl-last-updated" style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center"></div>
     </div>
+    <details id="gen-tools-details" style="margin-top:16px">
+      <summary style="font-size:14px;font-weight:700;color:var(--navy);padding:12px 0;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;border-top:1px solid var(--border)">⚡ Standalone Build Sheet Generator</summary>
+      <div id="tab-generate" style="margin-top:4px">
+  <div class="card">
+    <div class="card-title">Input Workbook</div>
+    <div id="drop-zone">
+      <input type="file" accept=".xlsx" id="file-input" />
+      <div class="dz-icon">📂</div>
+      <h3>Drop your Build Sheet here</h3>
+      <p>or click to browse — .xlsx files</p>
+    </div>
+    <div id="file-loaded">
+      <div style="font-size:28px">📊</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="fname"></div>
+        <div style="font-size:12px;color:var(--muted)" id="fsize"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-clear">✕ Change</button>
+    </div>
+  </div>
+  <div class="card" id="card-proj" hidden>
+    <div class="card-title">Project Details</div>
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+  <div class="card" id="card-parts" hidden>
+    <div class="card-title">Parts (<span id="parts-count">0</span>)</div>
+    <table class="parts-tbl">
+      <thead><tr><th>Part</th><th>Location</th><th>Color</th><th>Qty</th><th>Incl.</th></tr></thead>
+      <tbody id="parts-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">Export Location</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div id="export-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">Default (workspace folder)</div>
+      <button class="btn btn-secondary btn-sm" id="btn-pick-export-dir">📁 Browse</button>
+      <button class="btn btn-secondary btn-sm" id="btn-clear-export-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-primary btn-block" id="btn-generate" disabled>
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-label">⚡ Generate Build Sheet</span>
+    </button>
+  </div>
+
+  <!-- Previous versions modal (shown after generation when older exports exist) -->
+  <div id="card-prev-versions" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:10px;padding:24px;max-width:430px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25)">
+      <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">Previous Versions Found</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Older exports of this build sheet were found in the export folder:</div>
+      <ul id="prev-versions-list" style="margin:0 0 18px;padding:0 0 0 18px;font-size:12px;color:var(--navy);word-break:break-all;line-height:1.8"></ul>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" id="btn-delete-prev" style="background:#c0392b;border-color:#c0392b">🗑 Delete previous version(s)</button>
+        <button class="btn btn-secondary" id="btn-keep-prev">Keep both</button>
+      </div>
+      <div id="prev-versions-status" style="display:none;font-size:12px;margin-top:10px;text-align:center"></div>
+    </div>
+  </div>
+  <div class="card" id="card-results" hidden>
+    <div class="card-title">Results</div>
+    <div id="result-banner" class="result-banner success">
+      <span id="banner-icon" style="font-size:22px">✅</span>
+      <div style="flex:1">
+        <div id="banner-msg" style="font-weight:700"></div>
+        <div id="banner-sub" style="font-weight:400;font-size:12px;opacity:.75;margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="stat-parts">—</div><div class="lbl">Parts</div></div>
+      <div class="stat-box"><div class="num" id="stat-pl">—</div><div class="lbl">Placements</div></div>
+      <div class="stat-box"><div class="num" id="stat-warn" style="color:var(--yellow)">—</div><div class="lbl">Warnings</div></div>
+    </div>
+  </div>
+  <div class="card" id="card-warns" hidden>
+    <div class="card-title">Warnings</div>
+    <ul class="warn-list" id="warn-list"></ul>
+  </div>
+  <div class="card" id="card-output" hidden>
+    <div class="card-title">Output File</div>
+    <div class="output-row">
+      <span style="font-size:24px">📑</span>
+      <div style="flex:1;overflow:hidden">
+        <div style="font-weight:600;font-size:14px;color:var(--navy)" id="out-name"></div>
+        <div style="font-size:11px;color:var(--muted);word-break:break-all" id="out-path"></div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" id="btn-open">Open in PowerPoint ↗</button>
+    <button class="btn btn-block" id="btn-export-pdf" style="margin-top:8px;background:var(--navy);color:#fff">
+      <span id="pdf-spinner" style="display:none;margin-right:4px">⏳</span>
+      <span id="pdf-label">Export PDF</span>
+    </button>
+    <button class="btn btn-gold btn-block" id="btn-open-pdf" style="display:none;margin-top:4px">Open PDF ↗</button>
+    <div id="pdf-status" style="display:none;font-size:13px;margin-top:6px;text-align:center"></div>
+  </div>
+  <div class="card" id="card-log" hidden>
+    <div class="card-title">Log</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+  <div id="reset-row" hidden>
+    <button class="btn btn-secondary btn-block" id="btn-reset">↩ Start Over</button>
+  </div>
+      </div>
+    </details>
   </div>
 </div><!-- end tab-settings -->
+
+
+<!-- ═══════════ PROJECTS TAB ═══════════ -->
+<div id="tab-projects" class="main-content" hidden>
+
+  <!-- List view -->
+  <div id="proj-list-view">
+    <div class="card">
+      <div class="card-title">
+        Projects
+        <button class="btn btn-primary btn-sm" id="btn-new-project">+ New Project</button>
+      </div>
+      <div id="proj-list-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">
+        No projects yet. Click <strong>+ New Project</strong> to get started.
+      </div>
+      <div id="proj-list-rows" hidden></div>
+    </div>
+  </div>
+
+  <!-- Detail view — Overview | Edit | Builds -->
+  <div id="proj-detail-view" hidden>
+    <div class="card">
+      <div class="card-title">
+        <div>
+          <div id="proj-detail-agency" style="font-size:16px;font-weight:700;color:var(--navy)"></div>
+          <div id="proj-detail-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-proj-detail-back">← Projects</button>
+      </div>
+      <div class="proj-tab-bar">
+        <button class="proj-tab proj-dtab active" data-ptab="overview">Overview</button>
+        <button class="proj-tab proj-dtab" data-ptab="edit">Edit</button>
+        <button class="proj-tab proj-dtab" data-ptab="builds">Builds</button>
+      </div>
+      <div id="proj-ptab-overview" class="proj-panel active"></div>
+      <div id="proj-ptab-edit"     class="proj-panel"></div>
+      <div id="proj-ptab-builds"   class="proj-panel">
+        <div id="proj-action-status" style="display:none;padding:8px 12px;border-radius:6px;font-size:13px;margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div id="proj-editor" hidden>
+    <div class="card">
+      <div class="card-title">
+        <div>
+          <span id="proj-editor-title">New Project</span>
+          <div id="proj-wizard-step" class="proj-wizard-step"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-gold btn-sm" id="proj-btn-save">💾 Save</button>
+          <button class="btn btn-secondary btn-sm" id="btn-proj-cancel">✕ Cancel</button>
+        </div>
+      </div>
+      <div class="proj-tab-bar" id="proj-editor-tabbar">
+        <button class="proj-tab proj-etab active" data-etab="customer">1 · Customer</button>
+        <button class="proj-tab proj-etab" data-etab="preferences">2 · Preferences</button>
+        <button class="proj-tab proj-etab" data-etab="fleet">3 · Fleet Units</button>
+        <button class="proj-tab proj-etab" data-etab="review">4 · Review</button>
+      </div>
+      <!-- Step 1: Customer -->
+      <div id="proj-etab-customer" class="proj-panel active">
+        <div class="form-row">
+          <div class="form-group" style="flex:2;position:relative">
+            <label>Agency <span style="color:var(--red)">*</span></label>
+            <input type="text" id="proj-agency" placeholder="e.g. Springfield PD" autocomplete="off" />
+            <input type="hidden" id="proj-agency-id" />
+            <div id="proj-agency-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:220px;overflow-y:auto"></div>
+          </div>
+          <div class="form-group" style="max-width:130px;flex:none">
+            <label>Build Year</label>
+            <input type="number" id="proj-build-year" placeholder="2026" min="2020" max="2040" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quote # <span style="font-size:11px;font-weight:400;color:var(--muted)">(optional, add later)</span></label>
+            <input type="text" id="proj-quote" placeholder="Q-1234" />
+          </div>
+          <div class="form-group" style="position:relative">
+            <label>Sales Rep <span style="color:var(--red)">*</span></label>
+            <input type="text" id="proj-salesrep" placeholder="Name" autocomplete="off" />
+            <input type="hidden" id="proj-salesrep-id" />
+            <div id="proj-salesrep-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-height:220px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Step 2: Preferences -->
+      <div id="proj-etab-preferences" class="proj-panel">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Camera System</label>
+            <select id="proj-camera">
+              <option value="">— Not specified —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Push Bumper Brand</label>
+            <input type="text" id="proj-bumper-brand" list="proj-bumper-list" placeholder="e.g. Setina" autocomplete="off">
+            <datalist id="proj-bumper-list"></datalist>
+          </div>
+          <div class="form-group">
+            <label>Cage / Partition Brand</label>
+            <input type="text" id="proj-cage-brand" list="proj-cage-list" placeholder="e.g. Pro-Gard" autocomplete="off">
+            <datalist id="proj-cage-list"></datalist>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lighting Brand(s)</label>
+          <div id="proj-lighting-checkboxes" class="proj-brand-checks"></div>
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="proj-slick-top"> Slick Top (no roof lights on this vehicle)
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Preferences Notes</label>
+          <textarea id="proj-pref-notes" rows="2" placeholder="Any other preferences or notes…" style="resize:vertical;width:100%;box-sizing:border-box"></textarea>
+        </div>
+      </div>
+      <!-- Step 3: Fleet Units -->
+      <div id="proj-etab-fleet" class="proj-panel">
+        <div id="proj-units-list"></div>
+        <div style="margin-top:8px">
+          <button class="btn btn-secondary btn-sm" id="btn-proj-add-unit">+ Add Unit Group</button>
+        </div>
+      </div>
+      <!-- Step 4: Review -->
+      <div id="proj-etab-review" class="proj-panel">
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px" id="proj-review-hint">Review your project details, then click <strong>Finish</strong> to save.</p>
+        <div id="proj-review-content"></div>
+      </div>
+      <!-- Status bar (always visible, outside any tab panel) -->
+      <div id="proj-op-status" style="display:none;padding:8px 12px;border-radius:6px;font-size:13px;margin-top:8px"></div>
+      <!-- Wizard footer nav (shown only in wizard mode) -->
+      <div id="proj-wizard-footer" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:4px;border-top:1px solid var(--border)">
+          <button class="btn btn-secondary btn-sm" id="proj-btn-back">← Back</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="proj-btn-next">Next →</button>
+            <button class="btn btn-gold btn-sm" id="proj-btn-finish">✓ Finish</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- end card -->
+  </div><!-- end proj-editor -->
+
+  <!-- ── BUILD EDITOR ── -->
+  <div id="proj-build-editor" hidden>
+    <div id="pbe-header">
+      <div id="pbe-unit-info"></div>
+      <button class="btn btn-secondary btn-sm" id="pbe-back-btn">← Back to Project</button>
+    </div>
+
+    <!-- Preview card (used by preview_canvas.js) -->
+    <div id="pbe-preview-section">
+      <div class="card" id="card-preview" hidden>
+        <div class="card-title">
+          Build Preview
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
+            <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Drag icons to reposition. Click to open the inspector. Changes are pending until you click Apply.</p>
+
+        <!-- toolbar -->
+        <div class="pv-toolbar" id="pv-toolbar">
+          <button class="btn btn-primary btn-sm" id="btn-pv-apply" disabled>
+            Apply Changes <span id="pv-pending-count" class="pv-badge" style="display:none"></span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-pv-reset-view">Reset This View</button>
+          <button class="btn btn-secondary btn-sm" id="btn-pv-reset-all">Reset All Views</button>
+        </div>
+
+        <!-- view tabs -->
+        <div class="pv-view-tab-bar" id="pv-view-tabs"></div>
+
+        <!-- canvas container -->
+        <div class="pv-canvas-outer">
+          <div id="pv-canvas-wrap" class="pv-canvas-wrap"></div>
+
+          <!-- override inspector — floats over canvas -->
+          <div id="pv-inspector" class="pv-inspector" hidden>
+            <div class="pv-insp-header">
+              <span id="pv-insp-title" class="pv-insp-title"></span>
+              <button id="pv-insp-close" class="pv-insp-close" title="Close">✕</button>
+            </div>
+
+            <div class="pv-insp-meta">
+              <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Model</span><span id="pv-insp-model" class="pv-insp-meta-val">—</span></div>
+              <div class="pv-insp-meta-row"><span class="pv-insp-meta-lbl">Location</span><span id="pv-insp-location" class="pv-insp-meta-val">—</span></div>
+            </div>
+
+            <label class="pv-insp-row pv-insp-check">
+              <input type="checkbox" id="pv-insp-visible" checked>
+              <span>Visible</span>
+            </label>
+
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Rotation °</span>
+              <input type="range"  id="pv-insp-rotation" min="-180" max="180" step="1" value="0" class="pv-insp-range">
+              <input type="number" id="pv-insp-rot-num"  min="-180" max="180" step="1" value="0" class="pv-insp-num">
+            </div>
+
+            <div class="pv-insp-row pv-insp-checks">
+              <label><input type="checkbox" id="pv-insp-flip-h"> Flip H</label>
+              <label><input type="checkbox" id="pv-insp-flip-v"> Flip V</label>
+            </div>
+
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Offset X</span>
+              <input type="range"  id="pv-insp-dx"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
+              <input type="number" id="pv-insp-dx-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
+            </div>
+
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Offset Y</span>
+              <input type="range"  id="pv-insp-dy"     min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-range">
+              <input type="number" id="pv-insp-dy-num" min="-0.3" max="0.3" step="0.005" value="0" class="pv-insp-num">
+            </div>
+
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Size ×</span>
+              <input type="range"  id="pv-insp-scale"     min="0.25" max="4" step="0.05" value="1" class="pv-insp-range">
+              <input type="number" id="pv-insp-scale-num" min="0.25" max="4" step="0.05" value="1" class="pv-insp-num">
+            </div>
+
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Layer</span>
+              <input type="number" id="pv-insp-layer" min="-10" max="10" step="1" value="0" class="pv-insp-num" style="width:70px" title="Z-order layer. Higher = on top. 0 = default.">
+            </div>
+
+            <div class="pv-insp-actions">
+              <button class="btn btn-secondary btn-sm" id="pv-insp-reset-part">↩ Reset This Part</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Build manifest editor (used by manifest_editor.js) -->
+    <div id="pbe-manifest-section">
+      <div class="card" id="card-manifest" hidden>
+        <div class="card-title">
+          <span>Build Manifest (<span id="me-parts-count">0</span>)</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="addPart()">+ Add Part</button>
+          </div>
+        </div>
+        <div id="me-tbody-container"></div>
+      </div>
+    </div>
+
+    <div id="pbe-footer">
+      <button class="btn btn-secondary" id="pbe-create-preset-btn" style="display:none">Create Preset from this Setup</button>
+      <button class="btn btn-gold btn-block" id="pbe-save-return">💾 Save &amp; Return to Project</button>
+    </div>
+  </div><!-- end proj-build-editor -->
+
+</div><!-- end tab-projects -->
+
+<!-- ══ AGENCY CREATE MODAL ══ -->
+<div class="modal-overlay" id="agency-create-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">New Agency
+      <button class="modal-close" id="agency-create-close">✕</button>
+    </div>
+    <div class="form-group"><label>Agency Name <span style="color:var(--red)">*</span></label><input id="ac-name" type="text" placeholder="e.g. Springfield PD" /></div>
+    <div class="form-group"><label>Contact Name <span style="color:var(--red)">*</span></label><input id="ac-contact-name" type="text" placeholder="Full name" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input id="ac-contact-phone" type="tel" placeholder="e.g. 320-555-0100" /></div>
+      <div class="form-group"><label>Email</label><input id="ac-contact-email" type="email" placeholder="e.g. fleet@agency.gov" /></div>
+    </div>
+    <div class="form-group"><label>Customer Since</label><input id="ac-since" type="text" placeholder="e.g. 2019" /></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="ac-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ac-save">Create Agency</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SALES REP CREATE/EDIT MODAL ══ -->
+<div class="modal-overlay" id="sr-create-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title">Sales Rep
+      <button class="modal-close" id="sr-create-close">✕</button>
+    </div>
+    <div class="form-group"><label>Name <span style="color:var(--red)">*</span></label><input id="sr-name" type="text" placeholder="Full name" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone <span style="color:var(--red)">*</span></label><input id="sr-phone" type="tel" placeholder="e.g. 320-555-0100" /></div>
+      <div class="form-group"><label>Email <span style="color:var(--red)">*</span></label><input id="sr-email" type="email" placeholder="rep@company.com" /></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="sr-cancel">Cancel</button>
+      <button class="btn btn-primary" id="sr-save">Save Rep</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INDIVIDUAL UNIT EDIT MODAL ══ -->
+<div id="ind-edit-modal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">
+      <span id="ind-edit-modal-title">Edit Unit Details</span>
+      <button class="modal-close" onclick="PT_closeIndModal()" title="Close">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Unit #</label>
+        <input type="text" id="ind-edit-unit-number" placeholder="e.g. 101">
+      </div>
+      <div class="form-group">
+        <label>Year</label>
+        <input type="text" id="ind-edit-year" placeholder="2026">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Make <span style="font-size:11px;font-weight:400;color:var(--muted)">(from vehicle)</span></label>
+        <input type="text" id="ind-edit-make" readonly style="background:#f4f5f9">
+      </div>
+      <div class="form-group">
+        <label>Model <span style="font-size:11px;font-weight:400;color:var(--muted)">(from vehicle)</span></label>
+        <input type="text" id="ind-edit-model" readonly style="background:#f4f5f9">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Color</label>
+        <input type="text" id="ind-edit-color" placeholder="e.g. White">
+      </div>
+      <div class="form-group">
+        <label>VIN</label>
+        <input type="text" id="ind-edit-vin" placeholder="17-char VIN">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Existing Unit #</label>
+        <input type="text" id="ind-edit-existing-unit" placeholder="Previous unit #">
+      </div>
+      <div class="form-group">
+        <label>Existing VIN</label>
+        <input type="text" id="ind-edit-existing-vin" placeholder="Previous VIN">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="ind-edit-notes" placeholder="Optional notes for this unit">
+    </div>
+    <!-- Setup Build section — shown when opened from detail view -->
+    <div id="ind-modal-setup-section" style="display:none;padding-top:12px;margin-top:8px;border-top:1px solid var(--border)">
+      <button class="btn btn-primary" style="width:100%" onclick="PT_setupBuildFromModal()">⚡ Setup Build for this Unit</button>
+      <p style="font-size:11px;color:var(--muted);margin:6px 0 0">Opens the build sheet editor — saves any detail changes above first.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="PT_closeIndModal()">Close</button>
+      <button class="btn btn-primary" onclick="PT_saveIndModal()">Save Details</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- ══ EDIT PART MODAL ══ -->
@@ -1017,7 +1366,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<footer>DTM Vehicle Builder v7 · local server on port 7655</footer>
+<footer>DTM Vehicle Builder {{APP_VERSION}} · local server on port 7655</footer>
 
 <!-- ══ ADD LOCATION MODAL ══ -->
 <div class="modal-overlay" id="add-loc-modal">
@@ -1066,6 +1415,127 @@
   </div>
 </div>
 
+<!-- ── BUILD MANIFEST EDIT MODAL ── -->
+<div id="me-modal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title">
+      <span id="me-modal-title">Edit Part</span>
+      <button class="modal-close" onclick="meCancelModal()" title="Close">✕</button>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Part Type <span style="color:var(--red)">*</span></label>
+      <input id="me-name" type="text" placeholder="e.g. Siren Controller" list="me-name-list" autocomplete="off">
+      <datalist id="me-name-list"></datalist>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Location</label>
+        <input id="me-location" type="text" placeholder="e.g. Dash" list="me-loc-list" autocomplete="off">
+        <datalist id="me-loc-list"></datalist>
+      </div>
+      <div class="form-group" style="max-width:90px;flex:none">
+        <label>Qty</label>
+        <input id="me-qty" type="number" min="0" max="99" value="1">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Color</label>
+        <input id="me-color" type="text" placeholder="e.g. Red/Blue">
+      </div>
+      <div class="form-group">
+        <label>Manufacturer</label>
+        <input id="me-mfg" type="text" placeholder="e.g. Whelen" list="me-mfg-list" autocomplete="off">
+        <datalist id="me-mfg-list"></datalist>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Part Number</label>
+        <input id="me-pn" type="text" placeholder="Search or enter model #" list="me-pn-list" autocomplete="off">
+        <datalist id="me-pn-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input id="me-notes" type="text" placeholder="Optional">
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px;font-weight:600">
+      <input type="checkbox" id="me-include" checked>
+      Include in Build Drawing
+    </label>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="meCancelModal()">Cancel</button>
+      <button class="btn btn-primary" id="me-btn-save" onclick="savePartEdit()">Save Part</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="preset-edit-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">
+      Preset Settings
+      <button class="modal-close" id="pem-close" title="Close">✕</button>
+    </div>
+
+    <!-- Auto-generated name preview -->
+    <div style="background:var(--active-bg,#f0f4ff);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Auto-generated Name</div>
+      <div id="pem-name-preview" style="font-size:14px;font-weight:600">—</div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Description</label>
+      <input id="pem-description" type="text" placeholder="Optional description shown in preset picker">
+    </div>
+
+    <!-- Agency assignment -->
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Agency Assignment <span style="font-weight:400;color:var(--muted)">(leave blank for universal)</span></label>
+      <div id="pem-agency-checks" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:5px;padding:8px">
+        <p style="font-size:12px;color:var(--muted);margin:0">Loading agencies…</p>
+      </div>
+    </div>
+
+    <!-- Build types -->
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Compatible Build Types <span style="font-weight:400;color:var(--muted)">(leave blank for any)</span></label>
+      <div id="pem-bt-checks" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:4px 0"></div>
+    </div>
+
+    <!-- Vehicle types -->
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Compatible Vehicles <span style="font-weight:400;color:var(--muted)">(leave blank for any)</span></label>
+      <div id="pem-vehicle-checks" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:5px;padding:8px"></div>
+    </div>
+
+    <!-- Tag (General presets only) -->
+    <div class="form-group" id="pem-tag-row" style="margin-bottom:12px">
+      <label>Tag <span style="font-weight:400;color:var(--muted)">(optional — disambiguates General presets with the same vehicles)</span></label>
+      <input id="pem-tag" type="text" placeholder="e.g. Special Ops, Canine">
+    </div>
+
+    <!-- Parts count + export -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:13px">
+      <span style="color:var(--muted)">Parts:</span>
+      <span id="pem-part-count" style="font-weight:600">—</span>
+      <button class="btn btn-secondary btn-sm" id="pem-export-btn" style="margin-left:auto">Export to Workbook ↓</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="pem-cancel">Cancel</button>
+      <button class="btn btn-primary" id="pem-save">Save Preset</button>
+    </div>
+  </div>
+</div>
+
 <script src="/ui/js/api.js"></script>
 <script src="/ui/js/state.js"></script>
 <script src="/ui/js/tabs.js"></script>
@@ -1078,7 +1548,23 @@
 <script src="/ui/js/settings/parts_library.js"></script>
 <script src="/ui/js/settings/vehicles.js"></script>
 <script src="/ui/js/settings/tools.js"></script>
+<script src="/ui/js/settings/agencies.js"></script>
+<script src="/ui/js/settings/sales_reps.js"></script>
+<script src="/ui/js/settings/presets_mgr.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>
+<script src="/ui/js/manifest_editor.js"></script>
+
+<script src="/ui/js/projects/state.js"></script>
+<script src="/ui/js/projects/api.js"></script>
+<script src="/ui/js/projects/combo_search.js"></script>
+<script src="/ui/js/projects/list_view.js"></script>
+<script src="/ui/js/projects/detail_overview.js"></script>
+<script src="/ui/js/projects/detail_edit.js"></script>
+<script src="/ui/js/projects/detail_builds.js"></script>
+<script src="/ui/js/projects/build_editor.js"></script>
+<script src="/ui/js/projects/individual_modal.js"></script>
+<script src="/ui/js/projects/wizard.js"></script>
+<script src="/ui/js/projects/index.js"></script>
 <script src="/ui/js/main.js"></script>
 
 </body>

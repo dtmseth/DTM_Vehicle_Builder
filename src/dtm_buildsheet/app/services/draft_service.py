@@ -8,13 +8,16 @@ from ...inputs.project_drafts import (
     DraftPart,
     delete_draft,
     draft_from_project_input,
+    draft_part_from_payload,
     draft_summary,
     draft_to_project_input,
+    find_part_by_line_id,
     list_drafts,
     load_draft,
     new_draft,
     save_draft,
 )
+from ...naming import safe_id
 from ...paths import AppPaths
 
 
@@ -113,6 +116,96 @@ def handle_save_overrides_batch(draft_id: str, body: dict, paths: AppPaths) -> d
         return {"ok": False, "error": str(exc)}
 
 
+def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
+    """Append a new part to the draft's parts list."""
+    try:
+        clean_id = safe_id(draft_id)
+        if not clean_id or clean_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        if not body.get("name", "").strip():
+            return {"ok": False, "error": "name is required"}
+        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        part = draft_part_from_payload(body, paths)
+        draft.parts.append(part)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "part_added",
+            "line_id": part.line_id,
+            "name": part.name,
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {"ok": True, "draft_id": draft_id, "line_id": part.line_id, "draft_summary": draft_summary(draft)}
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_update_part_in_draft(draft_id: str, line_id: str, body: dict, paths: AppPaths) -> dict:
+    """Merge updated fields onto an existing part identified by line_id."""
+    try:
+        clean_draft_id = safe_id(draft_id)
+        if not clean_draft_id or clean_draft_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        clean_line_id = safe_id(line_id)
+        if not clean_line_id or clean_line_id != line_id:
+            return {"ok": False, "error": "invalid line_id"}
+        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        result = find_part_by_line_id(draft, line_id)
+        if result is None:
+            return {"ok": False, "error": f"Part not found: {line_id}"}
+        idx, existing = result
+        # Build a merged body: existing fields, overridden by incoming body
+        from dataclasses import asdict
+        merged = asdict(existing)
+        merged.update({k: v for k, v in body.items() if k != "line_id"})
+        merged["line_id"] = line_id
+        draft.parts[idx] = draft_part_from_payload(merged, paths)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "part_updated",
+            "line_id": line_id,
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {"ok": True, "draft_id": draft_id, "line_id": line_id, "draft_summary": draft_summary(draft)}
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) -> dict:
+    """Remove the part with the given line_id from the draft."""
+    try:
+        clean_draft_id = safe_id(draft_id)
+        if not clean_draft_id or clean_draft_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        clean_line_id = safe_id(line_id)
+        if not clean_line_id or clean_line_id != line_id:
+            return {"ok": False, "error": "invalid line_id"}
+        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        result = find_part_by_line_id(draft, line_id)
+        if result is None:
+            return {"ok": False, "error": f"Part not found: {line_id}"}
+        idx, removed = result
+        draft.parts.pop(idx)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "part_removed",
+            "line_id": line_id,
+            "name": removed.name,
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {"ok": True, "draft_id": draft_id, "line_id": line_id, "draft_summary": draft_summary(draft)}
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
     log_lines: list[str] = []
     try:
@@ -123,6 +216,22 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         log_lines.append(f"Vehicle type: {project.info.get('VehicleType', '?')}")
         log_lines.append(f"Parts: {len(project.parts)}")
 
+        # Resolve project-level export directory override
+        _project_export_dir = None
+        _proj_id_param = body.get("project_id", "")
+        if _proj_id_param:
+            try:
+                from ...inputs.project_entry import load_project
+                _proj_rec = load_project(_proj_id_param, paths)
+                _ed = (_proj_rec.export_dir or "").strip()
+                if _ed:
+                    from pathlib import Path as _Path
+                    _candidate = _Path(_ed)
+                    if _candidate.is_dir():
+                        _project_export_dir = _candidate
+            except Exception:
+                pass
+
         # generate_build_sheet expects a Path to an xlsx — for GUI-built drafts
         # we don't have one, so we generate from the ProjectInput directly via
         # the planning + rendering pipeline.
@@ -132,6 +241,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         from ...planning.override_applier import apply_overrides
         from ...render_ppt import render_plan_to_ppt
         from ...reporting import render_markdown_summary
+        from ...storage.local import LocalStorageProvider
 
         config = load_configs(paths)
         plan = build_plan(project, config)
@@ -148,8 +258,9 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         plan_path = out_dir / f"BuildPlan_{project_id}.json"
         summary_path = out_dir / f"BuildSummary_{project_id}.md"
 
-        plan_path.write_text(json.dumps(plan.to_dict(), indent=2), encoding="utf-8")
-        summary_path.write_text(render_markdown_summary(plan), encoding="utf-8")
+        storage = LocalStorageProvider()
+        storage.write_text(str(plan_path), json.dumps(plan.to_dict(), indent=2))
+        storage.write_text(str(summary_path), render_markdown_summary(plan))
 
         placements_count = sum(len(pp.placements) for pp in plan.planned_parts)
         log_lines.append(f"Wrote: {ppt_path.name}")
@@ -163,7 +274,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                     all_warnings.extend(inst.warnings)
 
         from .generation_service import finalize_output
-        export = finalize_output(ppt_path, paths)
+        export = finalize_output(ppt_path, paths, project_export_dir=_project_export_dir)
 
         return {
             "ok": True,

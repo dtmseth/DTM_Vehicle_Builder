@@ -15,6 +15,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 DEV_PROJECT_ROOT = PACKAGE_DIR.parents[1]
 RESOURCES_DIR = PACKAGE_DIR / "resources"
 DEFAULT_CONFIG_DIR = RESOURCES_DIR / "config"
+DEFAULT_DATA_DIR = RESOURCES_DIR / "default_data"
 ASSETS_DIR = RESOURCES_DIR / "assets"
 TEMPLATES_DIR = RESOURCES_DIR / "templates"
 SAMPLES_DIR = DEV_PROJECT_ROOT / "samples"
@@ -48,9 +49,16 @@ WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _DEV else PROJECT_ROOT
 WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _DEV else WORKSPACE_DIR / "config"
 WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"
 
-WORKSPACE_INPUT_DIR  = WORKSPACE_DIR / "input"
-WORKSPACE_OUTPUT_DIR = WORKSPACE_DIR / "output"
-WORKSPACE_DRAFTS_DIR = WORKSPACE_DIR / "drafts"
+WORKSPACE_INPUT_DIR    = WORKSPACE_DIR / "input"
+WORKSPACE_OUTPUT_DIR   = WORKSPACE_DIR / "output"
+WORKSPACE_DRAFTS_DIR   = WORKSPACE_DIR / "drafts"
+WORKSPACE_PROJECTS_DIR = WORKSPACE_DIR / "projects"
+
+BUNDLED_PRESETS_DIR = RESOURCES_DIR / "presets"
+# In dev mode presets write directly into the source tree (same pattern as
+# WORKSPACE_CONFIG_DIR and WORKSPACE_ASSETS_DIR) so they are committed to git
+# and shipped to end users as bundled presets.
+WORKSPACE_PRESETS_DIR = BUNDLED_PRESETS_DIR if _DEV else WORKSPACE_DIR / "presets"
 
 
 @dataclass(frozen=True)
@@ -66,6 +74,9 @@ class AppPaths:
     workspace_input_dir: Path = WORKSPACE_INPUT_DIR
     workspace_output_dir: Path = WORKSPACE_OUTPUT_DIR
     workspace_drafts_dir: Path = WORKSPACE_DRAFTS_DIR
+    workspace_presets_dir: Path = WORKSPACE_PRESETS_DIR
+    workspace_projects_dir: Path = WORKSPACE_PROJECTS_DIR
+    bundled_presets_dir: Path = BUNDLED_PRESETS_DIR
     samples_dir: Path = SAMPLES_DIR
 
 
@@ -131,7 +142,8 @@ def _log_westin_elitexd_probe(paths: AppPaths) -> None:
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
-              paths.workspace_input_dir, paths.workspace_output_dir, paths.workspace_drafts_dir):
+              paths.workspace_input_dir, paths.workspace_output_dir, paths.workspace_drafts_dir,
+              paths.workspace_presets_dir, paths.workspace_projects_dir):
         d.mkdir(parents=True, exist_ok=True)
 
     # In dev mode workspace_config_dir IS DEFAULT_CONFIG_DIR — no copying needed.
@@ -170,5 +182,21 @@ def ensure_workspace() -> AppPaths:
             )
 
     _log_westin_elitexd_probe(paths)
+
+    # Seed workspace-root data files (agencies, sales_reps) from packaged defaults
+    # if and only if they don't exist yet.  In dev mode workspace_dir is the repo
+    # workspace/ folder which is git-ignored; in bundled mode it's the user's
+    # Application Support folder.  Either way, once the file exists we leave it
+    # alone so user edits are never overwritten.
+    for data_filename in ("agencies.json", "sales_reps.json"):
+        dest = paths.workspace_dir / data_filename
+        if not dest.exists():
+            src = DEFAULT_DATA_DIR / data_filename
+            if src.exists():
+                try:
+                    shutil.copyfile(src, dest)
+                    _log.info("Seeded default data: %s", data_filename)
+                except Exception:
+                    _log.exception("Failed to seed default data %s", data_filename)
 
     return paths

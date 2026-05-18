@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "preset_id": "patrol_piu_standard",
+  "label": "General DURANGO/PIU/TAHOE",
+  "description": "Full standard patrol package for Explorer PIU, Tahoe PPV, and Durango SSV. Vendor selections (Whelen lighting, Watchguard cameras, Westin bumper, etc.) reflect current DTM standards and will be configurable per-project in a future update.",
+  "vehicle_types": [
+    "DURANGO",
+    "PIU",
+    "TAHOE"
+  ],
+  "agency_ids": [],
+  "build_types": [],
+  "tag": "",
+  "parts": [],
+  "placement_overrides": {}
+}

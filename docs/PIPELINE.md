@@ -74,9 +74,17 @@ Mutable runtime data:
 - `workspace/input/`
 - `workspace/output/`
 - `workspace/drafts/`
+- `workspace/projects/`
+- `workspace/presets/` (bundled app only; dev writes to `resources/presets/`)
+- `workspace/agencies.json`
+- `workspace/sales_reps.json`
 
-In development, `workspace/` lives in the repo.
-In a packaged app, the workspace will live in the user data folder for the OS.
+`workspace/` is git-ignored. In development it lives in the repo root; in a packaged app it
+lives in the OS user data folder (`~/Library/Application Support/DTM Vehicle Builder` on Mac,
+`%APPDATA%\DTM Vehicle Builder` on Windows).
+
+`agencies.json` and `sales_reps.json` are seeded on first run from `resources/default_data/`
+if they do not yet exist.
 
 ## Where To Change Things
 

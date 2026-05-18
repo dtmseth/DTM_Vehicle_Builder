@@ -1,6 +1,6 @@
 # DTM Vehicle Builder
 
-Generates PowerPoint build sheets for police and emergency vehicles. Upload an Excel workbook, configure parts and layout, export a finished `.pptx`.
+Generates PowerPoint build sheets for police and emergency vehicles. Manage a project library, configure builds per unit, and export finished `.pptx` files. Integrates an agency database, sales rep database, and preset library for repeatable fleet configurations.
 
 Runs as a native desktop app on macOS and Windows — no browser required.
 

@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 from ...paths import AppPaths, ASSETS_DIR
+from ...storage.local import LocalStorageProvider
 
 _log = logging.getLogger(__name__)
 
@@ -63,9 +64,8 @@ def upload_asset(body: dict, paths: AppPaths) -> dict:
         filename = Path(body.get("filename", "upload.png")).name
         data = base64.b64decode(body["data"])
         dest_dir = paths.workspace_assets_dir / folder
-        dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / filename
-        dest.write_bytes(data)
+        LocalStorageProvider().write_bytes(str(dest), data)
         rel = str(dest.relative_to(paths.workspace_assets_dir)).replace("\\", "/")
         if paths.workspace_assets_dir == ASSETS_DIR:
             _git_stage(dest)

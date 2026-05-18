@@ -6,6 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ...paths import AppPaths
+from ...storage.safety import assert_within_root
+
 
 def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
     """Find older PDF exports with the same Agency_Unit_Year_Updated_ prefix."""
@@ -101,7 +104,34 @@ end tell
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def export_to_pdf(body: dict) -> dict:
+def _allowed_roots(paths: AppPaths | None, extra_roots: list[Path] | None = None) -> list[Path]:
+    """Return the list of directory roots that open/export operations may target."""
+    if paths is None:
+        return []
+    roots = [paths.workspace_output_dir]
+    from ...app.services.generation_service import get_output_save_dir
+    export_dir = get_output_save_dir(paths)
+    if export_dir is not None:
+        roots.append(export_dir)
+    if extra_roots:
+        roots.extend(extra_roots)
+    return roots
+
+
+def _check_allowed(path: Path, roots: list[Path]) -> str | None:
+    """Return an error message if *path* is not inside any of *roots*, else None."""
+    if not roots:
+        return None  # no workspace context — skip check (e.g. tests)
+    for root in roots:
+        try:
+            assert_within_root(path, root)
+            return None
+        except ValueError:
+            continue
+    return f"Access denied: '{path.name}' is outside allowed output directories"
+
+
+def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     """Convert an existing PPTX file to PDF.
 
     Tries LibreOffice first (cross-platform), then PowerPoint COM on Windows.
@@ -116,6 +146,11 @@ def export_to_pdf(body: dict) -> dict:
         return {"ok": False, "error": f"PPTX file not found: {pptx_path.name}"}
     if pptx_path.suffix.lower() != ".pptx":
         return {"ok": False, "error": "output_path must point to a .pptx file"}
+
+    # Allow the actual pptx parent dir (covers project-specific export dirs)
+    err = _check_allowed(pptx_path, _allowed_roots(paths, extra_roots=[pptx_path.parent]))
+    if err:
+        return {"ok": False, "error": err}
 
     pdf_path = pptx_path.with_suffix(".pdf")
 
@@ -169,11 +204,70 @@ def export_to_pdf(body: dict) -> dict:
     }
 
 
-def open_file(body: dict) -> dict:
+def handle_export_all_pdf(project_id: str, paths: AppPaths) -> dict:
+    """Generate a PPTX + PDF for every draft in a project and return a results list."""
+    from ...inputs.project_entry import load_project
+
+    try:
+        project = load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Project not found: {project_id}"}
+
+    exported: list[dict] = []
+    errors:   list[dict] = []
+
+    for unit in project.build_units:
+        individuals = unit.individuals or []
+        if individuals:
+            for ind in individuals:
+                if not ind.draft_id:
+                    errors.append({"unit_id": unit.unit_id, "individual_id": ind.individual_id,
+                                   "error": "No draft created yet"})
+                    continue
+                _do_export(ind.draft_id, unit, paths, exported, errors, project_id=project_id)
+        else:
+            if not unit.draft_id:
+                errors.append({"unit_id": unit.unit_id, "error": "No draft created yet"})
+                continue
+            _do_export(unit.draft_id, unit, paths, exported, errors, project_id=project_id)
+
+    return {"ok": True, "exported": exported, "errors": errors}
+
+
+def _do_export(draft_id: str, unit, paths: AppPaths,
+               exported: list, errors: list, project_id: str = "") -> None:
+    from .draft_service import handle_generate_from_draft
+
+    gen = handle_generate_from_draft({"draft_id": draft_id, "project_id": project_id}, paths)
+    if not gen.get("ok"):
+        errors.append({"draft_id": draft_id, "unit_id": unit.unit_id,
+                       "error": gen.get("error", "Generation failed")})
+        return
+
+    pptx_path = gen.get("output_path")
+    if not pptx_path:
+        errors.append({"draft_id": draft_id, "unit_id": unit.unit_id,
+                       "error": "No output_path returned from generation"})
+        return
+
+    pdf_res = export_to_pdf({"output_path": pptx_path}, paths)
+    if pdf_res.get("ok"):
+        exported.append({"draft_id": draft_id, "unit_id": unit.unit_id,
+                          "pdf_name": pdf_res["pdf_name"], "pdf_path": pdf_res["pdf_path"]})
+    else:
+        errors.append({"draft_id": draft_id, "unit_id": unit.unit_id,
+                       "error": pdf_res.get("error", "PDF conversion failed")})
+
+
+def open_file(body: dict, paths: AppPaths | None = None) -> dict:
     """Open a file with the OS default application."""
     path = body.get("path", "")
     if not path or not Path(path).exists():
         return {"ok": False, "error": "File not found"}
+
+    err = _check_allowed(Path(path), _allowed_roots(paths))
+    if err:
+        return {"ok": False, "error": err}
     try:
         if sys.platform == "darwin":
             subprocess.Popen(["open", path])

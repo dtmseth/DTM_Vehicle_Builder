@@ -82,6 +82,16 @@ load -> render -> read form/state -> validate -> save
 
 Avoid adding new all-purpose globals when shared state belongs in `state.js` or a feature module.
 
+### Inline Style Policy
+
+`style="display:none"` in initial HTML is acceptable for JS-toggled elements. All other inline styles (colors, spacing, font sizes, layout) belong in `styles.css` as named classes.
+
+`projects_tab.js` and `ui/js/projects/*.js` contain ~100 inline style attributes embedded in JS template literals — layout values, muted-color spans, responsive flex wrappers. Extracting these to CSS classes is a bounded, worthwhile cleanup but has real regression risk (dynamic conditional styles, shared component fragments). Do it only when the module is already being substantially modified:
+
+- Move layout structure (`display:flex`, `gap`, `margin`, `padding`) to `.proj-*` classes in `styles.css`.
+- Move typography variants (`font-size:11px`, `font-weight:700`, `letter-spacing`) to utility classes already present in `styles.css`.
+- Leave `display:none` and inline conditional styles (`style="${flag ? '' : 'display:none'}"`) as-is — they are programmatic state, not CSS drift.
+
 ## Route And Service Rules
 
 Route modules should be thin. They should parse the request, call a service, and return a response.

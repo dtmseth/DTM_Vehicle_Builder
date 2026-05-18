@@ -15,7 +15,6 @@ function showProjectLoadedState(filename, filesizeStr) {
   dz.hidden = true;
   $("file-loaded").style.display = "flex";
   show("card-proj");
-  show("card-parts");
   $("btn-generate").disabled = false;
 }
 
@@ -33,12 +32,7 @@ function handleFile(file) {
       renderInfo(res.info); renderParts(res.parts);
       showProjectLoadedState(file.name, fmt(file.size));
       logLine("Parsed — "+res.parts.length+" parts found.");
-
-      // Show preview card and kick off an initial render
-      if (_parsedDraftId) {
-        show("card-preview");
-        pvLoad(_parsedDraftId);
-      }
+      show("card-parts");
     } else logLine("Parse error: "+res.error);
   };
   reader.readAsDataURL(file);
@@ -67,16 +61,14 @@ $("btn-clear").addEventListener("click", ()=>{
   fileB64=null; fileName=null; _parsedDraftId=null;
   $("file-input").value="";
   $("file-loaded").style.display="none"; dz.hidden=false;
-  hide("card-proj");hide("card-parts");hide("card-preview");
+  hide("card-proj");hide("card-parts");
   hide("card-results");hide("card-warns");hide("card-output");
   hide("card-log");hide("reset-row");
   $("log-box").textContent=""; $("btn-generate").disabled=true;
 });
 
 // Reload preview button
-$("btn-reload-preview").addEventListener("click", ()=>{
-  if (_parsedDraftId) pvLoad(_parsedDraftId);
-});
+$("btn-reload-preview").addEventListener("click", () => pvReload());
 
 $("btn-generate").addEventListener("click", async ()=>{
   if(!fileB64 && !_parsedDraftId) return;
@@ -260,6 +252,39 @@ $("btn-clear-save-dir").addEventListener("click", async()=>{
 
 function autoRegenTemplate() {
   api("/api/template/generate", {}).then(loadTemplateInfo).catch(() => {});
+}
+
+// ── Project output root picker (Settings → Tools) ─────────────────────────────
+function updateProjRootDisplay() {
+  const el = $("proj-output-root-display"); if (!el) return;
+  const dir = (_appSettings || {}).project_output_root || "";
+  if (dir) { el.textContent = dir; el.title = dir; el.style.color = "var(--navy)"; }
+  else     { el.textContent = "Default (Desktop / DTM Projects)"; el.title = ""; el.style.color = "var(--muted)"; }
+}
+
+const btnPickProjRoot  = $("btn-pick-proj-root");
+const btnClearProjRoot = $("btn-clear-proj-root");
+
+if (btnPickProjRoot) {
+  btnPickProjRoot.addEventListener("click", async () => {
+    const res = await api("/api/project/pick-output-root");
+    if (!res.ok) return;
+    if (!_appSettings) _appSettings = {};
+    _appSettings.project_output_root = res.path;
+    await api("/api/app-settings/save", _appSettings);
+    updateProjRootDisplay();
+    const status = $("proj-root-status");
+    if (status) { status.textContent = "✓ Saved"; status.style.display = "block"; setTimeout(() => { status.style.display = "none"; }, 2000); }
+  });
+}
+
+if (btnClearProjRoot) {
+  btnClearProjRoot.addEventListener("click", async () => {
+    if (!_appSettings) _appSettings = {};
+    delete _appSettings.project_output_root;
+    await api("/api/app-settings/save", _appSettings);
+    updateProjRootDisplay();
+  });
 }
 
 function logLine(msg){show("card-log"); $("log-box").textContent+=msg+"\n"; $("log-box").scrollTop=$("log-box").scrollHeight;}

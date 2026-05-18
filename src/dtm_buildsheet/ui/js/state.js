@@ -73,6 +73,9 @@ async function initSettings(){
   populateTemplateSectionSelect();
   syncWizardDiagramUi();
   await loadPartsLibrary();
+  if (typeof initAgenciesTab === "function") initAgenciesTab();
+  if (typeof initSalesRepsTab === "function") initSalesRepsTab();
+  if (typeof initPresetsTab === "function") initPresetsTab();
 }
 
 function populateTemplateSectionSelect(){

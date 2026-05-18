@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "build_types": [
+    "Patrol",
+    "Admin",
+    "Unmarked",
+    "K-9",
+    "Fire"
+  ],
+  "camera_brands": [
+    "Axon",
+    "Motorola M500",
+    "Watchguard"
+  ],
+  "lighting_brands": [
+    "Whelen",
+    "Code 3",
+    "Federal Signal",
+    "SoundOff Signal"
+  ],
+  "bumper_brands": [
+    "Setina",
+    "Go Industries",
+    "Westin"
+  ],
+  "cage_brands": [
+    "Setina",
+    "Jotto Desk",
+    "Havis"
+  ]
+}

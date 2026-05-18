@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "preset_id": "stearns_county_sheriff_patrol_piu_090b8e",
+  "label": "Stearns County Sheriff Patrol PIU",
+  "description": "",
+  "vehicle_types": [
+    "PIU"
+  ],
+  "agency_ids": [
+    "7a9e005e-4067-423c-8623-5787280b6a22"
+  ],
+  "build_types": [
+    "Patrol"
+  ],
+  "tag": "",
+  "parts": [],
+  "placement_overrides": {}
+}

@@ -10,6 +10,7 @@ from .paths import AppPaths, ensure_workspace
 from .planner import build_plan
 from .render_ppt import render_plan_to_ppt
 from .reporting import render_markdown_summary, render_terminal_summary
+from .storage.local import LocalStorageProvider
 
 
 @dataclass
@@ -45,8 +46,9 @@ def generate_build_sheet(input_xlsx: Path | None = None, paths: AppPaths | None 
     plan_path = active_paths.workspace_output_dir / f"BuildPlan_{project_id}.json"
     summary_path = active_paths.workspace_output_dir / f"BuildPlan_{project_id}_summary.md"
 
-    plan_path.write_text(json.dumps(plan.to_dict(), indent=2) + "\n", "utf-8")
-    summary_path.write_text(render_markdown_summary(plan), "utf-8")
+    storage = LocalStorageProvider()
+    storage.write_text(str(plan_path), json.dumps(plan.to_dict(), indent=2) + "\n")
+    storage.write_text(str(summary_path), render_markdown_summary(plan))
     ppt_path = render_plan_to_ppt(plan, active_paths)
 
     all_warnings: list[str] = list(plan.warnings)
