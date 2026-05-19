@@ -465,3 +465,11 @@
     #pbe-unit-info{font-size:14px;font-weight:600;color:var(--navy)}
     #pbe-footer{padding:16px 0 8px;border-top:1px solid var(--border);margin-top:8px}
 
+    /* ── Part status radio buttons ── */
+    .me-status-row{display:flex;margin-bottom:14px}
+    .me-status-btn{flex:1;padding:10px 6px;font-size:14px;font-weight:600;border:1px solid var(--border);background:#f0f2fa;color:var(--navy);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+    .me-status-btn:first-child{border-radius:6px 0 0 6px}
+    .me-status-btn:last-child{border-radius:0 6px 6px 0}
+    .me-status-btn:not(:first-child){border-left:none}
+    .me-status-btn--active{background:var(--navy);color:#fff;border-color:var(--navy);z-index:1;position:relative}
+

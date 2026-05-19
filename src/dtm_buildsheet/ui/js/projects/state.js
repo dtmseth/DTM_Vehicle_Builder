@@ -103,11 +103,15 @@ function _ptSetStatus(el, msg, mood) {
   el.textContent      = msg;
 }
 
+function _ptCurrentBuildYear() {
+  return ($("proj-build-year")?.value || $("et-build-year")?.value || "").trim();
+}
+
 function _ptEnsureIndividuals(u) {
   while (u.individuals.length < u.quantity) {
     const vm = _PT.vehicleMap[u.vehicle_model] || {};
     u.individuals.push({
-      individual_id: _ptUuid(), unit_number: "", year: "",
+      individual_id: _ptUuid(), unit_number: "", year: _ptCurrentBuildYear(),
       make: vm.make || "", model: vm.model || "",
       color: "", vin: "", existing_unit_number: "", existing_vin: "",
       notes: "", draft_id: null,

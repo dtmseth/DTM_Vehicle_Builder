@@ -31,19 +31,48 @@ window.PT_open = function (pid) {
   if (p) _ptShowDetail(p);
 };
 
-window.PT_del = async function (pid) {
-  if (!confirm("Delete this project? This cannot be undone.")) return;
-  try {
-    const res = await fetch(`/api/project/${encodeURIComponent(pid)}`, { method: "DELETE" }).then(r => r.json());
-    if (res.ok) {
-      toast("Project deleted", "success");
-      if (_PT.viewProject?.project_id === pid) _PT.viewProject = null;
-      await _ptLoadAll();
-      _ptShowList();
-    } else {
-      toast(res.error || "Delete failed", "error");
+// ── Delete project modal ───────────────────────────────────────────────────────
+(function () {
+  let _delPid = null;
+
+  async function _doDelete(deleteFiles) {
+    try {
+      const res = await api(`/api/project/${encodeURIComponent(_delPid)}/delete`, { delete_files: deleteFiles });
+      if (res.ok) {
+        toast(deleteFiles ? "Project and output files deleted" : "Project deleted", "success");
+        if (_PT.viewProject?.project_id === _delPid) _PT.viewProject = null;
+        await _ptLoadAll();
+        _ptShowList();
+      } else {
+        toast(res.error || "Delete failed", "error");
+      }
+    } catch (e) {
+      toast("Delete failed", "error");
+    } finally {
+      $("del-project-modal").classList.remove("open");
+      _delPid = null;
     }
-  } catch (e) {
-    toast("Delete failed", "error");
   }
-};
+
+  window.PT_del = function (pid) {
+    _delPid = pid;
+    const p = _PT.projects.find(x => x.project_id === pid);
+    const name = p ? _ptProjName(p) : pid;
+    $("del-project-modal-msg").textContent =
+      `"${name}" — choose what to delete. Output files are the build sheets in the project output folder.`;
+    $("del-project-modal").classList.add("open");
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const overlay = $("del-project-modal");
+    $("del-with-files-btn").addEventListener("click",  () => _doDelete(true));
+    $("del-proj-only-btn").addEventListener("click",   () => _doDelete(false));
+    $("del-cancel-btn").addEventListener("click",      () => {
+      overlay.classList.remove("open");
+      _delPid = null;
+    });
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay) { overlay.classList.remove("open"); _delPid = null; }
+    });
+  });
+})();

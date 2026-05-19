@@ -137,11 +137,6 @@ function _ptRenderEditTab(project, editable) {
         <label>Lighting Brand(s)</label>
         <div class="proj-brand-checks">${lightChecks}</div>
       </div>
-      <div class="form-group proj-slick-group">
-        <label class="proj-slick-label">
-          <input type="checkbox" id="et-slick-top"${pr.slick_top ? " checked" : ""}> Slick Top
-        </label>
-      </div>
       <div class="form-group">
         <label>Preferences Notes</label>
         <textarea id="et-pref-notes" rows="2" class="proj-textarea-full">${esc(pr.notes || "")}</textarea>
@@ -153,9 +148,7 @@ function _ptRenderEditTab(project, editable) {
         <button class="btn btn-secondary btn-sm" onclick="PT_addEditUnit()">+ Add Unit Group</button>
       </div>
 
-      <div class="proj-section-label">Export Location</div>
-      <div class="proj-form-hint">Override the default output folder for this project (leave blank to use the project root folder from Settings)</div>
-      <input type="text" id="et-export-dir" value="${esc(project.export_dir || "")}" placeholder="e.g. /Users/me/Documents/builds">`;
+      `;
 
     _ptRenderEditUnits();
     _ptWireEditTabSearch();
@@ -335,10 +328,8 @@ function _ptCollectEditForm() {
       push_bumper_brand: ($("et-bumper-brand")?.value    || "").trim(),
       cage_brand:        ($("et-cage-brand")?.value      || "").trim(),
       lighting_brands:   lightingBrands,
-      slick_top:         !!$("et-slick-top")?.checked,
       notes:             ($("et-pref-notes")?.value      || "").trim(),
     },
-    export_dir: ($("et-export-dir")?.value || "").trim(),
     build_units: _PT.editTabUnits.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,

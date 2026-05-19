@@ -50,6 +50,7 @@ function _meMakeRows(parts) {
       <td>${esc(p.raw_color || "—")}</td>
       <td style="text-align:center">${p.quantity || "—"}</td>
       <td style="color:var(--muted);font-size:11px">${esc(mfgModel)}</td>
+      <td style="font-size:11px;color:var(--muted)">${p.new_or_used ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used)) : "—"}</td>
       <td><span class="badge ${p.include ? "badge-on" : "badge-off"}">${p.include ? "Yes" : "No"}</span></td>
       <td class="me-row-actions">
         <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(p.line_id)}" title="Edit">≡</button>
@@ -61,7 +62,7 @@ function _meMakeRows(parts) {
 
 const _meThead = `<thead><tr>
   <th>Part</th><th>Location</th><th>Color</th><th style="text-align:center">Qty</th>
-  <th>Mfg / Model #</th><th>Incl.</th><th></th>
+  <th>Mfg / Model #</th><th>Status</th><th>Incl.</th><th></th>
 </tr></thead>`;
 
 function _meRender() {
@@ -131,6 +132,25 @@ function _meRender() {
   }
 }
 
+// ── status radio buttons ──────────────────────────────────
+
+function _meSetStatus(value) {
+  document.querySelectorAll(".me-status-btn").forEach(btn => {
+    btn.classList.toggle("me-status-btn--active", btn.dataset.value === value);
+  });
+  const sourceRow = $("me-reused-source-row");
+  if (sourceRow) sourceRow.style.display = value === "Reused" ? "" : "none";
+  if (value !== "Reused") {
+    const srcEl = $("me-source");
+    if (srcEl) srcEl.value = "";
+  }
+}
+
+function _meGetStatus() {
+  const active = document.querySelector(".me-status-btn.me-status-btn--active");
+  return active?.dataset.value || "";
+}
+
 // ── modal open/close ─────────────────────────────────────
 
 async function addPart() {
@@ -138,6 +158,7 @@ async function addPart() {
   $("me-modal-title").textContent = "Add Part";
   $("me-name").value      = "";
   $("me-include").checked = true;
+  _meSetStatus("");
   $("me-location").value  = "";
   $("me-color").value     = "";
   $("me-qty").value       = 1;
@@ -158,6 +179,9 @@ async function openPartEditModal(lineId) {
   $("me-modal-title").textContent  = "Edit Part";
   $("me-name").value      = part.name          || "";
   $("me-include").checked = !!part.include;
+  _meSetStatus(part.new_or_used || "");
+  const srcEl = $("me-source");
+  if (srcEl) srcEl.value = part.source || "";
   $("me-location").value  = part.location       || "";
   $("me-color").value     = part.raw_color      || "";
   $("me-qty").value       = part.quantity        ?? 0;
@@ -184,6 +208,8 @@ async function savePartEdit() {
   const body = {
     name,
     include:      $("me-include").checked,
+    new_or_used:  _meGetStatus(),
+    source:       ($("me-source")?.value || "").trim(),
     location:     $("me-location").value.trim(),
     raw_color:    $("me-color").value.trim(),
     quantity:     parseInt($("me-qty").value, 10) || 0,
@@ -203,6 +229,7 @@ async function savePartEdit() {
 
   meCancelModal();
   toast(_meEditLineId ? "Part updated" : "Part added", "success");
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   await loadDraftManifest(_meDraftId);
   if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);
 }
@@ -214,6 +241,7 @@ async function deletePart(lineId) {
   if (!res.ok) { toast(res.error || "Delete failed", "error"); return; }
 
   toast("Part removed", "success");
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   await loadDraftManifest(_meDraftId);
   if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);
 }
@@ -317,6 +345,11 @@ document.addEventListener("keydown", e => {
     e.preventDefault();
     savePartEdit();
   }
+});
+
+// Wire status radio buttons
+document.querySelectorAll(".me-status-btn").forEach(btn => {
+  btn.addEventListener("click", () => _meSetStatus(btn.dataset.value));
 });
 
 // Wire me-name → location list, color visibility, manufacturer list, part number list

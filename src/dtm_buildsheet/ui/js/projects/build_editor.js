@@ -19,13 +19,28 @@ function _pbePartsMatchPreset(draftParts, presetParts) {
   return da.every((v, i) => v === pa[i]);
 }
 
-async function _pbeCheckPresetButton(draftId, unit) {
-  const btn = $("pbe-create-preset-btn");
-  if (!btn) return;
-  btn.style.display = "";  // show optimistically
+function _pbeMarkDirty() {
+  const actionRow = $("pbe-action-row");
+  if (actionRow) actionRow.style.display = "flex";
+  const topPreset = $("pbe-create-preset-top");
+  if (topPreset) topPreset.style.display = "";
+  const topGroup = $("pbe-apply-group-top");
+  if (topGroup) topGroup.style.display = "";
+}
 
+function _pbeSetActionRowVisible(visible) {
+  const actionRow = $("pbe-action-row");
+  if (actionRow) actionRow.style.display = visible ? "flex" : "none";
+  const topPreset = $("pbe-create-preset-top");
+  if (topPreset) topPreset.style.display = visible ? "" : "none";
+  const topGroup = $("pbe-apply-group-top");
+  if (topGroup) topGroup.style.display = visible ? "" : "none";
+}
+
+async function _pbeCheckPresetButton(draftId, unit) {
+  // No preset assigned → always show (build has never been saved as a preset)
   const presetId = unit?.preset_id;
-  if (!presetId) return;  // no assigned preset → always show
+  if (!presetId) { _pbeMarkDirty(); return; }
 
   try {
     const [presetRes, draftRes] = await Promise.all([
@@ -41,21 +56,22 @@ async function _pbeCheckPresetButton(draftId, unit) {
       );
       const overridesMatch =
         JSON.stringify(draftOverrides) === JSON.stringify(presetOverrides);
-      if (partsMatch && overridesMatch) {
-        btn.style.display = "none";  // exact match — nothing new to save
-      }
+      // Exact match → nothing new to save; hide action buttons
+      _pbeSetActionRowVisible(!(partsMatch && overridesMatch));
     }
   } catch (_) {
-    // On any error keep the button visible (safe default)
+    // On any error keep buttons visible (safe default)
+    _pbeMarkDirty();
   }
 }
 
-async function _ptShowBuildEditor(draftId, unit, project, returnTab) {
+async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual) {
   _PT.pbeReturnProject = project;
   _PT.pbeReturnTab     = returnTab || "builds";
   _PT.pbeUnit          = unit;
   _PT.pbeProject       = project;
   _PT.pbeDraftId       = draftId;
+  _PT.pbeIndividual    = individual || null;
 
   hide("proj-list-view");
   hide("proj-detail-view");
@@ -65,13 +81,79 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab) {
   const vm      = _PT.vehicleMap[unit.vehicle_model] || {};
   const vmLabel = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "Vehicle");
   const agency  = project?.customer?.agency || "";
-  const parts   = [agency, vmLabel, unit.build_type].filter(Boolean).join(" · ");
+  const unitNum = individual?.unit_number?.trim();
+  const parts   = [agency, vmLabel, unit.build_type, unitNum ? `Unit ${unitNum}` : null].filter(Boolean).join(" · ");
   $("pbe-unit-info").textContent = parts;
 
   show("card-preview");
   pvLoad(draftId);
   loadDraftManifest(draftId);
   _pbeCheckPresetButton(draftId, unit);  // async; updates button visibility after load
+}
+
+async function _ptApplyToUnitGroup() {
+  const unit    = _PT.pbeUnit;
+  const currentDraftId = _PT.pbeDraftId;
+  const currentInd     = _PT.pbeIndividual;
+
+  if (!unit || !currentDraftId) {
+    toast("No active build to apply", "error");
+    return;
+  }
+
+  const siblings = (unit.individuals || []).filter(
+    ind => ind.individual_id !== currentInd?.individual_id
+  );
+
+  if (!siblings.length) {
+    toast("This is the only unit in the group — nothing to apply to", "info");
+    return;
+  }
+
+  if (!confirm(`Apply this build configuration to all ${siblings.length} other unit(s) in this group?\n\nThis will overwrite any existing build changes and set up any units that haven't been configured yet.`)) return;
+
+  const draftRes = await api(`/api/draft/${encodeURIComponent(currentDraftId)}`);
+  if (!draftRes?.ok) { toast("Could not load current draft", "error"); return; }
+
+  const parts     = draftRes.draft?.parts               || [];
+  const overrides = draftRes.draft?.placement_overrides  || {};
+  const projectId = _PT.pbeProject?.project_id;
+  const unitId    = unit.unit_id;
+
+  let successCount = 0;
+  let failCount    = 0;
+
+  for (const ind of siblings) {
+    try {
+      let draftId = ind.draft_id;
+
+      // Create a draft for this individual if one doesn't exist yet
+      if (!draftId) {
+        const createRes = await api(
+          `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unitId)}/individual/${encodeURIComponent(ind.individual_id)}/create-draft`,
+          {}
+        );
+        if (!createRes?.ok) { failCount++; continue; }
+        draftId = createRes.draft_id;
+      }
+
+      const res = await api("/api/draft/save", {
+        draft_id:            draftId,
+        parts,
+        placement_overrides: overrides,
+      });
+      if (res.ok) successCount++;
+      else        failCount++;
+    } catch (_) {
+      failCount++;
+    }
+  }
+
+  if (failCount > 0) {
+    toast(`Applied to ${successCount} unit(s); ${failCount} failed`, "error");
+  } else {
+    toast(`Applied to ${successCount} unit(s)`, "success");
+  }
 }
 
 async function _ptOpenCreatePresetFromBuild() {
@@ -91,7 +173,7 @@ async function _ptOpenCreatePresetFromBuild() {
   const buildTypes   = unit?.build_type    ? [unit.build_type]    : [];
 
   if (typeof pmOpenFromDraft === "function") {
-    await pmOpenFromDraft(parts, placementOverrides, { agencyIds, vehicleTypes, buildTypes });
+    await pmOpenFromDraft(parts, placementOverrides, { agencyIds, vehicleTypes, buildTypes }, project);
   } else {
     toast("Preset manager not available", "error");
   }
@@ -127,30 +209,63 @@ async function _ptHideBuildEditor() {
 // Wire the Save & Return and Create Preset buttons.
 // Called once from index.js _ptBind().
 function _ptBindBuildEditor() {
-  $("pbe-back-btn").addEventListener("click", () => {
-    if (confirm("Leave the Build Editor? Any unsaved position overrides will be lost.")) {
-      _ptHideBuildEditor();
-    }
-  });
-
-  $("pbe-save-return").addEventListener("click", async () => {
-    const btn = $("pbe-save-return");
-    if (btn) btn.disabled = true;
-    try {
-      // Flush any pending drag/inspector overrides to the server
-      if (typeof pvApplyChanges === "function") {
-        await pvApplyChanges();
+  $("pbe-back-btn").addEventListener("click", async () => {
+    const hasPending = typeof pvHasPendingChanges === "function" && pvHasPendingChanges();
+    if (hasPending) {
+      const choice = confirm(
+        "You have unsaved position overrides.\n\nOK = Save changes and return\nCancel = Discard changes and return"
+      );
+      if (choice) {
+        try {
+          if (typeof pvApplyChanges === "function") await pvApplyChanges();
+        } catch (e) {
+          console.warn("pbe-back-btn: pvApplyChanges failed", e);
+        }
       }
-    } catch (e) {
-      console.warn("pbe-save-return: pvApplyChanges failed", e);
-    } finally {
-      if (btn) btn.disabled = false;
     }
     _ptHideBuildEditor();
   });
 
+  async function _pbeSaveAndReturn(btnEl) {
+    if (btnEl) btnEl.disabled = true;
+    try {
+      if (typeof pvApplyChanges === "function") await pvApplyChanges();
+    } catch (e) {
+      console.warn("pbe save-return: pvApplyChanges failed", e);
+    } finally {
+      if (btnEl) btnEl.disabled = false;
+    }
+    _ptHideBuildEditor();
+  }
+
+  $("pbe-save-return").addEventListener("click", () =>
+    _pbeSaveAndReturn($("pbe-save-return"))
+  );
+
+  const previewSaveReturn = $("pbe-save-return-preview");
+  if (previewSaveReturn) {
+    previewSaveReturn.addEventListener("click", () =>
+      _pbeSaveAndReturn(previewSaveReturn)
+    );
+  }
+
   const createPresetBtn = $("pbe-create-preset-btn");
   if (createPresetBtn) {
     createPresetBtn.addEventListener("click", _ptOpenCreatePresetFromBuild);
+  }
+
+  const createPresetTop = $("pbe-create-preset-top");
+  if (createPresetTop) {
+    createPresetTop.addEventListener("click", _ptOpenCreatePresetFromBuild);
+  }
+
+  const applyGroupBtn = $("pbe-apply-group-btn");
+  if (applyGroupBtn) {
+    applyGroupBtn.addEventListener("click", _ptApplyToUnitGroup);
+  }
+
+  const applyGroupTop = $("pbe-apply-group-top");
+  if (applyGroupTop) {
+    applyGroupTop.addEventListener("click", _ptApplyToUnitGroup);
   }
 }

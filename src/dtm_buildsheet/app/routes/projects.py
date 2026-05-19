@@ -9,6 +9,7 @@ from ..services.project_service import (
     handle_create_draft,
     handle_create_individual_draft,
     handle_delete_project,
+    handle_delete_project_with_options,
     handle_get_project,
     handle_list_projects,
     handle_save_project,
@@ -46,6 +47,13 @@ def route_projects(
         project_id = path[len("/api/project/"):]
         if project_id and "/" not in project_id:
             _json(handler, handle_delete_project(project_id, paths))
+            return True
+
+    # POST /api/project/{project_id}/delete
+    if method == "POST" and path.startswith("/api/project/") and path.endswith("/delete"):
+        project_id = path[len("/api/project/"):-len("/delete")]
+        if project_id and "/" not in project_id:
+            _json(handler, handle_delete_project_with_options(project_id, body, paths))
             return True
 
     # POST /api/project/{project_id}/unit/{unit_id}/create-draft

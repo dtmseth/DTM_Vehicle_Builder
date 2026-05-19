@@ -529,6 +529,10 @@ async function pvResetThisPart() {
 
 // ── toolbar actions ──────────────────────────────────────
 
+function pvHasPendingChanges() {
+  return Object.keys(_pvPendingOverrides).length > 0;
+}
+
 async function pvApplyChanges() {
   if (!_pvDraftId || Object.keys(_pvPendingOverrides).length === 0) return;
 
@@ -621,6 +625,7 @@ function pvUpdateBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? "inline" : "none";
   }
+  if (count > 0 && typeof _pbeMarkDirty === "function") _pbeMarkDirty();
 }
 
 // ── spinner / error helpers ──────────────────────────────

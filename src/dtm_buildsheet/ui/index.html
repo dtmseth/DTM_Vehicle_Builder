@@ -908,11 +908,6 @@
           <label>Lighting Brand(s)</label>
           <div id="proj-lighting-checkboxes" class="proj-brand-checks"></div>
         </div>
-        <div class="form-group" style="margin-top:8px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
-            <input type="checkbox" id="proj-slick-top"> Slick Top (no roof lights on this vehicle)
-          </label>
-        </div>
         <div class="form-group">
           <label>Preferences Notes</label>
           <textarea id="proj-pref-notes" rows="2" placeholder="Any other preferences or notes…" style="resize:vertical;width:100%;box-sizing:border-box"></textarea>
@@ -957,7 +952,9 @@
       <div class="card" id="card-preview" hidden>
         <div class="card-title">
           Build Preview
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" id="pbe-create-preset-top" style="display:none">Save as New Preset?</button>
+            <button class="btn btn-secondary btn-sm" id="pbe-apply-group-top" style="display:none">Apply to Entire Unit Group</button>
             <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
             <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
           </div>
@@ -1039,6 +1036,10 @@
       </div>
     </div>
 
+    <div id="pbe-save-return-preview-row">
+      <button class="btn btn-gold btn-block" id="pbe-save-return-preview">💾 Save &amp; Return to Project</button>
+    </div>
+
     <!-- Build manifest editor (used by manifest_editor.js) -->
     <div id="pbe-manifest-section">
       <div class="card" id="card-manifest" hidden>
@@ -1053,7 +1054,10 @@
     </div>
 
     <div id="pbe-footer">
-      <button class="btn btn-secondary" id="pbe-create-preset-btn" style="display:none">Create Preset from this Setup</button>
+      <div id="pbe-action-row" style="display:none;gap:8px;margin-bottom:8px">
+        <button class="btn btn-secondary" id="pbe-create-preset-btn" style="flex:1">Save as New Preset?</button>
+        <button class="btn btn-secondary" id="pbe-apply-group-btn" style="flex:1">Apply to Entire Unit Group</button>
+      </div>
       <button class="btn btn-gold btn-block" id="pbe-save-return">💾 Save &amp; Return to Project</button>
     </div>
   </div><!-- end proj-build-editor -->
@@ -1081,6 +1085,18 @@
 </div>
 
 <!-- ══ SALES REP CREATE/EDIT MODAL ══ -->
+<div class="modal-overlay" id="del-project-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Delete Project</div>
+    <p id="del-project-modal-msg" style="margin:0 0 16px;font-size:13px;color:var(--text)"></p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-danger" id="del-with-files-btn" style="width:100%">Delete Project + Output Files</button>
+      <button class="btn btn-secondary" id="del-proj-only-btn" style="width:100%">Delete Project Only</button>
+      <button class="btn btn-secondary" id="del-cancel-btn" style="width:100%">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="sr-create-modal" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:380px">
     <div class="modal-title">Sales Rep
@@ -1421,6 +1437,15 @@
     <div class="modal-title">
       <span id="me-modal-title">Edit Part</span>
       <button class="modal-close" onclick="meCancelModal()" title="Close">✕</button>
+    </div>
+
+    <div class="me-status-row">
+      <button type="button" class="me-status-btn" data-value="New">New</button>
+      <button type="button" class="me-status-btn" data-value="Used">Used</button>
+      <button type="button" class="me-status-btn" data-value="Reused">Reused</button>
+    </div>
+    <div id="me-reused-source-row" style="display:none;margin-bottom:12px">
+      <input id="me-source" type="text" placeholder="Where will this part come from?">
     </div>
 
     <div class="form-group" style="margin-bottom:12px">

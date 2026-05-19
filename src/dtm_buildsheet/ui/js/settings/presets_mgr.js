@@ -6,6 +6,7 @@
   let _editId    = null;  // preset_id being edited; null = new
   let _importParts = null;              // parts array from workbook import, held while modal is open
   let _importPlacementOverrides = {};   // placement_overrides from build editor draft
+  let _contextProject = null;           // project passed from build editor for post-save update prompt
 
   let _BT_OPTIONS = ["Patrol", "Unmarked", "Admin", "K-9", "Fire"];  // overwritten from API
 
@@ -143,15 +144,21 @@
   function _openModal(preset) {
     _editId = preset?.preset_id || null;
 
-    // Populate agency multi-select
+    // Populate agency radio buttons (single selection, or None for general preset)
     const agContainer = $("pem-agency-checks");
     if (agContainer) {
-      agContainer.innerHTML = _agencies.map(a => `
-        <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
-          <input type="checkbox" value="${esc(a.agency_id)}"
-            ${(preset?.agency_ids || []).includes(a.agency_id) ? "checked" : ""}>
-          ${esc(a.name)}
-        </label>`).join("") || `<p style="font-size:12px;color:var(--muted);margin:0">No agencies added yet.</p>`;
+      const selectedId = (preset?.agency_ids || [])[0] || "";
+      agContainer.innerHTML =
+        `<label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
+          <input type="radio" name="pem-agency-radio" value="" ${!selectedId ? "checked" : ""}>
+          <em style="color:var(--muted)">None (General preset)</em>
+        </label>` +
+        (_agencies.map(a => `
+          <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
+            <input type="radio" name="pem-agency-radio" value="${esc(a.agency_id)}"
+              ${selectedId === a.agency_id ? "checked" : ""}>
+            ${esc(a.name)}
+          </label>`).join("") || "");
     }
 
     // Populate vehicle multi-select
@@ -204,6 +211,7 @@
     _editId = null;
     _importParts = null;
     _importPlacementOverrides = {};
+    _contextProject = null;
   }
 
   function _getSelectedValues(containerId) {
@@ -212,8 +220,15 @@
     return [...el.querySelectorAll("input:checked")].map(cb => cb.value);
   }
 
+  function _getSelectedAgency() {
+    const el = $("pem-agency-checks");
+    if (!el) return [];
+    const checked = el.querySelector("input[name='pem-agency-radio']:checked");
+    return checked && checked.value ? [checked.value] : [];
+  }
+
   function _updateNamePreview() {
-    const agencyIds   = _getSelectedValues("pem-agency-checks");
+    const agencyIds   = _getSelectedAgency();
     const buildTypes  = _getSelectedValues("pem-bt-checks");
     const vehicleKeys = _getSelectedValues("pem-vehicle-checks");
     const tag         = ($("pem-tag")?.value || "").trim();
@@ -226,8 +241,35 @@
     if (preview) preview.textContent = name || "(auto-generated)";
   }
 
+  async function _offerUpdateBuilds(presetId) {
+    if (!_contextProject || !presetId) return;
+    const affectedUnits = (_contextProject.build_units || [])
+      .filter(u => u.preset_id === presetId);
+    if (!affectedUnits.length) return;
+    const agency = _contextProject.customer?.agency || "this project";
+    const names  = affectedUnits.map(u =>
+      [u.build_type, u.vehicle_model].filter(Boolean).join(" ")
+    ).join(", ");
+    if (!confirm(`${affectedUnits.length} build group(s) in "${agency}" use this preset (${names}).\n\nUpdate those builds with the new preset parts?`)) return;
+    let updated = 0;
+    for (const unit of affectedUnits) {
+      for (const ind of (unit.individuals || [])) {
+        if (!ind.draft_id) continue;
+        try {
+          const r = await api("/api/draft/save", {
+            draft_id:            ind.draft_id,
+            parts:               _importParts || [],
+            placement_overrides: _importPlacementOverrides || {},
+          });
+          if (r.ok) updated++;
+        } catch (_) {}
+      }
+    }
+    if (updated) toast(`Updated ${updated} build(s) with new preset`, "success");
+  }
+
   async function _saveModal() {
-    const agencyIds   = _getSelectedValues("pem-agency-checks");
+    const agencyIds   = _getSelectedAgency();
     const buildTypes  = _getSelectedValues("pem-bt-checks");
     const vehicleKeys = _getSelectedValues("pem-vehicle-checks");
     const tag         = ($("pem-tag")?.value || "").trim();
@@ -263,6 +305,7 @@
       });
       if (!r2?.ok) { toast(r2?.error || "Save failed", "error"); return; }
       toast(`Preset saved: ${r2.label}`, "success");
+      await _offerUpdateBuilds(r2.preset_id);
       _closeModal();
       await _load();
       return;
@@ -270,6 +313,8 @@
 
     if (!res?.ok) { toast(res?.error || "Save failed", "error"); return; }
     toast(`Preset saved: ${res.label}`, "success");
+    await _offerUpdateBuilds(res.preset_id);
+
     _closeModal();
     await _load();
   }
@@ -319,10 +364,11 @@
    * @param {Object} placementOverrides - draft.placement_overrides dict
    * @param {Object} defaults           - { agencyIds, vehicleTypes, buildTypes }
    */
-  window.pmOpenFromDraft = async function (parts, placementOverrides, defaults) {
+  window.pmOpenFromDraft = async function (parts, placementOverrides, defaults, project) {
     await Promise.all([_load(), _loadVehicles()]);
-    _importParts            = parts || [];
+    _importParts              = parts || [];
     _importPlacementOverrides = placementOverrides || {};
+    _contextProject           = project || null;
     _editId                 = null;
     const scaffold = {
       preset_id:     null,
@@ -394,7 +440,13 @@
       };
     }
 
-    // Modal wiring — attach once
+    // Modal wiring — idempotent, safe to call again
+    _wireModalButtons();
+  };
+
+  // ── modal button wiring (runs once at load, safe to call from any context) ──
+
+  function _wireModalButtons() {
     const saveBtn = $("pem-save");
     if (saveBtn && !saveBtn._pmWired) {
       saveBtn._pmWired = true;
@@ -415,8 +467,6 @@
       exportBtn._pmWired = true;
       exportBtn.onclick = () => { if (_editId) pmExport(_editId, _editId); };
     }
-
-    // Live name preview — delegate to container divs
     ["pem-agency-checks", "pem-vehicle-checks", "pem-bt-checks"].forEach(id => {
       const el = $(id);
       if (el && !el._pmWired) {
@@ -429,7 +479,10 @@
       tagEl._pmWired = true;
       tagEl.oninput = _updateNamePreview;
     }
-  };
+  }
+
+  // Wire immediately so the modal works even if Settings tab is never visited
+  _wireModalButtons();
 
   // ── util ──────────────────────────────────────────────────────────────────
 

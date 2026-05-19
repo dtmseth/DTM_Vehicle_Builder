@@ -80,6 +80,7 @@ def handle_save_override(draft_id: str, body: dict, paths: AppPaths) -> dict:
     """Merge a single placement override into draft.placement_overrides.
 
     Body: {"key": "{part_id}:{view}", "override": {visible, rotation, ...}}
+    An empty override dict removes that key (treated as a reset).
     """
     try:
         draft = load_draft(draft_id, paths.workspace_drafts_dir)
@@ -87,7 +88,11 @@ def handle_save_override(draft_id: str, body: dict, paths: AppPaths) -> dict:
         override = body.get("override", {})
         if not key:
             return {"ok": False, "error": "key required"}
-        draft.placement_overrides[key] = override
+        if override:
+            draft.placement_overrides[key] = override
+            draft.user_modified = True
+        else:
+            draft.placement_overrides.pop(key, None)
         save_draft(draft, paths.workspace_drafts_dir)
         return {"ok": True, "draft_id": draft_id, "key": key}
     except FileNotFoundError:
@@ -100,14 +105,23 @@ def handle_save_overrides_batch(draft_id: str, body: dict, paths: AppPaths) -> d
     """Save multiple placement overrides atomically.
 
     Body: {"overrides": {"key1": {...}, "key2": {...}}}
-    Empty dict value for a key clears that override.
+    Empty dict value for a key removes that override (treated as a reset).
+    Sets user_modified when at least one non-empty override is written.
     """
     try:
         draft = load_draft(draft_id, paths.workspace_drafts_dir)
         overrides = body.get("overrides", {})
         if not isinstance(overrides, dict):
             return {"ok": False, "error": "overrides must be a dict"}
-        draft.placement_overrides.update(overrides)
+        has_real_change = False
+        for key, value in overrides.items():
+            if value:
+                draft.placement_overrides[key] = value
+                has_real_change = True
+            else:
+                draft.placement_overrides.pop(key, None)
+        if has_real_change:
+            draft.user_modified = True
         save_draft(draft, paths.workspace_drafts_dir)
         return {"ok": True, "draft_id": draft_id, "count": len(overrides)}
     except FileNotFoundError:
@@ -216,19 +230,49 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         log_lines.append(f"Vehicle type: {project.info.get('VehicleType', '?')}")
         log_lines.append(f"Parts: {len(project.parts)}")
 
-        # Resolve project-level export directory override
+        # Resolve project-level export directory.
+        # Priority: explicit project.export_dir → project_output_root derived dir
+        #           → legacy output_save_dir (handled by finalize_output).
         _project_export_dir = None
         _proj_id_param = body.get("project_id", "")
         if _proj_id_param:
             try:
+                from pathlib import Path as _Path
                 from ...inputs.project_entry import load_project
+                from ...inputs.project_dirs import ensure_project_output_dir
+                from ...config.store import load_config
                 _proj_rec = load_project(_proj_id_param, paths)
+
+                # Freshen UNIT ID, YEAR, and BuildType from the current project
+                # data so values set after draft creation are reflected in output.
+                for _bu in _proj_rec.build_units:
+                    for _idx, _ind in enumerate(_bu.individuals):
+                        if _ind.draft_id == draft_id:
+                            _nv = dict(project.info.get("NewVehicle") or {})
+                            _nv["UNIT ID"] = _ind.unit_number or f"Unit-{_idx + 1}"
+                            _ind_year = _ind.year or _proj_rec.customer.build_year or ""
+                            if _ind_year:
+                                _nv["YEAR"] = _ind_year
+                            project.info["NewVehicle"] = _nv
+                            project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
+                            break
+
                 _ed = (_proj_rec.export_dir or "").strip()
                 if _ed:
-                    from pathlib import Path as _Path
+                    # Explicit per-project directory — create if missing
                     _candidate = _Path(_ed)
-                    if _candidate.is_dir():
-                        _project_export_dir = _candidate
+                    _candidate.mkdir(parents=True, exist_ok=True)
+                    _project_export_dir = _candidate
+                else:
+                    # Derive from project_output_root setting
+                    _settings = load_config("app_settings.json", paths) or {}
+                    _root = _settings.get("project_output_root", "").strip()
+                    if _root:
+                        _agency = (_proj_rec.customer.agency or "").strip()
+                        _year = (_proj_rec.customer.build_year or "").strip()
+                        _project_export_dir = ensure_project_output_dir(
+                            _root, _agency, _year
+                        )
             except Exception:
                 pass
 
@@ -274,9 +318,30 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                     all_warnings.extend(inst.warnings)
 
         from .generation_service import finalize_output
+        import re as _re
+        from pathlib import Path as _Path
         export = finalize_output(ppt_path, paths, project_export_dir=_project_export_dir)
 
-        return {
+        # Detect rename: if the caller supplied the previous output path and the
+        # stable filename prefix (everything before the timestamp) has changed,
+        # the old file is now an orphan.  Return it so the UI can prompt the user.
+        _ts_pat = _re.compile(r'_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$')
+        _existing_path_str = body.get("existing_output_path", "")
+        name_changed: dict | None = None
+        if _existing_path_str:
+            _old = _Path(_existing_path_str)
+            _new = _Path(export["output_path"])
+            _old_prefix = _ts_pat.sub("", _old.stem)
+            _new_prefix = _ts_pat.sub("", _new.stem)
+            if _old_prefix != _new_prefix and _old.exists():
+                name_changed = {
+                    "old_path": str(_old),
+                    "old_name": _old.name,
+                    "new_path": export["output_path"],
+                    "new_name": export["output_name"],
+                }
+
+        result: dict = {
             "ok": True,
             "output_name": export["output_name"],
             "output_path": export["output_path"],
@@ -289,6 +354,9 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             "all_warnings": all_warnings,
             "log": "\n".join(log_lines),
         }
+        if name_changed:
+            result["name_changed"] = name_changed
+        return result
     except FileNotFoundError as exc:
         return {"ok": False, "error": str(exc), "log": "\n".join(log_lines)}
     except Exception as exc:

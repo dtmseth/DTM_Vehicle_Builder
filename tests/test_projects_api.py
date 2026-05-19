@@ -249,7 +249,7 @@ class TestHandleCreateDraft:
         draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
         nv = draft.vehicle_info.get("NewVehicle", {})
         assert nv.get("MODEL") == "Tahoe PPV"
-        assert nv.get("UNIT ID") == "unit-1"
+        assert nv.get("UNIT ID") == "Group Build"
         assert draft.vehicle_info.get("ExistingVehicle") == {}
 
     def test_preset_parts_transferred(self, tmp_path):

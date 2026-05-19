@@ -276,16 +276,18 @@ def _safe_part(s: str) -> str:
 
 def build_output_filename(project: dict) -> str:
     """Build a timestamped export filename from project info."""
-    agency = _safe_part(str(project.get("Agency", "") or "Agency"))
-    new_v  = project.get("NewVehicle") or {}
-    old_v  = project.get("ExistingVehicle") or {}
-    unit   = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
-    year   = _safe_part(str(new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
-    now    = datetime.now()
-    hour   = now.hour % 12 or 12
-    ampm   = "AM" if now.hour < 12 else "PM"
-    ts     = now.strftime(f"%b%d_%Y_{hour}-{now.strftime('%M-%S')}{ampm}")
-    return f"{agency}_{unit}_{year}_Updated_{ts}.pptx"
+    agency     = _safe_part(str(project.get("Agency", "") or "Agency"))
+    build_type = _safe_part(str(project.get("BuildType", "") or ""))
+    new_v      = project.get("NewVehicle") or {}
+    old_v      = project.get("ExistingVehicle") or {}
+    unit       = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
+    year       = _safe_part(str(new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
+    now        = datetime.now()
+    hour       = now.hour % 12 or 12
+    ampm       = "AM" if now.hour < 12 else "PM"
+    ts         = now.strftime(f"%b%d_%Y_{hour}-{now.strftime('%M-%S')}{ampm}")
+    parts      = [p for p in [agency, build_type, unit, year] if p and p != "Unknown"]
+    return "_".join(parts) + f"_Updated_{ts}.pptx"
 
 
 def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:

@@ -34,13 +34,18 @@ function _ptLoadForm(project) {
 
   $("proj-bumper-brand").value = pr.push_bumper_brand || "";
   $("proj-cage-brand").value   = pr.cage_brand        || "";
-  $("proj-slick-top").checked  = !!pr.slick_top;
   $("proj-pref-notes").value   = pr.notes             || "";
 
-  const selectedBrands = new Set(pr.lighting_brands || []);
-  document.querySelectorAll(".proj-lighting-brand-cb").forEach(cb => {
-    cb.checked = selectedBrands.has(cb.value);
-  });
+  const lightingContainer = $("proj-lighting-checkboxes");
+  if (lightingContainer) {
+    const lightOptions  = _ptLightingBrandsFromConfig();
+    const selectedBrands = new Set(pr.lighting_brands || []);
+    lightingContainer.innerHTML = lightOptions.map(m =>
+      `<label class="proj-brand-check-label">
+        <input type="checkbox" class="proj-lighting-brand-cb" value="${esc(m)}"${selectedBrands.has(m) ? " checked" : ""}> ${esc(m)}
+      </label>`
+    ).join("");
+  }
 
   _PT.units = (project?.build_units || []).map(u => ({
     uid:           u.unit_id       || _ptUuid(),
@@ -357,7 +362,6 @@ function _ptBuildPayload() {
       push_bumper_brand: $("proj-bumper-brand")?.value.trim() || "",
       cage_brand:        $("proj-cage-brand")?.value.trim()   || "",
       lighting_brands:   lightingBrands,
-      slick_top:         !!$("proj-slick-top")?.checked,
       notes:             $("proj-pref-notes")?.value.trim()   || "",
     },
     build_units: _PT.units.map(u => ({
@@ -406,7 +410,6 @@ async function _ptSaveProject() {
       const updated = _PT.projects.find(p => p.project_id === _PT.editId);
       toast("Project saved", "success");
       if (statusEl) statusEl.style.display = "none";
-      _PT.saving = false;
       setTimeout(() => {
         if (updated) _ptShowDetail(updated);
         else _ptShowList();
@@ -415,14 +418,12 @@ async function _ptSaveProject() {
       const msg = res.error || "Save failed";
       toast(msg, "error");
       if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
-      if (finBtn)  finBtn.disabled  = false;
-      if (saveBtn) saveBtn.disabled = false;
-      _PT.saving = false;
     }
   } catch (e) {
     const msg = e.message || "Unexpected error";
     toast(msg, "error");
     if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
+  } finally {
     if (finBtn)  finBtn.disabled  = false;
     if (saveBtn) saveBtn.disabled = false;
     _PT.saving = false;

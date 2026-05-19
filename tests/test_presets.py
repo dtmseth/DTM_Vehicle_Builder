@@ -561,3 +561,33 @@ class TestLoadPresetDict:
         paths = _paths_empty(tmp_path)
         with pytest.raises(FileNotFoundError):
             load_preset_dict("nonexistent", paths)
+
+
+# ── bundled preset sanity ──────────────────────────────────────────────────────
+
+class TestBundledPresetSanity:
+    """Every bundled preset that is not blank_custom must have at least one part.
+
+    This regression test prevents silently shipping presets with empty parts
+    arrays that would produce empty build editors when users set up a project.
+    """
+
+    def test_non_blank_bundled_presets_have_parts(self, tmp_path):
+        paths = _make_paths(tmp_path)
+        presets = list_presets(paths)
+        empty_non_blank = []
+        for p in presets:
+            if p["preset_id"] == "blank_custom":
+                continue
+            parts = load_preset(p["preset_id"], paths)
+            if len(parts) == 0:
+                empty_non_blank.append(p["preset_id"])
+        assert empty_non_blank == [], (
+            f"Bundled presets with no parts (should have parts or be blank_custom): "
+            f"{empty_non_blank}"
+        )
+
+    def test_blank_custom_is_intentionally_empty(self, tmp_path):
+        paths = _make_paths(tmp_path)
+        parts = load_preset("blank_custom", paths)
+        assert parts == []

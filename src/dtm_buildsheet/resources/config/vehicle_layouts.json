@@ -1763,6 +1763,14 @@
               "orientation": "h",
               "slot_count": 1,
               "pattern": "single"
+            },
+            "REAR LEFT ROOF": {
+              "x": 0.839,
+              "y": 0.624,
+              "units": "relative_image",
+              "orientation": "h",
+              "slot_count": 1,
+              "pattern": "single"
             }
           }
         },

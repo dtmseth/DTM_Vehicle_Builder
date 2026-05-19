@@ -217,9 +217,10 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
   if (!project) return;
   const unit = project.build_units[unitIndex];
   if (!unit) return;
+  const individual = (unit.individuals || []).find(i => i.individual_id === individualId);
 
   if (existingDraftId) {
-    await _ptShowBuildEditor(existingDraftId, unit, project, "builds");
+    await _ptShowBuildEditor(existingDraftId, unit, project, "builds", individual);
   } else {
     const statusEl = $("proj-action-status");
     if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "ok");
@@ -234,7 +235,9 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
       await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === projectId) || project;
       _PT.viewProject = updated;
-      await _ptShowBuildEditor(res.draft_id, unit, updated, "builds");
+      const updatedUnit = updated.build_units.find(u => u.unit_id === unitId) || unit;
+      const updatedInd  = (updatedUnit.individuals || []).find(i => i.individual_id === individualId) || individual;
+      await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "builds", updatedInd);
     } catch (e) {
       if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Error"), "err");
     }
@@ -247,12 +250,14 @@ window.PT_buildGenerate = async function (projectId, unitId, individualId, type)
   const unit = project.build_units.find(u => u.unit_id === unitId);
   if (!unit) return;
 
-  let draftId;
+  let draftId, existingOutputPath = "";
   if (type === "ind") {
     const ind = (unit.individuals || []).find(i => i.individual_id === individualId);
     draftId = ind?.draft_id;
+    existingOutputPath = ind?.output_path || "";
   } else {
     draftId = unit.draft_id;
+    existingOutputPath = unit.output_path || "";
   }
   if (!draftId) { toast("No build configured for this unit", "error"); return; }
 
@@ -266,7 +271,11 @@ window.PT_buildGenerate = async function (projectId, unitId, individualId, type)
   if (genBtn) genBtn.disabled = true;
 
   try {
-    const res = await api("/api/draft/generate", { draft_id: draftId, project_id: projectId });
+    const res = await api("/api/draft/generate", {
+      draft_id: draftId,
+      project_id: projectId,
+      existing_output_path: existingOutputPath,
+    });
     if (res.ok) {
       const outputPath = res.output_path || "";
       const updatedUnits = project.build_units.map(u => {
@@ -289,6 +298,19 @@ window.PT_buildGenerate = async function (projectId, unitId, individualId, type)
       }
       toast("Build sheet generated: " + (res.output_name || ""), "success");
       if (statusEl) statusEl.style.display = "none";
+
+      // Rename conflict: old file still exists under a different name
+      if (res.name_changed) {
+        const nc = res.name_changed;
+        const choice = confirm(
+          `The unit details changed, so the new build sheet has a different name.\n\n` +
+          `Old file: ${nc.old_name}\nNew file: ${nc.new_name}\n\n` +
+          `OK = Delete the old file\nCancel = Keep both`
+        );
+        if (choice) {
+          await api("/api/generate/delete-old", { files: [nc.old_path] });
+        }
+      }
     } else {
       const msg = res.error || "Generation failed";
       toast(msg, "error");
@@ -503,7 +525,9 @@ window.PT_startBuildIndividual = async function (projectId, unitIndex, individua
     await _ptLoadAll();
     const updated = _PT.projects.find(p => p.project_id === projectId) || project;
     _PT.viewProject = updated;
-    await _ptShowBuildEditor(res.draft_id, unit, updated, "builds");
+    const updatedUnit = updated.build_units.find(u => u.unit_id === unit.unit_id) || unit;
+    const updatedInd  = (updatedUnit.individuals || []).find(i => i.individual_id === individualId);
+    await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "builds", updatedInd);
   } catch (e) {
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Unexpected error"), "err");
   }
