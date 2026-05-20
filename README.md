@@ -83,6 +83,8 @@ Run automated tests:
 .venv/bin/python -m pytest
 ```
 
+Versioning follows Semantic Versioning. See `docs/VERSIONING.md` before publishing a release.
+
 If the app fails to launch with "Port 7655 is already in use", a previous instance is still running:
 ```bash
 lsof -ti :7655 | xargs kill

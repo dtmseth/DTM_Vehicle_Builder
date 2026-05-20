@@ -18,6 +18,56 @@ _pyproject = ROOT / "pyproject.toml"
 _version_match = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject.read_text(), re.MULTILINE)
 APP_VERSION = _version_match.group(1) if _version_match else "0.0.0"
 
+
+def _windows_version_file(version: str) -> str | None:
+    if _sys.platform == "darwin":
+        return None
+    parts = [int(p) for p in version.split("-")[0].split(".")[:3]]
+    while len(parts) < 3:
+        parts.append(0)
+    major, minor, patch = parts[:3]
+    version_tuple = (major, minor, patch, 0)
+    version_file = ROOT / "build" / "DTM_VehicleBuilder_version_info.txt"
+    version_file.parent.mkdir(exist_ok=True)
+    version_file.write_text(
+        f"""# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers={version_tuple},
+    prodvers={version_tuple},
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '040904B0',
+        [
+          StringStruct('CompanyName', 'DTM'),
+          StringStruct('FileDescription', '{APP_NAME}'),
+          StringStruct('FileVersion', '{version}'),
+          StringStruct('InternalName', '{APP_NAME}'),
+          StringStruct('OriginalFilename', '{APP_NAME}.exe'),
+          StringStruct('ProductName', '{APP_NAME}'),
+          StringStruct('ProductVersion', '{version}')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+""",
+        encoding="utf-8",
+    )
+    return str(version_file)
+
+
+VERSION_FILE = _windows_version_file(APP_VERSION)
+
 datas = collect_data_files("dtm_buildsheet")
 
 # Explicitly bundle resources so they're always present regardless of
@@ -81,6 +131,7 @@ exe = EXE(
     entitlements_file=None,
     icon=icon_path,
     manifest=manifest_path,
+    version=VERSION_FILE,
 )
 
 coll = COLLECT(

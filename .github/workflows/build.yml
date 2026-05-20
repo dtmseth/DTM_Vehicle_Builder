@@ -6,23 +6,21 @@ on:
   workflow_dispatch:
     inputs:
       bump_type:
-        description: 'Version bump type (for minor/major releases only)'
+        description: 'Semantic version bump for a release'
         type: choice
-        options: [patch, minor, major]
-        default: patch
+        options: [current, patch, minor, major]
+        default: current
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # Bump version first, then build from the tagged commit.
-  # The commit message contains [skip ci] so the push-back doesn't re-trigger this workflow.
   version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
-      version: ${{ steps.bump.outputs.version }}
+      version: ${{ steps.bump.outputs.version || steps.current.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,19 +28,45 @@ jobs:
           fetch-depth: 0
 
       - name: Configure git
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Read current version
+        id: current
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.bump_type == 'current'
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Bump version
         id: bump
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.bump_type != 'current'
         run: |
           pip install bump-my-version
-          BUMP_TYPE="${{ github.event.inputs.bump_type || 'patch' }}"
+          BUMP_TYPE="${{ github.event.inputs.bump_type }}"
           bump-my-version bump "$BUMP_TYPE"
           VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           git push origin main --follow-tags
+
+      - name: Tag current version
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.bump_type == 'current'
+        run: |
+          VERSION="${{ steps.current.outputs.version }}"
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            TAG_SHA="$(git rev-parse "$TAG")"
+            HEAD_SHA="$(git rev-parse HEAD)"
+            if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+              echo "::error::${TAG} already exists at ${TAG_SHA}, but this release would use ${HEAD_SHA}. Delete or move the incorrect tag before publishing."
+              exit 1
+            fi
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
 
   build-mac:
     needs: version
@@ -116,6 +140,7 @@ jobs:
           path: dist/DTM_Vehicle_Builder_Setup.exe
 
   publish:
+    if: github.event_name == 'workflow_dispatch'
     needs: [version, build-mac, build-windows]
     runs-on: ubuntu-latest
     permissions:
