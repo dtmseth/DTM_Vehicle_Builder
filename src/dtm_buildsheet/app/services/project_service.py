@@ -172,7 +172,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         DraftPart(
             name=p.name,
             include=p.include,
-            new_or_used=p.new_or_used,
+            new_or_used=p.new_or_used or "New",
             source=p.source,
             manufacturer=p.manufacturer,
             part_number=p.part_number,
@@ -275,7 +275,7 @@ def handle_create_individual_draft(
         DraftPart(
             name=p.name,
             include=p.include,
-            new_or_used=p.new_or_used,
+            new_or_used=p.new_or_used or "New",
             source=p.source,
             manufacturer=p.manufacturer,
             part_number=p.part_number,

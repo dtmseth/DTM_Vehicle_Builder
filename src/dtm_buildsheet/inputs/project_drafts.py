@@ -51,7 +51,7 @@ class DraftPart:
     placement_overrides dict for per-build layout adjustments."""
     name: str
     include: bool = True
-    new_or_used: str = ""
+    new_or_used: str = "New"
     source: str = ""
     manufacturer: str = ""
     part_number: str = ""

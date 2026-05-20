@@ -21,15 +21,13 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 _PART_FIELDS = {
-    "name", "include", "new_or_used", "source", "manufacturer", "part_number",
+    "name", "include", "manufacturer", "part_number",
     "location", "raw_color", "quantity", "lens", "notes",
     "explicit_color_profile", "driver_color", "passenger_color", "center_color",
 }
 
 _PART_DEFAULTS: dict = {
     "include": True,
-    "new_or_used": "",
-    "source": "",
     "manufacturer": "",
     "part_number": "",
     "location": "",
@@ -201,8 +199,8 @@ def _part_input_from_dict(d: dict) -> PartInput:
     return PartInput(
         name=d["name"],
         include=bool(d.get("include", True)),
-        new_or_used=str(d.get("new_or_used", "")),
-        source=str(d.get("source", "")),
+        new_or_used="",
+        source="",
         manufacturer=str(d.get("manufacturer", "")),
         part_number=str(d.get("part_number", "")),
         location=str(d.get("location", "")),

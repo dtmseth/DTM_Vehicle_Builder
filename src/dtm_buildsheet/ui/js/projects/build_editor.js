@@ -110,7 +110,7 @@ async function _ptApplyToUnitGroup() {
     return;
   }
 
-  if (!confirm(`Apply this build configuration to all ${siblings.length} other unit(s) in this group?\n\nThis will overwrite any existing build changes and set up any units that haven't been configured yet.`)) return;
+  if (!confirm(`Apply this build configuration to all ${siblings.length} other unit(s) in this group?\n\nThis will copy all parts, quantities, colors, placement overrides, and part status (New / Used / Reused) to every other unit — overwriting any existing build changes and setting up any units that haven't been configured yet.`)) return;
 
   const draftRes = await api(`/api/draft/${encodeURIComponent(currentDraftId)}`);
   if (!draftRes?.ok) { toast("Could not load current draft", "error"); return; }

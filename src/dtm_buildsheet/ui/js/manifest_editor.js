@@ -41,16 +41,25 @@ function _meSectionFor(partName) {
   return sec?.id || "_other";
 }
 
+function _meStatusRowStyle(status) {
+  if (status === "New")    return ' style="background:#eaf4fd"';
+  if (status === "Used" || status === "Reused") return ' style="background:#fff3e0"';
+  return "";
+}
+
 function _meMakeRows(parts) {
   return parts.map(p => {
     const mfgModel = [p.manufacturer, p.part_number].filter(Boolean).join(" / ") || "—";
-    return `<tr>
+    const statusLabel = p.new_or_used
+      ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used))
+      : "—";
+    return `<tr${_meStatusRowStyle(p.new_or_used)}>
       <td style="font-weight:500;max-width:160px;word-break:break-word">${esc(p.name)}</td>
       <td style="color:var(--muted)">${esc(p.location || "—")}</td>
       <td>${esc(p.raw_color || "—")}</td>
       <td style="text-align:center">${p.quantity || "—"}</td>
       <td style="color:var(--muted);font-size:11px">${esc(mfgModel)}</td>
-      <td style="font-size:11px;color:var(--muted)">${p.new_or_used ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used)) : "—"}</td>
+      <td style="font-size:11px;color:var(--muted)">${statusLabel}</td>
       <td><span class="badge ${p.include ? "badge-on" : "badge-off"}">${p.include ? "Yes" : "No"}</span></td>
       <td class="me-row-actions">
         <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(p.line_id)}" title="Edit">≡</button>
