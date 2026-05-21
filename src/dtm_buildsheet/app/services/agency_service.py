@@ -13,6 +13,7 @@ from pathlib import Path
 from ...domain.agency_models import AgencyRecord
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
+from ...storage.safety import validate_safe_id
 
 _log = logging.getLogger(__name__)
 
@@ -29,9 +30,119 @@ _ABBREV: list[tuple[str, str]] = [
 ]
 
 
-def _agencies_path(paths: AppPaths) -> Path:
+# ── paths ──────────────────────────────────────────────────────────────────────
+
+def _agencies_dir(paths: AppPaths) -> Path:
+    return paths.workspace_dir / "agencies"
+
+
+def _legacy_agencies_file(paths: AppPaths) -> Path:
     return paths.workspace_dir / "agencies.json"
 
+
+def _record_path(agency_id: str, paths: AppPaths) -> Path:
+    return _agencies_dir(paths) / f"{agency_id}.json"
+
+
+# ── in-memory cache ────────────────────────────────────────────────────────────
+#
+# Live fuzzy search fires every 220ms on keystroke. With monolithic JSON this was
+# one file read per request (cheap); with per-record JSON it would be one stat +
+# open + parse per record per keystroke. The cache loads the directory once on
+# first access and is updated per-record on save/delete.
+#
+# Keyed by str(agencies_dir) so tests with multiple AppPaths don't collide.
+
+_cache: dict[str, dict[str, AgencyRecord]] = {}
+
+
+def _cache_key(paths: AppPaths) -> str:
+    return str(_agencies_dir(paths))
+
+
+def _record_from_dict(rec: dict) -> AgencyRecord:
+    # Old records may have a single contact_info field instead of phone/email.
+    old_info = str(rec.get("contact_info", ""))
+    contact_phone = str(rec.get("contact_phone", ""))
+    contact_email = str(rec.get("contact_email", ""))
+    if old_info and not contact_phone and not contact_email:
+        if "@" in old_info:
+            contact_email = old_info
+        else:
+            contact_phone = old_info
+    return AgencyRecord(
+        agency_id=str(rec.get("agency_id", "")),
+        name=str(rec.get("name", "")),
+        contact_name=str(rec.get("contact_name", "")),
+        contact_phone=contact_phone,
+        contact_email=contact_email,
+        customer_since=str(rec.get("customer_since", "")),
+        created_at=str(rec.get("created_at", "")),
+        updated_at=str(rec.get("updated_at", "")),
+    )
+
+
+def _load_records_from_disk(paths: AppPaths) -> dict[str, AgencyRecord]:
+    """Build the cache from disk.
+
+    Per-record dir wins. If it doesn't exist but the legacy monolithic
+    `agencies.json` does, one-shot migrate every record into the per-record dir
+    so future saves don't orphan the other entries. The legacy file is left in
+    place as a backup; future loads see the per-record dir and ignore it.
+    """
+    records: dict[str, AgencyRecord] = {}
+    per_record_dir = _agencies_dir(paths)
+    if per_record_dir.exists():
+        for path in per_record_dir.glob("*.json"):
+            try:
+                rec = _record_from_dict(json.loads(path.read_text("utf-8")))
+                if rec.agency_id:
+                    records[rec.agency_id] = rec
+            except Exception:
+                _log.exception("Skipping corrupt agency file: %s", path)
+        return records
+
+    legacy = _legacy_agencies_file(paths)
+    if not legacy.exists():
+        return records
+    try:
+        data = json.loads(legacy.read_text("utf-8"))
+        for rec in data.get("agencies", []):
+            record = _record_from_dict(rec)
+            if record.agency_id:
+                records[record.agency_id] = record
+    except Exception:
+        _log.exception("Unexpected error loading legacy agencies from %s", legacy)
+        return records
+
+    # One-shot migration: write every legacy record to the per-record dir so
+    # future saves treat that dir as the source of truth.
+    storage = LocalStorageProvider()
+    for record in records.values():
+        try:
+            validate_safe_id(record.agency_id, label="agency_id")
+            storage.write_text(
+                str(_record_path(record.agency_id, paths)),
+                json.dumps(asdict(record), indent=2) + "\n",
+            )
+        except Exception:
+            _log.exception("Failed to migrate agency %s to per-record file", record.agency_id)
+    _log.info("Migrated %d agencies from %s to %s", len(records), legacy, per_record_dir)
+    return records
+
+
+def _records(paths: AppPaths) -> dict[str, AgencyRecord]:
+    key = _cache_key(paths)
+    if key not in _cache:
+        _cache[key] = _load_records_from_disk(paths)
+    return _cache[key]
+
+
+def _invalidate_cache(paths: AppPaths) -> None:
+    _cache.pop(_cache_key(paths), None)
+
+
+# ── persistence ────────────────────────────────────────────────────────────────
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -39,7 +150,6 @@ def _utcnow() -> str:
 
 def _normalize(text: str) -> str:
     text = text.lower().strip()
-    # strip punctuation except letters, digits, spaces
     text = re.sub(r"[^\w\s]", " ", text)
     for pattern, replacement in _ABBREV:
         text = re.sub(pattern, replacement, text)
@@ -47,50 +157,36 @@ def _normalize(text: str) -> str:
     return text
 
 
-def load_agencies(paths: AppPaths) -> list[AgencyRecord]:
-    p = _agencies_path(paths)
-    if not p.exists():
-        return []
-    try:
-        data = json.loads(p.read_text("utf-8"))
-        results = []
-        for rec in data.get("agencies", []):
-            # backward compat: old records may have contact_info instead of phone/email
-            old_info = str(rec.get("contact_info", ""))
-            contact_phone = str(rec.get("contact_phone", ""))
-            contact_email = str(rec.get("contact_email", ""))
-            if old_info and not contact_phone and not contact_email:
-                if "@" in old_info:
-                    contact_email = old_info
-                else:
-                    contact_phone = old_info
-            results.append(AgencyRecord(
-                agency_id=str(rec.get("agency_id", "")),
-                name=str(rec.get("name", "")),
-                contact_name=str(rec.get("contact_name", "")),
-                contact_phone=contact_phone,
-                contact_email=contact_email,
-                customer_since=str(rec.get("customer_since", "")),
-                created_at=str(rec.get("created_at", "")),
-                updated_at=str(rec.get("updated_at", "")),
-            ))
-        return results
-    except Exception:
-        _log.exception("Unexpected error loading agencies from %s", p)
-        return []
-
-
-def _save_agencies(records: list[AgencyRecord], paths: AppPaths) -> None:
-    p = _agencies_path(paths)
+def _write_record(record: AgencyRecord, paths: AppPaths) -> None:
+    validate_safe_id(record.agency_id, label="agency_id")
     LocalStorageProvider().write_text(
-        str(p),
-        json.dumps({"schema_version": 1, "agencies": [asdict(r) for r in records]}, indent=2) + "\n",
+        str(_record_path(record.agency_id, paths)),
+        json.dumps(asdict(record), indent=2) + "\n",
     )
 
 
+def _delete_record_file(agency_id: str, paths: AppPaths) -> bool:
+    validate_safe_id(agency_id, label="agency_id")
+    path = _record_path(agency_id, paths)
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
+
+
+# ── public API ─────────────────────────────────────────────────────────────────
+
+def load_agencies(paths: AppPaths) -> list[AgencyRecord]:
+    """Return all agencies as a list (sorted by name for stable display).
+
+    Compatibility shim for callers that expect the pre-cache list shape. Reads
+    from the cache, never directly from disk.
+    """
+    return sorted(_records(paths).values(), key=lambda r: r.name.lower())
+
+
 def handle_list_agencies(paths: AppPaths) -> dict:
-    records = load_agencies(paths)
-    return {"ok": True, "agencies": [asdict(r) for r in records]}
+    return {"ok": True, "agencies": [asdict(r) for r in load_agencies(paths)]}
 
 
 def handle_search_agencies(query: str, paths: AppPaths) -> dict:
@@ -107,13 +203,11 @@ def handle_search_agencies(query: str, paths: AppPaths) -> dict:
     seen: set[str] = set()
     matches: list[dict] = []
 
-    # substring match first (catches partial typing like "cloud" → "St. Cloud PD")
     for i, nn in enumerate(norm_names):
         if norm_query in nn and records[i].agency_id not in seen:
             seen.add(records[i].agency_id)
             matches.append({"agency_id": records[i].agency_id, "name": records[i].name})
 
-    # fuzzy fallback for typos / abbreviation differences
     if len(matches) < 8:
         close = difflib.get_close_matches(norm_query, norm_names, n=8, cutoff=0.5)
         for match_norm in close:
@@ -128,17 +222,19 @@ def handle_search_agencies(query: str, paths: AppPaths) -> dict:
 
 def handle_save_agency(body: dict, paths: AppPaths) -> dict:
     try:
-        records = load_agencies(paths)
-        agency_id = str(body.get("agency_id", "")).strip()
         name = str(body.get("name", "")).strip()
         if not name:
             return {"ok": False, "error": "Agency name is required"}
+
+        agency_id = str(body.get("agency_id", "")).strip() or str(uuid.uuid4())
         contact_name = str(body.get("contact_name", "")).strip()
         contact_phone = str(body.get("contact_phone", "")).strip()
         contact_email = str(body.get("contact_email", "")).strip()
         customer_since = str(body.get("customer_since", "")).strip()
         now = _utcnow()
-        existing = next((r for r in records if r.agency_id == agency_id), None)
+
+        records = _records(paths)
+        existing = records.get(agency_id)
         if existing:
             existing.name = name
             existing.contact_name = contact_name
@@ -149,7 +245,7 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             record = existing
         else:
             record = AgencyRecord(
-                agency_id=agency_id or str(uuid.uuid4()),
+                agency_id=agency_id,
                 name=name,
                 contact_name=contact_name,
                 contact_phone=contact_phone,
@@ -158,21 +254,27 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
                 created_at=now,
                 updated_at=now,
             )
-            records.append(record)
-        _save_agencies(records, paths)
+            records[agency_id] = record
+
+        _write_record(record, paths)
         return {"ok": True, "agency": asdict(record)}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
     except Exception as exc:
+        _log.exception("Failed to save agency")
         return {"ok": False, "error": str(exc)}
 
 
 def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:
     try:
-        records = load_agencies(paths)
-        before = len(records)
-        records = [r for r in records if r.agency_id != agency_id]
-        if len(records) == before:
+        records = _records(paths)
+        if agency_id not in records:
             return {"ok": False, "error": f"Agency not found: {agency_id}"}
-        _save_agencies(records, paths)
+        _delete_record_file(agency_id, paths)
+        records.pop(agency_id, None)
         return {"ok": True}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
     except Exception as exc:
+        _log.exception("Failed to delete agency %s", agency_id)
         return {"ok": False, "error": str(exc)}
