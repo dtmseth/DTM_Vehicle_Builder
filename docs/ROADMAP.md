@@ -63,6 +63,11 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
+**Status snapshot** (2026-05-21):
+- ✅ **Phase 0** — complete. Released as v1.1.3.
+- ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
+- ⏳ **Phase 2** — pre-work done; implementation pending.
+
 ### Phase 0 — Foundation Refactor
 
 **Goal**: clean baseline for everything that follows. Truth up docs, kill silent failures, fix the path-portability problem before any feature work invents new bad patterns on top of it.

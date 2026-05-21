@@ -11,14 +11,31 @@ from pathlib import Path
 _log = logging.getLogger(__name__)
 
 
-PACKAGE_DIR = Path(__file__).resolve().parent
-DEV_PROJECT_ROOT = PACKAGE_DIR.parents[1]
-RESOURCES_DIR = PACKAGE_DIR / "resources"
-DEFAULT_CONFIG_DIR = RESOURCES_DIR / "config"
-DEFAULT_DATA_DIR = RESOURCES_DIR / "default_data"
-ASSETS_DIR = RESOURCES_DIR / "assets"
-TEMPLATES_DIR = RESOURCES_DIR / "templates"
-SAMPLES_DIR = DEV_PROJECT_ROOT / "samples"
+# ── Phase 1 path-scope classification ─────────────────────────────────────────
+#
+# Each path is tagged with how Phase 2 (SharePoint go-live) will treat it.
+# Tags:
+#   [bundled]         — ships inside the app package; never written at runtime.
+#   [local-only]      — per-machine state; stays on the user's disk (e.g.
+#                       app_settings.project_output_root, uploaded workbooks).
+#   [shared-settings] — reviewed via PR through the GitHub settings repo;
+#                       app reads from a local SharePoint mirror of /Settings/.
+#   [shared-work]     — last-writer-wins per record on SharePoint /Projects/,
+#                       /Drafts/, /Exports/, /Assets/.
+#
+# Phase 2 will add SETTINGS_DIR and SHARED_WORK_DIR resolvers; nothing here
+# changes structurally until then. The tags exist now so any new code in
+# Phase 1 lands with the right intent and a Phase 2 grep can find every site.
+
+# ── Bundled (read-only, ships with app) ───────────────────────────────────────
+PACKAGE_DIR = Path(__file__).resolve().parent             # [bundled]
+DEV_PROJECT_ROOT = PACKAGE_DIR.parents[1]                 # [bundled] dev only
+RESOURCES_DIR = PACKAGE_DIR / "resources"                 # [bundled]
+DEFAULT_CONFIG_DIR = RESOURCES_DIR / "config"             # [bundled] seed → workspace/config/
+DEFAULT_DATA_DIR = RESOURCES_DIR / "default_data"         # [bundled] seed → workspace root
+ASSETS_DIR = RESOURCES_DIR / "assets"                     # [bundled] seed → workspace/assets/
+TEMPLATES_DIR = RESOURCES_DIR / "templates"               # [bundled]
+SAMPLES_DIR = DEV_PROJECT_ROOT / "samples"                # [bundled] dev only
 
 
 def _is_dev_checkout() -> bool:
@@ -40,25 +57,33 @@ def _user_workspace_root() -> Path:
 
 _DEV = _is_dev_checkout()
 
+# ── Workspace root ────────────────────────────────────────────────────────────
 PROJECT_ROOT = DEV_PROJECT_ROOT if _DEV else _user_workspace_root()
 WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _DEV else PROJECT_ROOT
+# WORKSPACE_DIR is a mixed-scope umbrella. Phase 2 will split into a
+# settings-cache root (mirrors /Settings/) and a work root (mirrors /Projects/,
+# /Drafts/, etc.). Until then everything lives under this one directory.
 
-# In dev mode the GUI writes directly to the source tree so every config
-# and asset change is immediately visible to git — no manual syncing needed.
-# In the bundled app these point into the user's Application Support folder.
-WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _DEV else WORKSPACE_DIR / "config"
-WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"
+# ── Settings (shared via PR review in Phase 2) ────────────────────────────────
+# In dev mode the GUI writes directly to the source tree so every config /
+# asset / preset change is immediately visible to git and ships to users on
+# the next release. In the bundled app these point into the user's
+# Application Support folder.
+WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _DEV else WORKSPACE_DIR / "config"   # [shared-settings] (one file is [local-only]; see config/schemas.py)
+WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"   # [shared-settings]
+BUNDLED_PRESETS_DIR  = RESOURCES_DIR / "presets"                                  # [bundled]
+WORKSPACE_PRESETS_DIR = BUNDLED_PRESETS_DIR if _DEV else WORKSPACE_DIR / "presets"  # [shared-settings]
 
-WORKSPACE_INPUT_DIR    = WORKSPACE_DIR / "input"
-WORKSPACE_OUTPUT_DIR   = WORKSPACE_DIR / "output"
-WORKSPACE_DRAFTS_DIR   = WORKSPACE_DIR / "drafts"
-WORKSPACE_PROJECTS_DIR = WORKSPACE_DIR / "projects"
+# ── Work data (last-writer-wins per record on SharePoint in Phase 2) ──────────
+WORKSPACE_INPUT_DIR    = WORKSPACE_DIR / "input"     # [local-only] uploaded workbooks, transient
+WORKSPACE_OUTPUT_DIR   = WORKSPACE_DIR / "output"    # [shared-work] generated .pptx (Exports)
+WORKSPACE_DRAFTS_DIR   = WORKSPACE_DIR / "drafts"    # [shared-work] per-record JSON
+WORKSPACE_PROJECTS_DIR = WORKSPACE_DIR / "projects"  # [shared-work] {id}/project.json
 
-BUNDLED_PRESETS_DIR = RESOURCES_DIR / "presets"
-# In dev mode presets write directly into the source tree (same pattern as
-# WORKSPACE_CONFIG_DIR and WORKSPACE_ASSETS_DIR) so they are committed to git
-# and shipped to end users as bundled presets.
-WORKSPACE_PRESETS_DIR = BUNDLED_PRESETS_DIR if _DEV else WORKSPACE_DIR / "presets"
+# Top-level workspace files / dirs not exposed as AppPaths constants:
+#   workspace/agencies/{id}.json    [shared-work] (per-record; see agency_service)
+#   workspace/sales_reps/{id}.json  [shared-work] (per-record; see sales_rep_service)
+#   workspace/dtm_buildsheet.log    [local-only]  (server log)
 
 
 @dataclass(frozen=True)

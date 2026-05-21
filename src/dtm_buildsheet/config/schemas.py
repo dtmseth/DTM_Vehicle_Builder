@@ -11,15 +11,25 @@ from copy import deepcopy
 from ..naming import canonical_name
 
 REQUIRED_CONFIG_FILES = {
+    # [shared-settings] — reviewed via PR through the GitHub settings repo in
+    # Phase 2. Edits propose a change; the merged result syncs back to every
+    # user's app via SharePoint /Settings/.
     "part_catalog.json",
     "vehicle_layouts.json",
     "asset_manifest.json",
     "parts_library.json",
     "workbook_rules.json",
-    "app_settings.json",
     "build_rules.json",
     "project_options.json",
+    # [local-only] — per-machine. Never synced. Holds the user's
+    # project_output_root, template_save_dir, etc.
+    "app_settings.json",
 }
+
+# Phase 2 will partition this set across two roots. Settings flow through
+# /Settings/ on SharePoint with PR review; app_settings.json stays on the
+# user's disk and is never proposed or synced.
+_LOCAL_ONLY_CONFIG_FILES = {"app_settings.json"}
 
 _VALID_RENDER_KINDS = {"light", "bar", "equipment", "none"}
 _VALID_CATEGORIES = {
