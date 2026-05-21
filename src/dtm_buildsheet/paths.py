@@ -200,3 +200,43 @@ def ensure_workspace() -> AppPaths:
                     _log.exception("Failed to seed default data %s", data_filename)
 
     return paths
+
+
+# ── output path portability ────────────────────────────────────────────────────
+# Persisted records (ProjectRecord, BuildUnit, IndividualUnit) store output_path
+# as workspace-relative when the file lives under the workspace, so a record
+# authored on one machine resolves correctly on another. Paths outside the
+# workspace (e.g. a user-configured project_output_root in ~/Documents) are kept
+# absolute — Phase 1 tags app_settings.project_output_root as local-only.
+
+def resolve_output_path(stored: str, workspace_dir: Path | None = None) -> str:
+    """Resolve a stored output_path to an absolute filesystem path.
+
+    Empty or already-absolute values are returned verbatim; workspace-relative
+    values are joined against *workspace_dir* (defaults to the active workspace).
+    """
+    if not stored:
+        return ""
+    p = Path(stored)
+    if p.is_absolute():
+        return stored
+    root = workspace_dir or WORKSPACE_DIR
+    return str(root / p)
+
+
+def relativize_output_path(absolute: str, workspace_dir: Path | None = None) -> str:
+    """Convert an absolute output_path to workspace-relative POSIX if it lives under the workspace.
+
+    Empty values pass through. Already-relative values pass through. Absolute paths
+    outside the workspace also pass through unchanged (those are local-only).
+    """
+    if not absolute:
+        return ""
+    p = Path(absolute)
+    if not p.is_absolute():
+        return absolute
+    root = (workspace_dir or WORKSPACE_DIR).resolve()
+    try:
+        return p.resolve().relative_to(root).as_posix()
+    except ValueError:
+        return absolute

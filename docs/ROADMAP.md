@@ -71,7 +71,8 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 
 **Work**:
 - Fix stale docs: project storage is `workspace/projects/{id}/project.json` (subdirectory), not flat. Update `CLAUDE.md`, `AGENTS.md`, `docs/PROJECT_WORKFLOW.md`.
-- Add `logging.exception()` to the four truly silent `except` blocks (in `agency_service`, `sales_rep_service`, `project_service`).
+- **Audit all silent `except Exception` blocks across persistence and service layers.** Add `logging.exception()` to unexpected catch-alls; keep expected not-found/validation responses quiet. Known sites include `agency_service`, `sales_rep_service`, `project_service`, plus `inputs/project_drafts.py:266` and `inputs/project_entry.py:85` (both silently swallow corruption when iterating directories — broken records vanish from the UI). Don't limit to the originally-counted four.
+- **Standardize all file writes through atomic helpers.** `agency_service.py:78`, `sales_rep_service.py:43`, and `preset_service.py:323` currently use direct `Path.write_text` — these can corrupt files if the process is killed mid-write. Route them through `LocalStorageProvider().write_text()` (temp-file + atomic rename), same pattern as `config/store.py`. Doing this in Phase 0 (rather than Phase 1) means the per-record migration in Phase 1 inherits safe writes for free.
 - Make persisted output paths portable. **Important nuance**: the existing architecture already separates the local-only absolute root (`app_settings.json.project_output_root` consumed by `inputs/project_dirs.py:resolve_project_output_dir`) from the computed output directory. That separation is correct and stays. What needs to change is the per-record fields that store *resolved* paths:
   - `IndividualUnit.output_path` (set when a build sheet is generated) — migrate to workspace-relative; resolve to absolute at read time via `paths.resolve_output_path(stored_value)`.
   - `BuildUnit.output_path` — same.
@@ -101,6 +102,18 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 **Goal**: team collaboration is live. Users sign in with their M365 account and never see GitHub. Settings changes flow through PR review on GitHub behind the scenes. Project data syncs to SharePoint. The app auto-checks for updates on launch.
 
 **Exit condition**: a teammate on a fresh install can sign in with their M365 account, see all team projects, edit a preset, have that edit show up as a PR for the owner to review within ~5 minutes, and see a banner if a newer app version is available. The app never asks the user for any non-M365 credential.
+
+**Pre-work completed (2026-05-21)** — all three cloud connections were validated end-to-end before any Phase 2 code was written:
+- ✓ Python (MSAL) → Azure AD → Microsoft Graph API → SharePoint read/write (proven via throwaway test script)
+- ✓ GitHub Actions → Azure AD service principal → Graph API → SharePoint write (proven via manual `workflow_dispatch` run)
+- ✓ Power Automate → SharePoint `/Settings/` trigger → email notification (proven live)
+
+Infrastructure already in place:
+- `dtm-shared-settings` repo created (public, classic branch protection on `main`, 1 reviewer required)
+- Two Azure AD app registrations: "DTM Vehicle Builder" (delegated, user auth) and "DTM Vehicle Builder CI" (application permissions, `Sites.ReadWrite.All`, admin consent granted)
+- SharePoint document library "DTM Vehicle Builder" on the DTM Fleet site (`/sites/DTMOperations`) with all seven folders created: `/Settings/`, `/PendingChanges/`, `/Projects/`, `/Drafts/`, `/Exports/`, `/Assets/`, `/Releases/`
+- GitHub Actions secrets added to `dtm-shared-settings`: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `SHAREPOINT_SITE_ID`, `SHAREPOINT_DRIVE_ID`
+- Power Automate Flow A (settings update → email) live and tested
 
 **Architecture overview**:
 
@@ -138,8 +151,8 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  POWER AUTOMATE (Standard, included with M365 — notifications)   │
-│   Flow A: new file in /Settings/  → post to Teams channel        │
-│   Flow B: new file in /Releases/  → post to Teams channel        │
+│   Flow A: new file in /Settings/  → send email                   │
+│   Flow B: new file in /Releases/  → send email                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -147,7 +160,7 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - *Why not GitHub-direct from app?* App users don't have GitHub accounts. Embedding a shared GitHub PAT in the app means rotating secrets and exposes a credential. M365 OAuth gives per-user attribution and existing identity.
 - *Why not OS-level SharePoint sync?* Unreliable. We've experienced staleness and out-of-date issues. Microsoft Graph API is the reliable path.
 - *Why GitHub Actions and not Power Automate for the sync glue?* HTTP-to-GitHub is a premium Power Automate connector (~$15/user/mo). GitHub Actions does the same thing for free, with the workflow files version-controlled alongside the code.
-- *Why Power Automate for notifications?* SharePoint trigger + Teams action are both standard connectors (included with M365). The flows are simple, visual, and don't need to live in code.
+- *Why Power Automate for notifications?* SharePoint trigger + Office 365 Outlook action are both standard connectors (included with M365). The flows are simple, visual, and don't need to live in code. (Teams is not in use; email is the notification channel.)
 
 **This is the first set of adapters, not the backbone.** Per §6 (Architectural Boundaries), Phase 2 builds these capabilities behind four interfaces — `SharedStorageProvider`, `IdentityProvider`, `ChangeProposalGateway`, `NotificationGateway` — with the M365/SharePoint/GitHub/Power Automate implementations as the *first* adapter set. The app's services depend on the interfaces, not on Graph API directly. This makes future variants (customer-facing web product, external sale to other upfitters) a matter of writing new adapter classes, not rewriting the app. See §6 for the rationale and the cost/benefit of doing this up-front.
 
@@ -166,7 +179,7 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 **Work — 2a: SharePoint backend + Graph API client (first adapter set)**:
 - Set up an Azure AD app registration (free, no Azure compute charges). Two app registrations actually:
   - **App-user registration** — used by each user's app instance. Delegated permissions: `Files.ReadWrite` scoped to a specific SharePoint site. User signs in with their M365 account.
-  - **Service-principal registration** — used by GitHub Actions. Application permissions: `Sites.ReadWrite.All` scoped to the same site. Credentials stored in GitHub Secrets.
+  - **Service-principal registration** — used by GitHub Actions. **Auth via OIDC federated credentials, not client secrets** (GitHub→Azure passwordless authentication is now the recommended path; avoids rotating long-lived secrets). Client secret only as fallback if OIDC setup blocks. Permissions: prefer **`Sites.Selected`** scoped only to the DTM SharePoint site over `Sites.ReadWrite.All` — least-privilege review with tenant admin before implementation.
 - Create the SharePoint document library with the structure: `/Settings/`, `/PendingChanges/`, `/Projects/`, `/Drafts/`, `/Exports/`, `/Assets/`, `/Releases/`.
 - Build `app/services/sharepoint_client.py`:
   - `signin_with_m365()` — OAuth flow on first launch. Token cached in OS keychain (macOS Keychain / Windows Credential Manager).
@@ -182,8 +195,8 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - Migration of existing local data: a one-time "Migrate to cloud" button in Settings that uploads the user's current `workspace/projects/` and `workspace/drafts/` to SharePoint.
 
 **Work — 2b: GitHub settings repo + Actions**:
-- Create `dtm-shared-settings` private repo. Seed it with current `resources/config/*.json` (the bundled defaults).
-- Enable branch protection on `main`: require pull request review (1 reviewer = you), require linear history, no direct pushes to main.
+- Create `dtm-shared-settings` as a **public** repo. Seed it with current `resources/config/*.json` (the bundled defaults). Public because: (a) the settings files are not sensitive — secrets live in GitHub Secrets and Azure AD, never in these JSON files; (b) GitHub Free does not enforce branch protection rules on private repos (requires GitHub Pro/Team); (c) a public config repo is standard practice and makes settings transparently reviewable by the team.
+- Enable branch protection on `main`: require pull request review (1 reviewer = you), require linear history, no direct pushes to main. **Use classic branch protection rules, not Rulesets** — Rulesets on private repos also require GitHub Team and show the same enforcement warning.
 - Three GitHub Actions workflows in this repo:
   - **`pickup-pending-changes.yml`** — `schedule: cron '*/5 * * * *'`. Uses the service-principal credential to call Graph API, lists files in `/PendingChanges/`, for each file:
     1. Reads the proposal JSON
@@ -202,16 +215,17 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - Banner is dismissible per-version (don't pester the user every launch about the same update).
 
 **Work — 2d: Power Automate notifications**:
-- **Flow A — Settings update notification**:
+- **Flow A — Settings update notification** ✓ live and tested (2026-05-21):
   - Trigger: "When a file is created or modified in a folder" → `/Settings/`
-  - Action: "Post message in Teams channel" → target channel of your choice
-  - Message body: "Team settings updated: `{file name}` was just changed. Restart your app to pick up the latest."
+  - Action: Office 365 Outlook → "Send an email (V2)"
+  - Subject: "DTM Settings Updated: `{file name}`"
+  - Body: file name, modified-by, instruction to restart the app.
   - Optional: include the commit message / PR title by also reading from a small metadata file the GitHub Action writes alongside the settings file.
-- **Flow B — App release notification**:
+- **Flow B — App release notification** (not yet built):
   - Trigger: "When a file is created in a folder" → `/Releases/`
-  - Action: "Post message in Teams channel"
-  - Message body: "App update available: `{file name}`. Open your app to download, or grab it directly from the Releases folder in SharePoint."
-- Both flows use Standard connectors (SharePoint + Teams). No premium needed. Free with M365.
+  - Action: Office 365 Outlook → "Send an email (V2)"
+  - Body: "App update available: `{file name}`. Open your app to download, or grab it directly from the Releases folder in SharePoint."
+- Both flows use Standard connectors (SharePoint + Office 365 Outlook). No premium needed. Free with M365.
 
 **Work — 2e: paths.py wires up the new roots**:
 - `SETTINGS_DIR` resolves to a local cache directory populated by `shared_settings_service.read_settings()`. Cache invalidates on app launch.
@@ -242,7 +256,7 @@ Online-first is the starting model. Every save calls Graph API; if the network i
 - **First-launch M365 sign-in adds a step** users don't have today. Worth it for the cleaner auth story.
 - **Two PRs touching the same settings file** before either is merged → standard Git merge conflict, resolved at review time on github.com.
 
-**Cost**: $0 marginal. M365 already paid; SharePoint storage included; Graph API free; private GitHub repo free for small teams; GitHub Actions has 2,000 free min/month for private repos (well under what these workflows need); Power Automate Standard included with M365.
+**Cost**: Expected $0 marginal *if* the workflows stay within included GitHub Actions quotas (2,000 free min/month for private repos on GitHub Free) and Power Automate flows use only Standard connectors (SharePoint + Teams; no Premium HTTP). Monitor usage; if either creeps past free-tier limits, costs are predictable but no longer zero.
 
 ### Phase 3 — `parts_db.json` (Schema, Migration, Dual-Read)
 
@@ -369,6 +383,7 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 
 **Decisions to make before starting**:
 - Separate app vs. tab in this app? Separate app justifies SQLite or a backend service; tab is fine with extended JSON. Probably tab first, separate app later if it grows.
+- **Inventory storage checkpoint**: `parts_db.json` is good for reviewed settings (low edit frequency, schema-style changes). It is *not* good for high-frequency operational data like inventory counts and price updates. If inventory will be edited many times per day by multiple users, **split inventory out of `parts_db.json`** into a separate `inventory.json` stored under SharePoint `/SharedWork/` (last-writer-wins per record, no PR review). Make this call before implementing inventory editing — moving it later is more painful than picking the right home up front.
 - Storage evolution: at what scale does `parts_db.json` need to graduate from JSON-in-Git to SQLite or Postgres? Probably around 500+ parts or when concurrent edits start being common. The schema in §7 is designed to translate cleanly to relational tables.
 
 **Work**:
@@ -613,6 +628,7 @@ Sketched schema. Lock it in Phase 3 before writing the migration script.
       "manufacturer_id": "whelen",
       "models": [
         {
+          "model_id": "wh_ion_t_single",
           "model_number": "ION-T-1",
           "submodel": "single-color",
           "color_count": 1,
@@ -622,6 +638,7 @@ Sketched schema. Lock it in Phase 3 before writing the migration script.
           "qty_on_hand": 24
         },
         {
+          "model_id": "wh_ion_t_tri",
           "model_number": "ION-T-T-T",
           "submodel": "tri-color",
           "color_count": 3,
@@ -694,8 +711,8 @@ Sketched schema. Lock it in Phase 3 before writing the migration script.
       "color_display_form": "label"
     },
     "light_role_name": {
-      "scene_predicate":   "colors == ['white']",
-      "warning_predicate": "any color in colors is not 'white'",
+      "scene_predicate":   { "colors_exact": ["white"] },
+      "warning_predicate": { "colors_any_not": ["white"] },
       "templates_by_zone": {
         "primary_front":  { "scene": "Forward Scene {n}",       "warning": "Forward Warning {n}" },
         "front_corner":   { "scene": "Front Corner Scene {n}",  "warning": "Front Corner Warning {n}" },
@@ -765,6 +782,9 @@ Explicit non-goals and anti-patterns to avoid:
 - **Don't change the semantics of `PartInput.name` / `DraftPart.name`.** The rule engine (`rules/engine.py`) matches on `_norm(part.name)` string equality; `build_rules.json` references parts by name. Renaming this field's contents breaks every rule. New naming concepts go in new fields (`display_name`, `part_id`, etc.).
 - **Don't invent a new `SharedStorageProvider`.** Extend the existing `storage.base.StorageProvider`. The interface already covers most of what's needed; only `read_bytes` and a declared `write_bytes` are missing.
 - **Don't split monolithic collections to per-record files without adding an in-memory cache.** Live fuzzy-search endpoints fire every 220ms; hundreds of disk reads per keystroke will tank performance.
+- **Don't put string predicates in config that look like code.** No `"colors == ['white']"` strings. Use declarative JSON: `{"colors_exact": ["white"]}`. Evaluating string predicates means writing a parser or using `eval()` — both are bad.
+- **Don't use `model_number` as a persisted foreign key.** Use a stable `model_id` slug. Model numbers change, get duplicated by vendor, or need friendly variants.
+- **Don't use client secrets for GitHub Actions → Azure auth when OIDC is available.** Federated credentials are now the recommended path.
 
 ---
 
@@ -788,7 +808,7 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-05-20 | App auth: M365 OAuth only. GitHub Actions auth: Azure AD service principal stored in GitHub Secrets | App users never see GitHub. The service principal credential lives only in CI, never in the app binary. Rotates every ~6 months (Azure AD client secret lifetime). |
 | 2026-05-20 | Sync glue: GitHub Actions, not Power Automate, for SharePoint↔GitHub | HTTP-to-GitHub is a premium Power Automate connector (~$15/user/mo). GitHub Actions does the same work for free, code-defined, version-controlled. |
 | 2026-05-20 | Proposal→PR latency: 5-minute cron via GitHub Actions | Simplest reliable mechanism. Acceptable for a review workflow. Can be upgraded later to webhook-driven (~15s) if it becomes annoying. |
-| 2026-05-20 | Power Automate used for two team notifications (Standard connectors only) | Settings update notification (post on new file in `/Settings/`) and app release notification (post on new file in `/Releases/`). SharePoint + Teams connectors are both standard, included with M365. |
+| 2026-05-20 | Power Automate used for two team notifications (Standard connectors only) | Settings update notification and app release notification. SharePoint + Office 365 Outlook connectors are both standard, included with M365. Teams is not in use — email is the notification channel. Flow A (settings update → email) is live and tested as of 2026-05-21. |
 | 2026-05-20 | Cloud integration built behind ports-and-adapters boundaries, not as a direct dependency | Two future variants (customer-facing web app, external sale to other upfitters) are explicit constraints. Swapping the cloud stack later should be a localized adapter change, not a rewrite. Cost: ~1-2 days up front in Phase 2 to define interfaces and wire DI. |
 | 2026-05-20 | Four port-and-adapter boundaries: storage, identity, change-proposal, notification | These are the boundaries we know we'll cross. No fifth boundary without a concrete second implementation on the horizon. |
 | 2026-05-20 | Build-time adapter selection via `app/adapters/wiring.py`, not runtime config | No dynamic plugin loader. No entry-point discovery. Adapter choice is a code change to one file at build time. Avoids accidental drift between supported and "supposedly supported" backends. |
@@ -797,6 +817,7 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-05-20 | Storage interface: extend existing `storage.base.StorageProvider`, do not invent new | Already has `read_text`/`write_text`/`delete`/`list_files`. Add `read_bytes` and pull `write_bytes` from `LocalStorageProvider` into the interface. Avoids parallel abstractions. |
 | 2026-05-20 | In-memory cache required for agency/sales-rep services before or during per-record file split | Live fuzzy-search at 220ms debounce currently re-reads JSON on each keystroke. Cheap with monolithic file; expensive with per-record. Cache invalidates on save/delete. |
 | 2026-05-20 | Path portability: `app_settings.project_output_root` stays absolute (local-only); record-side `output_path` fields become workspace-relative; `ProjectRecord.export_dir` may be dropped entirely | The existing architecture already separates the local root from the computed dir (`inputs/project_dirs.py:resolve_project_output_dir`). What changes is per-record stored paths, not the resolution logic. |
+| 2026-05-20 | `dtm-shared-settings` repo is public, not private | GitHub Free does not enforce branch protection rules on private repos (requires Pro/Team). Settings files are non-sensitive (secrets live in GitHub Secrets and Azure AD). Public repos get full enforcement for free. Making it public is the right call, not a workaround. |
 | 2026-05-20 | Cloud go-live prioritized before parts-DB schema migration | Team collaboration on the existing structure is more valuable than a clean schema in isolation. Schema migration becomes a normal PR after cloud is live. |
 | 2026-05-20 | Light color palette: red, blue, white, amber, green, purple | Six colors cover stated needs. Combinations derived (not enumerated). |
 | 2026-05-20 | Light naming is two-tier: part name (model + colors) and role name (zone + color pattern) | Different UI surfaces need different names. Part name for picker/inventory; role name for build sheet. Both derived by default. |

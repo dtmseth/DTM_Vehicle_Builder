@@ -226,7 +226,7 @@ class ProjectRecord:
     updated_at: str = ""
 ```
 
-Projects are stored as individual JSON files in `workspace/projects/` (one file per project, named `{project_id}.json`).
+Projects are stored in `workspace/projects/{project_id}/project.json` (one subdirectory per project). The subdirectory layout is intentional — future artifacts (generated PPTX, draft snapshots) can be dropped alongside the record without polluting the flat projects list.
 
 ## Agency and Sales Rep databases
 

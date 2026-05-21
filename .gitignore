@@ -14,3 +14,6 @@ build/
 *.egg-info/
 
 existing_code.xml
+
+# Throwaway connection test — contains secrets in plaintext
+test_graph_connection.py

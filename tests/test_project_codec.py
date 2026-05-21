@@ -173,7 +173,9 @@ class TestProjectFromDict:
         assert len(p.build_units) == 1
         assert p.build_units[0].vehicle_model == "Tahoe"
 
-    def test_export_dir_defaults_empty(self):
-        d = {"project_id": "p1", "created_at": "t", "updated_at": "t"}
+    def test_legacy_export_dir_is_ignored(self):
+        # ProjectRecord.export_dir was dropped in Phase 0. Old records that still
+        # carry the field on disk must load without error; the value is discarded.
+        d = {"project_id": "p1", "created_at": "t", "updated_at": "t", "export_dir": "/some/old/path"}
         p = project_from_dict(d)
-        assert p.export_dir == ""
+        assert not hasattr(p, "export_dir")

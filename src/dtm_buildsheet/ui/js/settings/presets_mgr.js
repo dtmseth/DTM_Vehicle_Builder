@@ -118,8 +118,8 @@
     ]);
     _presets  = pr?.presets  || [];
     _agencies = ar?.agencies || [];
-    if (opts?.ok && (opts.options?.build_types || []).length) {
-      _BT_OPTIONS = opts.options.build_types;
+    if (opts && (opts.build_types || []).length) {
+      _BT_OPTIONS = opts.build_types;
     }
     _filterAndRender();
   }

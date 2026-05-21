@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ...domain.input_models import PartInput
 from ...paths import AppPaths
+from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
 
 _log = logging.getLogger(__name__)
@@ -319,9 +320,9 @@ def save_preset(payload: dict, paths: AppPaths, overwrite: bool = False) -> dict
         return {"ok": False, "error": str(exc)}
 
     preset_id = validated["preset_id"]
-    paths.workspace_presets_dir.mkdir(parents=True, exist_ok=True)
-    _workspace_path(preset_id, paths).write_text(
-        json.dumps(validated, indent=2) + "\n", encoding="utf-8"
+    LocalStorageProvider().write_text(
+        str(_workspace_path(preset_id, paths)),
+        json.dumps(validated, indent=2) + "\n",
     )
     return {"ok": True, "preset_id": preset_id, "label": validated["label"]}
 
@@ -367,9 +368,9 @@ def clone_preset(preset_id: str, paths: AppPaths) -> dict:
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
 
-    paths.workspace_presets_dir.mkdir(parents=True, exist_ok=True)
-    (_workspace_path(new_id, paths)).write_text(
-        json.dumps(validated, indent=2) + "\n", encoding="utf-8"
+    LocalStorageProvider().write_text(
+        str(_workspace_path(new_id, paths)),
+        json.dumps(validated, indent=2) + "\n",
     )
     return {"ok": True, "preset_id": new_id, "label": validated["label"]}
 

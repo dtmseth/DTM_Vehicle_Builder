@@ -7,7 +7,7 @@ How data flows from a project record to a generated build sheet.
 ## Data model hierarchy
 
 ```
-ProjectRecord                        workspace/projects/{project_id}.json
+ProjectRecord                        workspace/projects/{project_id}/project.json
   └── BuildUnit[]                    vehicle model + build type + preset + quantity
         └── IndividualUnit[]         one unit per vehicle (VIN, year, color, unit #)
               └── draft_id ──────►  BuildDraft    workspace/drafts/{draft_id}.json
@@ -23,7 +23,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 | Data | Canonical location | Owner |
 |---|---|---|
-| Project records | `workspace/projects/{project_id}.json` | `inputs/project_entry.py`, `app/services/project_service.py` |
+| Project records | `workspace/projects/{project_id}/project.json` | `inputs/project_entry.py`, `app/services/project_service.py` |
 | Build drafts | `workspace/drafts/{draft_id}.json` | `inputs/project_drafts.py`, `app/services/draft_service.py` |
 | Bundled presets | `src/dtm_buildsheet/resources/presets/*.json` | `app/services/preset_service.py` |
 | User/workspace presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) | same |

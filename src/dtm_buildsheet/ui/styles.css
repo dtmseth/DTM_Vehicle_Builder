@@ -416,8 +416,6 @@
     .proj-edit-toolbar{display:flex;gap:8px;margin-bottom:14px}
     .proj-form-status{padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:10px}
     .proj-form-hint{font-size:12px;color:var(--muted);font-weight:400;margin-bottom:4px}
-    .proj-export-dir-display{font-size:13px;color:var(--navy)}
-    .proj-export-dir-default{color:var(--muted)}
     .proj-action-status{padding:8px 12px;border-radius:6px;font-size:13px;margin-top:12px}
     .proj-add-unit-row{margin-top:6px}
     .proj-ind-configured{font-size:11px;color:var(--green)}

@@ -1,6 +1,14 @@
 // ═══════════════════════════════════════════════════════
 // PREVIEW CANVAS  — Visual build preview with overrides
 // ═══════════════════════════════════════════════════════
+//
+// Slot positioning and override math here parallel domain/geometry.py
+// (slot_relative_positions). The server bakes per-instance slot_coeff values
+// the inspector reads, and this file applies drag-derived deltas
+// (anchor_dx/anchor_dy, h_spacing_delta) on top. Any change to pattern
+// semantics — single/horizontal/vertical/mirror — must land in both
+// domain/geometry.py and canvas.js (getSlotPositions) so the preview and the
+// generated PowerPoint stay in sync.
 
 // ── state ────────────────────────────────────────────────
 let _pvDraftId          = null;   // draft UUID from parse response

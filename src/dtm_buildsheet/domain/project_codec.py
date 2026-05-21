@@ -111,5 +111,4 @@ def project_from_dict(d: dict) -> ProjectRecord:
         customer=customer_from_dict(d.get("customer", {})),
         preferences=preferences_from_dict(d.get("preferences", {})),
         build_units=[build_unit_from_dict(u) for u in d.get("build_units", [])],
-        export_dir=str(d.get("export_dir", "")),
     )

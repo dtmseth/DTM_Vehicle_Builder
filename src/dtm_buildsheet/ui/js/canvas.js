@@ -1,6 +1,13 @@
 // ═══════════════════════════════════════════════════════
 // CANVAS UTILITIES (shared by placements + fixtures)
 // ═══════════════════════════════════════════════════════
+//
+// Placement math (slot patterns: single/horizontal/vertical/mirror) is
+// canonically defined in domain/geometry.py — slot_relative_positions().
+// The JS below mirrors that logic for the canvas preview. If you change
+// pattern semantics, spacing rules, or mirror offset behavior here, update
+// domain/geometry.py to match — server-rendered PowerPoint and the client
+// preview must agree.
 
 // ── multi-dot positioning ────────────────────────────────────────
 function getSlotPositions(loc, box){

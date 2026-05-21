@@ -18,6 +18,7 @@ REQUIRED_CONFIG_FILES = {
     "workbook_rules.json",
     "app_settings.json",
     "build_rules.json",
+    "project_options.json",
 }
 
 _VALID_RENDER_KINDS = {"light", "bar", "equipment", "none"}
@@ -218,6 +219,13 @@ _KNOWN_RULE_TYPES = {
 }
 
 
+def _validate_project_options(normalized: dict) -> None:
+    for key in ("build_types", "camera_brands", "lighting_brands", "bumper_brands", "cage_brands"):
+        val = normalized.setdefault(key, [])
+        if not isinstance(val, list):
+            raise ValueError(f"project_options.json '{key}' must be an array")
+
+
 def _validate_build_rules(normalized: dict) -> None:
     rules = normalized.setdefault("rules", {})
     if not isinstance(rules, dict):
@@ -259,6 +267,7 @@ _VALIDATORS = {
     "workbook_rules.json": _validate_workbook_rules,
     "app_settings.json": _validate_app_settings,
     "build_rules.json": _validate_build_rules,
+    "project_options.json": _validate_project_options,
 }
 
 

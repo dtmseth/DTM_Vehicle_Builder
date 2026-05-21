@@ -23,7 +23,6 @@ from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import templates as template_routes
 from .routes import validation as validation_routes
-from .services.project_options_service import handle_get_project_options
 from .services.template_service import pick_folder as _pick_folder
 
 PORT = 7655
@@ -88,8 +87,6 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/sales-reps" or path == "/api/sales-reps/search":
             if not sales_rep_routes.route_sales_reps(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
-        elif path == "/api/project-options":
-            self._api(handle_get_project_options(self.paths))
         elif path == "/api/project/pick-output-root":
             self._api(_pick_folder())
         elif path == "/api/projects" or path.startswith("/api/project/"):

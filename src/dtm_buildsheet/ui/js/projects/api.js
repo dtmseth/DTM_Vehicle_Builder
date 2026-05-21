@@ -10,7 +10,7 @@ async function _ptLoadAll() {
   if (pr)   { _PT.presets         = pr.presets   || []; }
   if (lr)   { _PT.vehicleMap      = lr.vehicles  || {}; _PT.vehicles = Object.keys(_PT.vehicleMap).sort(); }
   if (pjr)  { _PT.projects        = pjr.projects || []; }
-  if (opts?.ok) { _PT.projectOptions = opts.options || _PT.projectOptions; }
+  if (opts && !opts.error) { _PT.projectOptions = opts; }
 }
 
 // Load prefs dropdowns lazily (catalog + workbook rules for lighting/bumper/cage brands)

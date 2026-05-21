@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import logging
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -9,6 +10,9 @@ from pathlib import Path
 
 from ...domain.sales_rep_models import SalesRepRecord
 from ...paths import AppPaths
+from ...storage.local import LocalStorageProvider
+
+_log = logging.getLogger(__name__)
 
 
 def _reps_path(paths: AppPaths) -> Path:
@@ -37,15 +41,15 @@ def load_reps(paths: AppPaths) -> list[SalesRepRecord]:
             for rec in data.get("sales_reps", [])
         ]
     except Exception:
+        _log.exception("Unexpected error loading sales reps from %s", p)
         return []
 
 
 def _save_reps(records: list[SalesRepRecord], paths: AppPaths) -> None:
     p = _reps_path(paths)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(
+    LocalStorageProvider().write_text(
+        str(p),
         json.dumps({"schema_version": 1, "sales_reps": [asdict(r) for r in records]}, indent=2) + "\n",
-        "utf-8",
     )
 
 

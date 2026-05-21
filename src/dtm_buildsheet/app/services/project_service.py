@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
+
+_log = logging.getLogger(__name__)
 
 from ...config.store import load_config
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
@@ -46,7 +49,7 @@ def handle_list_projects(paths: AppPaths) -> dict:
                     project.customer.build_year,
                 )
             except Exception:
-                pass
+                _log.exception("Failed to ensure output dir for project %s", project.project_id)
     return {"ok": True, "projects": [asdict(p) for p in projects]}
 
 
@@ -77,9 +80,6 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         if "preferences" in body:
             project.preferences = preferences_from_dict(body["preferences"])
 
-        if "export_dir" in body:
-            project.export_dir = str(body.get("export_dir", ""))
-
         if "build_units" in body:
             project.build_units = [build_unit_from_dict(u) for u in body["build_units"]]
 
@@ -94,7 +94,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 project.customer.build_year,
             )
         except Exception:
-            pass
+            _log.exception("Failed to create output folder for project %s", project.project_id)
 
         return {"ok": True, "project_id": project.project_id, "path": str(path)}
     except ValueError as exc:
@@ -133,7 +133,7 @@ def handle_delete_project_with_options(project_id: str, body: dict, paths: AppPa
                 if folder and folder.exists() and folder.is_dir():
                     _shutil.rmtree(folder)
             except Exception:
-                pass
+                _log.exception("Failed to remove output folder for project %s", project_id)
         delete_project(project_id, paths)
         return {"ok": True}
     except FileNotFoundError:

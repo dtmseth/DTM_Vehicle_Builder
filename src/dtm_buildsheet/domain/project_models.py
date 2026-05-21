@@ -67,4 +67,3 @@ class ProjectRecord:
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
-    export_dir: str = ""

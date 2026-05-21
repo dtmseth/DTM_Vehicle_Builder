@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import logging
 import re
 import string
 import uuid
@@ -11,6 +12,9 @@ from pathlib import Path
 
 from ...domain.agency_models import AgencyRecord
 from ...paths import AppPaths
+from ...storage.local import LocalStorageProvider
+
+_log = logging.getLogger(__name__)
 
 _ABBREV: list[tuple[str, str]] = [
     (r"\bst\.?\s", "saint "),
@@ -72,15 +76,15 @@ def load_agencies(paths: AppPaths) -> list[AgencyRecord]:
             ))
         return results
     except Exception:
+        _log.exception("Unexpected error loading agencies from %s", p)
         return []
 
 
 def _save_agencies(records: list[AgencyRecord], paths: AppPaths) -> None:
     p = _agencies_path(paths)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(
+    LocalStorageProvider().write_text(
+        str(p),
         json.dumps({"schema_version": 1, "agencies": [asdict(r) for r in records]}, indent=2) + "\n",
-        "utf-8",
     )
 
 

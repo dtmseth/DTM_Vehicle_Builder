@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import traceback
 
 from ...config.loader import load_configs
@@ -9,6 +10,8 @@ from ...paths import AppPaths
 from ...planning.override_applier import apply_overrides
 from ...planning.planner import build_plan
 from ...ppt_helpers import icon_size_in_inches
+
+_log = logging.getLogger(__name__)
 
 _FALLBACK_VIEW_ORDER = ["front", "rear", "side", "top"]
 
@@ -50,6 +53,7 @@ def _rendered_vehicle_size(vehicle_type: str, view: str, paths: AppPaths) -> tup
         with PILImage.open(png) as img:
             img_w, img_h = img.size
     except Exception:
+        _log.exception("Could not read vehicle PNG dimensions: %s", png)
         return slot_w, slot_h
 
     img_ratio  = img_w / img_h

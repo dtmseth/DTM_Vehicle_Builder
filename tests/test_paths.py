@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dtm_buildsheet.paths import _copy_missing_tree
+from dtm_buildsheet.paths import (
+    _copy_missing_tree,
+    relativize_output_path,
+    resolve_output_path,
+)
 
 
 def test_copy_missing_tree_adds_and_updates_files(tmp_path: Path):
@@ -32,3 +36,50 @@ def test_copy_missing_tree_adds_and_updates_files(tmp_path: Path):
     assert not (dest / ".DS_Store").exists()
     # count reflects actual writes (new + updated = 2)
     assert written == 2
+
+
+# ── output path portability helpers ────────────────────────────────────────────
+
+
+def test_resolve_output_path_returns_empty_for_empty(tmp_path: Path):
+    assert resolve_output_path("", tmp_path) == ""
+
+
+def test_resolve_output_path_passes_absolute_through(tmp_path: Path):
+    abs_path = "/some/absolute/path/file.pptx"
+    assert resolve_output_path(abs_path, tmp_path) == abs_path
+
+
+def test_resolve_output_path_joins_relative_with_workspace(tmp_path: Path):
+    result = resolve_output_path("output/foo.pptx", tmp_path)
+    assert result == str(tmp_path / "output" / "foo.pptx")
+
+
+def test_relativize_output_path_returns_empty_for_empty(tmp_path: Path):
+    assert relativize_output_path("", tmp_path) == ""
+
+
+def test_relativize_output_path_passes_relative_through(tmp_path: Path):
+    assert relativize_output_path("output/foo.pptx", tmp_path) == "output/foo.pptx"
+
+
+def test_relativize_output_path_relativizes_inside_workspace(tmp_path: Path):
+    inside = tmp_path / "output" / "foo.pptx"
+    inside.parent.mkdir(parents=True)
+    inside.touch()
+    assert relativize_output_path(str(inside), tmp_path) == "output/foo.pptx"
+
+
+def test_relativize_output_path_keeps_outside_paths_absolute(tmp_path: Path):
+    outside = tmp_path.parent / "elsewhere" / "foo.pptx"
+    result = relativize_output_path(str(outside), tmp_path)
+    assert result == str(outside)
+
+
+def test_resolve_then_relativize_round_trips(tmp_path: Path):
+    inside = tmp_path / "output" / "foo.pptx"
+    inside.parent.mkdir(parents=True)
+    inside.touch()
+    rel = relativize_output_path(str(inside), tmp_path)
+    abs_again = resolve_output_path(rel, tmp_path)
+    assert Path(abs_again) == inside

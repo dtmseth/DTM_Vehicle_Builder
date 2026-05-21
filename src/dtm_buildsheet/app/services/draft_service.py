@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 import traceback
+
+_log = logging.getLogger(__name__)
 
 from ...generator import generate_build_sheet
 from ...inputs.project_drafts import (
@@ -230,14 +233,12 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         log_lines.append(f"Vehicle type: {project.info.get('VehicleType', '?')}")
         log_lines.append(f"Parts: {len(project.parts)}")
 
-        # Resolve project-level export directory.
-        # Priority: explicit project.export_dir → project_output_root derived dir
-        #           → legacy output_save_dir (handled by finalize_output).
+        # Resolve project-level export directory from project_output_root setting.
+        # Falls through to legacy output_save_dir handled by finalize_output().
         _project_export_dir = None
         _proj_id_param = body.get("project_id", "")
         if _proj_id_param:
             try:
-                from pathlib import Path as _Path
                 from ...inputs.project_entry import load_project
                 from ...inputs.project_dirs import ensure_project_output_dir
                 from ...config.store import load_config
@@ -257,24 +258,16 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                             project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
                             break
 
-                _ed = (_proj_rec.export_dir or "").strip()
-                if _ed:
-                    # Explicit per-project directory — create if missing
-                    _candidate = _Path(_ed)
-                    _candidate.mkdir(parents=True, exist_ok=True)
-                    _project_export_dir = _candidate
-                else:
-                    # Derive from project_output_root setting
-                    _settings = load_config("app_settings.json", paths) or {}
-                    _root = _settings.get("project_output_root", "").strip()
-                    if _root:
-                        _agency = (_proj_rec.customer.agency or "").strip()
-                        _year = (_proj_rec.customer.build_year or "").strip()
-                        _project_export_dir = ensure_project_output_dir(
-                            _root, _agency, _year
-                        )
+                _settings = load_config("app_settings.json", paths) or {}
+                _root = _settings.get("project_output_root", "").strip()
+                if _root:
+                    _agency = (_proj_rec.customer.agency or "").strip()
+                    _year = (_proj_rec.customer.build_year or "").strip()
+                    _project_export_dir = ensure_project_output_dir(
+                        _root, _agency, _year
+                    )
             except Exception:
-                pass
+                _log.exception("Could not resolve project export dir for draft %s", draft_id)
 
         # generate_build_sheet expects a Path to an xlsx — for GUI-built drafts
         # we don't have one, so we generate from the ProjectInput directly via

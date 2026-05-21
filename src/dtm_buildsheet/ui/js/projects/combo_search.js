@@ -1,10 +1,11 @@
 // ── Projects module: live-search combo widget ─────────────────────────────────
 // Reusable helpers for agency and sales-rep search combos.
 
-function _ptWireAgencySearch(inputEl, idEl, suggEl) {
+function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
   let timer = null;
+  const notify = () => { if (typeof onSelect === "function") onSelect(); };
   inputEl.addEventListener("input", () => {
-    if (idEl) idEl.value = "";
+    if (idEl && idEl.value) { idEl.value = ""; notify(); }
     clearTimeout(timer);
     const q = inputEl.value.trim();
     if (!q) { suggEl.style.display = "none"; return; }
@@ -22,6 +23,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl) {
           inputEl.value = el.dataset.name;
           if (idEl) idEl.value = el.dataset.id;
           suggEl.style.display = "none";
+          notify();
         });
       });
       const createEl = suggEl.querySelector(".sug-create");
@@ -32,6 +34,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl) {
             openAgencyModal({ prefill: q, onSuccess: a => {
               inputEl.value = a.name;
               if (idEl) idEl.value = a.agency_id;
+              notify();
             }});
           }
         });

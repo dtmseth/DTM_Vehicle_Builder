@@ -9,6 +9,7 @@ Draft files live in workspace/drafts/{draft_id}.json.
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -19,6 +20,8 @@ from ..domain.input_models import PartInput, ProjectInput
 from ..naming import canonical_name, safe_id, safe_project_id
 from ..paths import AppPaths
 from ..storage.local import LocalStorageProvider
+
+_log = logging.getLogger(__name__)
 
 
 def _utcnow() -> str:
@@ -264,9 +267,9 @@ def delete_draft(draft_id: str, drafts_dir: Path) -> None:
 
 
 def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
-    """Return all drafts sorted newest-first; silently skips corrupt files."""
+    """Return all drafts sorted newest-first by updated_at; silently skips corrupt files."""
     drafts = []
-    for path in sorted(drafts_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for path in drafts_dir.glob("*.json"):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             parts = [DraftPart(**p) for p in data.pop("parts", [])]
@@ -275,7 +278,8 @@ def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
             _ensure_line_ids(draft)
             drafts.append(draft)
         except Exception:
-            pass
+            _log.exception("Skipping corrupt draft file: %s", path)
+    drafts.sort(key=lambda d: d.updated_at, reverse=True)
     return drafts
 
 

@@ -26,8 +26,6 @@ function _ptRenderEditTab(project, editable) {
       ["Notes",       pr.notes],
     ].filter(([, v]) => v);
 
-    const exportDir = project.export_dir || "";
-
     panel.innerHTML = `
       <div class="proj-edit-toolbar">
         <button class="btn btn-primary btn-sm" onclick="PT_enterEditMode()">✏️ Edit</button>
@@ -41,13 +39,7 @@ function _ptRenderEditTab(project, editable) {
         ? prefPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
         : `<p class="proj-empty-msg">No preferences saved.</p>`}
       <div class="proj-section-label">Fleet Units</div>
-      ${_ptUnitFleetSummaryCards(project.build_units || [])}
-      <div class="proj-section-label">Export Location</div>
-      <div class="proj-export-dir-display">
-        ${exportDir
-          ? esc(exportDir)
-          : `<span class="proj-export-dir-default">Default (Desktop / DTM Projects)</span>`}
-      </div>`;
+      ${_ptUnitFleetSummaryCards(project.build_units || [])}`;
   } else {
     // ── Edit mode ──
     _PT.editTabUnits = (project.build_units || []).map(u => ({
@@ -258,8 +250,26 @@ function _ptRenderEditUnits() {
     const row = listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"]`);
     if (!row) return;
     row.querySelector(".et-u-vehicle").value = u.vehicle_model;
-    const qtyInput = row.querySelector(".et-u-qty");
-    const indBtn   = row.querySelector(".proj-ind-toggle-btn");
+    const qtyInput  = row.querySelector(".et-u-qty");
+    const indBtn    = row.querySelector(".proj-ind-toggle-btn");
+    const vehSelect = row.querySelector(".et-u-vehicle");
+    const btSelect  = row.querySelector(".et-u-buildtype");
+
+    // Vehicle / build-type changes invalidate the compatible-preset list. Commit
+    // the change to in-memory edit state, clear the chip if the selection no
+    // longer matches, then re-render so the dropdown reflects the new context.
+    const onUnitContextChange = () => {
+      _ptCollectEditUnits();
+      const live = _PT.editTabUnits.find(x => x.uid === u.uid);
+      if (live && live.preset_id) {
+        const stillCompatible = _ptCompatiblePresets(live).some(p => p.preset_id === live.preset_id);
+        if (!stillCompatible) live.preset_id = "";
+      }
+      _ptRenderEditUnits();
+    };
+    vehSelect?.addEventListener("change", onUnitContextChange);
+    btSelect?.addEventListener("change", onUnitContextChange);
+
     qtyInput?.addEventListener("input", () => {
       const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
       if (indBtn) indBtn.textContent = `Add Individual Unit Details (×${qty})`;
@@ -346,7 +356,12 @@ function _ptCollectEditForm() {
 function _ptWireEditTabSearch() {
   const etAgency = $("et-agency");
   if (etAgency) {
-    _ptWireAgencySearch(etAgency, $("et-agency-id"), $("et-agency-suggestions"));
+    _ptWireAgencySearch(
+      etAgency,
+      $("et-agency-id"),
+      $("et-agency-suggestions"),
+      () => _ptRenderEditUnits(),
+    );
   }
   const etRep = $("et-salesrep");
   if (etRep) {
