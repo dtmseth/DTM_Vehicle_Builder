@@ -11,6 +11,9 @@ class LocalStorageProvider(StorageProvider):
     def read_text(self, path: str) -> str:
         return Path(path).read_text(encoding="utf-8")
 
+    def read_bytes(self, path: str) -> bytes:
+        return Path(path).read_bytes()
+
     def write_text(self, path: str, data: str) -> None:
         dest = Path(path)
         dest.parent.mkdir(parents=True, exist_ok=True)
