@@ -35,15 +35,19 @@ scripts/
 2. Verify GitHub Actions secrets are set in `dtm-shared-settings`:
    - `AZURE_CLIENT_ID` — the **CI** Azure AD app's client ID (not the desktop app)
    - `AZURE_TENANT_ID`
+   - `AZURE_CLIENT_SECRET` — the CI app's client secret (rotated every ~6 months)
    - `SHAREPOINT_SITE_ID`
    - `SHAREPOINT_DRIVE_ID`
-3. On the Azure AD "DTM Vehicle Builder CI" app, add a federated credential
-   pointing at this repo's `main` branch (subject:
-   `repo:<owner>/dtm-shared-settings:ref:refs/heads/main`).
-4. Branch protection on `main`: 1 reviewer required, linear history, no
+3. Branch protection on `main`: 1 reviewer required, linear history, no
    direct pushes. Use **classic** branch protection (not Rulesets) — the
    repo is on GitHub Free and Rulesets require Pro/Team to enforce on the
    default branch.
+
+**Note on auth**: these workflows use the **client-credentials + client-secret**
+flow (same as the existing `test-sharepoint-connection.yml`). The roadmap
+recommends migrating to OIDC federated credentials for least-privilege
+review later, but client-credentials is already proven and removes a setup
+step. Switching to OIDC later is a workflow-only change (no script edits).
 
 ## Schema contract
 

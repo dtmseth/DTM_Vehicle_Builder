@@ -5,11 +5,7 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
-# OIDC federation lets us swap the long-lived client secret for a per-run
-# token. The federated credential on the Azure AD "DTM Vehicle Builder CI"
-# app must be configured to trust this repo's main branch.
 permissions:
-  id-token: write
   contents: write
   pull-requests: write
 
@@ -32,22 +28,18 @@ jobs:
       - name: Install script dependencies
         run: pip install --quiet -r scripts/requirements.txt
 
-      - name: Authenticate to Azure (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
-      - name: Acquire Graph access token
+      - name: Acquire Graph access token (client credentials)
         id: graph-token
         run: |
-          token=$(az account get-access-token \
-            --resource https://graph.microsoft.com \
-            --query accessToken \
-            --output tsv)
-          echo "::add-mask::$token"
-          echo "token=$token" >> "$GITHUB_OUTPUT"
+          RESPONSE=$(curl -s -X POST \
+            "https://login.microsoftonline.com/${{ secrets.AZURE_TENANT_ID }}/oauth2/v2.0/token" \
+            -d "client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
+            -d "scope=https://graph.microsoft.com/.default" \
+            -d "grant_type=client_credentials")
+          TOKEN=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
       - name: Run pickup script
         env:

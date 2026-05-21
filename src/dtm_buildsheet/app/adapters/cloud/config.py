@@ -4,9 +4,14 @@ import os
 from dataclasses import dataclass
 
 
-# Microsoft Graph scope for delegated SharePoint access. The user's tenant
-# admin has consented to this on the "DTM Vehicle Builder" delegated app.
-GRAPH_SCOPES: tuple[str, ...] = ("Files.ReadWrite", "Sites.Read.All")
+# Microsoft Graph scopes for delegated SharePoint access.
+#
+# `Files.ReadWrite.All` covers OneDrive + every SharePoint file the user has
+# access to. Without the `.All` suffix the scope is limited to the user's
+# personal OneDrive — writes to SharePoint return 403. `Sites.Read.All`
+# stays in the request so site metadata lookups (drive lists, item children)
+# work even when the per-item ACL would block a file read.
+GRAPH_SCOPES: tuple[str, ...] = ("Files.ReadWrite.All", "Sites.Read.All")
 
 GRAPH_ENDPOINT = "https://graph.microsoft.com/v1.0"
 
