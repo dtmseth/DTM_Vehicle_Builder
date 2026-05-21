@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import urllib.parse
@@ -37,6 +38,14 @@ logger = logging.getLogger("pickup")
 
 GRAPH = "https://graph.microsoft.com/v1.0"
 SUPPORTED_SCHEMA_VERSIONS = {1}
+
+# GitHub caps PR titles at 256 chars. Leaving headroom for the `[user] `
+# prefix while still keeping the title scannable.
+PR_TITLE_SUMMARY_MAX = 200
+
+# Characters allowed in the user-slug segment of a branch name. Anything
+# else gets normalized to a dash so git ref-name rules are never violated.
+_SAFE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
 
 
 def env(name: str, *, required: bool = True, default: str = "") -> str:
@@ -117,6 +126,27 @@ def validate(proposal: dict[str, Any]) -> str | None:
     return None
 
 
+def _sanitize_slug(raw: str) -> str:
+    """Normalize a slug to characters safe inside a git ref name."""
+    cleaned = _SAFE_SLUG_RE.sub("-", raw.lower()).strip("-")
+    return cleaned or "user"
+
+
+def _build_commit_message(submitted_by: str, summary: str, proposal_id: str) -> str:
+    """Compose a git commit message that respects the subject/body convention.
+
+    Git tooling assumes a blank line separates the first-line subject from the
+    body; without one, ``git log --oneline`` and many UIs garble multi-line
+    summaries. The proposal_id trailer always lands in the body.
+    """
+    summary_lines = summary.splitlines() if summary else [""]
+    subject = f"[{submitted_by}] {summary_lines[0]}".rstrip()
+    extra_body = "\n".join(summary_lines[1:]).strip()
+    trailer = f"Proposal ID: {proposal_id}"
+    body = f"{extra_body}\n\n{trailer}" if extra_body else trailer
+    return f"{subject}\n\n{body}"
+
+
 def open_pr_for_proposal(
     proposal: dict[str, Any],
     *,
@@ -128,9 +158,12 @@ def open_pr_for_proposal(
     submitted_by = proposal["submitted_by"]
     summary = proposal["summary"]
     # PR title field has practical limits and breaks on newlines — use the
-    # first line only. The full multi-line summary still lands in the body.
-    title_summary = summary.splitlines()[0] if summary else ""
-    slug = proposal.get("submitted_by_slug") or "user"
+    # first line only, truncated to GitHub's effective ceiling. The full
+    # multi-line summary still lands in the body.
+    title_summary = (
+        summary.splitlines()[0][:PR_TITLE_SUMMARY_MAX] if summary else ""
+    )
+    slug = _sanitize_slug(proposal.get("submitted_by_slug") or "user")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     # proposal_id segment guarantees uniqueness even if two runners process
     # different proposals from the same user in the same second.
@@ -138,8 +171,7 @@ def open_pr_for_proposal(
 
     target_path = Path(settings_subdir) / target
 
-    # Fresh branch off the latest main.
-    run(["git", "fetch", "origin", main_branch])
+    # Fresh branch off the latest main — caller already fetched once per run.
     run(["git", "checkout", "-B", branch, f"origin/{main_branch}"])
     target_path.parent.mkdir(parents=True, exist_ok=True)
     # The schema says new_content is a string, but be forgiving — older or
@@ -156,7 +188,7 @@ def open_pr_for_proposal(
         return True  # still delete the source; nothing to do
 
     run(["git", "add", str(target_path)])
-    commit_msg = f"[{submitted_by}] {summary}\n\nProposal ID: {proposal['proposal_id']}"
+    commit_msg = _build_commit_message(submitted_by, summary, proposal["proposal_id"])
     run(["git", "commit", "-m", commit_msg])
     run(["git", "push", "-u", "origin", branch])
 
@@ -196,6 +228,8 @@ def main() -> int:
     # Identify the bot for the commit history.
     run(["git", "config", "user.name", "dtm-pickup-bot"])
     run(["git", "config", "user.email", "noreply@dtmfleet.com"])
+    # Fetch once per run — every proposal branches off the same origin/main.
+    run(["git", "fetch", "origin", main_branch])
 
     items = list_pending(token, site_id, drive_id)
     logger.info("Found %d pending proposal(s)", len(items))
