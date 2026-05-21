@@ -138,6 +138,11 @@ def _records(paths: AppPaths) -> dict[str, AgencyRecord]:
     return _cache[key]
 
 
+def warmup_cache(paths: AppPaths) -> None:
+    """Force the cache to load now (drives the one-shot legacy migration on launch)."""
+    _records(paths)
+
+
 def _invalidate_cache(paths: AppPaths) -> None:
     _cache.pop(_cache_key(paths), None)
 

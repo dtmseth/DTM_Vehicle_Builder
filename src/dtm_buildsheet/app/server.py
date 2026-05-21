@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from ..paths import AppPaths, ensure_workspace
 from .routes import agencies as agency_routes
 from .routes import sales_reps as sales_rep_routes
+from .services import agency_service, sales_rep_service
 from .routes import assets as asset_routes
 from .routes import config as config_routes
 from .routes import drafts as draft_routes
@@ -245,6 +246,12 @@ def main(paths: AppPaths | None = None):
     if paths is not None:
         _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
+
+    # Warm per-record collection caches at startup so the one-shot legacy
+    # migration (Phase 1) fires immediately on launch rather than on first
+    # user interaction with the agency/sales-rep services.
+    agency_service.warmup_cache(active_paths)
+    sales_rep_service.warmup_cache(active_paths)
 
     if _port_is_busy(PORT):
         raise SystemExit(
