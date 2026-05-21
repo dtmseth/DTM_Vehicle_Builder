@@ -1,0 +1,60 @@
+name: pickup-pending-changes
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+# OIDC federation lets us swap the long-lived client secret for a per-run
+# token. The federated credential on the Azure AD "DTM Vehicle Builder CI"
+# app must be configured to trust this repo's main branch.
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pickup-pending-changes
+  cancel-in-progress: false
+
+jobs:
+  pickup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install script dependencies
+        run: pip install --quiet -r scripts/requirements.txt
+
+      - name: Authenticate to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Acquire Graph access token
+        id: graph-token
+        run: |
+          token=$(az account get-access-token \
+            --resource https://graph.microsoft.com \
+            --query accessToken \
+            --output tsv)
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Run pickup script
+        env:
+          GRAPH_ACCESS_TOKEN: ${{ steps.graph-token.outputs.token }}
+          SHAREPOINT_SITE_ID: ${{ secrets.SHAREPOINT_SITE_ID }}
+          SHAREPOINT_DRIVE_ID: ${{ secrets.SHAREPOINT_DRIVE_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SETTINGS_SUBDIR: resources/config
+          MAIN_BRANCH: main
+        run: python scripts/pickup_pending_changes.py

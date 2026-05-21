@@ -68,16 +68,18 @@ def build_internal_team_bundle() -> AdapterBundle:
     from .cloud.m365_identity_provider import M365IdentityProvider
     from .cloud.msal_client import MsalClient
     from .cloud.sharepoint_graph_provider import SharePointGraphProvider
+    from .cloud.sharepoint_proposals_gateway import SharePointPendingChangesGateway
 
     config = load_cloud_config_from_env()
     msal_client = MsalClient(config)
+    storage = SharePointGraphProvider(
+        config,
+        token_provider=lambda: msal_client.acquire_token(interactive_ok=False),
+    )
     return AdapterBundle(
-        storage=SharePointGraphProvider(
-            config,
-            token_provider=lambda: msal_client.acquire_token(interactive_ok=False),
-        ),
+        storage=storage,
         identity=M365IdentityProvider(msal_client),
-        proposals=InMemoryChangeProposalGateway(),
+        proposals=SharePointPendingChangesGateway(storage),
         notifications=NoOpNotificationGateway(),
     )
 
