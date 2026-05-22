@@ -164,3 +164,55 @@ jobs:
           files: |
             dist/DTM_Vehicle_Builder.dmg
             dist/DTM_Vehicle_Builder_Setup.exe
+
+      - name: Stage versioned installers for SharePoint
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          mkdir -p dist/sharepoint
+          cp "dist/DTM_Vehicle_Builder.dmg" "dist/sharepoint/DTM_Vehicle_Builder-${VERSION}.dmg"
+          cp "dist/DTM_Vehicle_Builder_Setup.exe" "dist/sharepoint/DTM_Vehicle_Builder_Setup-${VERSION}.exe"
+
+      - name: Acquire Graph access token
+        id: graph-token
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "https://login.microsoftonline.com/${{ secrets.AZURE_TENANT_ID }}/oauth2/v2.0/token" \
+            -d "client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
+            -d "scope=https://graph.microsoft.com/.default" \
+            -d "grant_type=client_credentials")
+          TOKEN=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload installers to SharePoint /Releases/
+        env:
+          GRAPH_TOKEN: ${{ steps.graph-token.outputs.token }}
+          DRIVE_ID: ${{ secrets.SHAREPOINT_DRIVE_ID }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # Installers exceed Graph's 4MB simple-upload threshold, so we
+          # use an upload-session per file. Created-by-resumable: yes,
+          # but here we send one big chunk per file (Graph permits up to
+          # 60 MiB in a single Content-Range PUT).
+          set -euo pipefail
+          upload_via_session() {
+            local local_path="$1"
+            local remote_name="$2"
+            local size
+            size=$(stat -c %s "$local_path")
+            local create_url="https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/Releases/${remote_name}:/createUploadSession"
+            local upload_url
+            upload_url=$(curl -fsS -X POST "$create_url" \
+              -H "Authorization: Bearer ${GRAPH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"item":{"@microsoft.graph.conflictBehavior":"replace"}}' \
+              | python3 -c "import sys,json; print(json.load(sys.stdin)['uploadUrl'])")
+            curl -fsS -X PUT "$upload_url" \
+              -H "Content-Length: ${size}" \
+              -H "Content-Range: bytes 0-$((size-1))/${size}" \
+              --data-binary "@${local_path}"
+            echo "Uploaded ${remote_name} (${size} bytes)"
+          }
+          upload_via_session "dist/sharepoint/DTM_Vehicle_Builder-${VERSION}.dmg" "DTM_Vehicle_Builder-${VERSION}.dmg"
+          upload_via_session "dist/sharepoint/DTM_Vehicle_Builder_Setup-${VERSION}.exe" "DTM_Vehicle_Builder_Setup-${VERSION}.exe"

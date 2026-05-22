@@ -23,6 +23,7 @@ from .routes import preview as preview_routes
 from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import templates as template_routes
+from .routes import updates as update_routes
 from .routes import validation as validation_routes
 from .services.template_service import pick_folder as _pick_folder
 
@@ -93,6 +94,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/projects" or path.startswith("/api/project/"):
             if not project_routes.route_projects(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/update/"):
+            if not update_routes.route_updates(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith("/ui/"):
             self._serve_static(path[len("/ui/"):])
         elif path == "/favicon.ico":
@@ -144,6 +148,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/project/save" or path.startswith("/api/project/"):
             if not project_routes.route_projects(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/update/"):
+            if not update_routes.route_updates(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         else:
             self._send(404, b"Not found", "text/plain")

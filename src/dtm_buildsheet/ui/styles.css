@@ -3,6 +3,15 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
+    /* update banner */
+    .update-banner{background:linear-gradient(90deg,#1a3a8c,#2a5fbf);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 20px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.15)}
+    .update-banner-text{flex:1}
+    .update-banner-btn{background:var(--gold);color:var(--navy);border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer}
+    .update-banner-btn:hover{filter:brightness(1.08)}
+    .update-banner-btn:disabled{opacity:.6;cursor:default}
+    .update-banner-dismiss{background:transparent;color:rgba(255,255,255,.7);border:none;font-size:20px;line-height:1;cursor:pointer;padding:0 4px}
+    .update-banner-dismiss:hover{color:#fff}
+
     /* header */
     .app-header{background:var(--navy);display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
     .header-brand{display:flex;align-items:center;gap:12px;padding:14px 24px;flex-shrink:0}

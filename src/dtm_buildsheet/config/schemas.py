@@ -216,6 +216,11 @@ def _validate_app_settings(normalized: dict) -> None:
     normalized.setdefault("template_save_dir", "")
     normalized.setdefault("output_save_dir", "")
     normalized.setdefault("project_output_root", "")
+    dismissed = normalized.setdefault("dismissed_update_versions", [])
+    if not isinstance(dismissed, list) or not all(isinstance(v, str) for v in dismissed):
+        raise ValueError(
+            "app_settings.json 'dismissed_update_versions' must be a list of strings"
+        )
 
 
 _VALID_RULE_SEVERITIES = {"warning", "error"}

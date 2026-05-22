@@ -3709,6 +3709,14 @@
               "orientation": "h",
               "slot_count": 1,
               "pattern": "single"
+            },
+            "ON ROOF": {
+              "x": 0.613,
+              "y": 0.07,
+              "units": "relative_image",
+              "orientation": "h",
+              "slot_count": 1,
+              "pattern": "single"
             }
           }
         },
