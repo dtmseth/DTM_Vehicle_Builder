@@ -85,8 +85,12 @@ def build_internal_team_bundle() -> AdapterBundle:
 
 
 def _cloud_flag_enabled() -> bool:
-    raw = os.environ.get(CLOUD_ENV_FLAG, "").strip().lower()
-    return raw in {"1", "true", "yes", "on"}
+    # Delegate to the cloud config module so env-var AND on-disk
+    # cloud_config.json are both honored. Kept as a thin wrapper so any code
+    # importing this name keeps working.
+    from .cloud.config import cloud_enabled
+
+    return cloud_enabled()
 
 
 def _select_default_bundle() -> AdapterBundle:

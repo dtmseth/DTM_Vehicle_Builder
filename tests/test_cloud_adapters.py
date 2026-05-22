@@ -68,7 +68,7 @@ def test_load_cloud_config_from_env_happy(monkeypatch):
     assert cfg.authority == "https://login.microsoftonline.com/t"
 
 
-def test_load_cloud_config_from_env_reports_all_missing(monkeypatch):
+def test_load_cloud_config_from_env_reports_all_missing(monkeypatch, tmp_path):
     for name in (
         "DTM_AZURE_TENANT_ID",
         "DTM_AZURE_CLIENT_ID",
@@ -76,6 +76,12 @@ def test_load_cloud_config_from_env_reports_all_missing(monkeypatch):
         "DTM_SHAREPOINT_DRIVE_ID",
     ):
         monkeypatch.delenv(name, raising=False)
+    # Redirect the on-disk fallback at a tmp path so a real
+    # workspace/cloud_config.json doesn't accidentally satisfy the lookup.
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.cloud_config_path",
+        lambda: tmp_path / "cloud_config.json",
+    )
     with pytest.raises(CloudConfigMissing) as exc:
         load_cloud_config_from_env()
     msg = str(exc.value)
@@ -86,6 +92,46 @@ def test_load_cloud_config_from_env_reports_all_missing(monkeypatch):
         "DTM_SHAREPOINT_DRIVE_ID",
     ):
         assert name in msg
+
+
+def test_load_cloud_config_from_file_fallback(monkeypatch, tmp_path):
+    """When env is unset, the JSON file fills in every field."""
+    for name in (
+        "DTM_AZURE_TENANT_ID",
+        "DTM_AZURE_CLIENT_ID",
+        "DTM_SHAREPOINT_SITE_ID",
+        "DTM_SHAREPOINT_DRIVE_ID",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    config_file = tmp_path / "cloud_config.json"
+    config_file.write_text(
+        '{"tenant_id":"t","client_id":"c","sharepoint_site_id":"s","sharepoint_drive_id":"d"}'
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.cloud_config_path",
+        lambda: config_file,
+    )
+    cfg = load_cloud_config_from_env()
+    assert cfg.tenant_id == "t"
+    assert cfg.client_id == "c"
+    assert cfg.sharepoint_site_id == "s"
+    assert cfg.sharepoint_drive_id == "d"
+
+
+def test_cloud_enabled_reads_file_when_env_unset(monkeypatch, tmp_path):
+    from dtm_buildsheet.app.adapters.cloud.config import cloud_enabled
+
+    monkeypatch.delenv("DTM_CLOUD", raising=False)
+    config_file = tmp_path / "cloud_config.json"
+    config_file.write_text('{"enabled": true}')
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.cloud_config_path",
+        lambda: config_file,
+    )
+    assert cloud_enabled() is True
+
+    config_file.write_text('{"enabled": false}')
+    assert cloud_enabled() is False
 
 
 # ── SharePointGraphProvider ──────────────────────────────────────────────────
@@ -307,8 +353,21 @@ def test_shared_settings_sync_handles_missing_remote_folder(tmp_path: Path):
 # ── Wiring + feature flag ────────────────────────────────────────────────────
 
 
-def test_cloud_flag_off_uses_local_bundle(monkeypatch):
+def _redirect_cloud_config_file_to_tmp(monkeypatch, tmp_path):
+    """Point the on-disk cloud_config.json lookup at an empty tmp dir.
+
+    Without this, a real ``workspace/cloud_config.json`` on the dev machine
+    leaks into tests that intend to exercise the no-config path.
+    """
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.cloud_config_path",
+        lambda: tmp_path / "cloud_config.json",
+    )
+
+
+def test_cloud_flag_off_uses_local_bundle(monkeypatch, tmp_path):
     monkeypatch.delenv(CLOUD_ENV_FLAG, raising=False)
+    _redirect_cloud_config_file_to_tmp(monkeypatch, tmp_path)
     set_active_bundle(None)  # type: ignore[arg-type]
     try:
         from dtm_buildsheet.app.adapters.noop import LocalIdentityProvider
@@ -319,7 +378,7 @@ def test_cloud_flag_off_uses_local_bundle(monkeypatch):
         set_active_bundle(build_local_bundle())
 
 
-def test_cloud_flag_on_without_config_falls_back(monkeypatch):
+def test_cloud_flag_on_without_config_falls_back(monkeypatch, tmp_path):
     monkeypatch.setenv(CLOUD_ENV_FLAG, "1")
     for name in (
         "DTM_AZURE_TENANT_ID",
@@ -328,6 +387,7 @@ def test_cloud_flag_on_without_config_falls_back(monkeypatch):
         "DTM_SHAREPOINT_DRIVE_ID",
     ):
         monkeypatch.delenv(name, raising=False)
+    _redirect_cloud_config_file_to_tmp(monkeypatch, tmp_path)
     set_active_bundle(None)  # type: ignore[arg-type]
     try:
         from dtm_buildsheet.app.adapters.noop import LocalIdentityProvider
