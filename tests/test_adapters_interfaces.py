@@ -97,18 +97,21 @@ def test_in_memory_proposal_gateway_records_and_lists():
         new_content="{}",
         summary="tweak library",
         user=user,
+        category="advanced",
     )
     second = gateway.submit_proposal(
         target_file="config/build_rules.json",
         new_content="{}",
         summary="adjust rule",
         user=user,
+        category="advanced",
     )
     gateway.submit_proposal(
         target_file="config/build_rules.json",
         new_content="{}",
         summary="someone else's change",
         user=other,
+        category="advanced",
     )
 
     assert isinstance(first, ProposalStatus)

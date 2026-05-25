@@ -7,7 +7,12 @@ import uuid
 from datetime import datetime, timezone
 
 from ....storage.base import StorageProvider
-from ..interfaces import ChangeProposalGateway, ProposalStatus, UserIdentity
+from ..interfaces import (
+    ChangeProposalGateway,
+    ProposalCategory,
+    ProposalStatus,
+    UserIdentity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +23,8 @@ PENDING_REMOTE_FOLDER = "PendingChanges"
 
 # Schema version for the proposal JSON payload. Bump when the on-wire shape
 # changes; the pickup workflow checks this and refuses unknown versions.
-PROPOSAL_SCHEMA_VERSION = 1
+# v2 (Phase 2-β): added `category` to drive two-tier review behavior.
+PROPOSAL_SCHEMA_VERSION = 2
 
 
 def _slugify(value: str) -> str:
@@ -53,6 +59,8 @@ class SharePointPendingChangesGateway(ChangeProposalGateway):
         new_content: str,
         summary: str,
         user: UserIdentity,
+        *,
+        category: ProposalCategory,
     ) -> ProposalStatus:
         proposal_id = str(uuid.uuid4())
         submitted_at = datetime.now(timezone.utc).isoformat()
@@ -62,6 +70,7 @@ class SharePointPendingChangesGateway(ChangeProposalGateway):
             "schema_version": PROPOSAL_SCHEMA_VERSION,
             "proposal_id": proposal_id,
             "target_file": target_file,
+            "category": category,
             "summary": summary,
             "submitted_by": user.display_name or user.user_id,
             "submitted_by_email": user.email,

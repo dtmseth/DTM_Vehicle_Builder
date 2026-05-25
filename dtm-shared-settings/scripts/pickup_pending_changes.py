@@ -37,7 +37,18 @@ import requests
 logger = logging.getLogger("pickup")
 
 GRAPH = "https://graph.microsoft.com/v1.0"
-SUPPORTED_SCHEMA_VERSIONS = {1}
+# v1 is the pre-Phase-2-β format with no `category`. v2 (Phase 2-β) adds
+# `category: "general" | "advanced"` which drives two-tier review behavior.
+SUPPORTED_SCHEMA_VERSIONS = {1, 2}
+
+# Categories accepted in the v2 schema. "general" → auto-merge after opening
+# the PR; "advanced" → leave the PR for owner review on github.com.
+KNOWN_CATEGORIES = {"general", "advanced"}
+
+# Default category for v1 proposals (no `category` field). Advanced is the
+# safe choice — anything written under the old contract continues to require
+# manual review, exactly as it does today.
+DEFAULT_CATEGORY = "advanced"
 
 # GitHub caps PR titles at 256 chars. Leaving headroom for the `[user] `
 # prefix while still keeping the title scannable.
@@ -114,6 +125,41 @@ def delete_proposal(token: str, site_id: str, drive_id: str, name: str) -> None:
     resp.raise_for_status()
 
 
+def _validate_target_file(target: str) -> str | None:
+    """Allow `foo.json` or `subdir/foo.json`. Reject anything that could
+    traverse out of the settings tree.
+
+    Per-record entities (agencies, sales reps, presets) live in subdirectories
+    under ``resources/`` and need the one-subdir form. Anything deeper or with
+    ``..`` segments is rejected — the workflow holds repo-write credentials,
+    so path traversal is a real risk to guard against.
+    """
+    if not target or target.startswith("/") or target.startswith("."):
+        return f"target_file must be relative, got {target!r}"
+    parts = target.split("/")
+    if len(parts) > 2:
+        return f"target_file may have at most one subdirectory, got {target!r}"
+    for seg in parts:
+        if not seg or seg in {".", ".."} or seg.startswith(".") or "\\" in seg or "\x00" in seg:
+            return f"target_file segment invalid: {seg!r}"
+    if not parts[-1].endswith(".json"):
+        return f"target_file must end in .json, got {target!r}"
+    return None
+
+
+def resolve_category(proposal: dict[str, Any]) -> str:
+    """Map the proposal payload's category onto a known value.
+
+    v1 proposals (no field) default to advanced. v2 proposals with an unknown
+    category also default to advanced — the safe choice if a future version
+    introduces a new tier the workflow doesn't yet understand.
+    """
+    raw = str(proposal.get("category", "")).strip().lower()
+    if raw in KNOWN_CATEGORIES:
+        return raw
+    return DEFAULT_CATEGORY
+
+
 def validate(proposal: dict[str, Any]) -> str | None:
     version = proposal.get("schema_version")
     if version not in SUPPORTED_SCHEMA_VERSIONS:
@@ -121,8 +167,9 @@ def validate(proposal: dict[str, Any]) -> str | None:
     for field in ("proposal_id", "target_file", "new_content", "summary", "submitted_by"):
         if not proposal.get(field):
             return f"missing required field: {field}"
-    if "/" in proposal["target_file"] or proposal["target_file"].startswith("."):
-        return f"target_file must be a bare filename, got {proposal['target_file']!r}"
+    target_problem = _validate_target_file(proposal["target_file"])
+    if target_problem:
+        return target_problem
     return None
 
 
@@ -153,10 +200,17 @@ def open_pr_for_proposal(
     settings_subdir: str,
     main_branch: str,
 ) -> bool:
-    """Returns True if a PR was opened (proposal should be deleted from SharePoint)."""
+    """Returns True if a PR was opened (proposal should be deleted from SharePoint).
+
+    For category=general, also enables immediate squash-merge so the PR lands
+    without owner review. Branch protection on the settings repo must permit
+    ``github-actions[bot]`` to bypass the review requirement; otherwise the
+    merge call fails and the PR is left open for manual handling.
+    """
     target = proposal["target_file"]
     submitted_by = proposal["submitted_by"]
     summary = proposal["summary"]
+    category = resolve_category(proposal)
     # PR title field has practical limits and breaks on newlines — use the
     # first line only, truncated to GitHub's effective ceiling. The full
     # multi-line summary still lands in the body.
@@ -196,6 +250,7 @@ def open_pr_for_proposal(
         f"**Submitted by:** {submitted_by}",
         f"**Email:** {proposal.get('submitted_by_email', '')}",
         f"**Submitted at:** {proposal.get('submitted_at', '')}",
+        f"**Category:** {category}",
         f"**Proposal ID:** `{proposal['proposal_id']}`",
         "",
         "## Summary",
@@ -213,6 +268,24 @@ def open_pr_for_proposal(
             "--body", pr_body,
         ]
     )
+
+    if category == "general":
+        # Branch protection bypass for github-actions[bot] is what makes this
+        # work. If the merge call fails (bypass not configured, merge conflict,
+        # etc.) the PR stays open for owner review — equivalent to advanced.
+        try:
+            run(
+                [
+                    "gh", "pr", "merge", branch,
+                    "--squash", "--delete-branch",
+                ]
+            )
+        except subprocess.CalledProcessError:
+            logger.exception(
+                "Auto-merge failed for general-category PR %s — leaving open for review",
+                branch,
+            )
+
     return True
 
 

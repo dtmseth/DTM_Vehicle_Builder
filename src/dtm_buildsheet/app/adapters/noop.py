@@ -7,6 +7,7 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    ProposalCategory,
     ProposalStatus,
     UserIdentity,
 )
@@ -54,6 +55,8 @@ class InMemoryChangeProposalGateway(ChangeProposalGateway):
         new_content: str,
         summary: str,
         user: UserIdentity,
+        *,
+        category: ProposalCategory,
     ) -> ProposalStatus:
         status = ProposalStatus(
             proposal_id=str(uuid.uuid4()),

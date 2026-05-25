@@ -23,6 +23,11 @@ class UserIdentity:
 
 ProposalState = Literal["pending", "approved", "rejected", "merged", "unknown"]
 
+# Two-tier review policy introduced in Phase 2-β. The pickup workflow opens a
+# PR either way; "general" proposals get auto-merged immediately, "advanced"
+# proposals wait for owner review on github.com.
+ProposalCategory = Literal["general", "advanced"]
+
 
 @dataclass(frozen=True)
 class ProposalStatus:
@@ -73,6 +78,8 @@ class ChangeProposalGateway(ABC):
         new_content: str,
         summary: str,
         user: UserIdentity,
+        *,
+        category: ProposalCategory,
     ) -> ProposalStatus: ...
 
     @abstractmethod
