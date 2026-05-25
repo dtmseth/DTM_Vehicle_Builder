@@ -14,6 +14,7 @@ from ...domain.agency_models import AgencyRecord
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
+from ..adapters.wiring import save_via_proposal
 
 _log = logging.getLogger(__name__)
 
@@ -262,7 +263,13 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             records[agency_id] = record
 
         _write_record(record, paths)
-        return {"ok": True, "agency": asdict(record)}
+        proposal_result = save_via_proposal(
+            target_file=f"agencies/{record.agency_id}.json",
+            serialized_content=json.dumps(asdict(record), indent=2) + "\n",
+            summary=f"{'Update' if existing else 'Add'} agency: {record.name}",
+            category="general",
+        )
+        return {"ok": True, "agency": asdict(record), **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

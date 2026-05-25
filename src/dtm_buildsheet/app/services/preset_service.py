@@ -14,6 +14,7 @@ from ...domain.input_models import PartInput
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
+from ..adapters.wiring import save_via_proposal
 
 _log = logging.getLogger(__name__)
 
@@ -320,11 +321,23 @@ def save_preset(payload: dict, paths: AppPaths, overwrite: bool = False) -> dict
         return {"ok": False, "error": str(exc)}
 
     preset_id = validated["preset_id"]
+    serialized = json.dumps(validated, indent=2) + "\n"
     LocalStorageProvider().write_text(
         str(_workspace_path(preset_id, paths)),
-        json.dumps(validated, indent=2) + "\n",
+        serialized,
     )
-    return {"ok": True, "preset_id": preset_id, "label": validated["label"]}
+    proposal_result = save_via_proposal(
+        target_file=f"presets/{preset_id}.json",
+        serialized_content=serialized,
+        summary=f"Update preset: {validated['label']}",
+        category="general",
+    )
+    return {
+        "ok": True,
+        "preset_id": preset_id,
+        "label": validated["label"],
+        **proposal_result,
+    }
 
 
 def delete_preset(preset_id: str, paths: AppPaths) -> dict:

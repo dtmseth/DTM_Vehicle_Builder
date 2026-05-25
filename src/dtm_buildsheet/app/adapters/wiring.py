@@ -10,6 +10,7 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    ProposalCategory,
 )
 from .noop import (
     InMemoryChangeProposalGateway,
@@ -126,3 +127,56 @@ def set_active_bundle(bundle: AdapterBundle) -> None:
     """Override the active bundle. Intended for tests and the bootstrap path."""
     global _active_bundle
     _active_bundle = bundle
+
+
+def save_via_proposal(
+    target_file: str,
+    serialized_content: str,
+    summary: str,
+    *,
+    category: ProposalCategory,
+) -> dict:
+    """Submit a settings change as a proposal. No-op outside cloud mode.
+
+    Callers must have already written the local copy. The proposal is an
+    additional step that ships the change to the team via the settings repo;
+    it does not replace the local write. Local stays canonical until the
+    next ``SharedSettingsService.sync_all()`` overwrites it with the merged
+    version on app startup.
+
+    Returns a dict with `proposed`: True when a proposal was actually
+    submitted, False otherwise (cloud disabled, not signed in, or the gateway
+    raised). The return value is intended to be merged into the route's JSON
+    response so the UI can decide which toast to show.
+    """
+    if not _cloud_flag_enabled():
+        return {"proposed": False, "reason": "cloud disabled"}
+
+    bundle = get_active_bundle()
+    try:
+        if not bundle.identity.is_signed_in():
+            return {"proposed": False, "reason": "not signed in"}
+        user = bundle.identity.current_user()
+    except Exception:
+        logger.exception("Identity check failed while submitting proposal")
+        return {"proposed": False, "reason": "identity error"}
+    if user is None:
+        return {"proposed": False, "reason": "not signed in"}
+
+    try:
+        status = bundle.proposals.submit_proposal(
+            target_file=target_file,
+            new_content=serialized_content,
+            summary=summary,
+            user=user,
+            category=category,
+        )
+    except Exception:
+        logger.exception("Failed to submit proposal for %s", target_file)
+        return {"proposed": False, "reason": "submit failed"}
+
+    return {
+        "proposed": True,
+        "proposal_id": status.proposal_id,
+        "category": category,
+    }
