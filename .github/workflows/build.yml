@@ -146,6 +146,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so we can `git log` between tags
+
       - uses: actions/download-artifact@v4
         with:
           name: DTM-Vehicle-Builder-Mac
@@ -156,11 +160,47 @@ jobs:
           name: DTM-Vehicle-Builder-Windows
           path: dist
 
+      - name: Generate release notes from git log
+        id: notes
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          TAG="v${VERSION}"
+          # Find the previous tag (one before HEAD's tag). If this is the
+          # very first release, fall back to "" which means "since repo
+          # genesis" — `git log` with an empty range does the right thing.
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+          if [ -n "$PREVIOUS_TAG" ]; then
+            RANGE="${PREVIOUS_TAG}..${TAG}"
+            HEADER="Changes since ${PREVIOUS_TAG}"
+          else
+            RANGE="${TAG}"
+            HEADER="Initial release"
+          fi
+          mkdir -p dist/sharepoint
+          NOTES_FILE="dist/sharepoint/notes-${VERSION}.md"
+          {
+            echo "# DTM Vehicle Builder v${VERSION}"
+            echo
+            echo "_Published $(date -u +'%Y-%m-%d %H:%M UTC')_"
+            echo
+            echo "## ${HEADER}"
+            echo
+            # Skip the bump commit itself (auto-generated, no signal).
+            git log "${RANGE}" \
+              --pretty=format:"- %s" \
+              --invert-grep --grep="^bump:" \
+              || true
+            echo
+          } > "${NOTES_FILE}"
+          echo "Generated ${NOTES_FILE}:"
+          cat "${NOTES_FILE}"
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.version.outputs.version }}
           name: DTM Vehicle Builder v${{ needs.version.outputs.version }}
+          body_path: dist/sharepoint/notes-${{ needs.version.outputs.version }}.md
           files: |
             dist/DTM_Vehicle_Builder.dmg
             dist/DTM_Vehicle_Builder_Setup.exe
@@ -168,7 +208,6 @@ jobs:
       - name: Stage versioned installers for SharePoint
         run: |
           VERSION="${{ needs.version.outputs.version }}"
-          mkdir -p dist/sharepoint
           cp "dist/DTM_Vehicle_Builder.dmg" "dist/sharepoint/DTM_Vehicle_Builder-${VERSION}.dmg"
           cp "dist/DTM_Vehicle_Builder_Setup.exe" "dist/sharepoint/DTM_Vehicle_Builder_Setup-${VERSION}.exe"
 
@@ -214,5 +253,20 @@ jobs:
               --data-binary "@${local_path}"
             echo "Uploaded ${remote_name} (${size} bytes)"
           }
-          upload_via_session "dist/sharepoint/DTM_Vehicle_Builder-${VERSION}.dmg" "DTM_Vehicle_Builder-${VERSION}.dmg"
-          upload_via_session "dist/sharepoint/DTM_Vehicle_Builder_Setup-${VERSION}.exe" "DTM_Vehicle_Builder_Setup-${VERSION}.exe"
+          upload_simple() {
+            # Small files (notes markdown) fit in a single PUT — no session needed.
+            local local_path="$1"
+            local remote_name="$2"
+            curl -fsS -X PUT \
+              "https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/Releases/${remote_name}:/content" \
+              -H "Authorization: Bearer ${GRAPH_TOKEN}" \
+              -H "Content-Type: text/markdown" \
+              --data-binary "@${local_path}" > /dev/null
+            echo "Uploaded ${remote_name}"
+          }
+          # Notes go up FIRST so Power Automate Flow B can read them when
+          # the installer change-trigger fires (same ordering principle as
+          # publish-settings-on-merge with its .meta.json sidecar).
+          upload_simple        "dist/sharepoint/notes-${VERSION}.md"                       "notes-${VERSION}.md"
+          upload_via_session   "dist/sharepoint/DTM_Vehicle_Builder-${VERSION}.dmg"        "DTM_Vehicle_Builder-${VERSION}.dmg"
+          upload_via_session   "dist/sharepoint/DTM_Vehicle_Builder_Setup-${VERSION}.exe"  "DTM_Vehicle_Builder_Setup-${VERSION}.exe"
