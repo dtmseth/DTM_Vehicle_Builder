@@ -293,18 +293,19 @@
       placement_overrides: _importPlacementOverrides || {},
     };
 
-    const res = await api("/api/presets/save", payload);
+    // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
+    const res = await apiSave("/api/presets/save", payload);
 
     // Backend conflict safety-net (race condition or client-side miss)
     if (res?.conflict) {
       if (!confirm(`A preset for this combination already exists:\n"${res.duplicate_label}"\n\nOverwrite it?`)) return;
-      const r2 = await api("/api/presets/save", {
+      const r2 = await apiSave("/api/presets/save", {
         ...payload,
         overwrite:  true,
         preset_id:  res.duplicate_preset_id,
       });
       if (!r2?.ok) { toast(r2?.error || "Save failed", "error"); return; }
-      toast(`Preset saved: ${r2.label}`, "success");
+      if (!r2.proposed) toast(`Preset saved: ${r2.label}`, "success");
       await _offerUpdateBuilds(r2.preset_id);
       _closeModal();
       await _load();
@@ -312,7 +313,7 @@
     }
 
     if (!res?.ok) { toast(res?.error || "Save failed", "error"); return; }
-    toast(`Preset saved: ${res.label}`, "success");
+    if (!res.proposed) toast(`Preset saved: ${res.label}`, "success");
     await _offerUpdateBuilds(res.preset_id);
 
     _closeModal();

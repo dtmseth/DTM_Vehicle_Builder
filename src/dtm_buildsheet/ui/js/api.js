@@ -10,7 +10,22 @@ const api = (path, body) =>
 async function apiSave(endpoint, data){
   const res = await api(endpoint, data);
   if(res?.ok && res.template_regen) setTimeout(loadTemplateInfo, 800);
+  maybeProposalToast(res);
   return res;
+}
+
+// Phase 2-β: surface the proposal pipeline outcome to the user.
+// "general" category = auto-merged by the settings-repo workflow within
+// minutes. "advanced" = a PR opens and waits for owner review.
+// No proposal field on the response = legacy/local-only save; nothing to
+// say beyond whatever the caller's own toast already shows.
+function maybeProposalToast(res){
+  if(!res?.ok || !res.proposed) return;
+  if(res.category === "general"){
+    toast("Saved (auto-merging shortly)", "success");
+  } else if(res.category === "advanced"){
+    toast("Submitted for review", "info");
+  }
 }
 
 function relativeTime(ms){

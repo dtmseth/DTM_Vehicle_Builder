@@ -14,6 +14,7 @@ from ..paths import AppPaths, ensure_workspace
 from .routes import agencies as agency_routes
 from .routes import sales_reps as sales_rep_routes
 from .services import agency_service, sales_rep_service
+from .services.shared_settings_service import sync_shared_settings_at_startup
 from .routes import assets as asset_routes
 from .routes import config as config_routes
 from .routes import drafts as draft_routes
@@ -254,9 +255,15 @@ def main(paths: AppPaths | None = None):
         _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
 
+    # Pull the latest team settings before the UI loads (Phase 2e). No-op
+    # when cloud mode is disabled or the user isn't signed in. Errors are
+    # logged inside; startup never fails here.
+    sync_shared_settings_at_startup(active_paths)
+
     # Warm per-record collection caches at startup so the one-shot legacy
     # migration (Phase 1) fires immediately on launch rather than on first
-    # user interaction with the agency/sales-rep services.
+    # user interaction with the agency/sales-rep services. Runs AFTER the
+    # shared-settings sync so the cache picks up any merged team changes.
     agency_service.warmup_cache(active_paths)
     sales_rep_service.warmup_cache(active_paths)
 

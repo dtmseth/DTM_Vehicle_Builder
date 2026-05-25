@@ -105,10 +105,13 @@
     if (!email) { toast("Email is required", "error"); return; }
     const payload = { name, phone, email };
     if (_editingId) payload.rep_id = _editingId;
-    const res = await api("/api/sales-rep/save", payload);
+    // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
+    const res = await apiSave("/api/sales-rep/save", payload);
     if (res?.ok) {
       _closeModal();
-      toast(_editingId ? "Rep updated" : `"${res.rep.name}" added`, "success");
+      if (!res.proposed) {
+        toast(_editingId ? "Rep updated" : `"${res.rep.name}" added`, "success");
+      }
       if (_pendingOnSuccess) { _pendingOnSuccess(res.rep); _pendingOnSuccess = null; }
       await _load();
     } else {

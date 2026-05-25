@@ -312,7 +312,7 @@ async function addFixturePart(partId){
   if(!_layouts.vehicles[_fixtureVehicle].fixtures[partId]) _layouts.vehicles[_fixtureVehicle].fixtures[partId]={};
 
   // Save catalog and layouts
-  const catRes=await api("/api/catalog/save",_catalog);
+  const catRes=await apiSave("/api/catalog/save",_catalog);
   if(!catRes.ok){ part.is_fixture=false; toast("Catalog save failed: "+(catRes.error||""),"error"); return; }
   const layRes=await apiSave("/api/layouts/save",_layouts);
   if(!layRes.ok){ toast("Layout save failed: "+(layRes.error||""),"error"); return; }
@@ -341,7 +341,7 @@ async function deleteFixturePart(){
   const catalogPart=(_catalog?.parts||[]).find(p=>p.part_id===_selectedFixtureId);
   if(catalogPart) catalogPart.is_fixture=false;
 
-  const catRes=await api("/api/catalog/save",_catalog);
+  const catRes=await apiSave("/api/catalog/save",_catalog);
   if(!catRes.ok){ toast("Catalog save failed: "+(catRes.error||""),"error"); return; }
   const layRes=await apiSave("/api/layouts/save",_layouts);
   if(!layRes.ok){ toast("Layout save failed: "+(layRes.error||""),"error"); return; }

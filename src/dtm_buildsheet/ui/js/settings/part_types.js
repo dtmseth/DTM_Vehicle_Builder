@@ -143,7 +143,7 @@ $("wbtn-4-save").addEventListener("click", async()=>{
       const viewMap={};
       Object.entries(_uploadedImages).forEach(([view,img])=>{viewMap[view]=`${assetFolder}/${img.filename}`;});
       assetMap[assetKey]=viewMap;
-      const mRes=await api("/api/manifest/save",_manifest);
+      const mRes=await apiSave("/api/manifest/save",_manifest);
       if(!mRes.ok) throw new Error("Manifest save failed: "+mRes.error);
     }
     const newPart={part_id:partId,display_name:name,category:$("wp-category").value,render_kind:rk,diagram:diag,default_views:views};
@@ -155,7 +155,7 @@ $("wbtn-4-save").addEventListener("click", async()=>{
     }
     _catalog.parts=(_catalog.parts||[]).filter(p=>p.part_id!==partId);
     _catalog.parts.push(newPart);
-    const cRes=await api("/api/catalog/save",_catalog);
+    const cRes=await apiSave("/api/catalog/save",_catalog);
     if(!cRes.ok) throw new Error("Catalog save failed: "+cRes.error);
 
     // Add to workbook_rules template_sections so it appears in the generated template
@@ -773,7 +773,7 @@ $("btn-modal-save").addEventListener("click", async()=>{
         }
         assetMap[ak]=altViewMap;
       }
-      await api("/api/manifest/save",_manifest);
+      await apiSave("/api/manifest/save",_manifest);
     }
     // Collect per-view render sizes
     const size_per_view={};
@@ -813,7 +813,7 @@ $("btn-modal-save").addEventListener("click", async()=>{
     // (is_fixture, group_shapes, quantity_rules, conditions, model_remaps, etc.)
     if(idx>=0) _catalog.parts[idx]={..._catalog.parts[idx], ...updated};
     else _catalog.parts.push(updated);
-    const res=await api("/api/catalog/save",_catalog);
+    const res=await apiSave("/api/catalog/save",_catalog);
     if(!res.ok) throw new Error(res.error);
 
     // Save location assignments back to workbook_rules part_rules
@@ -847,7 +847,7 @@ $("btn-modal-delete").addEventListener("click", async()=>{
   const deletedPart = _catalog.parts.find(p=>p.part_id===_editingPartId);
   const deletedName = deletedPart?.display_name;
   _catalog.parts=_catalog.parts.filter(p=>p.part_id!==_editingPartId);
-  const res=await api("/api/catalog/save",_catalog);
+  const res=await apiSave("/api/catalog/save",_catalog);
   if(!res.ok){toast("Delete failed: "+res.error,"error");return;}
 
   // Remove from template_sections so it no longer appears in generated template

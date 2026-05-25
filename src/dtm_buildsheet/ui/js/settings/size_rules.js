@@ -157,6 +157,7 @@ $("btn-save-sizes").addEventListener("click",async()=>{
   });
   _manifest.part_number_size_rules=rules;
   _manifest.size_rule_definitions=defs;
-  const res=await api("/api/manifest/save",_manifest);
-  if(res.ok) toast("Size rules saved!","success"); else toast("Save failed: "+res.error,"error");
+  const res=await apiSave("/api/manifest/save",_manifest);
+  if(res.ok){ if(!res.proposed) toast("Size rules saved!","success"); }
+  else toast("Save failed: "+res.error,"error");
 });

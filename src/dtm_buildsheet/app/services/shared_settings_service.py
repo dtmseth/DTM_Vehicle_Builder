@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ...paths import AppPaths
 from ...storage.base import StorageProvider
 from ...storage.local import LocalStorageProvider
 
@@ -91,3 +92,69 @@ class SharedSettingsService:
 
     def read_cached_text(self, filename: str) -> str:
         return (self._cache_dir / filename).read_text(encoding="utf-8")
+
+
+def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
+    """Pull the latest team settings into the local workspace config dir.
+
+    Phase 2e entrypoint — called from ``app/server.py:main()`` after workspace
+    bootstrap, before the HTTP server starts serving the UI. Errors are
+    logged and swallowed: startup must succeed even if the network is down or
+    the user isn't signed in yet. The toast UI in PR #3 surfaces any failure
+    later when the user actually tries to save.
+
+    Returns ``None`` when cloud mode is disabled, when no user is signed in,
+    or when the sync raised. Returns a ``SyncReport`` otherwise.
+
+    Scope note: this syncs the flat ``/Settings/`` folder only. Per-record
+    entities (agencies, sales_reps, presets) live in subfolders and need a
+    publish-workflow update before they can flow back to teammates. The
+    proposal pipeline already routes their saves correctly — sync of the
+    canonical reverse-direction lands in a follow-up.
+    """
+    # Deferred import — wiring imports nothing from app.services and we want
+    # to keep the dependency direction services → adapters.
+    from ..adapters import wiring
+
+    if not wiring._cloud_flag_enabled():  # noqa: SLF001 — intentional helper reuse
+        return None
+
+    try:
+        bundle = wiring.get_active_bundle()
+    except Exception:
+        logger.exception("Could not build cloud bundle for startup sync")
+        return None
+
+    try:
+        signed_in = bundle.identity.is_signed_in()
+    except Exception:
+        logger.exception("Identity check failed during startup sync")
+        return None
+
+    if not signed_in:
+        logger.info("Skipping shared-settings sync: user not signed in")
+        return None
+
+    try:
+        service = SharedSettingsService(
+            remote=bundle.storage,
+            cache_dir=paths.workspace_config_dir,
+        )
+        report = service.sync_all()
+    except Exception:
+        logger.exception("Shared-settings sync raised; continuing startup")
+        return None
+
+    if report.updated:
+        logger.info(
+            "Synced %d shared settings file(s): %s",
+            len(report.updated),
+            ", ".join(report.updated),
+        )
+    if report.failed:
+        logger.warning(
+            "Shared-settings sync had %d failure(s): %s",
+            len(report.failed),
+            report.failed,
+        )
+    return report

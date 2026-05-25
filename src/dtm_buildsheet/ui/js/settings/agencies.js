@@ -119,10 +119,15 @@
     };
     if (_editingId) payload.agency_id = _editingId;
 
-    const res = await api("/api/agency/save", payload);
+    // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
+    const res = await apiSave("/api/agency/save", payload);
     if (res?.ok) {
       _closeModal();
-      toast(_editingId ? "Agency updated" : `Agency "${res.agency.name}" created`, "success");
+      // Suppress the local-only "Agency updated" toast when a proposal toast
+      // already fired — two stacked toasts are noisy.
+      if (!res.proposed) {
+        toast(_editingId ? "Agency updated" : `Agency "${res.agency.name}" created`, "success");
+      }
       if (_pendingOnSuccess) { _pendingOnSuccess(res.agency); _pendingOnSuccess = null; }
       await _load();
     } else {
