@@ -21,29 +21,66 @@
   </div>
   <div class="header-tabs">
     <button class="htab" data-tab="projects">📋 Projects</button>
-    <button class="htab" data-tab="settings">⚙️ Settings</button>
+    <button class="htab" data-tab="general-settings">⚙️ General Settings</button>
+    <button class="htab" data-tab="advanced-settings">🔧 Advanced Settings</button>
   </div>
 </div>
 
 
 
-<!-- ═══════════ SETTINGS TAB ═══════════ -->
+<!-- ═══════════ SETTINGS TAB ═══════════
+     Container holds the stab content for both General and Advanced Settings.
+     The active header tab (general-settings vs advanced-settings) decides
+     which stab-bar is visible and which set of stabs are reachable. -->
 <div id="tab-settings" class="main-content" hidden>
-  <div class="stab-bar">
-    <button class="stab active" data-stab="placements">📍 Placements</button>
-    <button class="stab" data-stab="fixtures">🏗 Fixtures</button>
-    <button class="stab" data-stab="sizes">📐 Size Rules</button>
-    <button class="stab" data-stab="catalog">📋 Part Types</button>
-    <button class="stab" data-stab="parts">🔩 Parts Library</button>
-    <button class="stab" data-stab="vehicles">🚗 Vehicles</button>
-    <button class="stab" data-stab="agencies">🏛 Agencies</button>
-    <button class="stab" data-stab="sales-reps">👤 Sales Reps</button>
-    <button class="stab" data-stab="presets">📂 Presets</button>
-    <button class="stab" data-stab="tools">🔧 Tools</button>
+  <!-- General Settings stab-bar — easy edits, auto-merged with GitHub history -->
+  <div class="stab-bar" id="stab-bar-general" hidden>
+    <button class="stab" data-stab="projects-defaults" data-stab-group="general">📁 Projects</button>
+    <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
+    <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
+    <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
+  </div>
+  <!-- Advanced Settings stab-bar — review-gated config changes -->
+  <div class="stab-bar" id="stab-bar-advanced" hidden>
+    <button class="stab" data-stab="placements" data-stab-group="advanced">📍 Placements</button>
+    <button class="stab" data-stab="sizes" data-stab-group="advanced">📐 Light Size Rules</button>
+    <button class="stab" data-stab="part-manager" data-stab-group="advanced">🔩 Part Manager</button>
+    <button class="stab" data-stab="vehicles" data-stab-group="advanced">🚗 Vehicle Manager</button>
+    <button class="stab" data-stab="workbook-tools" data-stab-group="advanced">🔧 Workbook Tools</button>
+  </div>
+
+  <!-- Inner-stab bars: rendered above outer stabs that group two content
+       blocks. JS shows/hides them based on which outer stab is active and
+       toggles which inner content block is visible underneath. -->
+  <div class="inner-stab-bar" id="inner-stab-bar-placements" hidden>
+    <button class="inner-stab active" data-inner-stab="placements" data-inner-group="placements">Placements</button>
+    <button class="inner-stab" data-inner-stab="fixtures" data-inner-group="placements">Fixtures</button>
+  </div>
+  <div class="inner-stab-bar" id="inner-stab-bar-part-manager" hidden>
+    <button class="inner-stab active" data-inner-stab="catalog" data-inner-group="part-manager">Part Types</button>
+    <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library</button>
+  </div>
+
+  <!-- ── PROJECTS (General Settings) ──
+       Holds the project_output_root setting; moved here from the old Tools tab. -->
+  <div id="stab-projects-defaults" hidden>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Project Output Folder</div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+        Root folder where project build sheets are saved. Each project creates a subdirectory named after the agency.
+        Leave blank to use the default Desktop / DTM Projects location.
+      </p>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <div id="proj-output-root-display" class="dir-display" title="">Default (Desktop / DTM Projects)</div>
+        <button class="btn btn-secondary btn-sm" id="btn-pick-proj-root">📁 Browse</button>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-proj-root" title="Reset to default location" style="padding:4px 8px">✕</button>
+      </div>
+      <div id="proj-root-status" style="display:none;font-size:12px;color:var(--green);margin-top:4px"></div>
+    </div>
   </div>
 
   <!-- ── PLACEMENTS ── -->
-  <div id="stab-placements">
+  <div id="stab-placements" hidden>
     <div class="card">
       <div class="card-title">
         Vehicle Layout — Placements
@@ -658,22 +695,12 @@
     </div>
   </div>
 
-  <!-- ── TOOLS ── -->
-  <div id="stab-tools" hidden>
+  <!-- ── WORKBOOK TOOLS (renamed from Tools) ──
+       Project Output Folder card was relocated to #stab-projects-defaults
+       above; what remains here is the workbook template regen + the
+       standalone build-sheet generator. -->
+  <div id="stab-workbook-tools" hidden>
     <div class="card">
-      <div class="card-title" style="margin-bottom:6px">Project Output Folder</div>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-        Root folder where project build sheets are saved. Each project creates a subdirectory named after the agency.
-        Leave blank to use the default Desktop / DTM Projects location.
-      </p>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-        <div id="proj-output-root-display" class="dir-display" title="">Default (Desktop / DTM Projects)</div>
-        <button class="btn btn-secondary btn-sm" id="btn-pick-proj-root">📁 Browse</button>
-        <button class="btn btn-secondary btn-sm" id="btn-clear-proj-root" title="Reset to default location" style="padding:4px 8px">✕</button>
-      </div>
-      <div id="proj-root-status" style="display:none;font-size:12px;color:var(--green);margin-top:4px"></div>
-    </div>
-    <div class="card" style="margin-top:12px">
       <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
       <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
         The template is regenerated automatically after every config save.

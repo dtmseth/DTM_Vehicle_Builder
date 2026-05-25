@@ -35,6 +35,14 @@
     .stab{flex:1;padding:8px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;border-radius:6px;cursor:pointer;transition:.15s}
     .stab:hover{color:var(--navy)}
     .stab.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+    /* inner sub-tabs: appear under the main stab-bar for outer stabs that
+       group two content panes (e.g. Placements + Fixtures, Part Types +
+       Parts Library). Lighter visual weight than the main stab-bar so it
+       reads as nested. */
+    .inner-stab-bar{display:flex;gap:2px;background:transparent;border-bottom:1px solid var(--border);margin:-8px 0 14px;padding:0}
+    .inner-stab{padding:8px 14px;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;transition:.15s;margin-bottom:-1px}
+    .inner-stab:hover{color:var(--navy)}
+    .inner-stab.active{color:var(--navy);border-bottom-color:var(--gold)}
 
     /* buttons */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s}
