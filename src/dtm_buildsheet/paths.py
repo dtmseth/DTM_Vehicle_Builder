@@ -208,12 +208,20 @@ def ensure_workspace() -> AppPaths:
 
     _log_westin_elitexd_probe(paths)
 
-    # Seed workspace-root data files (agencies, sales_reps) from packaged defaults
-    # if and only if they don't exist yet.  In dev mode workspace_dir is the repo
-    # workspace/ folder which is git-ignored; in bundled mode it's the user's
-    # Application Support folder.  Either way, once the file exists we leave it
-    # alone so user edits are never overwritten.
-    for data_filename in ("agencies.json", "sales_reps.json"):
+    # Seed workspace-root data files from packaged defaults if and only if
+    # they don't exist yet. In dev mode workspace_dir is the repo workspace/
+    # folder which is git-ignored; in bundled mode it's the user's Application
+    # Support folder. Either way, once the file exists we leave it alone so
+    # user edits are never overwritten.
+    #
+    # cloud_config.json is treated the same: bundling the DTM Fleet tenant
+    # IDs lets a teammate's first launch enter cloud mode without manually
+    # dropping a config file. The values are non-secret (tenant + app
+    # registration + site IDs are all publicly discoverable during the OAuth
+    # flow); shipping them removes a setup step. External-sale variants will
+    # ship a different bundled cloud_config.json (or none, to default to
+    # local mode).
+    for data_filename in ("agencies.json", "sales_reps.json", "cloud_config.json"):
         dest = paths.workspace_dir / data_filename
         if not dest.exists():
             src = DEFAULT_DATA_DIR / data_filename
