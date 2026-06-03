@@ -11,6 +11,7 @@ from .msal_client import CloudAuthError, MsalClient
 logger = logging.getLogger(__name__)
 
 _GRAPH_ME_URL = f"{GRAPH_ENDPOINT}/me"
+_GRAPH_ME_PHOTO_URL = f"{GRAPH_ENDPOINT}/me/photo/$value"
 
 
 class M365IdentityProvider(IdentityProvider):
@@ -51,6 +52,36 @@ class M365IdentityProvider(IdentityProvider):
 
     def is_signed_in(self) -> bool:
         return self.current_user() is not None
+
+    def fetch_user_photo(self) -> bytes | None:
+        """Return the signed-in user's Microsoft Graph profile photo as bytes.
+
+        Returns ``None`` if the user hasn't set a photo (Graph 404), if no
+        cached account is available, or if the request fails. Callers should
+        cache the bytes — the photo rarely changes.
+        """
+        try:
+            token = self._msal.acquire_token(interactive_ok=False)
+        except CloudAuthError:
+            return None
+        try:
+            response = requests.get(
+                _GRAPH_ME_PHOTO_URL,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=self._http_timeout,
+            )
+        except requests.RequestException:
+            logger.exception("Failed to fetch user photo from Graph")
+            return None
+        if response.status_code == 404:
+            return None  # User has no profile photo set — that's fine.
+        if not response.ok:
+            logger.warning(
+                "Graph returned %d for user photo; treating as unavailable",
+                response.status_code,
+            )
+            return None
+        return response.content
 
     # ── Internal ──────────────────────────────────────────────────────────
 

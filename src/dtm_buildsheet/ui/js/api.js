@@ -11,6 +11,9 @@ async function apiSave(endpoint, data){
   const res = await api(endpoint, data);
   if(res?.ok && res.template_regen) setTimeout(loadTemplateInfo, 800);
   maybeProposalToast(res);
+  // A proposal save means cloud is working — refresh the chip so the user
+  // gets immediate confirmation that they're signed in (esp. on first save).
+  if(res?.proposed) setTimeout(refreshCloudStatus, 200);
   return res;
 }
 
@@ -67,3 +70,81 @@ function toast(msg, type=""){
   t.className="toast show"+(type?" "+type:"");
   setTimeout(()=>t.className="toast",2800);
 }
+
+// ─── Cloud connection indicator ─────────────────────────────────────────────
+// Header chip showing cloud state + signed-in M365 user + profile photo.
+// refreshCloudStatus() is called on app boot and after every successful
+// proposal save (the "I just confirmed cloud works" moment).
+function _cloudInitials(name){
+  if(!name) return "?";
+  const parts = String(name).trim().split(/\s+/);
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function _setCloudChip({stateClass, text, title, photo, initials}){
+  const chip = $("cloud-status"); if(!chip) return;
+  // Strip every cloud-status-* state class so we don't accumulate them.
+  chip.className = "cloud-status " + stateClass;
+  chip.title = title || text;
+  $("cloud-status-text").textContent = text;
+  const photoEl = $("cloud-status-photo");
+  const initialsEl = $("cloud-status-initials");
+  if(photo){
+    // Cache-bust on each call so a freshly-cached photo replaces a 404.
+    photoEl.src = "/api/cloud/photo?t=" + Date.now();
+    photoEl.hidden = false;
+    initialsEl.hidden = true;
+    photoEl.onerror = () => {
+      // Photo isn't actually available — fall back to initials.
+      photoEl.hidden = true;
+      initialsEl.hidden = false;
+      initialsEl.textContent = initials;
+    };
+  } else if(initials){
+    photoEl.hidden = true;
+    initialsEl.hidden = false;
+    initialsEl.textContent = initials;
+  } else {
+    photoEl.hidden = true;
+    initialsEl.hidden = true;
+  }
+}
+
+async function refreshCloudStatus(){
+  let res;
+  try { res = await api("/api/cloud/status"); }
+  catch(_){
+    _setCloudChip({stateClass:"cloud-status-local", text:"Offline",
+                   title:"Could not reach the local server"});
+    return;
+  }
+  if(!res?.cloud_enabled){
+    _setCloudChip({stateClass:"cloud-status-local", text:"Local mode",
+                   title:"Cloud mode is disabled for this install"});
+    return;
+  }
+  if(!res.signed_in){
+    _setCloudChip({stateClass:"cloud-status-signed-out", text:"Sign in needed",
+                   title:"Cloud mode is on but no Microsoft account is connected"});
+    return;
+  }
+  const name = res.user?.display_name || res.user?.email || "Signed in";
+  const initials = _cloudInitials(name);
+  _setCloudChip({
+    stateClass: "cloud-status-connected",
+    text: `Connected to Microsoft via: ${name}`,
+    title: res.user?.email
+      ? `Connected to Microsoft via: ${name} (${res.user.email})`
+      : `Connected to Microsoft via: ${name}`,
+    photo: res.has_photo,
+    initials,
+  });
+}
+
+// Boot + 60s polling. The status endpoint is cheap (no Graph hit on the
+// hot path — only on first-call photo fetch) so polling won't be noticed.
+document.addEventListener("DOMContentLoaded", () => {
+  refreshCloudStatus();
+  setInterval(refreshCloudStatus, 60_000);
+});

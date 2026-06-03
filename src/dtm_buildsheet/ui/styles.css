@@ -23,6 +23,20 @@
     .htab:hover{color:#fff}
     .htab.active{color:#fff;border-bottom-color:var(--gold)}
 
+    /* cloud connection indicator (right side of header) */
+    .cloud-status{display:flex;align-items:center;gap:8px;margin-left:auto;padding:6px 14px 6px 10px;margin-right:16px;border-radius:18px;background:rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.85);cursor:default;user-select:none;transition:background .15s}
+    .cloud-status:hover{background:rgba(255,255,255,.14)}
+    .cloud-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#888;box-shadow:0 0 0 2px rgba(0,0,0,.15)}
+    .cloud-status-photo{width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#444}
+    .cloud-status-initials{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--gold);color:var(--navy)}
+    .cloud-status-text{white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+    .cloud-status-connected .cloud-status-dot{background:#22c55e}
+    .cloud-status-signed-out .cloud-status-dot{background:#f59e0b}
+    .cloud-status-local .cloud-status-dot{background:#94a3b8}
+    .cloud-status-loading{opacity:.6}
+    .cloud-status-loading .cloud-status-dot{background:#94a3b8;animation:cloud-pulse 1s ease-in-out infinite}
+    @keyframes cloud-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
     /* layout */
     .main-content{max-width:960px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px}
 

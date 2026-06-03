@@ -16,6 +16,7 @@ from .routes import sales_reps as sales_rep_routes
 from .services import agency_service, sales_rep_service
 from .services.shared_settings_service import sync_shared_settings_at_startup
 from .routes import assets as asset_routes
+from .routes import cloud_status as cloud_status_routes
 from .routes import config as config_routes
 from .routes import drafts as draft_routes
 from .routes import exports as export_routes
@@ -97,6 +98,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/update/"):
             if not update_routes.route_updates(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/cloud/"):
+            if not cloud_status_routes.route_cloud_status(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/ui/"):
             self._serve_static(path[len("/ui/"):])
