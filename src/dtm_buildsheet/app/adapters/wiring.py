@@ -129,6 +129,55 @@ def set_active_bundle(bundle: AdapterBundle) -> None:
     _active_bundle = bundle
 
 
+def ensure_signed_in_for_cloud() -> bool:
+    """Trigger interactive M365 sign-in at boot if needed.
+
+    Without this, a fresh cloud-mode install (no cached MSAL token) silently
+    falls through to "not signed in" because the storage adapter's token
+    provider uses ``interactive_ok=False``. The user would then save settings
+    and see only the local-only toast — cloud mode looks broken even though
+    the bundle constructed successfully.
+
+    Behavior:
+      - Cloud disabled or bundle unavailable → no-op, returns False.
+      - Cached account present (silent SSO works) → no-op, returns True.
+      - No cached account → calls ``identity.signin()`` which opens the
+        OAuth browser flow (or device-code fallback in headless mode).
+        Returns True on success, False if the user cancels / OAuth fails.
+
+    Errors are logged but never propagate — startup must succeed even when
+    the user is offline or declines to sign in. They land in local mode
+    and can retry next launch.
+    """
+    if not _cloud_flag_enabled():
+        return False
+
+    try:
+        bundle = get_active_bundle()
+    except Exception:
+        logger.exception("Could not build cloud bundle for startup sign-in")
+        return False
+
+    try:
+        if bundle.identity.is_signed_in():
+            return True
+    except Exception:
+        logger.exception("is_signed_in check failed during startup")
+        # Fall through to interactive — the user clearly wanted cloud mode.
+
+    try:
+        logger.info("No cached M365 account — launching interactive sign-in")
+        bundle.identity.signin()
+        logger.info("Interactive sign-in complete")
+        return True
+    except Exception:
+        logger.exception(
+            "Interactive sign-in failed; continuing without cloud session "
+            "(saves will land locally until next launch)"
+        )
+        return False
+
+
 def save_via_proposal(
     target_file: str,
     serialized_content: str,

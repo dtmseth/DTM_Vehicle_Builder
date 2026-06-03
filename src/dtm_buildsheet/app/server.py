@@ -255,6 +255,13 @@ def main(paths: AppPaths | None = None):
         _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
 
+    # Make sure the user has a valid M365 session before anything that
+    # needs SharePoint runs. On first launch this opens the OAuth browser
+    # window; subsequent launches see a cached token and proceed silently.
+    # No-op outside cloud mode.
+    from .adapters.wiring import ensure_signed_in_for_cloud
+    ensure_signed_in_for_cloud()
+
     # Pull the latest team settings before the UI loads (Phase 2e). No-op
     # when cloud mode is disabled or the user isn't signed in. Errors are
     # logged inside; startup never fails here.
