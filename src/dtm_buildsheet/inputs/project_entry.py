@@ -88,12 +88,22 @@ def _project_from_dict_resolved(data: dict, paths: AppPaths) -> ProjectRecord:
 
 
 def save_project(project: ProjectRecord, paths: AppPaths) -> Path:
-    """Persist *project* to disk and update its updated_at timestamp."""
+    """Persist *project* to disk and update its updated_at timestamp.
+
+    In cloud mode, also mirrors the file up to SharePoint /Projects/
+    immediately so teammates' next sync pass picks it up. Mirror failure
+    is logged but doesn't fail the save — the periodic sync loop retries.
+    """
     validate_safe_id(project.project_id, label="project_id")
     project.updated_at = _utcnow()
     path = _project_path(project.project_id, paths)
     data = _project_to_dict_portable(project, paths)
     LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
+    # Deferred import to avoid a circular dependency at module import time
+    # (services → inputs is the established direction; this module is in
+    # inputs and shared_work_service is in services).
+    from ..app.services.shared_work_service import mirror_project_to_cloud
+    mirror_project_to_cloud(project.project_id, path)
     return path
 
 
@@ -134,7 +144,9 @@ def list_projects(paths: AppPaths) -> list[ProjectRecord]:
 def delete_project(project_id: str, paths: AppPaths) -> None:
     """Remove a project and its directory entirely.
 
-    Raises FileNotFoundError if the project does not exist.
+    Raises FileNotFoundError if the project does not exist. Also removes
+    the cloud mirror in cloud mode — last-writer-wins applies to deletes
+    too, so teammates' next sync drops the file from their workspace.
     """
     validate_safe_id(project_id, label="project_id")
     project_dir = _project_dir(project_id, paths)
@@ -142,3 +154,5 @@ def delete_project(project_id: str, paths: AppPaths) -> None:
     if not project_dir.exists():
         raise FileNotFoundError(f"Project not found: {project_id}")
     shutil.rmtree(project_dir)
+    from ..app.services.shared_work_service import delete_project_from_cloud
+    delete_project_from_cloud(project_id)

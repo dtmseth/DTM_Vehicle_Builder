@@ -251,6 +251,41 @@ def _setup_logging(workspace_dir: Path) -> None:
     )
 
 
+# Interval between background syncs of /Settings/, /Projects/, /Drafts/.
+# 60s is the sweet spot: short enough that teammates see changes within
+# ~2 min worst-case (60s app poll + ~30s workflow pipeline), low enough
+# bandwidth that even a busy team-of-10 only generates ~10 list_files
+# calls per minute against SharePoint.
+_PERIODIC_SYNC_INTERVAL_SECONDS = 60
+
+
+def _periodic_sync_loop(active_paths: AppPaths) -> None:
+    """Background loop that re-syncs shared settings + work data on a timer.
+
+    Runs forever as a daemon thread; the process exits when the main
+    thread does. Each iteration is wrapped so a sync exception doesn't
+    kill the loop — the next tick gets a fresh attempt.
+    """
+    import time
+
+    logger = logging.getLogger(__name__)
+    while True:
+        time.sleep(_PERIODIC_SYNC_INTERVAL_SECONDS)
+        try:
+            sync_shared_settings_at_startup(active_paths)
+            # Re-warm caches so newly-synced per-record files become
+            # visible to handlers without an app restart.
+            agency_service.warmup_cache(active_paths, force=True)
+            sales_rep_service.warmup_cache(active_paths, force=True)
+            # Project + draft sync wired in the SharedWorkService PR; both
+            # are no-ops in local mode.
+            from .services.shared_work_service import sync_work_data
+            sync_work_data(active_paths)
+        except Exception:
+            logger.exception("Periodic sync iteration failed; will retry in %ds",
+                             _PERIODIC_SYNC_INTERVAL_SECONDS)
+
+
 def main(paths: AppPaths | None = None):
     if paths is None:
         _setup_logging(AppPaths().workspace_dir)
@@ -277,6 +312,19 @@ def main(paths: AppPaths | None = None):
     # shared-settings sync so the cache picks up any merged team changes.
     agency_service.warmup_cache(active_paths)
     sales_rep_service.warmup_cache(active_paths)
+
+    # Background thread pulls shared settings every 60s so changes from
+    # teammates propagate without an app restart. No-op outside cloud mode
+    # (sync_shared_settings_at_startup returns None immediately). The
+    # warmup_cache + sync_shared_settings_at_startup pair runs again so
+    # any per-record changes picked up by the sync are reflected in the
+    # in-memory caches that handlers serve from.
+    threading.Thread(
+        target=_periodic_sync_loop,
+        args=(active_paths,),
+        daemon=True,
+        name="periodic-sync",
+    ).start()
 
     if _port_is_busy(PORT):
         raise SystemExit(

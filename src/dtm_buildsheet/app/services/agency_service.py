@@ -139,8 +139,15 @@ def _records(paths: AppPaths) -> dict[str, AgencyRecord]:
     return _cache[key]
 
 
-def warmup_cache(paths: AppPaths) -> None:
-    """Force the cache to load now (drives the one-shot legacy migration on launch)."""
+def warmup_cache(paths: AppPaths, *, force: bool = False) -> None:
+    """Force the cache to load now (drives the one-shot legacy migration on launch).
+
+    Pass ``force=True`` to invalidate first — used by the periodic sync loop
+    so newly-synced agency files from teammates become visible without
+    needing an app restart.
+    """
+    if force:
+        _invalidate_cache(paths)
     _records(paths)
 
 

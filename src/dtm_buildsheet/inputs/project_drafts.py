@@ -232,11 +232,19 @@ def _draft_path(draft_id: str, drafts_dir: Path) -> Path:
 
 
 def save_draft(draft: BuildDraft, drafts_dir: Path) -> Path:
-    """Persist draft to disk; updates updated_at timestamp."""
+    """Persist draft to disk; updates updated_at timestamp.
+
+    In cloud mode also mirrors the JSON to SharePoint /Drafts/ so other
+    teammates' next sync pass picks it up. Mirror failure is logged but
+    doesn't fail the save — the periodic sync loop retries.
+    """
     _ensure_line_ids(draft)
     draft.updated_at = _utcnow()
     path = _draft_path(draft.draft_id, drafts_dir)
     LocalStorageProvider().write_text(str(path), json.dumps(asdict(draft), indent=2))
+    # Deferred import to avoid a services → inputs → services circular chain.
+    from ..app.services.shared_work_service import mirror_draft_to_cloud
+    mirror_draft_to_cloud(draft.draft_id, path)
     return path
 
 
@@ -262,8 +270,14 @@ def load_draft(draft_id: str, drafts_dir: Path) -> BuildDraft:
 
 
 def delete_draft(draft_id: str, drafts_dir: Path) -> None:
-    """Remove a draft file; raises FileNotFoundError if not found."""
+    """Remove a draft file; raises FileNotFoundError if not found.
+
+    Also removes the cloud mirror in cloud mode so teammates' next sync
+    drops the draft from their workspace too.
+    """
     LocalStorageProvider().delete(str(_draft_path(draft_id, drafts_dir)))
+    from ..app.services.shared_work_service import delete_draft_from_cloud
+    delete_draft_from_cloud(draft_id)
 
 
 def list_drafts(drafts_dir: Path) -> list[BuildDraft]:

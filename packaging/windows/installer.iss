@@ -69,6 +69,8 @@ function InitializeSetup(): Boolean;
 var
   UninstallExe: String;
   ResultCode: Integer;
+  InstallDir: String;
+  WaitCount: Integer;
 begin
   Result := True;
   if IsAlreadyInstalled() then
@@ -76,6 +78,20 @@ begin
     UninstallExe := RemoveQuotes(GetUninstallString());
     Exec(UninstallExe, '/SILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE,
          ewWaitUntilTerminated, ResultCode);
+    // ewWaitUntilTerminated returns when the uninstaller process exits, but
+    // Inno Setup uninstallers fork a helper that finishes the work AFTER the
+    // main process exits (it has to delete unins000.exe itself). Without
+    // waiting for the install directory to actually empty out, the new
+    // install begins copying files while the old uninstall is still chewing
+    // on them — producing a Frankenstein with mixed-version .dist-info and
+    // a stale version string after over-installs.
+    InstallDir := ExpandConstant('{autopf}\{#MyAppName}');
+    for WaitCount := 1 to 60 do
+    begin
+      if not DirExists(InstallDir) then
+        Break;
+      Sleep(500);  // up to 30s total
+    end;
   end;
 end;
 

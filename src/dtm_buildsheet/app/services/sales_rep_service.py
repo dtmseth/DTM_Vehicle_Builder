@@ -100,8 +100,19 @@ def _records(paths: AppPaths) -> dict[str, SalesRepRecord]:
     return _cache[key]
 
 
-def warmup_cache(paths: AppPaths) -> None:
-    """Force the cache to load now (drives the one-shot legacy migration on launch)."""
+def _invalidate_cache(paths: AppPaths) -> None:
+    _cache.pop(_cache_key(paths), None)
+
+
+def warmup_cache(paths: AppPaths, *, force: bool = False) -> None:
+    """Force the cache to load now (drives the one-shot legacy migration on launch).
+
+    Pass ``force=True`` to invalidate first — used by the periodic sync loop
+    so newly-synced rep files from teammates become visible without an app
+    restart.
+    """
+    if force:
+        _invalidate_cache(paths)
     _records(paths)
 
 
