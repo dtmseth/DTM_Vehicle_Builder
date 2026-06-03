@@ -30,6 +30,17 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
+[InstallDelete]
+; Force-wipe PyInstaller's _internal directory before copying new files. This
+; is what carries the dtm_buildsheet-{version}.dist-info/METADATA that
+; importlib.metadata reads — if an old .dist-info survives the upgrade
+; alongside the new one, get_embedded_version() returns the wrong number and
+; the update banner keeps pestering the user about an "available" version
+; they just installed. Running this between the uninstall poll loop and the
+; [Files] copy guarantees a clean slate regardless of what the old
+; uninstaller left behind.
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Files]
 Source: "{#MyAppDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
