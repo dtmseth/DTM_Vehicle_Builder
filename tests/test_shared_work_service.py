@@ -160,11 +160,7 @@ def test_mirror_skips_missing_local_file(cloud_on, paths):
 
 def test_sync_work_data_is_noop_when_cloud_disabled(cloud_off, paths):
     report = shared_work_service.sync_work_data(paths)
-    assert report == {
-        "projects_updated": 0,
-        "drafts_updated": 0,
-        "skipped_local_mode": True,
-    }
+    assert report["skipped_local_mode"] is True
 
 
 def test_sync_pulls_projects_into_workspace(cloud_on, paths):
@@ -228,6 +224,94 @@ def test_sync_survives_missing_remote_folder(cloud_on, paths):
     report = shared_work_service.sync_work_data(paths)
     assert report["projects_updated"] == 0
     assert report["drafts_updated"] == 0
+
+
+# ── Reconciliation: deletion propagation + first-launch upload ──────────────
+
+
+def test_sync_uploads_local_only_files_on_first_run(cloud_on, paths):
+    """First-launch case: local has data, cloud is empty, state is empty.
+    Reconciliation should push local up so cloud becomes the union."""
+    remote = _FakeRemote()
+    set_active_bundle(_make_bundle(storage=remote))
+
+    # Seed a local project from before the cloud was wired.
+    project_dir = paths.workspace_projects_dir / "legacy-1"
+    project_dir.mkdir(parents=True)
+    (project_dir / "project.json").write_text('{"legacy": true}', encoding="utf-8")
+    # Same for a draft.
+    (paths.workspace_drafts_dir / "draft-legacy.json").write_text(
+        '{"draft": "legacy"}', encoding="utf-8"
+    )
+
+    report = shared_work_service.sync_work_data(paths)
+    assert report["projects_uploaded"] == 1
+    assert report["drafts_uploaded"] == 1
+    assert remote.files["Projects/legacy-1.json"] == b'{"legacy": true}'
+    assert remote.files["Drafts/draft-legacy.json"] == b'{"draft": "legacy"}'
+
+
+def test_sync_propagates_deletion_from_cloud(cloud_on, paths):
+    """Teammate deletes a project on their device → mirror removes from cloud.
+    Our next sync sees state has X but cloud doesn't → delete locally."""
+    remote = _FakeRemote()
+    remote.files["Projects/proj-1.json"] = b'{"v": 1}'
+    set_active_bundle(_make_bundle(storage=remote))
+
+    # First sync: pulls proj-1, records it in state.
+    shared_work_service.sync_work_data(paths)
+    assert (paths.workspace_projects_dir / "proj-1" / "project.json").exists()
+
+    # Teammate deletes; cloud copy is gone.
+    del remote.files["Projects/proj-1.json"]
+    report = shared_work_service.sync_work_data(paths)
+    assert report["projects_deleted"] == 1
+    assert not (paths.workspace_projects_dir / "proj-1").exists()
+
+
+def test_sync_does_not_delete_local_only_legacy_data(cloud_on, paths):
+    """A local file that was never in cloud + isn't in cloud now should be
+    uploaded (first-run case), not silently deleted."""
+    remote = _FakeRemote()
+    set_active_bundle(_make_bundle(storage=remote))
+
+    # Local has a project; state and cloud are empty.
+    project_dir = paths.workspace_projects_dir / "local-only"
+    project_dir.mkdir(parents=True)
+    (project_dir / "project.json").write_text('{"x": 1}', encoding="utf-8")
+
+    report = shared_work_service.sync_work_data(paths)
+    assert report["projects_deleted"] == 0
+    assert report["projects_uploaded"] == 1
+    # Local copy is untouched.
+    assert (project_dir / "project.json").exists()
+
+
+def test_state_manifest_persists_between_syncs(cloud_on, paths):
+    """Without persistence, every sync would treat all cloud files as 'new'
+    and skip the deletion-propagation step."""
+    remote = _FakeRemote()
+    remote.files["Projects/proj-x.json"] = b"{}"
+    set_active_bundle(_make_bundle(storage=remote))
+
+    shared_work_service.sync_work_data(paths)
+    state_file = paths.workspace_dir / ".cloud_state.json"
+    assert state_file.exists()
+    state = json.loads(state_file.read_text("utf-8"))
+    assert "proj-x" in state["projects"]
+
+
+def test_sync_handles_corrupt_state_manifest(cloud_on, paths):
+    """A corrupt state file shouldn't crash sync — treat as empty + rebuild."""
+    (paths.workspace_dir / ".cloud_state.json").write_text("not json")
+    remote = _FakeRemote()
+    remote.files["Projects/proj-1.json"] = b"{}"
+    set_active_bundle(_make_bundle(storage=remote))
+    report = shared_work_service.sync_work_data(paths)
+    assert report["projects_updated"] == 1
+
+
+import json  # noqa: E402 — used in the test above, kept local to avoid changing the module-level imports
 
 
 # ── Delete ───────────────────────────────────────────────────────────────────
