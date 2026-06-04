@@ -44,34 +44,32 @@ def get_status(paths: AppPaths) -> dict:
         "signed_in": bool,
         "user": { "display_name": str, "email": str, "user_id": str } | None,
         "has_photo": bool,
+        "syncing": bool,           # spinner state for the indicator modal
       }
 
     Never raises. UI treats any unexpected shape as "Local mode".
     """
+    syncing = _is_sync_in_progress()
+
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
-        return {"cloud_enabled": False, "signed_in": False, "user": None, "has_photo": False}
+        return _empty_status(syncing=syncing, cloud_enabled=False)
 
     try:
         bundle = wiring.get_active_bundle()
     except Exception:
         logger.exception("Could not get active bundle for cloud status")
-        return {"cloud_enabled": True, "signed_in": False, "user": None, "has_photo": False}
+        return _empty_status(syncing=syncing, cloud_enabled=True)
 
     try:
         if not bundle.identity.is_signed_in():
-            return {
-                "cloud_enabled": True,
-                "signed_in": False,
-                "user": None,
-                "has_photo": False,
-            }
+            return _empty_status(syncing=syncing, cloud_enabled=True)
         user = bundle.identity.current_user()
     except Exception:
         logger.exception("is_signed_in / current_user check failed")
-        return {"cloud_enabled": True, "signed_in": False, "user": None, "has_photo": False}
+        return _empty_status(syncing=syncing, cloud_enabled=True)
 
     if user is None:
-        return {"cloud_enabled": True, "signed_in": False, "user": None, "has_photo": False}
+        return _empty_status(syncing=syncing, cloud_enabled=True)
 
     # Lazy-load the photo if we haven't fetched it yet this session. Done
     # synchronously to keep the status endpoint single-call. If Graph is
@@ -88,7 +86,27 @@ def get_status(paths: AppPaths) -> dict:
             "user_id": user.user_id,
         },
         "has_photo": has_photo,
+        "syncing": syncing,
     }
+
+
+def _empty_status(*, syncing: bool, cloud_enabled: bool) -> dict:
+    return {
+        "cloud_enabled": cloud_enabled,
+        "signed_in": False,
+        "user": None,
+        "has_photo": False,
+        "syncing": syncing,
+    }
+
+
+def _is_sync_in_progress() -> bool:
+    """Late import to break the server.py ↔ services circular at import time."""
+    try:
+        from .. import server as _server
+        return bool(_server.is_sync_in_progress())
+    except Exception:
+        return False
 
 
 def get_cached_photo_bytes(paths: AppPaths) -> bytes | None:

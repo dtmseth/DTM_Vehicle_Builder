@@ -24,18 +24,31 @@
     .htab.active{color:#fff;border-bottom-color:var(--gold)}
 
     /* cloud connection indicator (right side of header) */
-    .cloud-status{display:flex;align-items:center;gap:8px;margin-left:auto;padding:6px 14px 6px 10px;margin-right:16px;border-radius:18px;background:rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.85);cursor:default;user-select:none;transition:background .15s}
+    .cloud-status{display:flex;align-items:center;gap:6px;margin-left:auto;padding:4px 10px 4px 8px;margin-right:16px;border-radius:16px;background:rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.85);user-select:none;transition:background .15s;border:none;cursor:pointer;font-family:inherit}
     .cloud-status:hover{background:rgba(255,255,255,.14)}
-    .cloud-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#888;box-shadow:0 0 0 2px rgba(0,0,0,.15)}
-    .cloud-status-photo{width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#444}
-    .cloud-status-initials{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--gold);color:var(--navy)}
-    .cloud-status-text{white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+    .cloud-status:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    .cloud-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#888;box-shadow:0 0 0 2px rgba(0,0,0,.15)}
+    .cloud-status-photo{width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#444}
+    .cloud-status-initials{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;background:var(--gold);color:var(--navy)}
+    .cloud-status-text{white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+    .cloud-status-spinner{display:inline-block;font-size:13px;color:var(--gold);animation:cloud-spin 1s linear infinite;line-height:1}
     .cloud-status-connected .cloud-status-dot{background:#22c55e}
     .cloud-status-signed-out .cloud-status-dot{background:#f59e0b}
     .cloud-status-local .cloud-status-dot{background:#94a3b8}
     .cloud-status-loading{opacity:.6}
     .cloud-status-loading .cloud-status-dot{background:#94a3b8;animation:cloud-pulse 1s ease-in-out infinite}
     @keyframes cloud-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+    @keyframes cloud-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+    /* cloud modal body */
+    .cloud-modal-identity{display:flex;align-items:center;gap:14px;padding:12px 0 8px}
+    .cloud-modal-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#ddd}
+    .cloud-modal-initials{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:var(--gold);color:var(--navy)}
+    .cloud-modal-identity-text{flex:1;min-width:0}
+    .cloud-modal-name{font-weight:600;font-size:15px;line-height:1.3;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cloud-modal-email{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cloud-modal-meta{font-size:12px;color:var(--muted);padding:8px 0}
+    .cloud-modal-sync-active{animation:cloud-spin 1s linear infinite;display:inline-block}
 
     /* layout */
     .main-content{max-width:960px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px}

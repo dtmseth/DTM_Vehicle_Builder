@@ -157,6 +157,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/update/"):
             if not update_routes.route_updates(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/cloud/"):
+            if not cloud_status_routes.route_cloud_status(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
         else:
             self._send(404, b"Not found", "text/plain")
 
@@ -259,8 +262,70 @@ def _setup_logging(workspace_dir: Path) -> None:
 _PERIODIC_SYNC_INTERVAL_SECONDS = 60
 
 
+_sync_in_progress = False  # noqa: PLW0603 — see run_sync_now() for the contract
+
+
+def is_sync_in_progress() -> bool:
+    """True while a sync (initial or periodic or forced) is mid-flight.
+
+    The cloud-indicator modal uses this to drive its spinner. Single flag
+    is fine because all sync paths are serialized through the same lock-free
+    background thread; the periodic loop and the force-sync API never run
+    concurrently with each other.
+    """
+    return _sync_in_progress
+
+
+def run_sync_now(active_paths: AppPaths) -> dict:
+    """Run a single sync cycle synchronously and return a small report.
+
+    Called by /api/cloud/sync from the modal. Reuses the same body as the
+    periodic loop so the two paths can never drift. While in-flight, sets
+    a module-level flag the status endpoint surfaces so the UI can show a
+    spinner. Never raises — the wrapper logs and continues.
+    """
+    global _sync_in_progress
+    _sync_in_progress = True
+    logger = logging.getLogger(__name__)
+    report: dict = {"ok": True}
+    try:
+        # Sign-in step is included so "Force Sync Now" can also recover an
+        # app that lost its cached token between launches.
+        from .adapters.wiring import ensure_signed_in_for_cloud
+        ensure_signed_in_for_cloud()
+
+        settings_report = sync_shared_settings_at_startup(active_paths)
+        report["settings"] = (
+            {
+                "updated": settings_report.updated,
+                "unchanged_count": len(settings_report.unchanged),
+                "failed_count": len(settings_report.failed),
+            }
+            if settings_report
+            else None
+        )
+
+        agency_service.warmup_cache(active_paths, force=True)
+        sales_rep_service.warmup_cache(active_paths, force=True)
+
+        from .services.shared_work_service import sync_work_data
+        work_report = sync_work_data(active_paths)
+        report["work"] = work_report
+    except Exception as exc:
+        logger.exception("Sync cycle failed")
+        report = {"ok": False, "error": str(exc)}
+    finally:
+        _sync_in_progress = False
+    return report
+
+
 def _periodic_sync_loop(active_paths: AppPaths) -> None:
     """Background loop that re-syncs shared settings + work data on a timer.
+
+    First iteration fires immediately (without sleeping) so the cloud
+    bootstrap runs off the main thread: the HTTP server is already up
+    while sign-in + initial sync proceed in parallel. Subsequent
+    iterations sleep first.
 
     Runs forever as a daemon thread; the process exits when the main
     thread does. Each iteration is wrapped so a sync exception doesn't
@@ -269,18 +334,13 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
     import time
 
     logger = logging.getLogger(__name__)
+    first = True
     while True:
-        time.sleep(_PERIODIC_SYNC_INTERVAL_SECONDS)
+        if not first:
+            time.sleep(_PERIODIC_SYNC_INTERVAL_SECONDS)
+        first = False
         try:
-            sync_shared_settings_at_startup(active_paths)
-            # Re-warm caches so newly-synced per-record files become
-            # visible to handlers without an app restart.
-            agency_service.warmup_cache(active_paths, force=True)
-            sales_rep_service.warmup_cache(active_paths, force=True)
-            # Project + draft sync wired in the SharedWorkService PR; both
-            # are no-ops in local mode.
-            from .services.shared_work_service import sync_work_data
-            sync_work_data(active_paths)
+            run_sync_now(active_paths)
         except Exception:
             logger.exception("Periodic sync iteration failed; will retry in %ds",
                              _PERIODIC_SYNC_INTERVAL_SECONDS)
@@ -294,31 +354,18 @@ def main(paths: AppPaths | None = None):
         _setup_logging(active_paths.workspace_dir)
     Handler.paths = active_paths
 
-    # Make sure the user has a valid M365 session before anything that
-    # needs SharePoint runs. On first launch this opens the OAuth browser
-    # window; subsequent launches see a cached token and proceed silently.
-    # No-op outside cloud mode.
-    from .adapters.wiring import ensure_signed_in_for_cloud
-    ensure_signed_in_for_cloud()
-
-    # Pull the latest team settings before the UI loads (Phase 2e). No-op
-    # when cloud mode is disabled or the user isn't signed in. Errors are
-    # logged inside; startup never fails here.
-    sync_shared_settings_at_startup(active_paths)
-
     # Warm per-record collection caches at startup so the one-shot legacy
     # migration (Phase 1) fires immediately on launch rather than on first
-    # user interaction with the agency/sales-rep services. Runs AFTER the
-    # shared-settings sync so the cache picks up any merged team changes.
+    # user interaction with the agency/sales-rep services.
     agency_service.warmup_cache(active_paths)
     sales_rep_service.warmup_cache(active_paths)
 
-    # Background thread pulls shared settings every 60s so changes from
-    # teammates propagate without an app restart. No-op outside cloud mode
-    # (sync_shared_settings_at_startup returns None immediately). The
-    # warmup_cache + sync_shared_settings_at_startup pair runs again so
-    # any per-record changes picked up by the sync are reflected in the
-    # in-memory caches that handlers serve from.
+    # Cloud bootstrap (sign-in + initial sync) runs in the periodic sync
+    # thread's first iteration, NOT on the main thread. This keeps the
+    # HTTP server snappy — the UI loads immediately and the cloud
+    # indicator chip lights up as soon as the first sync completes. The
+    # loop then ticks every 60s to pull teammates' changes. Periodic
+    # sync is no-op outside cloud mode (early returns inside the helpers).
     threading.Thread(
         target=_periodic_sync_loop,
         args=(active_paths,),

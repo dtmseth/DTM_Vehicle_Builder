@@ -27,11 +27,49 @@
   <!-- Cloud connection indicator — updated by refreshCloudStatus() in api.js.
        Hidden via the `cloud-status-local` class which collapses the chip
        down to a small badge in local mode. -->
-  <div class="cloud-status cloud-status-loading" id="cloud-status" title="Checking cloud connection…">
+  <button class="cloud-status cloud-status-loading" id="cloud-status" type="button"
+          title="Checking cloud connection…" aria-label="Cloud connection settings">
     <span class="cloud-status-dot" aria-hidden="true"></span>
     <img class="cloud-status-photo" id="cloud-status-photo" alt="" hidden>
     <span class="cloud-status-initials" id="cloud-status-initials" hidden></span>
     <span class="cloud-status-text" id="cloud-status-text">Connecting…</span>
+    <span class="cloud-status-spinner" id="cloud-status-spinner" hidden aria-label="Syncing">⟳</span>
+  </button>
+</div>
+
+<!-- ══ CLOUD STATUS MODAL ══ -->
+<div class="modal-overlay" id="cloud-modal" role="dialog" aria-modal="true" aria-labelledby="cloud-modal-title">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="cloud-modal-title">Cloud Connection
+      <button class="modal-close" id="cloud-modal-close" aria-label="Close">✕</button>
+    </div>
+
+    <!-- Signed-in panel: who you are + actions -->
+    <div id="cloud-modal-signed-in" hidden>
+      <div class="cloud-modal-identity">
+        <img class="cloud-modal-photo" id="cloud-modal-photo" alt="" hidden>
+        <span class="cloud-modal-initials" id="cloud-modal-initials" hidden></span>
+        <div class="cloud-modal-identity-text">
+          <div class="cloud-modal-name" id="cloud-modal-name"></div>
+          <div class="cloud-modal-email" id="cloud-modal-email"></div>
+        </div>
+      </div>
+      <div class="cloud-modal-meta" id="cloud-modal-last-sync"></div>
+    </div>
+
+    <!-- Signed-out / local-mode panel -->
+    <div id="cloud-modal-signed-out" hidden>
+      <p class="cloud-modal-meta" id="cloud-modal-signed-out-text">Not signed in to Microsoft.</p>
+    </div>
+
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-secondary" id="cloud-modal-sync" type="button">
+        <span id="cloud-modal-sync-label">⟳ Force sync now</span>
+      </button>
+      <button class="btn btn-secondary" id="cloud-modal-switch" type="button">👤 Switch user</button>
+      <button class="btn btn-secondary" id="cloud-modal-signin" type="button" hidden>🔑 Sign in</button>
+      <button class="btn btn-secondary" id="cloud-modal-done" type="button" style="margin-left:auto">Done</button>
+    </div>
   </div>
 </div>
 

@@ -100,7 +100,17 @@ def test_status_reports_local_mode_when_cloud_disabled(cloud_off, paths):
         "signed_in": False,
         "user": None,
         "has_photo": False,
+        "syncing": False,
     }
+
+
+def test_status_includes_syncing_flag_when_sync_in_progress(cloud_off, paths, monkeypatch):
+    """The modal needs this flag to drive its spinner UI."""
+    from dtm_buildsheet.app.services import cloud_status_service as svc
+    monkeypatch.setattr(svc, "_is_sync_in_progress", lambda: True)
+    set_active_bundle(_make_bundle())
+    s = svc.get_status(paths)
+    assert s["syncing"] is True
 
 
 def test_status_reports_signed_out_when_no_cached_account(cloud_on, paths):

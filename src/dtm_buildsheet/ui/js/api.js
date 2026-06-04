@@ -82,7 +82,11 @@ function _cloudInitials(name){
   return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
 }
 
-function _setCloudChip({stateClass, text, title, photo, initials}){
+// Cached so the modal can render the same identity the chip is showing
+// without a second fetch. Updated by every refreshCloudStatus() call.
+let _lastCloudStatus = null;
+
+function _setCloudChip({stateClass, text, title, photo, initials, syncing}){
   const chip = $("cloud-status"); if(!chip) return;
   // Strip every cloud-status-* state class so we don't accumulate them.
   chip.className = "cloud-status " + stateClass;
@@ -109,37 +113,177 @@ function _setCloudChip({stateClass, text, title, photo, initials}){
     photoEl.hidden = true;
     initialsEl.hidden = true;
   }
+  // Spinner overlay — shown whenever the backend reports a sync in flight.
+  const spinner = $("cloud-status-spinner");
+  if(spinner) spinner.hidden = !syncing;
 }
 
 async function refreshCloudStatus(){
   let res;
   try { res = await api("/api/cloud/status"); }
   catch(_){
+    _lastCloudStatus = null;
     _setCloudChip({stateClass:"cloud-status-local", text:"Offline",
                    title:"Could not reach the local server"});
     return;
   }
+  _lastCloudStatus = res;
+  const syncing = !!res?.syncing;
   if(!res?.cloud_enabled){
     _setCloudChip({stateClass:"cloud-status-local", text:"Local mode",
-                   title:"Cloud mode is disabled for this install"});
+                   title:"Cloud mode is disabled for this install", syncing});
     return;
   }
   if(!res.signed_in){
     _setCloudChip({stateClass:"cloud-status-signed-out", text:"Sign in needed",
-                   title:"Cloud mode is on but no Microsoft account is connected"});
+                   title:"Cloud mode is on but no Microsoft account is connected",
+                   syncing});
     return;
   }
   const name = res.user?.display_name || res.user?.email || "Signed in";
   const initials = _cloudInitials(name);
   _setCloudChip({
     stateClass: "cloud-status-connected",
-    text: `Connected to Microsoft via: ${name}`,
+    text: name,  // Shorter — name + photo carries the rest. Full context lives in the tooltip and modal.
     title: res.user?.email
       ? `Connected to Microsoft via: ${name} (${res.user.email})`
       : `Connected to Microsoft via: ${name}`,
     photo: res.has_photo,
     initials,
+    syncing,
   });
+}
+
+// ─── Cloud status modal ─────────────────────────────────────────────────────
+// Click the chip → opens a modal with: user identity, last sync timestamp,
+// "Force sync now" (runs all syncs immediately), "Switch user"
+// (signout + signin), and a "Sign in" button when not signed in.
+
+let _lastSyncAt = null;  // millis since epoch of the last completed sync
+
+function _formatLastSync(){
+  if(!_lastSyncAt) return "Not synced yet this session";
+  return "Last sync: " + relativeTime(_lastSyncAt);
+}
+
+function _refreshCloudModalBody(){
+  const status = _lastCloudStatus;
+  const signedInPanel = $("cloud-modal-signed-in");
+  const signedOutPanel = $("cloud-modal-signed-out");
+  const switchBtn = $("cloud-modal-switch");
+  const signinBtn = $("cloud-modal-signin");
+  const signedOutText = $("cloud-modal-signed-out-text");
+
+  if(status?.signed_in){
+    signedInPanel.hidden = false;
+    signedOutPanel.hidden = true;
+    switchBtn.hidden = false;
+    signinBtn.hidden = true;
+    const name = status.user?.display_name || status.user?.email || "Signed in";
+    $("cloud-modal-name").textContent = name;
+    $("cloud-modal-email").textContent = status.user?.email || "";
+    const photoEl = $("cloud-modal-photo");
+    const initialsEl = $("cloud-modal-initials");
+    if(status.has_photo){
+      photoEl.src = "/api/cloud/photo?t=" + Date.now();
+      photoEl.hidden = false;
+      initialsEl.hidden = true;
+      photoEl.onerror = () => {
+        photoEl.hidden = true;
+        initialsEl.hidden = false;
+        initialsEl.textContent = _cloudInitials(name);
+      };
+    } else {
+      photoEl.hidden = true;
+      initialsEl.hidden = false;
+      initialsEl.textContent = _cloudInitials(name);
+    }
+    $("cloud-modal-last-sync").textContent = _formatLastSync();
+  } else {
+    signedInPanel.hidden = true;
+    signedOutPanel.hidden = false;
+    switchBtn.hidden = true;
+    signinBtn.hidden = !(status?.cloud_enabled);
+    signedOutText.textContent = status?.cloud_enabled
+      ? "Cloud mode is on but no Microsoft account is connected. Sign in to start syncing."
+      : "Cloud mode is disabled for this install. " + _formatLastSync();
+  }
+
+  // Sync button label reflects current state.
+  const syncLabel = $("cloud-modal-sync-label");
+  if(_lastCloudStatus?.syncing){
+    syncLabel.innerHTML = '<span class="cloud-modal-sync-active">⟳</span> Syncing…';
+  } else {
+    syncLabel.textContent = "⟳ Force sync now";
+  }
+}
+
+function openCloudModal(){
+  refreshCloudStatus().then(_refreshCloudModalBody);
+  $("cloud-modal").classList.add("open");
+}
+
+function closeCloudModal(){
+  $("cloud-modal").classList.remove("open");
+}
+
+async function _doForceSync(){
+  const btn = $("cloud-modal-sync");
+  btn.disabled = true;
+  $("cloud-modal-sync-label").innerHTML = '<span class="cloud-modal-sync-active">⟳</span> Syncing…';
+  try {
+    // Pre-emptively refresh the chip to show the spinner before /api/cloud/sync
+    // returns (the next refresh will see syncing=true while the call is alive).
+    refreshCloudStatus();
+    const res = await api("/api/cloud/sync", {});
+    if(res?.ok){
+      _lastSyncAt = Date.now();
+      toast("Sync complete", "success");
+    } else {
+      toast("Sync failed: " + (res?.error || "unknown error"), "error");
+    }
+  } catch(e){
+    toast("Sync failed: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    await refreshCloudStatus();
+    _refreshCloudModalBody();
+  }
+}
+
+async function _doSwitchUser(){
+  const btn = $("cloud-modal-switch");
+  btn.disabled = true;
+  try {
+    await api("/api/cloud/signout", {});
+    const res = await api("/api/cloud/signin", {});
+    if(res?.ok){
+      toast("Signed in as " + (res.user?.display_name || "user"), "success");
+      await refreshCloudStatus();
+      _refreshCloudModalBody();
+    } else {
+      toast("Sign-in failed: " + (res?.error || "unknown error"), "error");
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function _doSignin(){
+  const btn = $("cloud-modal-signin");
+  btn.disabled = true;
+  try {
+    const res = await api("/api/cloud/signin", {});
+    if(res?.ok){
+      toast("Signed in as " + (res.user?.display_name || "user"), "success");
+      await refreshCloudStatus();
+      _refreshCloudModalBody();
+    } else {
+      toast("Sign-in failed: " + (res?.error || "unknown error"), "error");
+    }
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // Boot + 60s polling. The status endpoint is cheap (no Graph hit on the
@@ -147,4 +291,31 @@ async function refreshCloudStatus(){
 document.addEventListener("DOMContentLoaded", () => {
   refreshCloudStatus();
   setInterval(refreshCloudStatus, 60_000);
+  // Modal wiring — each listener belongs to exactly one element so the
+  // single-listener pattern from the rest of the app is preserved.
+  $("cloud-status")?.addEventListener("click", openCloudModal);
+  $("cloud-modal-close")?.addEventListener("click", closeCloudModal);
+  $("cloud-modal-done")?.addEventListener("click", closeCloudModal);
+  $("cloud-modal-sync")?.addEventListener("click", _doForceSync);
+  $("cloud-modal-switch")?.addEventListener("click", _doSwitchUser);
+  $("cloud-modal-signin")?.addEventListener("click", _doSignin);
+  // Close-on-backdrop-click parity with other modals.
+  $("cloud-modal")?.addEventListener("click", (e) => {
+    if(e.target.id === "cloud-modal") closeCloudModal();
+  });
 });
+
+// Track sync completions from the chip polling cycle so "Last sync" stays
+// fresh whether the sync was kicked off by the timer or the button.
+const _origRefreshCloudStatus_forSyncTime = refreshCloudStatus;
+refreshCloudStatus = async function(){
+  const wasSyncing = _lastCloudStatus?.syncing;
+  await _origRefreshCloudStatus_forSyncTime();
+  // Edge-trigger: just transitioned from syncing → not-syncing means a
+  // background or forced sync just landed.
+  if(wasSyncing && _lastCloudStatus && !_lastCloudStatus.syncing){
+    _lastSyncAt = Date.now();
+    if(!$("cloud-modal").classList.contains("open")) return;  // no UI to update
+    _refreshCloudModalBody();
+  }
+};

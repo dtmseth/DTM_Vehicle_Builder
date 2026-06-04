@@ -74,6 +74,16 @@ class SharedSettingsService:
 
         for remote_path in remote_files:
             name = remote_path.rsplit("/", 1)[-1]
+            # The publish workflow uploads a {filename}.meta.json sidecar
+            # alongside each settings file for Power Automate Flow A to read.
+            # Those sidecars aren't actual config; pulling them into the
+            # workspace config dir pollutes it with non-loadable JSON.
+            if name.endswith(".meta.json"):
+                continue
+            # ci-connection-test.json is a smoke-test artifact left in
+            # /Settings/ from the cloud-pipeline validation. Not real config.
+            if name == "ci-connection-test.json":
+                continue
             try:
                 payload = self._remote.read_bytes(remote_path)
             except Exception as exc:  # noqa: BLE001 — adapter surfaces many error shapes
