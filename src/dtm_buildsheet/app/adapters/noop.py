@@ -7,6 +7,7 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    ProposalAction,
     ProposalCategory,
     ProposalStatus,
     UserIdentity,
@@ -57,6 +58,7 @@ class InMemoryChangeProposalGateway(ChangeProposalGateway):
         user: UserIdentity,
         *,
         category: ProposalCategory,
+        action: ProposalAction = "upsert",
     ) -> ProposalStatus:
         status = ProposalStatus(
             proposal_id=str(uuid.uuid4()),

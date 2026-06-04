@@ -12,7 +12,7 @@ from ...domain.sales_rep_models import SalesRepRecord
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
-from ..adapters.wiring import save_via_proposal
+from ..adapters.wiring import delete_via_proposal, save_via_proposal
 
 _log = logging.getLogger(__name__)
 
@@ -235,9 +235,16 @@ def handle_delete_rep(rep_id: str, paths: AppPaths) -> dict:
         records = _records(paths)
         if rep_id not in records:
             return {"ok": False, "error": f"Rep not found: {rep_id}"}
+        rep_name = records[rep_id].name
         _delete_record_file(rep_id, paths)
         records.pop(rep_id, None)
-        return {"ok": True}
+        # Propagate to cloud via the proposal pipeline (action=delete).
+        proposal_result = delete_via_proposal(
+            target_file=f"sales_reps/{rep_id}.json",
+            summary=f"Delete sales rep: {rep_name}",
+            category="general",
+        )
+        return {"ok": True, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

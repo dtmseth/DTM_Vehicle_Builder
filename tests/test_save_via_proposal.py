@@ -18,6 +18,7 @@ from dtm_buildsheet.app.adapters.noop import (
 )
 from dtm_buildsheet.app.adapters.wiring import (
     AdapterBundle,
+    delete_via_proposal,
     save_via_proposal,
     set_active_bundle,
 )
@@ -169,3 +170,41 @@ def test_handles_gateway_failure(cloud_on):
         category="advanced",
     )
     assert result == {"proposed": False, "reason": "submit failed"}
+
+
+# ── delete_via_proposal ─────────────────────────────────────────────────────
+
+
+def test_delete_via_proposal_submits_with_action_delete(cloud_on):
+    """The delete helper goes through the same gateway as save but stamps
+    action=delete on the payload so the pickup workflow git-rms instead
+    of writing."""
+    class _RecordingProposals(InMemoryChangeProposalGateway):
+        last_kwargs: dict | None = None
+        def submit_proposal(self, *args, **kwargs):  # type: ignore[override]
+            type(self).last_kwargs = kwargs
+            return super().submit_proposal(*args, **kwargs)
+
+    proposals = _RecordingProposals()
+    bundle = _make_bundle(proposals=proposals)
+    set_active_bundle(bundle)
+
+    result = delete_via_proposal(
+        target_file="agencies/abc.json",
+        summary="Delete agency: Test PD",
+        category="general",
+    )
+    assert result["proposed"] is True
+    assert result["action"] == "delete"
+    assert _RecordingProposals.last_kwargs["action"] == "delete"
+    assert _RecordingProposals.last_kwargs["target_file"] == "agencies/abc.json"
+
+
+def test_delete_via_proposal_is_noop_when_cloud_disabled(cloud_off):
+    set_active_bundle(_make_bundle())
+    result = delete_via_proposal(
+        target_file="agencies/abc.json",
+        summary="test",
+        category="general",
+    )
+    assert result == {"proposed": False, "reason": "cloud disabled"}

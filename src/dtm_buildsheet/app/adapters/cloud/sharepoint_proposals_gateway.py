@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from ....storage.base import StorageProvider
 from ..interfaces import (
     ChangeProposalGateway,
+    ProposalAction,
     ProposalCategory,
     ProposalStatus,
     UserIdentity,
@@ -24,7 +25,11 @@ PENDING_REMOTE_FOLDER = "PendingChanges"
 # Schema version for the proposal JSON payload. Bump when the on-wire shape
 # changes; the pickup workflow checks this and refuses unknown versions.
 # v2 (Phase 2-β): added `category` to drive two-tier review behavior.
-PROPOSAL_SCHEMA_VERSION = 2
+# v3 (Phase 2 close): added `action: "upsert" | "delete"` so per-record
+# entities (agencies, sales reps, presets) can be deleted through the same
+# PR pipeline that creates them. Missing action defaults to "upsert" on
+# the workflow side for backward compat with any v2 payloads in flight.
+PROPOSAL_SCHEMA_VERSION = 3
 
 
 def _slugify(value: str) -> str:
@@ -61,6 +66,7 @@ class SharePointPendingChangesGateway(ChangeProposalGateway):
         user: UserIdentity,
         *,
         category: ProposalCategory,
+        action: ProposalAction = "upsert",
     ) -> ProposalStatus:
         proposal_id = str(uuid.uuid4())
         submitted_at = datetime.now(timezone.utc).isoformat()
@@ -71,6 +77,7 @@ class SharePointPendingChangesGateway(ChangeProposalGateway):
             "proposal_id": proposal_id,
             "target_file": target_file,
             "category": category,
+            "action": action,
             "summary": summary,
             "submitted_by": user.display_name or user.user_id,
             "submitted_by_email": user.email,

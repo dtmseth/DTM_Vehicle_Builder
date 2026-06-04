@@ -77,6 +77,26 @@ def test_resolve_category_v1_defaults_to_advanced():
     assert pickup.resolve_category({"schema_version": 1}) == "advanced"
 
 
+# ── resolve_action (v3) ─────────────────────────────────────────────────────
+
+
+def test_resolve_action_v1_v2_default_to_upsert():
+    """Older schemas had no action — keep write-only behavior for backward compat."""
+    assert pickup.resolve_action({"schema_version": 1}) == "upsert"
+    assert pickup.resolve_action({"schema_version": 2}) == "upsert"
+
+
+def test_resolve_action_unknown_value_defaults_to_upsert():
+    """Future action the workflow doesn't know — never silently delete."""
+    assert pickup.resolve_action({"action": "shred"}) == "upsert"
+
+
+@pytest.mark.parametrize("value", ["upsert", "UPSERT", "delete", " DELETE "])
+def test_resolve_action_normalizes_known_values(value):
+    expected = value.strip().lower()
+    assert pickup.resolve_action({"action": value}) == expected
+
+
 def test_resolve_category_unknown_value_defaults_to_advanced():
     """Future tier the workflow doesn't recognize — safe fallback is advanced."""
     assert pickup.resolve_category({"category": "premium"}) == "advanced"
@@ -131,3 +151,17 @@ def test_validate_rejects_missing_required_fields(missing):
 
 def test_validate_rejects_path_traversal_in_target_file():
     assert pickup.validate(_base_payload(target_file="../../etc/passwd")) is not None
+
+
+def test_validate_accepts_delete_action_without_new_content():
+    """new_content is required for upsert but optional for delete — the
+    pickup workflow only needs target_file to git-rm."""
+    payload = _base_payload(schema_version=3, action="delete")
+    payload["new_content"] = ""  # empty is fine for deletes
+    assert pickup.validate(payload) is None
+
+
+def test_validate_still_requires_new_content_for_upsert():
+    payload = _base_payload(schema_version=3, action="upsert")
+    payload["new_content"] = ""
+    assert pickup.validate(payload) is not None

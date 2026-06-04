@@ -28,6 +28,13 @@ ProposalState = Literal["pending", "approved", "rejected", "merged", "unknown"]
 # proposals wait for owner review on github.com.
 ProposalCategory = Literal["general", "advanced"]
 
+# What the pickup workflow should do with the target file. Schema v3 added
+# "delete" so deleting an agency / sales-rep / preset propagates through the
+# same PR pipeline that creates them. "upsert" is the original behavior:
+# write new_content to the target file. Default is "upsert" for backwards
+# compatibility — schema v2 payloads have no action field.
+ProposalAction = Literal["upsert", "delete"]
+
 
 @dataclass(frozen=True)
 class ProposalStatus:
@@ -80,6 +87,7 @@ class ChangeProposalGateway(ABC):
         user: UserIdentity,
         *,
         category: ProposalCategory,
+        action: ProposalAction = "upsert",
     ) -> ProposalStatus: ...
 
     @abstractmethod

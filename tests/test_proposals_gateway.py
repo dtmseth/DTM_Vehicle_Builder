@@ -98,10 +98,11 @@ def test_submit_proposal_writes_uuid_json_file(gateway, remote, seth):
     payload = json.loads(remote.files[expected_path])
 
     assert payload["schema_version"] == PROPOSAL_SCHEMA_VERSION
-    assert payload["schema_version"] == 2  # explicit Phase 2-β contract pin
+    assert payload["schema_version"] == 3  # Phase 2 close: action field added
     assert payload["proposal_id"] == status.proposal_id
     assert payload["target_file"] == "parts_library.json"
     assert payload["category"] == "advanced"
+    assert payload["action"] == "upsert"  # default when not specified
     assert payload["summary"] == "Add SETINA to manufacturers"
     assert payload["submitted_by"] == "Seth Miller"
     assert payload["submitted_by_email"] == "seth@dtmfleet.com"
@@ -121,6 +122,23 @@ def test_submit_proposal_records_general_category(gateway, remote, seth):
     )
     payload = json.loads(remote.files[f"{PENDING_REMOTE_FOLDER}/{status.proposal_id}.json"])
     assert payload["category"] == "general"
+    assert payload["target_file"] == "agencies/agency-123.json"
+
+
+def test_submit_proposal_records_delete_action(gateway, remote, seth):
+    """Delete proposals carry action='delete' so the pickup workflow knows
+    to git-rm the target instead of writing new_content."""
+    status = gateway.submit_proposal(
+        target_file="agencies/agency-123.json",
+        new_content="",  # ignored when action=delete
+        summary="Delete agency: Hennepin County PD",
+        user=seth,
+        category="general",
+        action="delete",
+    )
+    payload = json.loads(remote.files[f"{PENDING_REMOTE_FOLDER}/{status.proposal_id}.json"])
+    assert payload["category"] == "general"
+    assert payload["action"] == "delete"
     assert payload["target_file"] == "agencies/agency-123.json"
 
 

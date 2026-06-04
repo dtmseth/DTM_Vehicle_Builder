@@ -14,7 +14,7 @@ from ...domain.input_models import PartInput
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
-from ..adapters.wiring import save_via_proposal
+from ..adapters.wiring import delete_via_proposal, save_via_proposal
 
 _log = logging.getLogger(__name__)
 
@@ -341,7 +341,12 @@ def save_preset(payload: dict, paths: AppPaths, overwrite: bool = False) -> dict
 
 
 def delete_preset(preset_id: str, paths: AppPaths) -> dict:
-    """Delete a workspace preset. Returns error if it's a bundled preset."""
+    """Delete a workspace preset. Returns error if it's a bundled preset.
+
+    Propagates the deletion to cloud (and from there to other devices)
+    via the proposal pipeline. Bundled presets never get a proposal —
+    they're read-only and live in resources/presets/, not /Settings/.
+    """
     try:
         validate_safe_id(preset_id, label="preset_id")
     except ValueError as exc:
@@ -351,8 +356,19 @@ def delete_preset(preset_id: str, paths: AppPaths) -> dict:
     p = _workspace_path(preset_id, paths)
     if not p.exists():
         return {"ok": False, "error": "Preset not found"}
+    # Capture the label before unlinking so the proposal summary is human-readable.
+    label = preset_id
+    try:
+        label = (json.loads(p.read_text("utf-8")) or {}).get("label", preset_id) or preset_id
+    except Exception:
+        pass
     p.unlink()
-    return {"ok": True}
+    proposal_result = delete_via_proposal(
+        target_file=f"presets/{preset_id}.json",
+        summary=f"Delete preset: {label}",
+        category="general",
+    )
+    return {"ok": True, **proposal_result}
 
 
 def clone_preset(preset_id: str, paths: AppPaths) -> dict:

@@ -122,12 +122,20 @@ def cloud_on(monkeypatch):
 
 @pytest.fixture
 def workspace_paths(tmp_path: Path) -> AppPaths:
-    """An AppPaths pinned to a tmp workspace so test runs don't touch real files."""
+    """An AppPaths pinned to a tmp workspace so test runs don't touch real files.
+
+    Overrides every dir the sync touches — including workspace_presets_dir,
+    which otherwise defaults to the bundled-presets dir in dev mode and
+    would have the sync writing .settings_etags.json into the source tree
+    and trying to delete real bundled presets via the deletion-propagation
+    step. Hermetic-by-default to keep the production bundled tree pristine.
+    """
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     paths = AppPaths(
         workspace_dir=tmp_path,
         workspace_config_dir=config_dir,
+        workspace_presets_dir=tmp_path / "presets",
     )
     return paths
 
@@ -194,3 +202,126 @@ def test_swallows_sync_errors(cloud_on, monkeypatch, workspace_paths):
     set_active_bundle(_make_bundle(storage=_ExplodingRemote()))
     # Must not raise. Returns None because sync didn't complete.
     assert sync_shared_settings_at_startup(workspace_paths) is None
+
+
+# ── Per-record subdir sync (agencies / sales_reps / presets) ────────────────
+
+
+def _make_workspace_paths_with_subdirs(tmp_path):
+    """Compatibility alias — the main workspace_paths fixture is now hermetic
+    for all three subdirs, but the subdir-sync tests still use this helper
+    name so existing call sites stay consistent.
+    """
+    from dtm_buildsheet.paths import AppPaths
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    paths = AppPaths(
+        workspace_dir=tmp_path,
+        workspace_config_dir=config_dir,
+        workspace_presets_dir=tmp_path / "presets",
+    )
+    return paths
+
+
+def test_subdir_sync_pulls_agencies(cloud_on, tmp_path):
+    paths = _make_workspace_paths_with_subdirs(tmp_path)
+    remote = _FakeRemote(files={
+        "Settings/agencies/agency-1.json": b'{"name": "Stearns SO"}',
+        "Settings/agencies/agency-2.json": b'{"name": "Saint Cloud PD"}',
+    })
+    set_active_bundle(_make_bundle(storage=remote))
+
+    report = sync_shared_settings_at_startup(paths)
+    assert report is not None
+    assert (paths.workspace_dir / "agencies" / "agency-1.json").read_bytes() == b'{"name": "Stearns SO"}'
+    assert (paths.workspace_dir / "agencies" / "agency-2.json").read_bytes() == b'{"name": "Saint Cloud PD"}'
+
+
+def test_subdir_sync_pulls_sales_reps_and_presets(cloud_on, tmp_path):
+    paths = _make_workspace_paths_with_subdirs(tmp_path)
+    remote = _FakeRemote(files={
+        "Settings/sales_reps/rep-1.json": b'{"name": "Cody"}',
+        "Settings/presets/preset-1.json": b'{"label": "PIU Patrol"}',
+    })
+    set_active_bundle(_make_bundle(storage=remote))
+
+    sync_shared_settings_at_startup(paths)
+    assert (paths.workspace_dir / "sales_reps" / "rep-1.json").read_bytes() == b'{"name": "Cody"}'
+    assert (paths.workspace_presets_dir / "preset-1.json").read_bytes() == b'{"label": "PIU Patrol"}'
+
+
+def test_subdir_sync_propagates_deletions(cloud_on, tmp_path):
+    """Per-record subdirs use last-writer-wins: deletions on cloud should
+    remove the local copy too."""
+    paths = _make_workspace_paths_with_subdirs(tmp_path)
+    remote = _FakeRemote(files={
+        "Settings/agencies/agency-1.json": b'{"name": "Stearns SO"}',
+    })
+    set_active_bundle(_make_bundle(storage=remote))
+
+    # First sync: pulls agency-1 into local + records its eTag.
+    sync_shared_settings_at_startup(paths)
+    local_a1 = paths.workspace_dir / "agencies" / "agency-1.json"
+    assert local_a1.exists()
+
+    # Someone deletes agency-1 from cloud; next sync should remove it locally.
+    del remote.files["Settings/agencies/agency-1.json"]
+    sync_shared_settings_at_startup(paths)
+    assert not local_a1.exists()
+
+
+def test_subdir_sync_does_not_propagate_flat_settings_deletions(cloud_on, tmp_path):
+    """The flat /Settings/ files have bundled defaults — never auto-delete."""
+    paths = _make_workspace_paths_with_subdirs(tmp_path)
+    remote = _FakeRemote(files={
+        "Settings/vehicle_layouts.json": b'{"vehicles": {}}',
+    })
+    set_active_bundle(_make_bundle(storage=remote))
+
+    sync_shared_settings_at_startup(paths)
+    local_file = paths.workspace_config_dir / "vehicle_layouts.json"
+    assert local_file.exists()
+
+    # Cloud-side delete should NOT remove the local copy.
+    del remote.files["Settings/vehicle_layouts.json"]
+    sync_shared_settings_at_startup(paths)
+    assert local_file.exists(), "flat /Settings/ files must preserve local on cloud-side delete"
+
+
+def test_subdir_sync_skips_unchanged_via_etag(cloud_on, tmp_path):
+    """eTag matching short-circuits content fetches the way the flat sync does."""
+    paths = _make_workspace_paths_with_subdirs(tmp_path)
+    remote = _FakeRemote(files={
+        "Settings/presets/foo.json": b'{"label": "Foo"}',
+    })
+
+    # Track read_bytes calls so we can assert the eTag fast path is active.
+    read_count = {"n": 0}
+    original_read = remote.read_bytes
+
+    def _counting_read(path):
+        read_count["n"] += 1
+        return original_read(path)
+    remote.read_bytes = _counting_read  # type: ignore[method-assign]
+
+    set_active_bundle(_make_bundle(storage=remote))
+
+    sync_shared_settings_at_startup(paths)
+    first_count = read_count["n"]
+    # Hand-set an eTag on the file so the second sync sees a matching
+    # one and skips the fetch. _FakeRemote.list_files_with_metadata returns
+    # empty etag by default; for this assertion we override to a stable value.
+    from dtm_buildsheet.storage.base import FileMetadata as _FM
+    remote.list_files_with_metadata = lambda directory: [  # type: ignore[method-assign]
+        _FM(path=p, etag="stable-etag-v1") for p in remote.list_files(directory)
+    ]
+
+    # First sync after eTag override: still fetches because state had no eTag.
+    sync_shared_settings_at_startup(paths)
+    after_first_etagged = read_count["n"]
+    # Second sync with same eTag: should NOT fetch — proves the fast path works.
+    sync_shared_settings_at_startup(paths)
+    after_second_etagged = read_count["n"]
+    assert after_second_etagged == after_first_etagged, (
+        "matching eTag must short-circuit the content fetch"
+    )

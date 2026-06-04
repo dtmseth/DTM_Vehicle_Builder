@@ -14,7 +14,7 @@ from ...domain.agency_models import AgencyRecord
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
-from ..adapters.wiring import save_via_proposal
+from ..adapters.wiring import delete_via_proposal, save_via_proposal
 
 _log = logging.getLogger(__name__)
 
@@ -289,9 +289,20 @@ def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:
         records = _records(paths)
         if agency_id not in records:
             return {"ok": False, "error": f"Agency not found: {agency_id}"}
+        agency_name = records[agency_id].name
         _delete_record_file(agency_id, paths)
         records.pop(agency_id, None)
-        return {"ok": True}
+        # Propagate to cloud via the proposal pipeline (schema v3 action=delete).
+        # No-op outside cloud mode; otherwise the pickup workflow git-rms the
+        # file from dtm-shared-settings, the publish workflow drops it from
+        # SharePoint /Settings/agencies/, and other devices' next sync
+        # propagates the deletion to their local workspaces.
+        proposal_result = delete_via_proposal(
+            target_file=f"agencies/{agency_id}.json",
+            summary=f"Delete agency: {agency_name}",
+            category="general",
+        )
+        return {"ok": True, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

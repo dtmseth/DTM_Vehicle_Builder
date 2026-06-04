@@ -11,6 +11,7 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    ProposalAction,
     ProposalCategory,
 )
 from .noop import (
@@ -190,6 +191,7 @@ def save_via_proposal(
     summary: str,
     *,
     category: ProposalCategory,
+    action: ProposalAction = "upsert",
 ) -> dict:
     """Submit a settings change as a proposal. No-op outside cloud mode.
 
@@ -232,6 +234,7 @@ def save_via_proposal(
             summary=summary,
             user=user,
             category=category,
+            action=action,
         )
     except Exception:
         logger.exception("Failed to submit proposal for %s", target_file)
@@ -241,4 +244,29 @@ def save_via_proposal(
         "proposed": True,
         "proposal_id": status.proposal_id,
         "category": category,
+        "action": action,
     }
+
+
+def delete_via_proposal(
+    target_file: str,
+    summary: str,
+    *,
+    category: ProposalCategory,
+) -> dict:
+    """Submit a delete proposal so a per-record entity disappears everywhere.
+
+    Thin convenience wrapper around save_via_proposal with action="delete"
+    and an empty payload. The pickup workflow handles action=delete by
+    git-rm'ing the target file; the publish workflow then deletes it from
+    SharePoint /Settings/. Other devices pick up the absence via the
+    settings subdir sync's deletion-propagation step (see
+    SharedSettingsService.propagate_deletions).
+    """
+    return save_via_proposal(
+        target_file=target_file,
+        serialized_content="",  # ignored when action=delete
+        summary=summary,
+        category=category,
+        action="delete",
+    )

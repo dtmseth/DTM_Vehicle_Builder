@@ -31,12 +31,24 @@ class SyncReport:
 
 
 class SharedSettingsService:
-    """Read-only mirror of the cloud `/Settings/` folder into a local cache.
+    """Read-only mirror of a cloud settings folder into a local cache.
 
-    Phase 2a wires this against ``SharePointGraphProvider``. The contract is
-    deliberately narrow: pull the latest contents into a cache directory and
-    let existing config-loading code keep reading files off disk. Phase 2e
-    will route ``paths.WORKSPACE_CONFIG_DIR`` here.
+    Used for both the flat ``/Settings/`` directory (bundled config files
+    like ``vehicle_layouts.json``) and per-record subdirectories
+    (``/Settings/agencies/``, ``/Settings/sales_reps/``, ``/Settings/presets/``).
+
+    The contract is deliberately narrow: pull the latest cloud contents
+    into a cache directory and let existing services keep reading files
+    off disk. eTags from the listing response let us skip the per-file
+    fetch on every poll when nothing has changed.
+
+    Set ``propagate_deletions=True`` to also remove local files that were
+    present in the prior sync's state but are absent from cloud now. Used
+    for per-record entities where last-writer-wins is the contract.
+    Default is False because the flat ``/Settings/`` syncs settings whose
+    bundled defaults seed the workspace on first install — propagating
+    a cloud-side deletion would nuke those defaults locally without a
+    way to get them back.
     """
 
     def __init__(
@@ -46,11 +58,15 @@ class SharedSettingsService:
         *,
         remote_folder: str = SETTINGS_REMOTE_FOLDER,
         local_storage: StorageProvider | None = None,
+        etag_cache_filename: str = ".settings_etags.json",
+        propagate_deletions: bool = False,
     ) -> None:
         self._remote = remote
         self._cache_dir = Path(cache_dir)
         self._remote_folder = remote_folder.strip("/")
         self._local = local_storage or LocalStorageProvider()
+        self._etag_cache_filename = etag_cache_filename
+        self._propagate_deletions = propagate_deletions
 
     @property
     def cache_dir(self) -> Path:
@@ -116,11 +132,27 @@ class SharedSettingsService:
                 report.updated.append(name)
             current_etags[name] = entry.etag
 
+        # Deletion propagation: anything in the prior eTag manifest but
+        # absent from current cloud was removed by some other device.
+        # Delete the local copy so this device follows.
+        if self._propagate_deletions:
+            for name in prior_etags:
+                if name in current_etags:
+                    continue  # still in cloud
+                local_path = self._cache_dir / name
+                if not local_path.exists():
+                    continue  # already gone locally
+                try:
+                    local_path.unlink()
+                    report.updated.append(f"(deleted) {name}")
+                except OSError:
+                    logger.exception("Could not delete local %s", local_path)
+
         self._save_etags(current_etags)
         return report
 
     def _etag_path(self):
-        return self._cache_dir / ".settings_etags.json"
+        return self._cache_dir / self._etag_cache_filename
 
     def _load_etags(self) -> dict[str, str]:
         path = self._etag_path()
@@ -145,22 +177,29 @@ class SharedSettingsService:
 
 
 def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
-    """Pull the latest team settings into the local workspace config dir.
+    """Pull the latest team settings into the local workspace.
 
-    Phase 2e entrypoint — called from ``app/server.py:main()`` after workspace
-    bootstrap, before the HTTP server starts serving the UI. Errors are
-    logged and swallowed: startup must succeed even if the network is down or
-    the user isn't signed in yet. The toast UI in PR #3 surfaces any failure
-    later when the user actually tries to save.
+    Phase 2e entrypoint — runs at startup and then on the 60s periodic
+    timer. Pulls four directories independently:
 
-    Returns ``None`` when cloud mode is disabled, when no user is signed in,
-    or when the sync raised. Returns a ``SyncReport`` otherwise.
+      /Settings/                  → workspace_config_dir
+      /Settings/agencies/         → workspace_dir / "agencies"
+      /Settings/sales_reps/       → workspace_dir / "sales_reps"
+      /Settings/presets/          → workspace_presets_dir
 
-    Scope note: this syncs the flat ``/Settings/`` folder only. Per-record
-    entities (agencies, sales_reps, presets) live in subfolders and need a
-    publish-workflow update before they can flow back to teammates. The
-    proposal pipeline already routes their saves correctly — sync of the
-    canonical reverse-direction lands in a follow-up.
+    The flat /Settings/ sync is pull-only — its files have bundled defaults
+    that seed the workspace on first install, so propagating a cloud
+    deletion would orphan the local copy with no way to recover. The three
+    per-record subdir syncs DO propagate deletions; combined with delete
+    proposals (handled by the pickup workflow when proposal action='delete')
+    this is what makes "delete an agency on Device A and it disappears
+    everywhere within ~minutes" work end-to-end.
+
+    Errors are logged and swallowed: startup must succeed even if the
+    network is down or the user isn't signed in. Returns the FLAT-sync
+    SyncReport for backwards compat with the call sites that inspect
+    .updated for the data_version bump; the subdir reports are merged in
+    by aggregating their .updated lists.
     """
     # Deferred import — wiring imports nothing from app.services and we want
     # to keep the dependency direction services → adapters.
@@ -185,26 +224,68 @@ def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
         logger.info("Skipping shared-settings sync: user not signed in")
         return None
 
+    aggregate_report = SyncReport()
     try:
-        service = SharedSettingsService(
+        # 1. Flat /Settings/ — bundled config files; preserve local on
+        #    cloud-side deletions.
+        flat = SharedSettingsService(
             remote=bundle.storage,
             cache_dir=paths.workspace_config_dir,
         )
-        report = service.sync_all()
+        flat_report = flat.sync_all()
+        aggregate_report.updated.extend(flat_report.updated)
+        aggregate_report.unchanged.extend(flat_report.unchanged)
+        aggregate_report.failed.extend(flat_report.failed)
+
+        # 2-4. Per-record subdirs with deletion propagation. Each gets its
+        #      own eTag cache file in the destination dir so the three
+        #      states stay independent.
+        for remote_subfolder, local_dir in _SUBDIR_TARGETS(paths):
+            local_dir.mkdir(parents=True, exist_ok=True)
+            subdir_service = SharedSettingsService(
+                remote=bundle.storage,
+                cache_dir=local_dir,
+                remote_folder=remote_subfolder,
+                etag_cache_filename=".settings_etags.json",
+                propagate_deletions=True,
+            )
+            sub_report = subdir_service.sync_all()
+            # Tag the subdir's update entries so the log makes it clear
+            # which records changed where.
+            tag = remote_subfolder.rsplit("/", 1)[-1]
+            aggregate_report.updated.extend(f"{tag}/{n}" for n in sub_report.updated)
+            aggregate_report.unchanged.extend(f"{tag}/{n}" for n in sub_report.unchanged)
+            aggregate_report.failed.extend(
+                (f"{tag}/{name}", err) for name, err in sub_report.failed
+            )
     except Exception:
         logger.exception("Shared-settings sync raised; continuing startup")
         return None
 
-    if report.updated:
+    if aggregate_report.updated:
         logger.info(
             "Synced %d shared settings file(s): %s",
-            len(report.updated),
-            ", ".join(report.updated),
+            len(aggregate_report.updated),
+            ", ".join(aggregate_report.updated),
         )
-    if report.failed:
+    if aggregate_report.failed:
         logger.warning(
             "Shared-settings sync had %d failure(s): %s",
-            len(report.failed),
-            report.failed,
+            len(aggregate_report.failed),
+            aggregate_report.failed,
         )
-    return report
+    return aggregate_report
+
+
+def _SUBDIR_TARGETS(paths: AppPaths) -> list[tuple[str, Path]]:
+    """Return [(remote_folder, local_dir), ...] for the three per-record syncs.
+
+    Helper exists so the call site stays readable and tests can patch the
+    list when exercising specific subdirs. Order is stable so log output
+    is predictable.
+    """
+    return [
+        (f"{SETTINGS_REMOTE_FOLDER}/agencies", paths.workspace_dir / "agencies"),
+        (f"{SETTINGS_REMOTE_FOLDER}/sales_reps", paths.workspace_dir / "sales_reps"),
+        (f"{SETTINGS_REMOTE_FOLDER}/presets", paths.workspace_presets_dir),
+    ]
