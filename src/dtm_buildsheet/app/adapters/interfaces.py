@@ -58,7 +58,16 @@ class IdentityProvider(ABC):
     """
 
     @abstractmethod
-    def signin(self) -> UserIdentity: ...
+    def signin(self, *, force_account_picker: bool = False) -> UserIdentity:
+        """Run the interactive sign-in flow and return the user's identity.
+
+        ``force_account_picker=True`` is honored by providers that show an
+        account chooser (the M365 provider, primarily). Set when the call
+        is a user-initiated Switch User so a cached browser session can't
+        silently win the OAuth round-trip. Routine first-launch sign-in
+        leaves it False.
+        """
+        ...
 
     @abstractmethod
     def current_user(self) -> UserIdentity | None: ...

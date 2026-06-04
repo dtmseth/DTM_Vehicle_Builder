@@ -77,31 +77,75 @@ def _find_previous_versions(ppt_path: Path, export_dir: Path) -> list[str]:
     ]
 
 
-def finalize_output(ppt_path: Path, paths: AppPaths, project_export_dir: Path | None = None) -> dict:
+def finalize_output(
+    ppt_path: Path,
+    paths: AppPaths,
+    project_export_dir: Path | None = None,
+    *,
+    agency: str = "",
+    year: str = "",
+) -> dict:
     """
     Copy ppt_path to the configured export directory (if set).
     project_export_dir takes priority over the global output_save_dir setting.
     Returns {output_path, output_name, previous_versions}.
     No conflict logic — the timestamp in the filename ensures uniqueness.
+
+    In cloud mode (and only when ``exports_library_name`` is configured),
+    the final PPTX is also auto-uploaded to a SharePoint folder on the
+    company's separate library — in the background, so the response returns
+    immediately. agency / year drive the {library}/{base}/{agency}/{year}/
+    layout. Missing values get sanitized to "Unassigned" upstream.
     """
     export_dir = project_export_dir if (project_export_dir and project_export_dir.is_dir()) else get_output_save_dir(paths)
     if export_dir is None:
-        return {
+        result_path = ppt_path
+        result = {
             "output_path": str(ppt_path),
             "output_name": ppt_path.name,
             "previous_versions": [],
         }
+    else:
+        export_dir.mkdir(parents=True, exist_ok=True)
+        dest = export_dir / ppt_path.name
+        shutil.copy2(ppt_path, dest)
+        previous = _find_previous_versions(dest, export_dir)
+        result_path = dest
+        result = {
+            "output_path": str(dest),
+            "output_name": dest.name,
+            "previous_versions": previous,
+        }
 
-    export_dir.mkdir(parents=True, exist_ok=True)
-    dest = export_dir / ppt_path.name
-    shutil.copy2(ppt_path, dest)
+    # Fire the SharePoint auto-upload from the canonical final path. The
+    # service is a no-op outside cloud mode and when exports aren't
+    # configured, so callers without agency/year context still get correct
+    # local-only behavior.
+    try:
+        from .exports_upload_service import upload_export_in_background
+        from .. import server as _server
 
-    previous = _find_previous_versions(dest, export_dir)
-    return {
-        "output_path": str(dest),
-        "output_name": dest.name,
-        "previous_versions": previous,
-    }
+        def _on_complete(ok: bool) -> None:
+            if ok:
+                # Same data_version counter the UI watches for sync changes —
+                # bump it so the cloud chip refreshes and tells the user the
+                # upload finished.
+                try:
+                    _server._bump_data_version()  # noqa: SLF001
+                except Exception:
+                    pass
+
+        upload_export_in_background(
+            result_path,
+            agency=agency,
+            year=year,
+            on_complete=_on_complete,
+        )
+    except Exception:
+        # Don't let the auto-upload setup affect the local-write contract.
+        pass
+
+    return result
 
 
 def handle_delete_old(body: dict, paths: AppPaths) -> dict:
@@ -146,7 +190,15 @@ def generate_build_sheet_handler(body: dict, paths: AppPaths) -> dict:
         result = generate_build_sheet(path, paths)
         log_lines.append(f"Wrote: {result.ppt_path.name}")
 
-        export = finalize_output(result.ppt_path, paths)
+        # Standalone Tools tab — no ProjectRecord context, but the parsed
+        # workbook carries Agency / BuildYear that we can use for the
+        # SharePoint upload folder layout. Falls back to "Unassigned" inside
+        # the uploader when missing.
+        export = finalize_output(
+            result.ppt_path, paths,
+            agency=str(project.info.get("Agency", "")),
+            year=str(project.info.get("BuildYear", "")),
+        )
 
         return {
             "ok": True,

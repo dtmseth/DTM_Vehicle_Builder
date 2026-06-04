@@ -3,5 +3,8 @@
   "tenant_id": "ae8e001a-ccac-4c38-8bd6-580ffcb9668f",
   "client_id": "9fec886d-1162-408e-9a6d-bd7e5141e561",
   "sharepoint_site_id": "netorgft11566699.sharepoint.com,d72d0b09-5a7f-43ea-a7bd-d7ee7f33ea4f,086353cf-2c54-4ceb-a367-10a6aa852832",
-  "sharepoint_drive_id": "b!CQst139a6kOnvdfufzPqT89TYwhULOtMo2cQpqqFKDJkEtyg-IuVRbI1ITFPoEKF"
+  "sharepoint_drive_id": "b!CQst139a6kOnvdfufzPqT89TYwhULOtMo2cQpqqFKDJkEtyg-IuVRbI1ITFPoEKF",
+  "exports_library_name": "Company Files",
+  "exports_library_internal_name": "Build Photos",
+  "exports_base_folder": "Vehicle Builder Projects"
 }

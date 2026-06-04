@@ -294,7 +294,10 @@ async function _doSwitchUser(){
   btn.disabled = true;
   try {
     await api("/api/cloud/signout", {});
-    const res = await api("/api/cloud/signin", {});
+    // force_account_picker tells MSAL to add prompt=select_account to the
+    // OAuth request. Without it the browser's existing Microsoft session
+    // wins silently and "Switch User" appears to do nothing.
+    const res = await api("/api/cloud/signin", {force_account_picker: true});
     if(res?.ok){
       toast("Signed in as " + (res.user?.display_name || "user"), "success");
       await refreshCloudStatus();

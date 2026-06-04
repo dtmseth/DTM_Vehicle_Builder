@@ -313,7 +313,17 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         from .generation_service import finalize_output
         import re as _re
         from pathlib import Path as _Path
-        export = finalize_output(ppt_path, paths, project_export_dir=_project_export_dir)
+        # Pull agency + year off the project record for the SharePoint
+        # auto-upload's folder layout. _agency/_year were computed above
+        # for the local export-dir path; reuse them so the cloud upload
+        # lands at the same {agency}/{year}/ shape as the local copy.
+        export = finalize_output(
+            ppt_path,
+            paths,
+            project_export_dir=_project_export_dir,
+            agency=_agency or project.info.get("Agency", ""),
+            year=_year or project.info.get("BuildYear", "") or _ind_year,
+        )
 
         # Detect rename: if the caller supplied the previous output path and the
         # stable filename prefix (everything before the timestamp) has changed,

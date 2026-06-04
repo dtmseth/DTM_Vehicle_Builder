@@ -28,7 +28,9 @@ class LocalIdentityProvider(IdentityProvider):
     the M365 adapter lands and as the default in tests.
     """
 
-    def signin(self) -> UserIdentity:
+    def signin(self, *, force_account_picker: bool = False) -> UserIdentity:
+        # Local identity has no browser flow — kwarg accepted for interface
+        # parity only.
         return _LOCAL_USER
 
     def current_user(self) -> UserIdentity | None:

@@ -27,8 +27,21 @@ class M365IdentityProvider(IdentityProvider):
         self._http_timeout = http_timeout
         self._cached_identity: UserIdentity | None = None
 
-    def signin(self) -> UserIdentity:
-        token = self._msal.acquire_token(interactive_ok=True)
+    def signin(self, *, force_account_picker: bool = False) -> UserIdentity:
+        """Run the interactive OAuth flow and return the user identity.
+
+        ``force_account_picker=True`` makes the OAuth endpoint show the
+        account chooser even if the browser is already signed into a
+        Microsoft account. The Switch User modal action passes this so a
+        cached browser session can't silently win. Routine sign-in
+        (first-launch / re-sign-in after explicit signout) leaves it
+        False so the picker doesn't appear when only one account is
+        plausibly the right answer.
+        """
+        token = self._msal.acquire_token(
+            interactive_ok=True,
+            force_account_picker=force_account_picker,
+        )
         identity = self._fetch_identity(token)
         self._cached_identity = identity
         return identity

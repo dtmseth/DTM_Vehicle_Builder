@@ -92,18 +92,34 @@ class MsalClient:
 
     # ── Public API ────────────────────────────────────────────────────────
 
-    def acquire_token(self, *, interactive_ok: bool = True) -> str:
+    def acquire_token(
+        self,
+        *,
+        interactive_ok: bool = True,
+        force_account_picker: bool = False,
+    ) -> str:
         """Return a valid Graph access token, prompting the user if needed.
 
         Set `interactive_ok=False` to forbid any UI — useful for background
         refresh paths that should fail loudly rather than pop a window.
+
+        Set `force_account_picker=True` to bypass the cached MSAL account
+        AND tell the OAuth endpoint to show the account picker even if the
+        browser has a Microsoft session cookie. Used by Switch User in the
+        cloud-status modal: without this, MSAL silently reuses whichever
+        account the browser is signed into and the user can't actually
+        switch. Always implies interactive — silent acquisition skips the
+        picker step entirely.
         """
-        token = self._acquire_silent()
-        if token:
-            return token
+        if not force_account_picker:
+            token = self._acquire_silent()
+            if token:
+                return token
         if not interactive_ok:
             raise CloudAuthError("No cached account and interactive sign-in disabled")
-        return self._acquire_interactive_or_devicecode()
+        return self._acquire_interactive_or_devicecode(
+            force_account_picker=force_account_picker,
+        )
 
     def has_cached_account(self) -> bool:
         return bool(self._app.get_accounts())
@@ -134,9 +150,16 @@ class MsalClient:
             return result["access_token"]
         return None
 
-    def _acquire_interactive_or_devicecode(self) -> str:
+    def _acquire_interactive_or_devicecode(self, *, force_account_picker: bool = False) -> str:
+        # prompt="select_account" forces the OAuth endpoint to show the
+        # account chooser even when the browser already has a Microsoft
+        # session — without it, MSAL silently reuses that session and the
+        # Switch User flow has no visible effect.
+        interactive_kwargs: dict = {"scopes": list(GRAPH_SCOPES)}
+        if force_account_picker:
+            interactive_kwargs["prompt"] = "select_account"
         try:
-            result = self._app.acquire_token_interactive(scopes=list(GRAPH_SCOPES))
+            result = self._app.acquire_token_interactive(**interactive_kwargs)
             if result and "access_token" in result:
                 return result["access_token"]
         except Exception:  # noqa: BLE001 — fall through to device-code

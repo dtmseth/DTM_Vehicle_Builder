@@ -36,16 +36,36 @@ class CloudConfig:
     a public-client app registration. Sourced from env or a workspace JSON
     file at process start to keep the desktop bundle portable across dev /
     CI / future variants.
+
+    Export-target fields (``exports_*``) name a SECOND SharePoint library on
+    the same site where generated PPTX build sheets are auto-uploaded after
+    every successful generate. The library lives outside the vehicle-builder
+    one so it can be accessed through normal team SharePoint without anyone
+    needing the app installed. The drive_id is resolved at runtime by
+    listing /sites/{site_id}/drives and matching by display name, because
+    SharePoint's internal library names can lag user-facing renames.
     """
 
     tenant_id: str
     client_id: str
     sharepoint_site_id: str
     sharepoint_drive_id: str
+    # Export-target library lookup. The two names are tried in order
+    # against /sites/{site_id}/drives.name — give the display name first;
+    # the internal-name fallback covers libraries that were renamed in the
+    # SharePoint UI but kept their backend name (SharePoint doesn't always
+    # update the latter).
+    exports_library_name: str = ""
+    exports_library_internal_name: str = ""
+    exports_base_folder: str = ""  # e.g. "Vehicle Builder Projects" inside the library
 
     @property
     def authority(self) -> str:
         return f"https://login.microsoftonline.com/{self.tenant_id}"
+
+    @property
+    def exports_enabled(self) -> bool:
+        return bool(self.exports_library_name or self.exports_library_internal_name)
 
 
 class CloudConfigMissing(RuntimeError):
@@ -117,4 +137,19 @@ def load_cloud_config_from_env() -> CloudConfig:
             + ", ".join(sorted(missing))
             + f" (looked in env and {cloud_config_path()})"
         )
+
+    # Optional export-target fields. Absence just means auto-upload is off
+    # for this install — no CloudConfigMissing.
+    optional = {
+        "exports_library_name": "DTM_EXPORTS_LIBRARY_NAME",
+        "exports_library_internal_name": "DTM_EXPORTS_LIBRARY_INTERNAL_NAME",
+        "exports_base_folder": "DTM_EXPORTS_BASE_FOLDER",
+    }
+    for field_name, env_name in optional.items():
+        raw = os.environ.get(env_name, "").strip()
+        if not raw:
+            raw = str(file_values.get(field_name, "")).strip()
+        if raw:
+            values[field_name] = raw
+
     return CloudConfig(**values)

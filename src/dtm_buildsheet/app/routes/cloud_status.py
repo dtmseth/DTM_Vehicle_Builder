@@ -58,7 +58,11 @@ def route_cloud_status(
         send_json(handler, _signout())
         return True
     if method == "POST" and path == "/api/cloud/signin":
-        send_json(handler, _signin())
+        # POST body can pass {"force_account_picker": true} to force the
+        # OAuth account chooser — Switch User sends that; first-launch
+        # sign-in sends a plain object and gets the default silent-when-
+        # possible flow.
+        send_json(handler, _signin(force_account_picker=bool(body.get("force_account_picker"))))
         return True
     return False
 
@@ -92,13 +96,20 @@ def _signout() -> dict:
     return {"ok": True}
 
 
-def _signin() -> dict:
-    """Trigger the interactive OAuth flow — opens browser + waits for redirect."""
+def _signin(*, force_account_picker: bool = False) -> dict:
+    """Trigger the interactive OAuth flow — opens browser + waits for redirect.
+
+    ``force_account_picker`` makes the OAuth endpoint show the account
+    chooser even when the browser is already signed into a Microsoft
+    account. Switch User passes True; routine sign-in (boot, after a
+    failed silent attempt) leaves it False so users with only one
+    plausible account don't see an unnecessary picker.
+    """
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
         return {"ok": False, "error": "Cloud mode is disabled"}
     try:
         bundle = wiring.get_active_bundle()
-        identity = bundle.identity.signin()
+        identity = bundle.identity.signin(force_account_picker=force_account_picker)
     except Exception as exc:
         logger.exception("Interactive signin raised")
         return {"ok": False, "error": str(exc)}
