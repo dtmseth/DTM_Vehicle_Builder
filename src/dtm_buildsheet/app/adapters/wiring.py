@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys  # noqa: F401 — used by pytest-guard check
 from dataclasses import dataclass
 
 from ...storage.base import StorageProvider
@@ -149,6 +150,11 @@ def ensure_signed_in_for_cloud() -> bool:
     the user is offline or declines to sign in. They land in local mode
     and can retry next launch.
     """
+    # Hard guard against an OAuth prompt firing during a pytest run on
+    # the developer's machine. See _cloud_storage() / save_via_proposal()
+    # for the matching guards on the write paths.
+    if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("DTM_ALLOW_CLOUD_IN_TESTS"):
+        return False
     if not _cloud_flag_enabled():
         return False
 
@@ -198,6 +204,13 @@ def save_via_proposal(
     raised). The return value is intended to be merged into the route's JSON
     response so the UI can decide which toast to show.
     """
+    # Hard guard: NEVER write proposals to real SharePoint during a test
+    # run. PYTEST_CURRENT_TEST is set automatically by pytest; this is the
+    # backstop for the autouse conftest fixture in tests/conftest.py.
+    # Tests that legitimately exercise the cloud path against a fake
+    # ChangeProposalGateway opt in by setting DTM_ALLOW_CLOUD_IN_TESTS=1.
+    if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("DTM_ALLOW_CLOUD_IN_TESTS"):
+        return {"proposed": False, "reason": "test environment"}
     if not _cloud_flag_enabled():
         return {"proposed": False, "reason": "cloud disabled"}
 

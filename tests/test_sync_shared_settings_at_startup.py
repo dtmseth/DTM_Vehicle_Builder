@@ -117,6 +117,7 @@ def cloud_off(monkeypatch):
 @pytest.fixture
 def cloud_on(monkeypatch):
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
+    monkeypatch.setenv("DTM_ALLOW_CLOUD_IN_TESTS", "1")
 
 
 @pytest.fixture

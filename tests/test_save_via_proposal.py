@@ -77,12 +77,20 @@ def reset_bundle():
 def cloud_off(monkeypatch):
     """Force the cloud-flag check off regardless of env or cloud_config.json."""
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: False)
+    # Bypass the autouse test-env guard so the cloud-disabled code path
+    # actually gets exercised. Safe because the flag itself is off — no
+    # real I/O can happen even if the guard is bypassed.
+    monkeypatch.setenv("DTM_ALLOW_CLOUD_IN_TESTS", "1")
 
 
 @pytest.fixture
 def cloud_on(monkeypatch):
     """Force the cloud-flag check on regardless of env or cloud_config.json."""
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
+    # Opt back into cloud paths against fake remotes — the
+    # autouse PYTEST_CURRENT_TEST guard in shared_work_service /
+    # wiring otherwise blocks every test from reaching cloud code.
+    monkeypatch.setenv("DTM_ALLOW_CLOUD_IN_TESTS", "1")
 
 
 # ── No-op when cloud disabled ────────────────────────────────────────────────

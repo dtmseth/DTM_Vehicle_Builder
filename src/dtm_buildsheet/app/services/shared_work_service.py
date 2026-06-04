@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 from pathlib import Path
 
@@ -67,6 +68,18 @@ def _cloud_storage():
     Single helper so every call site short-circuits the same way when cloud
     is disabled or the bundle failed to construct.
     """
+    # Hard guard: NEVER let pytest-driven code paths reach real SharePoint.
+    # PYTEST_CURRENT_TEST is set by pytest automatically while a test is
+    # running; this short-circuit applies even if some test forgot to
+    # monkey-patch the cloud flag or bundle. See tests/conftest.py for
+    # the matching autouse fixture that's the primary defense.
+    #
+    # Tests that DO need to exercise the cloud code path with a fake
+    # remote (test_shared_work_service, test_cloud_status_service) opt
+    # back in by setting DTM_ALLOW_CLOUD_IN_TESTS=1 in their cloud_on
+    # fixture — they're known to have installed a _FakeRemote bundle.
+    if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("DTM_ALLOW_CLOUD_IN_TESTS"):
+        return None
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
         return None
     try:
