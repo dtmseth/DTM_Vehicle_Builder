@@ -262,60 +262,90 @@ def _setup_logging(workspace_dir: Path) -> None:
 _PERIODIC_SYNC_INTERVAL_SECONDS = 60
 
 
+# Serialize concurrent sync invocations. Without this, the periodic loop
+# and /api/cloud/sync (the modal's "Force Sync" button) could run
+# simultaneously: each sets _sync_in_progress True, the faster one finishes
+# and sets it back to False mid-way through the other, the API reports
+# "synced!" while work is still in flight. Lock makes "force sync" wait
+# for any in-progress periodic sync to finish before starting its own pass.
+_sync_lock = threading.Lock()
 _sync_in_progress = False  # noqa: PLW0603 — see run_sync_now() for the contract
+
+# Monotonically-increasing counter incremented every time a sync produces
+# observable changes (updated/deleted/uploaded files). Surfaced in the
+# /api/cloud/status response so the UI can detect "data changed under me"
+# and re-fetch its lists without waiting for the user to click around.
+_data_version = 0  # noqa: PLW0603 — see _bump_data_version()
 
 
 def is_sync_in_progress() -> bool:
-    """True while a sync (initial or periodic or forced) is mid-flight.
-
-    The cloud-indicator modal uses this to drive its spinner. Single flag
-    is fine because all sync paths are serialized through the same lock-free
-    background thread; the periodic loop and the force-sync API never run
-    concurrently with each other.
-    """
+    """True while a sync (initial or periodic or forced) is mid-flight."""
     return _sync_in_progress
+
+
+def get_data_version() -> int:
+    """Return the current data-version counter for the cloud status payload."""
+    return _data_version
+
+
+def _bump_data_version() -> None:
+    global _data_version
+    _data_version += 1
 
 
 def run_sync_now(active_paths: AppPaths) -> dict:
     """Run a single sync cycle synchronously and return a small report.
 
-    Called by /api/cloud/sync from the modal. Reuses the same body as the
-    periodic loop so the two paths can never drift. While in-flight, sets
-    a module-level flag the status endpoint surfaces so the UI can show a
-    spinner. Never raises — the wrapper logs and continues.
+    Called by /api/cloud/sync from the modal AND by the periodic loop.
+    Serialized through ``_sync_lock`` so two concurrent callers don't
+    race on the in-progress flag. While in-flight, sets a module-level
+    flag the status endpoint surfaces so the UI can show a spinner.
+    Bumps ``_data_version`` if any files changed so the UI can re-fetch
+    its lists. Never raises — the wrapper logs and continues.
     """
     global _sync_in_progress
-    _sync_in_progress = True
     logger = logging.getLogger(__name__)
     report: dict = {"ok": True}
-    try:
-        # Sign-in step is included so "Force Sync Now" can also recover an
-        # app that lost its cached token between launches.
-        from .adapters.wiring import ensure_signed_in_for_cloud
-        ensure_signed_in_for_cloud()
+    with _sync_lock:
+        _sync_in_progress = True
+        try:
+            # Sign-in step is included so "Force Sync Now" can also recover
+            # an app that lost its cached token between launches.
+            from .adapters.wiring import ensure_signed_in_for_cloud
+            ensure_signed_in_for_cloud()
 
-        settings_report = sync_shared_settings_at_startup(active_paths)
-        report["settings"] = (
-            {
-                "updated": settings_report.updated,
-                "unchanged_count": len(settings_report.unchanged),
-                "failed_count": len(settings_report.failed),
-            }
-            if settings_report
-            else None
-        )
+            settings_report = sync_shared_settings_at_startup(active_paths)
+            settings_changed = bool(settings_report and settings_report.updated)
+            report["settings"] = (
+                {
+                    "updated": settings_report.updated,
+                    "unchanged_count": len(settings_report.unchanged),
+                    "failed_count": len(settings_report.failed),
+                }
+                if settings_report
+                else None
+            )
 
-        agency_service.warmup_cache(active_paths, force=True)
-        sales_rep_service.warmup_cache(active_paths, force=True)
+            agency_service.warmup_cache(active_paths, force=True)
+            sales_rep_service.warmup_cache(active_paths, force=True)
 
-        from .services.shared_work_service import sync_work_data
-        work_report = sync_work_data(active_paths)
-        report["work"] = work_report
-    except Exception as exc:
-        logger.exception("Sync cycle failed")
-        report = {"ok": False, "error": str(exc)}
-    finally:
-        _sync_in_progress = False
+            from .services.shared_work_service import sync_work_data
+            work_report = sync_work_data(active_paths)
+            report["work"] = work_report
+
+            work_changed = bool(
+                work_report.get("projects_updated") or work_report.get("projects_deleted")
+                or work_report.get("projects_uploaded")
+                or work_report.get("drafts_updated") or work_report.get("drafts_deleted")
+                or work_report.get("drafts_uploaded")
+            )
+            if settings_changed or work_changed:
+                _bump_data_version()
+        except Exception as exc:
+            logger.exception("Sync cycle failed")
+            report = {"ok": False, "error": str(exc)}
+        finally:
+            _sync_in_progress = False
     return report
 
 

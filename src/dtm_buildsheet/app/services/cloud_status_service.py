@@ -45,31 +45,36 @@ def get_status(paths: AppPaths) -> dict:
         "user": { "display_name": str, "email": str, "user_id": str } | None,
         "has_photo": bool,
         "syncing": bool,           # spinner state for the indicator modal
+        "data_version": int,       # bumps when sync changed local files
       }
 
-    Never raises. UI treats any unexpected shape as "Local mode".
+    The UI watches data_version transitions to know when to re-fetch its
+    project/draft lists — sync changes those files behind the UI's back,
+    and without this signal the UI shows stale data until the next user
+    navigation. Never raises; UI treats any unexpected shape as "Local mode".
     """
     syncing = _is_sync_in_progress()
+    data_version = _data_version()
 
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
-        return _empty_status(syncing=syncing, cloud_enabled=False)
+        return _empty_status(syncing=syncing, cloud_enabled=False, data_version=data_version)
 
     try:
         bundle = wiring.get_active_bundle()
     except Exception:
         logger.exception("Could not get active bundle for cloud status")
-        return _empty_status(syncing=syncing, cloud_enabled=True)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
 
     try:
         if not bundle.identity.is_signed_in():
-            return _empty_status(syncing=syncing, cloud_enabled=True)
+            return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
         user = bundle.identity.current_user()
     except Exception:
         logger.exception("is_signed_in / current_user check failed")
-        return _empty_status(syncing=syncing, cloud_enabled=True)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
 
     if user is None:
-        return _empty_status(syncing=syncing, cloud_enabled=True)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
 
     # Lazy-load the photo if we haven't fetched it yet this session. Done
     # synchronously to keep the status endpoint single-call. If Graph is
@@ -87,16 +92,18 @@ def get_status(paths: AppPaths) -> dict:
         },
         "has_photo": has_photo,
         "syncing": syncing,
+        "data_version": data_version,
     }
 
 
-def _empty_status(*, syncing: bool, cloud_enabled: bool) -> dict:
+def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int) -> dict:
     return {
         "cloud_enabled": cloud_enabled,
         "signed_in": False,
         "user": None,
         "has_photo": False,
         "syncing": syncing,
+        "data_version": data_version,
     }
 
 
@@ -107,6 +114,14 @@ def _is_sync_in_progress() -> bool:
         return bool(_server.is_sync_in_progress())
     except Exception:
         return False
+
+
+def _data_version() -> int:
+    try:
+        from .. import server as _server
+        return int(_server.get_data_version())
+    except Exception:
+        return 0
 
 
 def get_cached_photo_bytes(paths: AppPaths) -> bytes | None:

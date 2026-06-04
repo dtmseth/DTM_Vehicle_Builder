@@ -49,8 +49,16 @@ DRAFTS_REMOTE_FOLDER = "Drafts"
 # should also delete them locally) vs. which are local-only (so we should
 # upload them). Without this, a missing-from-cloud file is ambiguous —
 # could be deleted from cloud OR never made it to cloud.
+#
+# Schema v2 (current) additionally stores per-file eTags so we can skip the
+# content fetch when the cloud copy is provably unchanged. The eTag is
+# whatever Graph returned at the last sync; if it matches what Graph
+# returns now, the file hasn't changed and we can leave local alone.
+# Schema v1 (just lists of IDs) auto-upgrades on first sync — every file
+# is considered "missing eTag" and falls through to the slow-path
+# content-fetch, populating eTags as it goes.
 _STATE_FILENAME = ".cloud_state.json"
-_STATE_SCHEMA_VERSION = 1
+_STATE_SCHEMA_VERSION = 2
 
 
 def _cloud_storage():
@@ -175,12 +183,12 @@ def sync_work_data(paths: AppPaths) -> dict:
         }
 
     state = _load_state(paths)
-    proj = _reconcile_projects(storage, paths, set(state.get("projects", [])))
-    draf = _reconcile_drafts(storage, paths, set(state.get("drafts", [])))
+    proj = _reconcile_projects(storage, paths, _state_as_etag_map(state.get("projects")))
+    draf = _reconcile_drafts(storage, paths, _state_as_etag_map(state.get("drafts")))
     _save_state(paths, {
         "schema_version": _STATE_SCHEMA_VERSION,
-        "projects": sorted(proj["current_ids"]),
-        "drafts":   sorted(draf["current_ids"]),
+        "projects": proj["current_etags"],
+        "drafts":   draf["current_etags"],
     })
 
     if proj["updated"] or proj["deleted"] or proj["uploaded"] or draf["updated"] or draf["deleted"] or draf["uploaded"]:
@@ -231,149 +239,182 @@ def _save_state(paths: AppPaths, state: dict) -> None:
         logger.exception("Could not write cloud state manifest")
 
 
+def _state_as_etag_map(raw) -> dict[str, str]:
+    """Normalize a state-file 'projects'/'drafts' value into an {id: etag} dict.
+
+    Schema v2 stores it natively as a dict. Schema v1 (and dev-machines that
+    upgraded from before) stored a flat list of IDs — treated here as
+    {id: ""} so every file falls through to the slow-path fetch on first
+    sync after upgrade, populating eTags as it goes.
+    """
+    if isinstance(raw, dict):
+        return {str(k): str(v) for k, v in raw.items()}
+    if isinstance(raw, list):
+        return {str(item): "" for item in raw}
+    return {}
+
+
 # ── Reconciliation: projects ─────────────────────────────────────────────────
 
 
-def _reconcile_projects(storage, paths: AppPaths, last_known: set[str]) -> dict:
-    paths.workspace_projects_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        remote_files = storage.list_files(PROJECTS_REMOTE_FOLDER)
-    except FileNotFoundError:
-        remote_files = []
-    except Exception:
-        logger.exception("Could not list remote projects; keeping last-known state")
-        return {"current_ids": last_known, "updated": 0, "deleted": 0, "uploaded": 0}
-
-    # Step 1: pull every cloud project (content-equality skips no-ops).
-    remote_ids: set[str] = set()
-    updated = 0
-    for remote_path in remote_files:
-        if not remote_path.endswith(".json") or remote_path.endswith(".meta.json"):
-            continue
-        name = remote_path.rsplit("/", 1)[-1]
-        project_id = name[: -len(".json")]
-        try:
-            validate_safe_id(project_id, label="project_id")
-        except ValueError:
-            logger.warning("Skipping remote project with unsafe id: %r", project_id)
-            continue
-        try:
-            payload = storage.read_bytes(remote_path)
-        except Exception:
-            logger.exception("Could not read remote project %s", remote_path)
-            continue
-        remote_ids.add(project_id)
-        local_dir = paths.workspace_projects_dir / project_id
-        local_dir.mkdir(parents=True, exist_ok=True)
-        local_path = local_dir / "project.json"
-        if local_path.exists() and local_path.read_bytes() == payload:
-            continue
-        try:
-            local_path.write_bytes(payload)
-            updated += 1
-        except OSError:
-            logger.exception("Could not write local project %s", local_path)
-
-    # Step 2: enumerate what we actually have locally right now.
-    local_ids: set[str] = set()
-    for project_dir in paths.workspace_projects_dir.iterdir():
-        if project_dir.is_dir() and (project_dir / "project.json").exists():
-            local_ids.add(project_dir.name)
-
-    # Step 3: deletions — anything we last saw in cloud but isn't there now.
-    deleted = 0
-    for project_id in last_known - remote_ids:
-        if project_id not in local_ids:
-            continue
-        try:
-            shutil.rmtree(paths.workspace_projects_dir / project_id)
-            local_ids.discard(project_id)
-            deleted += 1
-        except OSError:
-            logger.exception("Could not delete local project %s", project_id)
-
-    # Step 4: uploads — local-only files that have never been in cloud.
-    uploaded = 0
-    for project_id in local_ids - remote_ids - last_known:
-        local_path = paths.workspace_projects_dir / project_id / "project.json"
-        if mirror_project_to_cloud(project_id, local_path):
-            remote_ids.add(project_id)
-            uploaded += 1
-
-    return {
-        "current_ids": remote_ids,
-        "updated": updated,
-        "deleted": deleted,
-        "uploaded": uploaded,
-    }
+def _reconcile_projects(storage, paths: AppPaths, last_known: dict[str, str]) -> dict:
+    return _reconcile_records(
+        storage,
+        paths,
+        last_known,
+        remote_folder=PROJECTS_REMOTE_FOLDER,
+        id_label="project_id",
+        local_record_path=lambda paths_, rid: paths_.workspace_projects_dir / rid / "project.json",
+        list_local_ids=_list_local_project_ids,
+        delete_local=_delete_local_project,
+        mirror_to_cloud=mirror_project_to_cloud,
+        ensure_local_root=lambda paths_: paths_.workspace_projects_dir.mkdir(parents=True, exist_ok=True),
+    )
 
 
 # ── Reconciliation: drafts ───────────────────────────────────────────────────
 
 
-def _reconcile_drafts(storage, paths: AppPaths, last_known: set[str]) -> dict:
-    paths.workspace_drafts_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        remote_files = storage.list_files(DRAFTS_REMOTE_FOLDER)
-    except FileNotFoundError:
-        remote_files = []
-    except Exception:
-        logger.exception("Could not list remote drafts; keeping last-known state")
-        return {"current_ids": last_known, "updated": 0, "deleted": 0, "uploaded": 0}
+def _reconcile_drafts(storage, paths: AppPaths, last_known: dict[str, str]) -> dict:
+    return _reconcile_records(
+        storage,
+        paths,
+        last_known,
+        remote_folder=DRAFTS_REMOTE_FOLDER,
+        id_label="draft_id",
+        local_record_path=lambda paths_, rid: paths_.workspace_drafts_dir / f"{rid}.json",
+        list_local_ids=_list_local_draft_ids,
+        delete_local=_delete_local_draft,
+        mirror_to_cloud=mirror_draft_to_cloud,
+        ensure_local_root=lambda paths_: paths_.workspace_drafts_dir.mkdir(parents=True, exist_ok=True),
+    )
 
-    remote_ids: set[str] = set()
+
+# ── Shared reconciliation engine ─────────────────────────────────────────────
+
+
+def _reconcile_records(
+    storage,
+    paths: AppPaths,
+    last_known: dict[str, str],
+    *,
+    remote_folder: str,
+    id_label: str,
+    local_record_path,
+    list_local_ids,
+    delete_local,
+    mirror_to_cloud,
+    ensure_local_root,
+) -> dict:
+    """Single body shared by projects and drafts reconciliation.
+
+    The two record kinds differ only in how their IDs map to local paths
+    and how they're enumerated/deleted on disk. Everything else (eTag
+    short-circuit, deletion propagation, local-only upload) is identical.
+    """
+    ensure_local_root(paths)
+    try:
+        remote_entries = storage.list_files_with_metadata(remote_folder)
+    except FileNotFoundError:
+        remote_entries = []
+    except Exception:
+        logger.exception("Could not list remote %s; keeping last-known state", remote_folder)
+        return {"current_etags": last_known, "updated": 0, "deleted": 0, "uploaded": 0}
+
+    # Step 1: walk the cloud listing. eTag match against state means we
+    # know the cloud copy is unchanged AND we know local should also be
+    # up-to-date (we wrote that eTag last time we synced it). Skip the
+    # fetch entirely — this is the fast path for typical 60s cycles where
+    # nothing has changed.
+    remote_etags: dict[str, str] = {}
     updated = 0
-    for remote_path in remote_files:
+    for entry in remote_entries:
+        remote_path = entry.path
         if not remote_path.endswith(".json") or remote_path.endswith(".meta.json"):
             continue
         name = remote_path.rsplit("/", 1)[-1]
-        draft_id = name[: -len(".json")]
+        record_id = name[: -len(".json")]
         try:
-            validate_safe_id(draft_id, label="draft_id")
+            validate_safe_id(record_id, label=id_label)
         except ValueError:
-            logger.warning("Skipping remote draft with unsafe id: %r", draft_id)
+            logger.warning("Skipping remote %s with unsafe id: %r", id_label, record_id)
+            continue
+        remote_etags[record_id] = entry.etag
+        prior_etag = last_known.get(record_id)
+        local_path = local_record_path(paths, record_id)
+        if entry.etag and prior_etag == entry.etag and local_path.exists():
+            # Fast path: cloud unchanged since last sync, local present.
             continue
         try:
             payload = storage.read_bytes(remote_path)
         except Exception:
-            logger.exception("Could not read remote draft %s", remote_path)
+            logger.exception("Could not read remote %s %s", id_label, remote_path)
+            # Preserve the prior etag so we try again next iteration.
+            if prior_etag:
+                remote_etags[record_id] = prior_etag
             continue
-        remote_ids.add(draft_id)
-        local_path = paths.workspace_drafts_dir / name
+        local_path.parent.mkdir(parents=True, exist_ok=True)
         if local_path.exists() and local_path.read_bytes() == payload:
             continue
         try:
             local_path.write_bytes(payload)
             updated += 1
         except OSError:
-            logger.exception("Could not write local draft %s", local_path)
+            logger.exception("Could not write local %s file %s", id_label, local_path)
 
-    local_ids: set[str] = set()
-    for path in paths.workspace_drafts_dir.glob("*.json"):
-        if path.is_file():
-            local_ids.add(path.stem)
+    remote_ids = set(remote_etags)
 
+    # Step 2: deletions propagated from cloud → wipe locally.
+    local_ids = set(list_local_ids(paths))
     deleted = 0
-    for draft_id in last_known - remote_ids:
-        if draft_id not in local_ids:
+    for record_id in set(last_known) - remote_ids:
+        if record_id not in local_ids:
             continue
         try:
-            (paths.workspace_drafts_dir / f"{draft_id}.json").unlink()
-            local_ids.discard(draft_id)
+            delete_local(paths, record_id)
+            local_ids.discard(record_id)
             deleted += 1
         except OSError:
-            logger.exception("Could not delete local draft %s", draft_id)
+            logger.exception("Could not delete local %s %s", id_label, record_id)
 
+    # Step 3: local-only files → upload them so cloud becomes the union.
     uploaded = 0
-    for draft_id in local_ids - remote_ids - last_known:
-        local_path = paths.workspace_drafts_dir / f"{draft_id}.json"
-        if mirror_draft_to_cloud(draft_id, local_path):
-            remote_ids.add(draft_id)
+    for record_id in local_ids - remote_ids - set(last_known):
+        local_path = local_record_path(paths, record_id)
+        if mirror_to_cloud(record_id, local_path):
+            # First sync after upload: we don't know the eTag yet (Graph
+            # returns it but write_text doesn't surface it). Mark with
+            # empty string so the NEXT sync's listing fills in the eTag.
+            remote_etags[record_id] = ""
             uploaded += 1
 
     return {
-        "current_ids": remote_ids,
+        "current_etags": remote_etags,
         "updated": updated,
         "deleted": deleted,
         "uploaded": uploaded,
     }
+
+
+def _list_local_project_ids(paths: AppPaths):
+    if not paths.workspace_projects_dir.exists():
+        return []
+    return [
+        d.name
+        for d in paths.workspace_projects_dir.iterdir()
+        if d.is_dir() and (d / "project.json").exists()
+    ]
+
+
+def _list_local_draft_ids(paths: AppPaths):
+    if not paths.workspace_drafts_dir.exists():
+        return []
+    return [p.stem for p in paths.workspace_drafts_dir.glob("*.json") if p.is_file()]
+
+
+def _delete_local_project(paths: AppPaths, project_id: str) -> None:
+    shutil.rmtree(paths.workspace_projects_dir / project_id)
+
+
+def _delete_local_draft(paths: AppPaths, draft_id: str) -> None:
+    (paths.workspace_drafts_dir / f"{draft_id}.json").unlink()

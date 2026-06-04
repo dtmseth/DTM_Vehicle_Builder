@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 import requests
 
-from ....storage.base import StorageProvider
+from ....storage.base import FileMetadata, StorageProvider
 from .config import GRAPH_ENDPOINT, CloudConfig
 
 logger = logging.getLogger(__name__)
@@ -94,16 +94,22 @@ class SharePointGraphProvider(StorageProvider):
         response.raise_for_status()
 
     def list_files(self, directory: str) -> list[str]:
-        """Return drive-relative paths of files directly under *directory*.
+        """Return drive-relative paths of files directly under *directory*."""
+        return [m.path for m in self.list_files_with_metadata(directory)]
 
-        Folders are skipped. Result paths are prefixed with *directory* so they
-        round-trip through `read_text` / `write_text` without further joining.
-        Pagination via `@odata.nextLink` is followed so callers see the full
-        listing of folders larger than Graph's default page size.
+    def list_files_with_metadata(self, directory: str) -> list[FileMetadata]:
+        """List files with Graph's ETag attached.
+
+        The children endpoint returns ``eTag`` per item in the same response
+        as the path; surfacing it lets sync_work_data skip the per-file
+        content fetch when the cloud copy hasn't changed since we last
+        recorded it. Pagination via ``@odata.nextLink`` is followed so
+        callers see the full listing of folders larger than Graph's
+        default page size.
         """
         base = self._normalize(directory)
         url = self._children_url(base)
-        files: list[str] = []
+        results: list[FileMetadata] = []
         while url:
             response = self._session.get(
                 url,
@@ -120,9 +126,15 @@ class SharePointGraphProvider(StorageProvider):
                 name = item.get("name")
                 if not name:
                     continue
-                files.append(f"{base}/{name}" if base else name)
+                path = f"{base}/{name}" if base else name
+                # Graph returns eTag as either ``eTag`` (top-level) or
+                # cTag. Prefer eTag — it changes on content updates;
+                # cTag also changes for metadata-only updates which would
+                # produce false-positive "changed" results.
+                etag = str(item.get("eTag") or item.get("cTag") or "")
+                results.append(FileMetadata(path=path, etag=etag))
             url = payload.get("@odata.nextLink")
-        return files
+        return results
 
     # ── Internal URL builders ─────────────────────────────────────────────
 

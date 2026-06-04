@@ -95,13 +95,13 @@ def paths(tmp_path: Path) -> AppPaths:
 def test_status_reports_local_mode_when_cloud_disabled(cloud_off, paths):
     set_active_bundle(_make_bundle())
     s = cloud_status_service.get_status(paths)
-    assert s == {
-        "cloud_enabled": False,
-        "signed_in": False,
-        "user": None,
-        "has_photo": False,
-        "syncing": False,
-    }
+    assert s["cloud_enabled"] is False
+    assert s["signed_in"] is False
+    assert s["user"] is None
+    assert s["has_photo"] is False
+    assert s["syncing"] is False
+    # data_version is a monotonic counter; just confirm it's an int.
+    assert isinstance(s["data_version"], int)
 
 
 def test_status_includes_syncing_flag_when_sync_in_progress(cloud_off, paths, monkeypatch):

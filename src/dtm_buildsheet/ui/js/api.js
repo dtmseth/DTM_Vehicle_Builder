@@ -86,6 +86,31 @@ function _cloudInitials(name){
 // without a second fetch. Updated by every refreshCloudStatus() call.
 let _lastCloudStatus = null;
 
+// Tracks the data_version we last reacted to. When the backend bumps this
+// (sync changed local files), refreshCloudStatus() detects the transition
+// and triggers a UI refresh for whatever the user is currently looking at —
+// otherwise sync silently changes files and the UI shows stale lists until
+// the user navigates away and back.
+let _lastSeenDataVersion = null;
+
+function _refreshVisibleDataAfterSync(){
+  // Projects list is the most visible thing sync changes (besides settings
+  // which are rendered on-demand when the user navigates to them). Re-fetch
+  // and re-render whichever projects view is showing.
+  try {
+    if (typeof _ptLoadAll === "function") {
+      _ptLoadAll().then(() => {
+        // Re-render the active view if its helper is defined. The list
+        // view is the common case; detail views re-render when the user
+        // clicks back into a project, so we don't need to chase them here.
+        if (typeof _ptRenderList === "function") _ptRenderList();
+      }).catch(e => console.warn("Post-sync projects refresh failed:", e));
+    }
+  } catch (e) {
+    console.warn("Post-sync refresh threw:", e);
+  }
+}
+
 function _setCloudChip({stateClass, text, title, photo, initials, syncing}){
   const chip = $("cloud-status"); if(!chip) return;
   // Strip every cloud-status-* state class so we don't accumulate them.
@@ -128,6 +153,19 @@ async function refreshCloudStatus(){
     return;
   }
   _lastCloudStatus = res;
+  // Detect "data changed under us" via the data_version counter the
+  // backend bumps on every sync that produced observable changes. Don't
+  // fire on the very first poll (would re-fetch unnecessarily on app
+  // load); only when the version transitions to something newer.
+  const dv = res?.data_version;
+  if (typeof dv === "number") {
+    if (_lastSeenDataVersion === null) {
+      _lastSeenDataVersion = dv;
+    } else if (dv !== _lastSeenDataVersion) {
+      _lastSeenDataVersion = dv;
+      _refreshVisibleDataAfterSync();
+    }
+  }
   const syncing = !!res?.syncing;
   if(!res?.cloud_enabled){
     _setCloudChip({stateClass:"cloud-status-local", text:"Local mode",
