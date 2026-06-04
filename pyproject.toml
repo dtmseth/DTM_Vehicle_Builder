@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dtm-buildsheet"
-version = "2.1.5"
+version = "2.1.6"
 description = "GUI-first DTM build sheet generator"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -65,7 +65,7 @@ dtm_buildsheet = [
 ]
 
 [tool.bumpversion]
-current_version = "2.1.5"
+current_version = "2.1.6"
 commit = true
 tag = true
 tag_name = "v{new_version}"
