@@ -369,7 +369,28 @@ def run_sync_now(active_paths: AppPaths) -> dict:
                 or queue_report.get("exports_succeeded")
             )
 
-            if settings_changed or work_changed or queue_changed:
+            # Background download of any newer release into the queue dir
+            # so the next restart (or explicit "Restart now" click) installs
+            # it silently. Pulls the user's dismissed-versions list so a
+            # dismissed update doesn't keep getting re-fetched.
+            update_changed = False
+            try:
+                from .adapters.wiring import get_active_bundle
+                from .services.update_check_service import download_pending_update_if_any
+                from ..config.store import load_config
+                _settings = load_config("app_settings.json", active_paths) or {}
+                _dismissed = list(_settings.get("dismissed_update_versions", []) or [])
+                update_report = download_pending_update_if_any(
+                    get_active_bundle().storage,
+                    active_paths,
+                    dismissed_versions=_dismissed,
+                )
+                report["update"] = update_report
+                update_changed = bool(update_report.get("queued"))
+            except Exception:
+                logger.exception("Sync: background update check failed")
+
+            if settings_changed or work_changed or queue_changed or update_changed:
                 _bump_data_version()
         except Exception as exc:
             logger.exception("Sync cycle failed")
@@ -412,6 +433,26 @@ def main(paths: AppPaths | None = None):
     active_paths = paths or ensure_workspace()
     if paths is not None:
         _setup_logging(active_paths.workspace_dir)
+
+    # Boot-time silent install: if last session queued an installer, run it
+    # now (Windows only) and exit so the installer's CloseApplications hook
+    # can replace our binaries cleanly. The installer auto-launches the new
+    # version when it finishes (see installer.iss [Run] section).
+    try:
+        import sys as _sys
+        from .services.update_check_service import consume_queued_installer
+        if consume_queued_installer(active_paths):
+            logging.getLogger(__name__).info(
+                "Queued installer launched; exiting so it can replace this version"
+            )
+            _sys.exit(0)
+    except SystemExit:
+        raise
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Boot-time queued-installer check failed; continuing normal startup"
+        )
+
     Handler.paths = active_paths
 
     # Warm per-record collection caches at startup so the one-shot legacy

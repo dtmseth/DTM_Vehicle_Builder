@@ -29,6 +29,9 @@ def route_updates(
     if method == "POST" and path == "/api/update/download":
         send_json(handler, _download(body, paths))
         return True
+    if method == "POST" and path == "/api/update/install-now":
+        send_json(handler, update_check_service.install_now(paths))
+        return True
     return False
 
 

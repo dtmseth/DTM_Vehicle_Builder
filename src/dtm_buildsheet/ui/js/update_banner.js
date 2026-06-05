@@ -1,7 +1,10 @@
 // ═══════════════════════════════════════════════════════
-// UPDATE BANNER — polls /api/update/check at launch and on
-// reconnect; shows a top-of-page banner with Download +
-// Dismiss when a newer installer is available.
+// UPDATE BANNER — two modes:
+//   "restart" → background download is queued; one-click silent install
+//   "download" → manual fallback for the very first install or when the
+//                background download couldn't run (no cloud, etc.)
+// Re-polls every 60s so the queued installer is picked up shortly after
+// the background sync downloads it.
 // ═══════════════════════════════════════════════════════
 (function () {
   const banner = document.getElementById("update-banner");
@@ -11,31 +14,54 @@
   const dismissBtn = document.getElementById("update-banner-dismiss");
 
   let currentInfo = null;
+  let mode = "download"; // "download" | "restart"
 
-  function show(info, currentVersion) {
+  function show(info, currentVersion, kind) {
     currentInfo = info;
-    text.textContent =
-      `Update available — v${info.version}` +
-      (currentVersion ? ` (you have v${currentVersion})` : "");
+    mode = kind || "download";
+    if (mode === "restart") {
+      text.textContent =
+        `Update v${info.version} ready — restart to install`;
+      downloadBtn.textContent = "Restart Now";
+    } else {
+      text.textContent =
+        `Update available — v${info.version}` +
+        (currentVersion ? ` (you have v${currentVersion})` : "");
+      downloadBtn.textContent = "Download";
+    }
     banner.hidden = false;
   }
 
   function hide() {
     banner.hidden = true;
     currentInfo = null;
+    mode = "download";
   }
 
   async function poll() {
+    // Prefer pending_update from the cloud-status payload (a fully
+    // downloaded installer queued by the background sync). Fall back to
+    // /api/update/check for the manual flow.
+    try {
+      const status = await api("/api/cloud/status");
+      if (status?.pending_update?.version) {
+        show(
+          { version: status.pending_update.version },
+          status.current_version || null,
+          "restart",
+        );
+        return;
+      }
+    } catch (_) { /* fall through to manual check */ }
     try {
       const res = await api("/api/update/check");
       if (res && res.available && res.info) {
-        show(res.info, res.current_version);
+        show(res.info, res.current_version, "download");
       } else {
         hide();
       }
     } catch (e) {
-      // Cloud may be off, network may be down — silent. No banner is the
-      // right default when we don't know.
+      // Cloud may be off, network may be down — silent.
     }
   }
 
@@ -43,6 +69,20 @@
     if (!currentInfo) return;
     downloadBtn.disabled = true;
     const originalText = downloadBtn.textContent;
+    if (mode === "restart") {
+      downloadBtn.textContent = "Installing…";
+      try {
+        await api("/api/update/install-now", {});
+        // The server.install_now spawns the installer silently and exits
+        // ~1.5s later. The webview will lose its socket; nothing more to
+        // do here — the new version will come up automatically when the
+        // installer's [Run] section fires.
+      } catch (_) {
+        // Connection dropping IS the expected case once the server
+        // exits. Swallow.
+      }
+      return;
+    }
     downloadBtn.textContent = "Downloading…";
     try {
       const res = await api("/api/update/download", { version: currentInfo.version });
@@ -77,7 +117,10 @@
   });
 
   // Defer the first poll so it doesn't compete with the initial paint.
+  // Re-poll periodically so a freshly-queued installer becomes visible
+  // within ~60s of the background download completing.
   window.addEventListener("DOMContentLoaded", () => {
     setTimeout(poll, 1500);
+    setInterval(poll, 60_000);
   });
 })();

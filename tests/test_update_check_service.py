@@ -209,6 +209,93 @@ def test_storage_list_exception_returns_none():
 # ── download_update ──────────────────────────────────────────────────────────
 
 
+def _paths_with_workspace(tmp_path: Path):
+    from dtm_buildsheet.paths import AppPaths
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    return AppPaths(workspace_dir=workspace)
+
+
+def test_queue_installer_for_next_launch_moves_file(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import (
+        get_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    downloads = tmp_path / "downloads"
+    downloads.mkdir()
+    installer = downloads / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    installer.write_bytes(b"INSTALLER")
+    queued = queue_installer_for_next_launch(installer, paths)
+    assert queued.exists() and queued.read_bytes() == b"INSTALLER"
+    assert not installer.exists()  # moved, not copied
+    assert get_queued_installer(paths) == queued
+
+
+def test_queue_installer_replaces_older_queued(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import (
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    # Pre-existing older installer
+    queue_dir = paths.workspace_dir / ".queued_installer"
+    queue_dir.mkdir()
+    older = queue_dir / "DTM_Vehicle_Builder_Setup-2.2.3.exe"
+    older.write_bytes(b"OLDER")
+
+    newer_src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.4.exe"
+    newer_src.write_bytes(b"NEWER")
+    queue_installer_for_next_launch(newer_src, paths)
+    assert not older.exists()
+    assert (queue_dir / "DTM_Vehicle_Builder_Setup-2.2.4.exe").read_bytes() == b"NEWER"
+
+
+def test_get_pending_update_info_reports_version(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import (
+        get_pending_update_info,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.3.0.exe"
+    src.write_bytes(b"x")
+    queue_installer_for_next_launch(src, paths)
+    info = get_pending_update_info(paths)
+    assert info == {"version": "2.3.0", "filename": "DTM_Vehicle_Builder_Setup-2.3.0.exe"}
+
+
+def test_get_pending_update_info_returns_none_when_empty(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import get_pending_update_info
+    paths = _paths_with_workspace(tmp_path)
+    assert get_pending_update_info(paths) is None
+
+
+def test_download_pending_update_if_any_skips_already_queued(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    from dtm_buildsheet.app.services.update_check_service import (
+        download_pending_update_if_any,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    # Queue 2.3.0 already
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.3.0.exe"
+    src.write_bytes(b"x")
+    queue_installer_for_next_launch(src, paths)
+    # Remote also has 2.3.0
+    remote = _FakeRemote(
+        {f"{RELEASES_REMOTE_FOLDER}/DTM_Vehicle_Builder_Setup-2.3.0.exe": b"y"}
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.0",
+    )
+    result = download_pending_update_if_any(remote, paths, dismissed_versions=[])
+    assert result.get("already_queued") == "2.3.0"
+
+
 def test_download_update_writes_installer_to_destination(tmp_path: Path):
     remote = _FakeRemote(
         {f"{RELEASES_REMOTE_FOLDER}/DTM_Vehicle_Builder-1.4.0.dmg": b"FAKE_DMG_BYTES"}

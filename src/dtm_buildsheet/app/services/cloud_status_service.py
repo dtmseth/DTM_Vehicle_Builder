@@ -94,6 +94,7 @@ def get_status(paths: AppPaths) -> dict:
         "syncing": syncing,
         "data_version": data_version,
         "pending_queue": _queue_depth(paths),
+        "pending_update": _pending_update(paths),
     }
 
 
@@ -106,7 +107,20 @@ def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int) -> d
         "syncing": syncing,
         "data_version": data_version,
         "pending_queue": {"proposals": 0, "exports": 0},
+        "pending_update": None,
     }
+
+
+def _pending_update(paths: AppPaths) -> dict | None:
+    """Forward to update_check_service so the cloud chip can surface a
+    "Update vX.Y.Z ready" banner when an installer is queued. Returns
+    None on any error so the status response stays usable."""
+    try:
+        from .update_check_service import get_pending_update_info
+        return get_pending_update_info(paths)
+    except Exception:
+        logger.exception("pending_update lookup failed")
+        return None
 
 
 def _queue_depth(paths: AppPaths) -> dict:

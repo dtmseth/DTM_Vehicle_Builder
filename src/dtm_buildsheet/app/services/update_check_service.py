@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -162,6 +163,168 @@ def download_update(
     local_path = destination_dir / info.filename
     local_path.write_bytes(data)
     return local_path
+
+
+# ── Silent auto-update: queue / consume / install ──────────────────────────
+
+
+def _queued_installer_dir(paths) -> Path:
+    return paths.workspace_dir / ".queued_installer"
+
+
+def queue_installer_for_next_launch(local_path: Path, paths) -> Path:
+    """Move a freshly-downloaded installer into the queue dir so the next
+    app launch (or an explicit Restart-now click) can run it silently.
+
+    A single installer is queued at a time — any older queued file with a
+    different name is removed first. Returns the queued path.
+    """
+    queue_dir = _queued_installer_dir(paths)
+    queue_dir.mkdir(parents=True, exist_ok=True)
+    # Drop older queued installers; only the newest should be present.
+    for stale in queue_dir.iterdir():
+        if stale.name == local_path.name:
+            continue
+        try:
+            stale.unlink()
+        except OSError:
+            logger.exception("could not remove older queued installer %s", stale)
+    target = queue_dir / local_path.name
+    try:
+        if target.exists():
+            target.unlink()
+        local_path.replace(target)
+    except OSError:
+        # Cross-device fallback (Downloads vs workspace on different drives)
+        target.write_bytes(local_path.read_bytes())
+        try:
+            local_path.unlink()
+        except OSError:
+            pass
+    logger.info("Queued installer for next launch: %s", target)
+    return target
+
+
+def get_queued_installer(paths) -> Path | None:
+    """Return the queued installer path if one is present, else None.
+
+    On non-Windows platforms returns None — silent install isn't supported
+    elsewhere and the Mac DMG flow stays manual."""
+    if not sys.platform.startswith("win"):
+        return None
+    queue_dir = _queued_installer_dir(paths)
+    if not queue_dir.exists():
+        return None
+    for entry in queue_dir.iterdir():
+        if entry.suffix.lower() == ".exe" and entry.is_file():
+            return entry
+    return None
+
+
+def get_pending_update_info(paths) -> dict | None:
+    """Status-endpoint helper: describe the queued installer (if any).
+
+    Returns ``{"version": "...", "filename": "..."}`` so the UI can show a
+    "Update v2.2.4 ready — Restart now" banner. None when no installer
+    is queued or the platform is unsupported.
+    """
+    queued = get_queued_installer(paths)
+    if queued is None:
+        return None
+    parsed = parse_release_filename(queued.name)
+    version = parsed[1] if parsed else ""
+    return {"version": version, "filename": queued.name}
+
+
+def _spawn_installer_silent(installer: Path) -> bool:
+    """Launch the Inno Setup installer in silent mode.
+
+    Returns True if subprocess.Popen returned without raising. The
+    installer itself handles uninstaller-wait + close-current-app via the
+    InitializeSetup hook in installer.iss.
+    """
+    try:
+        subprocess.Popen([
+            str(installer),
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+        ])
+        return True
+    except Exception:
+        logger.exception("Could not launch queued installer %s", installer)
+        return False
+
+
+def consume_queued_installer(paths) -> bool:
+    """Boot-time hook: if a queued installer is present, launch it silently
+    and return True. The caller is responsible for sys.exit'ing so the
+    installer's CloseApplications/InitializeSetup poll has a clean target.
+
+    No-op on Mac and when nothing is queued; safe to call unconditionally
+    at startup."""
+    installer = get_queued_installer(paths)
+    if installer is None:
+        return False
+    logger.info("Consuming queued installer: %s", installer.name)
+    return _spawn_installer_silent(installer)
+
+
+def install_now(paths) -> dict:
+    """User-triggered install: launches the queued installer silently and
+    returns a status dict for the route layer. The route handler exits the
+    server process after a short delay so the installer's wait-for-close
+    actually succeeds."""
+    installer = get_queued_installer(paths)
+    if installer is None:
+        return {"ok": False, "error": "No update queued"}
+    ok = _spawn_installer_silent(installer)
+    if not ok:
+        return {"ok": False, "error": "Could not launch installer"}
+    # Schedule a graceful exit shortly after the installer starts. We can
+    # rely on the installer's uninstall-poll to wait for the old version
+    # to fully close.
+    import threading
+    threading.Timer(1.5, lambda: os._exit(0)).start()  # type: ignore[name-defined]
+    return {"ok": True, "filename": installer.name}
+
+
+def download_pending_update_if_any(storage, paths, dismissed_versions: list[str] | None = None) -> dict:
+    """Periodic-sync hook: check for a newer release and, if one is
+    available and not already queued at the same-or-newer version,
+    download it into the queue dir.
+
+    Returns a small dict the sync log uses; never raises.
+    """
+    if not sys.platform.startswith("win"):
+        return {"skipped": "not windows"}
+    try:
+        info = check_for_update(storage, dismissed_versions=dismissed_versions or [])
+    except Exception:
+        logger.exception("update-poll: check_for_update raised")
+        return {"error": "check failed"}
+    if info is None:
+        return {"newer": False}
+
+    # Don't re-download if the queued installer is already this version or
+    # newer.
+    existing = get_queued_installer(paths)
+    if existing is not None:
+        parsed = parse_release_filename(existing.name)
+        if parsed and parse_semver(parsed[1]) >= parse_semver(info.version):
+            return {"already_queued": parsed[1]}
+
+    try:
+        local = download_update(storage, info)
+    except Exception:
+        logger.exception("update-poll: download_update raised")
+        return {"error": "download failed"}
+    try:
+        queue_installer_for_next_launch(local, paths)
+    except Exception:
+        logger.exception("update-poll: queue raised")
+        return {"error": "queue failed"}
+    return {"queued": info.version}
 
 
 def reveal_in_file_manager(path: Path) -> None:
