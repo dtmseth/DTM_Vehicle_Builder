@@ -95,6 +95,8 @@ def _load_records_from_disk(paths: AppPaths) -> dict[str, AgencyRecord]:
     per_record_dir = _agencies_dir(paths)
     if per_record_dir.exists():
         for path in per_record_dir.glob("*.json"):
+            if path.name.startswith("."):  # skip shared-settings eTag cache
+                continue
             try:
                 rec = _record_from_dict(json.loads(path.read_text("utf-8")))
                 if rec.agency_id:

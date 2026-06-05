@@ -232,7 +232,46 @@ def ensure_workspace() -> AppPaths:
                 except Exception:
                     _log.exception("Failed to seed default data %s", data_filename)
 
+    # Forward-merge new top-level keys from the bundled cloud_config.json into
+    # the workspace copy. Existing values are never touched — only absent keys
+    # are filled in. This keeps users who installed pre-v2.2.1 from being
+    # stuck without the exports_* keys (auto-upload silently disabled) when
+    # we add new optional config in later releases.
+    _merge_missing_cloud_config_keys(paths)
+
     return paths
+
+
+def _merge_missing_cloud_config_keys(paths: AppPaths) -> None:
+    """Fill in absent top-level keys in workspace cloud_config.json from the
+    bundled default. Existing values are preserved. Silent no-op when either
+    file is missing or unparseable — bootstrap continues normally."""
+    import json
+
+    dest = paths.workspace_dir / "cloud_config.json"
+    src = DEFAULT_DATA_DIR / "cloud_config.json"
+    if not dest.exists() or not src.exists():
+        return
+
+    try:
+        bundled = json.loads(src.read_text(encoding="utf-8"))
+        workspace = json.loads(dest.read_text(encoding="utf-8"))
+    except Exception:
+        _log.exception("Could not parse cloud_config for merge; leaving as-is")
+        return
+    if not isinstance(bundled, dict) or not isinstance(workspace, dict):
+        return
+
+    added = [k for k in bundled if k not in workspace]
+    if not added:
+        return
+    for k in added:
+        workspace[k] = bundled[k]
+    try:
+        dest.write_text(json.dumps(workspace, indent=2) + "\n", encoding="utf-8")
+        _log.info("Merged %d missing cloud_config key(s): %s", len(added), ", ".join(added))
+    except OSError:
+        _log.exception("Could not write merged cloud_config.json to %s", dest)
 
 
 # ── output path portability ────────────────────────────────────────────────────

@@ -101,6 +101,10 @@ def _load_dir(directory: Path, source: str) -> list[dict]:
     if not directory.exists():
         return results
     for path in sorted(directory.glob("*.json")):
+        # Skip dotfiles like .settings_etags.json — the shared-settings sync
+        # writes its eTag cache into this directory, and it's not a preset.
+        if path.name.startswith("."):
+            continue
         try:
             raw = json.loads(path.read_text("utf-8"))
             validated = validate_preset_payload(raw)

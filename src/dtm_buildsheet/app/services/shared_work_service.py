@@ -120,6 +120,31 @@ def mirror_draft_to_cloud(draft_id: str, local_path: Path) -> bool:
     )
 
 
+# Fire-and-forget wrappers — used by save_project / save_draft so a Graph
+# roundtrip doesn't block the local save response. The 60s sync_work_data
+# loop is the safety net for any mirror that fails silently in the
+# background; teammates see the change on their next sync regardless.
+
+def mirror_project_to_cloud_in_background(project_id: str, local_path: Path) -> None:
+    import threading
+    threading.Thread(
+        target=mirror_project_to_cloud,
+        args=(project_id, local_path),
+        daemon=True,
+        name=f"mirror-project-{project_id}",
+    ).start()
+
+
+def mirror_draft_to_cloud_in_background(draft_id: str, local_path: Path) -> None:
+    import threading
+    threading.Thread(
+        target=mirror_draft_to_cloud,
+        args=(draft_id, local_path),
+        daemon=True,
+        name=f"mirror-draft-{draft_id}",
+    ).start()
+
+
 def _mirror_to_cloud(*, kind: str, record_id: str, local_path: Path, remote_folder: str) -> bool:
     storage = _cloud_storage()
     if storage is None:

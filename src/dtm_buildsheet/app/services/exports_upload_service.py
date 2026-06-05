@@ -71,11 +71,16 @@ def _sanitize_segment(value: str) -> str:
     return cleaned or "Unassigned"
 
 
-def _bundle_or_none():
-    """Return the active cloud bundle, or None when uploads should skip."""
+def _bundle_or_none(*, log_reason: bool = False):
+    """Return the active cloud bundle, or None when uploads should skip.
+
+    When ``log_reason`` is True, the reason for skipping is logged at INFO
+    level so a quiet skip can still be diagnosed from the log."""
     if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("DTM_ALLOW_CLOUD_IN_TESTS"):
         return None
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
+        if log_reason:
+            logger.info("Export upload skipped: cloud mode is disabled")
         return None
     try:
         bundle = wiring.get_active_bundle()
@@ -84,11 +89,26 @@ def _bundle_or_none():
         return None
     try:
         if not bundle.identity.is_signed_in():
+            if log_reason:
+                logger.info("Export upload skipped: no signed-in Microsoft account")
             return None
     except Exception:
         logger.exception("is_signed_in check failed during export upload")
         return None
     return bundle
+
+
+def _exports_target_configured() -> bool:
+    """Return True when cloud_config.json defines an exports library.
+
+    Used by the background worker to decide whether enqueueing a retry can
+    ever succeed. When False, the upload is permanently disabled for this
+    install and queueing would just thrash the drain loop forever."""
+    try:
+        from ..adapters.cloud.config import load_cloud_config_from_env
+        return load_cloud_config_from_env().exports_enabled
+    except Exception:
+        return False
 
 
 def _get_export_drive_id(bundle, config) -> Optional[str]:
@@ -224,7 +244,7 @@ def upload_export(
     empty so the file still lands somewhere instead of failing. ``filename``
     defaults to the local file's name.
     """
-    bundle = _bundle_or_none()
+    bundle = _bundle_or_none(log_reason=True)
     if bundle is None:
         return False
     if not local_pptx.exists():
@@ -241,6 +261,12 @@ def upload_export(
         logger.exception("Could not load cloud config for export upload")
         return False
     if not config.exports_enabled:
+        logger.info(
+            "Export upload skipped: cloud_config.json has no exports_library_name. "
+            "Add exports_library_name / exports_library_internal_name / exports_base_folder "
+            "to %s to enable SharePoint auto-upload.",
+            local_pptx.name,
+        )
         return False  # not configured for this install
 
     drive_id = _get_export_drive_id(bundle, config)
@@ -301,13 +327,15 @@ def upload_export_in_background(
             # forever.
             try:
                 from ..adapters import wiring
-                # Don't queue in pytest, local mode, or when the local
-                # file is gone (upload_export already returned False for
-                # missing-file). The drain logic also no-ops gracefully
-                # if any of these conditions changed by retry time.
+                # Only queue when retrying could plausibly succeed: cloud is
+                # enabled, an exports target is configured, the file is
+                # still on disk, and we're not in pytest. Anything else is
+                # a permanent skip — queueing would just thrash the drain
+                # loop forever (the v2.2.x exports_* config drift bug).
                 if (
                     not os.environ.get("PYTEST_CURRENT_TEST")
                     and wiring._cloud_flag_enabled()  # noqa: SLF001
+                    and _exports_target_configured()
                     and local_pptx.exists()
                 ):
                     from ...paths import AppPaths

@@ -242,9 +242,10 @@ def save_draft(draft: BuildDraft, drafts_dir: Path) -> Path:
     draft.updated_at = _utcnow()
     path = _draft_path(draft.draft_id, drafts_dir)
     LocalStorageProvider().write_text(str(path), json.dumps(asdict(draft), indent=2))
-    # Deferred import to avoid a services → inputs → services circular chain.
-    from ..app.services.shared_work_service import mirror_draft_to_cloud
-    mirror_draft_to_cloud(draft.draft_id, path)
+    # Fire-and-forget so the local save returns instantly. sync_work_data's
+    # 60s timer is the safety net for any mirror that fails in the background.
+    from ..app.services.shared_work_service import mirror_draft_to_cloud_in_background
+    mirror_draft_to_cloud_in_background(draft.draft_id, path)
     return path
 
 

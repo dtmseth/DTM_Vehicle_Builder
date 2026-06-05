@@ -102,8 +102,10 @@ def save_project(project: ProjectRecord, paths: AppPaths) -> Path:
     # Deferred import to avoid a circular dependency at module import time
     # (services → inputs is the established direction; this module is in
     # inputs and shared_work_service is in services).
-    from ..app.services.shared_work_service import mirror_project_to_cloud
-    mirror_project_to_cloud(project.project_id, path)
+    # Fire-and-forget so the local save returns instantly. sync_work_data's
+    # 60s timer is the safety net for any mirror that fails in the background.
+    from ..app.services.shared_work_service import mirror_project_to_cloud_in_background
+    mirror_project_to_cloud_in_background(project.project_id, path)
     return path
 
 
