@@ -349,6 +349,38 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                     "new_name": export["output_name"],
                 }
 
+        # Persist the new output_path + render timestamp into the project
+        # record server-side so the UI doesn't need a follow-up
+        # /api/project/save round-trip (saves ~1-2s of perceived gen time
+        # and avoids a race where the UI redraws the Builds tab from a
+        # stale project copy).
+        last_rendered_at = ""
+        if _proj_id_param:
+            try:
+                from datetime import datetime, timezone
+                from ...inputs.project_entry import load_project, save_project
+                _proj = load_project(_proj_id_param, paths)
+                last_rendered_at = datetime.now(timezone.utc).isoformat()
+                _changed = False
+                for _bu in _proj.build_units:
+                    if _bu.individuals:
+                        for _ind in _bu.individuals:
+                            if _ind.draft_id == draft_id:
+                                _ind.output_path = export["output_path"]
+                                _ind.last_rendered_at = last_rendered_at
+                                _changed = True
+                                break
+                    elif _bu.draft_id == draft_id:
+                        _bu.output_path = export["output_path"]
+                        _bu.last_rendered_at = last_rendered_at
+                        _changed = True
+                        break
+                if _changed:
+                    save_project(_proj, paths)
+                    _t_step("save_project (record output_path)")
+            except Exception:
+                _log.exception("Could not update project record after generate")
+
         result: dict = {
             "ok": True,
             "output_name": export["output_name"],
@@ -361,6 +393,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             "warnings_count": len(all_warnings),
             "all_warnings": all_warnings,
             "log": "\n".join(log_lines),
+            "last_rendered_at": last_rendered_at,
         }
         if name_changed:
             result["name_changed"] = name_changed

@@ -78,6 +78,8 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         output_path=str(d.get("output_path", "")),
         confirmed=bool(d.get("confirmed", False)),
         confirmed_at=str(d.get("confirmed_at", "")),
+        last_rendered_at=str(d.get("last_rendered_at", "")),
+        pdf_path=str(d.get("pdf_path", "")),
     )
 
 
@@ -100,6 +102,8 @@ def build_unit_from_dict(d: Any) -> BuildUnit:
         draft_id=str(draft_id) if draft_id is not None else None,
         output_path=str(d.get("output_path", "")),
         individuals=individuals,
+        last_rendered_at=str(d.get("last_rendered_at", "")),
+        pdf_path=str(d.get("pdf_path", "")),
     )
 
 

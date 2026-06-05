@@ -29,10 +29,9 @@ function _ptRenderBuildsTab(p) {
         const hasOutput = !!(ind.output_path || "").trim();
         const confirmed = !!ind.confirmed;
 
+        const hasPdf    = !!(ind.pdf_path || "").trim();
         const setupLbl  = hasDraft ? "Edit Build" : "Setup Build";
-        const genLbl    = hasOutput ? "⚡ Regenerate" : "⚡ Generate";
-        const genDis    = !hasDraft ? ` disabled title="Configure build first"` : "";
-        const expDis    = !hasOutput ? ` disabled title="Generate build sheet first"` : "";
+        const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
         return `<div class="proj-build-card" id="build-card-${iid}">
@@ -53,24 +52,26 @@ function _ptRenderBuildsTab(p) {
               onclick="PT_setupOrEditBuildInd('${pid}','${uid}','${iid}','${draftIdEsc}',${uIdx})">
               ${esc(setupLbl)}
             </button>
-            <button class="btn btn-primary btn-sm"${genDis}
-              onclick="PT_buildGenerate('${pid}','${uid}','${iid}','ind')">
-              ${genLbl}
+            <button class="btn btn-primary btn-sm"${buildDis}
+              onclick="PT_buildOpenPptx('${pid}','${uid}','${iid}','ind')">
+              📊 Preview / Edit in PowerPoint
             </button>
-            <button class="btn btn-secondary btn-sm"${expDis}
+            <button class="btn btn-secondary btn-sm"${buildDis}
               onclick="PT_buildExportPdf('${pid}','${uid}','${iid}','ind')">
               📄 Export PDF
             </button>
+            ${hasPdf ? `<button class="btn btn-secondary btn-sm"
+              onclick="PT_buildOpenPdf('${pid}','${uid}','${iid}','ind')">📑 View PDF</button>` : ""}
+            <button class="btn btn-secondary btn-sm"
+              onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Show in folder</button>
           </div>
         </div>`;
       }).join("");
     } else {
       const hasDraft  = !!u.draft_id;
-      const hasOutput = !!(u.output_path || "").trim();
+      const hasPdf    = !!(u.pdf_path || "").trim();
       const setupLbl  = hasDraft ? "Edit Build" : "Setup Build";
-      const genLbl    = hasOutput ? "⚡ Regenerate" : "⚡ Generate";
-      const genDis    = !hasDraft ? ` disabled title="Configure build first"` : "";
-      const expDis    = !hasOutput ? ` disabled title="Generate build sheet first"` : "";
+      const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
 
       cards = `<div class="proj-build-card" id="build-card-unit-${uid}">
@@ -86,14 +87,18 @@ function _ptRenderBuildsTab(p) {
             onclick="PT_setupOrEditBuildUnit('${pid}','${uid}','${draftIdEsc}',${uIdx})">
             ${esc(setupLbl)}
           </button>
-          <button class="btn btn-primary btn-sm"${genDis}
-            onclick="PT_buildGenerate('${pid}','${uid}','','unit')">
-            ${genLbl}
+          <button class="btn btn-primary btn-sm"${buildDis}
+            onclick="PT_buildOpenPptx('${pid}','${uid}','','unit')">
+            📊 Preview / Edit in PowerPoint
           </button>
-          <button class="btn btn-secondary btn-sm"${expDis}
+          <button class="btn btn-secondary btn-sm"${buildDis}
             onclick="PT_buildExportPdf('${pid}','${uid}','','unit')">
             📄 Export PDF
           </button>
+          ${hasPdf ? `<button class="btn btn-secondary btn-sm"
+            onclick="PT_buildOpenPdf('${pid}','${uid}','','unit')">📑 View PDF</button>` : ""}
+          <button class="btn btn-secondary btn-sm"
+            onclick="PT_buildShowFolder('${pid}','${uid}','','unit')">📂 Show in folder</button>
         </div>
       </div>`;
     }
@@ -241,120 +246,219 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
   }
 };
 
-window.PT_buildGenerate = async function (projectId, unitId, individualId, type) {
-  const project = _PT.projects.find(p => p.project_id === projectId);
-  if (!project) return;
-  const unit = project.build_units.find(u => u.unit_id === unitId);
-  if (!unit) return;
+// ── Smart build buttons ────────────────────────────────────────────────
+// Preview/Edit, Export PDF, View PDF, Show in folder all go through here.
+// The "Generate" button is gone — both Preview and Export auto-regenerate
+// when the source has changed since the last render. Manual PowerPoint
+// edits are detected and the user is asked whether to keep them.
 
-  let draftId, existingOutputPath = "";
+function _ptResolveBuildContext(projectId, unitId, individualId, type) {
+  const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
+  if (!project) return null;
+  const unit = (project.build_units || []).find(u => u.unit_id === unitId);
+  if (!unit) return null;
+  let draftId = "", outputPath = "", pdfPath = "", lastRenderedAt = "";
   if (type === "ind") {
     const ind = (unit.individuals || []).find(i => i.individual_id === individualId);
-    draftId = ind?.draft_id;
-    existingOutputPath = ind?.output_path || "";
+    if (!ind) return null;
+    draftId = ind.draft_id || "";
+    outputPath = ind.output_path || "";
+    pdfPath = ind.pdf_path || "";
+    lastRenderedAt = ind.last_rendered_at || "";
   } else {
-    draftId = unit.draft_id;
-    existingOutputPath = unit.output_path || "";
+    draftId = unit.draft_id || "";
+    outputPath = unit.output_path || "";
+    pdfPath = unit.pdf_path || "";
+    lastRenderedAt = unit.last_rendered_at || "";
   }
-  if (!draftId) { toast("No build configured for this unit", "error"); return; }
+  return { project, unit, draftId, outputPath, pdfPath, lastRenderedAt };
+}
 
-  const statusEl = $("proj-action-status");
-  if (statusEl) _ptSetStatus(statusEl, "Generating build sheet…", "ok");
-
-  const cardEl = type === "ind"
-    ? $(`build-card-${individualId}`)
-    : $(`build-card-unit-${unitId}`);
-  const genBtn = cardEl?.querySelector(".btn-primary");
-  if (genBtn) genBtn.disabled = true;
-
+// Returns "open" (use existing), "regen" (rebuild), or null (user cancelled).
+async function _ptDecidePlan(ctx, statusEl) {
+  // No file yet → must regen
+  if (!ctx.outputPath) return "regen";
+  let status;
   try {
-    const res = await api("/api/draft/generate", {
-      draft_id: draftId,
-      project_id: projectId,
-      existing_output_path: existingOutputPath,
+    status = await api("/api/build/render-status", {
+      project_id: ctx.project.project_id,
+      unit_id: ctx.unit.unit_id,
+      individual_id: ctx.individualId || "",
+      output_path: ctx.outputPath,
+      last_rendered_at: ctx.lastRenderedAt,
     });
-    if (res.ok) {
-      const outputPath = res.output_path || "";
-      const updatedUnits = project.build_units.map(u => {
-        if (u.unit_id !== unitId) return { ...u };
-        if (type === "unit") return { ...u, output_path: outputPath };
-        return {
-          ...u,
-          individuals: (u.individuals || []).map(ind =>
-            ind.individual_id === individualId ? { ...ind, output_path: outputPath } : ind
-          ),
-        };
-      });
-      await api("/api/project/save", { project_id: projectId, build_units: updatedUnits });
-      await _ptLoadAll();
-      const updated = _PT.projects.find(p => p.project_id === projectId);
-      if (updated) {
-        _PT.viewProject = updated;
-        _ptRenderBuildsTab(updated);
-        _ptRenderOverview(updated);
-      }
-      toast("Build sheet generated: " + (res.output_name || ""), "success");
-      if (statusEl) statusEl.style.display = "none";
-
-      // Rename conflict: old file still exists under a different name
-      if (res.name_changed) {
-        const nc = res.name_changed;
-        const choice = confirm(
-          `The unit details changed, so the new build sheet has a different name.\n\n` +
-          `Old file: ${nc.old_name}\nNew file: ${nc.new_name}\n\n` +
-          `OK = Delete the old file\nCancel = Keep both`
-        );
-        if (choice) {
-          await api("/api/generate/delete-old", { paths: [nc.old_path] });
-        }
-      }
-    } else {
-      const msg = res.error || "Generation failed";
-      toast(msg, "error");
-      if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
-      if (genBtn) genBtn.disabled = false;
-    }
   } catch (e) {
-    const msg = e.message || "Unexpected error";
+    // Network/error — fall back to regen to be safe
+    return "regen";
+  }
+  ctx._status = status;
+  if (!status?.pptx_exists) return "regen";
+  if (!status.is_stale && !status.manually_edited) return "open";
+  if (status.is_stale && !status.manually_edited) return "regen";
+  // Stale AND manually edited → ask user
+  const choice = confirm(
+    "Build settings changed since you last rendered this PowerPoint, but " +
+    "you've also edited the file directly in PowerPoint.\n\n" +
+    "OK = Re-render from the build settings (discards your PowerPoint edits)\n" +
+    "Cancel = Open the edited PowerPoint as-is (build setting changes are ignored)"
+  );
+  return choice ? "regen" : "open";
+}
+
+async function _ptGenerateAndPersist(ctx, statusEl) {
+  if (!ctx.draftId) {
+    toast("No build configured for this unit", "error");
+    return null;
+  }
+  if (statusEl) _ptSetStatus(statusEl, "Preparing build sheet…", "ok");
+  const res = await api("/api/draft/generate", {
+    draft_id: ctx.draftId,
+    project_id: ctx.project.project_id,
+    existing_output_path: ctx.outputPath,
+  });
+  if (!res?.ok) {
+    const msg = res?.error || "Generation failed";
     toast(msg, "error");
     if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
-    if (genBtn) genBtn.disabled = false;
+    return null;
+  }
+  if (res.name_changed) {
+    const nc = res.name_changed;
+    const drop = confirm(
+      `Unit details changed, so the new build sheet has a different name.\n\n` +
+      `Old: ${nc.old_name}\nNew: ${nc.new_name}\n\n` +
+      `OK = Delete the old file · Cancel = Keep both`
+    );
+    if (drop) {
+      try { await api("/api/generate/delete-old", { paths: [nc.old_path] }); } catch (_) {}
+    }
+  }
+  // Backend stamped output_path + last_rendered_at on the project record
+  // itself, so just reload to refresh the UI state.
+  await _ptLoadAll();
+  const updated = _PT.projects.find(p => p.project_id === ctx.project.project_id);
+  if (updated) {
+    _PT.viewProject = updated;
+    _ptRenderBuildsTab(updated);
+    _ptRenderOverview(updated);
+  }
+  return res.output_path || ctx.outputPath;
+}
+
+window.PT_buildOpenPptx = async function (projectId, unitId, individualId, type) {
+  const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
+  if (!ctx) return;
+  ctx.individualId = individualId || "";
+  const statusEl = $("proj-action-status");
+  const plan = await _ptDecidePlan(ctx, statusEl);
+  if (!plan) return;
+  let target = ctx.outputPath;
+  if (plan === "regen") {
+    const result = await _ptGenerateAndPersist(ctx, statusEl);
+    if (!result) return;
+    target = result;
+  }
+  if (!target) { toast("No build sheet available", "error"); return; }
+  if (statusEl) _ptSetStatus(statusEl, "Opening in PowerPoint…", "ok");
+  try {
+    const res = await api("/open", { path: target });
+    if (res?.ok) {
+      if (statusEl) statusEl.style.display = "none";
+    } else {
+      toast(res?.error || "Could not open file", "error");
+    }
+  } catch (e) {
+    toast(e.message || "Open failed", "error");
   }
 };
 
-window.PT_buildExportPdf = async function (projectId, unitId, individualId, type, outputPath) {
-  if (!outputPath) {
-    const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
-    const unit = (project?.build_units || []).find(u => u.unit_id === unitId);
-    if (type === "ind") {
-      const ind = (unit?.individuals || []).find(i => i.individual_id === individualId);
-      outputPath = ind?.output_path || "";
-    } else {
-      outputPath = unit?.output_path || "";
-    }
-  }
-  if (!outputPath) { toast("Generate the build sheet first", "error"); return; }
-  const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
-  const customer = project?.customer || {};
+window.PT_buildExportPdf = async function (projectId, unitId, individualId, type) {
+  const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
+  if (!ctx) return;
+  ctx.individualId = individualId || "";
   const statusEl = $("proj-action-status");
+  const plan = await _ptDecidePlan(ctx, statusEl);
+  if (!plan) return;
+  let pptxPath = ctx.outputPath;
+  if (plan === "regen") {
+    const result = await _ptGenerateAndPersist(ctx, statusEl);
+    if (!result) return;
+    pptxPath = result;
+  }
+  if (!pptxPath) { toast("No build sheet available", "error"); return; }
+  const customer = ctx.project?.customer || {};
   if (statusEl) _ptSetStatus(statusEl, "Exporting PDF…", "ok");
   try {
     const res = await api("/api/export/pdf", {
-      output_path: outputPath,
+      output_path: pptxPath,
       agency: customer.agency || "",
       year: customer.build_year || "",
     });
-    if (res.ok) {
-      toast("PDF exported: " + (res.pdf_name || ""), "success");
-      if (statusEl) statusEl.style.display = "none";
-    } else {
-      const msg = res.error || "Export failed";
+    if (!res?.ok) {
+      const msg = res?.error || "Export failed";
       toast(msg, "error");
       if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
+      return;
     }
+    toast("PDF exported", "success");
+    // Persist pdf_path on the project so View PDF appears next render
+    const updatedUnits = ctx.project.build_units.map(u => {
+      if (u.unit_id !== unitId) return { ...u };
+      if (type === "ind") {
+        return {
+          ...u,
+          individuals: (u.individuals || []).map(ind =>
+            ind.individual_id === individualId
+              ? { ...ind, pdf_path: res.pdf_path || "" }
+              : ind
+          ),
+        };
+      }
+      return { ...u, pdf_path: res.pdf_path || "" };
+    });
+    await api("/api/project/save", {
+      project_id: ctx.project.project_id,
+      build_units: updatedUnits,
+    });
+    await _ptLoadAll();
+    const updated = _PT.projects.find(p => p.project_id === ctx.project.project_id);
+    if (updated) {
+      _PT.viewProject = updated;
+      _ptRenderBuildsTab(updated);
+    }
+    if (statusEl) _ptSetStatus(statusEl, "✅ PDF exported", "good");
+    // Open the PDF after export so the user sees it immediately
+    try { await api("/open", { path: res.pdf_path }); } catch (_) {}
   } catch (e) {
     toast(e.message || "Export failed", "error");
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Error"), "err");
+  }
+};
+
+window.PT_buildOpenPdf = async function (projectId, unitId, individualId, type) {
+  const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
+  if (!ctx) return;
+  if (!ctx.pdfPath) { toast("Export the PDF first", "error"); return; }
+  try {
+    const res = await api("/open", { path: ctx.pdfPath });
+    if (!res?.ok) toast(res?.error || "Could not open PDF", "error");
+  } catch (e) {
+    toast(e.message || "Open failed", "error");
+  }
+};
+
+window.PT_buildShowFolder = async function (projectId, unitId, individualId, type) {
+  const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
+  if (!ctx) return;
+  const customer = ctx.project?.customer || {};
+  try {
+    const res = await api("/api/build/show-folder", {
+      agency: customer.agency || "",
+      year: customer.build_year || "",
+    });
+    if (!res?.ok) toast(res?.error || "Could not open folder", "error");
+  } catch (e) {
+    toast(e.message || "Open failed", "error");
   }
 };
 

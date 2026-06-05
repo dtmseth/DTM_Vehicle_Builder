@@ -45,6 +45,11 @@ class IndividualUnit:
     output_path: str = ""
     confirmed: bool = False
     confirmed_at: str = ""
+    # ISO timestamp of the last successful PPTX render. Compared against
+    # max(project.updated_at, draft.updated_at) to detect a stale output,
+    # and against the PPTX file's mtime to detect a manual PowerPoint edit.
+    last_rendered_at: str = ""
+    pdf_path: str = ""
 
 
 @dataclass
@@ -57,6 +62,8 @@ class BuildUnit:
     draft_id: str | None = None
     output_path: str = ""
     individuals: list[IndividualUnit] = field(default_factory=list)
+    last_rendered_at: str = ""
+    pdf_path: str = ""
 
 
 @dataclass

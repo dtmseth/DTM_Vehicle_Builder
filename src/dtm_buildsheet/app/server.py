@@ -16,6 +16,7 @@ from .routes import sales_reps as sales_rep_routes
 from .services import agency_service, sales_rep_service
 from .services.shared_settings_service import sync_shared_settings_at_startup
 from .routes import assets as asset_routes
+from .routes import builds as build_routes
 from .routes import cloud_status as cloud_status_routes
 from .routes import config as config_routes
 from .routes import drafts as draft_routes
@@ -141,6 +142,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/draft/"):
             if not draft_routes.route_drafts(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/build/"):
+            if not build_routes.route_builds(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/presets/save" or path == "/api/presets/import-workbook" or (path.startswith("/api/presets/") and path.endswith("/clone")):
             if not preset_routes.route_presets(self, "POST", path, body, self.paths):
