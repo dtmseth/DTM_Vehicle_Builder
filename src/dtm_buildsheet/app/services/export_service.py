@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from ...paths import AppPaths
 from ...storage.safety import assert_within_root
+
+_log = logging.getLogger(__name__)
 
 
 def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
@@ -17,6 +21,19 @@ def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
         str(p) for p in sorted(pdf_path.parent.glob(f"{prefix}*.pdf"))
         if p.name != pdf_path.name
     ]
+
+
+def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
+    """Queue a SharePoint export upload for PDFs when agency/year context exists."""
+    agency = str(body.get("agency", "") or "")
+    year = str(body.get("year", "") or "")
+    if not agency and not year:
+        return
+    try:
+        from .exports_upload_service import upload_export_in_background
+        upload_export_in_background(pdf_path, agency=agency, year=year)
+    except Exception:
+        pass
 
 
 # ── LibreOffice discovery ──────────────────────────────────────────────────────
@@ -49,19 +66,32 @@ def _find_soffice() -> str | None:
 # ── PowerPoint COM (Windows only) ─────────────────────────────────────────────
 
 def _export_via_powerpoint_com(pptx_path: Path, pdf_path: Path) -> dict:
+    t0 = time.monotonic()
+    def _step(label: str, started: float) -> float:
+        now = time.monotonic()
+        _log.info("PPT-COM %s took %.2fs", label, now - started)
+        return now
     try:
         import comtypes.client  # type: ignore[import]
+        t = _step("import", t0)
         powerpoint = comtypes.client.CreateObject("Powerpoint.Application")
+        t = _step("CreateObject", t)
         powerpoint.Visible = 1
         prs = powerpoint.Presentations.Open(str(pptx_path))
+        t = _step(f"Presentations.Open({pptx_path.name})", t)
         prs.SaveAs(str(pdf_path), 32)  # 32 = ppSaveAsPDF
+        t = _step("SaveAs(PDF)", t)
         prs.Close()
+        t = _step("Close", t)
         powerpoint.Quit()
+        _step("Quit", t)
+        _log.info("PPT-COM total %.2fs for %s", time.monotonic() - t0, pptx_path.name)
         if pdf_path.exists():
             return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
                     "previous_versions": _find_previous_pdf_versions(pdf_path)}
         return {"ok": False, "error": "PDF not created by PowerPoint COM"}
     except Exception as exc:
+        _log.exception("PPT-COM failed after %.2fs", time.monotonic() - t0)
         return {"ok": False, "error": f"PowerPoint COM failed: {exc}"}
 
 
@@ -137,11 +167,13 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     Tries LibreOffice first (cross-platform), then PowerPoint COM on Windows.
     Returns {"ok": True, "pdf_path": ..., "pdf_name": ...} or {"ok": False, "error": ...}.
     """
+    _t_export_start = time.monotonic()
     pptx_path_str = body.get("output_path", "")
     if not pptx_path_str:
         return {"ok": False, "error": "output_path is required"}
 
     pptx_path = Path(pptx_path_str)
+    _log.info("export_to_pdf start: %s", pptx_path)
     if not pptx_path.exists():
         return {"ok": False, "error": f"PPTX file not found: {pptx_path.name}"}
     if pptx_path.suffix.lower() != ".pptx":
@@ -156,6 +188,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
 
     # 1. Try LibreOffice (available on macOS, Linux, and optionally Windows)
     soffice = _find_soffice()
+    _log.info("export_to_pdf path-select: soffice=%s platform=%s", bool(soffice), sys.platform)
     if soffice:
         try:
             result = subprocess.run(
@@ -170,6 +203,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
                 timeout=120,
             )
             if result.returncode == 0 and pdf_path.exists():
+                _maybe_upload_pdf(pdf_path, body)
                 return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
                         "previous_versions": _find_previous_pdf_versions(pdf_path)}
             stderr = result.stderr.decode("utf-8", errors="replace").strip()
@@ -184,6 +218,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     if sys.platform == "darwin":
         result = _export_via_applescript(pptx_path, pdf_path)
         if result["ok"]:
+            _maybe_upload_pdf(pdf_path, body)
             return result
         # Fall through to final error so the AppleScript failure message is surfaced
         # only when PowerPoint itself isn't available.
@@ -193,7 +228,12 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
 
     # 3. Windows fallback: PowerPoint COM automation
     if sys.platform == "win32":
-        return _export_via_powerpoint_com(pptx_path, pdf_path)
+        result = _export_via_powerpoint_com(pptx_path, pdf_path)
+        if result.get("ok"):
+            _maybe_upload_pdf(pdf_path, body)
+        _log.info("export_to_pdf finish (COM) total=%.2fs ok=%s",
+                  time.monotonic() - _t_export_start, result.get("ok"))
+        return result
 
     return {
         "ok": False,
@@ -224,18 +264,36 @@ def handle_export_all_pdf(project_id: str, paths: AppPaths) -> dict:
                     errors.append({"unit_id": unit.unit_id, "individual_id": ind.individual_id,
                                    "error": "No draft created yet"})
                     continue
-                _do_export(ind.draft_id, unit, paths, exported, errors, project_id=project_id)
+                _do_export(
+                    ind.draft_id, unit, paths, exported, errors,
+                    project_id=project_id,
+                    agency=project.customer.agency,
+                    year=project.customer.build_year,
+                )
         else:
             if not unit.draft_id:
                 errors.append({"unit_id": unit.unit_id, "error": "No draft created yet"})
                 continue
-            _do_export(unit.draft_id, unit, paths, exported, errors, project_id=project_id)
+            _do_export(
+                unit.draft_id, unit, paths, exported, errors,
+                project_id=project_id,
+                agency=project.customer.agency,
+                year=project.customer.build_year,
+            )
 
     return {"ok": True, "exported": exported, "errors": errors}
 
 
-def _do_export(draft_id: str, unit, paths: AppPaths,
-               exported: list, errors: list, project_id: str = "") -> None:
+def _do_export(
+    draft_id: str,
+    unit,
+    paths: AppPaths,
+    exported: list,
+    errors: list,
+    project_id: str = "",
+    agency: str = "",
+    year: str = "",
+) -> None:
     from .draft_service import handle_generate_from_draft
 
     gen = handle_generate_from_draft({"draft_id": draft_id, "project_id": project_id}, paths)
@@ -250,7 +308,7 @@ def _do_export(draft_id: str, unit, paths: AppPaths,
                        "error": "No output_path returned from generation"})
         return
 
-    pdf_res = export_to_pdf({"output_path": pptx_path}, paths)
+    pdf_res = export_to_pdf({"output_path": pptx_path, "agency": agency, "year": year}, paths)
     if pdf_res.get("ok"):
         exported.append({"draft_id": draft_id, "unit_id": unit.unit_id,
                           "pdf_name": pdf_res["pdf_name"], "pdf_path": pdf_res["pdf_path"]})

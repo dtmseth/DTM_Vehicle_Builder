@@ -240,6 +240,18 @@ def _port_is_busy(port: int) -> bool:
         return sock.connect_ex(("127.0.0.1", port)) == 0
 
 
+def _wait_for_server_ready(port: int, *, timeout_seconds: float = 5.0) -> bool:
+    """Wait until the HTTP server is accepting connections."""
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.2)
+            if sock.connect_ex(("127.0.0.1", port)) == 0:
+                return True
+        time.sleep(0.05)
+    return False
+
+
 def _setup_logging(workspace_dir: Path) -> None:
     workspace_dir.mkdir(parents=True, exist_ok=True)
     log_file = workspace_dir / "dtm_buildsheet.log"
@@ -430,6 +442,7 @@ def main(paths: AppPaths | None = None):
     try:
         import webview
         threading.Thread(target=server.serve_forever, daemon=True).start()
+        _wait_for_server_ready(PORT)
         window = webview.create_window(
             "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600)
         )

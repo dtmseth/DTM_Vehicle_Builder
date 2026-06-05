@@ -263,6 +263,85 @@ Online-first is the starting model. Every save calls Graph API; if the network i
 
 **Cost**: Expected $0 marginal *if* the workflows stay within included GitHub Actions quotas (2,000 free min/month for private repos on GitHub Free) and Power Automate flows use only Standard connectors (SharePoint + Teams; no Premium HTTP). Monitor usage; if either creeps past free-tier limits, costs are predictable but no longer zero.
 
+---
+
+#### Phase 2 — Shipped (as of v2.2.2)
+
+Phase 2's exit condition — *"a teammate on a fresh install can sign in with M365, see all team projects, edit a preset, have that edit show up as a PR within ~5 minutes, see an update banner, and never be asked for any non-M365 credential"* — is met. What actually shipped maps to the original sub-phases plus a meaningful pile of extras that surfaced during testing.
+
+**Sub-phases against the spec:**
+
+| Sub-phase | Status | Released in |
+|-----------|--------|-------------|
+| 2.0 Interface definitions (`StorageProvider`, `IdentityProvider`, `ChangeProposalGateway`, `NotificationGateway`) | ✅ shipped | 1.x (Phase 2 pre-work) |
+| 2a SharePoint backend + Graph client + first adapter set | ✅ shipped | 1.x |
+| 2b Settings repo + three GitHub Actions workflows (pickup / publish / build-release) | ✅ shipped | 1.x |
+| 2c App auto-update via SharePoint `/Releases/` (banner, dismiss, download) | ✅ shipped | 1.3.0 |
+| 2d Power Automate Flow A (settings-updated email) | ✅ shipped (Flow B punted — no dependents need it) | 1.x |
+| 2e periodic sync wires `WORKSPACE_*_DIR` to cloud (60s loop, eTags, lazy boot) | ✅ shipped | 2.1.x |
+| 2-α General/Advanced Settings UI split | ✅ shipped | commit 9cb6689 |
+| 2-β Save-becomes-propose cutover (schema v2 with category) | ✅ shipped | 2.0.0 |
+
+**Extras that grew out of Phase 2** (none of these were in the original §Phase 2 spec but all proved necessary):
+
+| Item | Released in | Why it landed |
+|------|-------------|----------------|
+| Schema v3 (`action: upsert \| delete`) + delete-via-proposal pipeline (pickup `git rm`, publish Graph `DELETE`) | 2.2.0 | Phase 2 close — closes the asymmetric save-works-but-delete-doesn't gap for per-record entities |
+| Settings subdir inbound sync (`/Settings/agencies/`, `/sales_reps/`, `/presets/`) with deletion propagation via per-cache eTag manifest | 2.2.0 | Per-record entities had outbound proposals but no return-path sync — teammates' agency changes never reached other devices |
+| Cloud-is-source-of-truth reconciliation for projects + drafts (state-tracked deletion propagation, first-launch upload of legacy local-only files) | 2.1.5 | Pull-only sync left every device with subtly different data; the manifest pattern converges them |
+| eTag-aware sync (extends `StorageProvider` with `list_files_with_metadata`, `FileMetadata` dataclass) — skips content fetches when cloud copy is provably unchanged | 2.1.5 | First implementation fetched every file's content every cycle; sync took minutes for non-trivial data sets. After eTag short-circuit, typical sync is ~3 list calls and zero reads |
+| Cloud connection indicator (header chip, profile photo via Graph `/me/photo`, modal with Switch User / Force Sync / Sign In) | 2.0.3, 2.2.1 | No visible signal whether cloud mode was working without saving and watching for the proposal toast |
+| Switch User actually switches accounts (`prompt=select_account` plumbed through MSAL when force_account_picker=True) | 2.2.1 | Modal's Switch User silently reused the browser's existing Microsoft session — clicking it appeared to do nothing |
+| Bundled `cloud_config.json` in `resources/default_data/` so first-launch on a fresh install seeds it into the workspace | 2.0.1 | Without this, every teammate had to manually drop a config file before cloud mode would engage |
+| Boot-time `ensure_signed_in_for_cloud()` so a fresh install with no cached MSAL token actually triggers OAuth (was silently falling through to local mode) | 2.0.2 | Discovered when the first Windows install never engaged cloud despite having `cloud_config.json` |
+| Inno installer `[InstallDelete]` for `_internal/` directory + uninstaller-dir-poll in `InitializeSetup()` | 2.0.x, 2.1.1 | Over-installs left stale `dtm_buildsheet-{old-version}.dist-info` alongside the new one; `importlib.metadata` returned the wrong version and the update banner kept pestering about a version the user just installed |
+| Sync lock + `_data_version` counter so UI auto-refreshes project lists on cloud changes | 2.1.5 | Force Sync said "done" while the periodic loop was still working (race condition); UI showed stale lists until app restart |
+| Per-record entity (agencies / sales-reps / presets) cloud mirror integration (`save_via_proposal` from each service handler) | 2.0.0 | Original Phase 2-β spec only covered the eight flat config files |
+| Test-isolation guards (`tests/conftest.py` autouse fixture disables cloud + installs local bundle; `PYTEST_CURRENT_TEST` short-circuits in `_cloud_storage` / `save_via_proposal` / `ensure_signed_in_for_cloud`; `DTM_ALLOW_CLOUD_IN_TESTS=1` opt-in) | 2.1.6 | Pytest runs were silently mirroring fixtures to the real SharePoint via transitive `save_project` / `save_via_proposal` calls — Test PD agencies, sales reps, presets, and ~700 projects/drafts ended up on production |
+| Cleanup scripts: `scripts/cleanup_test_projects.py` (local + cloud delete with conservative pattern matchers); `scripts/cleanup_sharepoint_test_data.py` (direct Graph DELETE for /Settings/agencies/ etc.) | 2.1.x | One-shot recovery from the test-pollution incident |
+| Lazy cloud bootstrap — sign-in + initial sync moved off the main thread into the periodic loop's first iteration | 2.1.x | First launch was blocking on OAuth before the webview window appeared |
+| Cron-throttle workaround: pickup workflow runs `gh workflow run publish-settings-on-merge.yml` after successful auto-merge | 1.x (settings repo PR #35) | GitHub Actions deprioritizes scheduled workflows on low-traffic public repos to 2–5 hour cadence; auto-merged general PRs also don't trigger `publish-settings-on-merge` because `GITHUB_TOKEN`-initiated events don't fire other workflows (the dispatch route does) |
+| Auto-upload PPTX exports to a separate company SharePoint library (`Company Files / Vehicle Builder Projects / {agency} / {year} /`) via Graph upload sessions for files >4 MiB | 2.2.1 | Build sheets need to be browsable by the whole company via normal SharePoint, not just the app's users |
+| Persistent outbound retry queue (`workspace/.pending_outbound/{proposals,exports}/`) + yellow warning toast + modal pending count | 2.2.2 | Offline saves silently lost their cloud-side step; users had to manually re-save when network came back. Queue drains on every sync iteration + at boot |
+
+**Deliberately deferred from Phase 2** (architectural decisions, not bugs):
+
+- **Power Automate Flow B (release-published email)**: Has no dependents — release notifications were nice-to-have, not blocking. Existing `/Releases/` sync handles the actual update propagation.
+- **SharePoint webhook → workflow_dispatch for pickup**: Would speed settings PR creation from "2–5 hour cron" to "~10 seconds". Requires Power Automate Premium ($15/user/mo) for the HTTP connector, OR an Office Scripts workaround. Punted — settings change infrequently enough that the cron cadence is acceptable, and projects/drafts (the frequent path) don't go through GitHub at all.
+- **Code signing certificate** ($300+/year for EV): Reduces Windows SmartScreen friction. Owner opted to skip the cost; silent auto-update (next section) reduces SmartScreen exposure organically over time.
+- **Mac silent auto-update**: DMG auto-mount + `.app` replacement is a different pattern (Sparkle framework or manual mount/copy). Mac users keep the existing "download + reveal in Finder" flow until/unless we revisit.
+
+**End-to-end latency achieved** (vs. Phase 2 spec's "~5 minutes"):
+
+- Project edits: ~60s typical, hard ceiling ~120s (direct SharePoint mirror, no GitHub round-trip)
+- Draft edits: ~60s typical
+- Settings edits (general/auto-merge): ~3 minutes worst case (cron + workflow + publish + 60s sync poll)
+- Settings edits (advanced/review): cron-bound (the manual merge step is owner-paced anyway)
+- Project deletes / draft deletes / general-entity deletes: same as their save counterparts
+
+#### Phase 2 — In flight (next session pickup)
+
+**Silent auto-update via the existing cloud sync loop** — design lives at `/Users/skreev/.claude/plans/kind-cuddling-canyon.md`. Owner approved the plan; not yet implemented.
+
+**Goal**: small bug fixes and feature additions reach users on the same 60s cadence that settings do. Instead of every release going through "click Download → click through SmartScreen → click through installer wizard → app reopens", the installer downloads silently in the background and runs automatically on the next app restart.
+
+**Scope summary** (full detail in the plan file):
+- Add `queue_installer_for_next_launch` + `consume_queued_installer` to `update_check_service.py`. Queued installer lives at `workspace/.queued_installer/{filename}`.
+- `server.py:main()` checks for a queued installer before any other init; if present, spawns it silently and `sys.exit(0)`'s. The installer's existing `CloseApplications` + uninstaller-poll handles the rest.
+- `run_sync_now()` calls `download_pending_update_if_any` after settings + work-data sync. Downloads in the background to the queue dir.
+- `cloud_status_service.get_status` exposes `pending_update: {version} | null` so the UI can show a friendlier "Update v2.2.3 ready — restart now" banner with a Restart button (new `POST /api/update/install-now` endpoint).
+- `packaging/windows/installer.iss` removes the `skipifsilent` flag from the `[Run]` section so silent installs also auto-launch the new version.
+
+**Out of scope for this work** (same as ever): Mac silent install, loose-file Python source hot-reload, code-signing cert.
+
+**Verification plan** (from the plan file):
+1. Ship 2.2.3 as the baseline. Ship 2.2.4 as the test version.
+2. With 2.2.3 running, wait 60s — `pending_update` should populate, the new banner should appear.
+3. Click Restart → installer runs silently → 2.2.4 comes up automatically.
+4. Cold-start consume: close 2.2.3 with a queued installer present, relaunch — silent install runs at boot.
+
+---
+
 ### Phase 3 — `parts_db.json` (Schema, Migration, Dual-Read)
 
 **Goal**: stand up the canonical parts database. Existing config files still work as fallback during transition; new code reads from `parts_db.json`.

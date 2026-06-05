@@ -29,7 +29,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | User/workspace presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) | same |
 | Agency database | `workspace/agencies.json` | `app/services/agency_service.py` |
 | Sales rep database | `workspace/sales_reps.json` | `app/services/sales_rep_service.py` |
-| Generated outputs | `{export_dir}/{project_id}/` | `app/services/generation_service.py`, `export_service.py` |
+| Generated outputs | `workspace/output/`, then SharePoint export library by agency/year | `app/services/generation_service.py`, `export_service.py`, `exports_upload_service.py` |
 
 ---
 
@@ -69,14 +69,16 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 ---
 
-## Export directory
+## Export Location
 
-`ProjectRecord.export_dir` controls where generated files land:
+Generated `.pptx` and `.pdf` files are written to the local app output folder (`workspace/output/`).
+When cloud mode and the export library are configured, successful exports are also uploaded to SharePoint:
 
-- **Empty string** → falls back to the global `output_save_dir` from `app_settings.json`; if that is also unset, files stay in `workspace/output/`.
-- **Absolute path** → user-specified folder that overrides the global setting. Set via the Edit tab in the project detail view.
+```text
+{exports_base_folder}/{agency}/{year}/{filename}
+```
 
-The `project_id` is passed with every `/api/draft/generate` call so the backend can resolve the project record and apply its `export_dir`. Generated `.pptx` files land directly in the configured directory; exported `.pdf` files appear alongside the matching `.pptx`.
+The `project_id` is passed with every `/api/draft/generate` call so the backend can refresh unit labels and agency/year metadata from the current project record before rendering. Custom per-project output folders and the old standalone export-folder picker are no longer used.
 
 ---
 

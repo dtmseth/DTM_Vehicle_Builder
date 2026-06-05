@@ -5,10 +5,8 @@ from dataclasses import asdict
 
 _log = logging.getLogger(__name__)
 
-from ...config.store import load_config
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
 from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences, IndividualUnit
-from ...inputs.project_dirs import ensure_project_output_dir
 from ...inputs.project_drafts import DraftPart, new_draft, save_draft
 from ...inputs.project_entry import (
     delete_project,
@@ -23,33 +21,17 @@ from .preset_service import load_preset
 
 
 def _project_output_root(paths: AppPaths) -> str:
-    """Return the configured project_output_root, or empty string if not set."""
-    settings = load_config("app_settings.json", paths) or {}
-    return settings.get("project_output_root", "").strip()
+    """Legacy compatibility hook; project output folders are no longer user-configured."""
+    return ""
 
 
 def _ensure_project_folder(paths: AppPaths, agency: str, build_year: str) -> None:
-    """Create the per-project output folder if project_output_root is configured."""
-    root = _project_output_root(paths)
-    if root:
-        ensure_project_output_dir(root, agency, build_year)
+    """Legacy no-op; generated files stay in the app workspace output folder."""
+    return None
 
 
 def handle_list_projects(paths: AppPaths) -> dict:
     projects = list_projects(paths)
-    # Ensure output folders exist for all known projects (handles existing projects
-    # retroactively and is a no-op when folders already exist).
-    root = _project_output_root(paths)
-    if root:
-        for project in projects:
-            try:
-                ensure_project_output_dir(
-                    root,
-                    project.customer.agency,
-                    project.customer.build_year,
-                )
-            except Exception:
-                _log.exception("Failed to ensure output dir for project %s", project.project_id)
     return {"ok": True, "projects": [asdict(p) for p in projects]}
 
 
@@ -119,21 +101,6 @@ def handle_delete_project_with_options(project_id: str, body: dict, paths: AppPa
     """POST /api/project/{id}/delete — optionally also remove the output folder."""
     delete_files = bool(body.get("delete_files", False))
     try:
-        if delete_files:
-            try:
-                import shutil as _shutil
-                from ...inputs.project_dirs import resolve_project_output_dir
-                project = load_project(project_id, paths)
-                root = _project_output_root(paths)
-                folder = resolve_project_output_dir(
-                    root,
-                    project.customer.agency or "",
-                    project.customer.build_year or "",
-                )
-                if folder and folder.exists() and folder.is_dir():
-                    _shutil.rmtree(folder)
-            except Exception:
-                _log.exception("Failed to remove output folder for project %s", project_id)
         delete_project(project_id, paths)
         return {"ok": True}
     except FileNotFoundError:

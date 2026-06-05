@@ -200,30 +200,6 @@ $("btn-open-pdf").addEventListener("click", ()=>api("/open",{path:window._pdfPat
 
 $("btn-reset").addEventListener("click", ()=>location.reload());
 
-// ── Export folder picker (output destination for generated build sheets) ─────
-function updateExportDirDisplay(){
-  const el=$("export-save-dir"); if(!el) return;
-  const dir=(_appSettings||{}).output_save_dir||"";
-  if(dir){ el.textContent=dir; el.title=dir; el.style.color="var(--navy)"; }
-  else   { el.textContent="Default (workspace folder)"; el.title=""; el.style.color="var(--muted)"; }
-}
-
-$("btn-pick-export-dir").addEventListener("click", async()=>{
-  const res=await api("/api/generate/pick-folder");
-  if(!res.ok) return;
-  if(!_appSettings) _appSettings={};
-  _appSettings.output_save_dir=res.path;
-  await api("/api/app-settings/save",_appSettings);
-  updateExportDirDisplay();
-});
-
-$("btn-clear-export-dir").addEventListener("click", async()=>{
-  if(!_appSettings) _appSettings={};
-  delete _appSettings.output_save_dir;
-  await api("/api/app-settings/save",_appSettings);
-  updateExportDirDisplay();
-});
-
 // ── Save-To folder picker ─────────────────────────────────────────────────
 function updateSaveToDisplay(){
   const el=$("tpl-save-dir"); if(!el) return;
@@ -252,39 +228,6 @@ $("btn-clear-save-dir").addEventListener("click", async()=>{
 
 function autoRegenTemplate() {
   api("/api/template/generate", {}).then(loadTemplateInfo).catch(() => {});
-}
-
-// ── Project output root picker (Settings → Tools) ─────────────────────────────
-function updateProjRootDisplay() {
-  const el = $("proj-output-root-display"); if (!el) return;
-  const dir = (_appSettings || {}).project_output_root || "";
-  if (dir) { el.textContent = dir; el.title = dir; el.style.color = "var(--navy)"; }
-  else     { el.textContent = "Default (Desktop / DTM Projects)"; el.title = ""; el.style.color = "var(--muted)"; }
-}
-
-const btnPickProjRoot  = $("btn-pick-proj-root");
-const btnClearProjRoot = $("btn-clear-proj-root");
-
-if (btnPickProjRoot) {
-  btnPickProjRoot.addEventListener("click", async () => {
-    const res = await api("/api/project/pick-output-root");
-    if (!res.ok) return;
-    if (!_appSettings) _appSettings = {};
-    _appSettings.project_output_root = res.path;
-    await api("/api/app-settings/save", _appSettings);
-    updateProjRootDisplay();
-    const status = $("proj-root-status");
-    if (status) { status.textContent = "✓ Saved"; status.style.display = "block"; setTimeout(() => { status.style.display = "none"; }, 2000); }
-  });
-}
-
-if (btnClearProjRoot) {
-  btnClearProjRoot.addEventListener("click", async () => {
-    if (!_appSettings) _appSettings = {};
-    delete _appSettings.project_output_root;
-    await api("/api/app-settings/save", _appSettings);
-    updateProjRootDisplay();
-  });
 }
 
 function logLine(msg){show("card-log"); $("log-box").textContent+=msg+"\n"; $("log-box").scrollTop=$("log-box").scrollHeight;}

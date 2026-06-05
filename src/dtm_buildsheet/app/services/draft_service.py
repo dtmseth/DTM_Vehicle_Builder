@@ -224,25 +224,38 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
 
 
 def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
+    import time as _time
+    _t_start = _time.monotonic()
+    _t_last = _t_start
+    def _t_step(label: str) -> None:
+        nonlocal _t_last
+        now = _time.monotonic()
+        _log.info("generate-from-draft %s took %.2fs (cumulative %.2fs)",
+                  label, now - _t_last, now - _t_start)
+        _t_last = now
     log_lines: list[str] = []
     try:
         draft_id = body.get("draft_id", "")
         draft = load_draft(draft_id, paths.workspace_drafts_dir)
         project = draft_to_project_input(draft)
+        _t_step(f"load_draft({draft_id})")
         log_lines.append(f"Draft: {draft_id}")
         log_lines.append(f"Vehicle type: {project.info.get('VehicleType', '?')}")
         log_lines.append(f"Parts: {len(project.parts)}")
 
-        # Resolve project-level export directory from project_output_root setting.
-        # Falls through to legacy output_save_dir handled by finalize_output().
+        # Resolve project metadata for filename freshness and SharePoint export
+        # folder layout. Local PPTX files always stay in workspace/output.
         _project_export_dir = None
+        _agency = str(project.info.get("Agency", "") or "")
+        _year = str(project.info.get("BuildYear", "") or "")
+        _ind_year = ""
         _proj_id_param = body.get("project_id", "")
         if _proj_id_param:
             try:
                 from ...inputs.project_entry import load_project
-                from ...inputs.project_dirs import ensure_project_output_dir
-                from ...config.store import load_config
                 _proj_rec = load_project(_proj_id_param, paths)
+                _agency = (_proj_rec.customer.agency or "").strip() or _agency
+                _year = (_proj_rec.customer.build_year or "").strip() or _year
 
                 # Freshen UNIT ID, YEAR, and BuildType from the current project
                 # data so values set after draft creation are reflected in output.
@@ -257,17 +270,8 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                             project.info["NewVehicle"] = _nv
                             project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
                             break
-
-                _settings = load_config("app_settings.json", paths) or {}
-                _root = _settings.get("project_output_root", "").strip()
-                if _root:
-                    _agency = (_proj_rec.customer.agency or "").strip()
-                    _year = (_proj_rec.customer.build_year or "").strip()
-                    _project_export_dir = ensure_project_output_dir(
-                        _root, _agency, _year
-                    )
             except Exception:
-                _log.exception("Could not resolve project export dir for draft %s", draft_id)
+                _log.exception("Could not resolve project metadata for draft %s", draft_id)
 
         # generate_build_sheet expects a Path to an xlsx — for GUI-built drafts
         # we don't have one, so we generate from the ProjectInput directly via
@@ -281,7 +285,9 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         from ...storage.local import LocalStorageProvider
 
         config = load_configs(paths)
+        _t_step("load_configs")
         plan = build_plan(project, config)
+        _t_step("build_plan")
 
         if draft.placement_overrides:
             plan = apply_overrides(plan, draft.placement_overrides)
@@ -292,12 +298,14 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         out_dir.mkdir(parents=True, exist_ok=True)
 
         ppt_path = render_plan_to_ppt(plan, paths)
+        _t_step(f"render_plan_to_ppt({ppt_path.name})")
         plan_path = out_dir / f"BuildPlan_{project_id}.json"
         summary_path = out_dir / f"BuildSummary_{project_id}.md"
 
         storage = LocalStorageProvider()
         storage.write_text(str(plan_path), json.dumps(plan.to_dict(), indent=2))
         storage.write_text(str(summary_path), render_markdown_summary(plan))
+        _t_step("write plan+summary")
 
         placements_count = sum(len(pp.placements) for pp in plan.planned_parts)
         log_lines.append(f"Wrote: {ppt_path.name}")
@@ -313,10 +321,6 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         from .generation_service import finalize_output
         import re as _re
         from pathlib import Path as _Path
-        # Pull agency + year off the project record for the SharePoint
-        # auto-upload's folder layout. _agency/_year were computed above
-        # for the local export-dir path; reuse them so the cloud upload
-        # lands at the same {agency}/{year}/ shape as the local copy.
         export = finalize_output(
             ppt_path,
             paths,
@@ -324,6 +328,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             agency=_agency or project.info.get("Agency", ""),
             year=_year or project.info.get("BuildYear", "") or _ind_year,
         )
+        _t_step("finalize_output (queues SharePoint upload)")
 
         # Detect rename: if the caller supplied the previous output path and the
         # stable filename prefix (everything before the timestamp) has changed,

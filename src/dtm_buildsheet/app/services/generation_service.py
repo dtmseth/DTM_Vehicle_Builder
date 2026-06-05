@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import base64
 import re
-import shutil
 import traceback
 from pathlib import Path
 
-from ...config.store import load_config
 from ...generator import generate_build_sheet
 from ...input_reader import load_input
 from ...paths import AppPaths
@@ -58,11 +56,12 @@ def parse_workbook(body: dict, paths: AppPaths) -> dict:
 
 
 def get_output_save_dir(paths: AppPaths) -> Path | None:
-    """Returns the user-configured export directory, or None to use the workspace default."""
-    settings = load_config("app_settings.json", paths) or {}
-    save_dir = settings.get("output_save_dir", "").strip()
-    if save_dir and Path(save_dir).is_dir():
-        return Path(save_dir)
+    """Legacy compatibility hook.
+
+    Generated build sheets now stay in the app workspace output directory.
+    SharePoint distribution is handled by exports_upload_service after the
+    local write succeeds, so user-configured export folders are ignored.
+    """
     return None
 
 
@@ -86,8 +85,7 @@ def finalize_output(
     year: str = "",
 ) -> dict:
     """
-    Copy ppt_path to the configured export directory (if set).
-    project_export_dir takes priority over the global output_save_dir setting.
+    Keep ppt_path in the app workspace output directory.
     Returns {output_path, output_name, previous_versions}.
     No conflict logic — the timestamp in the filename ensures uniqueness.
 
@@ -97,25 +95,12 @@ def finalize_output(
     immediately. agency / year drive the {library}/{base}/{agency}/{year}/
     layout. Missing values get sanitized to "Unassigned" upstream.
     """
-    export_dir = project_export_dir if (project_export_dir and project_export_dir.is_dir()) else get_output_save_dir(paths)
-    if export_dir is None:
-        result_path = ppt_path
-        result = {
-            "output_path": str(ppt_path),
-            "output_name": ppt_path.name,
-            "previous_versions": [],
-        }
-    else:
-        export_dir.mkdir(parents=True, exist_ok=True)
-        dest = export_dir / ppt_path.name
-        shutil.copy2(ppt_path, dest)
-        previous = _find_previous_versions(dest, export_dir)
-        result_path = dest
-        result = {
-            "output_path": str(dest),
-            "output_name": dest.name,
-            "previous_versions": previous,
-        }
+    result_path = ppt_path
+    result = {
+        "output_path": str(ppt_path),
+        "output_name": ppt_path.name,
+        "previous_versions": _find_previous_versions(ppt_path, ppt_path.parent),
+    }
 
     # Fire the SharePoint auto-upload from the canonical final path. The
     # service is a no-op outside cloud mode and when exports aren't
@@ -157,9 +142,7 @@ def handle_delete_old(body: dict, paths: AppPaths) -> dict:
     if not file_paths:
         return {"ok": False, "error": "No paths provided"}
 
-    export_dir = get_output_save_dir(paths)
-    if export_dir is None:
-        return {"ok": False, "error": "No export directory configured"}
+    export_dir = paths.workspace_output_dir
 
     deleted, errors = [], []
     for fp in file_paths:

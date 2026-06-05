@@ -109,21 +109,13 @@
     <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library</button>
   </div>
 
-  <!-- ── PROJECTS (General Settings) ──
-       Holds the project_output_root setting; moved here from the old Tools tab. -->
+  <!-- ── PROJECTS (General Settings) ── -->
   <div id="stab-projects-defaults" hidden>
     <div class="card">
-      <div class="card-title" style="margin-bottom:6px">Project Output Folder</div>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-        Root folder where project build sheets are saved. Each project creates a subdirectory named after the agency.
-        Leave blank to use the default Desktop / DTM Projects location.
+      <div class="card-title" style="margin-bottom:6px">Project Defaults</div>
+      <p style="font-size:12px;color:var(--muted);margin:0">
+        Build sheets are saved in the local app output folder and uploaded automatically to the company SharePoint export library by agency and year.
       </p>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-        <div id="proj-output-root-display" class="dir-display" title="">Default (Desktop / DTM Projects)</div>
-        <button class="btn btn-secondary btn-sm" id="btn-pick-proj-root">📁 Browse</button>
-        <button class="btn btn-secondary btn-sm" id="btn-clear-proj-root" title="Reset to default location" style="padding:4px 8px">✕</button>
-      </div>
-      <div id="proj-root-status" style="display:none;font-size:12px;color:var(--green);margin-top:4px"></div>
     </div>
   </div>
 
@@ -744,9 +736,7 @@
   </div>
 
   <!-- ── WORKBOOK TOOLS (renamed from Tools) ──
-       Project Output Folder card was relocated to #stab-projects-defaults
-       above; what remains here is the workbook template regen + the
-       standalone build-sheet generator. -->
+       Workbook template regen + the standalone build-sheet generator. -->
   <div id="stab-workbook-tools" hidden>
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">Workbook Template</div>
@@ -799,15 +789,6 @@
       <thead><tr><th>Part</th><th>Location</th><th>Color</th><th>Qty</th><th>Incl.</th></tr></thead>
       <tbody id="parts-tbody"></tbody>
     </table>
-  </div>
-
-  <div class="card">
-    <div class="card-title" style="margin-bottom:8px">Export Location</div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <div id="export-save-dir" style="flex:1;font-size:12px;color:var(--muted);background:#f4f5f9;border:1px solid var(--border);border-radius:5px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">Default (workspace folder)</div>
-      <button class="btn btn-secondary btn-sm" id="btn-pick-export-dir">📁 Browse</button>
-      <button class="btn btn-secondary btn-sm" id="btn-clear-export-dir" title="Reset to default workspace folder" style="padding:4px 8px">✕</button>
-    </div>
   </div>
 
   <div class="card">

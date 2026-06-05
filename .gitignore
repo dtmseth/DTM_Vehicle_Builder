@@ -9,6 +9,9 @@ workspace/
 # Config file backups written at runtime
 src/dtm_buildsheet/resources/config/history/
 
+# Cloud sync eTag cache (workspace state — happens to live in resources/config in dev mode)
+src/dtm_buildsheet/resources/config/.settings_etags.json
+
 dist/
 build/
 *.egg-info/

@@ -51,7 +51,6 @@ function relativeTime(ms){
 async function loadTemplateInfo(){
   const el = $("tpl-last-updated"); if(!el) return;
   updateSaveToDisplay();
-  updateExportDirDisplay();
   try {
     const res = await api("/api/template/info");
     if(res.exists && res.mtime){
@@ -324,8 +323,12 @@ async function _doSwitchUser(){
     } else {
       toast("Sign-in failed: " + (res?.error || "unknown error"), "error");
     }
+  } catch(e) {
+    toast("Sign-in failed: " + (e?.message || "unknown error"), "error");
   } finally {
     btn.disabled = false;
+    await refreshCloudStatus();
+    _refreshCloudModalBody();
   }
 }
 
@@ -341,8 +344,12 @@ async function _doSignin(){
     } else {
       toast("Sign-in failed: " + (res?.error || "unknown error"), "error");
     }
+  } catch(e) {
+    toast("Sign-in failed: " + (e?.message || "unknown error"), "error");
   } finally {
     btn.disabled = false;
+    await refreshCloudStatus();
+    _refreshCloudModalBody();
   }
 }
 

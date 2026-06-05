@@ -35,8 +35,6 @@ function _ptRenderBuildsTab(p) {
         const expDis    = !hasOutput ? ` disabled title="Generate build sheet first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
-        const outputEsc   = hasOutput ? esc(ind.output_path) : "";
-
         return `<div class="proj-build-card" id="build-card-${iid}">
           <div class="proj-build-card-top">
             <div class="proj-build-card-label">${esc(label)}</div>
@@ -60,7 +58,7 @@ function _ptRenderBuildsTab(p) {
               ${genLbl}
             </button>
             <button class="btn btn-secondary btn-sm"${expDis}
-              onclick="PT_buildExportPdf('${pid}','${uid}','${iid}','ind','${outputEsc}')">
+              onclick="PT_buildExportPdf('${pid}','${uid}','${iid}','ind')">
               📄 Export PDF
             </button>
           </div>
@@ -74,7 +72,6 @@ function _ptRenderBuildsTab(p) {
       const genDis    = !hasDraft ? ` disabled title="Configure build first"` : "";
       const expDis    = !hasOutput ? ` disabled title="Generate build sheet first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
-      const outputEsc  = hasOutput ? esc(u.output_path) : "";
 
       cards = `<div class="proj-build-card" id="build-card-unit-${uid}">
         <div class="proj-build-card-label">${esc(u.build_type || "Unit")} ×${u.quantity}</div>
@@ -94,7 +91,7 @@ function _ptRenderBuildsTab(p) {
             ${genLbl}
           </button>
           <button class="btn btn-secondary btn-sm"${expDis}
-            onclick="PT_buildExportPdf('${pid}','${uid}','','unit','${outputEsc}')">
+            onclick="PT_buildExportPdf('${pid}','${uid}','','unit')">
             📄 Export PDF
           </button>
         </div>
@@ -308,7 +305,7 @@ window.PT_buildGenerate = async function (projectId, unitId, individualId, type)
           `OK = Delete the old file\nCancel = Keep both`
         );
         if (choice) {
-          await api("/api/generate/delete-old", { files: [nc.old_path] });
+          await api("/api/generate/delete-old", { paths: [nc.old_path] });
         }
       }
     } else {
@@ -326,11 +323,27 @@ window.PT_buildGenerate = async function (projectId, unitId, individualId, type)
 };
 
 window.PT_buildExportPdf = async function (projectId, unitId, individualId, type, outputPath) {
+  if (!outputPath) {
+    const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
+    const unit = (project?.build_units || []).find(u => u.unit_id === unitId);
+    if (type === "ind") {
+      const ind = (unit?.individuals || []).find(i => i.individual_id === individualId);
+      outputPath = ind?.output_path || "";
+    } else {
+      outputPath = unit?.output_path || "";
+    }
+  }
   if (!outputPath) { toast("Generate the build sheet first", "error"); return; }
+  const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
+  const customer = project?.customer || {};
   const statusEl = $("proj-action-status");
   if (statusEl) _ptSetStatus(statusEl, "Exporting PDF…", "ok");
   try {
-    const res = await api("/api/export/pdf", { output_path: outputPath });
+    const res = await api("/api/export/pdf", {
+      output_path: outputPath,
+      agency: customer.agency || "",
+      year: customer.build_year || "",
+    });
     if (res.ok) {
       toast("PDF exported: " + (res.pdf_name || ""), "success");
       if (statusEl) statusEl.style.display = "none";
