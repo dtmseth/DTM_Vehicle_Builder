@@ -290,7 +290,7 @@
     /* toast */
     .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200;transform:translateY(80px);opacity:0;transition:.3s}
     .toast.show{transform:translateY(0);opacity:1}
-    .toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:#1a6091}
+    .toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:#1a6091}.toast.warn{background:#b45309;color:#fff}
 
     /* ── per-view size editor in parts-modal ─────────────────────── */
     .pm-view-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}

@@ -339,7 +339,21 @@ def run_sync_now(active_paths: AppPaths) -> dict:
                 or work_report.get("drafts_updated") or work_report.get("drafts_deleted")
                 or work_report.get("drafts_uploaded")
             )
-            if settings_changed or work_changed:
+
+            # Drain any cloud writes that failed at save time. The
+            # proposal and export paths enqueue failures here; drain
+            # retries them now that we know cloud is reachable (we just
+            # finished a sync). Bumps data_version when something landed
+            # so the UI knows to refresh.
+            from .services.outbound_queue import drain_queue
+            queue_report = drain_queue(active_paths)
+            report["queue"] = queue_report
+            queue_changed = bool(
+                queue_report.get("proposals_succeeded")
+                or queue_report.get("exports_succeeded")
+            )
+
+            if settings_changed or work_changed or queue_changed:
                 _bump_data_version()
         except Exception as exc:
             logger.exception("Sync cycle failed")

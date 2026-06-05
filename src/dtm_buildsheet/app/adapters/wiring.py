@@ -185,32 +185,21 @@ def ensure_signed_in_for_cloud() -> bool:
         return False
 
 
-def save_via_proposal(
+def _submit_proposal_to_cloud(
+    *,
     target_file: str,
     serialized_content: str,
     summary: str,
-    *,
-    category: ProposalCategory,
-    action: ProposalAction = "upsert",
+    category: str,
+    action: str = "upsert",
 ) -> dict:
-    """Submit a settings change as a proposal. No-op outside cloud mode.
+    """Bare submission: bundle + identity + gateway, no enqueue fallback.
 
-    Callers must have already written the local copy. The proposal is an
-    additional step that ships the change to the team via the settings repo;
-    it does not replace the local write. Local stays canonical until the
-    next ``SharedSettingsService.sync_all()`` overwrites it with the merged
-    version on app startup.
-
-    Returns a dict with `proposed`: True when a proposal was actually
-    submitted, False otherwise (cloud disabled, not signed in, or the gateway
-    raised). The return value is intended to be merged into the route's JSON
-    response so the UI can decide which toast to show.
+    This is what both ``save_via_proposal`` and the outbound queue's
+    drain loop call to attempt a real cloud write. Pulled out so the
+    drain path doesn't bounce back into the enqueue branch on retry
+    (which would otherwise create infinite queue growth).
     """
-    # Hard guard: NEVER write proposals to real SharePoint during a test
-    # run. PYTEST_CURRENT_TEST is set automatically by pytest; this is the
-    # backstop for the autouse conftest fixture in tests/conftest.py.
-    # Tests that legitimately exercise the cloud path against a fake
-    # ChangeProposalGateway opt in by setting DTM_ALLOW_CLOUD_IN_TESTS=1.
     if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("DTM_ALLOW_CLOUD_IN_TESTS"):
         return {"proposed": False, "reason": "test environment"}
     if not _cloud_flag_enabled():
@@ -233,8 +222,8 @@ def save_via_proposal(
             new_content=serialized_content,
             summary=summary,
             user=user,
-            category=category,
-            action=action,
+            category=category,  # type: ignore[arg-type]
+            action=action,  # type: ignore[arg-type]
         )
     except Exception:
         logger.exception("Failed to submit proposal for %s", target_file)
@@ -246,6 +235,66 @@ def save_via_proposal(
         "category": category,
         "action": action,
     }
+
+
+def save_via_proposal(
+    target_file: str,
+    serialized_content: str,
+    summary: str,
+    *,
+    category: ProposalCategory,
+    action: ProposalAction = "upsert",
+) -> dict:
+    """Submit a settings change as a proposal. No-op outside cloud mode.
+
+    Callers must have already written the local copy. The proposal is an
+    additional step that ships the change to the team via the settings repo;
+    it does not replace the local write. Local stays canonical until the
+    next ``SharedSettingsService.sync_all()`` overwrites it with the merged
+    version on app startup.
+
+    Returns a dict with `proposed`: True when a proposal was actually
+    submitted, False otherwise (cloud disabled, not signed in, or the gateway
+    raised). The return value is intended to be merged into the route's JSON
+    response so the UI can decide which toast to show.
+    """
+    result = _submit_proposal_to_cloud(
+        target_file=target_file,
+        serialized_content=serialized_content,
+        summary=summary,
+        category=category,
+        action=action,
+    )
+
+    # If submission failed for a transient reason (network, identity,
+    # gateway error), persist it for retry. The drain happens at every
+    # sync cycle so the user doesn't have to do anything special.
+    # "cloud disabled" and "test environment" are NOT transient — no point
+    # queueing something that has no cloud destination by design.
+    if not result.get("proposed"):
+        reason = result.get("reason", "")
+        if _is_queueable_failure(reason):
+            from ...paths import AppPaths
+            from ..services.outbound_queue import enqueue_proposal
+            queued = enqueue_proposal(
+                AppPaths(),
+                target_file=target_file,
+                serialized_content=serialized_content,
+                summary=summary,
+                category=category,
+                action=action,
+            )
+            if queued:
+                result["queued"] = True
+
+    return result
+
+
+def _is_queueable_failure(reason: str) -> bool:
+    """A failure reason is queueable if a future retry could plausibly
+    succeed. Cloud-disabled and test-environment are NOT — they're by
+    design, not transient."""
+    return reason in {"not signed in", "submit failed", "identity error"}
 
 
 def delete_via_proposal(

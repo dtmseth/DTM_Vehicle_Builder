@@ -93,6 +93,7 @@ def get_status(paths: AppPaths) -> dict:
         "has_photo": has_photo,
         "syncing": syncing,
         "data_version": data_version,
+        "pending_queue": _queue_depth(paths),
     }
 
 
@@ -104,7 +105,19 @@ def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int) -> d
         "has_photo": False,
         "syncing": syncing,
         "data_version": data_version,
+        "pending_queue": {"proposals": 0, "exports": 0},
     }
+
+
+def _queue_depth(paths: AppPaths) -> dict:
+    """Forward to the outbound queue service. Never raises — empty depth
+    on any error so a bad lookup doesn't break the status response."""
+    try:
+        from .outbound_queue import queue_depth
+        return queue_depth(paths)
+    except Exception:
+        logger.exception("queue_depth lookup failed")
+        return {"proposals": 0, "exports": 0}
 
 
 def _is_sync_in_progress() -> bool:

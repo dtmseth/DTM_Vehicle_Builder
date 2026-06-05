@@ -20,10 +20,16 @@ async function apiSave(endpoint, data){
 // Phase 2-β: surface the proposal pipeline outcome to the user.
 // "general" category = auto-merged by the settings-repo workflow within
 // minutes. "advanced" = a PR opens and waits for owner review.
-// No proposal field on the response = legacy/local-only save; nothing to
-// say beyond whatever the caller's own toast already shows.
+// queued = cloud was unreachable; the change is persisted for retry on
+// the next sync cycle, but the user should know the cloud-side step
+// didn't complete this moment.
 function maybeProposalToast(res){
-  if(!res?.ok || !res.proposed) return;
+  if(!res?.ok) return;
+  if(res.queued){
+    toast("Saved locally — will retry sync when the cloud is reachable", "warn");
+    return;
+  }
+  if(!res.proposed) return;
   if(res.category === "general"){
     toast("Saved (auto-merging shortly)", "success");
   } else if(res.category === "advanced"){
@@ -220,6 +226,19 @@ function _refreshCloudModalBody(){
     const name = status.user?.display_name || status.user?.email || "Signed in";
     $("cloud-modal-name").textContent = name;
     $("cloud-modal-email").textContent = status.user?.email || "";
+    // Surface any pending retry-queue items so the user knows changes
+    // are waiting to be synced. Zero counts: hide the row entirely.
+    const queue = status.pending_queue || {};
+    const pending = (queue.proposals || 0) + (queue.exports || 0);
+    const pendingEl = $("cloud-modal-pending");
+    if(pendingEl){
+      if(pending > 0){
+        pendingEl.hidden = false;
+        pendingEl.textContent = `⏳ ${pending} change${pending === 1 ? "" : "s"} pending sync`;
+      } else {
+        pendingEl.hidden = true;
+      }
+    }
     const photoEl = $("cloud-modal-photo");
     const initialsEl = $("cloud-modal-initials");
     if(status.has_photo){

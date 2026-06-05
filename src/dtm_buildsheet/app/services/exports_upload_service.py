@@ -286,9 +286,41 @@ def upload_export_in_background(
     ``on_complete(success: bool)`` is called from the worker thread when
     the upload finishes. The server.py data_version counter is the
     intended consumer — bumping it lets the UI know to refresh / toast.
+
+    Failed uploads are enqueued for retry (when cloud is enabled). The
+    sync loop drains the queue on every iteration; even if the app is
+    closed mid-upload, next launch re-tries automatically.
     """
     def _worker():
         ok = upload_export(local_pptx, agency=agency, year=year, filename=filename)
+        if not ok:
+            # Only queue if cloud was supposed to handle this. The
+            # upload_export() implementation short-circuits to False on
+            # both transient and intentional reasons; we re-check the
+            # cloud flag here so cloud-disabled installs don't queue
+            # forever.
+            try:
+                from ..adapters import wiring
+                # Don't queue in pytest, local mode, or when the local
+                # file is gone (upload_export already returned False for
+                # missing-file). The drain logic also no-ops gracefully
+                # if any of these conditions changed by retry time.
+                if (
+                    not os.environ.get("PYTEST_CURRENT_TEST")
+                    and wiring._cloud_flag_enabled()  # noqa: SLF001
+                    and local_pptx.exists()
+                ):
+                    from ...paths import AppPaths
+                    from .outbound_queue import enqueue_export
+                    enqueue_export(
+                        AppPaths(),
+                        local_path=local_pptx,
+                        agency=agency,
+                        year=year,
+                        filename=filename,
+                    )
+            except Exception:
+                logger.exception("Failed to queue export retry for %s", local_pptx.name)
         if on_complete is not None:
             try:
                 on_complete(ok)

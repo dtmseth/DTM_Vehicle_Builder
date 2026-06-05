@@ -133,6 +133,8 @@ def test_submits_when_cloud_enabled_and_signed_in(cloud_on):
 
 
 def test_skips_when_not_signed_in(cloud_on):
+    """Transient failure — local copy must persist + the proposal queues
+    for retry on the next sync cycle when sign-in eventually happens."""
     bundle = _make_bundle(identity=_StubIdentity(signed_in=False, user=None))
     set_active_bundle(bundle)
 
@@ -142,7 +144,10 @@ def test_skips_when_not_signed_in(cloud_on):
         summary="test",
         category="general",
     )
-    assert result == {"proposed": False, "reason": "not signed in"}
+    assert result["proposed"] is False
+    assert result["reason"] == "not signed in"
+    # Queueable: a future signin would let the drain retry.
+    assert result["queued"] is True
 
 
 def test_skips_when_current_user_returns_none(cloud_on):
@@ -155,7 +160,9 @@ def test_skips_when_current_user_returns_none(cloud_on):
         summary="test",
         category="general",
     )
-    assert result == {"proposed": False, "reason": "not signed in"}
+    assert result["proposed"] is False
+    assert result["reason"] == "not signed in"
+    assert result["queued"] is True
 
 
 def test_handles_gateway_failure(cloud_on):
@@ -169,7 +176,10 @@ def test_handles_gateway_failure(cloud_on):
         summary="test",
         category="advanced",
     )
-    assert result == {"proposed": False, "reason": "submit failed"}
+    assert result["proposed"] is False
+    assert result["reason"] == "submit failed"
+    # Transient cloud error: queue for retry.
+    assert result["queued"] is True
 
 
 # ── delete_via_proposal ─────────────────────────────────────────────────────
