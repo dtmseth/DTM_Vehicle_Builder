@@ -49,7 +49,10 @@ class IndividualUnit:
     # max(project.updated_at, draft.updated_at) to detect a stale output,
     # and against the PPTX file's mtime to detect a manual PowerPoint edit.
     last_rendered_at: str = ""
+    last_rendered_by: str = ""  # display name of the signed-in M365 user
     pdf_path: str = ""
+    last_exported_at: str = ""
+    last_exported_by: str = ""
 
 
 @dataclass
@@ -63,7 +66,10 @@ class BuildUnit:
     output_path: str = ""
     individuals: list[IndividualUnit] = field(default_factory=list)
     last_rendered_at: str = ""
+    last_rendered_by: str = ""
     pdf_path: str = ""
+    last_exported_at: str = ""
+    last_exported_by: str = ""
 
 
 @dataclass

@@ -1,5 +1,50 @@
 // ── Projects module: detail Builds tab ───────────────────────────────────────
 
+function _ptFirstName(s) {
+  s = (s || "").trim();
+  if (!s) return "";
+  // Handle "Last, First" — common in some M365 tenants.
+  if (s.includes(",")) return s.split(",")[1]?.trim().split(/\s+/)[0] || s;
+  return s.split(/\s+/)[0];
+}
+
+function _ptShortAgo(iso) {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const sec = Math.max(0, (Date.now() - t) / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + "m ago";
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr + "h ago";
+  const day = Math.floor(hr / 24);
+  if (day < 30) return day + "d ago";
+  const mo = Math.floor(day / 30);
+  if (mo < 12) return mo + "mo ago";
+  return Math.floor(mo / 12) + "y ago";
+}
+
+function _ptRenderTimelineRow(holder) {
+  // holder has last_rendered_at/by, last_exported_at/by — render a small
+  // dim line so teammates can see who built each artifact at a glance.
+  const pptxBy   = _ptFirstName(holder.last_rendered_by);
+  const pptxWhen = _ptShortAgo(holder.last_rendered_at);
+  const pdfBy    = _ptFirstName(holder.last_exported_by);
+  const pdfWhen  = _ptShortAgo(holder.last_exported_at);
+  const lines = [];
+  if (pptxWhen) {
+    const who = pptxBy ? `${esc(pptxBy)} · ` : "";
+    lines.push(`<span class="proj-build-card-author">📊 ${who}${pptxWhen}</span>`);
+  }
+  if (pdfWhen) {
+    const who = pdfBy ? `${esc(pdfBy)} · ` : "";
+    lines.push(`<span class="proj-build-card-author">📄 ${who}${pdfWhen}</span>`);
+  }
+  if (!lines.length) return "";
+  return `<div class="proj-build-card-timeline">${lines.join(" ")}</div>`;
+}
+
 function _ptRenderBuildsTab(p) {
   const buildsPanel = $("proj-ptab-builds");
   if (!buildsPanel) return;
@@ -44,6 +89,7 @@ function _ptRenderBuildsTab(p) {
             ${hasDraft  ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
           </div>
+          ${_ptRenderTimelineRow(ind)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
             ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
           </div>
@@ -79,6 +125,7 @@ function _ptRenderBuildsTab(p) {
         <div class="proj-ind-card-badges">
           ${hasDraft ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
         </div>
+        ${_ptRenderTimelineRow(u)}
         <div class="proj-build-card-stats" id="build-stats-unit-${uid}">
           ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
         </div>
@@ -393,6 +440,9 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       output_path: pptxPath,
       agency: customer.agency || "",
       year: customer.build_year || "",
+      project_id: ctx.project.project_id,
+      unit_id: unitId,
+      individual_id: individualId || "",
     });
     if (!res?.ok) {
       const msg = res?.error || "Export failed";
@@ -401,25 +451,8 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       return;
     }
     toast("PDF exported", "success");
-    // Persist pdf_path on the project so View PDF appears next render
-    const updatedUnits = ctx.project.build_units.map(u => {
-      if (u.unit_id !== unitId) return { ...u };
-      if (type === "ind") {
-        return {
-          ...u,
-          individuals: (u.individuals || []).map(ind =>
-            ind.individual_id === individualId
-              ? { ...ind, pdf_path: res.pdf_path || "" }
-              : ind
-          ),
-        };
-      }
-      return { ...u, pdf_path: res.pdf_path || "" };
-    });
-    await api("/api/project/save", {
-      project_id: ctx.project.project_id,
-      build_units: updatedUnits,
-    });
+    // Backend stamped pdf_path + last_exported_at/by on the project
+    // record itself, so just reload to refresh the UI.
     await _ptLoadAll();
     const updated = _PT.projects.find(p => p.project_id === ctx.project.project_id);
     if (updated) {

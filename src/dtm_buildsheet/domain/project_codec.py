@@ -79,7 +79,10 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         confirmed=bool(d.get("confirmed", False)),
         confirmed_at=str(d.get("confirmed_at", "")),
         last_rendered_at=str(d.get("last_rendered_at", "")),
+        last_rendered_by=str(d.get("last_rendered_by", "")),
         pdf_path=str(d.get("pdf_path", "")),
+        last_exported_at=str(d.get("last_exported_at", "")),
+        last_exported_by=str(d.get("last_exported_by", "")),
     )
 
 
@@ -103,7 +106,10 @@ def build_unit_from_dict(d: Any) -> BuildUnit:
         output_path=str(d.get("output_path", "")),
         individuals=individuals,
         last_rendered_at=str(d.get("last_rendered_at", "")),
+        last_rendered_by=str(d.get("last_rendered_by", "")),
         pdf_path=str(d.get("pdf_path", "")),
+        last_exported_at=str(d.get("last_exported_at", "")),
+        last_exported_by=str(d.get("last_exported_by", "")),
     )
 
 

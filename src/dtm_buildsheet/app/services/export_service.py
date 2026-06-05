@@ -23,6 +23,48 @@ def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
     ]
 
 
+def _stamp_export_on_project(body: dict, pdf_path: Path, paths: AppPaths | None) -> None:
+    """Update the project record with the PDF path + author + timestamp.
+
+    No-op when the body doesn't include enough context (project_id +
+    unit_id) or when the project can't be loaded. The UI sends the IDs
+    along with the export call now so this hook stays in one place
+    instead of leaking another /api/project/save round-trip into the UI.
+    """
+    if paths is None:
+        return
+    project_id = str(body.get("project_id", "") or "").strip()
+    unit_id = str(body.get("unit_id", "") or "").strip()
+    individual_id = str(body.get("individual_id", "") or "").strip()
+    if not project_id or not unit_id:
+        return
+    try:
+        from datetime import datetime, timezone
+        from ...inputs.project_entry import load_project, save_project
+        from .draft_service import _current_user_display_name
+        project = load_project(project_id, paths)
+        now = datetime.now(timezone.utc).isoformat()
+        by = _current_user_display_name()
+        for bu in project.build_units:
+            if bu.unit_id != unit_id:
+                continue
+            if individual_id:
+                for ind in bu.individuals or []:
+                    if ind.individual_id == individual_id:
+                        ind.pdf_path = str(pdf_path)
+                        ind.last_exported_at = now
+                        ind.last_exported_by = by
+                        break
+            else:
+                bu.pdf_path = str(pdf_path)
+                bu.last_exported_at = now
+                bu.last_exported_by = by
+            break
+        save_project(project, paths)
+    except Exception:
+        _log.exception("Could not stamp PDF metadata on project %s", project_id)
+
+
 def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
     """Queue a SharePoint export upload for PDFs when agency/year context exists."""
     agency = str(body.get("agency", "") or "")
@@ -204,6 +246,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
             )
             if result.returncode == 0 and pdf_path.exists():
                 _maybe_upload_pdf(pdf_path, body)
+                _stamp_export_on_project(body, pdf_path, paths)
                 return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
                         "previous_versions": _find_previous_pdf_versions(pdf_path)}
             stderr = result.stderr.decode("utf-8", errors="replace").strip()
@@ -219,6 +262,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
         result = _export_via_applescript(pptx_path, pdf_path)
         if result["ok"]:
             _maybe_upload_pdf(pdf_path, body)
+            _stamp_export_on_project(body, pdf_path, paths)
             return result
         # Fall through to final error so the AppleScript failure message is surfaced
         # only when PowerPoint itself isn't available.
@@ -231,6 +275,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
         result = _export_via_powerpoint_com(pptx_path, pdf_path)
         if result.get("ok"):
             _maybe_upload_pdf(pdf_path, body)
+            _stamp_export_on_project(body, pdf_path, paths)
         _log.info("export_to_pdf finish (COM) total=%.2fs ok=%s",
                   time.monotonic() - _t_export_start, result.get("ok"))
         return result

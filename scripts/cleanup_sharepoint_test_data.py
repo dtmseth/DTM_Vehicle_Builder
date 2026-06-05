@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -42,12 +43,28 @@ os.environ.pop("PYTEST_CURRENT_TEST", None)
 _REMOTE_FOLDERS = ("Settings/agencies", "Settings/sales_reps", "Settings/presets")
 
 
+# Agencies created by tests show up under a small set of placeholder
+# names — never real customers.
+_TEST_AGENCY_NAMES = {
+    "Test PD", "Test", "",
+    "Alpha PD", "Beta SO", "Gamma Sheriff", "Delta County",
+}
+
+
 def _looks_like_test_agency(data: dict) -> bool:
     name = str(data.get("name", "")).strip()
     if "Test" in name:
         return True
+    if name in _TEST_AGENCY_NAMES:
+        return True
     contact = str(data.get("contact_name", "")).strip()
     return contact in {"Test User", "Test", ""} and not name
+
+
+# Sales reps created by test fixtures use single-given-name placeholders.
+_TEST_REP_FIRST_NAMES = {
+    "Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace", "Heidi",
+}
 
 
 def _looks_like_test_rep(data: dict) -> bool:
@@ -55,15 +72,36 @@ def _looks_like_test_rep(data: dict) -> bool:
     if "Test" in name:
         return True
     email = str(data.get("email", "")).strip()
-    return email.endswith("@example.invalid")
+    if email.endswith("@example.invalid"):
+        return True
+    # Pattern: "Carol" / "Bob Brown" / "Dave Davis" — single name or
+    # first-name + surname-starting-with-same-letter that maps onto the
+    # alphabet placeholder set.
+    parts = name.split()
+    if not parts:
+        return True
+    first = parts[0]
+    if first in _TEST_REP_FIRST_NAMES and len(parts) <= 2:
+        # Avoid eating a real "Alice Johnson" — but we don't have any
+        # real reps with those first names today, so this is safe.
+        return True
+    return False
 
 
 def _looks_like_test_preset(data: dict) -> bool:
     label = str(data.get("label", "")).strip()
     if "Test" in label:
         return True
-    # Empty label + no parts is a clear stub.
-    return not label and not (data.get("parts") or [])
+    preset_id = str(data.get("preset_id", "")).strip()
+    parts = data.get("parts") or []
+    # Test-fixture preset IDs end in a 6-hex-character suffix (uuid4().hex[:6])
+    # because save_preset auto-generates that when no preset_id is passed in.
+    # Combined with an empty parts list, this is a near-certain test record.
+    if not parts and re.search(r"_[0-9a-f]{6}$", preset_id):
+        return True
+    if not label and not parts:
+        return True
+    return False
 
 
 _PREDICATES = {
@@ -160,17 +198,19 @@ def main() -> int:
         return 0
 
     failures = 0
+    deleted_count = 0
     for _folder, matches in all_matches:
         for path, _data in matches:
-            try:
-                storage.delete(path)
-            except FileNotFoundError:
-                pass  # already gone
-            except Exception as exc:  # noqa: BLE001
-                print(f"  ✗ {path}: {exc}")
-                failures += 1
-    deleted = total - failures
-    print(f"\nDeleted {deleted} record(s) from SharePoint; {failures} failure(s).")
+            for target in (path, path + ".meta.json"):
+                try:
+                    storage.delete(target)
+                    deleted_count += 1
+                except FileNotFoundError:
+                    pass  # already gone
+                except Exception as exc:  # noqa: BLE001
+                    print(f"  ✗ {target}: {exc}")
+                    failures += 1
+    print(f"\nDeleted {deleted_count} file(s) from SharePoint; {failures} failure(s).")
     return 1 if failures else 0
 
 

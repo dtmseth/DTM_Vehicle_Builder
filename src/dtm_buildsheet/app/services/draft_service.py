@@ -5,6 +5,24 @@ import traceback
 
 _log = logging.getLogger(__name__)
 
+
+def _current_user_display_name() -> str:
+    """Return the signed-in M365 display name, or "" outside cloud mode.
+
+    Used to stamp last_rendered_by / last_exported_by on build records so
+    teammates can see who produced each PPTX/PDF without opening it."""
+    try:
+        from ..adapters import wiring
+        if not wiring._cloud_flag_enabled():  # noqa: SLF001
+            return ""
+        bundle = wiring.get_active_bundle()
+        user = bundle.identity.current_user()
+        if user is None:
+            return ""
+        return user.display_name or user.email or ""
+    except Exception:
+        return ""
+
 from ...generator import generate_build_sheet
 from ...inputs.project_drafts import (
     BuildDraft,
@@ -355,6 +373,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         # and avoids a race where the UI redraws the Builds tab from a
         # stale project copy).
         last_rendered_at = ""
+        last_rendered_by = _current_user_display_name()
         if _proj_id_param:
             try:
                 from datetime import datetime, timezone
@@ -368,11 +387,13 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                             if _ind.draft_id == draft_id:
                                 _ind.output_path = export["output_path"]
                                 _ind.last_rendered_at = last_rendered_at
+                                _ind.last_rendered_by = last_rendered_by
                                 _changed = True
                                 break
                     elif _bu.draft_id == draft_id:
                         _bu.output_path = export["output_path"]
                         _bu.last_rendered_at = last_rendered_at
+                        _bu.last_rendered_by = last_rendered_by
                         _changed = True
                         break
                 if _changed:
@@ -394,6 +415,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             "all_warnings": all_warnings,
             "log": "\n".join(log_lines),
             "last_rendered_at": last_rendered_at,
+            "last_rendered_by": last_rendered_by,
         }
         if name_changed:
             result["name_changed"] = name_changed

@@ -187,6 +187,11 @@ def _onedrive_candidate_roots() -> list[Path]:
     user_profile = os.environ.get("USERPROFILE") or os.environ.get("HOME")
     if user_profile:
         roots.append(Path(user_profile))
+        # macOS OneDrive client mounts every SharePoint library under
+        # ~/Library/CloudStorage. That's where libraries live, so check
+        # there before anywhere else.
+        if sys.platform == "darwin":
+            roots.append(Path(user_profile) / "Library" / "CloudStorage")
     for var in _OneDrive_ENV_VARS:
         path = os.environ.get(var)
         if path:
@@ -210,54 +215,51 @@ def _find_onedrive_synced_folder(
     library_internal_name: str,
     base_subpath: str,
 ) -> Optional[Path]:
-    """Glob the user's local OneDrive siblings for a folder matching the
-    target SharePoint library.
+    """Look for a locally-synced OneDrive copy of the target SharePoint
+    library.
 
-    Examples on Windows:
-        %USERPROFILE%\\dtmfleet.com\\Company Files\\Vehicle Builder Projects\\Acme PD\\2026
-        %USERPROFILE%\\OneDrive - dtmfleet.com\\Company Files\\Vehicle Builder Projects\\Acme PD\\2026
+    On macOS the bundled app does NOT have Full Disk Access by default,
+    so iterating arbitrary subfolders of ~/Library/CloudStorage triggers
+    a permission prompt PER folder. To avoid that we only construct
+    direct candidate paths and check existence — no listing of unrelated
+    siblings. If none of the candidates exist, we return None and the
+    caller falls back to the SharePoint web URL.
 
-    We try each candidate root; for each one we walk one or two levels
-    deep looking for a directory whose name contains the library display
-    or internal name, then descend into base_subpath under it.
+    On Windows the same constraint isn't strictly necessary but the
+    targeted form keeps behavior consistent.
     """
-    targets = {t.strip().lower() for t in (library_display_name, library_internal_name) if t.strip()}
+    targets = [t.strip() for t in (library_display_name, library_internal_name) if t.strip()]
     if not targets:
         return None
 
+    candidates: list[Path] = []
     for root in _onedrive_candidate_roots():
         if not root.exists() or not root.is_dir():
             continue
+        for lib in targets:
+            # Common OneDrive mount conventions:
+            #   macOS: ~/Library/CloudStorage/OneDrive-SharedLibraries-<tenant>/<library>/
+            #   macOS: ~/Library/CloudStorage/<tenant> - <library>/
+            #   Windows: %USERPROFILE%\<library>\
+            #   Windows: %USERPROFILE%\<tenant>\<library>\
+            candidates.append(root / lib)
+            candidates.append(root / f"OneDrive - {lib}")
+
+    for c in candidates:
         try:
-            entries = list(root.iterdir())
+            if not c.exists() or not c.is_dir():
+                continue
         except OSError:
             continue
-        for entry in entries:
-            if not entry.is_dir():
-                continue
-            name_lc = entry.name.lower()
-            # The library folder might be a direct child (e.g. "Company Files")
-            # or nested inside a tenant-named folder ("dtmfleet.com").
-            if any(t in name_lc for t in targets):
-                candidate = entry / base_subpath
-                if candidate.exists():
-                    return candidate
-                if entry.exists():
-                    return entry  # at least the library — better than nothing
-                continue
-            # Otherwise descend one level (tenant folder convention).
-            try:
-                children = list(entry.iterdir())
-            except OSError:
-                continue
-            for child in children:
-                if not child.is_dir():
-                    continue
-                if any(t in child.name.lower() for t in targets):
-                    candidate = child / base_subpath
-                    if candidate.exists():
-                        return candidate
-                    return child
+        leaf = c / base_subpath
+        try:
+            if leaf.exists() and leaf.is_dir():
+                return leaf
+        except OSError:
+            pass
+        # Library is mounted but the agency/year subfolder hasn't been
+        # synced yet — open the library root rather than nothing.
+        return c
     return None
 
 
@@ -268,23 +270,94 @@ def _build_sharepoint_web_url(
 ) -> Optional[str]:
     """Compose a SharePoint web URL pointing at the agency/year folder.
 
-    The site_id stored in cloud_config has the form
-    "{host},{site_collection_guid},{site_guid}". We can extract the
-    hostname and build a /sites/.../<library>/<path> URL. If the host
-    can't be parsed we return None and the caller falls back to a
-    raw-file open of the local copy.
+    Earlier this function tried to assemble a URL from just the hostname
+    + library name, but SharePoint URLs always include /sites/<sitename>/
+    in the middle so that approach 404s in the browser. Now we ask Graph
+    for the drive's webUrl (which already includes the correct site path)
+    and append the agency/year subpath onto it.
+
+    Returns None when the cloud bundle is unavailable, no exports library
+    is configured, or Graph can't resolve the drive — the caller then
+    treats this as "no folder to open" and surfaces the error to the UI.
     """
     if not site_id:
         return None
-    host = site_id.split(",", 1)[0].strip()
-    if not host:
-        return None
-    # Most internal-name aware URLs require knowing the site relative
-    # path, but the public host + library route works without it.
     from urllib.parse import quote
+
+    drive_web_url = _get_exports_drive_web_url()
+    if not drive_web_url:
+        return None
+
     encoded_subpath = "/".join(quote(seg) for seg in base_subpath.split("/") if seg)
-    library = quote(library_display_name or "")
-    return f"https://{host}/{library}/{encoded_subpath}" if library else None
+    base = drive_web_url.rstrip("/")
+    return f"{base}/{encoded_subpath}" if encoded_subpath else base
+
+
+def _get_exports_drive_web_url() -> Optional[str]:
+    """Resolve the SharePoint web URL for the configured exports library.
+
+    Asks Graph for the drive's ``webUrl`` (which includes the correct
+    /sites/<sitename>/<library> path) so we can build a browser-openable
+    URL underneath it. The result is cached per cloud config so this
+    only costs a Graph call the first time per session.
+    """
+    try:
+        from ..adapters import wiring
+        from ..adapters.cloud.config import load_cloud_config_from_env
+        if not wiring._cloud_flag_enabled():  # noqa: SLF001
+            return None
+        bundle = wiring.get_active_bundle()
+        config = load_cloud_config_from_env()
+        if not config.exports_enabled:
+            return None
+    except Exception:
+        return None
+
+    cache_key = (
+        f"{config.sharepoint_site_id}|"
+        f"{config.exports_library_name}|"
+        f"{config.exports_library_internal_name}"
+    )
+    cached = _drive_web_url_cache.get(cache_key)
+    if cached:
+        return cached
+
+    # Reuse the same drive_id lookup the export uploader caches.
+    try:
+        from .exports_upload_service import _get_export_drive_id  # noqa: SLF001
+        drive_id = _get_export_drive_id(bundle, config)
+    except Exception:
+        return None
+    if not drive_id:
+        return None
+
+    token_provider = getattr(bundle.storage, "_token_provider", None)
+    if token_provider is None:
+        return None
+    try:
+        token = token_provider()
+    except Exception:
+        return None
+
+    import requests
+    try:
+        resp = requests.get(
+            f"https://graph.microsoft.com/v1.0/drives/{drive_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        web_url = str(resp.json().get("webUrl") or "")
+    except Exception:
+        logger.exception("Could not look up drive webUrl")
+        return None
+    if not web_url:
+        return None
+    _drive_web_url_cache[cache_key] = web_url
+    return web_url
+
+
+_drive_web_url_cache: dict[str, str] = {}
 
 
 def resolve_show_folder(body: dict) -> dict:
