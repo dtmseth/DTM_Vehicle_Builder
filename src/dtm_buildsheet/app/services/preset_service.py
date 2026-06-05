@@ -372,6 +372,9 @@ def delete_preset(preset_id: str, paths: AppPaths) -> dict:
         summary=f"Delete preset: {label}",
         category="general",
     )
+    # Belt-and-suspenders direct delete (see agency_service comment).
+    from .shared_work_service import delete_setting_from_cloud
+    delete_setting_from_cloud(f"presets/{preset_id}.json")
     return {"ok": True, **proposal_result}
 
 

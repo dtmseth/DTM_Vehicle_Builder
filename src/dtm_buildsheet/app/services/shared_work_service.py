@@ -194,6 +194,41 @@ def delete_draft_from_cloud(draft_id: str) -> bool:
         return False
 
 
+SETTINGS_REMOTE_FOLDER = "Settings"
+
+
+def delete_setting_from_cloud(target_file: str) -> bool:
+    """Directly delete a /Settings/<subdir>/<id>.json (and its .meta.json
+    sidecar) from SharePoint right away.
+
+    Belt-and-suspenders for the per-record settings entities (agencies,
+    sales reps, presets): the proposal pipeline does the "official"
+    deletion through dtm-shared-settings, but the publish workflow can
+    be hours late due to GitHub Actions' cron throttling on low-traffic
+    repos. Direct delete makes the cloud copy disappear immediately so
+    other devices' next sync sees it as gone without waiting on the
+    workflow round-trip. The proposal still fires so the repo record
+    stays in sync.
+
+    No-op outside cloud mode. ``target_file`` is the same shape used
+    by save_via_proposal — e.g. ``"agencies/abc-123.json"``.
+    """
+    storage = _cloud_storage()
+    if storage is None:
+        return False
+    remote = f"{SETTINGS_REMOTE_FOLDER}/{target_file}"
+    ok = True
+    for path in (remote, remote + ".meta.json"):
+        try:
+            storage.delete(path)
+        except FileNotFoundError:
+            pass  # already gone
+        except Exception:
+            logger.exception("Failed to direct-delete %s from SharePoint", path)
+            ok = False
+    return ok
+
+
 # ── Inbound: pull cloud changes into local cache ─────────────────────────────
 
 

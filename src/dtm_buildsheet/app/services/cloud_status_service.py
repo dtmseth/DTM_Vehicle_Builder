@@ -57,24 +57,24 @@ def get_status(paths: AppPaths) -> dict:
     data_version = _data_version()
 
     if not wiring._cloud_flag_enabled():  # noqa: SLF001
-        return _empty_status(syncing=syncing, cloud_enabled=False, data_version=data_version)
+        return _empty_status(syncing=syncing, cloud_enabled=False, data_version=data_version, paths=paths)
 
     try:
         bundle = wiring.get_active_bundle()
     except Exception:
         logger.exception("Could not get active bundle for cloud status")
-        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version, paths=paths)
 
     try:
         if not bundle.identity.is_signed_in():
-            return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
+            return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version, paths=paths)
         user = bundle.identity.current_user()
     except Exception:
         logger.exception("is_signed_in / current_user check failed")
-        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version, paths=paths)
 
     if user is None:
-        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version)
+        return _empty_status(syncing=syncing, cloud_enabled=True, data_version=data_version, paths=paths)
 
     # Lazy-load the photo if we haven't fetched it yet this session. Done
     # synchronously to keep the status endpoint single-call. If Graph is
@@ -95,10 +95,12 @@ def get_status(paths: AppPaths) -> dict:
         "data_version": data_version,
         "pending_queue": _queue_depth(paths),
         "pending_update": _pending_update(paths),
+        "update_state": _update_state(paths),
     }
 
 
-def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int) -> dict:
+def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int,
+                  paths: AppPaths | None = None) -> dict:
     return {
         "cloud_enabled": cloud_enabled,
         "signed_in": False,
@@ -108,6 +110,7 @@ def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int) -> d
         "data_version": data_version,
         "pending_queue": {"proposals": 0, "exports": 0},
         "pending_update": None,
+        "update_state": _update_state(paths) if paths is not None else None,
     }
 
 
@@ -121,6 +124,31 @@ def _pending_update(paths: AppPaths) -> dict | None:
     except Exception:
         logger.exception("pending_update lookup failed")
         return None
+
+
+def _update_state(paths: AppPaths) -> dict:
+    """Single-line update state for the UI ('up_to_date', 'downloading',
+    'ready', 'available', 'platform_unsupported'). Falls back to
+    'up_to_date' on any error so the status response stays useful."""
+    try:
+        from .update_check_service import describe_update_state, check_for_update
+        from ..adapters.wiring import _cloud_flag_enabled, get_active_bundle  # noqa: SLF001
+        from ...config.store import load_config
+        available = None
+        if _cloud_flag_enabled():
+            try:
+                settings = load_config("app_settings.json", paths) or {}
+                dismissed = list(settings.get("dismissed_update_versions", []) or [])
+                info = check_for_update(get_active_bundle().storage, dismissed_versions=dismissed)
+                if info is not None:
+                    available = {"version": info.version, "filename": info.filename}
+            except Exception:
+                logger.exception("update_state: check_for_update failed")
+        return describe_update_state(paths, available_info=available)
+    except Exception:
+        logger.exception("update_state lookup failed")
+        from .update_check_service import get_embedded_version
+        return {"state": "up_to_date", "current": get_embedded_version()}
 
 
 def _queue_depth(paths: AppPaths) -> dict:

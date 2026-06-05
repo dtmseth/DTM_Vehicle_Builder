@@ -273,6 +273,81 @@ def test_get_pending_update_info_returns_none_when_empty(tmp_path: Path, monkeyp
     assert get_pending_update_info(paths) is None
 
 
+def test_consume_queued_installer_skips_same_version(tmp_path: Path, monkeypatch):
+    """Regression: v2.2.4 hit an install loop because consume_queued_installer
+    re-ran the SAME installer on every boot, even after the install completed.
+    Now it must compare queued version vs embedded version and discard stale
+    files instead of relaunching them."""
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.5",
+    )
+    spawned = []
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent",
+        lambda installer: spawned.append(str(installer)) or True,
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        consume_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.5.exe"
+    src.write_bytes(b"x")
+    queued = queue_installer_for_next_launch(src, paths)
+    assert queued.exists()
+    # Boot consume should see queued (2.2.5) == current (2.2.5) and discard.
+    result = consume_queued_installer(paths)
+    assert result is False
+    assert spawned == []  # installer must NOT be launched
+    assert not queued.exists()  # stale file deleted
+
+
+def test_consume_queued_installer_runs_when_newer(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.5",
+    )
+    spawned = []
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent",
+        lambda installer: spawned.append(str(installer)) or True,
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        consume_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.6.exe"
+    src.write_bytes(b"y")
+    queue_installer_for_next_launch(src, paths)
+    assert consume_queued_installer(paths) is True
+    assert len(spawned) == 1
+
+
+def test_get_pending_update_info_discards_stale(tmp_path: Path, monkeypatch):
+    """Same defensive cleanup for the status payload — surfacing a 'ready'
+    state for a version we're already running would re-trigger the loop
+    via the UI's Restart Now button."""
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.3.0",
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        get_pending_update_info,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.3.0.exe"
+    src.write_bytes(b"x")
+    queued = queue_installer_for_next_launch(src, paths)
+    assert get_pending_update_info(paths) is None
+    assert not queued.exists()
+
+
 def test_download_pending_update_if_any_skips_already_queued(tmp_path: Path, monkeypatch):
     monkeypatch.setattr("sys.platform", "win32")
     from dtm_buildsheet.app.services.update_check_service import (

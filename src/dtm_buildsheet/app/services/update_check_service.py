@@ -224,16 +224,32 @@ def get_queued_installer(paths) -> Path | None:
 def get_pending_update_info(paths) -> dict | None:
     """Status-endpoint helper: describe the queued installer (if any).
 
-    Returns ``{"version": "...", "filename": "..."}`` so the UI can show a
-    "Update v2.2.4 ready — Restart now" banner. None when no installer
-    is queued or the platform is unsupported.
+    Returns ``{"version": "...", "filename": "..."}`` only when the
+    queued installer is for a STRICTLY NEWER version than the one
+    currently running. If we just finished installing this version, the
+    file is still on disk but pointing at the version we already are —
+    we delete it here so the next boot doesn't re-run it (the v2.2.4
+    install-loop bug). None when there's nothing queued, the queue is
+    stale, or the platform is unsupported.
     """
     queued = get_queued_installer(paths)
     if queued is None:
         return None
     parsed = parse_release_filename(queued.name)
-    version = parsed[1] if parsed else ""
-    return {"version": version, "filename": queued.name}
+    if not parsed:
+        return None
+    queued_version = parsed[1]
+    if parse_semver(queued_version) <= parse_semver(get_embedded_version()):
+        _delete_quietly(queued)
+        return None
+    return {"version": queued_version, "filename": queued.name}
+
+
+def _delete_quietly(path: Path) -> None:
+    try:
+        path.unlink()
+    except OSError:
+        logger.exception("Could not remove stale queued installer %s", path)
 
 
 def _spawn_installer_silent(installer: Path) -> bool:
@@ -257,16 +273,41 @@ def _spawn_installer_silent(installer: Path) -> bool:
 
 
 def consume_queued_installer(paths) -> bool:
-    """Boot-time hook: if a queued installer is present, launch it silently
-    and return True. The caller is responsible for sys.exit'ing so the
-    installer's CloseApplications/InitializeSetup poll has a clean target.
+    """Boot-time hook: if a queued installer is present AND it's a newer
+    version than the one currently running, launch it silently and
+    return True. The caller is responsible for sys.exit'ing so the
+    installer's CloseApplications/InitializeSetup poll has a clean
+    target.
+
+    Critical version check: without it, every boot would re-launch the
+    same installer that produced the version we just started, causing
+    an unrecoverable install loop the v2.2.4 release hit. If queued <=
+    current, the file is deleted in place — the install is already
+    done, the artifact is just leftover.
 
     No-op on Mac and when nothing is queued; safe to call unconditionally
     at startup."""
     installer = get_queued_installer(paths)
     if installer is None:
         return False
-    logger.info("Consuming queued installer: %s", installer.name)
+    parsed = parse_release_filename(installer.name)
+    if not parsed:
+        # Unrecognisable filename — refuse to launch it as an installer.
+        _delete_quietly(installer)
+        return False
+    queued_version = parsed[1]
+    current = get_embedded_version()
+    if parse_semver(queued_version) <= parse_semver(current):
+        logger.info(
+            "Discarding stale queued installer %s (current=%s, queued=%s)",
+            installer.name, current, queued_version,
+        )
+        _delete_quietly(installer)
+        return False
+    logger.info(
+        "Consuming queued installer: %s (current=%s -> %s)",
+        installer.name, current, queued_version,
+    )
     return _spawn_installer_silent(installer)
 
 
@@ -278,6 +319,11 @@ def install_now(paths) -> dict:
     installer = get_queued_installer(paths)
     if installer is None:
         return {"ok": False, "error": "No update queued"}
+    parsed = parse_release_filename(installer.name)
+    if parsed:
+        if parse_semver(parsed[1]) <= parse_semver(get_embedded_version()):
+            _delete_quietly(installer)
+            return {"ok": False, "error": "Already up to date"}
     ok = _spawn_installer_silent(installer)
     if not ok:
         return {"ok": False, "error": "Could not launch installer"}
@@ -287,6 +333,17 @@ def install_now(paths) -> dict:
     import threading
     threading.Timer(1.5, lambda: os._exit(0)).start()  # type: ignore[name-defined]
     return {"ok": True, "filename": installer.name}
+
+
+_download_in_progress: set[str] = set()  # version strings currently downloading
+
+
+def is_download_in_progress() -> str | None:
+    """Status helper: returns the version string currently being downloaded
+    by the background sync, or None when no download is active."""
+    if not _download_in_progress:
+        return None
+    return next(iter(_download_in_progress))
 
 
 def download_pending_update_if_any(storage, paths, dismissed_versions: list[str] | None = None) -> dict:
@@ -314,17 +371,61 @@ def download_pending_update_if_any(storage, paths, dismissed_versions: list[str]
         if parsed and parse_semver(parsed[1]) >= parse_semver(info.version):
             return {"already_queued": parsed[1]}
 
+    _download_in_progress.add(info.version)
     try:
-        local = download_update(storage, info)
-    except Exception:
-        logger.exception("update-poll: download_update raised")
-        return {"error": "download failed"}
-    try:
-        queue_installer_for_next_launch(local, paths)
-    except Exception:
-        logger.exception("update-poll: queue raised")
-        return {"error": "queue failed"}
-    return {"queued": info.version}
+        try:
+            local = download_update(storage, info)
+        except Exception:
+            logger.exception("update-poll: download_update raised")
+            return {"error": "download failed"}
+        try:
+            queue_installer_for_next_launch(local, paths)
+        except Exception:
+            logger.exception("update-poll: queue raised")
+            return {"error": "queue failed"}
+        return {"queued": info.version}
+    finally:
+        _download_in_progress.discard(info.version)
+
+
+def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
+    """Single source of truth for "what's the update situation right now?".
+
+    Used by cloud_status_service so the UI can render a clear one-line
+    state instead of guessing from a mix of /api/update/check and
+    pending_update fields. Possible states:
+
+      - "up_to_date" — nothing newer available, nothing queued
+      - "downloading" — background sync is fetching the installer now
+      - "ready" — installer is queued, restart will install it
+      - "available" — newer version exists but auto-download isn't
+        configured (non-Windows, or check available but the periodic
+        sync hasn't run yet). UI offers a manual download.
+      - "platform_unsupported" — Mac (silent auto-update is Windows-only)
+    """
+    current = get_embedded_version()
+    pending = get_pending_update_info(paths)
+    if pending:
+        return {"state": "ready", "current": current, "ready_version": pending["version"]}
+    in_progress = is_download_in_progress()
+    if in_progress:
+        return {"state": "downloading", "current": current, "downloading_version": in_progress}
+    if not sys.platform.startswith("win"):
+        if available_info:
+            return {
+                "state": "available",
+                "current": current,
+                "available_version": available_info.get("version", ""),
+            }
+        return {"state": "platform_unsupported", "current": current}
+    if available_info:
+        # Windows + available but no queue yet — sync hasn't completed.
+        return {
+            "state": "downloading",
+            "current": current,
+            "downloading_version": available_info.get("version", ""),
+        }
+    return {"state": "up_to_date", "current": current}
 
 
 def reveal_in_file_manager(path: Path) -> None:

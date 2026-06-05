@@ -246,6 +246,9 @@ def handle_delete_rep(rep_id: str, paths: AppPaths) -> dict:
             summary=f"Delete sales rep: {rep_name}",
             category="general",
         )
+        # Belt-and-suspenders direct delete (see agency_service comment).
+        from .shared_work_service import delete_setting_from_cloud
+        delete_setting_from_cloud(f"sales_reps/{rep_id}.json")
         return {"ok": True, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}

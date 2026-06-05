@@ -47,7 +47,7 @@ _REMOTE_FOLDERS = ("Settings/agencies", "Settings/sales_reps", "Settings/presets
 # names — never real customers.
 _TEST_AGENCY_NAMES = {
     "Test PD", "Test", "",
-    "Alpha PD", "Beta SO", "Gamma Sheriff", "Delta County",
+    "Alpha PD", "Beta SO", "Gamma PD", "Gamma Sheriff", "Delta County",
 }
 
 

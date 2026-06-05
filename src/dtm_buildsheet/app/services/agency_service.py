@@ -304,6 +304,12 @@ def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:
             summary=f"Delete agency: {agency_name}",
             category="general",
         )
+        # Belt-and-suspenders: also drop the cloud copy directly so the
+        # delete sticks even if the publish workflow is delayed by the
+        # GitHub Actions cron throttle (was resurrecting deleted entries
+        # on the next sync).
+        from .shared_work_service import delete_setting_from_cloud
+        delete_setting_from_cloud(f"agencies/{agency_id}.json")
         return {"ok": True, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}

@@ -39,20 +39,36 @@
   }
 
   async function poll() {
-    // Prefer pending_update from the cloud-status payload (a fully
-    // downloaded installer queued by the background sync). Fall back to
-    // /api/update/check for the manual flow.
+    // Single source of truth: cloud_status.update_state. The server tells
+    // us whether to show "Restart Now" (ready), nothing (downloading or
+    // up-to-date), or "Download" (manual fallback only — non-Windows or
+    // cloud disabled).
     try {
       const status = await api("/api/cloud/status");
-      if (status?.pending_update?.version) {
-        show(
-          { version: status.pending_update.version },
-          status.current_version || null,
-          "restart",
-        );
+      const us = status?.update_state;
+      if (us?.state === "ready") {
+        show({ version: us.ready_version }, us.current, "restart");
+        return;
+      }
+      if (us?.state === "downloading" || us?.state === "up_to_date") {
+        // Either the auto-update is fetching the installer right now
+        // (no user action needed) or there's nothing to install.
+        // Either way, no banner — the cloud modal carries the detail.
+        hide();
+        return;
+      }
+      if (us?.state === "available") {
+        // Manual path: non-Windows or cloud disabled. Offer Download.
+        show({ version: us.available_version }, us.current, "download");
+        return;
+      }
+      if (us?.state === "platform_unsupported") {
+        hide();
         return;
       }
     } catch (_) { /* fall through to manual check */ }
+    // Fallback when cloud_status didn't return — usually a cold start
+    // before the periodic sync finished its first iteration.
     try {
       const res = await api("/api/update/check");
       if (res && res.available && res.info) {

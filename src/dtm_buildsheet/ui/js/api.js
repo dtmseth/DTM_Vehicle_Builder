@@ -209,6 +209,44 @@ function _formatLastSync(){
   return "Last sync: " + relativeTime(_lastSyncAt);
 }
 
+function _renderUpdateStateRow(state){
+  const el = $("cloud-modal-update-state");
+  if(!el) return;
+  if(!state){ el.textContent = ""; el.style.color = ""; el.title = ""; return; }
+  const cur = state.current || "";
+  let txt = "", color = "var(--muted)", title = "";
+  switch(state.state){
+    case "ready":
+      txt = `🔄 Update v${state.ready_version} downloaded — restart to install`;
+      color = "var(--green, #166534)";
+      title = "Click Restart Now in the banner above (or close and reopen the app) to apply.";
+      break;
+    case "downloading":
+      txt = `⬇️ Downloading v${state.downloading_version}…`;
+      color = "var(--navy)";
+      title = "The new version is being downloaded in the background. It will install on next restart.";
+      break;
+    case "available":
+      txt = `⬇️ Update v${state.available_version} available`;
+      color = "var(--navy)";
+      title = "A newer version is available. Use the banner above to download it.";
+      break;
+    case "platform_unsupported":
+      txt = `✅ v${cur} (auto-update is Windows-only)`;
+      title = "Mac auto-update isn't supported yet — download new releases manually when notified.";
+      break;
+    case "up_to_date":
+    default:
+      txt = `✅ Up to date · v${cur}`;
+      color = "var(--green, #166534)";
+      title = "You're running the latest release.";
+      break;
+  }
+  el.textContent = txt;
+  el.style.color = color;
+  el.title = title;
+}
+
 function _refreshCloudModalBody(){
   const status = _lastCloudStatus;
   const signedInPanel = $("cloud-modal-signed-in");
@@ -260,6 +298,7 @@ function _refreshCloudModalBody(){
       initialsEl.textContent = _cloudInitials(name);
     }
     $("cloud-modal-last-sync").textContent = _formatLastSync();
+    _renderUpdateStateRow(status.update_state);
   } else {
     signedInPanel.hidden = true;
     signedOutPanel.hidden = false;
