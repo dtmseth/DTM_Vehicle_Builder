@@ -225,17 +225,22 @@ function _refreshCloudModalBody(){
     const name = status.user?.display_name || status.user?.email || "Signed in";
     $("cloud-modal-name").textContent = name;
     $("cloud-modal-email").textContent = status.user?.email || "";
-    // Surface any pending retry-queue items so the user knows changes
-    // are waiting to be synced. Zero counts: hide the row entirely.
+    // Queue items remaining after a sync cycle ran already retried at
+    // least once and still failed — surface them as a warning so the
+    // user knows a real failure is being retried, not work in flight.
     const queue = status.pending_queue || {};
     const pending = (queue.proposals || 0) + (queue.exports || 0);
     const pendingEl = $("cloud-modal-pending");
     if(pendingEl){
       if(pending > 0){
         pendingEl.hidden = false;
-        pendingEl.textContent = `⏳ ${pending} change${pending === 1 ? "" : "s"} pending sync`;
+        pendingEl.innerHTML = `⚠️ ${pending} upload${pending === 1 ? "" : "s"} failed — will retry on next sync`;
+        pendingEl.style.color = "var(--orange, #b45309)";
+        pendingEl.title = "These changes saved locally but couldn't reach SharePoint. Check dtm_buildsheet.log for the exact reason (most often a library-name mismatch or expired token).";
       } else {
         pendingEl.hidden = true;
+        pendingEl.style.color = "";
+        pendingEl.title = "";
       }
     }
     const photoEl = $("cloud-modal-photo");
