@@ -494,6 +494,17 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
                 or queue_report.get("exports_succeeded")
             )
 
+            # Sweep processed entries out of /PendingChanges/ so it doesn't
+            # accumulate forever. The pickup workflow reads from there but
+            # doesn't delete; everything older than 12h is either applied
+            # or stuck and safe to drop.
+            try:
+                from .services.shared_work_service import cleanup_processed_proposals
+                pending_cleanup = cleanup_processed_proposals()
+                report["pending_cleanup"] = pending_cleanup
+            except Exception:
+                logger.exception("PendingChanges cleanup failed")
+
             # Background download of any newer release into the queue dir
             # so the next restart (or explicit "Restart now" click) installs
             # it silently. Pulls the user's dismissed-versions list so a

@@ -236,6 +236,76 @@ def save_setting_to_cloud_in_background(target_file: str, serialized_content: st
     ).start()
 
 
+def cleanup_processed_proposals() -> dict:
+    """Delete old /PendingChanges/ entries to keep the folder from growing.
+
+    Each save/delete via the proposal pipeline writes a JSON record to
+    SharePoint /PendingChanges/ for the pickup workflow to consume. The
+    workflow reads it, creates a PR in dtm-shared-settings, but does NOT
+    delete the original — those proposals accumulate forever.
+
+    Heuristic for "this proposal is done":
+      - Older than 12 hours: drop unconditionally. The pickup +
+        publish workflow normally processes within minutes to a few
+        hours (cron throttle is the worst case). Anything still around
+        after half a day is processed, stuck, or both — removing it is
+        harmless because the canonical state lives in /Settings/ which
+        the direct-mirror writes maintain.
+      - Cap deletions per cycle at 50 so a backlog doesn't stall the
+        sync indefinitely.
+
+    Returns {"checked": int, "deleted": int}. Never raises."""
+    storage = _cloud_storage()
+    if storage is None:
+        return {"checked": 0, "deleted": 0}
+
+    try:
+        proposals = list(storage.list_files("PendingChanges"))
+    except Exception:
+        logger.exception("PendingChanges cleanup: list failed")
+        return {"checked": 0, "deleted": 0}
+
+    import json as _json
+    from datetime import datetime, timezone
+
+    now_ts = datetime.now(timezone.utc)
+    deleted = 0
+    checked = 0
+    MAX_PER_CYCLE = 50
+    AGE_CUTOFF_HOURS = 12
+
+    for proposal_path in proposals:
+        if checked >= MAX_PER_CYCLE:
+            break
+        if proposal_path.endswith(".meta.json"):
+            continue
+        checked += 1
+        try:
+            payload = _json.loads(storage.read_text(proposal_path))
+        except Exception:
+            continue
+        submitted_at_str = str(payload.get("submitted_at", ""))
+        try:
+            submitted_at = datetime.fromisoformat(submitted_at_str)
+        except Exception:
+            continue
+        age_hours = (now_ts - submitted_at).total_seconds() / 3600.0
+        if age_hours < AGE_CUTOFF_HOURS:
+            continue
+        for p in (proposal_path, proposal_path + ".meta.json"):
+            try:
+                storage.delete(p)
+            except FileNotFoundError:
+                pass
+            except Exception:
+                logger.warning("PendingChanges cleanup: delete failed for %s", p)
+        deleted += 1
+
+    if deleted:
+        logger.info("PendingChanges cleanup: %d processed proposal(s) removed", deleted)
+    return {"checked": checked, "deleted": deleted}
+
+
 def delete_setting_from_cloud(target_file: str) -> bool:
     """Directly delete a /Settings/<subdir>/<id>.json (and its .meta.json
     sidecar) from SharePoint right away.

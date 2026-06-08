@@ -559,9 +559,8 @@ def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
       - "downloading" — background sync is fetching the installer now
       - "ready" — installer is queued, restart will install it
       - "available" — newer version exists but auto-download isn't
-        configured (non-Windows, or check available but the periodic
-        sync hasn't run yet). UI offers a manual download.
-      - "platform_unsupported" — Mac (silent auto-update is Windows-only)
+        configured for this platform. UI offers a manual download.
+      - "platform_unsupported" — Linux (no installer pattern at all)
     """
     current = get_embedded_version()
     pending = get_pending_update_info(paths)
@@ -570,22 +569,26 @@ def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
     in_progress = is_download_in_progress()
     if in_progress:
         return {"state": "downloading", "current": current, "downloading_version": in_progress}
-    if not sys.platform.startswith("win"):
+    # Platforms with a known installer suffix (.exe on Windows, .dmg on
+    # macOS) get the auto-download path: if check_for_update found
+    # something newer, the sync is about to fetch it — show "downloading"
+    # so the UI doesn't redundantly invite the user to click Download.
+    if _expected_installer_suffix() is not None:
         if available_info:
             return {
-                "state": "available",
+                "state": "downloading",
                 "current": current,
-                "available_version": available_info.get("version", ""),
+                "downloading_version": available_info.get("version", ""),
             }
-        return {"state": "platform_unsupported", "current": current}
+        return {"state": "up_to_date", "current": current}
+    # Linux / other: no installer pattern, fall back to manual download.
     if available_info:
-        # Windows + available but no queue yet — sync hasn't completed.
         return {
-            "state": "downloading",
+            "state": "available",
             "current": current,
-            "downloading_version": available_info.get("version", ""),
+            "available_version": available_info.get("version", ""),
         }
-    return {"state": "up_to_date", "current": current}
+    return {"state": "platform_unsupported", "current": current}
 
 
 def reveal_in_file_manager(path: Path) -> None:

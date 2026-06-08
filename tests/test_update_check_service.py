@@ -462,3 +462,49 @@ def test_consume_queued_installer_dispatches_mac(tmp_path: Path, monkeypatch):
     queue_installer_for_next_launch(src, paths)
     assert consume_queued_installer(paths) is True
     assert calls == {"win": 0, "mac": 1}
+
+
+def test_describe_update_state_mac_with_available_returns_downloading(tmp_path, monkeypatch):
+    """Mac auto-update shipped in v2.2.11. describe_update_state used to
+    hardcode `sys.platform.startswith("win")` so Mac with an available
+    version got "available" (Download banner) instead of "downloading"."""
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.11",
+    )
+    from dtm_buildsheet.app.services.update_check_service import describe_update_state
+    paths = _paths_with_workspace(tmp_path)
+    state = describe_update_state(
+        paths,
+        available_info={"version": "2.2.12", "filename": "DTM_Vehicle_Builder-2.2.12.dmg"},
+    )
+    assert state["state"] == "downloading"
+    assert state["downloading_version"] == "2.2.12"
+
+
+def test_describe_update_state_mac_no_available_returns_up_to_date(tmp_path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.11",
+    )
+    from dtm_buildsheet.app.services.update_check_service import describe_update_state
+    paths = _paths_with_workspace(tmp_path)
+    state = describe_update_state(paths, available_info=None)
+    assert state["state"] == "up_to_date"
+
+
+def test_describe_update_state_linux_routes_to_manual(tmp_path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "2.2.11",
+    )
+    from dtm_buildsheet.app.services.update_check_service import describe_update_state
+    paths = _paths_with_workspace(tmp_path)
+    state = describe_update_state(
+        paths,
+        available_info={"version": "2.2.12"},
+    )
+    assert state["state"] == "available"
