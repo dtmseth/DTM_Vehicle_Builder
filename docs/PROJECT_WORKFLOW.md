@@ -25,10 +25,9 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 |---|---|---|
 | Project records | `workspace/projects/{project_id}/project.json` | `inputs/project_entry.py`, `app/services/project_service.py` |
 | Build drafts | `workspace/drafts/{draft_id}.json` | `inputs/project_drafts.py`, `app/services/draft_service.py` |
-| Bundled presets | `src/dtm_buildsheet/resources/presets/*.json` | `app/services/preset_service.py` |
-| User/workspace presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) | same |
-| Agency database | `workspace/agencies.json` | `app/services/agency_service.py` |
-| Sales rep database | `workspace/sales_reps.json` | `app/services/sales_rep_service.py` |
+| Presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) — synced from SharePoint `/Settings/presets/` | `app/services/preset_service.py` |
+| Agencies (per-record) | `workspace/agencies/{agency_id}.json` — synced from SharePoint `/Settings/agencies/` | `app/services/agency_service.py` |
+| Sales reps (per-record) | `workspace/sales_reps/{rep_id}.json` — synced from SharePoint `/Settings/sales_reps/` | `app/services/sales_rep_service.py` |
 | Generated outputs | `workspace/output/`, then SharePoint export library by agency/year | `app/services/generation_service.py`, `export_service.py`, `exports_upload_service.py` |
 
 ---
@@ -61,11 +60,17 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 4. **Edit draft** — the embedded build editor (`#proj-build-editor`) loads the draft into the preview canvas
    and manifest editor. Changes are persisted on "Save & Return".
 
-5. **Generate** — clicking Generate calls `POST /generate` (or equivalent generation route).
-   The draft is converted to `ProjectInput`, planned into a `BuildPlan`, and rendered to a `.pptx`.
-   `IndividualUnit.output_path` is updated with the result path.
+5. **Preview / Edit in PowerPoint** — the per-build action is "📊 Preview / Edit in PowerPoint", not a separate Generate step. Behind the scenes:
+   - `POST /api/build/render-status` decides whether the existing PPTX is fresh, stale (source changed), or manually edited in PowerPoint since the last render.
+   - Stale + not edited → silent re-render via `POST /api/draft/generate`.
+   - Stale + edited → modal asks whether to discard the manual edits or open the existing file as-is.
+   - Fresh → just open.
 
-6. **Export PDF** — clicking "Export PDF" calls `POST /api/export/pdf` using the stored `output_path`.
+   Generation stamps `IndividualUnit.output_path`, `last_rendered_at`, and `last_rendered_by` (display name of the signed-in M365 user) on the project record server-side; no follow-up `/api/project/save` from the UI is needed.
+
+6. **Export PDF** — "📄 Export PDF" runs the same staleness check, regenerates if needed, then exports the PDF and uploads it to the SharePoint exports library. Updates `pdf_path`, `last_exported_at`, `last_exported_by` on the project record.
+
+7. **View PDF / Show in folder** — visible once the corresponding artifact exists. "View PDF" opens the local PDF; "Show in folder" tries an OneDrive-synced path first, falling back to the SharePoint web URL via Graph's `drives/{id}.webUrl`.
 
 ---
 
@@ -88,7 +93,7 @@ Presets are **applied once at draft-creation time**, not linked live. After a dr
 - Editing the preset does not change existing drafts.
 - Changing `BuildUnit.preset_id` does not update existing drafts — the user must re-create the draft
   (or edit the manifest manually) to apply a different preset.
-- `blank_custom` is always available as the zero-parts preset.
+- `blank_custom` is hardcoded in `preset_service` (not a file) and is always available as the zero-parts preset. Every other preset comes from the cloud — synced down from SharePoint `/Settings/presets/` into `workspace_presets_dir`. Bundled presets (the old `resources/presets/*.json` files) were removed in v2.2.10; cloud is the single source.
 
 ---
 
@@ -103,5 +108,6 @@ In dev mode (`pyproject.toml` present), several paths collapse back into the sou
 | `workspace_presets_dir` | `resources/presets/` | `~/Library/Application Support/.../presets/` |
 | `workspace_dir` | `{repo}/workspace/` | `~/Library/Application Support/DTM Vehicle Builder/` |
 
-`workspace/agencies.json` and `workspace/sales_reps.json` are seeded on first run from
-`resources/default_data/` if they do not yet exist.
+`workspace/agencies.json` and `workspace/sales_reps.json` are legacy flat-file fallbacks. The live data lives in per-record directories (`workspace/agencies/{id}.json`, etc.) and is synced from `/Settings/agencies/` and `/Settings/sales_reps/` on SharePoint. The legacy seeds in `resources/default_data/` only run if a fresh install has nothing local yet AND no cloud is reachable.
+
+Saves go directly to SharePoint via `save_setting_to_cloud_in_background` (added in v2.2.9 alongside `save_via_proposal`). Deletes go through `delete_setting_from_cloud` (v2.2.6). Both routes make SP authoritative within seconds of the local write, independent of the dtm-shared-settings publish workflow's cron cadence.

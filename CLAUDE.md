@@ -161,7 +161,7 @@ The app has two main tabs: **Projects** and **Settings**.
 #proj-detail-view    — detail view with three sub-tabs:
     Overview         — read-only customer + prefs cards (2-col), fleet groups below
     Edit             — read-only by default; [✏️ Edit] enters edit mode with inputs
-    Builds           — per-unit cards with Setup/Edit Build, Generate, Export PDF buttons
+    Builds           — per-unit cards: [Setup/Edit Build] [📊 Preview/Edit in PowerPoint] [📄 Export PDF] [📑 View PDF (when present)] [📂 Show in folder] + per-card author tags
 #proj-editor         — 4-step wizard (new projects only: Customer → Preferences → Fleet → Review)
 #proj-build-editor   — embedded build editor (in-place; replaces switching to a separate tab)
     #pbe-header      — unit context bar + "← Back to Project" button
@@ -232,15 +232,19 @@ Projects are stored in `workspace/projects/{project_id}/project.json` (one subdi
 
 ## Agency and Sales Rep databases
 
-Both live in flat JSON files at the workspace root:
-- `workspace/agencies.json` — `{"schema_version": 1, "agencies": [AgencyRecord, ...]}`
-- `workspace/sales_reps.json` — `{"schema_version": 1, "sales_reps": [SalesRepRecord, ...]}`
+Per-record JSON files under workspace subdirectories, each mirroring a SharePoint `/Settings/` folder:
+- `workspace/agencies/{agency_id}.json` ↔ `Settings/agencies/{agency_id}.json`
+- `workspace/sales_reps/{rep_id}.json` ↔ `Settings/sales_reps/{rep_id}.json`
+
+The legacy flat-file form (`workspace/agencies.json`, `workspace/sales_reps.json`) exists only as a one-shot migration source for older installs; on first read, `agency_service` / `sales_rep_service` rewrite each entry into the per-record dir and forget the flat file.
 
 Agency search uses `difflib.get_close_matches` after normalizing common abbreviations (PD→police department, SO→sheriff's office, St.→saint, etc.). The project wizard has live-search combos for both fields; contact info comes from the agency record (no separate contact field on the project).
 
+Saves and deletes hit SharePoint directly via `save_setting_to_cloud_in_background` and `delete_setting_from_cloud` so other devices see the change within the next 60s sync cycle — see `docs/ROADMAP.md` § Phase 2.5 for why the proposal pipeline alone isn't enough.
+
 ## Preset system
 
-Presets are JSON files (schema_version 2) stored in `workspace/presets/` (bundled app) or `src/dtm_buildsheet/resources/presets/` (dev mode — so new presets ship to users):
+Presets are JSON files (schema_version 2) cached in `workspace_presets_dir` — `workspace/presets/` in the bundled app, `src/dtm_buildsheet/resources/presets/` in dev mode. **The cache is a local mirror of SharePoint `/Settings/presets/`, not a source.** Bundled presets were removed in v2.2.10; `resources/presets/*.json` is gitignored.
 
 ```json
 {
@@ -254,7 +258,7 @@ Presets are JSON files (schema_version 2) stored in `workspace/presets/` (bundle
 }
 ```
 
-Label is auto-generated from agency + build_type + vehicle_types. The preset manager (Settings → Presets) supports import from workbook, export to workbook, clone, and delete.
+Label is auto-generated from agency + build_type + vehicle_types. The preset manager (Settings → Presets) supports import from workbook, export to workbook, clone, and delete. `blank_custom` is hardcoded in `preset_service` (no file) and is the only preset that survives a fresh-install-with-no-cloud.
 
 ## Workspace vs bundled resources
 `paths.py` detects dev vs bundled via presence of `pyproject.toml`:
@@ -352,3 +356,7 @@ const api = (path, body) =>
 - **Placement math is shared** — `domain/geometry.py` is the one source of truth for slot positioning. Preview canvas JS mirrors this logic; if you change it server-side, update the JS too.
 - **#card-preview and #card-manifest are singletons** — they exist only inside `#proj-build-editor`. The standalone generate tool in Settings → Tools does not render them.
 - **`state.js` initSettings()** is called every time the user switches to the Settings tab. It lazy-loads config, then calls `initAgenciesTab()`, `initSalesRepsTab()`, and `initPresetsTab()` if they exist.
+- **Cloud is source of truth** for per-record entities (agencies, sales reps, presets, projects, drafts) as of v2.2.9+. Saves direct-mirror to SharePoint via `save_setting_to_cloud_in_background` / `mirror_*_to_cloud_in_background` alongside the proposal pipeline; deletes go through `delete_setting_from_cloud`. The dtm-shared-settings GitHub repo is audit-only — its publish workflow is cron-throttled and is no longer the canonical write path. See `docs/ROADMAP.md` § Phase 2.5 for the full hardening pass.
+- **Auto-update** is silent on both Windows (.exe) and Mac (.dmg) as of v2.2.11. `update_check_service` exposes `_expected_installer_suffix()` — DO NOT hard-code `sys.platform.startswith("win")` in update-state code; that's how the Mac "platform_unsupported" bug shipped.
+- **Per-build buttons**: there is no Generate button. The Builds tab has `[Edit Build] [📊 Preview / Edit in PowerPoint] [📄 Export PDF] [📑 View PDF] [📂 Show in folder]`. Both Preview and Export auto-regenerate when source changed since `last_rendered_at`; a manual-edit-detection modal warns before discarding PowerPoint edits.
+- **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud I/O, and `wiring.save_via_proposal` also refuses to enqueue when `PYTEST_CURRENT_TEST` is set. Tests that needed to assert queueing behavior have been updated to assert `"queued" not in result`. Bypassing these guards reintroduces the abc.json resurrection bug (root cause documented in v2.2.12 commit).

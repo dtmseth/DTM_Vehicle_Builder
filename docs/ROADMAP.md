@@ -265,7 +265,7 @@ Online-first is the starting model. Every save calls Graph API; if the network i
 
 ---
 
-#### Phase 2 — Shipped (as of v2.2.2)
+#### Phase 2 — Shipped (originally as of v2.2.2; extended through v2.2.13)
 
 Phase 2's exit condition — *"a teammate on a fresh install can sign in with M365, see all team projects, edit a preset, have that edit show up as a PR within ~5 minutes, see an update banner, and never be asked for any non-M365 credential"* — is met. What actually shipped maps to the original sub-phases plus a meaningful pile of extras that surfaced during testing.
 
@@ -319,26 +319,41 @@ Phase 2's exit condition — *"a teammate on a fresh install can sign in with M3
 - Settings edits (advanced/review): cron-bound (the manual merge step is owner-paced anyway)
 - Project deletes / draft deletes / general-entity deletes: same as their save counterparts
 
-#### Phase 2 — In flight (next session pickup)
+#### Phase 2.5 — Cloud + Distribution Hardening (v2.2.3 → v2.2.13)
 
-**Silent auto-update via the existing cloud sync loop** — design lives at `/Users/skreev/.claude/plans/kind-cuddling-canyon.md`. Owner approved the plan; not yet implemented.
+Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightened the rough edges that surfaced when teammates actually used it day-to-day. Documenting these here because several change the assumptions Phases 3+ are written against — anyone reading this roadmap from scratch should not assume the v2.2.2 architecture.
 
-**Goal**: small bug fixes and feature additions reach users on the same 60s cadence that settings do. Instead of every release going through "click Download → click through SmartScreen → click through installer wizard → app reopens", the installer downloads silently in the background and runs automatically on the next app restart.
+| Item | Released in | What changed structurally |
+|------|-------------|---------------------------|
+| **Silent auto-update (Windows)** — kind-cuddling-canyon plan implemented in full. `consume_queued_installer` at boot + `download_pending_update_if_any` on the 60s sync loop + `pending_update` field in cloud-status + `POST /api/update/install-now` for the Restart button | 2.2.3 | Releases now reach users at sync cadence, not click-through cadence. |
+| **Silent auto-update (Mac)** — DMG mount + .app copy + xattr quarantine strip + relaunch via detached shell script | 2.2.11 | Mac is no longer a manual-download outlier. The "platform_unsupported" branch now only applies to Linux. |
+| **Install-loop fix** (the v2.2.4 incident) — `consume_queued_installer` version-checks before relaunching the installer; stale installers self-delete | 2.2.6 | Boot-time consume can never re-run the same installer that produced the current version. Without this, every restart re-launched the queued installer indefinitely. |
+| **`update_state` single source of truth** — `up_to_date / downloading / ready / available / platform_unsupported` returned by cloud-status; banner + cloud modal both drive off it | 2.2.6, 2.2.13 | UI never shows a stale "Download" banner while the background sync is already fetching the same DMG/EXE. |
+| **Direct SP write on save** (alongside `save_via_proposal`) | 2.2.6 (delete), 2.2.9 (save) | The dtm-shared-settings publish-workflow is cron-throttled by GitHub on low-traffic repos; per-record entities (agencies, sales reps, presets) saved on one device routinely never reached SharePoint. Direct mirror via `save_setting_to_cloud_in_background` / `delete_setting_from_cloud` makes SharePoint authoritative within seconds. Proposals still fire for the repo audit record, but the canonical state lives on SP. |
+| **PendingChanges auto-clean** — 12-hour age cutoff on `/PendingChanges/` runs every sync, capped at 50/cycle | 2.2.13 | Without it the folder grew forever because the pickup workflow reads but doesn't delete. |
+| **Bundled-preset concept removed** — `blank_custom` hardcoded in `preset_service`; all other presets sync from `/Settings/presets/` | 2.2.10 | The "delete preset locally → it comes back labelled 'bundled'" UX bug. Resources/presets/ is now strictly a dev-mode workspace mirror; `resources/presets/*.json` is gitignored. |
+| **cloud_config key auto-merge** on every launch | 2.2.2 (in this hardening pass) | Pre-2.2.1 installs were silently missing `exports_library_name` etc. because the seeder only ran when the file didn't exist. Now new top-level keys backfill into the existing workspace copy. |
+| **Outbound-queue junk guard** — `enqueue_proposal` and the drain step reject empty `{}` upserts; cleanup script sweeps `/PendingChanges/` for the same pattern | 2.2.9, 2.2.12 | The "abc.json agency keeps reappearing" bug. Root cause: a `cloud_on` test fixture using `DTM_ALLOW_CLOUD_IN_TESTS=1` called `enqueue_proposal(AppPaths(), ...)` against the REAL workspace, dropping `agencies/abc.json` payloads with content `{"name":"x"}` that the dev app would later submit to SP. Wiring now refuses to enqueue from pytest, period. |
+| **Sync-state UX** — periodic syncs are quiet (no spinner during check), but a 3-second spinner flash fires when transfers actually land; modal shows a `🔄 N agencies updated · M projects uploaded · ...` change list for 10s | 2.2.10, 2.2.12 | Pre-2.2.10 the chip spun for every 60s check-and-find-nothing cycle, training users to ignore it. Post-2.2.10 quiet meant transfers were invisible. Current design surfaces only signal, not noise. |
+| **Settings tab post-sync refresh** — agencies / sales reps / presets tabs re-fetch after `data_version` bumps | 2.2.12 | A teammate's deletion landed locally but the rendered list stayed stale until the user restarted. `_refreshVisibleDataAfterSync` now drives `window.refreshAgenciesTab` / `refreshSalesRepsTab` / `refreshPresetsTab` along with the projects refresh. |
+| **Project + draft mirrors are async** | 2.2.6 | `save_project` / `save_draft` no longer block the HTTP response on a Graph roundtrip. Cut ~1-2s off every generate (the UI saved the project right after) and every draft edit. `sync_work_data` is the safety net for any mirror that failed silently. |
+| **"Author/timestamp on builds"** — `last_rendered_by`, `last_exported_at`, `last_exported_by` per-IndividualUnit / BuildUnit; rendered as `📊 Seth · 3h ago · 📄 Alice · 2d ago` per card | 2.2.6 | Teammates can see what's been built and by whom without opening the file. Synced via the project record. |
+| **UX rewrite: Generate button removed** — `[Edit Build] [📊 Preview / Edit in PowerPoint] [📄 Export PDF] [📑 View PDF] [📂 Show in folder]`. Smart auto-regen if source changed; modal asks to discard vs keep manual PowerPoint edits | 2.2.6 | Generate-then-Export was a two-step ritual that confused users. Both buttons now produce the right artifact on demand. |
+| **Show-in-folder** — Graph-resolved drive `webUrl` (Windows browser path was 404'ing) + targeted OneDrive mount probe (no per-library TCC prompts on Mac) | 2.2.6 | Was either wrong URL or many permission prompts. |
 
-**Scope summary** (full detail in the plan file):
-- Add `queue_installer_for_next_launch` + `consume_queued_installer` to `update_check_service.py`. Queued installer lives at `workspace/.queued_installer/{filename}`.
-- `server.py:main()` checks for a queued installer before any other init; if present, spawns it silently and `sys.exit(0)`'s. The installer's existing `CloseApplications` + uninstaller-poll handles the rest.
-- `run_sync_now()` calls `download_pending_update_if_any` after settings + work-data sync. Downloads in the background to the queue dir.
-- `cloud_status_service.get_status` exposes `pending_update: {version} | null` so the UI can show a friendlier "Update v2.2.3 ready — restart now" banner with a Restart button (new `POST /api/update/install-now` endpoint).
-- `packaging/windows/installer.iss` removes the `skipifsilent` flag from the `[Run]` section so silent installs also auto-launch the new version.
+**Cumulative impact**:
+- Cloud is now strictly source of truth for per-record entities (agencies / sales reps / presets / projects / drafts). The dtm-shared-settings GitHub repo holds the audit trail, not the live data.
+- Auto-update is fully unattended on both Windows and Mac.
+- The "save on one device, see it on another" latency is bounded by the 60s sync interval, not the GitHub Actions cron throttle.
+- The dev workspace and the test suite no longer pollute production SharePoint.
 
-**Out of scope for this work** (same as ever): Mac silent install, loose-file Python source hot-reload, code-signing cert.
-
-**Verification plan** (from the plan file):
-1. Ship 2.2.3 as the baseline. Ship 2.2.4 as the test version.
-2. With 2.2.3 running, wait 60s — `pending_update` should populate, the new banner should appear.
-3. Click Restart → installer runs silently → 2.2.4 comes up automatically.
-4. Cold-start consume: close 2.2.3 with a queued installer present, relaunch — silent install runs at boot.
+**Still loose** (called out so Phase 3+ planning doesn't trip on them):
+- **dtm-shared-settings repo cleanup** — 5 old bundled preset files (`patrol_piu_standard.json`, the Saint Cloud pair, Stearns, Sartell) still sit in `resources/config/presets/`. Functionally dead because the publish workflow's bulk path is no longer the canonical source, but git-rm'ing them is the cleanest end state. Not blocking.
+- **Real-customer agency dedup** — Stearns / St. Cloud / Sartell each have ~11 duplicate records on SP from before direct save. Needs a UI "merge duplicates" tool (proposed but not built). Customer data, not pollution — left untouched.
+- **Code signing certificate** — still opted out. Silent auto-update reduces SmartScreen exposure but the very first install still hits the unsigned-EXE warning.
+- **Power Automate Flow B** (release-published email) — still deferred. No dependents.
+- **SharePoint webhook → workflow_dispatch** for instant settings PR creation — still deferred. Cron cadence is acceptable.
+- **dtm-shared-settings publish workflow** still doesn't auto-clean `/PendingChanges/`. Our 12-hour sweep covers it from the app side, but if anyone ever rebuilds that workflow, deleting the consumed proposal would be cleaner.
 
 ---
 
