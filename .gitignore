@@ -11,9 +11,13 @@ src/dtm_buildsheet/resources/config/history/
 
 # Cloud sync eTag cache (workspace state — happens to live in resources/ in dev mode)
 src/dtm_buildsheet/resources/config/.settings_etags.json
-src/dtm_buildsheet/resources/presets/.settings_etags.json
 src/dtm_buildsheet/resources/default_data/agencies/.settings_etags.json
 src/dtm_buildsheet/resources/default_data/sales_reps/.settings_etags.json
+
+# Bundled presets were removed in v2.2.10; resources/presets/ is now
+# only the dev mode workspace mirror of /Settings/presets/ on SharePoint.
+# Anything that lands there is cloud-synced user data, not source.
+src/dtm_buildsheet/resources/presets/*.json
 
 dist/
 build/
