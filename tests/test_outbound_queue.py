@@ -69,11 +69,11 @@ def test_enqueue_export_writes_a_json_payload(paths, tmp_path):
 def test_queue_depth_counts_each_kind(paths, tmp_path):
     pptx = tmp_path / "x.pptx"; pptx.write_bytes(b"x")
     outbound_queue.enqueue_proposal(
-        paths, target_file="agencies/a.json", serialized_content="{}",
+        paths, target_file="agencies/a.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
     )
     outbound_queue.enqueue_proposal(
-        paths, target_file="agencies/b.json", serialized_content="{}",
+        paths, target_file="agencies/b.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
     )
     outbound_queue.enqueue_export(paths, local_path=pptx, agency="A", year="2026")
@@ -91,7 +91,7 @@ def test_queue_depth_for_empty_workspace(paths):
 def test_drain_proposal_success_removes_queue_file(paths, monkeypatch):
     """When the retry submits successfully, the queue file gets cleaned up."""
     outbound_queue.enqueue_proposal(
-        paths, target_file="agencies/x.json", serialized_content="{}",
+        paths, target_file="agencies/x.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
     )
     queue_dir = paths.workspace_dir / ".pending_outbound" / "proposals"
@@ -111,7 +111,7 @@ def test_drain_proposal_success_removes_queue_file(paths, monkeypatch):
 def test_drain_proposal_failure_leaves_queue_file(paths, monkeypatch):
     """A still-failing retry must leave the queue entry for the next pass."""
     outbound_queue.enqueue_proposal(
-        paths, target_file="agencies/x.json", serialized_content="{}",
+        paths, target_file="agencies/x.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
     )
     queue_dir = paths.workspace_dir / ".pending_outbound" / "proposals"
@@ -172,7 +172,7 @@ def test_drain_caps_work_per_cycle(paths, monkeypatch):
     """A massive backlog shouldn't stall the 60s sync forever."""
     for i in range(60):
         outbound_queue.enqueue_proposal(
-            paths, target_file=f"agencies/{i}.json", serialized_content="{}",
+            paths, target_file=f"agencies/{i}.json", serialized_content='{"name":"x"}',
             summary="s", category="general",
         )
     from dtm_buildsheet.app.adapters import wiring
@@ -185,3 +185,49 @@ def test_drain_caps_work_per_cycle(paths, monkeypatch):
     report = outbound_queue.drain_queue(paths)
     # Implementation caps drain at 25 per cycle.
     assert report["proposals_retried"] == 25
+
+
+def test_enqueue_refuses_empty_upsert(paths):
+    """Regression: empty agencies/abc.json upserts were time-bombing —
+    every drain submitted one to /PendingChanges/ and the workflow
+    eventually republished an empty record under /Settings/."""
+    assert outbound_queue.enqueue_proposal(
+        paths, target_file="agencies/abc.json",
+        serialized_content="{}",  # empty upsert
+        summary="empty test", category="general",
+    ) is False
+    queue_dir = paths.workspace_dir / ".pending_outbound" / "proposals"
+    assert not queue_dir.exists() or not list(queue_dir.glob("*.json"))
+
+
+def test_enqueue_allows_delete_with_no_content(paths):
+    """Delete proposals legitimately have no payload."""
+    assert outbound_queue.enqueue_proposal(
+        paths, target_file="agencies/x.json", serialized_content="",
+        summary="del", category="general", action="delete",
+    ) is True
+
+
+def test_drain_discards_junk_without_submitting(paths, monkeypatch, tmp_path):
+    """If a junk proposal somehow lands in the queue (e.g., legacy file
+    from before the enqueue guard), drain must NOT submit it."""
+    # Write a junk queue file directly to bypass the enqueue guard.
+    queue_dir = paths.workspace_dir / ".pending_outbound" / "proposals"
+    queue_dir.mkdir(parents=True, exist_ok=True)
+    import json as _json
+    junk = queue_dir / "stale.json"
+    junk.write_text(_json.dumps({
+        "type": "proposal", "queued_at": "x",
+        "target_file": "agencies/abc.json",
+        "serialized_content": "{}",
+        "summary": "empty", "category": "general", "action": "upsert",
+    }))
+    submitted = []
+    from dtm_buildsheet.app.adapters import wiring
+    monkeypatch.setattr(
+        wiring, "_submit_proposal_to_cloud",
+        lambda **kw: submitted.append(kw) or {"proposed": True},
+    )
+    outbound_queue.drain_queue(paths)
+    assert submitted == []        # nothing was submitted
+    assert not junk.exists()      # file was discarded

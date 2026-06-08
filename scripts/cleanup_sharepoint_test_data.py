@@ -42,6 +42,18 @@ os.environ.pop("PYTEST_CURRENT_TEST", None)
 
 _REMOTE_FOLDERS = ("Settings/agencies", "Settings/sales_reps", "Settings/presets")
 
+# /PendingChanges/ collects proposals waiting for the pickup workflow. If the
+# workflow processes a junk proposal (empty agency, test fixture, etc.) it
+# re-creates the file under /Settings/ — and the cycle resumes. We sweep this
+# folder too so junk doesn't time-bomb.
+_PROPOSAL_FOLDER = "PendingChanges"
+
+# Targets known to be junk regardless of payload contents.
+_JUNK_PROPOSAL_TARGETS = {
+    "agencies/abc.json",
+    "presets/existing_preset.json",
+}
+
 
 # Agencies created by tests show up under a small set of placeholder
 # names — never real customers.
@@ -157,6 +169,45 @@ def _survey(storage, folder: str, predicate):
     return matches
 
 
+def _survey_pending_changes(storage) -> list:
+    """Find proposals in /PendingChanges/ that target known-junk records.
+
+    A proposal that targets ``agencies/abc.json`` or has empty content is
+    junk in flight — left alone it would feed the pickup workflow and
+    re-create the test file under /Settings/. Returns ``[(path, payload)]``
+    so the apply step can delete both the proposal and its .meta sidecar."""
+    out: list[tuple[str, dict]] = []
+    try:
+        paths_ = storage.list_files(_PROPOSAL_FOLDER)
+    except FileNotFoundError:
+        return out
+    for path in paths_:
+        if not path.endswith(".json") or path.endswith(".meta.json"):
+            continue
+        try:
+            data = json.loads(storage.read_text(path))
+        except Exception:  # noqa: BLE001
+            continue
+        target = str(data.get("target_file", ""))
+        if target in _JUNK_PROPOSAL_TARGETS:
+            out.append((path, data))
+            continue
+        if data.get("action") == "upsert":
+            content = str(data.get("serialized_content", "")).strip()
+            if not content or content == "{}":
+                out.append((path, data))
+                continue
+            try:
+                inner = json.loads(content)
+            except Exception:  # noqa: BLE001
+                inner = {}
+            if isinstance(inner, dict):
+                name = str(inner.get("name", "")).strip()
+                if name in _TEST_AGENCY_NAMES:
+                    out.append((path, data))
+    return out
+
+
 def _summarize(folder: str, matches):
     print(f"\n{folder}: {len(matches)} test-pattern file(s).")
     for path, data in matches[:5]:
@@ -187,6 +238,19 @@ def main() -> int:
         matches = _survey(storage, folder, _PREDICATES[folder])
         _summarize(folder, matches)
         all_matches.append((folder, matches))
+
+    # /PendingChanges sweep: proposals waiting on the pickup workflow that
+    # would otherwise re-create the junk under /Settings/.
+    pending_matches = _survey_pending_changes(storage)
+    if pending_matches:
+        print(f"\n{_PROPOSAL_FOLDER}: {len(pending_matches)} junk proposal(s).")
+        for path, payload in pending_matches[:5]:
+            t = payload.get("target_file", "?")
+            a = payload.get("action", "upsert")
+            print(f"  - {path}  → {t} ({a})")
+        if len(pending_matches) > 5:
+            print(f"  ... and {len(pending_matches) - 5} more")
+        all_matches.append((_PROPOSAL_FOLDER, pending_matches))
 
     total = sum(len(m) for _, m in all_matches)
     if total == 0:

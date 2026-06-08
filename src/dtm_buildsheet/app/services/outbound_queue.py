@@ -66,6 +66,38 @@ def _safe_filename(stem: str) -> str:
 # ── Enqueue ─────────────────────────────────────────────────────────────────
 
 
+def _proposal_payload_is_junk(serialized_content: str, action: str) -> bool:
+    """Refuse to enqueue / drain proposals that would publish empty records.
+
+    Causes of empty proposals seen in the wild:
+      - A save handler that fell through validation but still called
+        save_via_proposal with an empty serialized_content (legacy bug).
+      - Replays of stale queue files after we cleaned up the underlying
+        record locally but the queue still pointed at it.
+
+    Each such proposal, when drained, sat in SharePoint /PendingChanges/
+    and time-bombed: the pickup workflow would eventually create a PR,
+    auto-merge it, and republish the empty record under /Settings/. Then
+    the user sees "abc.json" reappear with no name and no parts.
+
+    For upserts only — delete proposals legitimately have no payload."""
+    if action != "upsert":
+        return False
+    content = (serialized_content or "").strip()
+    if not content or content == "{}":
+        return True
+    try:
+        data = json.loads(content)
+    except Exception:  # noqa: BLE001
+        return False
+    if isinstance(data, dict):
+        # Strip schema_version so a record with only that field counts as empty.
+        meaningful = {k: v for k, v in data.items() if k != "schema_version"}
+        if not meaningful:
+            return True
+    return False
+
+
 def enqueue_proposal(
     paths: AppPaths,
     *,
@@ -77,6 +109,12 @@ def enqueue_proposal(
 ) -> bool:
     """Persist a failed proposal submission for later retry. Returns True
     on a successful enqueue write."""
+    if _proposal_payload_is_junk(serialized_content, action):
+        logger.info(
+            "Refusing to enqueue empty proposal for %s — would republish junk",
+            target_file,
+        )
+        return False
     queue_dir = _queue_dir(paths, _PROPOSALS_KIND)
     queue_dir.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -186,6 +224,21 @@ def _drain_proposals(paths: AppPaths) -> dict[str, int]:
             break
         payload = _load_queue_file(queue_path)
         if payload is None:
+            continue
+        # Discard junk proposals (empty-record upserts) without ever
+        # submitting them. Without this, every drain submits one to
+        # /PendingChanges/ and the pickup workflow re-creates the empty
+        # record under /Settings/ — exactly the abc.json resurrection
+        # symptom that prompted this guard.
+        if _proposal_payload_is_junk(
+            payload.get("serialized_content", ""),
+            payload.get("action", "upsert"),
+        ):
+            logger.info(
+                "Discarding junk queued proposal for %s",
+                payload.get("target_file"),
+            )
+            _safe_unlink(queue_path)
             continue
         retried += 1
         result = _submit_proposal_to_cloud(

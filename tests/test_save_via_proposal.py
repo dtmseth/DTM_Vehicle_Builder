@@ -102,7 +102,7 @@ def test_returns_noop_when_cloud_disabled(cloud_off):
 
     result = save_via_proposal(
         target_file="agencies/abc.json",
-        serialized_content="{}",
+        serialized_content='{"name":"x"}',
         summary="test",
         category="general",
     )
@@ -140,7 +140,7 @@ def test_skips_when_not_signed_in(cloud_on):
 
     result = save_via_proposal(
         target_file="agencies/abc.json",
-        serialized_content="{}",
+        serialized_content='{"name":"x"}',
         summary="test",
         category="general",
     )
@@ -156,7 +156,7 @@ def test_skips_when_current_user_returns_none(cloud_on):
 
     result = save_via_proposal(
         target_file="agencies/abc.json",
-        serialized_content="{}",
+        serialized_content='{"name":"x"}',
         summary="test",
         category="general",
     )
@@ -172,7 +172,7 @@ def test_handles_gateway_failure(cloud_on):
 
     result = save_via_proposal(
         target_file="agencies/abc.json",
-        serialized_content="{}",
+        serialized_content='{"name":"x"}',
         summary="test",
         category="advanced",
     )
