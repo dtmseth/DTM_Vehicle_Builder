@@ -274,6 +274,17 @@ def save_via_proposal(
     if not result.get("proposed"):
         reason = result.get("reason", "")
         if _is_queueable_failure(reason):
+            # CRITICAL: never write the outbound queue from inside a
+            # pytest run. Tests that opt into cloud paths via
+            # DTM_ALLOW_CLOUD_IN_TESTS=1 used to fall through this branch
+            # with the real AppPaths() workspace as the queue dir,
+            # producing agencies/abc.json proposals that the dev app
+            # would then submit to SharePoint on next launch (root cause
+            # of the recurring abc.json resurrection). Tests asserting
+            # queueing behavior should monkeypatch enqueue_proposal.
+            import os as _os
+            if _os.environ.get("PYTEST_CURRENT_TEST"):
+                return result
             from ...paths import AppPaths
             from ..services.outbound_queue import enqueue_proposal
             queued = enqueue_proposal(

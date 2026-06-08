@@ -301,6 +301,15 @@ _sync_quiet = False  # noqa: PLW0603
 _last_sync_changes: dict | None = None  # noqa: PLW0603
 _SYNC_CHANGES_DISPLAY_SECONDS = 10
 
+# Unix timestamp until which the cloud chip should keep spinning AFTER a
+# quiet periodic sync finished with actual transfers. Without this the
+# quiet sync would only ever bump the modal "changes" row without giving
+# the user any visual indication that data was just moving. Holding the
+# spinner for 3s after transfer is enough that a glance at the chip
+# catches the activity.
+_visible_hold_until: float = 0.0  # noqa: PLW0603
+_VISIBLE_HOLD_AFTER_TRANSFER_SECONDS = 3.0
+
 # Monotonically-increasing counter incremented every time a sync produces
 # observable changes (updated/deleted/uploaded files). Surfaced in the
 # /api/cloud/status response so the UI can detect "data changed under me"
@@ -321,9 +330,17 @@ def get_data_version() -> int:
 def is_sync_in_progress_visible() -> bool:
     """Status-endpoint hook: True only when the cloud chip SHOULD spin.
 
-    Quiet (periodic) cycles don't surface a spinner — they're background
-    polls that mostly find nothing. Only user-initiated force-syncs do."""
-    return _sync_in_progress and not _sync_quiet
+    Three conditions surface the spinner:
+      1. Force-sync is running (raw flag set, quiet=False).
+      2. A quiet periodic sync just transferred something and we're
+         still inside the brief hold window so a glance at the chip
+         catches the activity (_visible_hold_until > now).
+    """
+    if _sync_in_progress and not _sync_quiet:
+        return True
+    if _visible_hold_until > _now_unix():
+        return True
+    return False
 
 
 def get_sync_changes_summary() -> dict | None:
@@ -403,6 +420,8 @@ def _record_change_summary(work_report: dict, settings_report,
         "items": items,
         "expires_at": _now_unix() + _SYNC_CHANGES_DISPLAY_SECONDS,
     }
+    global _visible_hold_until
+    _visible_hold_until = _now_unix() + _VISIBLE_HOLD_AFTER_TRANSFER_SECONDS
 
 
 def _bump_data_version() -> None:

@@ -382,6 +382,10 @@
     _openModal(scaffold);
   };
 
+  // Called by the post-sync refresher so a teammate's preset save/delete
+  // becomes visible without restarting the app.
+  window.refreshPresetsTab = _load;
+
   window.initPresetsTab = async function () {
     await _load();
     await _loadVehicles();

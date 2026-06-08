@@ -93,6 +93,9 @@
     $("btn-add-agency")?.addEventListener("click", () => openAgencyModal({}));
     $("agency-search")?.addEventListener("input", _filterAndRender);
   };
+  // Called by the post-sync refresher so a teammate's deletion or save
+  // becomes visible without restarting the app.
+  window.refreshAgenciesTab = _load;
 
   // ── modal wiring — attached once at script load, before initAgenciesTab ──────
   function _closeModal() {

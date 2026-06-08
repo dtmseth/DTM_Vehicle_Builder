@@ -99,17 +99,25 @@ let _lastCloudStatus = null;
 let _lastSeenDataVersion = null;
 
 function _refreshVisibleDataAfterSync(){
-  // Projects list is the most visible thing sync changes (besides settings
-  // which are rendered on-demand when the user navigates to them). Re-fetch
-  // and re-render whichever projects view is showing.
+  // Re-fetch anything sync could have changed under the user's feet.
+  // Projects list is the most common; settings tabs (agencies, sales
+  // reps, presets) also need a refresh — without it, a teammate's
+  // deletion shows up in the local file but the rendered list stays
+  // stale until the user navigates away and back.
   try {
     if (typeof _ptLoadAll === "function") {
       _ptLoadAll().then(() => {
-        // Re-render the active view if its helper is defined. The list
-        // view is the common case; detail views re-render when the user
-        // clicks back into a project, so we don't need to chase them here.
         if (typeof _ptRenderList === "function") _ptRenderList();
       }).catch(e => console.warn("Post-sync projects refresh failed:", e));
+    }
+    if (typeof refreshAgenciesTab === "function") {
+      refreshAgenciesTab().catch(e => console.warn("Post-sync agencies refresh failed:", e));
+    }
+    if (typeof refreshSalesRepsTab === "function") {
+      refreshSalesRepsTab().catch(e => console.warn("Post-sync sales-reps refresh failed:", e));
+    }
+    if (typeof refreshPresetsTab === "function") {
+      refreshPresetsTab().catch(e => console.warn("Post-sync presets refresh failed:", e));
     }
   } catch (e) {
     console.warn("Post-sync refresh threw:", e);

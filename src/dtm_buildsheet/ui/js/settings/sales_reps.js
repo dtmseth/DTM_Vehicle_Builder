@@ -85,6 +85,7 @@
     $("btn-add-sales-rep")?.addEventListener("click", () => openSalesRepModal({}));
     $("sales-rep-search")?.addEventListener("input", _filterAndRender);
   };
+  window.refreshSalesRepsTab = _load;
 
   // ── modal wiring — one listener, attached at script load ───────────────────
   function _closeModal() {
