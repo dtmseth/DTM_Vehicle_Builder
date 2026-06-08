@@ -254,11 +254,25 @@ class TestHandleCreateDraft:
 
     def test_preset_parts_transferred(self, tmp_path):
         paths = _paths(tmp_path)
+        # Seed a workspace preset (the cloud-synced cache stand-in) since
+        # bundled presets no longer exist.
+        paths.workspace_presets_dir.mkdir(parents=True, exist_ok=True)
+        (paths.workspace_presets_dir / "patrol_piu_standard.json").write_text(
+            json.dumps({
+                "schema_version": 2,
+                "preset_id": "patrol_piu_standard",
+                "label": "Patrol PIU Standard",
+                "vehicle_types": [],
+                "agency_ids": [],
+                "build_types": [],
+                "tag": "",
+                "parts": [{"name": "Headlight", "include": True}],
+            })
+        )
         create = handle_save_project(_project_body(), paths)
         pid = create["project_id"]
         result = handle_create_draft(pid, "unit-1", paths)
         draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
-        # patrol_starter has parts
         assert len(draft.parts) > 0
 
     def test_blank_custom_used_when_no_preset(self, tmp_path):

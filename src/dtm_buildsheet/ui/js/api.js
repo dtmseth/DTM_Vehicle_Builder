@@ -209,6 +209,26 @@ function _formatLastSync(){
   return "Last sync: " + relativeTime(_lastSyncAt);
 }
 
+function _renderChangesRow(changes){
+  // changes = { summary: "...", items: [...] } | null
+  // Populated for ~10s after a sync that actually transferred something.
+  // Listing the items lets the user see what landed without re-reading
+  // the project list themselves.
+  const el = $("cloud-modal-changes");
+  if(!el) return;
+  if(!changes || !changes.summary){
+    el.hidden = true;
+    el.textContent = "";
+    el.style.color = "";
+    el.title = "";
+    return;
+  }
+  el.hidden = false;
+  el.textContent = "🔄 " + changes.summary;
+  el.style.color = "var(--green, #166534)";
+  el.title = (changes.items || []).join("\n");
+}
+
 function _renderUpdateStateRow(state){
   const el = $("cloud-modal-update-state");
   if(!el) return;
@@ -299,6 +319,7 @@ function _refreshCloudModalBody(){
     }
     $("cloud-modal-last-sync").textContent = _formatLastSync();
     _renderUpdateStateRow(status.update_state);
+    _renderChangesRow(status.changes);
   } else {
     signedInPanel.hidden = true;
     signedOutPanel.hidden = false;

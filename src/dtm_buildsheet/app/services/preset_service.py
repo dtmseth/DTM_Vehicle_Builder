@@ -123,43 +123,60 @@ def _load_dir(directory: Path, source: str) -> list[dict]:
     return results
 
 
+# The single hardcoded preset that every install always sees. Used as the
+# "start from scratch" entry in the project wizard. Lives in code (rather
+# than on disk + cloud) so it can never be edited, deleted, or duplicated
+# by mistake, and so a fresh offline install still has at least one option.
+_BLANK_CUSTOM_SUMMARY = {
+    "preset_id": "blank_custom",
+    "label": "Blank / Custom",
+    "description": "Empty starting point. Add whichever parts apply to this build.",
+    "vehicle_types": [],
+    "agency_ids": [],
+    "build_types": [],
+    "tag": "",
+    "source": "builtin",
+}
+
+_BLANK_CUSTOM_FULL = {
+    "schema_version": 2,
+    "preset_id": "blank_custom",
+    "label": "Blank / Custom",
+    "description": "Empty starting point. Add whichever parts apply to this build.",
+    "vehicle_types": [],
+    "agency_ids": [],
+    "build_types": [],
+    "tag": "",
+    "parts": [],
+    "placement_overrides": {},
+}
+
+
 def list_presets(paths: AppPaths,
                  cloud_presets: list[dict] | None = None) -> list[dict]:
-    """Return all available presets; workspace overrides bundled for the same preset_id.
+    """Return all available presets.
 
-    Priority (highest → lowest):
-      1. workspace  — user-created; mutable; lives in user app-data dir
-      2. cloud      — future community presets; pass as cloud_presets=[...]
-                      when a cloud fetch is available (not yet implemented)
-      3. bundled    — ships with the app; read-only in production
+    Cloud is the source of truth for presets — they're synced down into
+    paths.workspace_presets_dir by shared_settings_service on every cycle.
+    Plus one hardcoded "Blank / Custom" entry that lives in code so a
+    fresh offline install still has a way to start a new project.
 
-    In dev mode workspace_presets_dir == bundled_presets_dir (source tree), so all
-    presets write directly to git and ship to end users as bundled presets.
+    The legacy bundled_presets_dir is intentionally ignored: shipping
+    presets in the installer caused stale-bundled-vs-cloud confusion
+    (deleting in the UI on one device "deleted" the workspace copy and
+    left the bundled fallback, which looked like the preset came back).
     """
-    by_id: dict[str, dict] = {}
-    dev_mode = paths.workspace_presets_dir == paths.bundled_presets_dir
+    by_id: dict[str, dict] = {"blank_custom": dict(_BLANK_CUSTOM_SUMMARY)}
 
-    if dev_mode:
-        # Single directory: load once, label as workspace (all editable in dev)
-        for item in _load_dir(paths.bundled_presets_dir, source="workspace"):
-            by_id[item["preset_id"]] = item
-    else:
-        # Bundled presets first (lowest priority — overridden by anything above)
-        for item in _load_dir(paths.bundled_presets_dir, source="bundled"):
-            by_id[item["preset_id"]] = item
+    for item in cloud_presets or []:
+        item.setdefault("source", "cloud")
+        by_id[item["preset_id"]] = item
 
-        # ── CLOUD HOOK ───────────────────────────────────────────────────────
-        # When cloud/community presets are implemented, fetch them here and
-        # pass the list in as cloud_presets.  Cloud overrides bundled but not
-        # workspace, so add them after bundled and before workspace.
-        for item in cloud_presets or []:
-            item.setdefault("source", "cloud")
-            by_id[item["preset_id"]] = item
-        # ─────────────────────────────────────────────────────────────────────
-
-        # Workspace presets win over everything
-        for item in _load_dir(paths.workspace_presets_dir, source="workspace"):
-            by_id[item["preset_id"]] = item
+    # Workspace presets (the local cache shared_settings_service writes
+    # cloud presets into) win over the in-memory cloud list when both
+    # exist, so a freshly-saved local edit is visible immediately.
+    for item in _load_dir(paths.workspace_presets_dir, source="workspace"):
+        by_id[item["preset_id"]] = item
 
     return sorted(by_id.values(), key=lambda x: x["label"].lower())
 
@@ -167,18 +184,19 @@ def list_presets(paths: AppPaths,
 def load_preset(preset_id: str, paths: AppPaths) -> list[PartInput]:
     """Load a preset by ID and return its parts as PartInput objects.
 
-    Workspace overrides bundled when the same preset_id exists in both.
-    Raises FileNotFoundError if the preset does not exist.
-    Raises ValueError if the preset file is malformed.
+    Cloud → workspace cache is the only source. blank_custom is the
+    hardcoded built-in. Raises FileNotFoundError otherwise.
     """
     validate_safe_id(preset_id, label="preset_id")
 
-    for search_dir in (paths.workspace_presets_dir, paths.bundled_presets_dir):
-        candidate = search_dir / f"{preset_id}.json"
-        if candidate.exists():
-            raw = json.loads(candidate.read_text("utf-8"))
-            validated = validate_preset_payload(raw)
-            return [_part_input_from_dict(p) for p in validated["parts"]]
+    if preset_id == "blank_custom":
+        return []
+
+    candidate = paths.workspace_presets_dir / f"{preset_id}.json"
+    if candidate.exists():
+        raw = json.loads(candidate.read_text("utf-8"))
+        validated = validate_preset_payload(raw)
+        return [_part_input_from_dict(p) for p in validated["parts"]]
 
     raise FileNotFoundError(f"Preset not found: {preset_id}")
 
@@ -186,17 +204,18 @@ def load_preset(preset_id: str, paths: AppPaths) -> list[PartInput]:
 def load_preset_dict(preset_id: str, paths: AppPaths) -> dict:
     """Load a preset by ID and return the full validated dict (including placement_overrides).
 
-    Workspace overrides bundled when the same preset_id exists in both.
-    Raises FileNotFoundError if the preset does not exist.
-    Raises ValueError if the preset file is malformed.
+    Cloud → workspace cache is the only source. blank_custom is the
+    hardcoded built-in. Raises FileNotFoundError otherwise.
     """
     validate_safe_id(preset_id, label="preset_id")
 
-    for search_dir in (paths.workspace_presets_dir, paths.bundled_presets_dir):
-        candidate = search_dir / f"{preset_id}.json"
-        if candidate.exists():
-            raw = json.loads(candidate.read_text("utf-8"))
-            return validate_preset_payload(raw)
+    if preset_id == "blank_custom":
+        return dict(_BLANK_CUSTOM_FULL)
+
+    candidate = paths.workspace_presets_dir / f"{preset_id}.json"
+    if candidate.exists():
+        raw = json.loads(candidate.read_text("utf-8"))
+        return validate_preset_payload(raw)
 
     raise FileNotFoundError(f"Preset not found: {preset_id}")
 
@@ -224,10 +243,10 @@ def _part_input_from_dict(d: dict) -> PartInput:
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _is_bundled(preset_id: str, paths: AppPaths) -> bool:
-    # In dev mode workspace IS the bundled dir — everything is editable.
-    if paths.workspace_presets_dir == paths.bundled_presets_dir:
-        return False
-    return (paths.bundled_presets_dir / f"{preset_id}.json").exists()
+    """Only the in-code blank_custom is non-deletable now. Everything else
+    is a workspace file (synced from cloud) and can be edited or removed.
+    Kept as a helper so existing callers don't need to change."""
+    return preset_id == "blank_custom"
 
 
 def _workspace_path(preset_id: str, paths: AppPaths) -> Path:
@@ -382,20 +401,19 @@ def delete_preset(preset_id: str, paths: AppPaths) -> dict:
 
 
 def clone_preset(preset_id: str, paths: AppPaths) -> dict:
-    """Copy a preset (workspace or bundled) with a new ID; strips agency_ids."""
+    """Copy a preset with a new ID; strips agency_ids."""
     try:
         validate_safe_id(preset_id, label="preset_id")
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
 
-    original = None
-    for search_dir in (paths.workspace_presets_dir, paths.bundled_presets_dir):
-        candidate = search_dir / f"{preset_id}.json"
-        if candidate.exists():
-            original = json.loads(candidate.read_text("utf-8"))
-            break
-    if original is None:
-        return {"ok": False, "error": "Preset not found"}
+    if preset_id == "blank_custom":
+        original = dict(_BLANK_CUSTOM_FULL)
+    else:
+        candidate = paths.workspace_presets_dir / f"{preset_id}.json"
+        if not candidate.exists():
+            return {"ok": False, "error": "Preset not found"}
+        original = json.loads(candidate.read_text("utf-8"))
 
     new_id = f"clone_{uuid.uuid4().hex[:8]}"
     original["preset_id"] = new_id

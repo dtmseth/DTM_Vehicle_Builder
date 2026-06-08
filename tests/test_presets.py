@@ -118,11 +118,13 @@ class TestListPresets:
         ids = [p["preset_id"] for p in presets]
         assert "blank_custom" in ids
 
-    def test_bundled_patrol_piu_standard_present(self, tmp_path):
-        paths = _make_paths(tmp_path)
+    def test_workspace_preset_present(self, tmp_path):
+        workspace_dir = tmp_path / "ws"
+        _write_preset(workspace_dir, _MINIMAL_PRESET)
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
         presets = list_presets(paths)
         ids = [p["preset_id"] for p in presets]
-        assert "patrol_piu_standard" in ids
+        assert _MINIMAL_PRESET["preset_id"] in ids
 
     def test_response_shape(self, tmp_path):
         paths = _make_paths(tmp_path)
@@ -134,75 +136,57 @@ class TestListPresets:
             assert "vehicle_types" in p
             assert "source" in p
 
-    def test_workspace_overrides_bundled(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        _write_preset(bundled_dir, {**_MINIMAL_PRESET, "label": "Bundled Version"})
+    def test_workspace_overrides_cloud(self, tmp_path):
+        # Cloud-passed-in preset for a given preset_id is overridden by
+        # the workspace cache (e.g. a freshly-saved local edit).
         workspace_dir = tmp_path / "workspace_presets"
         _write_preset(workspace_dir, {**_MINIMAL_PRESET, "label": "Workspace Override"})
-
-        paths = AppPaths(
-            bundled_presets_dir=bundled_dir,
-            workspace_presets_dir=workspace_dir,
-        )
-        presets = list_presets(paths)
-        assert len(presets) == 1
-        assert presets[0]["label"] == "Workspace Override"
-        assert presets[0]["source"] == "workspace"
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
+        cloud_presets = [{**_MINIMAL_PRESET, "label": "Cloud Version", "source": "cloud"}]
+        presets = list_presets(paths, cloud_presets=cloud_presets)
+        target = [p for p in presets if p["preset_id"] == _MINIMAL_PRESET["preset_id"]]
+        assert len(target) == 1
+        assert target[0]["label"] == "Workspace Override"
+        assert target[0]["source"] == "workspace"
 
     def test_workspace_source_label(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
         workspace_dir = tmp_path / "workspace_presets"
         _write_preset(workspace_dir, _MINIMAL_PRESET)
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
+        match = [p for p in list_presets(paths) if p["preset_id"] == _MINIMAL_PRESET["preset_id"]]
+        assert match and match[0]["source"] == "workspace"
 
-        paths = AppPaths(
-            bundled_presets_dir=bundled_dir,
-            workspace_presets_dir=workspace_dir,
-        )
+    def test_blank_custom_is_always_listed(self, tmp_path):
+        # Hardcoded built-in — present even with no workspace files.
+        paths = AppPaths(workspace_presets_dir=tmp_path / "empty")
         presets = list_presets(paths)
-        assert presets[0]["source"] == "workspace"
-
-    def test_bundled_source_label(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        workspace_dir = tmp_path / "workspace_presets"
-        workspace_dir.mkdir()
-        _write_preset(bundled_dir, _MINIMAL_PRESET)
-
-        paths = AppPaths(
-            bundled_presets_dir=bundled_dir,
-            workspace_presets_dir=workspace_dir,
-        )
-        presets = list_presets(paths)
-        assert presets[0]["source"] == "bundled"
+        ids = {p["preset_id"] for p in presets}
+        assert "blank_custom" in ids
+        bc = next(p for p in presets if p["preset_id"] == "blank_custom")
+        assert bc["source"] == "builtin"
 
     def test_corrupt_preset_skipped(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        bundled_dir.mkdir()
-        (bundled_dir / "bad.json").write_text("not json{{{", encoding="utf-8")
         workspace_dir = tmp_path / "workspace_presets"
         workspace_dir.mkdir()
-
-        paths = AppPaths(bundled_presets_dir=bundled_dir, workspace_presets_dir=workspace_dir)
+        (workspace_dir / "bad.json").write_text("not json{{{", encoding="utf-8")
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
+        # blank_custom is the only valid entry now.
         presets = list_presets(paths)
-        assert presets == []
+        assert {p["preset_id"] for p in presets} == {"blank_custom"}
 
     def test_sorted_by_label(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        for pid, lbl in [("z_preset", "Zebra"), ("a_preset", "Apple")]:
-            _write_preset(bundled_dir, {**_MINIMAL_PRESET, "preset_id": pid, "label": lbl})
         workspace_dir = tmp_path / "workspace_presets"
-        workspace_dir.mkdir()
-
-        paths = AppPaths(bundled_presets_dir=bundled_dir, workspace_presets_dir=workspace_dir)
+        for pid, lbl in [("z_preset", "Zebra"), ("a_preset", "Apple")]:
+            _write_preset(workspace_dir, {**_MINIMAL_PRESET, "preset_id": pid, "label": lbl})
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
         presets = list_presets(paths)
         labels = [p["label"] for p in presets]
         assert labels == sorted(labels, key=str.lower)
 
-    def test_missing_directories_return_empty(self, tmp_path):
-        paths = AppPaths(
-            bundled_presets_dir=tmp_path / "no_bundled",
-            workspace_presets_dir=tmp_path / "no_workspace",
-        )
-        assert list_presets(paths) == []
+    def test_missing_directories_return_blank_custom_only(self, tmp_path):
+        paths = AppPaths(workspace_presets_dir=tmp_path / "no_workspace")
+        presets = list_presets(paths)
+        assert [p["preset_id"] for p in presets] == ["blank_custom"]
 
 
 # ── load_preset ────────────────────────────────────────────────────────────────
@@ -213,19 +197,18 @@ class TestLoadPreset:
         parts = load_preset("blank_custom", paths)
         assert parts == []
 
-    def test_loads_patrol_piu_standard(self, tmp_path):
-        paths = _make_paths(tmp_path)
-        parts = load_preset("patrol_piu_standard", paths)
-        assert len(parts) > 0
-        assert all(isinstance(p, PartInput) for p in parts)
-
-    def test_part_names_are_strings(self, tmp_path):
-        paths = _make_paths(tmp_path)
-        parts = load_preset("patrol_piu_standard", paths)
-        assert all(isinstance(p.name, str) and p.name for p in parts)
+    def test_loads_from_workspace(self, tmp_path):
+        workspace_dir = tmp_path / "workspace_presets"
+        _write_preset(workspace_dir, {
+            **_MINIMAL_PRESET,
+            "parts": [{"name": "Headlight"}],
+        })
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
+        parts = load_preset("test-preset", paths)
+        assert len(parts) == 1 and parts[0].name == "Headlight"
 
     def test_parts_are_partinput_instances(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
+        workspace_dir = tmp_path / "workspace_presets"
         preset = {
             **_MINIMAL_PRESET,
             "parts": [{
@@ -246,11 +229,8 @@ class TestLoadPreset:
                 "center_color": "",
             }],
         }
-        _write_preset(bundled_dir, preset)
-        paths = AppPaths(
-            bundled_presets_dir=bundled_dir,
-            workspace_presets_dir=tmp_path / "workspace_presets",
-        )
+        _write_preset(workspace_dir, preset)
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
         parts = load_preset("test-preset", paths)
         assert len(parts) == 1
         p = parts[0]
@@ -260,21 +240,8 @@ class TestLoadPreset:
         assert p.raw_color == "Red/Blue"
         assert p.manufacturer == "Whelen"
 
-    def test_workspace_overrides_bundled_on_load(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        workspace_dir = tmp_path / "workspace_presets"
-        _write_preset(bundled_dir, {**_MINIMAL_PRESET, "parts": [{"name": "Bundled Part"}]})
-        _write_preset(workspace_dir, {**_MINIMAL_PRESET, "parts": [{"name": "Workspace Part"}]})
-
-        paths = AppPaths(bundled_presets_dir=bundled_dir, workspace_presets_dir=workspace_dir)
-        parts = load_preset("test-preset", paths)
-        assert parts[0].name == "Workspace Part"
-
     def test_missing_preset_raises_file_not_found(self, tmp_path):
-        paths = AppPaths(
-            bundled_presets_dir=tmp_path / "no_bundled",
-            workspace_presets_dir=tmp_path / "no_workspace",
-        )
+        paths = AppPaths(workspace_presets_dir=tmp_path / "no_workspace")
         with pytest.raises(FileNotFoundError, match="not found"):
             load_preset("nonexistent", paths)
 
@@ -294,16 +261,13 @@ class TestLoadPreset:
             load_preset("", paths)
 
     def test_malformed_preset_raises_value_error(self, tmp_path):
-        bundled_dir = tmp_path / "bundled"
-        bundled_dir.mkdir()
-        (bundled_dir / "bad_preset.json").write_text(
+        workspace_dir = tmp_path / "workspace_presets"
+        workspace_dir.mkdir()
+        (workspace_dir / "bad_preset.json").write_text(
             json.dumps({"preset_id": "bad_preset", "label": "", "parts": []}),
             encoding="utf-8",
         )
-        paths = AppPaths(
-            bundled_presets_dir=bundled_dir,
-            workspace_presets_dir=tmp_path / "workspace_presets",
-        )
+        paths = AppPaths(workspace_presets_dir=workspace_dir)
         with pytest.raises(ValueError):
             load_preset("bad_preset", paths)
 
@@ -563,30 +527,9 @@ class TestLoadPresetDict:
             load_preset_dict("nonexistent", paths)
 
 
-# ── bundled preset sanity ──────────────────────────────────────────────────────
+# ── blank_custom (hardcoded built-in) ──────────────────────────────────────────
 
-class TestBundledPresetSanity:
-    """Every bundled preset that is not blank_custom must have at least one part.
-
-    This regression test prevents silently shipping presets with empty parts
-    arrays that would produce empty build editors when users set up a project.
-    """
-
-    def test_non_blank_bundled_presets_have_parts(self, tmp_path):
-        paths = _make_paths(tmp_path)
-        presets = list_presets(paths)
-        empty_non_blank = []
-        for p in presets:
-            if p["preset_id"] == "blank_custom":
-                continue
-            parts = load_preset(p["preset_id"], paths)
-            if len(parts) == 0:
-                empty_non_blank.append(p["preset_id"])
-        assert empty_non_blank == [], (
-            f"Bundled presets with no parts (should have parts or be blank_custom): "
-            f"{empty_non_blank}"
-        )
-
+class TestBlankCustomBuiltin:
     def test_blank_custom_is_intentionally_empty(self, tmp_path):
         paths = _make_paths(tmp_path)
         parts = load_preset("blank_custom", paths)

@@ -286,6 +286,20 @@ _PERIODIC_SYNC_INTERVAL_SECONDS = 60
 # for any in-progress periodic sync to finish before starting its own pass.
 _sync_lock = threading.Lock()
 _sync_in_progress = False  # noqa: PLW0603 — see run_sync_now() for the contract
+# When True, the UI suppresses the cloud-chip spinner while a sync cycle is
+# in flight. Periodic 60s background syncs always run quiet — the user
+# doesn't see a spinner for the polling/checking phase that 99% of cycles
+# never finds any changes in. Manual force-sync flips this off so the
+# explicit user-triggered action still gets a spinner.
+_sync_quiet = False  # noqa: PLW0603
+
+# Most-recent sync's change list, e.g.
+#   {"summary": "2 agencies added · 1 project modified", "expires_at": <unix>}
+# Set after each sync that actually transferred something. Cleared by the
+# status-endpoint hook once expires_at is in the past so the modal
+# briefly shows what changed and then quietly goes away.
+_last_sync_changes: dict | None = None  # noqa: PLW0603
+_SYNC_CHANGES_DISPLAY_SECONDS = 10
 
 # Monotonically-increasing counter incremented every time a sync produces
 # observable changes (updated/deleted/uploaded files). Surfaced in the
@@ -304,26 +318,118 @@ def get_data_version() -> int:
     return _data_version
 
 
+def is_sync_in_progress_visible() -> bool:
+    """Status-endpoint hook: True only when the cloud chip SHOULD spin.
+
+    Quiet (periodic) cycles don't surface a spinner — they're background
+    polls that mostly find nothing. Only user-initiated force-syncs do."""
+    return _sync_in_progress and not _sync_quiet
+
+
+def get_sync_changes_summary() -> dict | None:
+    """Return the most-recent change summary if it hasn't aged out yet.
+
+    Auto-clears the slot once the display window has elapsed so the modal
+    naturally goes back to "nothing to show" without an explicit reset."""
+    global _last_sync_changes
+    snap = _last_sync_changes
+    if snap is None:
+        return None
+    if snap.get("expires_at", 0) < _now_unix():
+        _last_sync_changes = None
+        return None
+    return {"summary": snap["summary"], "items": snap.get("items", [])}
+
+
+def _now_unix() -> float:
+    return time.time()
+
+
+def _record_change_summary(work_report: dict, settings_report,
+                           queue_report: dict, update_report: dict | None) -> None:
+    """Build a human-readable summary of what just got synced, and stash it
+    for the next few cloud_status polls so the modal can show it.
+
+    Settings updates come back as a list of filenames; we collapse them to
+    counts per kind (agencies, sales reps, presets, general configs).
+    Work data already comes back as counts. Queue items are retry
+    successes, surfaced as "queued change(s) sent". Update queue is the
+    auto-update installer reaching the .queued_installer dir.
+    """
+    global _last_sync_changes
+    items: list[str] = []
+
+    if settings_report and settings_report.updated:
+        kinds: dict[str, int] = {}
+        for name in settings_report.updated:
+            kind = "settings"
+            if name.startswith("agencies/"):
+                kind = "agencies"
+            elif name.startswith("sales_reps/"):
+                kind = "sales reps"
+            elif name.startswith("presets/"):
+                kind = "presets"
+            kinds[kind] = kinds.get(kind, 0) + 1
+        for kind, n in kinds.items():
+            items.append(f"{n} {kind} updated")
+
+    proj_up = work_report.get("projects_updated") or 0
+    proj_del = work_report.get("projects_deleted") or 0
+    proj_pushed = work_report.get("projects_uploaded") or 0
+    draft_up = work_report.get("drafts_updated") or 0
+    draft_del = work_report.get("drafts_deleted") or 0
+    draft_pushed = work_report.get("drafts_uploaded") or 0
+    if proj_up: items.append(f"{proj_up} project{'s' if proj_up != 1 else ''} updated")
+    if proj_del: items.append(f"{proj_del} project{'s' if proj_del != 1 else ''} deleted")
+    if proj_pushed: items.append(f"{proj_pushed} project{'s' if proj_pushed != 1 else ''} uploaded")
+    if draft_up: items.append(f"{draft_up} draft{'s' if draft_up != 1 else ''} updated")
+    if draft_del: items.append(f"{draft_del} draft{'s' if draft_del != 1 else ''} deleted")
+    if draft_pushed: items.append(f"{draft_pushed} draft{'s' if draft_pushed != 1 else ''} uploaded")
+
+    if queue_report.get("proposals_succeeded"):
+        n = queue_report["proposals_succeeded"]
+        items.append(f"{n} queued change{'s' if n != 1 else ''} sent")
+    if queue_report.get("exports_succeeded"):
+        n = queue_report["exports_succeeded"]
+        items.append(f"{n} export{'s' if n != 1 else ''} uploaded")
+
+    if update_report and update_report.get("queued"):
+        items.append(f"app update v{update_report['queued']} downloaded")
+
+    if not items:
+        return
+    _last_sync_changes = {
+        "summary": " · ".join(items),
+        "items": items,
+        "expires_at": _now_unix() + _SYNC_CHANGES_DISPLAY_SECONDS,
+    }
+
+
 def _bump_data_version() -> None:
     global _data_version
     _data_version += 1
 
 
-def run_sync_now(active_paths: AppPaths) -> dict:
+def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
     """Run a single sync cycle synchronously and return a small report.
 
     Called by /api/cloud/sync from the modal AND by the periodic loop.
     Serialized through ``_sync_lock`` so two concurrent callers don't
-    race on the in-progress flag. While in-flight, sets a module-level
-    flag the status endpoint surfaces so the UI can show a spinner.
-    Bumps ``_data_version`` if any files changed so the UI can re-fetch
-    its lists. Never raises — the wrapper logs and continues.
+    race on the in-progress flag.
+
+    ``quiet`` is True for the periodic 60s background loop — the UI
+    hides the cloud-chip spinner during quiet syncs because most of them
+    are pure "check, nothing to do" passes. The user only sees the
+    spinner when they explicitly clicked Force Sync Now (non-quiet) OR
+    when a quiet sync surfaces a change list (rendered briefly in the
+    modal so they can see what landed).
     """
-    global _sync_in_progress
+    global _sync_in_progress, _sync_quiet
     logger = logging.getLogger(__name__)
     report: dict = {"ok": True}
     with _sync_lock:
         _sync_in_progress = True
+        _sync_quiet = quiet
         try:
             # Sign-in step is included so "Force Sync Now" can also recover
             # an app that lost its cached token between launches.
@@ -374,6 +480,7 @@ def run_sync_now(active_paths: AppPaths) -> dict:
             # it silently. Pulls the user's dismissed-versions list so a
             # dismissed update doesn't keep getting re-fetched.
             update_changed = False
+            update_report: dict = {}
             try:
                 from .adapters.wiring import get_active_bundle
                 from .services.update_check_service import download_pending_update_if_any
@@ -392,11 +499,14 @@ def run_sync_now(active_paths: AppPaths) -> dict:
 
             if settings_changed or work_changed or queue_changed or update_changed:
                 _bump_data_version()
+                _record_change_summary(work_report, settings_report, queue_report,
+                                       update_report if update_changed else None)
         except Exception as exc:
             logger.exception("Sync cycle failed")
             report = {"ok": False, "error": str(exc)}
         finally:
             _sync_in_progress = False
+            _sync_quiet = False
     return report
 
 
@@ -421,7 +531,7 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
             time.sleep(_PERIODIC_SYNC_INTERVAL_SECONDS)
         first = False
         try:
-            run_sync_now(active_paths)
+            run_sync_now(active_paths, quiet=True)
         except Exception:
             logger.exception("Periodic sync iteration failed; will retry in %ds",
                              _PERIODIC_SYNC_INTERVAL_SECONDS)

@@ -96,6 +96,7 @@ def get_status(paths: AppPaths) -> dict:
         "pending_queue": _queue_depth(paths),
         "pending_update": _pending_update(paths),
         "update_state": _update_state(paths),
+        "changes": _changes_summary(),
     }
 
 
@@ -111,6 +112,7 @@ def _empty_status(*, syncing: bool, cloud_enabled: bool, data_version: int,
         "pending_queue": {"proposals": 0, "exports": 0},
         "pending_update": None,
         "update_state": _update_state(paths) if paths is not None else None,
+        "changes": _changes_summary(),
     }
 
 
@@ -163,12 +165,23 @@ def _queue_depth(paths: AppPaths) -> dict:
 
 
 def _is_sync_in_progress() -> bool:
-    """Late import to break the server.py ↔ services circular at import time."""
+    """Late import to break the server.py ↔ services circular at import time.
+
+    Uses the visible-spinner predicate, not the raw flag — quiet periodic
+    syncs report False here so the UI chip stays calm."""
     try:
         from .. import server as _server
-        return bool(_server.is_sync_in_progress())
+        return bool(_server.is_sync_in_progress_visible())
     except Exception:
         return False
+
+
+def _changes_summary() -> dict | None:
+    try:
+        from .. import server as _server
+        return _server.get_sync_changes_summary()
+    except Exception:
+        return None
 
 
 def _data_version() -> int:
