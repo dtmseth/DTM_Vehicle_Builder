@@ -197,6 +197,45 @@ def delete_draft_from_cloud(draft_id: str) -> bool:
 SETTINGS_REMOTE_FOLDER = "Settings"
 
 
+def save_setting_to_cloud(target_file: str, serialized_content: str) -> bool:
+    """Direct SP mirror for /Settings/<subdir>/<id>.json on save.
+
+    The proposal pipeline (save_via_proposal) creates a PR in
+    dtm-shared-settings that the publish workflow eventually pushes to
+    SharePoint. Eventually = hours, because GitHub Actions cron throttles
+    schedules on low-traffic repos. That delay caused per-record entities
+    saved on one device to never reach SP, which broke cross-device
+    visibility for agencies/sales reps/presets.
+
+    Direct write here makes SP authoritative immediately. The proposal
+    still fires so the repo holds an audit record, but other devices
+    can sync the new content within their normal 60s cycle instead of
+    waiting on the workflow.
+
+    No-op outside cloud mode. Returns True on success."""
+    storage = _cloud_storage()
+    if storage is None:
+        return False
+    try:
+        storage.write_text(f"{SETTINGS_REMOTE_FOLDER}/{target_file}", serialized_content)
+        return True
+    except Exception:
+        logger.exception("Failed to direct-save %s to SharePoint", target_file)
+        return False
+
+
+def save_setting_to_cloud_in_background(target_file: str, serialized_content: str) -> None:
+    """Fire-and-forget wrapper for save_setting_to_cloud. Used from the
+    save handlers so the response doesn't block on a Graph roundtrip."""
+    import threading
+    threading.Thread(
+        target=save_setting_to_cloud,
+        args=(target_file, serialized_content),
+        daemon=True,
+        name=f"mirror-setting-{target_file}",
+    ).start()
+
+
 def delete_setting_from_cloud(target_file: str) -> bool:
     """Directly delete a /Settings/<subdir>/<id>.json (and its .meta.json
     sidecar) from SharePoint right away.

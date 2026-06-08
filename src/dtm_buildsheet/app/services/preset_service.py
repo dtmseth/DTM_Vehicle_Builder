@@ -336,6 +336,9 @@ def save_preset(payload: dict, paths: AppPaths, overwrite: bool = False) -> dict
         summary=f"Update preset: {validated['label']}",
         category="general",
     )
+    # Direct SP mirror — see agency_service comment.
+    from .shared_work_service import save_setting_to_cloud_in_background
+    save_setting_to_cloud_in_background(f"presets/{preset_id}.json", serialized)
     return {
         "ok": True,
         "preset_id": preset_id,

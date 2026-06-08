@@ -218,11 +218,17 @@ def handle_save_rep(body: dict, paths: AppPaths) -> dict:
             records[rep_id] = record
 
         _write_record(record, paths)
+        serialized = json.dumps(asdict(record), indent=2) + "\n"
         proposal_result = save_via_proposal(
             target_file=f"sales_reps/{record.rep_id}.json",
-            serialized_content=json.dumps(asdict(record), indent=2) + "\n",
+            serialized_content=serialized,
             summary=f"{'Update' if existing else 'Add'} sales rep: {record.name}",
             category="general",
+        )
+        # Direct SP mirror — see agency_service comment.
+        from .shared_work_service import save_setting_to_cloud_in_background
+        save_setting_to_cloud_in_background(
+            f"sales_reps/{record.rep_id}.json", serialized,
         )
         return {"ok": True, "rep": asdict(record), **proposal_result}
     except ValueError as exc:

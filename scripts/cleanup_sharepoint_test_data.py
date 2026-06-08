@@ -47,6 +47,7 @@ _REMOTE_FOLDERS = ("Settings/agencies", "Settings/sales_reps", "Settings/presets
 # names — never real customers.
 _TEST_AGENCY_NAMES = {
     "Test PD", "Test", "",
+    "abc", "Abc", "ABC",
     "Alpha PD", "Beta SO", "Gamma PD", "Gamma Sheriff", "Delta County",
 }
 
@@ -93,6 +94,9 @@ def _looks_like_test_preset(data: dict) -> bool:
     if "Test" in label:
         return True
     preset_id = str(data.get("preset_id", "")).strip()
+    # Known test-fixture IDs that the test suite has historically published.
+    if preset_id in {"existing_preset"}:
+        return True
     parts = data.get("parts") or []
     # Test-fixture preset IDs end in a 6-hex-character suffix (uuid4().hex[:6])
     # because save_preset auto-generates that when no preset_id is passed in.

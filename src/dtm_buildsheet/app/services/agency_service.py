@@ -272,11 +272,19 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             records[agency_id] = record
 
         _write_record(record, paths)
+        serialized = json.dumps(asdict(record), indent=2) + "\n"
         proposal_result = save_via_proposal(
             target_file=f"agencies/{record.agency_id}.json",
-            serialized_content=json.dumps(asdict(record), indent=2) + "\n",
+            serialized_content=serialized,
             summary=f"{'Update' if existing else 'Add'} agency: {record.name}",
             category="general",
+        )
+        # Direct SP mirror so other devices see the new/updated record
+        # within their next 60s sync, not whenever the dtm-shared-settings
+        # publish workflow happens to wake up.
+        from .shared_work_service import save_setting_to_cloud_in_background
+        save_setting_to_cloud_in_background(
+            f"agencies/{record.agency_id}.json", serialized,
         )
         return {"ok": True, "agency": asdict(record), **proposal_result}
     except ValueError as exc:
