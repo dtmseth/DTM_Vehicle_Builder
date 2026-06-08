@@ -384,3 +384,81 @@ def test_download_update_writes_installer_to_destination(tmp_path: Path):
     local_path = download_update(remote, info, destination_dir=tmp_path)
     assert local_path == tmp_path / info.filename
     assert local_path.read_bytes() == b"FAKE_DMG_BYTES"
+
+
+# ── Mac silent auto-update ──────────────────────────────────────────────────
+
+
+def test_get_queued_installer_finds_dmg_on_mac(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("sys.platform", "darwin")
+    from dtm_buildsheet.app.services.update_check_service import (
+        get_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder-2.2.10.dmg"
+    src.write_bytes(b"FAKE_DMG")
+    queued = queue_installer_for_next_launch(src, paths)
+    assert get_queued_installer(paths) == queued
+
+
+def test_get_queued_installer_ignores_exe_on_mac(tmp_path: Path, monkeypatch):
+    """A leftover .exe in the queue dir must not be returned on a Mac."""
+    monkeypatch.setattr("sys.platform", "darwin")
+    from dtm_buildsheet.app.services.update_check_service import (
+        get_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.2.10.exe"
+    src.write_bytes(b"x")
+    queue_installer_for_next_launch(src, paths)
+    assert get_queued_installer(paths) is None
+
+
+def test_download_pending_update_runs_on_mac(tmp_path: Path, monkeypatch):
+    """Pre-fix: download_pending_update_if_any short-circuited with
+    `{"skipped": "not windows"}`. Now Mac participates too."""
+    monkeypatch.setattr("sys.platform", "darwin")
+    from dtm_buildsheet.app.services.update_check_service import (
+        download_pending_update_if_any,
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "1.0.0",
+    )
+    remote = _FakeRemote(
+        {f"{RELEASES_REMOTE_FOLDER}/DTM_Vehicle_Builder-1.4.0.dmg": b"D"}
+    )
+    paths = _paths_with_workspace(tmp_path)
+    result = download_pending_update_if_any(remote, paths, dismissed_versions=[])
+    assert result.get("queued") == "1.4.0"
+
+
+def test_consume_queued_installer_dispatches_mac(tmp_path: Path, monkeypatch):
+    """consume_queued_installer must invoke the Mac path and not the
+    Windows one when running on darwin."""
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "1.0.0",
+    )
+    calls = {"win": 0, "mac": 0}
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent_windows",
+        lambda p: (calls.__setitem__("win", calls["win"] + 1), True)[1],
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service._spawn_installer_silent_mac",
+        lambda p: (calls.__setitem__("mac", calls["mac"] + 1), True)[1],
+    )
+    from dtm_buildsheet.app.services.update_check_service import (
+        consume_queued_installer,
+        queue_installer_for_next_launch,
+    )
+    paths = _paths_with_workspace(tmp_path)
+    src = tmp_path / "DTM_Vehicle_Builder-2.0.0.dmg"
+    src.write_bytes(b"D")
+    queue_installer_for_next_launch(src, paths)
+    assert consume_queued_installer(paths) is True
+    assert calls == {"win": 0, "mac": 1}

@@ -205,18 +205,33 @@ def queue_installer_for_next_launch(local_path: Path, paths) -> Path:
     return target
 
 
+def _expected_installer_suffix() -> str | None:
+    """Which file extension is auto-installable on this platform.
+
+    Windows: ".exe" (Inno Setup silent install)
+    macOS:   ".dmg" (mount + .app copy)
+    Other:   None — auto-update is unsupported, manual download only.
+    """
+    if sys.platform.startswith("win"):
+        return ".exe"
+    if sys.platform.startswith("darwin"):
+        return ".dmg"
+    return None
+
+
 def get_queued_installer(paths) -> Path | None:
     """Return the queued installer path if one is present, else None.
 
-    On non-Windows platforms returns None — silent install isn't supported
-    elsewhere and the Mac DMG flow stays manual."""
-    if not sys.platform.startswith("win"):
+    Looks for ``.exe`` on Windows and ``.dmg`` on macOS; returns None
+    on other platforms where silent auto-install isn't implemented."""
+    suffix = _expected_installer_suffix()
+    if suffix is None:
         return None
     queue_dir = _queued_installer_dir(paths)
     if not queue_dir.exists():
         return None
     for entry in queue_dir.iterdir():
-        if entry.suffix.lower() == ".exe" and entry.is_file():
+        if entry.suffix.lower() == suffix and entry.is_file():
             return entry
     return None
 
@@ -253,12 +268,23 @@ def _delete_quietly(path: Path) -> None:
 
 
 def _spawn_installer_silent(installer: Path) -> bool:
-    """Launch the Inno Setup installer in silent mode.
+    """Platform-dispatching silent installer launcher.
 
-    Returns True if subprocess.Popen returned without raising. The
-    installer itself handles uninstaller-wait + close-current-app via the
-    InitializeSetup hook in installer.iss.
-    """
+    Windows: Inno Setup /VERYSILENT — installer handles uninstall +
+    close-current-app via its InitializeSetup hook.
+    macOS: shell script that waits for the running app to exit, mounts
+    the DMG, swaps the .app in place, strips quarantine, and relaunches.
+
+    Returns True if the install process started without raising."""
+    if sys.platform.startswith("win"):
+        return _spawn_installer_silent_windows(installer)
+    if sys.platform.startswith("darwin"):
+        return _spawn_installer_silent_mac(installer)
+    logger.warning("Silent install not supported on %s", sys.platform)
+    return False
+
+
+def _spawn_installer_silent_windows(installer: Path) -> bool:
     try:
         subprocess.Popen([
             str(installer),
@@ -270,6 +296,137 @@ def _spawn_installer_silent(installer: Path) -> bool:
     except Exception:
         logger.exception("Could not launch queued installer %s", installer)
         return False
+
+
+def _spawn_installer_silent_mac(dmg: Path) -> bool:
+    """Spin up a detached shell script that mount-copy-unmount-relaunches.
+
+    Has to run as a separate process because the .app being replaced is
+    the one we're running from. Caller is expected to sys.exit shortly
+    after this returns so the script's pgrep wait can finish promptly.
+    """
+    app_path = _resolve_running_app_bundle()
+    if app_path is None:
+        logger.warning(
+            "Mac auto-update: couldn't resolve running .app path from %s; "
+            "skipping silent install",
+            sys.executable,
+        )
+        return False
+    script_path = _write_mac_update_script()
+    if script_path is None:
+        return False
+    try:
+        subprocess.Popen(
+            ["/bin/bash", str(script_path), str(dmg), str(app_path)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,  # detach from our process group
+        )
+        logger.info(
+            "Spawned Mac update script (dmg=%s, target=%s)",
+            dmg.name, app_path,
+        )
+        return True
+    except Exception:
+        logger.exception("Could not spawn Mac update script")
+        return False
+
+
+def _resolve_running_app_bundle() -> Path | None:
+    """Walk up from sys.executable to the enclosing .app bundle.
+
+    PyInstaller-built bundles put the launcher at
+    ``<App>.app/Contents/MacOS/<exe>``, so the .app is two parents up.
+    Returns None in dev mode (python binary outside an .app)."""
+    try:
+        p = Path(sys.executable).resolve()
+        for parent in p.parents:
+            if parent.suffix == ".app":
+                return parent
+    except Exception:
+        logger.exception("_resolve_running_app_bundle failed")
+    return None
+
+
+def _write_mac_update_script() -> Path | None:
+    """Write the update script to /tmp and chmod +x. Returns its path."""
+    script = r"""#!/bin/bash
+# DTM Vehicle Builder Mac silent update.
+# Args: $1 = DMG path, $2 = target .app path
+set +e
+DMG_PATH="$1"
+APP_PATH="$2"
+LOG="$HOME/Library/Logs/DTM_Vehicle_Builder_update.log"
+mkdir -p "$(dirname "$LOG")"
+exec >>"$LOG" 2>&1
+echo ""
+echo "=== Silent update $(date) ==="
+echo "DMG:    $DMG_PATH"
+echo "Target: $APP_PATH"
+
+# Let the parent process exit cleanly. Then poll for a few seconds in
+# case Python is slow to release file handles.
+sleep 2
+for i in 1 2 3 4 5 6 7 8; do
+  if ! pgrep -f "DTM Vehicle Builder.app/Contents/MacOS" >/dev/null; then
+    break
+  fi
+  echo "Waiting for app to exit ($i)..."
+  sleep 1
+done
+
+# Mount the DMG (hidden, no verify — the artifact is trusted because we
+# downloaded it from our own SharePoint via an authenticated Graph call).
+MOUNT_INFO=$(hdiutil attach -nobrowse -noverify -noautoopen "$DMG_PATH" 2>&1)
+echo "$MOUNT_INFO"
+MOUNTPOINT=$(echo "$MOUNT_INFO" | awk -F'\t' '/\/Volumes\//{print $NF; exit}')
+if [ -z "$MOUNTPOINT" ]; then
+  echo "Could not determine mountpoint; aborting."
+  exit 1
+fi
+echo "Mounted at $MOUNTPOINT"
+
+# The DMG layout is `<root>/<App>.app` plus a /Applications symlink.
+# Avoid the symlink: find the real bundle.
+SOURCE_APP=$(find "$MOUNTPOINT" -maxdepth 2 -name "*.app" -not -path "*/Applications/*" | head -1)
+if [ -z "$SOURCE_APP" ]; then
+  echo "Could not find a .app inside $MOUNTPOINT; aborting."
+  hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1
+  exit 1
+fi
+echo "Source: $SOURCE_APP"
+
+# Replace the old app. If the user is running from /Applications without
+# admin rights, this will fail loudly — better than partially overwriting.
+if [ -d "$APP_PATH" ]; then
+  rm -rf "$APP_PATH" || { echo "Could not delete old .app"; hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1; exit 1; }
+fi
+cp -R "$SOURCE_APP" "$APP_PATH" || { echo "Copy failed"; hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1; exit 1; }
+
+# Strip quarantine so Gatekeeper doesn't block the first launch with a
+# "downloaded from internet" prompt (we just installed it ourselves —
+# user did NOT double-click anything from a browser).
+xattr -dr com.apple.quarantine "$APP_PATH" 2>/dev/null || true
+
+# Clean up
+hdiutil detach "$MOUNTPOINT" -force >/dev/null 2>&1
+rm -f "$DMG_PATH"
+
+# Relaunch into the new version.
+echo "Relaunching..."
+open "$APP_PATH"
+echo "=== Done $(date) ==="
+"""
+    try:
+        import tempfile
+        script_path = Path(tempfile.gettempdir()) / f"dtm_update_{os.getpid()}.sh"
+        script_path.write_text(script, encoding="utf-8")
+        script_path.chmod(0o755)
+        return script_path
+    except OSError:
+        logger.exception("Could not write Mac update script")
+        return None
 
 
 def consume_queued_installer(paths) -> bool:
@@ -351,10 +508,13 @@ def download_pending_update_if_any(storage, paths, dismissed_versions: list[str]
     available and not already queued at the same-or-newer version,
     download it into the queue dir.
 
+    Runs on Windows (queues .exe) and macOS (queues .dmg). Other
+    platforms are no-op until we add an installer pattern for them.
+
     Returns a small dict the sync log uses; never raises.
     """
-    if not sys.platform.startswith("win"):
-        return {"skipped": "not windows"}
+    if _expected_installer_suffix() is None:
+        return {"skipped": f"no auto-update for {sys.platform}"}
     try:
         info = check_for_update(storage, dismissed_versions=dismissed_versions or [])
     except Exception:

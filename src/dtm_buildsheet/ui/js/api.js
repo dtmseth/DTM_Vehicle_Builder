@@ -252,8 +252,8 @@ function _renderUpdateStateRow(state){
       title = "A newer version is available. Use the banner above to download it.";
       break;
     case "platform_unsupported":
-      txt = `✅ v${cur} (auto-update is Windows-only)`;
-      title = "Mac auto-update isn't supported yet — download new releases manually when notified.";
+      txt = `✅ v${cur} (auto-update unavailable on this platform)`;
+      title = "Auto-update isn't supported on this OS — download new releases manually when notified.";
       break;
     case "up_to_date":
     default:
