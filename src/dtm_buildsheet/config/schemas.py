@@ -21,6 +21,11 @@ REQUIRED_CONFIG_FILES = {
     "workbook_rules.json",
     "build_rules.json",
     "project_options.json",
+    # [shared-settings, Phase 3] — canonical parts database. Direct-mirrored
+    # to SharePoint on save (alongside the proposal pipeline). Workbook /
+    # parts_library / vehicle_layouts remain as dual-read fallbacks during
+    # the transition; see app/services/parts_db_service.py.
+    "parts_db.json",
     # [local-only] — per-machine. Never synced. Holds the user's
     # project_output_root, template_save_dir, etc.
     "app_settings.json",
@@ -241,6 +246,56 @@ def _validate_project_options(normalized: dict) -> None:
             raise ValueError(f"project_options.json '{key}' must be an array")
 
 
+_PARTS_DB_REQUIRED_TOP_KEYS = (
+    "part_categories",
+    "location_zones",
+    "locations",
+    "build_sections",
+    "manufacturers",
+    "color_palette",
+    "parts",
+    "naming_rules",
+)
+_PARTS_DB_PART_REQUIRED_KEYS = ("friendly_name", "category")
+
+
+def _validate_parts_db(normalized: dict) -> None:
+    """Phase 3 minimum: top-level shape + per-part required keys.
+
+    Deep validation (every manufacturer_id resolves, every location key
+    exists in `locations`, etc.) is deferred to Phase 4 when users can
+    edit parts_db through the UI. For Phase 3 the file is only written
+    by the migration script (which runs its own validation) and read
+    by parts_db_service.
+    """
+    for key in _PARTS_DB_REQUIRED_TOP_KEYS:
+        normalized.setdefault(key, {})
+
+    parts = normalized.get("parts")
+    if not isinstance(parts, dict):
+        raise ValueError("parts_db.json 'parts' must be an object keyed by part_id")
+
+    for part_id, spec in parts.items():
+        if not isinstance(spec, dict):
+            raise ValueError(f"parts_db.json part '{part_id}' must be an object")
+        for key in _PARTS_DB_PART_REQUIRED_KEYS:
+            if key not in spec:
+                raise ValueError(f"parts_db.json part '{part_id}' missing '{key}'")
+        models = spec.get("models", [])
+        if not isinstance(models, list):
+            raise ValueError(f"parts_db.json part '{part_id}' 'models' must be a list")
+        # model_id is required on every model per the §1.2 schema lock decision.
+        for idx, model in enumerate(models):
+            if not isinstance(model, dict):
+                raise ValueError(
+                    f"parts_db.json part '{part_id}' model[{idx}] must be an object"
+                )
+            if "model_id" not in model:
+                raise ValueError(
+                    f"parts_db.json part '{part_id}' model[{idx}] missing 'model_id'"
+                )
+
+
 def _validate_build_rules(normalized: dict) -> None:
     rules = normalized.setdefault("rules", {})
     if not isinstance(rules, dict):
@@ -283,6 +338,7 @@ _VALIDATORS = {
     "app_settings.json": _validate_app_settings,
     "build_rules.json": _validate_build_rules,
     "project_options.json": _validate_project_options,
+    "parts_db.json": _validate_parts_db,
 }
 
 

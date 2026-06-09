@@ -23,6 +23,7 @@ from .routes import drafts as draft_routes
 from .routes import exports as export_routes
 from .routes import generation as generation_routes
 from .routes import preview as preview_routes
+from .routes import parts_db as parts_db_routes
 from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import templates as template_routes
@@ -89,6 +90,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/agencies" or path == "/api/agencies/search":
             if not agency_routes.route_agencies(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):
+            if not parts_db_routes.route_parts_db(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-reps" or path == "/api/sales-reps/search":
             if not sales_rep_routes.route_sales_reps(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
@@ -151,6 +155,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/agency/save":
             if not agency_routes.route_agencies(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/parts-db":
+            if not parts_db_routes.route_parts_db(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-rep/save":
             if not sales_rep_routes.route_sales_reps(self, "POST", path, body, self.paths):

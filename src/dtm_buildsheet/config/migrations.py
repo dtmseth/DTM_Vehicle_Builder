@@ -25,6 +25,9 @@ def _migrate_vehicle_layouts_spacing(data: dict) -> dict:
 
 _MIGRATIONS: dict[str, list] = {
     "vehicle_layouts.json": [_migrate_vehicle_layouts_spacing],
+    # parts_db.json starts at schema_version 1; no migrations registered yet.
+    # Hook point for future field changes (Phase 5 light naming, etc.).
+    "parts_db.json": [],
 }
 
 
