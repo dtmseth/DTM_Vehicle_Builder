@@ -11,7 +11,10 @@ from .http import send_json
 
 
 _PREFIX = "/api/parts-db"
-_PARTS_PREFIX = f"{_PREFIX}/parts"
+_CATEGORIES_PATH = f"{_PREFIX}/categories"
+_MANUFACTURERS_PATH = f"{_PREFIX}/manufacturers"
+_PRODUCTS_PATH = f"{_PREFIX}/products"
+_ZONES_PREFIX = f"{_PREFIX}/zones/"
 
 
 def route_parts_db(
@@ -20,52 +23,83 @@ def route_parts_db(
     qs = parse_qs(urlparse(handler.path).query)
     svc = get_parts_db_service(paths)
 
+    # GET /api/parts-db — full doc
     if method == "GET" and path == _PREFIX:
         send_json(handler, svc.raw_doc())
         return True
 
-    if method == "GET" and path == _PARTS_PREFIX:
-        category = qs.get("category", [""])[0]
-        if category:
-            parts = svc.list_parts_by_category(category)
-        else:
-            parts = [
-                p
-                for c in (svc.raw_doc().get("part_categories") or {})
-                for p in svc.list_parts_by_category(c)
-            ]
-        send_json(handler, {"parts": [asdict(p) for p in parts]})
+    # GET /api/parts-db/categories
+    if method == "GET" and path == _CATEGORIES_PATH:
+        send_json(handler, {"categories": [asdict(c) for c in svc.list_categories()]})
         return True
 
-    if method == "GET" and path.startswith(_PARTS_PREFIX + "/"):
-        # /api/parts-db/parts/{part_id}  OR  /api/parts-db/parts/{part_id}/locations
-        tail = path[len(_PARTS_PREFIX) + 1 :]
+    # GET /api/parts-db/manufacturers[?category=]
+    if method == "GET" and path == _MANUFACTURERS_PATH:
+        category = qs.get("category", [""])[0]
+        if category:
+            mfgs = svc.list_manufacturers_in_category(category)
+        else:
+            doc = svc.raw_doc()
+            mfgs_doc = doc.get("manufacturers") or {}
+            from ..services.parts_db_service import _hydrate_manufacturer
+            mfgs = [_hydrate_manufacturer(mid, spec) for mid, spec in mfgs_doc.items()]
+        send_json(handler, {"manufacturers": [asdict(m) for m in mfgs]})
+        return True
+
+    # GET /api/parts-db/products[?category=&manufacturer=]
+    if method == "GET" and path == _PRODUCTS_PATH:
+        category = qs.get("category", [""])[0]
+        manufacturer = qs.get("manufacturer", [""])[0]
+        if category and manufacturer:
+            products = [
+                p for p in svc.list_products_by_category(category)
+                if p.manufacturer_id == manufacturer
+            ]
+        elif category:
+            products = svc.list_products_by_category(category)
+        elif manufacturer:
+            products = svc.list_products_by_manufacturer(manufacturer)
+        else:
+            products = svc.list_products()
+        send_json(handler, {"products": [asdict(p) for p in products]})
+        return True
+
+    # GET /api/parts-db/products/{product_id}[/part-numbers]
+    if method == "GET" and path.startswith(_PRODUCTS_PATH + "/"):
+        tail = path[len(_PRODUCTS_PATH) + 1 :]
         if not tail:
             return False
-        if tail.endswith("/locations"):
-            part_id = tail[: -len("/locations")]
-            if not part_id or "/" in part_id:
+        if tail.endswith("/part-numbers"):
+            product_id = tail[: -len("/part-numbers")]
+            if not product_id or "/" in product_id:
                 return False
-            vehicle = qs.get("vehicle", [""])[0]
-            if not vehicle:
-                send_json(handler, {"error": "vehicle query parameter required"}, status=400)
+            if svc.get_product(product_id) is None:
+                send_json(handler, {"error": f"unknown product_id: {product_id}"}, status=404)
                 return True
-            locations = svc.list_compatible_locations(part_id, vehicle)
-            send_json(handler, {"locations": [asdict(loc) for loc in locations]})
+            part_numbers = svc.list_part_numbers(product_id)
+            send_json(handler, {"part_numbers": [asdict(pn) for pn in part_numbers]})
             return True
         if "/" in tail:
             return False
-        part_spec = (svc.raw_doc().get("parts") or {}).get(tail)
-        if not part_spec:
-            send_json(handler, {"error": f"unknown part_id: {tail}"}, status=404)
+        product = svc.get_product(tail)
+        if product is None:
+            send_json(handler, {"error": f"unknown product_id: {tail}"}, status=404)
             return True
-        from ..services.parts_db_service import _hydrate_part
-        send_json(handler, asdict(_hydrate_part(tail, part_spec)))
+        send_json(handler, asdict(product))
         return True
 
+    # GET /api/parts-db/zones/{zone_id}/products
+    if method == "GET" and path.startswith(_ZONES_PREFIX) and path.endswith("/products"):
+        zone_id = path[len(_ZONES_PREFIX) : -len("/products")]
+        if not zone_id or "/" in zone_id:
+            return False
+        products = svc.products_compatible_with_zone(zone_id)
+        send_json(handler, {"products": [asdict(p) for p in products]})
+        return True
+
+    # POST /api/parts-db — save full doc
     if method == "POST" and path == _PREFIX:
         result = save_config_file("parts_db.json", body, paths)
-        # Invalidate the cached doc so the next GET reflects the save.
         svc.invalidate()
         send_json(handler, result)
         return True

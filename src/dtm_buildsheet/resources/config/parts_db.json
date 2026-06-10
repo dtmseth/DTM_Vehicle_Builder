@@ -4,12 +4,13 @@
     "last_updated": "1970-01-01T00:00:00Z",
     "updated_by": "phase-3-stub"
   },
-  "part_categories": {},
-  "location_zones": {},
-  "locations": {},
-  "build_sections": {},
+  "categories": {},
   "manufacturers": {},
+  "products": {},
+  "option_axes_catalog": {},
   "color_palette": {},
-  "parts": {},
+  "location_zones": {},
+  "location_zone_map": {},
+  "part_types": {},
   "naming_rules": {}
 }

@@ -26,6 +26,12 @@ REQUIRED_CONFIG_FILES = {
     # parts_library / vehicle_layouts remain as dual-read fallbacks during
     # the transition; see app/services/parts_db_service.py.
     "parts_db.json",
+    # [shared-settings, Phase 3] — transition layer mapping legacy workbook
+    # part-type strings + model strings to product_ids. Lets manifest_editor
+    # and excel_reader find products by their old workbook identifiers
+    # without polluting the canonical product records. Throwaway when the
+    # workbook input path retires.
+    "legacy_workbook_index.json",
     # [local-only] — per-machine. Never synced. Holds the user's
     # project_output_root, template_save_dir, etc.
     "app_settings.json",
@@ -247,53 +253,76 @@ def _validate_project_options(normalized: dict) -> None:
 
 
 _PARTS_DB_REQUIRED_TOP_KEYS = (
-    "part_categories",
-    "location_zones",
-    "locations",
-    "build_sections",
+    "categories",
     "manufacturers",
+    "products",
+    "option_axes_catalog",
     "color_palette",
-    "parts",
+    "location_zones",
+    "location_zone_map",
+    "part_types",
     "naming_rules",
 )
-_PARTS_DB_PART_REQUIRED_KEYS = ("friendly_name", "category")
+_PRODUCT_REQUIRED_KEYS = ("manufacturer_id", "category_id", "model")
 
 
 def _validate_parts_db(normalized: dict) -> None:
-    """Phase 3 minimum: top-level shape + per-part required keys.
+    """Phase 3 validator: top-level shape + per-product required keys.
 
-    Deep validation (every manufacturer_id resolves, every location key
-    exists in `locations`, etc.) is deferred to Phase 4 when users can
-    edit parts_db through the UI. For Phase 3 the file is only written
-    by the migration script (which runs its own validation) and read
-    by parts_db_service.
+    Manufacturer-centric schema. See docs/ROADMAP.md §Phase 3 and the
+    quiet-vaulting-quail plan. Deep validation (every manufacturer_id
+    resolves to an entry in `manufacturers`, every category_id exists,
+    every part_number is unique) is deferred to Phase 4 when users edit
+    parts_db through the UI.
     """
     for key in _PARTS_DB_REQUIRED_TOP_KEYS:
         normalized.setdefault(key, {})
 
-    parts = normalized.get("parts")
-    if not isinstance(parts, dict):
-        raise ValueError("parts_db.json 'parts' must be an object keyed by part_id")
+    products = normalized.get("products")
+    if not isinstance(products, dict):
+        raise ValueError("parts_db.json 'products' must be an object keyed by product_id")
 
-    for part_id, spec in parts.items():
+    for product_id, spec in products.items():
         if not isinstance(spec, dict):
-            raise ValueError(f"parts_db.json part '{part_id}' must be an object")
-        for key in _PARTS_DB_PART_REQUIRED_KEYS:
+            raise ValueError(f"parts_db.json product '{product_id}' must be an object")
+        for key in _PRODUCT_REQUIRED_KEYS:
             if key not in spec:
-                raise ValueError(f"parts_db.json part '{part_id}' missing '{key}'")
-        models = spec.get("models", [])
-        if not isinstance(models, list):
-            raise ValueError(f"parts_db.json part '{part_id}' 'models' must be a list")
-        # model_id is required on every model per the §1.2 schema lock decision.
-        for idx, model in enumerate(models):
-            if not isinstance(model, dict):
                 raise ValueError(
-                    f"parts_db.json part '{part_id}' model[{idx}] must be an object"
+                    f"parts_db.json product '{product_id}' missing '{key}'"
                 )
-            if "model_id" not in model:
+        part_numbers = spec.get("part_numbers", [])
+        if not isinstance(part_numbers, list):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'part_numbers' must be a list"
+            )
+        for idx, pn in enumerate(part_numbers):
+            if not isinstance(pn, dict):
                 raise ValueError(
-                    f"parts_db.json part '{part_id}' model[{idx}] missing 'model_id'"
+                    f"parts_db.json product '{product_id}' part_numbers[{idx}] must be an object"
                 )
+            if "part_number" not in pn:
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' part_numbers[{idx}] missing 'part_number'"
+                )
+        option_axes = spec.get("option_axes", {})
+        if not isinstance(option_axes, dict):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'option_axes' must be an object"
+            )
+
+
+def _validate_legacy_workbook_index(normalized: dict) -> None:
+    """Top-level shape for legacy_workbook_index.json.
+
+    Two maps that must be dicts; values can be anything reasonable
+    (lists of strings, individual strings). Deep validation deferred —
+    the file is produced by the migration script which does its own
+    cross-referencing.
+    """
+    for key in ("part_type_to_products", "model_string_to_product"):
+        normalized.setdefault(key, {})
+        if not isinstance(normalized[key], dict):
+            raise ValueError(f"legacy_workbook_index.json '{key}' must be an object")
 
 
 def _validate_build_rules(normalized: dict) -> None:
@@ -339,6 +368,7 @@ _VALIDATORS = {
     "build_rules.json": _validate_build_rules,
     "project_options.json": _validate_project_options,
     "parts_db.json": _validate_parts_db,
+    "legacy_workbook_index.json": _validate_legacy_workbook_index,
 }
 
 

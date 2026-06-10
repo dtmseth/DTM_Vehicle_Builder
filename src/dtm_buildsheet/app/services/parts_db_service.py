@@ -1,20 +1,21 @@
-"""parts_db.json read service (Phase 3).
+"""parts_db.json read service (Phase 3, revised schema).
 
-Stands up the canonical parts database with a **dual-read** fallback so the
-existing workbook_rules / parts_library / vehicle_layouts plumbing keeps
-working while consumers migrate (Phase 4).
+Manufacturer-centric hierarchy: Category → Manufacturer → Product → PartNumber.
+See docs/ROADMAP.md §Phase 3 and the quiet-vaulting-quail plan file for the
+schema rationale.
 
-Lookups try `parts_db.json` first; when the file is missing, a part is
-missing, or a requested field is empty, the service delegates to
-`LegacyFallbackReader` which mirrors today's `workbook_rules.part_rules[name]`
-access pattern.
+Three-tier fallback for name-keyed lookups (the manifest editor's dropdowns
+during the dual-read transition):
+
+  1. parts_db.json  — the canonical answer once the migration has run
+  2. legacy_workbook_index.json — transition layer mapping old workbook
+     part-type strings to product_ids (populated by PR-2b migration)
+  3. workbook_rules.json — last-resort fallback, gone in Phase 4
 
 Lifecycle:
-- One singleton per process, accessible via `get_parts_db_service(paths)`.
-- Cache is populated on first query and invalidated by
-  `config_service.save_config_file("parts_db.json", ...)`.
-
-See docs/ROADMAP.md §Phase 3 and §7 for schema and design notes.
+- Process-wide singleton via `get_parts_db_service(paths)`.
+- Cache invalidated by `config_service.save_config_file("parts_db.json", ...)`
+  (and the sibling `legacy_workbook_index.json` save).
 """
 
 from __future__ import annotations
@@ -24,63 +25,101 @@ from typing import Optional
 
 from ...config.store import load_config
 from ...domain.parts_db_models import (
-    BracketRequirement,
+    Category,
     Color,
-    Location,
     Manufacturer,
-    Model,
-    Part,
+    OptionAxis,
+    PartNumber,
+    PartType,
+    Product,
+    Zone,
 )
 from ...paths import AppPaths
 
 logger = logging.getLogger(__name__)
 
 
-def _empty_doc() -> dict:
-    """Shape returned when parts_db.json is absent — every consumer sees the
-    same empty document instead of branching on file existence."""
+def _empty_parts_db_doc() -> dict:
     return {
         "schema_version": 1,
         "metadata": {},
-        "part_categories": {},
-        "location_zones": {},
-        "locations": {},
-        "build_sections": {},
+        "categories": {},
         "manufacturers": {},
+        "products": {},
+        "option_axes_catalog": {},
         "color_palette": {},
-        "parts": {},
+        "location_zones": {},
+        "location_zone_map": {},
+        "part_types": {},
         "naming_rules": {},
     }
 
 
-# ── Legacy fallback reader ────────────────────────────────────────────────────
+def _empty_legacy_index_doc() -> dict:
+    return {
+        "schema_version": 1,
+        "part_type_to_products": {},
+        "model_string_to_product": {},
+    }
 
 
-class LegacyFallbackReader:
-    """Mirrors today's workbook_rules / parts_library / vehicle_layouts access.
+# ── Legacy fallback readers ───────────────────────────────────────────────────
 
-    Compat-shim queries on `PartsDbService` delegate here when parts_db.json
-    can't answer (file missing, part missing, field empty). Phase 4 deletes
-    these callers and this reader along with them.
+
+class LegacyWorkbookIndex:
+    """Reader for legacy_workbook_index.json.
+
+    Bridges the gap between today's workbook string-keyed lookups and the
+    new product-id-keyed parts_db. The file lives at
+    workspace/config/legacy_workbook_index.json and is populated by the
+    PR-2b migration script. Until then, missing-file is treated as
+    empty maps (everything falls through to LegacyFallbackReader).
     """
 
     def __init__(self, paths: AppPaths):
         self._paths = paths
-        # The cache is lazy and per-call: we re-read workbook_rules on every
-        # query because it's small (~3K lines, cheap json.loads) and we want
-        # any in-app edits to be reflected immediately without an
-        # invalidation callback. Phase 4 deletes this reader, so the
-        # per-call cost is short-lived.
+        self._cache: dict | None = None
+
+    def _load(self) -> dict:
+        if self._cache is None:
+            try:
+                self._cache = load_config("legacy_workbook_index.json", self._paths)
+            except FileNotFoundError:
+                self._cache = _empty_legacy_index_doc()
+            except Exception:
+                logger.exception("Could not load legacy_workbook_index.json; using empty")
+                self._cache = _empty_legacy_index_doc()
+        return self._cache
 
     def reload(self) -> None:
-        pass  # nothing cached; here so PartsDbService.invalidate stays uniform
+        self._cache = None
+
+    def product_ids_for_part_type(self, label: str) -> list[str]:
+        return list(
+            (self._load().get("part_type_to_products") or {}).get(label) or []
+        )
+
+    def product_id_for_model_string(self, model: str) -> str | None:
+        return (self._load().get("model_string_to_product") or {}).get(model)
+
+
+class LegacyFallbackReader:
+    """Last-resort fallback: read raw workbook_rules.part_rules.
+
+    Used only when parts_db.json and legacy_workbook_index.json both have
+    nothing for a given query. Phase 4 deletes this class along with the
+    workbook_rules domain fields it reads.
+    """
+
+    def __init__(self, paths: AppPaths):
+        self._paths = paths
+
+    def reload(self) -> None:
+        pass  # no cache
 
     def _workbook_rule(self, legacy_name: str) -> dict:
         wb = load_config("workbook_rules.json", self._paths)
-        rules = wb.get("part_rules", {}) or {}
-        # part_rules is keyed by display_name verbatim; match case-insensitively
-        # because workbook input is upper-cased and the manifest editor passes
-        # the user-facing string through.
+        rules = wb.get("part_rules") or {}
         if legacy_name in rules:
             return rules[legacy_name]
         target = legacy_name.strip().upper()
@@ -90,13 +129,13 @@ class LegacyFallbackReader:
         return {}
 
     def manufacturers(self, legacy_name: str) -> list[str]:
-        return list(self._workbook_rule(legacy_name).get("manufacturer", []) or [])
+        return list(self._workbook_rule(legacy_name).get("manufacturer") or [])
 
     def models(self, legacy_name: str) -> list[str]:
-        return list(self._workbook_rule(legacy_name).get("models", []) or [])
+        return list(self._workbook_rule(legacy_name).get("models") or [])
 
     def locations(self, legacy_name: str) -> list[str]:
-        return list(self._workbook_rule(legacy_name).get("locations", []) or [])
+        return list(self._workbook_rule(legacy_name).get("locations") or [])
 
 
 # ── Service ──────────────────────────────────────────────────────────────────
@@ -106,246 +145,284 @@ class PartsDbService:
     def __init__(self, paths: AppPaths):
         self._paths = paths
         self._cache: dict | None = None
+        self._legacy_index = LegacyWorkbookIndex(paths)
         self._fallback = LegacyFallbackReader(paths)
 
-    # ── loading ────────────────────────────────────────────────────────────
+    # ── Loading ────────────────────────────────────────────────────────────
 
     def _load(self) -> dict:
         if self._cache is None:
             try:
                 self._cache = load_config("parts_db.json", self._paths)
             except FileNotFoundError:
-                # PR-1 ships before the data file. Treat missing as empty
-                # and rely entirely on the legacy fallback.
-                self._cache = _empty_doc()
+                self._cache = _empty_parts_db_doc()
             except Exception:
-                logger.exception("Could not load parts_db.json; using empty doc")
-                self._cache = _empty_doc()
+                logger.exception("Could not load parts_db.json; using empty")
+                self._cache = _empty_parts_db_doc()
         return self._cache
 
     def invalidate(self) -> None:
-        """Drop the cached doc. Called from config_service after a save."""
         self._cache = None
+        self._legacy_index.reload()
         self._fallback.reload()
 
     def raw_doc(self) -> dict:
-        """Return the full parts_db.json (for GET /api/parts-db)."""
         return self._load()
 
-    # ── primary typed queries ──────────────────────────────────────────────
+    def raw_legacy_index(self) -> dict:
+        return self._legacy_index._load()
 
-    def list_parts_by_category(self, category: str) -> list[Part]:
-        doc = self._load()
+    # ── Primary typed queries ──────────────────────────────────────────────
+
+    def list_categories(self) -> list[Category]:
         return [
-            _hydrate_part(pid, spec)
-            for pid, spec in (doc.get("parts") or {}).items()
-            if spec.get("category") == category
+            _hydrate_category(cid, spec)
+            for cid, spec in (self._load().get("categories") or {}).items()
         ]
 
-    def list_manufacturers_for_part(self, part_id: str) -> list[Manufacturer]:
+    def list_manufacturers_in_category(self, category_id: str) -> list[Manufacturer]:
         doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return []
-        mfg_id = part.get("manufacturer_id", "")
-        if not mfg_id:
-            return []
-        mfg = (doc.get("manufacturers") or {}).get(mfg_id)
-        if not mfg:
-            return []
-        return [_hydrate_manufacturer(mfg_id, mfg)]
-
-    def list_models_for_part(self, part_id: str) -> list[Model]:
-        doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return []
-        return [_hydrate_model(m) for m in (part.get("models") or [])]
-
-    def list_compatible_locations(self, part_id: str, vehicle_type: str) -> list[Location]:
-        doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return []
-        location_ids = (part.get("compatible_locations_by_vehicle") or {}).get(
-            vehicle_type, []
-        )
-        locations = doc.get("locations") or {}
-        out: list[Location] = []
-        for loc_id in location_ids:
-            spec = locations.get(loc_id)
-            if spec:
-                out.append(_hydrate_location(loc_id, spec))
-        return out
-
-    def list_compatible_colors(self, part_id: str) -> list[Color]:
-        doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return []
-        # Color compatibility is per-model; union them for the part-level view.
-        supported: set[str] = set()
-        for model in part.get("models", []):
-            supported.update(model.get("supported_colors", []) or [])
-        palette = doc.get("color_palette") or {}
-        return [
-            _hydrate_color(cid, palette[cid])
-            for cid in supported
-            if cid in palette
-        ]
-
-    def bracket_requirement(self, part_id: str) -> Optional[BracketRequirement]:
-        doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return None
-        if not part.get("bracket_required"):
-            return None
-        return BracketRequirement(
-            required=True,
-            compatible_bracket_part_ids=list(part.get("compatible_bracket_part_ids", []) or []),
-        )
-
-    def list_compatible_brackets(
-        self, part_id: str, location: str | None = None
-    ) -> list[Part]:
-        doc = self._load()
-        part = (doc.get("parts") or {}).get(part_id)
-        if not part:
-            return []
-        bracket_ids = part.get("compatible_bracket_part_ids", []) or []
-        parts = doc.get("parts") or {}
-        out: list[Part] = []
-        for bid in bracket_ids:
-            spec = parts.get(bid)
-            if not spec:
+        mfgs_doc = doc.get("manufacturers") or {}
+        seen: list[str] = []
+        for product in (doc.get("products") or {}).values():
+            if product.get("category_id") != category_id:
                 continue
-            if location is not None:
-                allowed = spec.get("compatible_locations", []) or []
-                if allowed and location not in allowed:
-                    continue
-            out.append(_hydrate_part(bid, spec))
+            mfg_id = product.get("manufacturer_id", "")
+            if mfg_id and mfg_id not in seen:
+                seen.append(mfg_id)
+        return [
+            _hydrate_manufacturer(mid, mfgs_doc[mid])
+            for mid in seen
+            if mid in mfgs_doc
+        ]
+
+    def list_products(self) -> list[Product]:
+        doc = self._load()
+        return [
+            _hydrate_product(pid, spec)
+            for pid, spec in (doc.get("products") or {}).items()
+        ]
+
+    def list_products_by_category(self, category_id: str) -> list[Product]:
+        doc = self._load()
+        return [
+            _hydrate_product(pid, spec)
+            for pid, spec in (doc.get("products") or {}).items()
+            if spec.get("category_id") == category_id
+        ]
+
+    def list_products_by_manufacturer(self, manufacturer_id: str) -> list[Product]:
+        doc = self._load()
+        return [
+            _hydrate_product(pid, spec)
+            for pid, spec in (doc.get("products") or {}).items()
+            if spec.get("manufacturer_id") == manufacturer_id
+        ]
+
+    def get_product(self, product_id: str) -> Optional[Product]:
+        spec = (self._load().get("products") or {}).get(product_id)
+        if not spec:
+            return None
+        return _hydrate_product(product_id, spec)
+
+    def list_part_numbers(self, product_id: str) -> list[PartNumber]:
+        spec = (self._load().get("products") or {}).get(product_id) or {}
+        return [_hydrate_part_number(pn) for pn in (spec.get("part_numbers") or [])]
+
+    def list_option_axes(self, product_id: str) -> dict[str, OptionAxis]:
+        spec = (self._load().get("products") or {}).get(product_id) or {}
+        return {
+            name: _hydrate_option_axis(name, axis)
+            for name, axis in (spec.get("option_axes") or {}).items()
+        }
+
+    # ── Compatibility queries ──────────────────────────────────────────────
+
+    def zones_for_category(self, category_id: str) -> list[str]:
+        cat = (self._load().get("categories") or {}).get(category_id) or {}
+        return list(cat.get("applies_to_zones") or [])
+
+    def products_compatible_with_zone(self, zone_id: str) -> list[Product]:
+        doc = self._load()
+        compatible_cats = {
+            cid
+            for cid, spec in (doc.get("categories") or {}).items()
+            if zone_id in (spec.get("applies_to_zones") or [])
+        }
+        return [
+            _hydrate_product(pid, spec)
+            for pid, spec in (doc.get("products") or {}).items()
+            if spec.get("category_id") in compatible_cats
+        ]
+
+    def brackets_for_product(self, product_id: str) -> list[Product]:
+        doc = self._load()
+        out: list[Product] = []
+        for pid, spec in (doc.get("products") or {}).items():
+            if spec.get("category_id") != "brackets":
+                continue
+            if product_id in (spec.get("compatible_with_products") or []):
+                out.append(_hydrate_product(pid, spec))
         return out
 
-    # ── compat shims (name-keyed; fall through to legacy) ──────────────────
+    def list_colors(self) -> list[Color]:
+        return [
+            _hydrate_color(cid, spec)
+            for cid, spec in (self._load().get("color_palette") or {}).items()
+        ]
 
-    def lookup_part_by_name(self, name: str) -> Optional[Part]:
+    # ── Compat shims (three-tier fallback) ────────────────────────────────
+
+    def products_for_legacy_part_type(self, label: str) -> list[Product]:
+        product_ids = self._legacy_index.product_ids_for_part_type(label)
         doc = self._load()
-        target = (name or "").strip().upper()
-        if not target:
+        products_doc = doc.get("products") or {}
+        return [
+            _hydrate_product(pid, products_doc[pid])
+            for pid in product_ids
+            if pid in products_doc
+        ]
+
+    def product_for_legacy_model_string(self, model: str) -> Optional[Product]:
+        pid = self._legacy_index.product_id_for_model_string(model)
+        if not pid:
             return None
-        for pid, spec in (doc.get("parts") or {}).items():
-            candidates = [spec.get("legacy_workbook_name", ""), spec.get("friendly_name", "")]
-            candidates.extend(spec.get("aliases", []) or [])
-            if any(c and c.strip().upper() == target for c in candidates):
-                return _hydrate_part(pid, spec)
-        return None
+        spec = (self._load().get("products") or {}).get(pid)
+        if not spec:
+            return None
+        return _hydrate_product(pid, spec)
 
-    def manufacturers_by_legacy_name(self, name: str) -> list[str]:
-        part = self.lookup_part_by_name(name)
-        if part and part.manufacturer_id:
+    def manufacturers_by_legacy_name(self, label: str) -> list[str]:
+        """Used by manifest_editor's manufacturer dropdown for a workbook part-type.
+
+        Tier 1: parts_db via legacy_workbook_index.
+        Tier 2: workbook_rules.part_rules.
+        """
+        products = self.products_for_legacy_part_type(label)
+        if products:
             doc = self._load()
-            mfg = (doc.get("manufacturers") or {}).get(part.manufacturer_id)
-            if mfg:
-                return [mfg.get("label", part.manufacturer_id)]
-        return self._fallback.manufacturers(name)
-
-    def models_by_legacy_name(self, name: str) -> list[str]:
-        part = self.lookup_part_by_name(name)
-        if part and part.models:
-            return [m.model_number or m.model_id for m in part.models if (m.model_number or m.model_id)]
-        return self._fallback.models(name)
-
-    def locations_by_legacy_name(self, name: str) -> list[str]:
-        part = self.lookup_part_by_name(name)
-        if part:
-            # Union of compatible locations across all vehicles
+            mfgs = doc.get("manufacturers") or {}
             seen: list[str] = []
-            for loc_ids in (part.compatible_locations_by_vehicle or {}).values():
-                for lid in loc_ids:
-                    if lid not in seen:
-                        seen.append(lid)
+            for p in products:
+                if p.manufacturer_id and p.manufacturer_id in mfgs:
+                    lbl = mfgs[p.manufacturer_id].get("label", p.manufacturer_id)
+                    if lbl not in seen:
+                        seen.append(lbl)
             if seen:
                 return seen
-        return self._fallback.locations(name)
+        return self._fallback.manufacturers(label)
+
+    def models_by_legacy_name(self, label: str) -> list[str]:
+        products = self.products_for_legacy_part_type(label)
+        if products:
+            seen: list[str] = []
+            for p in products:
+                if p.model and p.model not in seen:
+                    seen.append(p.model)
+            if seen:
+                return seen
+        return self._fallback.models(label)
+
+    def locations_by_legacy_name(self, label: str) -> list[str]:
+        """Locations aren't on products in the new schema — they're a vehicle
+        geometry concern. For the legacy compat shim, return the union of
+        location keys whose zone is in any compatible category's applies_to_zones.
+
+        If the parts_db has no products for this label, fall back to the
+        raw workbook_rules.part_rules[label].locations list.
+        """
+        doc = self._load()
+        products = self.products_for_legacy_part_type(label)
+        if products:
+            categories = doc.get("categories") or {}
+            location_zone_map = doc.get("location_zone_map") or {}
+            allowed_zones: set[str] = set()
+            for p in products:
+                allowed_zones.update(
+                    (categories.get(p.category_id) or {}).get("applies_to_zones") or []
+                )
+            if allowed_zones:
+                return [
+                    loc_id
+                    for loc_id, zone in location_zone_map.items()
+                    if zone in allowed_zones
+                ]
+        return self._fallback.locations(label)
 
 
-# ── hydration helpers ────────────────────────────────────────────────────────
+# ── Hydration helpers ────────────────────────────────────────────────────────
 
 
-def _hydrate_part(part_id: str, spec: dict) -> Part:
-    return Part(
-        part_id=part_id,
-        friendly_name=spec.get("friendly_name", ""),
-        category=spec.get("category", ""),
-        manufacturer_id=spec.get("manufacturer_id", ""),
-        build_section=spec.get("build_section", ""),
-        template_section=spec.get("template_section", ""),
-        legacy_workbook_name=spec.get("legacy_workbook_name", ""),
-        aliases=list(spec.get("aliases", []) or []),
-        models=[_hydrate_model(m) for m in (spec.get("models", []) or [])],
-        compatible_vehicles=list(spec.get("compatible_vehicles", []) or []),
-        compatible_locations_by_vehicle={
-            k: list(v) for k, v in (spec.get("compatible_locations_by_vehicle") or {}).items()
-        },
-        color_asset_map=dict(spec.get("color_asset_map") or {}),
-        bracket_required=bool(spec.get("bracket_required", False)),
-        compatible_bracket_part_ids=list(spec.get("compatible_bracket_part_ids", []) or []),
-        compatible_part_ids=list(spec.get("compatible_part_ids", []) or []),
-        compatible_locations=list(spec.get("compatible_locations", []) or []),
-        serialized=bool(spec.get("serialized", False)),
+def _hydrate_category(cid: str, spec: dict) -> Category:
+    return Category(
+        category_id=cid,
+        label=spec.get("label", cid),
+        applies_to_zones=list(spec.get("applies_to_zones") or []),
     )
 
 
-def _hydrate_model(spec: dict) -> Model:
-    return Model(
-        model_id=spec.get("model_id", ""),
-        model_number=spec.get("model_number", ""),
-        submodel=spec.get("submodel", ""),
-        color_count=int(spec.get("color_count", 1) or 1),
-        power_outputs=int(spec.get("power_outputs", 0) or 0),
-        supported_colors=list(spec.get("supported_colors", []) or []),
-        price_usd=spec.get("price_usd"),
-        qty_on_hand=spec.get("qty_on_hand"),
-    )
-
-
-def _hydrate_manufacturer(mfg_id: str, spec: dict) -> Manufacturer:
+def _hydrate_manufacturer(mid: str, spec: dict) -> Manufacturer:
     return Manufacturer(
-        manufacturer_id=mfg_id,
-        label=spec.get("label", mfg_id),
+        manufacturer_id=mid,
+        label=spec.get("label", mid),
         website=spec.get("website", ""),
     )
 
 
-def _hydrate_location(loc_id: str, spec: dict) -> Location:
-    return Location(
-        location_id=loc_id,
-        label=spec.get("label", loc_id),
-        zone=spec.get("zone", ""),
+def _hydrate_option_axis(name: str, spec: dict) -> OptionAxis:
+    return OptionAxis(
+        name=name,
+        type=spec.get("type", ""),
+        axis_id=spec.get("axis_id", ""),
+        allowed=list(spec.get("allowed") or []),
+        min=spec.get("min"),
+        max=spec.get("max"),
     )
 
 
-def _hydrate_color(color_id: str, spec: dict) -> Color:
+def _hydrate_part_number(spec: dict) -> PartNumber:
+    return PartNumber(
+        part_number=spec.get("part_number", ""),
+        friendly_name=spec.get("friendly_name", ""),
+        options=dict(spec.get("options") or {}),
+        qty_on_hand=spec.get("qty_on_hand"),
+        price_usd=spec.get("price_usd"),
+    )
+
+
+def _hydrate_product(pid: str, spec: dict) -> Product:
+    return Product(
+        product_id=pid,
+        manufacturer_id=spec.get("manufacturer_id", ""),
+        category_id=spec.get("category_id", ""),
+        model=spec.get("model", ""),
+        description=spec.get("description", ""),
+        images=dict(spec.get("images") or {}),
+        option_axes={
+            name: _hydrate_option_axis(name, axis)
+            for name, axis in (spec.get("option_axes") or {}).items()
+        },
+        part_numbers=[_hydrate_part_number(pn) for pn in (spec.get("part_numbers") or [])],
+        compatible_with_products=list(spec.get("compatible_with_products") or []),
+    )
+
+
+def _hydrate_color(cid: str, spec: dict) -> Color:
     return Color(
-        color_id=color_id,
-        label=spec.get("label", color_id),
+        color_id=cid,
+        label=spec.get("label", cid),
         hex=spec.get("hex", ""),
         naming_token=spec.get("naming_token", ""),
     )
 
 
-# ── module-level singleton ────────────────────────────────────────────────────
+# ── Singleton ────────────────────────────────────────────────────────────────
+
 
 _instance: PartsDbService | None = None
 
 
 def get_parts_db_service(paths: AppPaths) -> PartsDbService:
-    """Return (or build) the process-wide PartsDbService.
-
-    A second call with different `paths` resets the singleton — this is the
-    pattern used by tests that point the service at a tmp workspace.
-    """
     global _instance
     if _instance is None or _instance._paths is not paths:
         _instance = PartsDbService(paths)

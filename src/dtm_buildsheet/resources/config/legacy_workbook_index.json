@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "purpose": "Maps legacy workbook part-type strings to compatible product_ids. Used by manifest_editor and excel_reader during the parts_db transition. Populated by tools/migrate_workbook_to_parts_db.py. Throwaway when the workbook input path retires.",
+  "part_type_to_products": {},
+  "model_string_to_product": {}
+}

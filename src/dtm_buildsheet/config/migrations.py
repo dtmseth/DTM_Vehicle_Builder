@@ -28,6 +28,7 @@ _MIGRATIONS: dict[str, list] = {
     # parts_db.json starts at schema_version 1; no migrations registered yet.
     # Hook point for future field changes (Phase 5 light naming, etc.).
     "parts_db.json": [],
+    "legacy_workbook_index.json": [],
 }
 
 

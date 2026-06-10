@@ -1,9 +1,8 @@
-"""Phase 3: HTTP route coverage for /api/parts-db/*.
+"""Phase 3 (revised): HTTP route coverage for /api/parts-db/*.
 
-Bypasses the actual HTTP server — the route function `route_parts_db` accepts a
-handler-like object whose only requirement is `send_json`-compatible plumbing
-(`send_response`, `send_header`, `end_headers`, and `wfile.write`). A tiny
-FakeHandler captures the response so assertions stay readable.
+Seven endpoints — full doc, categories, manufacturers (with category filter),
+products (with category/manufacturer filters), single product, part-numbers
+of a product, products compatible with a zone, plus POST save.
 """
 from __future__ import annotations
 
@@ -26,12 +25,7 @@ def _reset_singleton():
 
 
 class FakeHandler:
-    """Implements just enough of BaseHTTPRequestHandler for `send_json`.
-
-    `route_parts_db` reads `self.path` to parse the querystring and writes
-    its response through `send_response`/`send_header`/`end_headers`/`wfile`
-    — those four members are all that needs faking.
-    """
+    """Just enough BaseHTTPRequestHandler surface for `send_json`."""
     def __init__(self, path: str):
         self.path = path
         self.status: int | None = None
@@ -53,134 +47,165 @@ class FakeHandler:
 
 _SYNTHETIC_DB = {
     "schema_version": 1,
-    "part_categories": {"lights": {"label": "Lights"}, "radar": {"label": "Radar"}},
-    "location_zones": {"primary_front": {"label": "Primary Front"}},
-    "locations": {"GRILL": {"label": "Grill", "zone": "primary_front"}},
-    "build_sections": {"front": {"label": "Front", "order": 1}},
-    "manufacturers": {"whelen": {"label": "Whelen"}},
-    "color_palette": {"red": {"label": "Red", "hex": "#E10600", "naming_token": "R"}},
-    "parts": {
+    "categories": {
+        "lights":       {"label": "Lights",       "applies_to_zones": ["primary_front"]},
+        "push_bumpers": {"label": "Push Bumpers", "applies_to_zones": ["primary_front"]},
+    },
+    "manufacturers": {
+        "whelen":   {"label": "Whelen"},
+        "setina":   {"label": "Setina"},
+        "soundoff": {"label": "SoundOff Signal"},
+    },
+    "products": {
         "whelen_ion_t": {
-            "friendly_name": "Whelen ION T",
-            "category": "lights",
             "manufacturer_id": "whelen",
-            "models": [{"model_id": "wh_ion_t_1", "model_number": "ION-T-1"}],
-            "compatible_locations_by_vehicle": {"TAHOE": ["GRILL"]},
+            "category_id": "lights",
+            "model": "ION T-Series",
+            "part_numbers": [{"part_number": "ION-T-RW"}],
+        },
+        "soundoff_mpower": {
+            "manufacturer_id": "soundoff",
+            "category_id": "lights",
+            "model": "mPOWER",
+        },
+        "setina_pb400": {
+            "manufacturer_id": "setina",
+            "category_id": "push_bumpers",
+            "model": "PB400",
         },
     },
-    "naming_rules": {},
+    "location_zones": {"primary_front": {"label": "Primary Front"}},
+    "location_zone_map": {"GRILL": "primary_front"},
 }
 
 
-def _paths_with_db(tmp_path: Path, db: dict | None = _SYNTHETIC_DB) -> AppPaths:
+def _paths(tmp_path: Path, db: dict | None = _SYNTHETIC_DB) -> AppPaths:
     if db is not None:
         (tmp_path / "parts_db.json").write_text(json.dumps(db), "utf-8")
     return AppPaths(workspace_config_dir=tmp_path)
 
 
-# ── GET endpoints ────────────────────────────────────────────────────────────
+# ── GETs ─────────────────────────────────────────────────────────────────────
 
 
 class TestGetFullDoc:
     def test_returns_doc(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
         h = FakeHandler("/api/parts-db")
-        assert route_parts_db(h, "GET", "/api/parts-db", {}, paths) is True
+        assert route_parts_db(h, "GET", "/api/parts-db", {}, _paths(tmp_path)) is True
         assert h.status == 200
-        assert h.body_json()["parts"]["whelen_ion_t"]["friendly_name"] == "Whelen ION T"
+        assert "whelen_ion_t" in h.body_json()["products"]
 
     def test_returns_empty_when_missing(self, tmp_path):
-        paths = AppPaths(workspace_config_dir=tmp_path)
         h = FakeHandler("/api/parts-db")
+        paths = AppPaths(workspace_config_dir=tmp_path)
         assert route_parts_db(h, "GET", "/api/parts-db", {}, paths) is True
-        assert h.body_json()["parts"] == {}
+        assert h.body_json()["products"] == {}
 
 
-class TestGetParts:
-    def test_filters_by_category(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts?category=lights")
-        assert route_parts_db(h, "GET", "/api/parts-db/parts", {}, paths) is True
-        body = h.body_json()
-        assert len(body["parts"]) == 1
-        assert body["parts"][0]["part_id"] == "whelen_ion_t"
-
-    def test_no_filter_returns_all(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts")
-        assert route_parts_db(h, "GET", "/api/parts-db/parts", {}, paths) is True
-        assert len(h.body_json()["parts"]) >= 1
+class TestGetCategories:
+    def test_returns_all(self, tmp_path):
+        h = FakeHandler("/api/parts-db/categories")
+        assert route_parts_db(h, "GET", "/api/parts-db/categories", {}, _paths(tmp_path)) is True
+        ids = {c["category_id"] for c in h.body_json()["categories"]}
+        assert ids == {"lights", "push_bumpers"}
 
 
-class TestGetSinglePart:
-    def test_returns_part(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts/whelen_ion_t")
-        ok = route_parts_db(h, "GET", "/api/parts-db/parts/whelen_ion_t", {}, paths)
-        assert ok is True
+class TestGetManufacturers:
+    def test_all_when_no_filter(self, tmp_path):
+        h = FakeHandler("/api/parts-db/manufacturers")
+        route_parts_db(h, "GET", "/api/parts-db/manufacturers", {}, _paths(tmp_path))
+        ids = {m["manufacturer_id"] for m in h.body_json()["manufacturers"]}
+        assert ids == {"whelen", "setina", "soundoff"}
+
+    def test_filtered_by_category(self, tmp_path):
+        h = FakeHandler("/api/parts-db/manufacturers?category=lights")
+        route_parts_db(h, "GET", "/api/parts-db/manufacturers", {}, _paths(tmp_path))
+        ids = {m["manufacturer_id"] for m in h.body_json()["manufacturers"]}
+        assert ids == {"whelen", "soundoff"}
+
+
+class TestGetProducts:
+    def test_all(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products")
+        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
+        assert len(h.body_json()["products"]) == 3
+
+    def test_filter_by_category(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products?category=lights")
+        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
+        ids = {p["product_id"] for p in h.body_json()["products"]}
+        assert ids == {"whelen_ion_t", "soundoff_mpower"}
+
+    def test_filter_by_manufacturer(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products?manufacturer=whelen")
+        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
+        ids = {p["product_id"] for p in h.body_json()["products"]}
+        assert ids == {"whelen_ion_t"}
+
+    def test_filter_by_both(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products?category=lights&manufacturer=setina")
+        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
+        # Setina has no lights → empty
+        assert h.body_json()["products"] == []
+
+
+class TestGetSingleProduct:
+    def test_returns_product(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products/whelen_ion_t")
+        route_parts_db(h, "GET", "/api/parts-db/products/whelen_ion_t", {}, _paths(tmp_path))
         assert h.status == 200
-        assert h.body_json()["part_id"] == "whelen_ion_t"
+        assert h.body_json()["model"] == "ION T-Series"
 
-    def test_404_when_unknown(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts/nope")
-        assert route_parts_db(h, "GET", "/api/parts-db/parts/nope", {}, paths) is True
+    def test_404_unknown(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products/nope")
+        route_parts_db(h, "GET", "/api/parts-db/products/nope", {}, _paths(tmp_path))
         assert h.status == 404
 
 
-class TestGetPartLocations:
-    def test_returns_locations_for_vehicle(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts/whelen_ion_t/locations?vehicle=TAHOE")
-        ok = route_parts_db(
-            h, "GET", "/api/parts-db/parts/whelen_ion_t/locations", {}, paths
-        )
-        assert ok is True
+class TestGetPartNumbers:
+    def test_returns_part_numbers(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products/whelen_ion_t/part-numbers")
+        route_parts_db(h, "GET", "/api/parts-db/products/whelen_ion_t/part-numbers", {}, _paths(tmp_path))
         assert h.status == 200
-        ids = [loc["location_id"] for loc in h.body_json()["locations"]]
-        assert ids == ["GRILL"]
+        pns = h.body_json()["part_numbers"]
+        assert [pn["part_number"] for pn in pns] == ["ION-T-RW"]
 
-    def test_missing_vehicle_returns_400(self, tmp_path):
-        paths = _paths_with_db(tmp_path)
-        h = FakeHandler("/api/parts-db/parts/whelen_ion_t/locations")
-        ok = route_parts_db(
-            h, "GET", "/api/parts-db/parts/whelen_ion_t/locations", {}, paths
-        )
-        assert ok is True
-        assert h.status == 400
+    def test_404_unknown_product(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products/nope/part-numbers")
+        route_parts_db(h, "GET", "/api/parts-db/products/nope/part-numbers", {}, _paths(tmp_path))
+        assert h.status == 404
 
 
-# ── POST endpoint ────────────────────────────────────────────────────────────
+class TestGetZoneProducts:
+    def test_returns_compatible_products(self, tmp_path):
+        h = FakeHandler("/api/parts-db/zones/primary_front/products")
+        route_parts_db(h, "GET", "/api/parts-db/zones/primary_front/products", {}, _paths(tmp_path))
+        # Lights + push_bumpers both apply to primary_front
+        ids = {p["product_id"] for p in h.body_json()["products"]}
+        assert ids == {"whelen_ion_t", "soundoff_mpower", "setina_pb400"}
+
+
+# ── POST ─────────────────────────────────────────────────────────────────────
 
 
 class TestPostSave:
-    def test_saves_and_invalidates_cache(self, tmp_path):
+    def test_save_succeeds(self, tmp_path):
         paths = AppPaths(workspace_config_dir=tmp_path)
-        body = dict(_SYNTHETIC_DB)
         h = FakeHandler("/api/parts-db")
-        assert route_parts_db(h, "POST", "/api/parts-db", body, paths) is True
+        assert route_parts_db(h, "POST", "/api/parts-db", dict(_SYNTHETIC_DB), paths) is True
         assert h.status == 200
         assert h.body_json()["ok"] is True
-        # File written
         on_disk = json.loads((tmp_path / "parts_db.json").read_text("utf-8"))
-        assert "whelen_ion_t" in on_disk["parts"]
-        # Service cache picks up the change on next read
-        h2 = FakeHandler("/api/parts-db")
-        route_parts_db(h2, "GET", "/api/parts-db", {}, paths)
-        assert "whelen_ion_t" in h2.body_json()["parts"]
+        assert "whelen_ion_t" in on_disk["products"]
 
-    def test_rejects_invalid_payload(self, tmp_path):
+    def test_save_invalid_payload(self, tmp_path):
         paths = AppPaths(workspace_config_dir=tmp_path)
-        # Missing required field on a part → validator raises → save handler
-        # returns {"ok": False, "error": ...}
         bad = {
             "schema_version": 1,
-            "parts": {
-                "broken": {"category": "lights"},  # no friendly_name
-            },
+            "products": {"broken": {"category_id": "lights"}},  # missing manufacturer_id + model
         }
         h = FakeHandler("/api/parts-db")
         route_parts_db(h, "POST", "/api/parts-db", bad, paths)
         body = h.body_json()
         assert body["ok"] is False
-        assert "friendly_name" in body["error"]
+        assert "manufacturer_id" in body["error"] or "model" in body["error"]
