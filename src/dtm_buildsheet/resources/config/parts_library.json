@@ -1033,10 +1033,10 @@
     },
     {
       "part_id": "factory_componant_relocation_plate",
-      "display_name": "FACTORY COMPONANT RELOCATION PLATE",
+      "display_name": "FACTORY COMPONENT RELOCATION PLATE",
       "category": "CENTER CONSOLE & COMPUTER",
       "manufacturer": "",
-      "model_number": "FACTORY COMPONANT RELOCATION PLATE",
+      "model_number": "FACTORY COMPONENT RELOCATION PLATE",
       "compatible_types": [
         "Special Face Plate 1"
       ],

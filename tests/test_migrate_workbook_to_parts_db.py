@@ -49,9 +49,10 @@ def _synthetic_inputs() -> dict:
                     "locations": ["PUSH_BUMPER_TOP"],
                 },
                 "Cage": {
-                    # Multi-manufacturer + TPO not in parts_library → unresolvable
+                    # Multi-manufacturer + UNKNOWN_TEST_MODEL not in parts_library
+                    # and not in MODEL_MANUFACTURER hand-table → orphan
                     "manufacturer": ["SETINA", "PRO-GARD"],
-                    "models": ["TPO"],
+                    "models": ["UNKNOWN_TEST_MODEL"],
                     "locations": [],
                 },
             },
@@ -170,7 +171,7 @@ class TestProducts:
         out, _ = built
         prods = out["parts_db"]["products"]
         # ION → whelen_ion, MPOWER → soundoff_mpower (resolved via MODEL_MANUFACTURER hand-table),
-        # PB400 → setina_pb400, TPO → orphan (no manufacturer resolution available)
+        # PB400 → setina_pb400, UNKNOWN_TEST_MODEL → orphan
         assert "whelen_ion" in prods
         assert "soundoff_mpower" in prods
         assert "setina_pb400" in prods
@@ -212,19 +213,21 @@ class TestCategoryMapping:
         assert out["parts_db"]["products"]["setina_pb400"]["category_id"] == "push_bumpers"
 
     def test_cage_resolves_to_cages(self, inputs):
-        # The TPO model under Cage has no resolvable manufacturer (not in
-        # parts_library, not in MODEL_MANUFACTURER), so the product won't be
-        # minted — but the category mapping itself should still work. Verify
-        # by setting up a resolvable case.
+        # UNKNOWN_TEST_MODEL under Cage has no resolvable manufacturer, so the
+        # product won't be minted — but the category mapping itself should
+        # still work. Verify by adding a resolvable model to both
+        # workbook_rules (so the model gets iterated) and parts_library
+        # (so the manufacturer resolves cleanly).
+        inputs["workbook_rules"]["part_rules"]["Cage"]["models"].append("FAKE_CAGE_MODEL")
         inputs["parts_library"]["parts"].append({
-            "display_name": "TPO", "category": "X",
-            "manufacturer": "SETINA", "model_number": "TPO",
+            "display_name": "FAKE_CAGE_MODEL", "category": "X",
+            "manufacturer": "SETINA", "model_number": "FAKE_CAGE_MODEL",
             "compatible_types": ["Cage"],
         })
         orphans = mig.Orphans()
         out = mig.build_parts_db(inputs, orphans)
-        assert "setina_tpo" in out["parts_db"]["products"]
-        assert out["parts_db"]["products"]["setina_tpo"]["category_id"] == "cages"
+        assert "setina_fake_cage_model" in out["parts_db"]["products"]
+        assert out["parts_db"]["products"]["setina_fake_cage_model"]["category_id"] == "cages"
 
 
 # ── Part types ──────────────────────────────────────────────────────────────
@@ -281,9 +284,9 @@ class TestLegacyWorkbookIndex:
 class TestOrphans:
     def test_unknown_model_orphan_collected(self, built):
         _, orphans = built
-        # TPO has no resolvable manufacturer → orphan
+        # UNKNOWN_TEST_MODEL has no resolvable manufacturer → orphan
         models = [m for m, _ in orphans.unknown_model_manufacturers]
-        assert "TPO" in models
+        assert "UNKNOWN_TEST_MODEL" in models
 
     def test_orphans_property(self, built):
         _, orphans = built
@@ -293,7 +296,7 @@ class TestOrphans:
         _, orphans = built
         md = orphans.to_markdown()
         assert "Migration orphans report" in md
-        assert "TPO" in md
+        assert "UNKNOWN_TEST_MODEL" in md
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -323,4 +326,4 @@ class TestHelpers:
 
     def test_lookup_returns_none_when_unresolvable(self):
         inputs = _synthetic_inputs()
-        assert mig.lookup_manufacturer_for_model("TPO", inputs["workbook_rules"], inputs["parts_library"]) is None
+        assert mig.lookup_manufacturer_for_model("UNKNOWN_TEST_MODEL", inputs["workbook_rules"], inputs["parts_library"]) is None

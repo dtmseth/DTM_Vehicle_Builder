@@ -118,29 +118,34 @@ LOCATION_TO_ZONE: dict[str, str] = {
     "LEFT ON DASH":        "interior",
     "HEADLINER":           "interior",
 
-    # ─── Ambiguous — owner reviews ────────────────────────────────────────
-    # These are referenced by products but the right zone isn't obvious from
-    # the location name alone. Mark UNKNOWN and the script reports them as
-    # orphans. Owner picks a zone (possibly adding a new zone like `roof`
-    # if needed).
-    "IN LIGHT BAR":              UNKNOWN,  # interior or roof depending on which light bar
-    "LIGHTBAR MOUNT":            UNKNOWN,  # roof — but no `roof` zone exists yet
-    "ON ROOF":                   UNKNOWN,
-    "ROOF":                      UNKNOWN,
-    "ROOF CENTER":               UNKNOWN,
-    "ROOF LIGHT BAR":            UNKNOWN,
-    "PILLARS":                   UNKNOWN,  # A-pillar (front_corner) or B-pillar (side)?
-    "SPOT LIGHT MOUNT":          UNKNOWN,  # mirror area? roof?
-    "UPPER DRIVER AND PASSENGER": UNKNOWN,
+    # Roof — added 2026-06-11 per owner. Owner: "In light bar will only
+    # ever refer to a roof light bar, so it would be a roof location.
+    # Lightbar mount is always roof."
+    "IN LIGHT BAR":               "roof",
+    "LIGHTBAR MOUNT":             "roof",
+    "ON ROOF":                    "roof",
+    "ROOF":                       "roof",
+    "ROOF CENTER":                "roof",
+    "ROOF LIGHT BAR":             "roof",
 
-    # ─── Meta / sentinel locations — not real zones ──────────────────────
-    # These don't correspond to a vehicle location at all. Mapped to empty
-    # string so the resolver skips zone-based part_type derivation; products
-    # placed here fall back to model-name labels.
-    "ON SPECIFIC BRACKET":      "",
-    "PASSENGER SIDE ONLY":      "",
-    "SPECIFY LOCATION":         "",
-    "VEHICLE SPECIFIC BRACKET": "",
+    # Pillars — owner: "A pillars are front corner, or sometimes interior,
+    # B pillar is always interior." Defaulting to front_corner; owner can
+    # change if a specific use case is B-pillar.
+    "PILLARS":                    "front_corner",
+
+    # Upper driver and passenger — owner: "front".
+    "UPPER DRIVER AND PASSENGER": "primary_front",
+
+    # ─── Meta / sentinel locations — not real warning/scene zones ─────────
+    # Owner: "placement location categories are really only for warning/scene
+    # lights, not other parts that use the same locations, like anything
+    # spotlight, push bumper, etc." → unmapping these so the resolver
+    # falls back to category_only derivation for non-light parts here.
+    "SPOT LIGHT MOUNT":            "",   # thermal imager mount — non-light
+    "ON SPECIFIC BRACKET":         "",
+    "PASSENGER SIDE ONLY":         "",
+    "SPECIFY LOCATION":            "",
+    "VEHICLE SPECIFIC BRACKET":    "",
     "VEHICLE SPECIFIC BRACKET(S)": "",
 }
 
@@ -153,23 +158,24 @@ LOCATION_TO_ZONE: dict[str, str] = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _PARTS_DB_CATEGORIES = {
-    "lights":       "Lights",
-    "push_bumpers": "Push Bumpers",
-    "cages":        "Cages",
-    "audio":        "Audio",
-    "radar":        "Radar",
-    "brackets":     "Brackets",
-    "decals":       "Decals",
-    "k9":           "K-9 Equipment",
-    "accessories":  "Accessories",
-    "antennas":     "Antennas",
+    "lights":         "Lights",
+    "push_bumpers":   "Push Bumpers",
+    "cages":          "Cages",
+    "audio":          "Audio",
+    "radar":          "Radar",
+    "brackets":       "Brackets",
+    "decals":         "Decals",
+    "k9":             "K-9 Equipment",
+    "accessories":    "Accessories",
+    "antennas":       "Antennas",
+    "center_console": "Center Console",
 }
 
 # applies_to_zones — what zones each category is valid in. Owner reviews.
 _CATEGORY_ZONES: dict[str, list[str]] = {
     "lights":       ["primary_front", "front_corner", "front_side",
                      "side", "rear_side", "rear_corner", "rear",
-                     "rear_interior", "interior"],
+                     "rear_interior", "interior", "roof"],
     "push_bumpers": ["primary_front"],
     "cages":        ["interior"],
     "audio":        ["primary_front", "interior"],
@@ -179,6 +185,7 @@ _CATEGORY_ZONES: dict[str, list[str]] = {
     "k9":           ["interior"],
     "accessories":  [],
     "antennas":     ["rear_interior", "interior"],
+    "center_console": ["interior"],
 }
 
 _DEFAULT_PER_CATALOG_CATEGORY: dict[str, str] = {
@@ -204,7 +211,26 @@ _DISPLAY_NAME_TO_CATEGORY: dict[str, str] = {
     "Radar Interface Cable (To Camera)": "accessories",
     "Radio Antenna Cable": "antennas",
     "Cradle Point Antenna": "antennas",
-    # Owner adds more here as orphan report surfaces them.
+    # ── Owner answers 2026-06-11 ─────────────────────────────────────────
+    "Pit Bar":         "push_bumpers",
+    "Wing Wraps":      "push_bumpers",
+    "Opticom":         "accessories",
+    "Auto Eject":      "accessories",
+    "Thermal Imager":  "accessories",
+    "Arges":           "accessories",
+    "Radio Antenna Top": "antennas",
+    "Radio Speaker":   "audio",
+    # ── Center console ──────────────────────────────────────────────────
+    # Special Face Plate {n} slots hold Cup Holders, Factory Component
+    # Relocation Plate, Motorola XTL face plates, etc. Owner classification.
+    "Special Face Plate 1": "center_console",
+    "Special Face Plate 2": "center_console",
+    "Special Face Plate 3": "center_console",
+    "Special Face Plate 4": "center_console",
+    "Special Face Plate 5": "center_console",
+    "Special Face Plate 6": "center_console",
+    "Special Face Plate 7": "center_console",
+    "Center Console":       "center_console",
 }
 
 
@@ -241,8 +267,208 @@ MODEL_MANUFACTURER: dict[str, str] = {
     "PB450L2":       "setina",
     "HDX":           "pro_gard",
     "PIT ULTRA":     "westin",
-    # Everything else is filled in by the dry-run report. Owner edits this
-    # dict in place and re-runs.
+
+    # ─── Owner-review batch added 2026-06-11 ─────────────────────────────
+    # All entries below are BEST GUESSES based on industry knowledge +
+    # workbook context. Owner reviews and corrects. Wrong guesses produce
+    # wrong manufacturer IDs and possibly extra manufacturers in the DB;
+    # missing entries fall back to UNKNOWN orphans.
+    #
+    # The legacy_workbook_index.model_string_to_product map will reflect
+    # whatever this dict ends up being, so a wrong guess gets baked in.
+    # Worth scanning carefully.
+
+    # ── Whelen lighting (warning/scene + accessories) ──────────────────
+    "2 LAMP TRACER":       "whelen",  # ? Whelen Tracer series
+    "TRACER 5 LAMP":       "whelen",  # ?
+    "TRACER 6 LAMP":       "whelen",  # ?
+    "TRACER L BRACKETS X2 PER": "whelen",  # ? accessory
+    "T-SERIES":            "whelen",  # ? Whelen T-Series
+    "T-SERIES ION":        "whelen",  # ?
+    "MEGA T-SERIES":       "whelen",  # ?
+    "MINI T-SERIES":       "whelen",  # ?
+    "T-IONS W/SHORUD":     "whelen",  # ?
+    "STANDARD MOUNT ION":  "whelen",  # ? ION variant
+    "SURFACE MOUNT ION":   "whelen",  # ?
+    "INNER EDGE":          "whelen",  # ? Whelen Inner Edge interior light bar
+    "MICRO PULSE":         "whelen",  # ?
+    "MIRROR BEAMS":        "whelen",  # ? Whelen MirrorBeam
+    "U-SERIES":            "whelen",  # ? Whelen U-Series mirror beam
+    "INTERSECTORS":        "whelen",  # ? Whelen Intersectors (could be Feniex)
+    "VXE":                 "whelen",  # ? Whelen Vertex variant
+    "9X EDGE":             "whelen",  # ? could be Federal Signal Spectralux 9X
+    "PIONEER":             "whelen",  # ? Whelen Pioneer scene light
+    "FIELD SERIES":        "whelen",  # ? Whelen Field Series scene light
+
+    # ── Whelen Roof Light Bars ─────────────────────────────────────────
+    "FREEDOM":             "whelen",  # ?
+    "LEGACY":              "whelen",  # ?
+    "LIBERTY":             "whelen",  # ?
+    "JUSTICE":             "whelen",  # ?
+    "CENATOR":             "whelen",  # ?
+
+    # ── Whelen control / power systems ─────────────────────────────────
+    "CCTL5":               "whelen",  # ? Whelen CenCom Sapphire control head
+    "CCTL6":               "whelen",  # ?
+    "CCTL7":               "whelen",  # ?
+    "CCTL8":               "whelen",  # ?
+    "CCTL9":               "whelen",  # ?
+    "CEM8":                "whelen",  # ? Whelen CenCom Expansion Module
+    "CEM16":               "whelen",  # ?
+    "CEM24":               "whelen",  # ?
+    "CORE":                "whelen",  # ? Whelen Core control system
+    "CORE CONTROL HEAD":   "whelen",  # ?
+    "BLUEPRINT":           "whelen",  # ? Whelen Blueprint controller
+    "FLASHED WITH CORE":   "whelen",  # ? Whelen Core flasher config
+
+    # ── Whelen audio ───────────────────────────────────────────────────
+    "AM-900":              "whelen",  # ? Whelen amplifier
+    "LC HOWLER":           "whelen",  # ?
+    "WC HOWLER":           "whelen",  # ?
+    "WCX HOWLER":          "whelen",  # ?
+    "SA315P":              "whelen",  # ? Whelen Siren
+    "SA315U":              "whelen",  # ?
+    "SAK1":                "whelen",  # ? Whelen siren bracket
+    "SAK9":                "whelen",  # ?
+
+    # ── Whelen interior light bars (uncertain) ─────────────────────────
+    "RST":                 "whelen",  # ? rear interior light bar
+    "FST":                 "whelen",  # ? front interior light bar
+    "XLP":                 "whelen",  # ? interior light bar — could be SoundOff
+
+    # ── SoundOff Signal ────────────────────────────────────────────────
+    "M-POWER":             "soundoff",  # ? alias of MPOWER
+    "NFORCE":              "soundoff",  # ? SoundOff nForce
+    "N-FORCE":             "soundoff",  # ?
+    "M4":                  "soundoff",  # ? could be Feniex M4 instead
+
+    # ── Federal Signal ─────────────────────────────────────────────────
+    "AVENGER X1":          "federal_signal",  # ? Federal Signal Avenger
+    "AVENGER X2":          "federal_signal",  # ?
+
+    # ── Setina (cages, partitions, equipment) ──────────────────────────
+    "TPO":                 "setina",  # ?
+    "CARGO MAXX":          "setina",  # ?
+    "BOARD":               "setina",  # ? equipment tray
+    "EQUIPMENT TRAY":      "setina",  # ?
+    "EQUIPMENT DRAWER":    "setina",  # ?
+    "EQUIMPENT BOX":       "setina",  # ? (typo in source)
+    "REPLACEMENT FLOOR":   "setina",  # ?
+    "FULL PARTITION":      "setina",  # ?
+    "FULL XL PARTITION":   "setina",  # ?
+    "PASSENGER SIDE XL PARTITION": "setina",  # ?
+    "SINGLE PRISIONER":    "setina",  # ? partition variant (typo in source)
+    "POLY DIVIDER":        "setina",  # ? Setina poly cage product
+    "POLY WINDOW":         "setina",  # ?
+    "STEEL WINDOW":        "setina",  # ?
+
+    # ── Pro-Gard ───────────────────────────────────────────────────────
+    "POLY FLOOR PAN":      "pro_gard",  # ?
+    "POLY FLOOR PAN W/ DRAINS": "pro_gard",  # ?
+    "POLY SEAT COVER":     "pro_gard",  # ?
+    "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS": "pro_gard",  # ? (typo in source)
+    "HEAT ALARM AND DOOR POPPER": "pro_gard",  # ? could be Ace K-9
+    "HEAT ALARM ONLY":     "pro_gard",  # ?
+
+    # ── Ace K-9 ────────────────────────────────────────────────────────
+    "ACE K-9":             "ace_k_9",  # ?
+    "ULTIMATE":            "ace_k_9",  # ? Ace K-9 Ultimate kennel
+    "ULTIMATE II":         "ace_k_9",  # ?
+    "FULL PLATFORM":       "ace_k_9",  # ?
+    "2/3 1/2 PASS EXIT":   "ace_k_9",  # ? K-9 kennel variant
+    "2/3 1/3 DRIVER EXIT": "ace_k_9",  # ?
+
+    # ── Pro-Gard gun racks ─────────────────────────────────────────────
+    "DUAL HANDCUFF":       "pro_gard",  # ? could be Santa Cruz
+    "DUAL SHOT GUN":       "pro_gard",  # ?
+    "HANDCUFF AND SHOT GUN": "pro_gard",  # ?
+    "SINGLE HANDCUFF":     "pro_gard",  # ?
+    "SINGLE SHOT GUN":     "pro_gard",  # ?
+
+    # ── Santa Cruz (T-rail) ────────────────────────────────────────────
+    "DUAL T-RAIL":         "santa_cruz",  # ?
+    "SINGLE T-RAIL":       "santa_cruz",  # ?
+    "FRONT OVERHEAD BRACKETS": "santa_cruz",  # ? could be Pro-Gard
+    "REAR OVERHEAD BRACKETS": "santa_cruz",  # ?
+
+    # ── Havis (mounts, consoles, faceplates) ───────────────────────────
+    "UNIVERSAL":           "havis",  # ? Havis center console
+    "VEHICLE SPECIFIC":    "havis",  # ?
+    "7\"\" SCREEN":        "havis",  # ?
+    "8\"\" SCREEN":        "havis",  # ?
+    "9\"\" SCREEN":        "havis",  # ?
+    "9\"\" MONGOOSE":      "havis",  # ?
+    "9\"\" XE":            "havis",  # ?
+    "PRINTER ARM REST":    "havis",  # ?
+    "SIDE ARM REST":       "havis",  # ?
+    "STANDARD ARM REST":   "havis",  # ?
+    "3.5\"\" POCKET":      "havis",  # ? face plate
+    "6\"\" POCKET":        "havis",  # ?
+
+    # ── Watchguard (camera/DVR) ────────────────────────────────────────
+    "WATCHGUARD DVR":      "watchguard",  # ?
+    "4RE":                 "watchguard",  # ? Watchguard 4RE DVR
+    "M500":                "watchguard",  # ?
+
+    # ── Axon (camera/DVR) ──────────────────────────────────────────────
+    "FLEET 2":             "axon",  # ?
+    "FLEET 3":             "axon",  # ?
+
+    # ── Angel Armor (bullet proof) ─────────────────────────────────────
+    "LEVEL 3+(RIFLE)":     "angel_armor",  # ?
+    "LEVEL 3A (HANDGUN)":  "angel_armor",  # ?
+
+    # ── Cradlepoint (cellular/antenna) ─────────────────────────────────
+    "FIRST NET ROOF MOUNT": "cradle_point",  # ?
+    "FIRST NET WINDOW MOUNT": "cradle_point",  # ?
+    "VERIZON ROOF MOUNT":  "cradle_point",  # ?
+    "VERIZON WINDOW MOUNT": "cradle_point",  # ?
+    "ROOF MOUNT":          "cradle_point",  # ?
+    "WINDOW MOUNT":        "cradle_point",  # ?
+
+    # ── Motorola ───────────────────────────────────────────────────────
+    "MOTORAOLA XTL":       "motorola",  # ? (typo in source)
+    "ALL IN ONE UNIT":     "motorola",  # ?
+    "SPLIT UNIT":          "motorola",  # ?
+
+    # ── Arges (a manufacturer in its own right) ────────────────────────
+    "ARGES CONTROL HEAD":  "arges",  # ?
+
+    # ── Westin push bumper accessories ─────────────────────────────────
+    "PIT BARS":            "westin",  # ? could be Setina
+    "WING WRAPS":          "westin",  # ?
+    "WESTIN 2 LIGHT TUBE": "westin",  # ?
+    "WESTIN 4 LIGHT TUBE": "westin",  # ?
+
+    # ── DTM custom brackets ────────────────────────────────────────────
+    "DTM EXTENDED CARGO WINDOW BRACKET": "dtm",  # ? DTM-fabricated
+    "UNIVERSAL GRILL BRACKET": "dtm",  # ?
+
+    # ── Generic / material descriptors (might warrant cleanup later) ──
+    "POLY":                "setina",  # ? generic material descriptor
+    "POLY TINTED":         "setina",  # ?
+    "STEEL":               "setina",  # ?
+    "STEEL HORIZONTAL":    "setina",  # ?
+    "STEEL VERTICAL":      "setina",  # ?
+    "ANGLE BRACKET":       "dtm",  # ? generic shape descriptor
+    "L BRACKET":           "dtm",  # ?
+    "GROMMET MOUNT":       "dtm",  # ?
+    "LICENSE PLATE BRACKET": "dtm",  # ? — also a location, listed as a model
+    "TWIST LOCK ADAPTOR":  "dtm",  # ?
+    "CYLINDER STYLE":      "specify",  # ? antenna style
+    "WHIP STYLE":          "specify",  # ?
+    "3\"\" ROUND":         "specify",  # ? generic dome light
+    "3\"\" ROUND(S)":      "specify",  # ?
+    "6\"\" ROUND":         "specify",  # ?
+
+    # ── Center console face plate inserts ──────────────────────────────
+    "CUP HOLDERS":         "havis",  # ? Havis console insert
+    "FACTORY COMPONENT RELOCATION PLATE": "havis",  # ? typo-fixed; Havis or DTM
+
+    # ── Dropped via _SENTINEL_MODELS (placeholders / install notes):
+    #     SPECIFY BAR / BRACKET / CRADLE / DOCK / MODEL / SWITCH PLATE (SPECIFY)
+    #     PREWIRE — wires run, no light installed (install config)
+    #     DIRECT TO COMPUTER — install method for Thermal Imager Monitor
 }
 
 
@@ -358,25 +584,400 @@ WORKBOOK_PART_TYPE_GROUPS: list[dict[str, Any]] = [
         "sequence_scope": "per_zone_per_role",
         "workbook_label_pattern": "Lower Lift Gate Warning",
     },
-    # ── Equipment (one-offs) ────────────────────────────────────────────
-    {
-        "match_re": r"^Push Bumper$",
-        "part_type_id": "push_bumper",
-        "label": "Push Bumper",
-        "category_id": "push_bumpers",
-        "predicate": {"category_only": True},
-        "sequence_scope": "global",
-        "workbook_label_pattern": "Push Bumper",
-    },
-    {
-        "match_re": r"^Cage$",
-        "part_type_id": "cage",
-        "label": "Cage",
-        "category_id": "cages",
-        "predicate": {"category_only": True},
-        "sequence_scope": "global",
-        "workbook_label_pattern": "Cage",
-    },
+    # ── Push bumpers + add-ons ──────────────────────────────────────────
+    {"match_re": r"^Push Bumper$", "part_type_id": "push_bumper", "label": "Push Bumper",
+     "category_id": "push_bumpers", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Push Bumper"},
+    {"match_re": r"^Pit Bar$", "part_type_id": "pit_bar", "label": "Pit Bar",
+     "category_id": "push_bumpers", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Pit Bar"},
+    {"match_re": r"^Pit Bar Warning$", "part_type_id": "pit_bar_warning",
+     "label": "Pit Bar Warning", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Pit Bar Warning"},
+    {"match_re": r"^Wing Wraps$", "part_type_id": "wing_wraps", "label": "Wing Wraps",
+     "category_id": "push_bumpers", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Wing Wraps"},
+    {"match_re": r"^Wire Covers$", "part_type_id": "wire_covers", "label": "Wire Covers",
+     "category_id": "push_bumpers", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Wire Covers"},
+    {"match_re": r"^FW \d+ Bracket$", "part_type_id": "fw_bracket",
+     "label": "FW Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "FW {n} Bracket"},
+
+    # ── Cages + interior security/structure ─────────────────────────────
+    {"match_re": r"^Cage$", "part_type_id": "cage", "label": "Cage",
+     "category_id": "cages", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Cage"},
+    {"match_re": r"^Front Partition$", "part_type_id": "front_partition",
+     "label": "Front Partition", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Partition"},
+    {"match_re": r"^Front Partition Transfer Kit$", "part_type_id": "front_partition_transfer_kit",
+     "label": "Front Partition Transfer Kit", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Partition Transfer Kit"},
+    {"match_re": r"^Rear Partition$", "part_type_id": "rear_partition",
+     "label": "Rear Partition", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Partition"},
+    {"match_re": r"^Chicago Barrier$", "part_type_id": "chicago_barrier",
+     "label": "Chicago Barrier", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Chicago Barrier"},
+    {"match_re": r"^Rear Window Bars$", "part_type_id": "rear_window_bars",
+     "label": "Rear Window Bars", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Window Bars"},
+    {"match_re": r"^Rear Seat Divider$", "part_type_id": "rear_seat_divider",
+     "label": "Rear Seat Divider", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Seat Divider"},
+    {"match_re": r"^Replacement Rear Seat$", "part_type_id": "replacement_rear_seat",
+     "label": "Replacement Rear Seat", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Replacement Rear Seat"},
+    {"match_re": r"^Floor Pan$", "part_type_id": "floor_pan", "label": "Floor Pan",
+     "category_id": "cages", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Floor Pan"},
+    {"match_re": r"^Bullet Proof Door Panel\(s\)$", "part_type_id": "bullet_proof_door_panel",
+     "label": "Bullet Proof Door Panel", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Bullet Proof Door Panel(s)"},
+    {"match_re": r"^Bullet Proof Door Window\(s\)$", "part_type_id": "bullet_proof_door_window",
+     "label": "Bullet Proof Door Window", "category_id": "cages",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Bullet Proof Door Window(s)"},
+
+    # ── Light bars + interior/exterior lights ───────────────────────────
+    {"match_re": r"^Roof Light Bar$", "part_type_id": "roof_light_bar",
+     "label": "Roof Light Bar", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Roof Light Bar"},
+    {"match_re": r"^Front Interior Light Bar$", "part_type_id": "front_interior_light_bar",
+     "label": "Front Interior Light Bar", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Interior Light Bar"},
+    {"match_re": r"^Rear Interior Light Bar$", "part_type_id": "rear_interior_light_bar",
+     "label": "Rear Interior Light Bar", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Interior Light Bar"},
+    {"match_re": r"^Front Dome Light$", "part_type_id": "front_dome_light",
+     "label": "Front Dome Light", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Dome Light"},
+    {"match_re": r"^Rear Seat Lights \d+$", "part_type_id": "rear_seat_lights",
+     "label": "Rear Seat Lights", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Seat Lights {n}"},
+    {"match_re": r"^Rear Seat Cargo Lights$", "part_type_id": "rear_seat_cargo_lights",
+     "label": "Rear Seat Cargo Lights", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Seat Cargo Lights"},
+    {"match_re": r"^Cargo Lighting$", "part_type_id": "cargo_lighting",
+     "label": "Cargo Lighting", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Cargo Lighting"},
+    {"match_re": r"^2-Lamp Tracer$", "part_type_id": "tracer_2_lamp",
+     "label": "2-Lamp Tracer", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "2-Lamp Tracer"},
+    {"match_re": r"^5-Lamp Tracer$", "part_type_id": "tracer_5_lamp",
+     "label": "5-Lamp Tracer", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "5-Lamp Tracer"},
+    {"match_re": r"^6-Lamp Tracer$", "part_type_id": "tracer_6_lamp",
+     "label": "6-Lamp Tracer", "category_id": "lights",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "6-Lamp Tracer"},
+
+    # ── Brackets (singletons + patterns) ────────────────────────────────
+    {"match_re": r"^Side Warning Bracket \d+$", "part_type_id": "side_warning_bracket",
+     "label": "Side Warning Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Side Warning Bracket {n}"},
+    {"match_re": r"^Rear Warning Bracket \d+$", "part_type_id": "rear_warning_bracket",
+     "label": "Rear Warning Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Warning Bracket {n}"},
+    {"match_re": r"^Lower Lift Gate Warning Bracket$", "part_type_id": "lower_liftgate_warning_bracket",
+     "label": "Lower Lift Gate Warning Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Lower Lift Gate Warning Bracket"},
+    {"match_re": r"^Siren Speaker Bracket$", "part_type_id": "siren_speaker_bracket",
+     "label": "Siren Speaker Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Siren Speaker Bracket"},
+    {"match_re": r"^Front Radar Antenna Mount$", "part_type_id": "front_radar_antenna_mount",
+     "label": "Front Radar Antenna Mount", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Radar Antenna Mount"},
+    {"match_re": r"^Rear Radar Antenna Mount$", "part_type_id": "rear_radar_antenna_mount",
+     "label": "Rear Radar Antenna Mount", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Radar Antenna Mount"},
+    {"match_re": r"^Printer Mount$", "part_type_id": "printer_mount",
+     "label": "Printer Mount", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Printer Mount"},
+    {"match_re": r"^Pa Mic Clip$", "part_type_id": "pa_mic_clip",
+     "label": "Pa Mic Clip", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Pa Mic Clip"},
+    {"match_re": r"^Gunlock Bracket \d+$", "part_type_id": "gunlock_bracket",
+     "label": "Gunlock Bracket", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Gunlock Bracket {n}"},
+    {"match_re": r"^Arges Mount$", "part_type_id": "arges_mount",
+     "label": "Arges Mount", "category_id": "brackets",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Arges Mount"},
+
+    # ── Audio ───────────────────────────────────────────────────────────
+    {"match_re": r"^Siren Speaker \d+$", "part_type_id": "siren_speaker",
+     "label": "Siren Speaker", "category_id": "audio",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Siren Speaker {n}"},
+    {"match_re": r"^External Amp$", "part_type_id": "external_amp",
+     "label": "External Amp", "category_id": "audio",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "External Amp"},
+    {"match_re": r"^Howler$", "part_type_id": "howler", "label": "Howler",
+     "category_id": "audio", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Howler"},
+    {"match_re": r"^Pa Mic$", "part_type_id": "pa_mic", "label": "Pa Mic",
+     "category_id": "audio", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Pa Mic"},
+    {"match_re": r"^Radio Speaker$", "part_type_id": "radio_speaker",
+     "label": "Radio Speaker", "category_id": "audio",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radio Speaker"},
+
+    # ── Radar ───────────────────────────────────────────────────────────
+    {"match_re": r"^Radar$", "part_type_id": "radar", "label": "Radar",
+     "category_id": "radar", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radar"},
+
+    # ── Antennas ────────────────────────────────────────────────────────
+    {"match_re": r"^Radio Antenna Cable$", "part_type_id": "radio_antenna_cable",
+     "label": "Radio Antenna Cable", "category_id": "antennas",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radio Antenna Cable"},
+    {"match_re": r"^Radio Antenna Top$", "part_type_id": "radio_antenna_top",
+     "label": "Radio Antenna Top", "category_id": "antennas",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radio Antenna Top"},
+
+    # ── K-9 ─────────────────────────────────────────────────────────────
+    {"match_re": r"^K-9 Kennel$", "part_type_id": "k9_kennel",
+     "label": "K-9 Kennel", "category_id": "k9",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "K-9 Kennel"},
+    {"match_re": r"^K-9 Heat Alarm/Popper$", "part_type_id": "k9_heat_alarm_popper",
+     "label": "K-9 Heat Alarm/Popper", "category_id": "k9",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "K-9 Heat Alarm/Popper"},
+    {"match_re": r"^K-9 Control Head$", "part_type_id": "k9_control_head",
+     "label": "K-9 Control Head", "category_id": "k9",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "K-9 Control Head"},
+    {"match_re": r"^K-9 Add-Ons$", "part_type_id": "k9_add_ons",
+     "label": "K-9 Add-Ons", "category_id": "k9",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "K-9 Add-Ons"},
+
+    # ── Decals / appearance ─────────────────────────────────────────────
+    {"match_re": r"^Decals$", "part_type_id": "decals", "label": "Decals",
+     "category_id": "decals", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Decals"},
+    {"match_re": r"^Window Tint$", "part_type_id": "window_tint",
+     "label": "Window Tint", "category_id": "decals",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Window Tint"},
+
+    # ── Accessories (the catch-all bucket) ──────────────────────────────
+    # Owner may want to split these into finer categories later; for Phase 3
+    # they all live under "accessories".
+    {"match_re": r"^Headlight Flasher$", "part_type_id": "headlight_flasher",
+     "label": "Headlight Flasher", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Headlight Flasher"},
+    {"match_re": r"^Tail Light Flasher$", "part_type_id": "tail_light_flasher",
+     "label": "Tail Light Flasher", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Tail Light Flasher"},
+    {"match_re": r"^Opticom$", "part_type_id": "opticom", "label": "Opticom",
+     "category_id": "accessories", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Opticom"},
+    {"match_re": r"^Auto Eject$", "part_type_id": "auto_eject",
+     "label": "Auto Eject", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Auto Eject"},
+    {"match_re": r"^Battery Tender$", "part_type_id": "battery_tender",
+     "label": "Battery Tender", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Battery Tender"},
+    {"match_re": r"^Vehicle to Vehicle Sync$", "part_type_id": "v2v_sync",
+     "label": "Vehicle to Vehicle Sync", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Vehicle to Vehicle Sync"},
+    {"match_re": r"^Cloud System$", "part_type_id": "cloud_system",
+     "label": "Cloud System", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Cloud System"},
+    {"match_re": r"^Remote Start$", "part_type_id": "remote_start",
+     "label": "Remote Start", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Remote Start"},
+    {"match_re": r"^Photo Eye$", "part_type_id": "photo_eye",
+     "label": "Photo Eye", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Photo Eye"},
+    {"match_re": r"^GPD W/ Extension$", "part_type_id": "gpd_extension",
+     "label": "GPD W/ Extension", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "GPD W/ Extension"},
+    {"match_re": r"^Cradle Point$", "part_type_id": "cradle_point",
+     "label": "Cradle Point", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Cradle Point"},
+    {"match_re": r"^Cradle Point Antenna$", "part_type_id": "cradle_point_antenna",
+     "label": "Cradle Point Antenna", "category_id": "antennas",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Cradle Point Antenna"},
+    {"match_re": r"^Radar Interface Cable \(To Camera\)$", "part_type_id": "radar_interface_cable",
+     "label": "Radar Interface Cable", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radar Interface Cable (To Camera)"},
+    {"match_re": r"^Thermal Imager$", "part_type_id": "thermal_imager",
+     "label": "Thermal Imager", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Thermal Imager"},
+    {"match_re": r"^Thermal Imager Monitor$", "part_type_id": "thermal_imager_monitor",
+     "label": "Thermal Imager Monitor", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Thermal Imager Monitor"},
+    {"match_re": r"^Light Controller$", "part_type_id": "light_controller",
+     "label": "Light Controller", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Light Controller"},
+    {"match_re": r"^Control Head$", "part_type_id": "control_head",
+     "label": "Control Head", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Control Head"},
+    {"match_re": r"^Vehicle interface$", "part_type_id": "vehicle_interface",
+     "label": "Vehicle Interface", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Vehicle interface"},
+    {"match_re": r"^Expansion Module$", "part_type_id": "expansion_module",
+     "label": "Expansion Module", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Expansion Module"},
+    {"match_re": r"^Radio \d+$", "part_type_id": "radio",
+     "label": "Radio", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radio {n}"},
+    {"match_re": r"^Radio Mic Clip \d+$", "part_type_id": "radio_mic_clip",
+     "label": "Radio Mic Clip", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Radio Mic Clip {n}"},
+    {"match_re": r"^Center Console$", "part_type_id": "center_console",
+     "label": "Center Console", "category_id": "center_console",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Center Console"},
+    {"match_re": r"^Special Face Plate \d+$", "part_type_id": "special_face_plate",
+     "label": "Special Face Plate", "category_id": "center_console",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Special Face Plate {n}"},
+    {"match_re": r"^Arm Rest$", "part_type_id": "arm_rest",
+     "label": "Arm Rest", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Arm Rest"},
+    {"match_re": r"^Motion Attachment$", "part_type_id": "motion_attachment",
+     "label": "Motion Attachment", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Motion Attachment"},
+    {"match_re": r"^Docking Station$", "part_type_id": "docking_station",
+     "label": "Docking Station", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Docking Station"},
+    {"match_re": r"^Printer$", "part_type_id": "printer", "label": "Printer",
+     "category_id": "accessories", "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Printer"},
+    {"match_re": r"^Printer Power$", "part_type_id": "printer_power",
+     "label": "Printer Power", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Printer Power"},
+    {"match_re": r"^Printer USB$", "part_type_id": "printer_usb",
+     "label": "Printer USB", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Printer USB"},
+    {"match_re": r"^12v Aux Ports$", "part_type_id": "aux_12v_ports",
+     "label": "12v Aux Ports", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "12v Aux Ports"},
+    {"match_re": r"^Camera DVR$", "part_type_id": "camera_dvr",
+     "label": "Camera DVR", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Camera DVR"},
+    {"match_re": r"^Front Camera$", "part_type_id": "front_camera",
+     "label": "Front Camera", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Front Camera"},
+    {"match_re": r"^Body Camera Dock$", "part_type_id": "body_camera_dock",
+     "label": "Body Camera Dock", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Body Camera Dock"},
+    {"match_re": r"^Rear Seat Camera$", "part_type_id": "rear_seat_camera",
+     "label": "Rear Seat Camera", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Seat Camera"},
+    {"match_re": r"^Rear Camera$", "part_type_id": "rear_camera",
+     "label": "Rear Camera", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Rear Camera"},
+    {"match_re": r"^Wireless Mic Charger$", "part_type_id": "wireless_mic_charger",
+     "label": "Wireless Mic Charger", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Wireless Mic Charger"},
+    {"match_re": r"^Storage Compartment$", "part_type_id": "storage_compartment",
+     "label": "Storage Compartment", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Storage Compartment"},
+    {"match_re": r"^Door Lock Button$", "part_type_id": "door_lock_button",
+     "label": "Door Lock Button", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Door Lock Button"},
+    {"match_re": r"^Equipment Tray$", "part_type_id": "equipment_tray",
+     "label": "Equipment Tray", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Equipment Tray"},
+    {"match_re": r"^Gunlock \d+$", "part_type_id": "gunlock",
+     "label": "Gunlock", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Gunlock {n}"},
+    {"match_re": r"^Floor Mats$", "part_type_id": "floor_mats",
+     "label": "Floor Mats", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Floor Mats"},
+    {"match_re": r"^Seat Covers$", "part_type_id": "seat_covers",
+     "label": "Seat Covers", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Seat Covers"},
+    {"match_re": r"^Harness$", "part_type_id": "harness",
+     "label": "Harness", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Harness"},
+    {"match_re": r"^Arges$", "part_type_id": "arges_face",
+     "label": "Arges", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Arges"},
+    {"match_re": r"^Arges Controller$", "part_type_id": "arges_controller",
+     "label": "Arges Controller", "category_id": "accessories",
+     "predicate": {"category_only": True},
+     "sequence_scope": "global", "workbook_label_pattern": "Arges Controller"},
+
     # Catch-all: any workbook label not matched by the patterns above is an
     # orphan. Owner adds a row above to match it, then re-runs.
 ]
@@ -401,6 +1002,24 @@ _SENTINEL_MFGS = {
     "SPECIFY MANUFACTURER",
     "OEM",
     "MFG CLIP",
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Placeholder / install-note model strings that aren't real products.
+# These get silently dropped from products[] and legacy_workbook_index.
+# Owner confirmed 2026-06-11.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SENTINEL_MODELS = {
+    "SPECIFY BAR",
+    "SPECIFY BRACKET",
+    "SPECIFY CRADLE",
+    "SPECIFY DOCK",
+    "SPECITY MODEL",        # typo of SPECIFY MODEL
+    "SWITCH PLATE (SPECIFY)",
+    "PREWIRE",              # install method — wires run, no light installed
+    "DIRECT TO COMPUTER",   # install method for Thermal Imager Monitor
 }
 
 
@@ -598,6 +1217,8 @@ def build_location_zones() -> dict:
         "rear":          {"label": "Rear"},
         "rear_interior": {"label": "Rear Interior"},
         "interior":      {"label": "Interior"},
+        # Added 2026-06-11 — light bars + roof-mount placements
+        "roof":          {"label": "Roof"},
     }
 
 
@@ -724,6 +1345,8 @@ def build_products(
         # the workbook_rule lists multiple mfgs).
         models = rule.get("models") or []
         for model in models:
+            if model in _SENTINEL_MODELS:
+                continue  # placeholder / install note, not a real product
             mfg_slug = lookup_manufacturer_for_model(model, workbook_rules, parts_library)
             if not mfg_slug:
                 unknown_models[model].append(part_type_label)
