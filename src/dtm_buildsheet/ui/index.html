@@ -109,6 +109,7 @@
   <div class="inner-stab-bar" id="inner-stab-bar-part-manager" hidden>
     <button class="inner-stab active" data-inner-stab="catalog" data-inner-group="part-manager">Part Types</button>
     <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library</button>
+    <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Database (v2)</button>
   </div>
 
   <!-- ── PROJECTS (General Settings) ── -->
@@ -632,6 +633,51 @@
           <thead><tr><th>Part / Manufacturer</th><th>Model #</th><th>Compatible Types</th><th>Size Rule</th><th>Images</th><th></th></tr></thead>
           <tbody id="lib-tbody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTS DB (v2 tree editor) ── -->
+  <div id="stab-parts-db" hidden>
+    <div class="card">
+      <div class="card-title">Parts Database
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="pdb-meta" style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-pdb-reload">↺ Reload</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        Edits the unified <code>parts_db.json</code>. Click a node in the tree to view; click <em>Edit</em> to modify. The legacy Part Types / Parts Library tabs above remain in place until Phase 3 cutover.
+      </p>
+      <div id="pdb-empty-state" hidden style="padding:20px;border:1px dashed var(--border);border-radius:8px;text-align:center;color:var(--muted);font-size:13px">
+        <div style="font-size:16px;margin-bottom:8px">🌱 No data yet</div>
+        <div>The <code>parts_db.json</code> file exists but is empty.</div>
+        <div style="margin-top:8px">Seed it by running the migration:</div>
+        <pre style="display:inline-block;margin-top:6px;padding:6px 10px;background:#f4f5f9;border-radius:5px;font-size:12px;color:var(--text)">.venv/bin/python tools/migrate_workbook_to_parts_db.py --write</pre>
+      </div>
+      <div id="pdb-main" class="pdb-layout" hidden>
+        <div class="pdb-tree-pane">
+          <input class="catalog-search" id="pdb-search" type="text" placeholder="Filter tree…" style="margin-bottom:8px" />
+          <div class="pdb-tree" id="pdb-tree"></div>
+        </div>
+        <div class="pdb-detail-pane" id="pdb-detail">
+          <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Select a node from the tree to view details.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTS DB modals ── -->
+  <div class="modal-overlay" id="pdb-modal">
+    <div class="modal" style="width:720px">
+      <div class="modal-title">
+        <span id="pdb-modal-title">Edit</span>
+        <button class="modal-close" id="pdb-modal-close">×</button>
+      </div>
+      <div id="pdb-modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="pdb-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="pdb-modal-save">Save</button>
       </div>
     </div>
   </div>
@@ -1635,6 +1681,7 @@
 <script src="/ui/js/settings/size_rules.js"></script>
 <script src="/ui/js/settings/part_types.js"></script>
 <script src="/ui/js/settings/parts_library.js"></script>
+<script src="/ui/js/settings/part_manager.js"></script>
 <script src="/ui/js/settings/vehicles.js"></script>
 <script src="/ui/js/settings/tools.js"></script>
 <script src="/ui/js/settings/agencies.js"></script>
