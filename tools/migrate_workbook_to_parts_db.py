@@ -1439,6 +1439,11 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Print summary; do not write files")
     parser.add_argument("--write", action="store_true",
                         help="Write parts_db.json + legacy_workbook_index.json")
+    parser.add_argument("--push-to-cloud", action="store_true",
+                        help="After --write, route both files through save_config_file "
+                             "so the SharePoint direct-mirror fires. Prevents the next "
+                             "60s shared-settings sync from clobbering the migration with "
+                             "whatever (older) copy SharePoint has.")
     parser.add_argument("--orphans-out", default="orphans.md",
                         help="Path for the orphans report")
     args = parser.parse_args()
@@ -1489,6 +1494,26 @@ def main() -> int:
     OUTPUT_LEGACY_INDEX.write_text(json.dumps(legacy_index, indent=2) + "\n", "utf-8")
     print(f"Wrote {OUTPUT_PARTS_DB}")
     print(f"Wrote {OUTPUT_LEGACY_INDEX}")
+
+    if args.push_to_cloud:
+        # Re-save through save_config_file so direct-mirror to SharePoint
+        # fires for both files. Without this step the next shared-settings
+        # sync will overwrite the migrated data with whatever (older) copy
+        # SharePoint has, because the writes above bypass the save pipeline.
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        from dtm_buildsheet.paths import AppPaths
+        from dtm_buildsheet.app.services.config_service import save_config_file
+        paths = AppPaths()
+        for filename, payload in (
+            ("parts_db.json", parts_db),
+            ("legacy_workbook_index.json", legacy_index),
+        ):
+            result = save_config_file(filename, payload, paths)
+            if not result.get("ok"):
+                print(f"Cloud push failed for {filename}: {result.get('error')}", file=sys.stderr)
+                return 3
+            tag = "queued for retry" if result.get("queued") else "direct-mirrored"
+            print(f"  {filename} → {tag} (proposal {result.get('proposal_id','—')})")
     return 0
 
 

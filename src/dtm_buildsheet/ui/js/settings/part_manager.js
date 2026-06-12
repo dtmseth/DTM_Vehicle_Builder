@@ -577,12 +577,15 @@ function _pdbCollectFormData(kind){
       const section = row.querySelector('[data-pos-field="section"]').value;
       const zone = row.querySelector('[data-pos-field="zone"]').value;
       const sub_zone = row.querySelector('[data-pos-field="sub_zone"]').value;
-      const out = {};
-      if(section) out.section = section;
-      if(zone) out.zone = zone;
+      // Validator (_validate_parts_db) requires both 'section' and 'zone'
+      // keys to be present on every tree_position; empty string is fine,
+      // missing key is not. Drop rows that are entirely blank, but
+      // otherwise always include both keys.
+      if(!section && !zone && !sub_zone) return null;
+      const out = { section, zone };
       if(sub_zone) out.sub_zone = sub_zone;
       return out;
-    }).filter(p => p.section || p.zone || p.sub_zone);
+    }).filter(p => p !== null);
     const max = $("pdbf-max").value.trim();
     return {
       label: $("pdbf-label").value.trim(),
