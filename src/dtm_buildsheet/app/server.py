@@ -156,7 +156,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/agency/save":
             if not agency_routes.route_agencies(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
-        elif path == "/api/parts-db":
+        elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):
             if not parts_db_routes.route_parts_db(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-rep/save":

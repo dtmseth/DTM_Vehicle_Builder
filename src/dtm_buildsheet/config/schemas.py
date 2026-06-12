@@ -253,28 +253,35 @@ def _validate_project_options(normalized: dict) -> None:
 
 
 _PARTS_DB_REQUIRED_TOP_KEYS = (
-    "categories",
+    "types",
+    "sections",
+    "zones",
+    "sub_zones",
+    "build_attributes",
+    "tags",
     "manufacturers",
     "products",
-    "option_axes_catalog",
-    "color_palette",
-    "location_zones",
-    "location_zone_map",
     "part_types",
+    "placements",
+    "placement_zones",
+    "services",
+    "preference_filters",
+    "color_palette",
     "naming_rules",
 )
-_PRODUCT_REQUIRED_KEYS = ("manufacturer_id", "category_id", "model")
+_PRODUCT_REQUIRED_KEYS = ("manufacturer_id", "model")
+_PART_TYPE_REQUIRED_KEYS = ("label", "type_id")
 
 
 def _validate_parts_db(normalized: dict) -> None:
-    """Phase 3 validator: top-level shape + per-product required keys.
+    """Phase 3 validator (schema v2): tree-based + intersection rule format.
 
-    Manufacturer-centric schema. See docs/ROADMAP.md §Phase 3 and the
-    quiet-vaulting-quail plan. Deep validation (every manufacturer_id
-    resolves to an entry in `manufacturers`, every category_id exists,
-    every part_number is unique) is deferred to Phase 4 when users edit
+    Top-level shape + per-product / per-part-type required keys. Deep
+    validation (every type_id resolves, every tree_positions.zone exists,
+    every part_number is unique) deferred to Phase 4 when users edit
     parts_db through the UI.
     """
+    normalized.setdefault("schema_version", 2)
     for key in _PARTS_DB_REQUIRED_TOP_KEYS:
         normalized.setdefault(key, {})
 
@@ -304,11 +311,37 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(
                     f"parts_db.json product '{product_id}' part_numbers[{idx}] missing 'part_number'"
                 )
-        option_axes = spec.get("option_axes", {})
-        if not isinstance(option_axes, dict):
+        fits = spec.get("fits_part_types", [])
+        if not isinstance(fits, list):
             raise ValueError(
-                f"parts_db.json product '{product_id}' 'option_axes' must be an object"
+                f"parts_db.json product '{product_id}' 'fits_part_types' must be a list"
             )
+
+    part_types = normalized.get("part_types")
+    if not isinstance(part_types, dict):
+        raise ValueError("parts_db.json 'part_types' must be an object keyed by part_type_id")
+
+    for pt_id, spec in part_types.items():
+        if not isinstance(spec, dict):
+            raise ValueError(f"parts_db.json part_type '{pt_id}' must be an object")
+        for key in _PART_TYPE_REQUIRED_KEYS:
+            if key not in spec:
+                raise ValueError(f"parts_db.json part_type '{pt_id}' missing '{key}'")
+        positions = spec.get("tree_positions", [])
+        if not isinstance(positions, list):
+            raise ValueError(
+                f"parts_db.json part_type '{pt_id}' 'tree_positions' must be a list"
+            )
+        for idx, pos in enumerate(positions):
+            if not isinstance(pos, dict):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' tree_positions[{idx}] must be an object"
+                )
+            for k in ("section", "zone"):
+                if k not in pos:
+                    raise ValueError(
+                        f"parts_db.json part_type '{pt_id}' tree_positions[{idx}] missing '{k}'"
+                    )
 
 
 def _validate_legacy_workbook_index(normalized: dict) -> None:

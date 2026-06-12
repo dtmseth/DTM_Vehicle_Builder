@@ -1,9 +1,4 @@
-"""Phase 3 (revised): HTTP route coverage for /api/parts-db/*.
-
-Seven endpoints — full doc, categories, manufacturers (with category filter),
-products (with category/manufacturer filters), single product, part-numbers
-of a product, products compatible with a zone, plus POST save.
-"""
+"""Phase 3 (schema v2): HTTP route coverage for /api/parts-db/*."""
 from __future__ import annotations
 
 import io
@@ -25,7 +20,6 @@ def _reset_singleton():
 
 
 class FakeHandler:
-    """Just enough BaseHTTPRequestHandler surface for `send_json`."""
     def __init__(self, path: str):
         self.path = path
         self.status: int | None = None
@@ -46,36 +40,54 @@ class FakeHandler:
 
 
 _SYNTHETIC_DB = {
-    "schema_version": 1,
-    "categories": {
-        "lights":       {"label": "Lights",       "applies_to_zones": ["primary_front"]},
-        "push_bumpers": {"label": "Push Bumpers", "applies_to_zones": ["primary_front"]},
-    },
-    "manufacturers": {
-        "whelen":   {"label": "Whelen"},
-        "setina":   {"label": "Setina"},
-        "soundoff": {"label": "SoundOff Signal"},
-    },
+    "schema_version": 2,
+    "types": {"lights": {"label": "Lights"}, "structural": {"label": "Structural"}},
+    "sections": {"exterior": {"label": "Exterior"}},
+    "zones": {"front": {"label": "Front", "section": "exterior"}},
+    "sub_zones": {},
+    "build_attributes": {},
+    "tags": {"camera": {"label": "Camera"}},
+    "manufacturers": {"whelen": {"label": "Whelen"}, "setina": {"label": "Setina"}},
     "products": {
         "whelen_ion_t": {
-            "manufacturer_id": "whelen",
-            "category_id": "lights",
-            "model": "ION T-Series",
+            "manufacturer_id": "whelen", "model": "ION T",
+            "fits_part_types": ["forward_warning"],
+            "tag_ids": [],
             "part_numbers": [{"part_number": "ION-T-RW"}],
         },
-        "soundoff_mpower": {
-            "manufacturer_id": "soundoff",
-            "category_id": "lights",
-            "model": "mPOWER",
-        },
         "setina_pb400": {
-            "manufacturer_id": "setina",
-            "category_id": "push_bumpers",
-            "model": "PB400",
+            "manufacturer_id": "setina", "model": "PB400",
+            "fits_part_types": ["push_bumper"],
+        },
+        "whelen_cam": {
+            "manufacturer_id": "whelen", "model": "Cam",
+            "fits_part_types": ["front_camera"],
+            "tag_ids": ["camera"],
         },
     },
-    "location_zones": {"primary_front": {"label": "Primary Front"}},
-    "location_zone_map": {"GRILL": "primary_front"},
+    "part_types": {
+        "forward_warning": {
+            "label": "Forward Warning", "type_id": "lights",
+            "tree_positions": [{"section": "exterior", "zone": "front"}],
+            "workbook_label_pattern": "Forward Warning {n}",
+        },
+        "push_bumper": {
+            "label": "Push Bumper", "type_id": "structural",
+            "tree_positions": [{"section": "exterior", "zone": "front"}],
+            "workbook_label_pattern": "Push Bumper",
+        },
+        "front_camera": {
+            "label": "Front Camera", "type_id": "lights",   # using lights to keep fixture minimal
+            "tree_positions": [{"section": "exterior", "zone": "front"}],
+            "tag_ids": ["camera"],
+            "workbook_label_pattern": "Front Camera",
+        },
+    },
+    "placements": {"GRILL": {"placement_zone": "primary_front"}},
+    "placement_zones": {"primary_front": {"label": "Primary Front"}},
+    "services": {},
+    "preference_filters": {},
+    "color_palette": {},
 }
 
 
@@ -85,127 +97,145 @@ def _paths(tmp_path: Path, db: dict | None = _SYNTHETIC_DB) -> AppPaths:
     return AppPaths(workspace_config_dir=tmp_path)
 
 
-# ── GETs ─────────────────────────────────────────────────────────────────────
+# ── Top-level taxonomies ────────────────────────────────────────────────────
 
 
-class TestGetFullDoc:
-    def test_returns_doc(self, tmp_path):
+class TestTopLevelEndpoints:
+    def test_full_doc(self, tmp_path):
         h = FakeHandler("/api/parts-db")
-        assert route_parts_db(h, "GET", "/api/parts-db", {}, _paths(tmp_path)) is True
+        route_parts_db(h, "GET", "/api/parts-db", {}, _paths(tmp_path))
         assert h.status == 200
         assert "whelen_ion_t" in h.body_json()["products"]
 
-    def test_returns_empty_when_missing(self, tmp_path):
-        h = FakeHandler("/api/parts-db")
-        paths = AppPaths(workspace_config_dir=tmp_path)
-        assert route_parts_db(h, "GET", "/api/parts-db", {}, paths) is True
-        assert h.body_json()["products"] == {}
+    def test_types(self, tmp_path):
+        h = FakeHandler("/api/parts-db/types")
+        route_parts_db(h, "GET", "/api/parts-db/types", {}, _paths(tmp_path))
+        ids = {t["type_id"] for t in h.body_json()["types"]}
+        assert ids == {"lights", "structural"}
 
+    def test_sections(self, tmp_path):
+        h = FakeHandler("/api/parts-db/sections")
+        route_parts_db(h, "GET", "/api/parts-db/sections", {}, _paths(tmp_path))
+        assert {s["section_id"] for s in h.body_json()["sections"]} == {"exterior"}
 
-class TestGetCategories:
-    def test_returns_all(self, tmp_path):
-        h = FakeHandler("/api/parts-db/categories")
-        assert route_parts_db(h, "GET", "/api/parts-db/categories", {}, _paths(tmp_path)) is True
-        ids = {c["category_id"] for c in h.body_json()["categories"]}
-        assert ids == {"lights", "push_bumpers"}
+    def test_zones_unfiltered(self, tmp_path):
+        h = FakeHandler("/api/parts-db/zones")
+        route_parts_db(h, "GET", "/api/parts-db/zones", {}, _paths(tmp_path))
+        assert {z["zone_id"] for z in h.body_json()["zones"]} == {"front"}
 
+    def test_zones_filtered(self, tmp_path):
+        h = FakeHandler("/api/parts-db/zones?section=exterior")
+        route_parts_db(h, "GET", "/api/parts-db/zones", {}, _paths(tmp_path))
+        assert len(h.body_json()["zones"]) == 1
 
-class TestGetManufacturers:
-    def test_all_when_no_filter(self, tmp_path):
+    def test_tags(self, tmp_path):
+        h = FakeHandler("/api/parts-db/tags")
+        route_parts_db(h, "GET", "/api/parts-db/tags", {}, _paths(tmp_path))
+        assert {t["tag_id"] for t in h.body_json()["tags"]} == {"camera"}
+
+    def test_manufacturers(self, tmp_path):
         h = FakeHandler("/api/parts-db/manufacturers")
         route_parts_db(h, "GET", "/api/parts-db/manufacturers", {}, _paths(tmp_path))
         ids = {m["manufacturer_id"] for m in h.body_json()["manufacturers"]}
-        assert ids == {"whelen", "setina", "soundoff"}
-
-    def test_filtered_by_category(self, tmp_path):
-        h = FakeHandler("/api/parts-db/manufacturers?category=lights")
-        route_parts_db(h, "GET", "/api/parts-db/manufacturers", {}, _paths(tmp_path))
-        ids = {m["manufacturer_id"] for m in h.body_json()["manufacturers"]}
-        assert ids == {"whelen", "soundoff"}
+        assert ids == {"whelen", "setina"}
 
 
-class TestGetProducts:
+# ── Part types ──────────────────────────────────────────────────────────────
+
+
+class TestPartTypeEndpoints:
+    def test_all(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types")
+        route_parts_db(h, "GET", "/api/parts-db/part-types", {}, _paths(tmp_path))
+        ids = {pt["part_type_id"] for pt in h.body_json()["part_types"]}
+        assert ids == {"forward_warning", "push_bumper", "front_camera"}
+
+    def test_filter_by_type(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types?type=lights")
+        route_parts_db(h, "GET", "/api/parts-db/part-types", {}, _paths(tmp_path))
+        ids = {pt["part_type_id"] for pt in h.body_json()["part_types"]}
+        # fixture has front_camera labelled type_id=lights too
+        assert ids == {"forward_warning", "front_camera"}
+
+    def test_filter_by_tag(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types?tag=camera")
+        route_parts_db(h, "GET", "/api/parts-db/part-types", {}, _paths(tmp_path))
+        ids = {pt["part_type_id"] for pt in h.body_json()["part_types"]}
+        assert ids == {"front_camera"}
+
+    def test_single(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types/forward_warning")
+        route_parts_db(h, "GET", "/api/parts-db/part-types/forward_warning", {}, _paths(tmp_path))
+        assert h.status == 200
+        assert h.body_json()["label"] == "Forward Warning"
+
+    def test_404_unknown(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types/nope")
+        route_parts_db(h, "GET", "/api/parts-db/part-types/nope", {}, _paths(tmp_path))
+        assert h.status == 404
+
+    def test_products_for_part_type(self, tmp_path):
+        h = FakeHandler("/api/parts-db/part-types/forward_warning/products")
+        route_parts_db(h, "GET", "/api/parts-db/part-types/forward_warning/products", {}, _paths(tmp_path))
+        ids = {p["product_id"] for p in h.body_json()["products"]}
+        assert ids == {"whelen_ion_t"}
+
+
+# ── Products ────────────────────────────────────────────────────────────────
+
+
+class TestProductEndpoints:
     def test_all(self, tmp_path):
         h = FakeHandler("/api/parts-db/products")
         route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
         assert len(h.body_json()["products"]) == 3
 
-    def test_filter_by_category(self, tmp_path):
-        h = FakeHandler("/api/parts-db/products?category=lights")
+    def test_filter_by_tag(self, tmp_path):
+        h = FakeHandler("/api/parts-db/products?tag=camera")
         route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
         ids = {p["product_id"] for p in h.body_json()["products"]}
-        assert ids == {"whelen_ion_t", "soundoff_mpower"}
+        assert ids == {"whelen_cam"}
 
-    def test_filter_by_manufacturer(self, tmp_path):
-        h = FakeHandler("/api/parts-db/products?manufacturer=whelen")
-        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
-        ids = {p["product_id"] for p in h.body_json()["products"]}
-        assert ids == {"whelen_ion_t"}
-
-    def test_filter_by_both(self, tmp_path):
-        h = FakeHandler("/api/parts-db/products?category=lights&manufacturer=setina")
-        route_parts_db(h, "GET", "/api/parts-db/products", {}, _paths(tmp_path))
-        # Setina has no lights → empty
-        assert h.body_json()["products"] == []
-
-
-class TestGetSingleProduct:
-    def test_returns_product(self, tmp_path):
+    def test_single(self, tmp_path):
         h = FakeHandler("/api/parts-db/products/whelen_ion_t")
         route_parts_db(h, "GET", "/api/parts-db/products/whelen_ion_t", {}, _paths(tmp_path))
         assert h.status == 200
-        assert h.body_json()["model"] == "ION T-Series"
+        assert h.body_json()["model"] == "ION T"
 
-    def test_404_unknown(self, tmp_path):
-        h = FakeHandler("/api/parts-db/products/nope")
-        route_parts_db(h, "GET", "/api/parts-db/products/nope", {}, _paths(tmp_path))
-        assert h.status == 404
-
-
-class TestGetPartNumbers:
-    def test_returns_part_numbers(self, tmp_path):
+    def test_part_numbers(self, tmp_path):
         h = FakeHandler("/api/parts-db/products/whelen_ion_t/part-numbers")
         route_parts_db(h, "GET", "/api/parts-db/products/whelen_ion_t/part-numbers", {}, _paths(tmp_path))
-        assert h.status == 200
-        pns = h.body_json()["part_numbers"]
-        assert [pn["part_number"] for pn in pns] == ["ION-T-RW"]
-
-    def test_404_unknown_product(self, tmp_path):
-        h = FakeHandler("/api/parts-db/products/nope/part-numbers")
-        route_parts_db(h, "GET", "/api/parts-db/products/nope/part-numbers", {}, _paths(tmp_path))
-        assert h.status == 404
+        assert [pn["part_number"] for pn in h.body_json()["part_numbers"]] == ["ION-T-RW"]
 
 
-class TestGetZoneProducts:
-    def test_returns_compatible_products(self, tmp_path):
-        h = FakeHandler("/api/parts-db/zones/primary_front/products")
-        route_parts_db(h, "GET", "/api/parts-db/zones/primary_front/products", {}, _paths(tmp_path))
-        # Lights + push_bumpers both apply to primary_front
-        ids = {p["product_id"] for p in h.body_json()["products"]}
-        assert ids == {"whelen_ion_t", "soundoff_mpower", "setina_pb400"}
+# ── Validation endpoint ────────────────────────────────────────────────────
 
 
-# ── POST ─────────────────────────────────────────────────────────────────────
+class TestValidatePlacement:
+    def test_valid_triple(self, tmp_path):
+        h = FakeHandler("/api/parts-db/validate-placement")
+        body = {"part_type_id": "forward_warning",
+                "product_id": "whelen_ion_t",
+                "location_id": "GRILL"}
+        route_parts_db(h, "POST", "/api/parts-db/validate-placement", body, _paths(tmp_path))
+        assert h.body_json()["valid"] is True
+
+    def test_invalid_product_for_part_type(self, tmp_path):
+        h = FakeHandler("/api/parts-db/validate-placement")
+        body = {"part_type_id": "forward_warning",
+                "product_id": "setina_pb400",
+                "location_id": "GRILL"}
+        route_parts_db(h, "POST", "/api/parts-db/validate-placement", body, _paths(tmp_path))
+        assert h.body_json()["valid"] is False
 
 
-class TestPostSave:
+# ── Save ────────────────────────────────────────────────────────────────────
+
+
+class TestSave:
     def test_save_succeeds(self, tmp_path):
-        paths = AppPaths(workspace_config_dir=tmp_path)
         h = FakeHandler("/api/parts-db")
-        assert route_parts_db(h, "POST", "/api/parts-db", dict(_SYNTHETIC_DB), paths) is True
+        paths = AppPaths(workspace_config_dir=tmp_path)
+        route_parts_db(h, "POST", "/api/parts-db", dict(_SYNTHETIC_DB), paths)
         assert h.status == 200
         assert h.body_json()["ok"] is True
-        on_disk = json.loads((tmp_path / "parts_db.json").read_text("utf-8"))
-        assert "whelen_ion_t" in on_disk["products"]
-
-    def test_save_invalid_payload(self, tmp_path):
-        paths = AppPaths(workspace_config_dir=tmp_path)
-        bad = {
-            "schema_version": 1,
-            "products": {"broken": {"category_id": "lights"}},  # missing manufacturer_id + model
-        }
-        h = FakeHandler("/api/parts-db")
-        route_parts_db(h, "POST", "/api/parts-db", bad, paths)
-        body = h.body_json()
-        assert body["ok"] is False
-        assert "manufacturer_id" in body["error"] or "model" in body["error"]

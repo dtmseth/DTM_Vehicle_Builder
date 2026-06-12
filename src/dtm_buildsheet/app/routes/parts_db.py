@@ -11,10 +11,17 @@ from .http import send_json
 
 
 _PREFIX = "/api/parts-db"
-_CATEGORIES_PATH = f"{_PREFIX}/categories"
+_TYPES_PATH = f"{_PREFIX}/types"
+_SECTIONS_PATH = f"{_PREFIX}/sections"
+_ZONES_PATH = f"{_PREFIX}/zones"
+_SUB_ZONES_PATH = f"{_PREFIX}/sub-zones"
+_BUILD_ATTRS_PATH = f"{_PREFIX}/build-attributes"
+_TAGS_PATH = f"{_PREFIX}/tags"
+_SERVICES_PATH = f"{_PREFIX}/services"
 _MANUFACTURERS_PATH = f"{_PREFIX}/manufacturers"
+_PART_TYPES_PATH = f"{_PREFIX}/part-types"
 _PRODUCTS_PATH = f"{_PREFIX}/products"
-_ZONES_PREFIX = f"{_PREFIX}/zones/"
+_VALIDATE_PATH = f"{_PREFIX}/validate-placement"
 
 
 def route_parts_db(
@@ -23,48 +30,92 @@ def route_parts_db(
     qs = parse_qs(urlparse(handler.path).query)
     svc = get_parts_db_service(paths)
 
-    # GET /api/parts-db — full doc
+    # GET endpoints ───────────────────────────────────────────────────────
+
     if method == "GET" and path == _PREFIX:
         send_json(handler, svc.raw_doc())
         return True
 
-    # GET /api/parts-db/categories
-    if method == "GET" and path == _CATEGORIES_PATH:
-        send_json(handler, {"categories": [asdict(c) for c in svc.list_categories()]})
+    if method == "GET" and path == _TYPES_PATH:
+        send_json(handler, {"types": [asdict(t) for t in svc.list_types()]})
         return True
 
-    # GET /api/parts-db/manufacturers[?category=]
+    if method == "GET" and path == _SECTIONS_PATH:
+        send_json(handler, {"sections": [asdict(s) for s in svc.list_sections()]})
+        return True
+
+    if method == "GET" and path == _ZONES_PATH:
+        section = qs.get("section", [""])[0] or None
+        send_json(handler, {"zones": [asdict(z) for z in svc.list_zones(section)]})
+        return True
+
+    if method == "GET" and path == _SUB_ZONES_PATH:
+        zone = qs.get("zone", [""])[0] or None
+        send_json(handler, {"sub_zones": [asdict(s) for s in svc.list_sub_zones(zone)]})
+        return True
+
+    if method == "GET" and path == _BUILD_ATTRS_PATH:
+        send_json(handler, {"build_attributes": [asdict(a) for a in svc.list_build_attributes()]})
+        return True
+
+    if method == "GET" and path == _TAGS_PATH:
+        send_json(handler, {"tags": [asdict(t) for t in svc.list_tags()]})
+        return True
+
+    if method == "GET" and path == _SERVICES_PATH:
+        send_json(handler, {"services": [asdict(s) for s in svc.list_services()]})
+        return True
+
     if method == "GET" and path == _MANUFACTURERS_PATH:
-        category = qs.get("category", [""])[0]
-        if category:
-            mfgs = svc.list_manufacturers_in_category(category)
-        else:
-            doc = svc.raw_doc()
-            mfgs_doc = doc.get("manufacturers") or {}
-            from ..services.parts_db_service import _hydrate_manufacturer
-            mfgs = [_hydrate_manufacturer(mid, spec) for mid, spec in mfgs_doc.items()]
-        send_json(handler, {"manufacturers": [asdict(m) for m in mfgs]})
+        send_json(handler, {"manufacturers": [asdict(m) for m in svc.list_manufacturers()]})
         return True
 
-    # GET /api/parts-db/products[?category=&manufacturer=]
+    if method == "GET" and path == _PART_TYPES_PATH:
+        type_id = qs.get("type", [""])[0] or None
+        section = qs.get("section", [""])[0] or None
+        zone = qs.get("zone", [""])[0] or None
+        sub_zone = qs.get("sub_zone", [""])[0] or None
+        tag = qs.get("tag", [""])[0] or None
+        if tag:
+            results = svc.list_part_types_with_tag(tag)
+        elif type_id or section or zone or sub_zone is not None:
+            results = svc.list_part_types_at(type_id, section, zone, sub_zone)
+        else:
+            results = svc.list_part_types()
+        send_json(handler, {"part_types": [asdict(pt) for pt in results]})
+        return True
+
+    if method == "GET" and path.startswith(_PART_TYPES_PATH + "/"):
+        tail = path[len(_PART_TYPES_PATH) + 1 :]
+        if not tail:
+            return False
+        if tail.endswith("/products"):
+            pt_id = tail[: -len("/products")]
+            if not pt_id or "/" in pt_id:
+                return False
+            if svc.get_part_type(pt_id) is None:
+                send_json(handler, {"error": f"unknown part_type_id: {pt_id}"}, status=404)
+                return True
+            send_json(handler, {"products": [asdict(p) for p in svc.list_products_for_part_type(pt_id)]})
+            return True
+        if "/" in tail:
+            return False
+        pt = svc.get_part_type(tail)
+        if pt is None:
+            send_json(handler, {"error": f"unknown part_type_id: {tail}"}, status=404)
+            return True
+        send_json(handler, asdict(pt))
+        return True
+
     if method == "GET" and path == _PRODUCTS_PATH:
-        category = qs.get("category", [""])[0]
-        manufacturer = qs.get("manufacturer", [""])[0]
-        if category and manufacturer:
-            products = [
-                p for p in svc.list_products_by_category(category)
-                if p.manufacturer_id == manufacturer
-            ]
-        elif category:
-            products = svc.list_products_by_category(category)
-        elif manufacturer:
-            products = svc.list_products_by_manufacturer(manufacturer)
+        tag = qs.get("tag", [""])[0] or None
+        if tag:
+            results = svc.list_products_with_tag(tag)
         else:
-            products = svc.list_products()
-        send_json(handler, {"products": [asdict(p) for p in products]})
+            results = svc.list_products()
+        send_json(handler, {"products": [asdict(p) for p in results]})
         return True
 
-    # GET /api/parts-db/products/{product_id}[/part-numbers]
     if method == "GET" and path.startswith(_PRODUCTS_PATH + "/"):
         tail = path[len(_PRODUCTS_PATH) + 1 :]
         if not tail:
@@ -76,8 +127,7 @@ def route_parts_db(
             if svc.get_product(product_id) is None:
                 send_json(handler, {"error": f"unknown product_id: {product_id}"}, status=404)
                 return True
-            part_numbers = svc.list_part_numbers(product_id)
-            send_json(handler, {"part_numbers": [asdict(pn) for pn in part_numbers]})
+            send_json(handler, {"part_numbers": [asdict(pn) for pn in svc.list_part_numbers(product_id)]})
             return True
         if "/" in tail:
             return False
@@ -88,20 +138,19 @@ def route_parts_db(
         send_json(handler, asdict(product))
         return True
 
-    # GET /api/parts-db/zones/{zone_id}/products
-    if method == "GET" and path.startswith(_ZONES_PREFIX) and path.endswith("/products"):
-        zone_id = path[len(_ZONES_PREFIX) : -len("/products")]
-        if not zone_id or "/" in zone_id:
-            return False
-        products = svc.products_compatible_with_zone(zone_id)
-        send_json(handler, {"products": [asdict(p) for p in products]})
-        return True
+    # POST endpoints ──────────────────────────────────────────────────────
 
-    # POST /api/parts-db — save full doc
     if method == "POST" and path == _PREFIX:
         result = save_config_file("parts_db.json", body, paths)
         svc.invalidate()
         send_json(handler, result)
+        return True
+
+    if method == "POST" and path == _VALIDATE_PATH:
+        part_type_id = body.get("part_type_id", "")
+        product_id = body.get("product_id", "")
+        location_id = body.get("location_id", "")
+        send_json(handler, svc.validate_placement(part_type_id, product_id, location_id))
         return True
 
     return False

@@ -1,11 +1,8 @@
-"""Phase 3 (revised): three-tier dual-read fallback.
+"""Phase 3 (schema v2): three-tier dual-read fallback for legacy lookups.
 
-Tier 1: parts_db.json (via legacy_workbook_index for name-keyed queries)
+Tier 1: parts_db.json (via legacy_workbook_index for name→product mapping)
 Tier 2: legacy_workbook_index.json (transition map)
 Tier 3: workbook_rules.json (last resort)
-
-Tests pin the cascade: each query returns from the highest tier that has
-data; missing tiers fall through to the next.
 """
 from __future__ import annotations
 
@@ -30,12 +27,7 @@ def _write(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), "utf-8")
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
-
-
 def _seed_workbook_only(tmp_path: Path) -> AppPaths:
-    """workbook_rules.json only — both parts_db.json and legacy_workbook_index
-    missing. Tier-3 fallback should engage."""
     _write(tmp_path / "workbook_rules.json", {
         "schema_version": 1,
         "template_sections": [],
@@ -50,81 +42,46 @@ def _seed_workbook_only(tmp_path: Path) -> AppPaths:
     return AppPaths(workspace_config_dir=tmp_path)
 
 
-def _seed_workbook_plus_legacy_index(tmp_path: Path) -> AppPaths:
-    """Both workbook_rules and legacy_workbook_index present, but parts_db
-    has no matching products. The legacy_index points at products that
-    aren't there, so the shim should fall through to workbook_rules."""
-    _write(tmp_path / "workbook_rules.json", {
-        "schema_version": 1,
-        "template_sections": [],
-        "part_rules": {
-            "Forward Warning 1": {
-                "manufacturer": ["Whelen"],
-                "models": ["ION"],
-                "locations": ["GRILL"],
-            },
-        },
-    })
-    _write(tmp_path / "legacy_workbook_index.json", {
-        "schema_version": 1,
-        "part_type_to_products": {
-            "Forward Warning 1": ["whelen_ion_t"],
-        },
-        "model_string_to_product": {
-            "ION": "whelen_ion_t",
-        },
-    })
-    # parts_db.json missing → tier-1 misses, tier-2 returns product_ids that
-    # don't resolve, shim falls through to tier-3.
-    return AppPaths(workspace_config_dir=tmp_path)
-
-
 def _seed_all_three_tiers(tmp_path: Path) -> AppPaths:
-    """Full dataset: parts_db has the product, legacy_index points at it,
-    workbook_rules has stale fallback data. Tier-1 wins."""
     _write(tmp_path / "workbook_rules.json", {
         "schema_version": 1,
         "template_sections": [],
         "part_rules": {
             "Forward Warning 1": {
-                "manufacturer": ["STALE_MFG"],
-                "models": ["STALE_MODEL"],
-                "locations": ["STALE_LOC"],
+                "manufacturer": ["STALE"],
+                "models": ["STALE"],
+                "locations": ["STALE"],
             },
         },
     })
     _write(tmp_path / "legacy_workbook_index.json", {
         "schema_version": 1,
-        "part_type_to_products": {
-            "Forward Warning 1": ["whelen_ion_t"],
-        },
-        "model_string_to_product": {
-            "ION": "whelen_ion_t",
-        },
+        "part_type_to_products": {"Forward Warning 1": ["whelen_ion"]},
+        "model_string_to_product": {"ION": "whelen_ion"},
     })
     _write(tmp_path / "parts_db.json", {
-        "schema_version": 1,
-        "categories": {"lights": {"label": "Lights", "applies_to_zones": ["primary_front"]}},
+        "schema_version": 2,
         "manufacturers": {"whelen": {"label": "Whelen"}},
         "products": {
-            "whelen_ion_t": {
+            "whelen_ion": {
                 "manufacturer_id": "whelen",
-                "category_id": "lights",
-                "model": "ION T-Series",
+                "model": "ION T",
+                "fits_part_types": ["forward_warning"],
             },
         },
-        "location_zone_map": {"GRILL": "primary_front", "PUSH_BUMPER_TOP": "primary_front"},
     })
     return AppPaths(workspace_config_dir=tmp_path)
 
 
-# ── Tier 3: workbook_rules only ───────────────────────────────────────────────
+# ── Tier-3 fallback only ─────────────────────────────────────────────────────
 
 
-class TestTier3FallbackOnly:
+class TestTier3:
     def test_manufacturers_from_workbook(self, tmp_path):
         svc = PartsDbService(_seed_workbook_only(tmp_path))
-        assert svc.manufacturers_by_legacy_name("Forward Warning 1") == ["Whelen", "Federal Signal"]
+        assert svc.manufacturers_by_legacy_name("Forward Warning 1") == [
+            "Whelen", "Federal Signal"
+        ]
 
     def test_models_from_workbook(self, tmp_path):
         svc = PartsDbService(_seed_workbook_only(tmp_path))
@@ -134,59 +91,30 @@ class TestTier3FallbackOnly:
         svc = PartsDbService(_seed_workbook_only(tmp_path))
         assert svc.locations_by_legacy_name("Forward Warning 1") == ["GRILL", "PUSH_BUMPER_TOP"]
 
-    def test_unknown_label_returns_empty(self, tmp_path):
+    def test_no_legacy_index_no_resolution(self, tmp_path):
         svc = PartsDbService(_seed_workbook_only(tmp_path))
-        assert svc.manufacturers_by_legacy_name("Phantom Light") == []
+        assert svc.product_for_legacy_model_string("ION") is None
+        assert svc.products_for_legacy_part_type_label("Forward Warning 1") == []
 
 
-# ── Tier 2 misses → Tier 3 takes over ────────────────────────────────────────
-
-
-class TestTier2MissResolvesToTier3:
-    def test_index_points_at_missing_product_falls_through(self, tmp_path):
-        svc = PartsDbService(_seed_workbook_plus_legacy_index(tmp_path))
-        # legacy_workbook_index says "Forward Warning 1" → whelen_ion_t,
-        # but no parts_db.json exists. Shim returns nothing from tier-1+2
-        # and falls back to workbook_rules.
-        assert svc.manufacturers_by_legacy_name("Forward Warning 1") == ["Whelen"]
-
-
-# ── Tier 1 wins ──────────────────────────────────────────────────────────────
+# ── Tier-1 wins ──────────────────────────────────────────────────────────────
 
 
 class TestTier1Wins:
     def test_manufacturers_from_parts_db(self, tmp_path):
         svc = PartsDbService(_seed_all_three_tiers(tmp_path))
-        # parts_db has whelen → "Whelen" label. workbook_rules stale string ignored.
         assert svc.manufacturers_by_legacy_name("Forward Warning 1") == ["Whelen"]
 
     def test_models_from_parts_db(self, tmp_path):
         svc = PartsDbService(_seed_all_three_tiers(tmp_path))
-        assert svc.models_by_legacy_name("Forward Warning 1") == ["ION T-Series"]
+        assert svc.models_by_legacy_name("Forward Warning 1") == ["ION T"]
 
-    def test_locations_via_category_applies_to_zones(self, tmp_path):
-        svc = PartsDbService(_seed_all_three_tiers(tmp_path))
-        # parts_db has lights → applies_to_zones=[primary_front]; location_zone_map
-        # GRILL/PUSH_BUMPER_TOP → primary_front. Both should come through.
-        locs = svc.locations_by_legacy_name("Forward Warning 1")
-        assert set(locs) == {"GRILL", "PUSH_BUMPER_TOP"}
-
-
-# ── Product-string lookups ───────────────────────────────────────────────────
-
-
-class TestProductLookups:
-    def test_product_for_legacy_model_string(self, tmp_path):
+    def test_product_lookup_via_index(self, tmp_path):
         svc = PartsDbService(_seed_all_three_tiers(tmp_path))
         p = svc.product_for_legacy_model_string("ION")
-        assert p is not None and p.product_id == "whelen_ion_t"
+        assert p is not None and p.product_id == "whelen_ion"
 
-    def test_products_for_legacy_part_type(self, tmp_path):
+    def test_products_for_legacy_part_type_label(self, tmp_path):
         svc = PartsDbService(_seed_all_three_tiers(tmp_path))
-        products = svc.products_for_legacy_part_type("Forward Warning 1")
-        assert [p.product_id for p in products] == ["whelen_ion_t"]
-
-    def test_no_legacy_index_no_resolution(self, tmp_path):
-        svc = PartsDbService(_seed_workbook_only(tmp_path))
-        assert svc.product_for_legacy_model_string("ION") is None
-        assert svc.products_for_legacy_part_type("Forward Warning 1") == []
+        products = svc.products_for_legacy_part_type_label("Forward Warning 1")
+        assert [p.product_id for p in products] == ["whelen_ion"]

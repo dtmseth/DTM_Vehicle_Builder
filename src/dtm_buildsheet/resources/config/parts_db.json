@@ -1,16 +1,22 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "last_updated": "1970-01-01T00:00:00Z",
     "updated_by": "phase-3-stub"
   },
-  "categories": {},
+  "types": {},
+  "sections": {},
+  "zones": {},
+  "sub_zones": {},
+  "build_attributes": {},
+  "tags": {},
   "manufacturers": {},
   "products": {},
-  "option_axes_catalog": {},
-  "color_palette": {},
-  "location_zones": {},
-  "location_zone_map": {},
   "part_types": {},
+  "placements": {},
+  "placement_zones": {},
+  "services": {},
+  "preference_filters": {},
+  "color_palette": {},
   "naming_rules": {}
 }

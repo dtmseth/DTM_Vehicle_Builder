@@ -1,14 +1,5 @@
-"""Phase 3 (revised): parts_db.json + legacy_workbook_index.json validators.
-
-Manufacturer-centric schema. Validates top-level shape, required product
-keys (manufacturer_id, category_id, model), and part_numbers list shape.
-Deep validation (cross-reference manufacturers, etc.) is deferred to
-Phase 4.
-"""
+"""Phase 3 (schema v2): parts_db.json + legacy_workbook_index.json validators."""
 from __future__ import annotations
-
-import json
-from pathlib import Path
 
 import pytest
 
@@ -25,78 +16,59 @@ class TestRegistration:
         assert "legacy_workbook_index.json" in REQUIRED_CONFIG_FILES
 
 
-# ── parts_db.json ────────────────────────────────────────────────────────────
-
-
 class TestPartsDbValidator:
     def test_accepts_minimum_valid_doc(self):
         result = validate_config_payload("parts_db.json", {
-            "schema_version": 1,
+            "schema_version": 2,
             "products": {
-                "ok": {
-                    "manufacturer_id": "whelen",
-                    "category_id": "lights",
-                    "model": "ION T-Series",
-                },
+                "ok": {"manufacturer_id": "whelen", "model": "ION T"},
+            },
+            "part_types": {
+                "forward_warning": {"label": "Forward Warning", "type_id": "lights"},
             },
         })
-        # Missing top-level blocks get filled in
-        for key in ("categories", "manufacturers", "color_palette",
-                    "location_zones", "location_zone_map", "part_types",
-                    "option_axes_catalog", "naming_rules"):
+        # All top-level keys get filled
+        for key in ("types", "sections", "zones", "sub_zones", "build_attributes",
+                    "tags", "manufacturers", "placements", "placement_zones",
+                    "services", "preference_filters", "color_palette", "naming_rules"):
             assert key in result
 
     def test_rejects_non_dict_products(self):
         with pytest.raises(ValueError, match="'products' must be an object"):
-            validate_config_payload("parts_db.json", {"schema_version": 1, "products": []})
+            validate_config_payload("parts_db.json", {"products": []})
 
     def test_rejects_product_missing_manufacturer_id(self):
         with pytest.raises(ValueError, match="manufacturer_id"):
             validate_config_payload("parts_db.json", {
-                "schema_version": 1,
-                "products": {"x": {"category_id": "lights", "model": "Y"}},
-            })
-
-    def test_rejects_product_missing_category_id(self):
-        with pytest.raises(ValueError, match="category_id"):
-            validate_config_payload("parts_db.json", {
-                "schema_version": 1,
-                "products": {"x": {"manufacturer_id": "whelen", "model": "Y"}},
+                "products": {"x": {"model": "Y"}},
             })
 
     def test_rejects_product_missing_model(self):
         with pytest.raises(ValueError, match="model"):
             validate_config_payload("parts_db.json", {
-                "schema_version": 1,
-                "products": {"x": {"manufacturer_id": "whelen", "category_id": "lights"}},
+                "products": {"x": {"manufacturer_id": "whelen"}},
             })
 
-    def test_rejects_part_number_missing_part_number(self):
-        with pytest.raises(ValueError, match="part_number"):
+    def test_rejects_product_non_list_fits(self):
+        with pytest.raises(ValueError, match="fits_part_types"):
             validate_config_payload("parts_db.json", {
-                "schema_version": 1,
-                "products": {
-                    "x": {
-                        "manufacturer_id": "whelen",
-                        "category_id": "lights",
-                        "model": "Y",
-                        "part_numbers": [{"friendly_name": "no part_number"}],
-                    },
-                },
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "fits_part_types": "not a list"}},
             })
 
-    def test_rejects_option_axes_non_dict(self):
-        with pytest.raises(ValueError, match="option_axes"):
+    def test_rejects_part_type_missing_label(self):
+        with pytest.raises(ValueError, match="label"):
             validate_config_payload("parts_db.json", {
-                "schema_version": 1,
-                "products": {
-                    "x": {
-                        "manufacturer_id": "whelen",
-                        "category_id": "lights",
-                        "model": "Y",
-                        "option_axes": [],  # wrong shape
-                    },
-                },
+                "part_types": {"x": {"type_id": "lights"}},
+            })
+
+    def test_rejects_part_type_tree_position_missing_zone(self):
+        with pytest.raises(ValueError, match="zone"):
+            validate_config_payload("parts_db.json", {
+                "part_types": {"x": {
+                    "label": "X", "type_id": "lights",
+                    "tree_positions": [{"section": "exterior"}],
+                }},
             })
 
 
@@ -104,44 +76,28 @@ class TestPartsDbRoundtrip:
     def test_save_then_load(self, tmp_path):
         paths = AppPaths(workspace_config_dir=tmp_path)
         doc = {
-            "schema_version": 1,
+            "schema_version": 2,
             "products": {
-                "whelen_ion_t": {
-                    "manufacturer_id": "whelen",
-                    "category_id": "lights",
-                    "model": "ION T-Series",
-                    "part_numbers": [{"part_number": "ION-T-RW"}],
+                "whelen_ion_t": {"manufacturer_id": "whelen", "model": "ION T",
+                                  "part_numbers": [{"part_number": "ION-T-RW"}]},
+            },
+            "part_types": {
+                "forward_warning": {
+                    "label": "Forward Warning", "type_id": "lights",
+                    "tree_positions": [{"section": "exterior", "zone": "front"}],
                 },
             },
         }
         save_config("parts_db.json", doc, paths)
         loaded = load_config("parts_db.json", paths)
-        assert loaded["products"]["whelen_ion_t"]["model"] == "ION T-Series"
-
-
-# ── legacy_workbook_index.json ───────────────────────────────────────────────
+        assert loaded["products"]["whelen_ion_t"]["model"] == "ION T"
 
 
 class TestLegacyIndexValidator:
     def test_accepts_minimum(self):
         result = validate_config_payload("legacy_workbook_index.json", {"schema_version": 1})
         assert result["part_type_to_products"] == {}
-        assert result["model_string_to_product"] == {}
 
     def test_rejects_non_dict_map(self):
         with pytest.raises(ValueError, match="part_type_to_products"):
-            validate_config_payload("legacy_workbook_index.json", {
-                "schema_version": 1,
-                "part_type_to_products": [],
-            })
-
-    def test_roundtrip(self, tmp_path):
-        paths = AppPaths(workspace_config_dir=tmp_path)
-        doc = {
-            "schema_version": 1,
-            "part_type_to_products": {"Forward Warning 1": ["whelen_ion_t"]},
-            "model_string_to_product": {"ION": "whelen_ion_t"},
-        }
-        save_config("legacy_workbook_index.json", doc, paths)
-        loaded = load_config("legacy_workbook_index.json", paths)
-        assert loaded["model_string_to_product"]["ION"] == "whelen_ion_t"
+            validate_config_payload("legacy_workbook_index.json", {"part_type_to_products": []})

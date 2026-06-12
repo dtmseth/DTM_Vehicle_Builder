@@ -1,17 +1,23 @@
-"""Typed return shapes for parts_db_service.
+"""Typed return shapes for parts_db_service (schema v2).
 
-Manufacturer-centric hierarchy:
-    Category → Manufacturer → Product → PartNumber
+Tree-based hierarchy for user navigation:
+    Type → Section → Zone → Sub-zone? → Part Type
 
-A Product is the unit of identity in the parts database — exactly one
-manufacturer and one category per product. Variants live inside the
-product as a flat `part_numbers` list (gain `friendly_name` / `options`
-tags over time) plus a declarative `option_axes` block describing the
-combinatorial dimensions (used by light products to generate variants
-from color × lens; used by other products to filter the part_numbers UI).
+Plus orthogonal taxonomies:
+    Tags                — themes (camera, radar, siren, comms)
+    Build Attributes    — pre-selected booleans hiding zones/types
+    Preference Filters  — per-category manufacturer restrictions
+    Services            — line items the customer wants (not parts)
 
-PartType is NOT a record — it's a derivation rule. See planning/part_type_resolver
-for how a placement's workbook label gets computed at render time.
+Compatibility uses a single intersection-based rule applied everywhere:
+a (part_type, product, placement) triple is valid iff each entity's
+optional whitelist either is empty or contains the other entities.
+
+Each Product is the unit of identity. Models include `fits_part_types`
+(forward-indexed for fast lookup from the part_type side too). Variants
+live inside the product as a flat `part_numbers[]` list; entries gain
+`friendly_name` / `options` tags incrementally as the owner populates
+SKU detail.
 """
 
 from __future__ import annotations
@@ -20,11 +26,76 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+# ── Top-level taxonomies ─────────────────────────────────────────────────────
+
+
 @dataclass
-class Category:
-    category_id: str
+class Type:
+    type_id: str
     label: str
-    applies_to_zones: list[str] = field(default_factory=list)
+    requires_attribute: str = ""   # build_attribute that must be true for this type to show
+
+
+@dataclass
+class Section:
+    section_id: str
+    label: str
+
+
+@dataclass
+class Zone:
+    """Tree-navigation zone (Front, Rear, Interior > Forward of Cage, etc.)."""
+    zone_id: str
+    label: str
+    section: str
+    requires_attribute: str = ""
+
+
+@dataclass
+class SubZone:
+    sub_zone_id: str
+    label: str
+    zone: str
+    requires_attribute: str = ""
+
+
+@dataclass
+class BuildAttribute:
+    """Pre-selected boolean that filters the visible tree at build time."""
+    attribute_id: str
+    label: str
+    default_by_build_type: dict[str, bool] = field(default_factory=dict)
+
+
+@dataclass
+class Tag:
+    tag_id: str
+    label: str
+
+
+# ── Placement-side taxonomies ────────────────────────────────────────────────
+
+
+@dataclass
+class PlacementZone:
+    """Light part-type derivation zone (primary_front, front_corner, etc.).
+
+    Distinct from the tree-navigation Zone above. Used by the workbook
+    label sequencing and by the workbook input path for legacy compat.
+    """
+    placement_zone_id: str
+    label: str
+
+
+@dataclass
+class Placement:
+    """Per-location restriction metadata."""
+    location_id: str               # the physical location key from vehicle_layouts.json
+    placement_zone: str = ""       # which light placement_zone this location is in
+    allowed_products: list[str] = field(default_factory=list)
+
+
+# ── Products + SKUs ──────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -35,31 +106,8 @@ class Manufacturer:
 
 
 @dataclass
-class OptionAxis:
-    """Declarative description of one variant dimension on a product.
-
-    `type` selects the picker shape — multi_select_from_palette (colors),
-    single_select (lens, vehicle_fitment), free_text. `axis_id` optionally
-    points at a shared definition in `option_axes_catalog`; if absent,
-    the axis is product-local.
-    """
-    name: str                           # the key under product.option_axes
-    type: str
-    axis_id: str = ""
-    allowed: list[str] = field(default_factory=list)
-    min: int | None = None
-    max: int | None = None
-
-
-@dataclass
 class PartNumber:
-    """One concrete SKU under a product.
-
-    During transition many entries will be raw strings — `part_number`
-    set, everything else empty. Owner fills `friendly_name` and
-    `options` over time. Untyped SKUs are valid and just display the
-    raw string in the UI.
-    """
+    """One concrete SKU under a product. Sparse during transition."""
     part_number: str
     friendly_name: str = ""
     options: dict[str, Any] = field(default_factory=dict)
@@ -71,14 +119,44 @@ class PartNumber:
 class Product:
     product_id: str
     manufacturer_id: str
-    category_id: str
-    model: str                          # freeform — name or number, whatever it's called
+    model: str                              # freeform — name or number, whatever it's called
+    fits_part_types: list[str] = field(default_factory=list)
+    tag_ids: list[str] = field(default_factory=list)
     description: str = ""
     images: dict[str, str] = field(default_factory=dict)
-    option_axes: dict[str, OptionAxis] = field(default_factory=dict)
     part_numbers: list[PartNumber] = field(default_factory=list)
-    # For bracket products only — points at the products this bracket attaches to.
-    compatible_with_products: list[str] = field(default_factory=list)
+
+
+# ── Part types ───────────────────────────────────────────────────────────────
+
+
+@dataclass
+class TreePosition:
+    """One position a part_type occupies in the navigation tree. A part_type
+    may have multiple positions (e.g. Side Warning at exterior side AND
+    interior prisoner area)."""
+    section: str
+    zone: str
+    sub_zone: str = ""
+
+
+@dataclass
+class PartType:
+    part_type_id: str
+    label: str
+    type_id: str                                            # top-level type (lights, equipment, ...)
+    tree_positions: list[TreePosition] = field(default_factory=list)
+    tag_ids: list[str] = field(default_factory=list)
+    max_count: int | None = None                            # None = unlimited
+    accessory_of: str = ""                                  # parent part_type_id, if accessory
+    accessories: list[str] = field(default_factory=list)    # suggested when this part_type is added
+    allowed_products: list[str] = field(default_factory=list)
+    allowed_placements: list[str] = field(default_factory=list)
+    workbook_label_pattern: str = "{label}"                 # legacy workbook export label
+    sequence_scope: str = "global"                          # per_part_type counter scope
+
+
+# ── Color palette ────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -89,26 +167,26 @@ class Color:
     naming_token: str = ""
 
 
+# ── Services (non-product line items) ────────────────────────────────────────
+
+
 @dataclass
-class Zone:
-    zone_id: str
+class Service:
+    service_id: str
     label: str
 
 
-@dataclass
-class PartType:
-    """Derivation rule, not a record.
+# ── Preference filters ───────────────────────────────────────────────────────
 
-    `predicate` is a declarative match — never a string expression.
-    `sequence_scope` selects how the sequence counter rolls over:
-      "per_zone_per_role" — counter per (zone, role)
-      "global"            — one counter for everything in this part_type
-    `workbook_label_pattern` is the legacy compatibility hook — produces
-    the string ("Forward Warning 1") that build_rules.json keys on.
+
+@dataclass
+class PreferenceFilter:
+    """Maps a project.preferences.X field to a per-scope manufacturer restriction.
+
+    `filter_scope` accepts exactly one of: type_id, part_type_ids, tag_ids.
     """
-    part_type_id: str
-    label: str
-    category_id: str
-    predicate: dict[str, Any] = field(default_factory=dict)
-    sequence_scope: str = "global"
-    workbook_label_pattern: str = "{label}"
+    filter_id: str
+    preference_field: str                       # "preferences.lighting", etc.
+    filter_scope_kind: str                      # "type_id" | "part_type_ids" | "tag_ids"
+    filter_scope_values: list[str] = field(default_factory=list)
+    filter_action: str = "restrict_to_manufacturer"
