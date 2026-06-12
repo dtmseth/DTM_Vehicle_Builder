@@ -63,10 +63,20 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
-**Status snapshot** (2026-05-21):
+**Status snapshot** (2026-06-12):
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
-- ⏳ **Phase 2** — pre-work done; implementation pending.
+- ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
+- 🟡 **Phase 3** — schema + service + migration + Part Manager UI all landed; dual-read consumer swap (PR-3) is the only remaining gate to "Phase 3 done."
+  - PR-1 (parts_db.json service + dual-read scaffolding): commit `cbc18d4`.
+  - PR-2a (schema revision — manufacturer-centric hierarchy): commit `5f4189b`.
+  - PR-2b (1–3/4): migration script + tests; hand-tables iteration; schema v2 redesign — commits `befb52d`, `368c040`, `6b68847`.
+  - PR-2b (4/4): Part Manager UI + migration seed — commits `7157c13`, `01ada6d`.
+    - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 48 manufacturers · 186 products · 106 part_types · 59 placements.
+    - legacy_workbook_index.json populated: 102 part_type→products · 186 model→product.
+    - Migration ran with `--push-to-cloud`, so SharePoint direct-mirror fired and the sync won't clobber.
+  - **Next**: PR-3 (manifest_editor dual-read swap), then Phase 4 consumer migrations.
+- 🟢 **Phase 8 MVP brought forward** (out of order) so the owner can review the migration output through a UI instead of by hand. The Part Manager UI is the read-only tree + edit-modal MVP described in §Phase 8; inventory/pricing/separate-app questions still deferred to the full Phase 8.
 
 ### Phase 0 — Foundation Refactor
 
@@ -359,6 +369,19 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ### Phase 3 — `parts_db.json` (Schema, Migration, Dual-Read)
 
+**Current status (2026-06-12)** — read this first if you're picking up Phase 3 work:
+
+- ✅ `domain/parts_db_models.py` — 13 dataclasses (Type, Section, Zone, SubZone, BuildAttribute, Tag, Manufacturer, Product, PartNumber, PartType, TreePosition, Placement, PlacementZone, PreferenceFilter, Color, Service).
+- ✅ `app/services/parts_db_service.py` — 23 typed queries + `validate_placement(part_type_id, product_id, location_id)`. Three-tier fallback (parts_db → legacy_workbook_index → workbook_rules).
+- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`. Full doc GET + POST.
+- ✅ `config/schemas.py::_validate_parts_db` — top-level shape + per-product/per-part-type required-key validation. Deep validation deferred to Phase 4.
+- ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot script, owner-editable hand-tables, refuses `--write` while orphans remain. `--push-to-cloud` flag re-saves through `save_config_file` so SharePoint direct-mirror fires (added 2026-06-12).
+- ✅ `parts_db.json` seeded (5/106/186/48), `legacy_workbook_index.json` seeded (102/186). Both cloud-pushed.
+- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) at Settings → Advanced → Part Manager → Database (v2) — read-only tree + edit modals for part_type/product/manufacturer/tag.
+- ⏳ **PR-3 (the only remaining Phase 3 work)** — `manifest_editor.js` dual-read swap. Until this lands, no production reader of build-sheet output touches `parts_db.json` — it's edit-only via the Part Manager.
+
+**What "PR-3 dual-read" means concretely**: in `manifest_editor.js::_mePopulateDataLists` (and the equivalent dropdown-population paths), call `/api/parts-db/manufacturers`, `/api/parts-db/products`, `/api/parts-db/part-types?…` instead of (or in addition to) the existing workbook_rules / parts_library fetches. Compatibility-filter products by the selected part_type using `pt.allowed_products` + `product.fits_part_types`. Keep workbook_rules fallback paths intact — they're the third tier in `parts_db_service` already.
+
 **Goal**: stand up the canonical parts database. Existing config files still work as fallback during transition; new code reads from `parts_db.json`.
 
 **Exit condition**: `parts_db.json` exists in the settings repo with the full set of parts/manufacturers/models/colors/locations currently spread across `workbook_rules.json`, `parts_library.json`, and `vehicle_layouts.json`, plus the new fields lights need (power outputs, color asset map). A backend service exposes typed queries. At least one consumer (likely `manifest_editor.js`) reads from it.
@@ -476,6 +499,8 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 
 ### Phase 8 — Parts Manager (Same DB, Separate App or Tab)
 
+**MVP slice shipped early (2026-06-12)**: the read-only tree + edit-modal slice was brought forward as part of Phase 3 PR-2b (4/4) so the owner could review the migration output (~165 model→manufacturer mappings, ~106 part_type tree positions) through a UI instead of by hand. Lives at Settings → Advanced → Part Manager → Database (v2); see `src/dtm_buildsheet/ui/js/settings/part_manager.js`. The remaining Phase 8 work below — inventory, pricing, low-stock indicators, the storage-split decision — is still open and depends on Phases 4–7.
+
 **Goal**: a UI for managing the parts database itself — friendly names, model numbers, sub-models, inventory quantities, prices. May be its own app; will share the same `parts_db.json`.
 
 **Exit condition**: `parts_db.json` is editable through a dedicated UI, not by hand. The builder app reads inventory/price data and surfaces it on the build sheet.
@@ -486,11 +511,12 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 - Storage evolution: at what scale does `parts_db.json` need to graduate from JSON-in-Git to SQLite or Postgres? Probably around 500+ parts or when concurrent edits start being common. The schema in §7 is designed to translate cleanly to relational tables.
 
 **Work**:
-- Inventory and price fields added to each model entry in `parts_db.json` (they're already in the schema sketch; this phase fills them in).
-- New tab (or app): list all parts, filter by category, edit fields inline, add new parts.
-- Edits go through the same PR review flow as other settings changes.
-- Build sheet output includes part numbers, quantities required, and (optionally) prices.
-- Low-stock indicator: when adding a part to a build, if `qty_on_hand < quantity_required`, surface a warning.
+- ✅ **MVP UI slice done** — tree view + edit modals for part_type/product/manufacturer/tag (commits `7157c13`, `01ada6d`).
+- ⏳ Inventory and price fields added to each model entry in `parts_db.json` (they're already in the schema sketch; this phase fills them in).
+- ⏳ Expose `qty_on_hand` / `price_usd` columns in the Part Manager product editor (the field is already in the `PartNumber` dataclass and the modal has a price input — needs polish + qty input).
+- ⏳ Build sheet output includes part numbers, quantities required, and (optionally) prices.
+- ⏳ Low-stock indicator: when adding a part to a build, if `qty_on_hand < quantity_required`, surface a warning.
+- ⏳ Nice-to-have UI gaps the MVP didn't cover: drag-and-drop tree reorganization, bulk edit, add/delete entity buttons, type-to-filter, validation panel, service/preference-filter/build-attribute editors.
 
 ### Phase 9 — Per-Project Serial Number Tracking
 

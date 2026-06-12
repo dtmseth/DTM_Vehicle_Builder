@@ -173,10 +173,19 @@ The app has two main tabs: **Projects** and **Settings**.
 `#card-preview` and `#card-manifest` live exclusively inside `#proj-build-editor`. They are singletons — not duplicated anywhere else in the DOM.
 
 ### Settings tab
-Ten sub-tabs (stabs):
-`placements | fixtures | sizes | catalog | parts | vehicles | agencies | sales-reps | presets | tools`
+Two header tabs (General / Advanced) each surface their own set of outer stabs:
 
-The **Tools** stab contains the standalone build-sheet generator (generate a `.pptx` by uploading a workbook directly), which was formerly the main "Generate" tab.
+- **General Settings**: `projects-defaults | agencies | sales-reps | presets`
+- **Advanced Settings**: `placements | sizes | part-manager | vehicles | workbook-tools`
+
+Two of the Advanced outer stabs group multiple inner stabs (rendered as a thin inner-stab-bar above the content):
+
+- `placements` → inner stabs: `placements | fixtures`
+- `part-manager` → inner stabs: `catalog (Part Types) | parts (Parts Library) | parts-db (Database v2)`
+
+The **Workbook Tools** stab contains the standalone build-sheet generator (generate a `.pptx` by uploading a workbook directly), which was formerly the main "Generate" tab.
+
+The **Database (v2)** inner stab is the visual editor for `parts_db.json` (Phase 3). It walks `part_types[*].tree_positions[]` to render Type › Section › Zone › Sub-zone › Part Type, with catalog buckets for Products / Manufacturers / Tags. Edits go through `POST /api/parts-db` → `save_config_file` → SharePoint direct-mirror.
 
 ## Project data model
 
@@ -360,3 +369,5 @@ const api = (path, body) =>
 - **Auto-update** is silent on both Windows (.exe) and Mac (.dmg) as of v2.2.11. `update_check_service` exposes `_expected_installer_suffix()` — DO NOT hard-code `sys.platform.startswith("win")` in update-state code; that's how the Mac "platform_unsupported" bug shipped.
 - **Per-build buttons**: there is no Generate button. The Builds tab has `[Edit Build] [📊 Preview / Edit in PowerPoint] [📄 Export PDF] [📑 View PDF] [📂 Show in folder]`. Both Preview and Export auto-regenerate when source changed since `last_rendered_at`; a manual-edit-detection modal warns before discarding PowerPoint edits.
 - **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud I/O, and `wiring.save_via_proposal` also refuses to enqueue when `PYTEST_CURRENT_TEST` is set. Tests that needed to assert queueing behavior have been updated to assert `"queued" not in result`. Bypassing these guards reintroduces the abc.json resurrection bug (root cause documented in v2.2.12 commit).
+- **parts_db.json is populated but not yet wired into production reads**. Phase 3 PR-2b seeded `parts_db.json` (5/106/186/48: types/part_types/products/manufacturers) and `legacy_workbook_index.json` (102/186 entries). Today only the Part Manager UI (Settings → Advanced → Part Manager → Database (v2)) and the schema validator read from these files. The build sheet generator, planner, manifest editor, rule engine, and excel reader all still drive off `workbook_rules.json` / `parts_library.json` / `vehicle_layouts.json` / `part_catalog.json`. PR-3 (manifest_editor dual-read) is the first consumer swap.
+- **Migration script has --push-to-cloud**. `tools/migrate_workbook_to_parts_db.py --write` writes via `Path.write_text()` which bypasses `save_config_file` and therefore SharePoint direct-mirror — meaning the next 60s shared-settings sync will silently overwrite the migration with whatever (older) copy SharePoint has. The `--push-to-cloud` flag re-saves the output through `save_config_file` to fire direct-mirror. Always use `--write --push-to-cloud` when you actually want the data to stick.
