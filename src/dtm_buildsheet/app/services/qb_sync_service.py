@@ -41,28 +41,28 @@ def _parts_db_path(paths: AppPaths) -> Path:
     return paths.workspace_config_dir / "parts_db.json"
 
 
-def _linked_item_ids(paths: AppPaths) -> set[str]:
-    """Collect qb_item_id values already present on VB products (read-only).
+def _linked_map(paths: AppPaths) -> dict[str, str]:
+    """Map qb_item_id → product_id for VB products already linked (read-only).
 
-    Returns an empty set if parts_db.json is absent or has no QB links yet —
+    Returns an empty map if parts_db.json is absent or has no QB links yet —
     which is the current state, so nothing is ever treated as linked until the
     owner explicitly links it.
     """
     path = _parts_db_path(paths)
     if not path.exists():
-        return set()
+        return {}
     try:
         db = json.loads(path.read_text("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
         logger.warning("parts_db.json unreadable during QB sync; treating as no links")
-        return set()
-    linked: set[str] = set()
+        return {}
+    linked: dict[str, str] = {}
     products = db.get("products", {}) if isinstance(db, dict) else {}
     if isinstance(products, dict):
-        for product in products.values():
+        for product_id, product in products.items():
             qb_id = str((product or {}).get("qb_item_id", "")).strip()
             if qb_id:
-                linked.add(qb_id)
+                linked[qb_id] = product_id
     return linked
 
 
@@ -113,14 +113,14 @@ def sync_items(paths: AppPaths) -> dict:
         logger.warning("QuickBooks item sync failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    linked_ids = _linked_item_ids(paths)
+    linked = _linked_map(paths)
     enriched = []
     linked_count = 0
     for item in items:
-        is_linked = item["qb_item_id"] in linked_ids
-        if is_linked:
+        product_id = linked.get(item["qb_item_id"])
+        if product_id:
             linked_count += 1
-        enriched.append({**item, "linked": is_linked})
+        enriched.append({**item, "linked": bool(product_id), "linked_product_id": product_id or ""})
 
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cache = {"last_sync_utc": now_iso, "item_count": len(enriched), "items": enriched}
@@ -150,3 +150,116 @@ def get_cached_items(paths: AppPaths) -> dict:
         "unlinked": len(items) - linked,
         "items": items,
     }
+
+
+# ── linking (Slice B) ────────────────────────────────────────────────────────
+#
+# Linking is the only path that writes parts_db.json, and it does so through
+# the normal config-save pipeline (save_config_file → SharePoint direct-mirror)
+# — never a raw write — so a link survives the next shared-settings sync.
+# It is additive: it sets QB fields on one product and touches nothing else.
+
+
+def _find_cached_item(paths: AppPaths, qb_item_id: str) -> dict | None:
+    for item in _read_cache(paths).get("items", []):
+        if item.get("qb_item_id") == qb_item_id:
+            return item
+    return None
+
+
+def _update_cache_link(paths: AppPaths, qb_item_id: str, product_id: str) -> None:
+    cache = _read_cache(paths)
+    for item in cache.get("items", []):
+        if item.get("qb_item_id") == qb_item_id:
+            item["linked"] = bool(product_id)
+            item["linked_product_id"] = product_id
+    _write_cache(paths, cache)
+
+
+def link_item(paths: AppPaths, *, qb_item_id: str, product_id: str) -> dict:
+    """Attach a QB item to an existing VB product (explicit, additive).
+
+    Writes ``qb_item_id`` / ``qb_sku`` / ``qb_unit_price`` / ``qb_last_synced``
+    onto the chosen product and saves through the config pipeline. Rejects the
+    link if the item is already linked elsewhere or the product already carries
+    a different QB item, so the mapping stays one-to-one.
+    """
+    import copy
+    from datetime import datetime, timezone
+
+    from .config_service import save_config_file
+    from .parts_db_service import get_parts_db_service
+
+    if not qb_item_id or not product_id:
+        return {"ok": False, "error": "missing_argument"}
+
+    item = _find_cached_item(paths, qb_item_id)
+    if item is None:
+        return {"ok": False, "error": "unknown_item"}
+
+    svc = get_parts_db_service(paths)
+    doc = copy.deepcopy(svc.raw_doc())
+    products = doc.get("products") or {}
+    product = products.get(product_id)
+    if product is None:
+        return {"ok": False, "error": "unknown_product"}
+
+    # Enforce a one-to-one mapping.
+    for pid, other in products.items():
+        if pid != product_id and str(other.get("qb_item_id", "")).strip() == qb_item_id:
+            return {"ok": False, "error": "item_already_linked", "linked_product_id": pid}
+    existing = str(product.get("qb_item_id", "")).strip()
+    if existing and existing != qb_item_id:
+        return {"ok": False, "error": "product_already_linked", "existing_qb_item_id": existing}
+
+    product["qb_item_id"] = qb_item_id
+    product["qb_sku"] = item.get("sku", "")
+    product["qb_unit_price"] = item.get("unit_price")
+    product["qb_last_synced"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    result = save_config_file("parts_db.json", doc, paths)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "save_failed")}
+    svc.invalidate()
+    _update_cache_link(paths, qb_item_id, product_id)
+    logger.info("QB item linked to product")
+    return {"ok": True, "product_id": product_id}
+
+
+def unlink_item(paths: AppPaths, *, qb_item_id: str) -> dict:
+    """Detach a QB item from whatever product carries it (additive reverse).
+
+    Removes only the QB fields from the product; everything else is untouched.
+    """
+    import copy
+
+    from .config_service import save_config_file
+    from .parts_db_service import get_parts_db_service
+
+    if not qb_item_id:
+        return {"ok": False, "error": "missing_argument"}
+
+    svc = get_parts_db_service(paths)
+    doc = copy.deepcopy(svc.raw_doc())
+    products = doc.get("products") or {}
+
+    target_id = None
+    for pid, product in products.items():
+        if str(product.get("qb_item_id", "")).strip() == qb_item_id:
+            target_id = pid
+            for field in ("qb_item_id", "qb_sku", "qb_unit_price", "qb_last_synced"):
+                product.pop(field, None)
+            break
+
+    if target_id is None:
+        # Nothing in parts_db carries it; just clear the cache flag.
+        _update_cache_link(paths, qb_item_id, "")
+        return {"ok": True, "product_id": ""}
+
+    result = save_config_file("parts_db.json", doc, paths)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("error", "save_failed")}
+    svc.invalidate()
+    _update_cache_link(paths, qb_item_id, "")
+    logger.info("QB item unlinked from product")
+    return {"ok": True, "product_id": target_id}

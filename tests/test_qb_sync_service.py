@@ -143,3 +143,99 @@ def test_normalize_item_handles_missing_price():
     norm = _normalize_item({"Id": "7", "Name": "Svc"})
     assert norm["unit_price"] is None
     assert norm["sku"] == ""
+
+
+# ── linking (Slice B) ────────────────────────────────────────────────────────
+
+
+class _FakePartsDbService:
+    """Minimal stand-in for PartsDbService backing link/unlink."""
+
+    def __init__(self, doc):
+        self._doc = doc
+        self.invalidated = False
+
+    def raw_doc(self):
+        return self._doc
+
+    def invalidate(self):
+        self.invalidated = True
+
+
+@pytest.fixture
+def _link_fakes(paths, monkeypatch):
+    """Wire link/unlink to an in-memory parts_db + a capturing save."""
+    doc = {"schema_version": 2, "products": {
+        "setina_pb400": {"model": "PB400", "manufacturer_id": "setina"},
+        "whelen_lib2": {"model": "Liberty II", "manufacturer_id": "whelen"},
+    }}
+    fake_svc = _FakePartsDbService(doc)
+    saved = {}
+
+    def _fake_save(filename, data, p):
+        saved["filename"] = filename
+        saved["data"] = data
+        # Mirror the real pipeline: persisted doc becomes what the next
+        # raw_doc() returns (production reloads from disk after invalidate()).
+        fake_svc._doc = data
+        return {"ok": True}
+
+    import dtm_buildsheet.app.services.config_service as cfg
+    import dtm_buildsheet.app.services.parts_db_service as pdb
+    monkeypatch.setattr(cfg, "save_config_file", _fake_save)
+    monkeypatch.setattr(pdb, "get_parts_db_service", lambda p: fake_svc)
+    # Seed a cache so link_item can find the item's sku/price.
+    sync.sync_items(paths)
+    return {"doc": doc, "svc": fake_svc, "saved": saved}
+
+
+def test_link_item_writes_qb_fields_via_save_pipeline(paths, _link_fakes):
+    res = sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    assert res["ok"] is True
+    # Saved through the config pipeline (not a raw write), full doc, right file.
+    assert _link_fakes["saved"]["filename"] == "parts_db.json"
+    product = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]
+    assert product["qb_item_id"] == "1"
+    assert product["qb_sku"] == "WL-LIB2"
+    assert product["qb_unit_price"] == 1249.0
+    assert "qb_last_synced" in product
+    assert _link_fakes["svc"].invalidated is True
+
+
+def test_link_item_rejects_double_linked_item(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    # Same QB item to a second product → rejected (one-to-one).
+    res = sync.link_item(paths, qb_item_id="1", product_id="setina_pb400")
+    assert res["ok"] is False
+    assert res["error"] == "item_already_linked"
+
+
+def test_link_item_rejects_product_with_other_link(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    res = sync.link_item(paths, qb_item_id="2", product_id="whelen_lib2")
+    assert res["ok"] is False
+    assert res["error"] == "product_already_linked"
+
+
+def test_link_item_unknown_product(paths, _link_fakes):
+    res = sync.link_item(paths, qb_item_id="1", product_id="nope")
+    assert res["ok"] is False
+    assert res["error"] == "unknown_product"
+
+
+def test_unlink_item_removes_qb_fields(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    res = sync.unlink_item(paths, qb_item_id="1")
+    assert res["ok"] is True
+    assert res["product_id"] == "whelen_lib2"
+    product = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]
+    assert "qb_item_id" not in product
+    assert "qb_sku" not in product
+
+
+def test_link_then_cache_reflects_link(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    cached = sync.get_cached_items(paths)
+    by_id = {i["qb_item_id"]: i for i in cached["items"]}
+    assert by_id["1"]["linked"] is True
+    assert by_id["1"]["linked_product_id"] == "whelen_lib2"

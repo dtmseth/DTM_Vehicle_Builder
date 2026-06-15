@@ -10,6 +10,8 @@ POST:
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
 - /api/quickbooks/disconnect  — revoke + clear stored tokens
 - /api/quickbooks/sync        — pull active Items from QBO into the cache
+- /api/quickbooks/link-item   — attach a QB item to an existing VB product
+- /api/quickbooks/unlink-item — detach a QB item from its VB product
 
 All JSON responses set ``Cache-Control: no-store`` (security standard). The
 callback never echoes the authorization code or any token into an HTML body;
@@ -66,6 +68,22 @@ def route_quickbooks(
         return True
     if method == "POST" and path == "/api/quickbooks/sync":
         _send_json(handler, qb_sync_service.sync_items(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/link-item":
+        _send_json(
+            handler,
+            qb_sync_service.link_item(
+                paths,
+                qb_item_id=body.get("qb_item_id", ""),
+                product_id=body.get("product_id", ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/unlink-item":
+        _send_json(
+            handler,
+            qb_sync_service.unlink_item(paths, qb_item_id=body.get("qb_item_id", "")),
+        )
         return True
     if method == "POST" and path == "/api/quickbooks/settings":
         _send_json(

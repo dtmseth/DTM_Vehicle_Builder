@@ -869,6 +869,28 @@
     </details>
   </div>
 
+  <!-- QB link picker: choose an existing VB product to attach a QB item to. -->
+  <div class="modal-overlay" id="qb-link-modal" role="dialog" aria-modal="true">
+    <div class="modal" style="width:560px">
+      <div class="modal-title">
+        <span>Link to part</span>
+        <button class="modal-close" id="qb-link-close">×</button>
+      </div>
+      <div id="qb-link-modal-body">
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+          Linking <strong id="qb-link-item-name">—</strong> to an existing Vehicle Builder part.
+          This adds the QuickBooks item ID to that part; nothing else changes.
+        </p>
+        <input type="text" id="qb-link-search" placeholder="Search parts…" autocomplete="off"
+               style="width:100%;box-sizing:border-box;margin-bottom:10px" />
+        <div id="qb-link-results" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="qb-link-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── WORKBOOK TOOLS (renamed from Tools) ──
        Workbook template regen + the standalone build-sheet generator. -->
   <div id="stab-workbook-tools" hidden>

@@ -529,10 +529,14 @@ Built in safe, non-destructive slices:
 - Settings UI: Parts Sync card (pull button, last-sync/counts summary, item list with linked/unlinked badges) inside the connected panel
 - `tests/test_qb_sync_service.py` (hermetic; asserts parts_db is byte-for-byte untouched by a sync)
 
-**Slice B — linking (pending)**
-- `quickbooks.py` route: `/link-item` → write `qb_item_id` onto a chosen VB product (explicit, opt-in, additive)
-- `parts_db.json` schema additions (`qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`)
-- Settings UI: link-to-existing-part / create-new-part actions in the queue
+**Slice B — linking ✅ implemented**
+- `qb_sync_service.link_item()` / `unlink_item()`: write `qb_item_id` / `qb_sku` / `qb_unit_price` / `qb_last_synced` onto a chosen product (or strip them). Saves through `save_config_file("parts_db.json", …)` — the normal config pipeline with SharePoint direct-mirror, never a raw write. Additive: touches one product, nothing else. Enforces a one-to-one item↔product mapping.
+- `quickbooks.py` routes: `POST /link-item`, `POST /unlink-item`
+- Settings UI: per-item 🔗 Link / Unlink buttons; link picker modal with a searchable product list. Linked items show the part label.
+- Cache item carries `linked` + `linked_product_id` so the UI reflects state without a re-pull.
+- Tests assert linking goes through `save_config_file` (not a raw write), enforces one-to-one, and that unlink strips only QB fields.
+
+  *Deferred:* "create new VB part from this item" (pre-fill Part Manager) — link-to-existing is the shipped path.
 
 **Slice C — reconciliation (pending, gated)**
 - Matched items update `sku` / `unit_price` / active status on linked parts; items absent from QBO get flagged `qb_inactive` (never deleted)

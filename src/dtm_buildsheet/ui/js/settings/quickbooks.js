@@ -10,6 +10,11 @@
 (function () {
   let _wired = false;
   let _status = null;
+  let _catalogLoaded = false;
+  let _productLabelById = {};
+  let _products = [];          // [{id, label, search}]
+  let _linkingItemId = null;   // qb_item_id currently being linked
+  let _lastItems = [];         // last rendered item list (for the link button)
 
   function _fmtDate(iso) {
     if (!iso) return "—";
@@ -84,6 +89,7 @@
     const list = $("qb-items-list");
     if (!list) return;
     const items = d.items || [];
+    _lastItems = items;
     if (!items.length) {
       list.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--muted);text-align:center">No items pulled yet. Click "Pull items from QuickBooks".</div>';
       return;
@@ -92,25 +98,55 @@
     // pass through esc() — QB data is never inserted as raw HTML.
     const sorted = items.slice().sort((a, b) => (a.linked === b.linked ? 0 : a.linked ? 1 : -1));
     list.innerHTML = sorted.map((it) => {
-      const badge = it.linked
-        ? '<span style="font-size:10px;font-weight:700;color:var(--green,#166534)">● linked</span>'
-        : '<span style="font-size:10px;font-weight:700;color:var(--orange,#b45309)">● unlinked</span>';
+      const id = esc(it.qb_item_id || "");
       const sku = it.sku ? `<span style="color:var(--muted)">SKU ${esc(it.sku)}</span> · ` : "";
       const price = _money(it.unit_price);
       const priceHtml = price ? ` · <span style="color:var(--muted)">${esc(price)}</span>` : "";
+      let action;
+      if (it.linked) {
+        const partLabel = _productLabelById[it.linked_product_id] || it.linked_product_id || "part";
+        action =
+          `<span style="font-size:10px;font-weight:700;color:var(--green,#166534)">● ${esc(partLabel)}</span>` +
+          `<button class="btn btn-secondary btn-sm" data-qb-unlink="${id}" style="margin-left:8px">Unlink</button>`;
+      } else {
+        action = `<button class="btn btn-secondary btn-sm" data-qb-link="${id}">🔗 Link</button>`;
+      }
       return (
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px">' +
           '<div style="min-width:0">' +
             `<div style="font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.name || "(unnamed)")}</div>` +
             `<div style="font-size:11px">${sku}${esc(it.type || "")}${priceHtml}</div>` +
           "</div>" +
-          `<div style="flex:none">${badge}</div>` +
+          `<div style="flex:none;display:flex;align-items:center;white-space:nowrap">${action}</div>` +
         "</div>"
       );
     }).join("");
   }
 
+  async function _ensureCatalog() {
+    if (_catalogLoaded) return;
+    try {
+      const [prodRes, mfgRes] = await Promise.all([
+        api("/api/parts-db/products"),
+        api("/api/parts-db/manufacturers"),
+      ]);
+      const mfgLabel = {};
+      (mfgRes?.manufacturers || []).forEach((m) => { mfgLabel[m.manufacturer_id] = m.label; });
+      _products = (prodRes?.products || []).map((p) => {
+        const mfg = mfgLabel[p.manufacturer_id] || p.manufacturer_id || "";
+        const label = [mfg, p.model].filter(Boolean).join(" ") || p.product_id;
+        return { id: p.product_id, label, search: (label + " " + p.product_id).toLowerCase() };
+      });
+      _productLabelById = {};
+      _products.forEach((p) => { _productLabelById[p.id] = p.label; });
+      _catalogLoaded = true;
+    } catch (e) {
+      _products = [];
+    }
+  }
+
   async function _loadItems() {
+    await _ensureCatalog();
     let data = null;
     try {
       data = await api("/api/quickbooks/items");
@@ -118,6 +154,70 @@
       data = null;
     }
     _renderItems(data);
+  }
+
+  // ── link picker modal ──────────────────────────────────────────────────
+
+  function _openLinkModal(qbItemId, itemName) {
+    _linkingItemId = qbItemId;
+    if ($("qb-link-item-name")) $("qb-link-item-name").textContent = itemName || qbItemId;
+    if ($("qb-link-search")) $("qb-link-search").value = "";
+    _renderLinkResults("");
+    $("qb-link-modal")?.classList.add("open");
+    setTimeout(() => $("qb-link-search")?.focus(), 0);
+  }
+
+  function _closeLinkModal() {
+    _linkingItemId = null;
+    $("qb-link-modal")?.classList.remove("open");
+  }
+
+  function _renderLinkResults(filter) {
+    const box = $("qb-link-results");
+    if (!box) return;
+    const q = (filter || "").trim().toLowerCase();
+    const matches = (q ? _products.filter((p) => p.search.includes(q)) : _products).slice(0, 100);
+    if (!matches.length) {
+      box.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--muted);text-align:center">No matching parts.</div>';
+      return;
+    }
+    box.innerHTML = matches.map((p) =>
+      '<div class="qb-link-row" data-qb-pick="' + esc(p.id) + '" ' +
+        'style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer">' +
+        `<span style="font-weight:600;color:var(--navy)">${esc(p.label)}</span>` +
+        `<span style="color:var(--muted);margin-left:6px;font-size:11px">${esc(p.id)}</span>` +
+      "</div>"
+    ).join("");
+  }
+
+  async function _doLink(productId) {
+    if (!_linkingItemId || !productId) return;
+    const res = await api("/api/quickbooks/link-item", { qb_item_id: _linkingItemId, product_id: productId });
+    if (res?.ok) {
+      toast("Linked to " + (_productLabelById[productId] || productId), "success");
+      _closeLinkModal();
+      await _loadItems();
+    } else {
+      toast(_linkError(res?.error), "error");
+    }
+  }
+
+  async function _doUnlink(qbItemId) {
+    const res = await api("/api/quickbooks/unlink-item", { qb_item_id: qbItemId });
+    if (res?.ok) {
+      toast("Unlinked", "success");
+      await _loadItems();
+    } else {
+      toast(res?.error || "Unlink failed", "error");
+    }
+  }
+
+  function _linkError(code) {
+    if (code === "item_already_linked") return "That QuickBooks item is already linked to another part";
+    if (code === "product_already_linked") return "That part is already linked to a different QuickBooks item";
+    if (code === "unknown_product") return "Part not found";
+    if (code === "unknown_item") return "Item not found — re-pull from QuickBooks";
+    return "Link failed: " + (code || "unknown error");
   }
 
   async function _sync() {
@@ -210,6 +310,31 @@
     $("qb-connect-btn")?.addEventListener("click", _connect);
     $("qb-disconnect-btn")?.addEventListener("click", _disconnect);
     $("qb-sync-btn")?.addEventListener("click", _sync);
+
+    // Delegated link/unlink buttons on the item list.
+    $("qb-items-list")?.addEventListener("click", (e) => {
+      const linkBtn = e.target.closest("[data-qb-link]");
+      if (linkBtn) {
+        const id = linkBtn.getAttribute("data-qb-link");
+        const item = (_lastItems || []).find((it) => it.qb_item_id === id);
+        _openLinkModal(id, item?.name);
+        return;
+      }
+      const unlinkBtn = e.target.closest("[data-qb-unlink]");
+      if (unlinkBtn) _doUnlink(unlinkBtn.getAttribute("data-qb-unlink"));
+    });
+
+    // Link picker modal.
+    $("qb-link-close")?.addEventListener("click", _closeLinkModal);
+    $("qb-link-cancel")?.addEventListener("click", _closeLinkModal);
+    $("qb-link-search")?.addEventListener("input", (e) => _renderLinkResults(e.target.value));
+    $("qb-link-results")?.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-qb-pick]");
+      if (row) _doLink(row.getAttribute("data-qb-pick"));
+    });
+    $("qb-link-modal")?.addEventListener("click", (e) => {
+      if (e.target.id === "qb-link-modal") _closeLinkModal();
+    });
   }
 
   // Called by tabs.js when the QuickBooks stab is shown.
