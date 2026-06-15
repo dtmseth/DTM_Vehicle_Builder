@@ -70,6 +70,31 @@ const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$
 
 function show(id){$(id).removeAttribute("hidden")}
 function hide(id){$(id).setAttribute("hidden","")}
+
+// Once a part image's aspect ratio is known, sync the size-input W/H fields.
+// If both are blank, seed them with a sensible default (~1.5" on the longer
+// axis) so the user is editing from a visible baseline rather than zero. If
+// one side already has a value and the lock is engaged, derive the other.
+function applyArToSizeInputs(view, ratio, wId, hId, lockId, defaultLongDim){
+  if(!ratio || ratio <= 0) return;
+  const wEl = $(wId), hEl = $(hId);
+  if(!wEl || !hEl) return;
+  const wVal = parseFloat(wEl.value) || 0;
+  const hVal = parseFloat(hEl.value) || 0;
+  const lockBtn = lockId ? $(lockId) : null;
+  const locked = !lockBtn || lockBtn.dataset.locked === "true";
+  if(wVal <= 0 && hVal <= 0){
+    const longDim = defaultLongDim || 1.5;
+    const w = ratio >= 1 ? longDim : longDim * ratio;
+    const h = ratio >= 1 ? longDim / ratio : longDim;
+    wEl.value = w.toFixed(2);
+    hEl.value = h.toFixed(2);
+    return;
+  }
+  if(!locked) return;
+  if(wVal > 0 && hVal <= 0)      hEl.value = (wVal / ratio).toFixed(2);
+  else if(hVal > 0 && wVal <= 0) wEl.value = (hVal * ratio).toFixed(2);
+}
 function toast(msg, type=""){
   const t=$("toast"); t.textContent=msg;
   t.className="toast show"+(type?" "+type:"");

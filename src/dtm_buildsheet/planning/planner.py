@@ -223,7 +223,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 v_spacing=location.get("v_spacing") or None,
                 h_spacing_units=location.get("h_spacing_units", "relative_image"),
                 size_override=merged_size_per_view.get(view) or None,
-                rotation=float(location.get("rotation", 0)),
+                rotation=(
+                    float(location.get("rotation", 0))
+                    + float((merged_size_per_view.get(view) or {}).get("rotation", 0))
+                ) % 360,
                 flip_h=bool(location.get("flip_h", False)),
                 flip_v=bool(location.get("flip_v", False)),
                 flip_mirrored_h=bool(location.get("flip_mirrored_h", False)),

@@ -228,6 +228,8 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "flip_mirrored_h":    pl.flip_mirrored_h,
                     "icon_w_pct":         icon_w_pct,
                     "icon_h_pct":         icon_h_pct,
+                    "icon_w_in":          w_in if first_inst else None,
+                    "icon_h_in":          h_in if first_inst else None,
                     "layer":              pl.layer,
                     "size":               pl.size_override,
                     "instances":          instances_out,

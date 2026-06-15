@@ -153,6 +153,12 @@ function buildPmImageGrid(p){
             value="${sz.h||""}" step="0.01" min="0.01" max="6" placeholder="—" />
           <button type="button" class="pm-ar-lock-btn" id="pm-ar-lock-${view}" data-view="${view}" data-locked="false" title="Lock aspect ratio" style="background:none;border:1px solid var(--border);border-radius:4px;padding:1px 5px;cursor:pointer;font-size:13px;line-height:1.4;margin-left:2px">🔓</button>
         </div>
+        <div class="pm-size-row" style="margin-top:4px">
+          <span title="Rotate the source image before any placement rotation. Use for photos uploaded sideways.">↻ Rotate</span>
+          <select id="pmvr-${view}" class="pmvr" data-view="${view}" style="font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:4px">
+            ${[0,90,180,270].map(d=>`<option value="${d}" ${(sz.rotation||0)==d?"selected":""}>${d}°</option>`).join("")}
+          </select>
+        </div>
         <button class="btn btn-danger btn-sm pm-del-view" data-view="${view}" style="margin-top:6px;width:fit-content">🗑 Remove image</button>
       </div>
       <!-- car preview overlay — visible when image + size both present -->
@@ -163,6 +169,22 @@ function buildPmImageGrid(p){
       </div>
     </div>`;
   }).join("");
+
+  // Probe existing images: detect AR + seed W/H when blank.
+  ["front","side","top","rear"].forEach(view=>{
+    const existing=p?.images?.[view];
+    if(!existing||_pmAspectRatios[view]) return;
+    const probe=new Image();
+    probe.onload=()=>{
+      if(probe.naturalWidth&&probe.naturalHeight){
+        _pmAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
+        applyArToSizeInputs(view, _pmAspectRatios[view],
+          `pmvw-${view}`, `pmvh-${view}`, `pm-ar-lock-${view}`);
+        updateCarPreview(view);
+      }
+    };
+    probe.src="/assets/"+existing;
+  });
 
   // Wire upload inputs
   $("pm-images-grid").querySelectorAll(".pmuz-input").forEach(inp=>{
@@ -179,17 +201,13 @@ function buildPmImageGrid(p){
         prevImg.src=ev.target.result;
         $(`pmuz-${view}`).classList.add("has-file");
         $(`pmvs-${view}`).style.display="";
-        // Detect and store aspect ratio from uploaded image
+        // Detect aspect ratio from uploaded image, auto-populate W/H if blank
         const probe=new Image();
         probe.onload=()=>{
           if(probe.naturalWidth&&probe.naturalHeight){
             _pmAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
-            const lockBtn=$(`pm-ar-lock-${view}`);
-            if(lockBtn?.dataset.locked==="true"){
-              const wEl=$(`pmvw-${view}`);
-              if(wEl&&parseFloat(wEl.value)>0)
-                $(`pmvh-${view}`).value=(parseFloat(wEl.value)/_pmAspectRatios[view]).toFixed(2);
-            }
+            applyArToSizeInputs(view, _pmAspectRatios[view], `pmvw-${view}`, `pmvh-${view}`, `pm-ar-lock-${view}`);
+            updateCarPreview(view);
           }
         };
         probe.src=ev.target.result;
@@ -240,7 +258,9 @@ function buildPmImageGrid(p){
       delete _pmUploadedImages[view];
       const thumb=$(`pmuz-${view}`);
       thumb.classList.remove("has-file");
-      const img=$(`pmuz-prev-${view}`); if(img){img.src="";img.style.display="none";}
+      // Clear src + remove .has-file; don't set inline display:none
+      // (it would persist and hide a re-uploaded image — see CSS specificity).
+      const img=$(`pmuz-prev-${view}`); if(img) img.removeAttribute("src");
       const sp=$(`pmvs-${view}`); if(sp) sp.style.display="none";
       const pv=$(`pmpreview-${view}`); if(pv) pv.classList.remove("visible");
     });
@@ -296,12 +316,17 @@ $("pm-save").addEventListener("click",async()=>{
       if(!res.ok) throw new Error("Image upload failed: "+res.error);
       images[view]="lights/"+img.filename;
     }
-    // Collect per-view render sizes (only where both W and H are filled)
+    // Collect per-view render sizes (only where both W and H are filled).
+    // Optional default image rotation per view (0/90/180/270) is added on top.
     const size_per_view={};
     ["front","side","top","rear"].forEach(v=>{
       const w=parseFloat($(`pmvw-${v}`)?.value)||0;
       const h=parseFloat($(`pmvh-${v}`)?.value)||0;
-      if(w&&h) size_per_view[v]={w,h};
+      const rot=parseInt($(`pmvr-${v}`)?.value)||0;
+      if(w&&h){
+        size_per_view[v]={w,h};
+        if(rot) size_per_view[v].rotation=rot;
+      }
     });
     const entry={part_id:partId,display_name:name,
       category:$("pm-category").value||"OTHER",
