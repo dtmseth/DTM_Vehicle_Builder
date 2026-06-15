@@ -239,16 +239,35 @@ def save_setting_to_cloud_in_background(target_file: str, serialized_content: st
 def save_settings_to_cloud_batch_in_background(items: list[tuple[str, str]]) -> None:
     """Mirror many settings files in ONE background thread (sequential).
 
-    Bulk operations (e.g. importing hundreds of QB customers as agencies)
-    must not spawn a thread per record. This walks the list on a single
-    daemon thread, each item a direct SP write. No-op outside cloud mode."""
+    ``items`` are ``(remote_target_file, local_file_path)`` pairs. Each file is
+    re-read from disk at upload time, and any that no longer exist are skipped —
+    so a record the user deletes mid-import is never (re-)uploaded, which would
+    otherwise resurrect it on the next sync. Bulk operations (e.g. importing
+    hundreds of QB customers as agencies) must not spawn a thread per record;
+    this walks the list on one daemon thread. No-op outside cloud mode."""
     import threading
 
-    def _run() -> None:
-        for target_file, serialized in items:
-            save_setting_to_cloud(target_file, serialized)
+    threading.Thread(
+        target=_mirror_settings_batch, args=(items,), daemon=True, name="mirror-settings-batch"
+    ).start()
 
-    threading.Thread(target=_run, daemon=True, name="mirror-settings-batch").start()
+
+def _mirror_settings_batch(items: list[tuple[str, str]]) -> int:
+    """Synchronous body of the batch mirror. Returns the count uploaded.
+
+    Skips items whose local file no longer exists so a deletion that races the
+    import is not resurrected. Separated out for testability."""
+    uploaded = 0
+    for target_file, local_path in items:
+        try:
+            p = Path(local_path)
+            if not p.exists():
+                continue  # deleted since the import was queued — don't resurrect
+            if save_setting_to_cloud(target_file, p.read_text(encoding="utf-8")):
+                uploaded += 1
+        except Exception:
+            logger.exception("Batch settings mirror failed for %s", target_file)
+    return uploaded
 
 
 def cleanup_processed_proposals() -> dict:
@@ -321,7 +340,7 @@ def cleanup_processed_proposals() -> dict:
     return {"checked": checked, "deleted": deleted}
 
 
-def delete_setting_from_cloud(target_file: str) -> bool:
+def delete_setting_from_cloud(target_file: str, *, attempts: int = 3) -> bool:
     """Directly delete a /Settings/<subdir>/<id>.json (and its .meta.json
     sidecar) from SharePoint right away.
 
@@ -334,22 +353,38 @@ def delete_setting_from_cloud(target_file: str) -> bool:
     workflow round-trip. The proposal still fires so the repo record
     stays in sync.
 
-    No-op outside cloud mode. ``target_file`` is the same shape used
-    by save_via_proposal — e.g. ``"agencies/abc-123.json"``.
+    No-op outside cloud mode (returns True — nothing to delete is success).
+    ``target_file`` is the same shape used by save_via_proposal — e.g.
+    ``"agencies/abc-123.json"``. Transient Graph failures (e.g. 429 throttling
+    during a bulk delete) are retried with backoff so a delete actually sticks
+    instead of silently leaving the cloud copy to resurrect on the next sync.
     """
+    import time
+
     storage = _cloud_storage()
     if storage is None:
-        return False
+        return True  # no cloud copy to remove
     remote = f"{SETTINGS_REMOTE_FOLDER}/{target_file}"
     ok = True
     for path in (remote, remote + ".meta.json"):
-        try:
-            storage.delete(path)
-        except FileNotFoundError:
-            pass  # already gone
-        except Exception:
-            logger.exception("Failed to direct-delete %s from SharePoint", path)
-            ok = False
+        deleted = False
+        for attempt in range(attempts):
+            try:
+                storage.delete(path)
+                deleted = True
+                break
+            except FileNotFoundError:
+                deleted = True  # already gone
+                break
+            except Exception:
+                if attempt == attempts - 1:
+                    logger.exception(
+                        "Failed to direct-delete %s from SharePoint after %d attempts",
+                        path, attempts,
+                    )
+                else:
+                    time.sleep(2 ** attempt)  # 1s, 2s backoff
+        ok = ok and deleted
     return ok
 
 

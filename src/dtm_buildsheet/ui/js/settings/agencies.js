@@ -81,7 +81,8 @@
     const res = await fetch(`/api/agency/${encodeURIComponent(agencyId)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     if (data?.ok) {
-      toast(`Agency "${name}" deleted`, "success");
+      if (data.cloud_warning) toast(data.cloud_warning, "error");
+      else toast(`Agency "${name}" deleted`, "success");
       await _load();
     } else {
       toast(data?.error || "Delete failed", "error");

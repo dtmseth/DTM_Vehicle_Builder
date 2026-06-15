@@ -395,8 +395,11 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
 
         try:
             _write_record(record, paths)
+            # Pass the local path (not the serialized content) so the batch
+            # mirror re-reads at upload time and skips any record deleted in
+            # the meantime — prevents an import from resurrecting a deletion.
             to_mirror.append(
-                (f"agencies/{record.agency_id}.json", json.dumps(asdict(record), indent=2) + "\n")
+                (f"agencies/{record.agency_id}.json", str(_record_path(record.agency_id, paths)))
             )
         except Exception:
             _log.exception("Failed to write imported agency %s", record.agency_id)
@@ -431,8 +434,17 @@ def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:
         # GitHub Actions cron throttle (was resurrecting deleted entries
         # on the next sync).
         from .shared_work_service import delete_setting_from_cloud
-        delete_setting_from_cloud(f"agencies/{agency_id}.json")
-        return {"ok": True, **proposal_result}
+        cloud_ok = delete_setting_from_cloud(f"agencies/{agency_id}.json")
+        result = {"ok": True, **proposal_result}
+        if cloud_ok is False:
+            # Local + proposal delete succeeded, but the direct cloud removal
+            # failed — without surfacing this the record silently resyncs and
+            # looks "undeletable." Tell the caller so the UI can warn + retry.
+            result["cloud_warning"] = (
+                "Removed locally, but the cloud copy could not be deleted "
+                "(it may reappear on the next sync). Try deleting it again."
+            )
+        return result
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:
