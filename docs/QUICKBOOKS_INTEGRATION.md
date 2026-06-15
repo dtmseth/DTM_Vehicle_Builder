@@ -538,11 +538,17 @@ Built in safe, non-destructive slices:
 
   *Deferred:* "create new VB part from this item" (pre-fill Part Manager) — link-to-existing is the shipped path.
 
-**Slice C — reconciliation (pending, gated)**
-- Matched items update `sku` / `unit_price` / active status on linked parts; items absent from QBO get flagged `qb_inactive` (never deleted)
-- Background sync on app start + 30-minute poll
+**Slice C — reconciliation + background sync ✅ implemented**
+- `qb_sync_service.reconcile_linked_parts()`: pushes QBO's `sku` / `unit_price` / active status onto LINKED parts only. Bounded — writes only QB-owned fields (`qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`); never touches the owner's categorization, never creates/deletes parts, never touches unlinked parts. Items missing from QBO's active set are flagged `qb_inactive=true` (and un-flagged if they return). Writes `parts_db.json` only when something changed, only via `save_config_file`.
+- `run_full_sync()`: `sync_items()` + `reconcile_linked_parts()`. The `/sync` route and the background poller both call this.
+- `start_background_sync()`: daemon thread, full sync at app start + every 30 min, guarded to run only when connected and to no-op under pytest. Wired in `server.py` `main()`.
+- Skips reconciliation entirely if the cache was never synced (won't flag everything inactive on an empty cache).
+- UI: sync toast reports `N parts updated, M flagged inactive`.
+- Tests cover update, inactive-flag, reactivate, idempotent no-double-write, unlinked-untouched, never-synced-skip, and full-sync orchestration.
 
-**Done when**: New QBO Items surface in the queue, linking persists and removes from queue, deactivated QBO Items get flagged `qb_inactive`.
+**Done when**: ✅ New QBO Items surface in the list, linking persists, linked parts auto-update from QBO, deactivated QBO Items get flagged `qb_inactive`.
+
+  *Deferred:* "create new VB part from this item" (pre-fill Part Manager) — link-to-existing is the shipped path.
 
 ### Phase 3 — Project Bridge
 

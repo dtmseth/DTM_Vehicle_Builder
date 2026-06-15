@@ -67,7 +67,7 @@ def route_quickbooks(
         _send_json(handler, qb_sync_service.get_cached_items(paths))
         return True
     if method == "POST" and path == "/api/quickbooks/sync":
-        _send_json(handler, qb_sync_service.sync_items(paths))
+        _send_json(handler, qb_sync_service.run_full_sync(paths))
         return True
     if method == "POST" and path == "/api/quickbooks/link-item":
         _send_json(

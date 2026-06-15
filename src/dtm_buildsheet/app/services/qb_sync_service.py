@@ -152,6 +152,142 @@ def get_cached_items(paths: AppPaths) -> dict:
     }
 
 
+# ── reconciliation (Slice C) ─────────────────────────────────────────────────
+#
+# Reconciliation is the "live catalog" half: it pushes QBO's authoritative
+# sku / unit_price / active status onto parts the owner has ALREADY linked.
+# It is deliberately bounded:
+#   - Only QB-owned fields are written (qb_sku, qb_unit_price, qb_inactive,
+#     qb_last_synced). The owner's categorization (model, manufacturer,
+#     fits_part_types, tags, placements, …) is never touched.
+#   - Only LINKED products are considered. Unlinked parts are never modified.
+#   - Parts are never created or deleted. An item that vanished from QBO's
+#     active set is flagged qb_inactive=true (and un-flagged if it returns).
+#   - parts_db.json is written only when something actually changed, and only
+#     through save_config_file (SharePoint direct-mirror), never a raw write.
+
+
+def reconcile_linked_parts(paths: AppPaths) -> dict:
+    """Update QB-owned fields on linked parts from the latest cached pull.
+
+    Reads the items cache (which must come from a successful ``sync_items``)
+    and applies QBO's sku/price/active status to linked products. Returns a
+    stats dict. A no-op (no linked parts, or nothing changed) writes nothing.
+    """
+    import copy
+    from datetime import datetime, timezone
+
+    from .config_service import save_config_file
+    from .parts_db_service import get_parts_db_service
+
+    cache = _read_cache(paths)
+    if not cache.get("last_sync_utc"):
+        # Never reconcile against an empty/never-synced cache — that would flag
+        # every linked part inactive.
+        return {"ok": True, "updated": 0, "flagged_inactive": 0, "reactivated": 0, "skipped": "no_sync"}
+
+    active_by_id = {i["qb_item_id"]: i for i in cache.get("items", [])}
+
+    svc = get_parts_db_service(paths)
+    doc = copy.deepcopy(svc.raw_doc())
+    products = doc.get("products") or {}
+
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    updated = 0
+    flagged_inactive = 0
+    reactivated = 0
+
+    for product in products.values():
+        qb_id = str(product.get("qb_item_id", "")).strip()
+        if not qb_id:
+            continue  # unlinked — never touch
+
+        item = active_by_id.get(qb_id)
+        if item is not None:
+            changed = False
+            if product.get("qb_sku") != item.get("sku", ""):
+                product["qb_sku"] = item.get("sku", "")
+                changed = True
+            if product.get("qb_unit_price") != item.get("unit_price"):
+                product["qb_unit_price"] = item.get("unit_price")
+                changed = True
+            if product.get("qb_inactive"):
+                product["qb_inactive"] = False
+                reactivated += 1
+                changed = True
+            if changed:
+                product["qb_last_synced"] = now_iso
+                updated += 1
+        else:
+            # Linked, but no longer in QBO's active set → flag (don't delete).
+            if not product.get("qb_inactive"):
+                product["qb_inactive"] = True
+                product["qb_last_synced"] = now_iso
+                flagged_inactive += 1
+
+    total_changed = updated + flagged_inactive
+    if total_changed:
+        result = save_config_file("parts_db.json", doc, paths)
+        if not result.get("ok"):
+            return {"ok": False, "error": result.get("error", "save_failed")}
+        svc.invalidate()
+
+    logger.info(
+        "QB reconcile: %d updated, %d flagged inactive, %d reactivated",
+        updated, flagged_inactive, reactivated,
+    )
+    return {
+        "ok": True,
+        "updated": updated,
+        "flagged_inactive": flagged_inactive,
+        "reactivated": reactivated,
+    }
+
+
+def run_full_sync(paths: AppPaths) -> dict:
+    """Pull active Items, then reconcile linked parts. Route + poller entry point."""
+    pull = sync_items(paths)
+    if not pull.get("ok"):
+        return pull
+    recon = reconcile_linked_parts(paths)
+    return {**pull, "reconciled": recon}
+
+
+# ── background sync (Slice C) ─────────────────────────────────────────────────
+
+_POLL_INTERVAL_SECONDS = 30 * 60
+_bg_thread = None
+
+
+def start_background_sync(paths: AppPaths, *, interval_seconds: int = _POLL_INTERVAL_SECONDS) -> None:
+    """Kick a daemon thread that runs a full sync now and every interval.
+
+    No-ops under pytest and never starts twice. Each pass runs only when the
+    connection is live; any error is swallowed so the poller keeps going.
+    """
+    import os
+    import threading
+    import time
+
+    global _bg_thread
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    if _bg_thread is not None and _bg_thread.is_alive():
+        return
+
+    def _loop():
+        while True:
+            try:
+                if quickbooks_service.get_status(paths).get("connected"):
+                    run_full_sync(paths)
+            except Exception:  # noqa: BLE001 — poller must never die
+                logger.warning("QuickBooks background sync pass failed")
+            time.sleep(interval_seconds)
+
+    _bg_thread = threading.Thread(target=_loop, name="qb-sync-poll", daemon=True)
+    _bg_thread.start()
+
+
 # ── linking (Slice B) ────────────────────────────────────────────────────────
 #
 # Linking is the only path that writes parts_db.json, and it does so through

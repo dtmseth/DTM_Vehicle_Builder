@@ -239,3 +239,89 @@ def test_link_then_cache_reflects_link(paths, _link_fakes):
     by_id = {i["qb_item_id"]: i for i in cached["items"]}
     assert by_id["1"]["linked"] is True
     assert by_id["1"]["linked_product_id"] == "whelen_lib2"
+
+
+# ── reconciliation (Slice C) ─────────────────────────────────────────────────
+
+
+def test_reconcile_updates_linked_part_price_and_sku(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    # The linked product now carries qb_unit_price 1249.0 (from link). Simulate
+    # QBO raising the price by rewriting the cache, then reconcile.
+    cache = sync._read_cache(paths)
+    for it in cache["items"]:
+        if it["qb_item_id"] == "1":
+            it["unit_price"] = 1399.0
+            it["sku"] = "WL-LIB2-NEW"
+    sync._write_cache(paths, cache)
+
+    res = sync.reconcile_linked_parts(paths)
+    assert res["ok"] is True
+    assert res["updated"] == 1
+    product = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]
+    assert product["qb_unit_price"] == 1399.0
+    assert product["qb_sku"] == "WL-LIB2-NEW"
+
+
+def test_reconcile_flags_missing_item_inactive(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    # Item "1" disappears from the active pull.
+    cache = sync._read_cache(paths)
+    cache["items"] = [it for it in cache["items"] if it["qb_item_id"] != "1"]
+    sync._write_cache(paths, cache)
+
+    res = sync.reconcile_linked_parts(paths)
+    assert res["flagged_inactive"] == 1
+    product = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]
+    assert product["qb_inactive"] is True
+
+
+def test_reconcile_reactivates_returning_item(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    # Flag inactive first.
+    cache = sync._read_cache(paths)
+    saved_items = list(cache["items"])
+    cache["items"] = [it for it in cache["items"] if it["qb_item_id"] != "1"]
+    sync._write_cache(paths, cache)
+    sync.reconcile_linked_parts(paths)
+    assert _link_fakes["saved"]["data"]["products"]["whelen_lib2"]["qb_inactive"] is True
+    # Item returns to the active set.
+    cache["items"] = saved_items
+    sync._write_cache(paths, cache)
+    res = sync.reconcile_linked_parts(paths)
+    assert res["reactivated"] == 1
+    assert _link_fakes["saved"]["data"]["products"]["whelen_lib2"]["qb_inactive"] is False
+
+
+def test_reconcile_never_touches_unlinked_parts(paths, _link_fakes):
+    # No links at all → reconcile writes nothing.
+    res = sync.reconcile_linked_parts(paths)
+    assert res["updated"] == 0
+    assert res["flagged_inactive"] == 0
+    assert "filename" not in _link_fakes["saved"]  # save_config_file never called
+
+
+def test_reconcile_skips_when_never_synced(paths, monkeypatch):
+    # Empty cache (no last_sync_utc) must not flag everything inactive.
+    res = sync.reconcile_linked_parts(paths)
+    assert res.get("skipped") == "no_sync"
+
+
+def test_reconcile_idempotent_no_double_write(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    # First reconcile applies price/sku from the cached item.
+    sync.reconcile_linked_parts(paths)
+    _link_fakes["saved"].clear()
+    # Second reconcile with no further change → no save.
+    res = sync.reconcile_linked_parts(paths)
+    assert res["updated"] == 0
+    assert "filename" not in _link_fakes["saved"]
+
+
+def test_run_full_sync_pulls_then_reconciles(paths, _link_fakes):
+    sync.link_item(paths, qb_item_id="1", product_id="whelen_lib2")
+    res = sync.run_full_sync(paths)
+    assert res["ok"] is True
+    assert res["item_count"] == 3
+    assert "reconciled" in res
+    assert res["reconciled"]["ok"] is True

@@ -230,7 +230,15 @@
     try {
       const res = await api("/api/quickbooks/sync", {});
       if (res?.ok) {
-        toast(`Pulled ${res.item_count} item${res.item_count === 1 ? "" : "s"} (${res.unlinked} unlinked)`, "success");
+        let msg = `Pulled ${res.item_count} item${res.item_count === 1 ? "" : "s"} (${res.unlinked} unlinked)`;
+        const r = res.reconciled;
+        if (r && (r.updated || r.flagged_inactive)) {
+          const bits = [];
+          if (r.updated) bits.push(`${r.updated} part${r.updated === 1 ? "" : "s"} updated`);
+          if (r.flagged_inactive) bits.push(`${r.flagged_inactive} flagged inactive`);
+          msg += " · " + bits.join(", ");
+        }
+        toast(msg, "success");
         await _loadItems();
       } else {
         toast(_syncError(res?.error), "error");

@@ -628,6 +628,14 @@ def main(paths: AppPaths | None = None):
         name="periodic-sync",
     ).start()
 
+    # QuickBooks: pull + reconcile linked parts at startup and every 30 min.
+    # No-op until the owner has connected a company (guarded inside).
+    try:
+        from .services import qb_sync_service
+        qb_sync_service.start_background_sync(active_paths)
+    except Exception:
+        logging.getLogger(__name__).warning("QuickBooks background sync did not start")
+
     if _port_is_busy(PORT):
         raise SystemExit(
             f"Port {PORT} is already in use. Close the other app instance and try again."
