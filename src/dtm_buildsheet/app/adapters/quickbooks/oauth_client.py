@@ -36,7 +36,12 @@ _FALLBACK_ENDPOINTS = {
 # Single scope covers Items, Customers, and Projects (Customer w/ Job flag).
 OAUTH_SCOPE = "com.intuit.quickbooks.accounting"
 
-_HTTP_TIMEOUT = 30
+_HTTP_TIMEOUT = 10
+
+# Discovery documents are stable; cache them per-environment across all client
+# instances so a fresh QuickBooksOAuthClient (created per service call) doesn't
+# re-fetch the well-known document on every operation.
+_DISCOVERY_CACHE: dict[str, dict] = {}
 
 
 class QuickBooksOAuthError(RuntimeError):
@@ -61,6 +66,10 @@ class QuickBooksOAuthClient:
     def _discover(self) -> dict:
         if self._endpoints is not None:
             return self._endpoints
+        cached = _DISCOVERY_CACHE.get(self._environment)
+        if cached is not None:
+            self._endpoints = cached
+            return cached
         url = _DISCOVERY_URLS[self._environment]
         try:
             resp = requests.get(url, timeout=_HTTP_TIMEOUT)
@@ -73,6 +82,9 @@ class QuickBooksOAuthClient:
                     "revocation_endpoint", _FALLBACK_ENDPOINTS["revocation_endpoint"]
                 ),
             }
+            # Only successful discovery is cached process-wide; a fallback stays
+            # local so a transient outage doesn't pin us to static endpoints.
+            _DISCOVERY_CACHE[self._environment] = self._endpoints
         except Exception:  # noqa: BLE001 — network / shape errors both fall back
             logger.warning(
                 "QuickBooks discovery document unavailable; using fallback endpoints"
