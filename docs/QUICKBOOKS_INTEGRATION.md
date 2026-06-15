@@ -140,34 +140,36 @@ The token refresh cycle runs automatically before any API call when `access_toke
 
 ---
 
-## Token Storage — Encryption Required
+## Token Storage — OS Keychain via `keyring`
 
-Intuit's security requirements mandate that the refresh token and realm ID be encrypted at rest using AES (symmetric encryption), with the AES key stored in a **separate** file from the encrypted values.
+This integration follows the same credential storage standard used by the existing M365/SharePoint integration: OS-native credential stores rather than manually managed encryption files. See `docs/EXTERNAL_CONNECTION_SECURITY.md` for the full standard.
 
-### File Layout
+Intuit's security requirements mandate AES encryption of tokens at rest with the key stored separately. The OS keychain satisfies this requirement — the OS manages AES encryption and key storage natively, at the hardware security layer on supported platforms.
 
-```
-workspace/config/
-  quickbooks_key.bin       ← AES-256 key ONLY (binary, 32 bytes)
-                              Generated on first run. Never logged. Never synced.
-  quickbooks_config.json   ← Encrypted token values + non-sensitive metadata
-```
+| Platform | Storage |
+|----------|---------|
+| macOS | Keychain |
+| Windows | Windows Credential Locker (DPAPI) |
+| Linux | libsecret / Secret Service |
 
-Both files are git-ignored and excluded from the SharePoint mirror.
+### Credential Keys
 
-### quickbooks_key.bin
+All sensitive QB values are stored in the OS keychain under the service name `"DTM Vehicle Builder"`:
 
-Generated once by `quickbooks_service.py` on first run using `os.urandom(32)`. If deleted, the connection must be re-established (tokens become unreadable). Store a backup in a secure password manager.
+| keyring key | Value |
+|-------------|-------|
+| `"qb_access_token"` | Current access token |
+| `"qb_refresh_token"` | Current refresh token |
+| `"qb_realm_id"` | QBO company ID |
+| `"qb_client_secret"` | OAuth client secret |
 
 ### quickbooks_config.json
+
+Non-sensitive metadata only — stored as plain JSON, git-ignored, excluded from SharePoint mirror:
 
 ```json
 {
   "client_id": "ABxxxx",
-  "client_secret_enc": "<AES-encrypted>",
-  "realm_id_enc": "<AES-encrypted>",
-  "access_token_enc": "<AES-encrypted>",
-  "refresh_token_enc": "<AES-encrypted>",
   "token_expiry_utc": "2026-06-15T17:30:00Z",
   "refresh_expiry_utc": "2026-09-24T14:00:00Z",
   "hard_expiry_utc": "2031-06-15T14:00:00Z",
@@ -176,38 +178,32 @@ Generated once by `quickbooks_service.py` on first run using `os.urandom(32)`. I
 }
 ```
 
-`client_id` is not sensitive (it's in every OAuth URL). All other credential fields are AES-encrypted before being written. Expiry timestamps are stored in plaintext for display purposes only — they contain no credentials.
+`client_id` is not a secret (it appears in every OAuth URL). Expiry timestamps are for display only. No credential values appear in this file.
 
-### Encryption Implementation
+### Implementation
 
-Use the `cryptography` library (add to `pyproject.toml` dependencies):
+Add `keyring` to `pyproject.toml` dependencies:
 
 ```python
 # In quickbooks_service.py
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import os, base64
+import keyring
 
-def _load_key() -> bytes:
-    key_path = paths.workspace / "config" / "quickbooks_key.bin"
-    if not key_path.exists():
-        key = os.urandom(32)  # AES-256
-        key_path.write_bytes(key)
-    return key_path.read_bytes()
+_SERVICE = "DTM Vehicle Builder"
 
-def _encrypt(plaintext: str) -> str:
-    key = _load_key()
-    aesgcm = AESGCM(key)
-    nonce = os.urandom(12)
-    ct = aesgcm.encrypt(nonce, plaintext.encode(), None)
-    return base64.b64encode(nonce + ct).decode()
+def _store(key: str, value: str) -> None:
+    keyring.set_password(_SERVICE, key, value)
 
-def _decrypt(ciphertext: str) -> str:
-    key = _load_key()
-    aesgcm = AESGCM(key)
-    data = base64.b64decode(ciphertext)
-    nonce, ct = data[:12], data[12:]
-    return aesgcm.decrypt(nonce, ct, None).decode()
+def _load(key: str) -> str | None:
+    return keyring.get_password(_SERVICE, key)
+
+def _delete(key: str) -> None:
+    try:
+        keyring.delete_password(_SERVICE, key)
+    except keyring.errors.PasswordDeleteError:
+        pass
 ```
+
+On disconnect, call `_delete` for all four credential keys. On token refresh, call `_store("qb_refresh_token", new_token)` and `_store("qb_access_token", new_access_token)` immediately — never skip this step.
 
 ---
 
@@ -321,8 +317,8 @@ src/dtm_buildsheet/
     quickbooks.js                ← Settings → QuickBooks tab UI
 
 workspace/config/
-  quickbooks_key.bin             ← AES-256 key (binary, git-ignored, never synced)
-  quickbooks_config.json         ← encrypted credentials + sync state (git-ignored, never synced)
+  quickbooks_config.json         ← non-sensitive metadata + sync state (git-ignored, never synced)
+                                    Credentials stored in OS keychain via keyring — not in this file
 ```
 
 ### Existing Files Modified
@@ -335,8 +331,8 @@ workspace/config/
 | `ui/js/main.js` | Wire QuickBooks tab init |
 | `config/schemas.py` | Add `quickbooks_config` schema + migration |
 | `parts_db.json` | Add `qb_item_id`, `qb_sku` fields per part entry |
-| `pyproject.toml` | Add `cryptography` dependency |
-| `.gitignore` | Add `workspace/config/quickbooks_key.bin` and `workspace/config/quickbooks_config.json` |
+| `pyproject.toml` | Add `keyring` dependency |
+| `.gitignore` | Add `workspace/config/quickbooks_config.json` |
 
 ---
 
@@ -544,7 +540,7 @@ When `connection_status` is `disconnected` or the tokens are expired/missing, th
 
 - **Production redirect URI must be HTTPS on a real domain**: `localhost` is rejected by Intuit for Production keys. The hosted relay is required.
 - **Refresh token rotation is mandatory**: Save the newly issued refresh token (encrypted) on every refresh call. One missed rotation permanently breaks the connection.
-- **AES key and config are separate files**: Intuit requires the encryption key to be stored separately from the encrypted values. Do not merge them into one file.
+- **Credentials live in OS keychain, not in files**: `quickbooks_config.json` contains only non-sensitive metadata. All credential values (`qb_access_token`, `qb_refresh_token`, `qb_realm_id`, `qb_client_secret`) are stored via `keyring`. This satisfies Intuit's AES encryption requirement — the OS keychain handles encryption and key management natively.
 - **Callback must 302 redirect**: Never return HTML that contains the authorization code or any token. Issue a server-side 302 to a clean URL after saving tokens.
 - **No QB data in logs**: Item names, prices, customer names, realm ID, and all token values must never appear in any log file.
 - **5-year hard expiry**: Set a calendar reminder. After 5 years, a one-time browser re-authorization is required.

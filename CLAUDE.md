@@ -131,6 +131,9 @@ docs/
   FEATURE_INVENTORY.md             ← every feature and non-obvious rule
   PROJECT_WORKFLOW.md              ← project → draft → output data flow and file ownership
   PACKAGING.md / PIPELINE.md
+  EXTERNAL_CONNECTION_SECURITY.md ← mandatory security standard for all external API integrations
+  QUICKBOOKS_INTEGRATION.md       ← QuickBooks Online integration design
+  QUICKBOOKS_QUESTIONNAIRE.md     ← Intuit App Assessment Questionnaire prepared answers
 ```
 
 ## Key entry points
