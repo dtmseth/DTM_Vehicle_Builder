@@ -10,42 +10,84 @@
 
 This document describes the planned integration between DTM Vehicle Builder and QuickBooks Online (QBO). The integration serves two purposes:
 
-1. **Parts catalog sync** — QBO Items become the authoritative source for part numbers, pricing, and active/inactive status. The Vehicle Builder layers categorization data (placement rules, build types, vehicle compatibility) on top that QBO does not have.
-2. **Project / time-tracking bridge** — VB projects and individual units are reflected as QBO Customers and QBO Projects so technician time can be logged against specific vehicles in QuickBooks.
+1. **Parts catalog sync** — QBO Items become the authoritative source for part numbers, pricing, and active/inactive status. The Vehicle Builder layers categorization data (placement rules, build types, vehicle compatibility) on top that QBO does not track.
+2. **Project / time-tracking bridge** — VB projects are pushed to QBO as Customer + Project records so technician time can be logged against specific builds in QuickBooks.
 
-End users of the Vehicle Builder app never interact with QuickBooks auth. A one-time setup flow (run by the app owner) produces long-lived tokens stored in the workspace config.
+End users of the Vehicle Builder app never interact with QuickBooks auth. A one-time setup flow (performed by the app owner) produces long-lived encrypted tokens stored locally. After that, the connection is fully automatic.
 
 ---
 
 ## Prerequisites and QBO Account Setup
 
-### ⚠️ Production Keys Are Required
+### Production Keys Are Required
 
 QuickBooks Online has two key environments:
 
 | Environment | Access | Use case |
 |-------------|--------|----------|
-| Development (Sandbox) | Connects only to Intuit's fake sandbox companies | Testing against dummy data |
-| **Production** | Connects to real QBO companies | **This is what we need** |
+| Development (Sandbox) | Connects only to Intuit's fake sandbox companies | Testing during development |
+| **Production** | Connects to real QBO companies | **Required for live data** |
 
-Development keys **cannot** connect to a live company. Even for an internal/unlisted app, Production keys are required to access real data.
+Development keys cannot connect to a real company. Even for an internal unlisted app, Production keys are required.
 
 **To obtain Production keys:**
 1. Go to the [Intuit Developer Dashboard](https://developer.intuit.com)
 2. Select your app → navigate to the **Production** tab
-3. Complete the **App Assessment Questionnaire** (internal/unlisted apps do not need App Store review or marketing approval — just the questionnaire)
+3. Complete the **App Assessment Questionnaire** (see `docs/QUICKBOOKS_QUESTIONNAIRE.md` for prepared answers)
 4. Once approved, copy the Production **Client ID** and **Client Secret**
-5. In the Production tab, register `http://localhost:7655/api/quickbooks/callback` as an allowed redirect URI
+5. Register the hosted relay URI as the redirect URI (see OAuth Redirect section below)
 
-The app does not need to be listed on the QuickBooks App Store. It can remain private/unlisted.
+The app does not need to be listed on the QuickBooks App Store. It remains private/unlisted.
 
-### Required OAuth Scopes
+### Required OAuth Scope
 
 ```
 com.intuit.quickbooks.accounting
 ```
 
-This single scope covers Items, Customers, Projects, and Time Activity — everything needed.
+This covers Items, Customers, Projects, and Time Activity.
+
+---
+
+## OAuth Redirect URI — Hosted Relay Required
+
+Intuit Production keys require an **HTTPS redirect URI on a real domain**. `http://localhost` is only accepted for sandbox/development keys. This means the app needs a hosted relay endpoint to act as the OAuth landing page before handing control back to the local server.
+
+### How the Relay Works
+
+```
+QuickBooks authorization page
+  │
+  └─ redirects to → https://[your-domain.com]/qb-callback?code=...&state=...&realmId=...
+                         │
+                         └─ server issues HTTP 302 → http://localhost:7655/api/quickbooks/callback
+                                                           ?code=...&state=...&realmId=...
+                                                                │
+                                                                └─ local app captures tokens
+```
+
+The relay page does nothing except issue a 302 redirect. It never reads, stores, or logs the authorization code. It is a dumb pass-through. The authorization code itself is short-lived (minutes) and is only useful in combination with the client secret, which never leaves the local machine.
+
+### Relay Implementation (Netlify or Vercel function)
+
+A minimal serverless function is the cleanest option — it issues a proper HTTP 302 (not a JavaScript redirect, which would not comply with Intuit's redirect security requirement). Deploy to Netlify or Vercel under a domain you control:
+
+```javascript
+// netlify/functions/qb-callback.js  (or vercel equivalent)
+export default function handler(req, res) {
+  const params = new URLSearchParams(req.query).toString();
+  res.writeHead(302, {
+    Location: `http://localhost:7655/api/quickbooks/callback?${params}`
+  });
+  res.end();
+}
+```
+
+Register `https://[your-domain.com]/.netlify/functions/qb-callback` (or equivalent) in the Intuit Developer Dashboard as the Production redirect URI.
+
+### During Development (Sandbox Only)
+
+For development against sandbox companies, register `http://localhost:7655/api/quickbooks/callback` separately under the Development tab. Development keys do not require HTTPS.
 
 ---
 
@@ -56,18 +98,29 @@ This single scope covers Items, Customers, Projects, and Time Activity — every
 ```
 Owner opens Settings → QuickBooks → clicks "Connect to QuickBooks"
   │
-  ├─ App opens browser tab to Intuit OAuth URL
-  │    https://appcenter.intuit.com/connect/oauth2?
-  │      client_id=...&redirect_uri=http://localhost:7655/api/quickbooks/callback
-  │      &scope=com.intuit.quickbooks.accounting&response_type=code&state=...
+  ├─ Server generates cryptographically random state value, stores it temporarily
+  │
+  ├─ App opens system browser to Intuit OAuth URL:
+  │    https://appcenter.intuit.com/connect/oauth2
+  │      ?client_id=...
+  │      &redirect_uri=https://[your-domain.com]/.netlify/functions/qb-callback
+  │      &scope=com.intuit.quickbooks.accounting
+  │      &response_type=code
+  │      &state=[random-state-value]
   │
   ├─ Owner logs into QBO, selects their company, clicks Authorize
   │
-  ├─ Browser redirects to http://localhost:7655/api/quickbooks/callback?code=...&realmId=...
+  ├─ QBO → relay (302) → http://localhost:7655/api/quickbooks/callback?code=...&state=...&realmId=...
   │
-  ├─ App exchanges code for access_token + refresh_token via POST to Intuit token endpoint
+  ├─ Server validates state parameter (CSRF check — reject if mismatch)
   │
-  └─ App saves tokens + realm_id to workspace/config/quickbooks_config.json
+  ├─ Server exchanges code for access_token + refresh_token via POST to Intuit token endpoint
+  │
+  ├─ Server encrypts refresh_token and realm_id using AES key from quickbooks_key.bin
+  │
+  ├─ Server saves encrypted values to quickbooks_config.json
+  │
+  └─ Server issues 302 redirect to /settings (never echoes tokens or code in HTML)
        (connection status badge turns green)
 ```
 
@@ -75,29 +128,46 @@ After this, the owner never needs to interact with QuickBooks auth again under n
 
 ### Token Lifecycle
 
-QuickBooks tokens behave as follows:
-
-| Token | Lifetime | Notes |
-|-------|----------|-------|
+| Token | Lifetime | Behavior |
+|-------|----------|----------|
 | `access_token` | 1 hour | Used for every API call |
-| `refresh_token` | 100 days of inactivity | **Rotates on every use** — must be saved after every refresh |
-| Hard maximum | 5 years | After 5 years, user must click "Reconnect" once |
+| `refresh_token` | 100 days of inactivity | **Rotates on every use** — new token issued and must be saved on every refresh |
+| Hard maximum | 5 years | After 5 years, one-time re-authorization required |
 
-**Critical implementation detail**: Every time `quickbooks_service` calls the token refresh endpoint to get a new access token, QBO issues a **new** refresh token in the response. The old refresh token is immediately invalidated. The service must overwrite the saved refresh token on every refresh or the integration will break within 24 hours.
+Every time `quickbooks_service` calls the token refresh endpoint, QBO issues a **new** refresh token. The old one is immediately invalidated. The service must decrypt the stored token, refresh, then re-encrypt and save the new token atomically. Missing one rotation permanently invalidates the connection.
 
 The token refresh cycle runs automatically before any API call when `access_token` is within 5 minutes of expiry.
 
-### Token Storage
+---
 
-`workspace/config/quickbooks_config.json`:
+## Token Storage — Encryption Required
+
+Intuit's security requirements mandate that the refresh token and realm ID be encrypted at rest using AES (symmetric encryption), with the AES key stored in a **separate** file from the encrypted values.
+
+### File Layout
+
+```
+workspace/config/
+  quickbooks_key.bin       ← AES-256 key ONLY (binary, 32 bytes)
+                              Generated on first run. Never logged. Never synced.
+  quickbooks_config.json   ← Encrypted token values + non-sensitive metadata
+```
+
+Both files are git-ignored and excluded from the SharePoint mirror.
+
+### quickbooks_key.bin
+
+Generated once by `quickbooks_service.py` on first run using `os.urandom(32)`. If deleted, the connection must be re-established (tokens become unreadable). Store a backup in a secure password manager.
+
+### quickbooks_config.json
 
 ```json
 {
   "client_id": "ABxxxx",
-  "client_secret": "xxxx",
-  "realm_id": "1234567890",
-  "access_token": "eyJ...",
-  "refresh_token": "AB11...",
+  "client_secret_enc": "<AES-encrypted>",
+  "realm_id_enc": "<AES-encrypted>",
+  "access_token_enc": "<AES-encrypted>",
+  "refresh_token_enc": "<AES-encrypted>",
   "token_expiry_utc": "2026-06-15T17:30:00Z",
   "refresh_expiry_utc": "2026-09-24T14:00:00Z",
   "hard_expiry_utc": "2031-06-15T14:00:00Z",
@@ -106,7 +176,129 @@ The token refresh cycle runs automatically before any API call when `access_toke
 }
 ```
 
-`client_secret` is stored in the workspace config (local machine only, git-ignored). The workspace is never synced to SharePoint — this file stays local.
+`client_id` is not sensitive (it's in every OAuth URL). All other credential fields are AES-encrypted before being written. Expiry timestamps are stored in plaintext for display purposes only — they contain no credentials.
+
+### Encryption Implementation
+
+Use the `cryptography` library (add to `pyproject.toml` dependencies):
+
+```python
+# In quickbooks_service.py
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os, base64
+
+def _load_key() -> bytes:
+    key_path = paths.workspace / "config" / "quickbooks_key.bin"
+    if not key_path.exists():
+        key = os.urandom(32)  # AES-256
+        key_path.write_bytes(key)
+    return key_path.read_bytes()
+
+def _encrypt(plaintext: str) -> str:
+    key = _load_key()
+    aesgcm = AESGCM(key)
+    nonce = os.urandom(12)
+    ct = aesgcm.encrypt(nonce, plaintext.encode(), None)
+    return base64.b64encode(nonce + ct).decode()
+
+def _decrypt(ciphertext: str) -> str:
+    key = _load_key()
+    aesgcm = AESGCM(key)
+    data = base64.b64decode(ciphertext)
+    nonce, ct = data[:12], data[12:]
+    return aesgcm.decrypt(nonce, ct, None).decode()
+```
+
+---
+
+## Security Compliance
+
+The following security controls must be implemented to meet Intuit's requirements. These apply to an internal/unlisted app; the subset that is relevant to a single-user local desktop app is marked.
+
+### OAuth Callback — 302 Redirect Required
+
+The `/api/quickbooks/callback` endpoint must **never return HTML that echoes the authorization code or any token back to the browser**. After exchanging the code and saving encrypted tokens, it must issue a `302 Found` redirect to a clean URL. This prevents the code from leaking via HTTP Referer headers.
+
+```python
+# In routes/quickbooks.py — callback handler
+def _handle_callback(self, query_params):
+    code = query_params.get("code")
+    state = query_params.get("state")
+    realm_id = query_params.get("realmId")
+
+    if not quickbooks_service.validate_state(state):
+        self._send(400, b"Invalid state", "text/plain")
+        return
+
+    quickbooks_service.exchange_code(code, realm_id)  # encrypts and saves tokens
+
+    # 302 redirect — never echo code or tokens in HTML
+    self.send_response(302)
+    self.send_header("Location", "/")
+    self.end_headers()
+```
+
+### CSRF Protection (OAuth State Parameter)
+
+Before opening the browser for OAuth, generate a random state value and store it temporarily (in-memory or a temp file). Reject any callback where the returned `state` does not match. This prevents CSRF attacks against the OAuth flow.
+
+```python
+import secrets
+_pending_state: str | None = None
+
+def generate_auth_url() -> str:
+    global _pending_state
+    _pending_state = secrets.token_urlsafe(32)
+    # include _pending_state in the OAuth URL &state= parameter
+
+def validate_state(state: str) -> bool:
+    global _pending_state
+    valid = secrets.compare_digest(state or "", _pending_state or "")
+    _pending_state = None  # consume once
+    return valid
+```
+
+### Logging — No QB Data in Logs
+
+The application logger must never write:
+- `access_token` or `refresh_token` values
+- `realm_id`
+- Raw QB API response bodies (which contain Item names, prices, customer data)
+
+Log only operation names, HTTP status codes, and timestamps. For QB API errors, log the `intuit_tid` header value (Intuit's trace ID) for troubleshooting — not the full response body.
+
+```python
+# Good:
+logger.info("QB items sync: status=200, intuit_tid=%s", response.headers.get("intuit_tid"))
+# Bad:
+logger.debug("QB response: %s", response.json())   # may contain customer data
+logger.error("Token refresh failed, token=%s", refresh_token)  # never
+```
+
+### Cache-Control Headers on QB Data Routes
+
+Any route that returns QuickBooks-sourced data must include:
+```
+Cache-Control: no-store
+```
+
+Add this header in `server.py`'s `_send()` helper for all `/api/quickbooks/*` responses.
+
+### HTTP Method Restriction
+
+The local server must return `405 Method Not Allowed` for TRACE and any other HTTP method not explicitly handled. Verify `server.py` rejects unexpected methods on all routes.
+
+### Input Sanitization — XSS
+
+QBO Item names and descriptions are rendered in the categorization UI. All QB-sourced strings must be HTML-escaped before being inserted into the DOM. Use `textContent` (not `innerHTML`) when displaying QB data in JavaScript, or escape server-side before returning in JSON that feeds innerHTML.
+
+### QB Data Usage Boundaries
+
+- The app reads Items and Customers from QBO.
+- The app writes Customers and Projects to QBO only.
+- The app never writes to Invoices, Transactions, Payments, or any financial record.
+- QB data is stored only on the local machine in `parts_db.json` and `quickbooks_config.json`. It is never transmitted to any server other than Intuit's own API endpoints.
+- QB data is used only to operate the parts catalog and project management features of this app. It is never shared with third parties or used for secondary purposes.
 
 ---
 
@@ -121,14 +313,16 @@ src/dtm_buildsheet/
       quickbooks.py              ← /api/quickbooks/* route handler
 
     services/
-      quickbooks_service.py      ← QBO API client, OAuth flow, token lifecycle
+      quickbooks_service.py      ← QBO API client, OAuth flow, token lifecycle,
+                                    AES encryption/decryption, CSRF state management
       qb_sync_service.py         ← sync orchestration (parts, projects)
 
   ui/js/settings/
     quickbooks.js                ← Settings → QuickBooks tab UI
 
 workspace/config/
-  quickbooks_config.json         ← tokens, realm_id, sync state (git-ignored, local only)
+  quickbooks_key.bin             ← AES-256 key (binary, git-ignored, never synced)
+  quickbooks_config.json         ← encrypted credentials + sync state (git-ignored, never synced)
 ```
 
 ### Existing Files Modified
@@ -136,11 +330,13 @@ workspace/config/
 | File | Change |
 |------|--------|
 | `domain/project_models.py` | Add `qb_customer_id`, `qb_project_id` to `ProjectRecord` |
-| `app/server.py` | Register `/api/quickbooks/*` routes |
+| `app/server.py` | Register `/api/quickbooks/*` routes; add `Cache-Control: no-store` to QB responses |
 | `ui/index.html` | Add QuickBooks stab to General Settings |
 | `ui/js/main.js` | Wire QuickBooks tab init |
 | `config/schemas.py` | Add `quickbooks_config` schema + migration |
 | `parts_db.json` | Add `qb_item_id`, `qb_sku` fields per part entry |
+| `pyproject.toml` | Add `cryptography` dependency |
+| `.gitignore` | Add `workspace/config/quickbooks_key.bin` and `workspace/config/quickbooks_config.json` |
 
 ---
 
@@ -153,6 +349,7 @@ qb_sync_service.sync_items()
   │
   ├─ GET /v3/company/{realmId}/query
   │    SELECT * FROM Item WHERE Active = true
+  │    (realm_id decrypted in-memory for the request, never logged)
   │
   ├─ For each QBO Item:
   │    ├─ Look up qb_item_id in local parts_db.json
@@ -162,7 +359,7 @@ qb_sync_service.sync_items()
   │    └─ UNMATCHED → add to "pending_qb_items" list in quickbooks_config.json
   │                    (surfaces in Settings → QuickBooks as "Uncategorized Items")
   │
-  └─ For each local part with qb_item_id not in QBO response:
+  └─ For each local part with qb_item_id not returned by QBO:
        mark as qb_inactive: true (do not delete — may be referenced by old builds)
 ```
 
@@ -182,7 +379,7 @@ Each entry in `parts_db.json` gains optional QB fields:
 }
 ```
 
-QBO is the source of truth for `sku`, `unit_price`, and `active` status. Vehicle Builder owns everything else (placement rules, compatible vehicles, build types, etc.).
+QBO is the source of truth for `sku`, `unit_price`, and `active` status. Vehicle Builder owns everything else.
 
 ### Categorization UI ("Uncategorized QB Items" Queue)
 
@@ -210,7 +407,6 @@ Once linked, the `qb_item_id` is written to the VB part record and that item nev
 - App start (background, non-blocking)
 - Periodic background poll every 30 minutes while app is running
 - Manual "Sync Now" button in Settings → QuickBooks
-- (Optional, Phase 2) QBO Webhook push — see Webhooks section below
 
 ---
 
@@ -224,24 +420,24 @@ Once linked, the `qb_item_id` is written to the VB part record and that item nev
 class ProjectRecord:
     ...
     qb_customer_id: str = ""   # QBO Customer.Id for the agency
-    qb_project_id: str = ""    # QBO Project (Customer with IsProject=true) Id
+    qb_project_id: str = ""    # QBO Project Id (Customer with Job=true)
 ```
 
 ### QBO Structure for a Build
 
-QBO does not have a native "Project" object at the API level. Projects are represented as Customers with `Job=true` (V2 API) linked to a parent Customer. The structure mirrors VB naturally:
+QBO does not have a separate Project object in the v3 API. Projects are Customers with `Job=true` and a `ParentRef`:
 
 ```
 QBO Customer: Lakeville Police Department       ← matches VB agency
   └─ QBO Project: 2025 Tahoe Fleet #26-043      ← matches VB ProjectRecord
-       (IsProject=true, linked to parent Customer)
+       (Job=true, ParentRef → Customer.Id)
 ```
 
-Per-vehicle tracking at the `IndividualUnit` level is done via time entries tagged to the parent QBO Project with the unit number in the description/memo field, rather than creating a sub-project per vehicle. This keeps QBO clean — one project per build, time entries carry the unit context.
+Per-vehicle tracking is done via time entries tagged to the QBO Project with the unit number in the description — not a sub-project per unit. One project per build; time entries carry the unit context.
 
 ### Push Flow (VB → QBO)
 
-Triggered by "Push to QuickBooks" button on the Builds tab (or auto on Export, configurable):
+Triggered by "Push to QuickBooks" on the Builds tab, or automatically on Export (configurable):
 
 ```
 qb_sync_service.push_project(project_record)
@@ -260,22 +456,22 @@ qb_sync_service.push_project(project_record)
   └─ Save project record
 ```
 
-After this, technicians open QuickBooks and log time against the project normally. VB does not manage time entries — it only creates the project scaffold.
+VB does not manage time entries — it only creates the project scaffold. Technicians log time directly in QuickBooks against the created project.
 
 ---
 
 ## API Route Map
 
-| Method | Path | Handler | Description |
-|--------|------|---------|-------------|
-| GET | `/api/quickbooks/status` | `quickbooks.py` | Connection status, last sync, token expiry |
-| GET | `/api/quickbooks/auth-url` | `quickbooks.py` | Returns OAuth URL to open in browser |
-| GET | `/api/quickbooks/callback` | `quickbooks.py` | OAuth redirect target — exchanges code for tokens |
-| POST | `/api/quickbooks/disconnect` | `quickbooks.py` | Clears tokens, sets status to disconnected |
-| POST | `/api/quickbooks/sync` | `quickbooks.py` | Trigger manual sync now |
-| GET | `/api/quickbooks/pending-items` | `quickbooks.py` | List unmatched QBO Items |
-| POST | `/api/quickbooks/link-item` | `quickbooks.py` | Link QBO item_id to VB part |
-| POST | `/api/quickbooks/push-project` | `quickbooks.py` | Push VB project to QBO |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/quickbooks/status` | Connection status, last sync, token expiry dates |
+| GET | `/api/quickbooks/auth-url` | Returns OAuth URL; generates + stores CSRF state |
+| GET | `/api/quickbooks/callback` | OAuth relay target — validates state, exchanges code, stores encrypted tokens, issues 302 |
+| POST | `/api/quickbooks/disconnect` | Clears encrypted tokens, sets status to disconnected |
+| POST | `/api/quickbooks/sync` | Trigger manual parts sync |
+| GET | `/api/quickbooks/pending-items` | List unmatched QBO Items (for categorization queue) |
+| POST | `/api/quickbooks/link-item` | Link a QBO item_id to a VB part |
+| POST | `/api/quickbooks/push-project` | Push VB project to QBO as Customer + Project |
 
 ---
 
@@ -300,59 +496,59 @@ After this, technicians open QuickBooks and log time against the project normall
 └──────────────────────────────────────────────────────────────┘
 ```
 
-If `connection_status` is `disconnected` or `expired`, the tab shows a "Connect to QuickBooks" button instead.
-
----
-
-## Optional Phase 2: QBO Webhooks
-
-Instead of polling every 30 minutes, QBO can push a notification to the app the moment an Item or Customer changes. This requires:
-
-1. A publicly accessible webhook endpoint (not `localhost`) — this means either:
-   - A cloud relay (e.g., a small hosted endpoint that forwards to the running local app), or
-   - Only useful if/when the app is ever deployed as a hosted service rather than a local desktop app
-2. Webhook signature verification (HMAC-SHA256 with a verifier token from QBO)
-3. Registering the endpoint in the Intuit Developer Dashboard
-
-**Recommendation**: Defer webhooks. Polling every 30 minutes is sufficient for a desktop app used by one team. Webhooks become relevant if the app moves to a hosted/cloud deployment.
+When `connection_status` is `disconnected` or the tokens are expired/missing, the tab shows a "Connect to QuickBooks" button and hides the sync UI.
 
 ---
 
 ## Implementation Phases
 
-### Phase 1 — OAuth + Token Management
-- `quickbooks_service.py`: OAuth URL generation, callback handler, token exchange, token refresh with rotation save, connection status
+### Phase 1 — OAuth + Token Management (Build and test this before submitting the questionnaire)
+
+- Deploy hosted relay endpoint to a domain you control
+- `quickbooks_service.py`: AES key generation, encrypt/decrypt helpers, OAuth URL generation with CSRF state, callback handler (validate state → exchange code → encrypt tokens → 302 redirect), token refresh with rotation save, connection status
 - `quickbooks.py` routes: `/status`, `/auth-url`, `/callback`, `/disconnect`
-- `quickbooks_config.json` schema + migration
+- `quickbooks_key.bin` + `quickbooks_config.json` schema + `.gitignore` entries
 - Settings UI: connection card only
 
-**Done when**: Can connect to live QBO company, access token auto-refreshes, refresh token rotation is correctly saved.
+**Done when**: Full OAuth round-trip works against a sandbox company, tokens are encrypted on disk, CSRF state validation rejects mismatched states, callback issues 302 (not HTML), token refresh correctly saves the new refresh token.
 
 ### Phase 2 — Parts Sync
-- `qb_sync_service.sync_items()`: pull Items, match by `qb_item_id`, write `pending_qb_items`
-- `parts_db.json` schema additions (`qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`)
-- `quickbooks.py` routes: `/sync`, `/pending-items`, `/link-item`
-- Settings UI: sync status card, uncategorized items queue, review/link UI
-- Background sync on app start + 30-min poll
 
-**Done when**: New QBO Items surface in the queue, linking a QBO item to a VB part persists and removes it from the queue, deactivated QBO items flag `qb_inactive`.
+- `qb_sync_service.sync_items()`: pull Items, match by `qb_item_id`, write pending queue
+- `parts_db.json` schema additions
+- `quickbooks.py` routes: `/sync`, `/pending-items`, `/link-item`
+- Settings UI: sync status, uncategorized items queue, link/create UI
+- Background sync on app start + 30-minute poll
+- Ensure QB Item data is not written to application logs
+
+**Done when**: New QBO Items surface in the queue, linking persists and removes from queue, deactivated QBO Items get flagged `qb_inactive`.
 
 ### Phase 3 — Project Bridge
+
 - `qb_sync_service.push_project()`: Customer lookup/create, Project create, write-back IDs
-- `ProjectRecord` additions (`qb_customer_id`, `qb_project_id`)
+- `ProjectRecord` additions
 - `quickbooks.py` route: `/push-project`
 - Builds tab: "Push to QuickBooks" button per project
 
-**Done when**: Pushing a project creates the correct QBO Customer + Project, IDs are saved back to the project record, re-pushing is idempotent.
+**Done when**: Pushing creates the correct QBO Customer + Project, IDs written back to project record, re-pushing is idempotent.
+
+### Phase 4 — Questionnaire Submission
+
+- Run full connect / disconnect / reconnect test cycle against sandbox
+- Confirm all Phase 1 security controls are in place
+- Submit the App Assessment Questionnaire using `docs/QUICKBOOKS_QUESTIONNAIRE.md` as the answer guide
 
 ---
 
 ## Known Constraints and Gotchas
 
-- **Refresh token rotation is mandatory**: Save the new refresh token on every API call that triggers a refresh. Missing even one rotation permanently invalidates the token.
-- **Production keys, not development**: Development (sandbox) keys cannot connect to a real QBO company. The App Assessment Questionnaire must be completed to get Production credentials.
-- **`localhost` redirect URI must be registered**: Add `http://localhost:7655/api/quickbooks/callback` in the Intuit Developer Dashboard under Production → Redirect URIs.
-- **5-year hard expiry**: Schedule a calendar reminder. After 5 years, a one-time re-authorization is required regardless of refresh activity.
-- **QBO Projects = Customers with Job flag**: There is no separate Project object in the QBO v3 API. Projects are Customers where `Job=true` with a `ParentRef`.
-- **`quickbooks_config.json` stays local**: This file contains credentials and must never be pushed to git or synced to SharePoint. Confirm it is in `.gitignore` and excluded from the SharePoint mirror logic.
-- **Inactive QBO items are not deleted in VB**: Old builds may reference parts that have since been discontinued. `qb_inactive: true` flags the part but preserves the record.
+- **Production redirect URI must be HTTPS on a real domain**: `localhost` is rejected by Intuit for Production keys. The hosted relay is required.
+- **Refresh token rotation is mandatory**: Save the newly issued refresh token (encrypted) on every refresh call. One missed rotation permanently breaks the connection.
+- **AES key and config are separate files**: Intuit requires the encryption key to be stored separately from the encrypted values. Do not merge them into one file.
+- **Callback must 302 redirect**: Never return HTML that contains the authorization code or any token. Issue a server-side 302 to a clean URL after saving tokens.
+- **No QB data in logs**: Item names, prices, customer names, realm ID, and all token values must never appear in any log file.
+- **5-year hard expiry**: Set a calendar reminder. After 5 years, a one-time browser re-authorization is required.
+- **QBO Projects = Customers with Job flag**: There is no separate Project object in the QBO v3 API.
+- **`quickbooks_key.bin` loss = loss of connection**: If the key file is deleted, stored tokens cannot be decrypted. The only recovery is to re-run the OAuth setup flow. Back up the key to a password manager.
+- **Inactive QBO items are not deleted in VB**: Old builds may reference discontinued parts. `qb_inactive: true` flags the part without deleting the record.
+- **This app accesses one realm only**: The Production key is connected to a single QBO company. It is not a multi-tenant app. This must be stated accurately in the questionnaire.
