@@ -95,6 +95,33 @@ class QuickBooksApiClient:
             start += page_size
         return items
 
+    def fetch_active_customers(self, *, page_size: int = 1000, top_level_only: bool = True) -> list[dict]:
+        """Return active Customers (top-level only by default).
+
+        Sub-customers / jobs (``Job=true`` or with a ``ParentRef``) are excluded
+        when ``top_level_only`` — those map to vehicle-level records, not
+        agencies. Normalized to the subset the agency importer needs.
+        """
+        customers: list[dict] = []
+        start = 1
+        while True:
+            stmt = (
+                "SELECT Id, DisplayName, CompanyName, GivenName, FamilyName, "
+                "PrimaryEmailAddr, PrimaryPhone, Job, Active "
+                f"FROM Customer WHERE Active = true STARTPOSITION {start} MAXRESULTS {page_size}"
+            )
+            qr = self.query(stmt)
+            batch = qr.get("Customer", []) or []
+            for raw in batch:
+                norm = _normalize_customer(raw)
+                if top_level_only and norm["is_sub"]:
+                    continue
+                customers.append(norm)
+            if len(batch) < page_size:
+                break
+            start += page_size
+        return customers
+
 
 def _normalize_item(raw: dict) -> dict:
     """Reduce a raw QBO Item to the fields the sync layer stores."""
@@ -110,4 +137,23 @@ def _normalize_item(raw: dict) -> dict:
         "description": (raw.get("Description") or "").strip(),
         "unit_price": price,
         "type": (raw.get("Type") or "").strip(),
+    }
+
+
+def _normalize_customer(raw: dict) -> dict:
+    """Reduce a raw QBO Customer to the fields the agency importer stores."""
+    email = ((raw.get("PrimaryEmailAddr") or {}).get("Address") or "").strip()
+    phone = ((raw.get("PrimaryPhone") or {}).get("FreeFormNumber") or "").strip()
+    contact = " ".join(
+        p for p in [(raw.get("GivenName") or "").strip(), (raw.get("FamilyName") or "").strip()] if p
+    )
+    # Prefer the company name; fall back to the display name.
+    name = (raw.get("CompanyName") or raw.get("DisplayName") or "").strip()
+    return {
+        "qb_customer_id": str(raw.get("Id", "")),
+        "name": name,
+        "contact_name": contact,
+        "contact_email": email,
+        "contact_phone": phone,
+        "is_sub": bool(raw.get("Job")) or ("ParentRef" in raw),
     }

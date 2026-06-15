@@ -236,6 +236,21 @@ def save_setting_to_cloud_in_background(target_file: str, serialized_content: st
     ).start()
 
 
+def save_settings_to_cloud_batch_in_background(items: list[tuple[str, str]]) -> None:
+    """Mirror many settings files in ONE background thread (sequential).
+
+    Bulk operations (e.g. importing hundreds of QB customers as agencies)
+    must not spawn a thread per record. This walks the list on a single
+    daemon thread, each item a direct SP write. No-op outside cloud mode."""
+    import threading
+
+    def _run() -> None:
+        for target_file, serialized in items:
+            save_setting_to_cloud(target_file, serialized)
+
+    threading.Thread(target=_run, daemon=True, name="mirror-settings-batch").start()
+
+
 def cleanup_processed_proposals() -> dict:
     """Delete old /PendingChanges/ entries to keep the folder from growing.
 

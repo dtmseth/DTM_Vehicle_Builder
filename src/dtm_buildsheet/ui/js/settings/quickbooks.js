@@ -57,6 +57,7 @@
     if ($("qb-connect-btn")) $("qb-connect-btn").disabled = !s.configured;
     if ($("qb-connect-hint")) $("qb-connect-hint").hidden = !!s.configured;
     if ($("qb-sync-panel")) $("qb-sync-panel").hidden = !s.connected;
+    if ($("qb-customers-panel")) $("qb-customers-panel").hidden = !s.connected;
 
     if (s.connected) {
       if ($("qb-token-renews")) $("qb-token-renews").textContent = _fmtDate(s.refresh_expiry_utc);
@@ -258,6 +259,42 @@
     return "Sync failed: " + (code || "unknown error");
   }
 
+  async function _pullCustomers() {
+    const btn = $("qb-customers-btn");
+    const spinner = $("qb-customers-spinner");
+    const label = $("qb-customers-label");
+    const busy = (on) => {
+      if (btn) btn.disabled = on;
+      if (spinner) spinner.style.display = on ? "inline-block" : "none";
+      if (label) label.textContent = on ? "Checking…" : "⬇️ Pull customers from QuickBooks";
+    };
+    busy(true);
+    try {
+      const pre = await api("/api/quickbooks/customers/preview");
+      if (!pre?.ok) { toast(_syncError(pre?.error), "error"); return; }
+      if (!pre.total) { toast("No customers found in QuickBooks", "success"); return; }
+      const ok = confirm(
+        `QuickBooks has ${pre.total} customer${pre.total === 1 ? "" : "s"}.\n\n` +
+        `${pre.would_create} new agenc${pre.would_create === 1 ? "y" : "ies"} will be created, ` +
+        `${pre.would_update} will be updated/linked.\n\nImport now?`
+      );
+      if (!ok) return;
+      if (label) label.textContent = "Importing…";
+      const res = await api("/api/quickbooks/customers/import", {});
+      if (res?.ok) {
+        toast(`Imported: ${res.created} created, ${res.updated} updated`, "success");
+        // Refresh the agencies tab if it's loaded so the new records show.
+        if (typeof initAgenciesTab === "function") { try { initAgenciesTab(); } catch (e) {} }
+      } else {
+        toast(_syncError(res?.error), "error");
+      }
+    } catch (e) {
+      toast("Customer import failed", "error");
+    } finally {
+      busy(false);
+    }
+  }
+
   async function _load() {
     try {
       _status = await api("/api/quickbooks/status");
@@ -318,6 +355,7 @@
     $("qb-connect-btn")?.addEventListener("click", _connect);
     $("qb-disconnect-btn")?.addEventListener("click", _disconnect);
     $("qb-sync-btn")?.addEventListener("click", _sync);
+    $("qb-customers-btn")?.addEventListener("click", _pullCustomers);
 
     // Delegated link/unlink buttons on the item list.
     $("qb-items-list")?.addEventListener("click", (e) => {

@@ -85,28 +85,34 @@ def _write_cache(paths: AppPaths, cache: dict) -> None:
     path.write_text(json.dumps(cache, indent=2) + "\n", encoding="utf-8")
 
 
+def _build_client(paths: AppPaths):
+    """Return (client, None) when connected, or (None, error_dict) otherwise."""
+    try:
+        access_token = quickbooks_service.ensure_access_token(paths)
+    except QuickBooksOAuthError as exc:
+        msg = "not_connected" if "not_connected" in str(exc) else str(exc)
+        return None, {"ok": False, "error": msg}
+
+    realm_id = quickbooks_service.get_realm_id(paths)
+    if not realm_id:
+        return None, {"ok": False, "error": "no_realm_id"}
+
+    environment = quickbooks_service.get_status(paths).get("environment", "production")
+    client = QuickBooksApiClient(
+        access_token=access_token, realm_id=realm_id, environment=environment
+    )
+    return client, None
+
+
 def sync_items(paths: AppPaths) -> dict:
     """Pull active Items from QBO into the local cache. Read-only re: parts_db.
 
     Returns a status dict: ``{"ok": True, "item_count": n, "linked": l,
     "unlinked": u, "last_sync_utc": iso}`` or ``{"ok": False, "error": ...}``.
     """
-    try:
-        access_token = quickbooks_service.ensure_access_token(paths)
-    except QuickBooksOAuthError as exc:
-        msg = "not_connected" if "not_connected" in str(exc) else str(exc)
-        return {"ok": False, "error": msg}
-
-    realm_id = quickbooks_service.get_realm_id(paths)
-    if not realm_id:
-        return {"ok": False, "error": "no_realm_id"}
-
-    status = quickbooks_service.get_status(paths)
-    environment = status.get("environment", "production")
-
-    client = QuickBooksApiClient(
-        access_token=access_token, realm_id=realm_id, environment=environment
-    )
+    client, err = _build_client(paths)
+    if err:
+        return err
     try:
         items = client.fetch_active_items()
     except QuickBooksApiError as exc:
@@ -251,6 +257,48 @@ def run_full_sync(paths: AppPaths) -> dict:
         return pull
     recon = reconcile_linked_parts(paths)
     return {**pull, "reconciled": recon}
+
+
+# ── customer → agency down-sync (Phase 3, first cut) ─────────────────────────
+#
+# Pulls QB Customers (top-level only) and upserts them into the agency store.
+# Two-step reviewed flow: preview (no write) → import (write). The agency
+# service owns the matching/upsert; this layer just fetches and delegates.
+
+
+def preview_customer_import(paths: AppPaths) -> dict:
+    """Fetch QB customers and report would-create / would-update. Writes nothing."""
+    client, err = _build_client(paths)
+    if err:
+        return err
+    try:
+        customers = client.fetch_active_customers()
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks customer fetch failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
+
+    from . import agency_service
+    return agency_service.preview_qb_customer_import(customers, paths)
+
+
+def import_customers(paths: AppPaths) -> dict:
+    """Fetch QB customers and upsert them into agencies. Returns created/updated."""
+    client, err = _build_client(paths)
+    if err:
+        return err
+    try:
+        customers = client.fetch_active_customers()
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks customer fetch failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
+
+    from . import agency_service
+    result = agency_service.upsert_agencies_from_qb(customers, paths)
+    logger.info(
+        "QB customer import: %d created, %d updated",
+        result.get("created", 0), result.get("updated", 0),
+    )
+    return result
 
 
 # ── background sync (Slice C) ─────────────────────────────────────────────────

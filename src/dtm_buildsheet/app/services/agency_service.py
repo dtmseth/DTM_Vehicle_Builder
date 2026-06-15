@@ -78,6 +78,7 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
         contact_phone=contact_phone,
         contact_email=contact_email,
         customer_since=str(rec.get("customer_since", "")),
+        qb_customer_id=str(rec.get("qb_customer_id", "")),
         created_at=str(rec.get("created_at", "")),
         updated_at=str(rec.get("updated_at", "")),
     )
@@ -292,6 +293,119 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
     except Exception as exc:
         _log.exception("Failed to save agency")
         return {"ok": False, "error": str(exc)}
+
+
+# ── QuickBooks customer import (down-sync) ──────────────────────────────────────
+#
+# Pulls QB Customers into agencies. Match precedence: existing qb_customer_id,
+# then normalized-name. New customers create agencies; matched ones are linked
+# (qb_customer_id stamped) and have empty contact fields filled from QB —
+# existing non-empty values and the agency name are never clobbered.
+
+
+def _match_existing_for_qb(
+    cust: dict,
+    by_qb: dict[str, AgencyRecord],
+    by_name: dict[str, AgencyRecord],
+) -> AgencyRecord | None:
+    hit = by_qb.get(cust.get("qb_customer_id", ""))
+    if hit:
+        return hit
+    return by_name.get(_normalize(cust.get("name", "")))
+
+
+def preview_qb_customer_import(customers: list[dict], paths: AppPaths) -> dict:
+    """Dry run: how many agencies a QB customer import would create vs update.
+
+    Writes nothing. Used by the reviewed-import flow.
+    """
+    records = _records(paths)
+    by_qb = {r.qb_customer_id: r for r in records.values() if r.qb_customer_id}
+    by_name: dict[str, AgencyRecord] = {}
+    for r in records.values():
+        by_name.setdefault(_normalize(r.name), r)
+
+    would_create = would_update = 0
+    for cust in customers:
+        if _match_existing_for_qb(cust, by_qb, by_name) is None:
+            would_create += 1
+        else:
+            would_update += 1
+    return {
+        "ok": True,
+        "total": len(customers),
+        "would_create": would_create,
+        "would_update": would_update,
+    }
+
+
+def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
+    """Create/link agency records from QB customers. Returns {created, updated}.
+
+    Cloud propagation is batched into a single background thread (direct SP
+    mirror) rather than one thread + one audit proposal per record — a first
+    import can be hundreds of customers, and flooding the audit repo / spawning
+    a thread each would be abusive. The direct mirror is the canonical write
+    path (the dtm-shared-settings repo is audit-only).
+    """
+    records = _records(paths)
+    by_qb = {r.qb_customer_id: r for r in records.values() if r.qb_customer_id}
+    by_name: dict[str, AgencyRecord] = {}
+    for r in records.values():
+        by_name.setdefault(_normalize(r.name), r)
+
+    now = _utcnow()
+    created = updated = 0
+    to_mirror: list[tuple[str, str]] = []
+
+    for cust in customers:
+        name = str(cust.get("name", "")).strip()
+        if not name:
+            continue
+        qb_id = str(cust.get("qb_customer_id", "")).strip()
+        existing = _match_existing_for_qb(cust, by_qb, by_name)
+        if existing:
+            existing.qb_customer_id = qb_id or existing.qb_customer_id
+            # Fill only empty contact fields; never clobber the user's data.
+            if not existing.contact_email and cust.get("contact_email"):
+                existing.contact_email = str(cust["contact_email"]).strip()
+            if not existing.contact_phone and cust.get("contact_phone"):
+                existing.contact_phone = str(cust["contact_phone"]).strip()
+            if not existing.contact_name and cust.get("contact_name"):
+                existing.contact_name = str(cust["contact_name"]).strip()
+            existing.updated_at = now
+            record = existing
+            updated += 1
+        else:
+            record = AgencyRecord(
+                agency_id=str(uuid.uuid4()),
+                name=name,
+                contact_name=str(cust.get("contact_name", "")).strip(),
+                contact_phone=str(cust.get("contact_phone", "")).strip(),
+                contact_email=str(cust.get("contact_email", "")).strip(),
+                qb_customer_id=qb_id,
+                created_at=now,
+                updated_at=now,
+            )
+            records[record.agency_id] = record
+            created += 1
+        if qb_id:
+            by_qb[qb_id] = record
+        by_name.setdefault(_normalize(record.name), record)
+
+        try:
+            _write_record(record, paths)
+            to_mirror.append(
+                (f"agencies/{record.agency_id}.json", json.dumps(asdict(record), indent=2) + "\n")
+            )
+        except Exception:
+            _log.exception("Failed to write imported agency %s", record.agency_id)
+
+    if to_mirror:
+        from .shared_work_service import save_settings_to_cloud_batch_in_background
+        save_settings_to_cloud_batch_in_background(to_mirror)
+
+    return {"ok": True, "created": created, "updated": updated, "total": created + updated}
 
 
 def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:

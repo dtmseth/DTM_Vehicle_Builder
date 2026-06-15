@@ -11,5 +11,6 @@ class AgencyRecord:
     contact_phone: str = ""
     contact_email: str = ""
     customer_since: str = ""
+    qb_customer_id: str = ""   # FK → QuickBooks Customer.Id (empty = not linked)
     created_at: str = ""
     updated_at: str = ""

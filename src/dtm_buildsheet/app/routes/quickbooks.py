@@ -5,6 +5,7 @@ GET:
 - /api/quickbooks/auth-url  — start the OAuth handshake (returns a URL)
 - /api/quickbooks/callback  — OAuth redirect target; always 302s, never HTML
 - /api/quickbooks/items     — locally cached pulled items (no network)
+- /api/quickbooks/customers/preview — dry-run count of a customer import
 
 POST:
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
@@ -12,6 +13,7 @@ POST:
 - /api/quickbooks/sync        — pull active Items from QBO into the cache
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
+- /api/quickbooks/customers/import — upsert QB customers into agencies
 
 All JSON responses set ``Cache-Control: no-store`` (security standard). The
 callback never echoes the authorization code or any token into an HTML body;
@@ -66,6 +68,9 @@ def route_quickbooks(
     if method == "GET" and path == "/api/quickbooks/items":
         _send_json(handler, qb_sync_service.get_cached_items(paths))
         return True
+    if method == "GET" and path == "/api/quickbooks/customers/preview":
+        _send_json(handler, qb_sync_service.preview_customer_import(paths))
+        return True
     if method == "POST" and path == "/api/quickbooks/sync":
         _send_json(handler, qb_sync_service.run_full_sync(paths))
         return True
@@ -84,6 +89,9 @@ def route_quickbooks(
             handler,
             qb_sync_service.unlink_item(paths, qb_item_id=body.get("qb_item_id", "")),
         )
+        return True
+    if method == "POST" and path == "/api/quickbooks/customers/import":
+        _send_json(handler, qb_sync_service.import_customers(paths))
         return True
     if method == "POST" and path == "/api/quickbooks/settings":
         _send_json(

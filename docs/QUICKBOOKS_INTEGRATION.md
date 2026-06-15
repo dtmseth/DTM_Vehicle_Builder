@@ -550,14 +550,32 @@ Built in safe, non-destructive slices:
 
   *Deferred:* "create new VB part from this item" (pre-fill Part Manager) — link-to-existing is the shipped path.
 
-### Phase 3 — Project Bridge
+### Phase 3 — Customers ↔ Agencies + Project Bridge
 
-- `qb_sync_service.push_project()`: Customer lookup/create, Project create, write-back IDs
-- `ProjectRecord` additions
-- `quickbooks.py` route: `/push-project`
-- Builds tab: "Push to QuickBooks" button per project
+QBO data-model fact (verified): **the API cannot create "Projects" directly** —
+`Customer.IsProject` is read-only. Per-unit tracking is done with **sub-customers
+(jobs)**: a Customer with `Job=true` and a `ParentRef`. Time/costs log against
+those, giving per-vehicle costing. (Jobs can be batch-converted to Projects in
+the QBO UI later.)
 
-**Done when**: Pushing creates the correct QBO Customer + Project, IDs written back to project record, re-pushing is idempotent.
+**Slice 1 — QB Customers → VB Agencies (down-sync) ✅ implemented**
+- `adapters/quickbooks/api_client.py`: `fetch_active_customers()` (top-level only — sub-customers excluded) + `_normalize_customer()`
+- `domain/agency_models.py`: `AgencyRecord.qb_customer_id`
+- `services/agency_service.py`: `preview_qb_customer_import()` (dry run) and `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create. Linking fills only EMPTY contact fields and never overwrites the agency name or the user's existing data. Bulk cloud propagation batched into one background thread (direct SP mirror; no per-record audit proposals).
+- `services/shared_work_service.py`: `save_settings_to_cloud_batch_in_background()`
+- `services/qb_sync_service.py`: `preview_customer_import()` / `import_customers()` (fetch → delegate to agency service)
+- `quickbooks.py` routes: `GET /customers/preview`, `POST /customers/import`
+- Settings UI: "⬇️ Pull customers from QuickBooks" → preview → confirm (`N new, M updated`) → import; refreshes the Agencies tab
+- `tests/test_qb_customer_sync.py` (create/link/fill, qb-id-over-name, idempotency, preview-no-write, qb_customer_id survives reload + user edit, orchestration)
+
+**Slice 2 — Agency → QB (up-sync, auto-mirror on save) [planned]**
+- On agency save, if connected, create/update the QB Customer in the background (same pattern as the SharePoint mirror). Write `qb_customer_id` back.
+
+**Slice 3 — Per-vehicle job bridge [planned, when sub-customers are in use]**
+- `push_vehicle_job()`: ensure the agency's Customer exists, create a sub-customer (job) per IndividualUnit under it, write `qb_job_id` back to the unit.
+- `IndividualUnit` / `ProjectRecord` additions; Builds tab "Push to QuickBooks" per unit.
+
+**Done when (Slice 1)**: ✅ Pulling QB customers creates/links agencies, re-pull is idempotent, the user's existing agency data is never clobbered.
 
 ### Phase 4 — Questionnaire Submission
 

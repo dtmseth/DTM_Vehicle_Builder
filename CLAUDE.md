@@ -254,6 +254,8 @@ Agency search uses `difflib.get_close_matches` after normalizing common abbrevia
 
 Saves and deletes hit SharePoint directly via `save_setting_to_cloud_in_background` and `delete_setting_from_cloud` so other devices see the change within the next 60s sync cycle — see `docs/ROADMAP.md` § Phase 2.5 for why the proposal pipeline alone isn't enough.
 
+`AgencyRecord` carries an optional `qb_customer_id` (FK → QuickBooks `Customer.Id`). The QuickBooks down-sync (`qb_sync_service.import_customers` → `agency_service.upsert_agencies_from_qb`) pulls top-level QB Customers into agencies, matching by `qb_customer_id` then normalized name, filling only empty contact fields (never clobbering user data). Bulk imports propagate via `save_settings_to_cloud_batch_in_background` (one thread, no per-record audit proposals) — do NOT swap this back to per-record `save_setting_to_cloud_in_background` in a loop, or a first import spawns hundreds of threads. Agency→QB push and the per-vehicle sub-customer/job bridge are planned but not yet built (QBO's API can't create Projects directly — `IsProject` is read-only; per-unit costing uses sub-customer jobs).
+
 ## Preset system
 
 Presets are JSON files (schema_version 2) cached in `workspace_presets_dir` — `workspace/presets/` in the bundled app, `src/dtm_buildsheet/resources/presets/` in dev mode. **The cache is a local mirror of SharePoint `/Settings/presets/`, not a source.** Bundled presets were removed in v2.2.10; `resources/presets/*.json` is gitignored.
