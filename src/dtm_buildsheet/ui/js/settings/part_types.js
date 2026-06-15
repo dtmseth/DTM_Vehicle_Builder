@@ -256,7 +256,7 @@ function buildModalImageSection(){
       <div class="pm-view-thumb ${hasImg?"has-file":""}" id="muz-${view}" title="Click to upload ${view} image">
         <input type="file" accept="image/*" data-view="${view}" class="muz-input" />
         <img id="muz-prev-${view}"
-          ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+          ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.removeAttribute('src')"`:""} />
         ${!hasImg?'<span>🖼️</span>':""}
         <div class="pm-view-label">${view}</div>
       </div>
@@ -644,7 +644,7 @@ function buildAltImageSection(){
             <div class="pm-view-thumb ${hasImg?"has-file":""}" id="alt-muz-${akId}-${view}" title="Upload ${view} image for ${esc(ak)}" style="width:72px;height:72px">
               <input type="file" accept="image/*" class="alt-muz-input" data-alt-key="${esc(ak)}" data-view="${view}" />
               <img id="alt-muz-prev-${akId}-${view}"
-                ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+                ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.removeAttribute('src')"`:""} />
               ${!hasImg?'<span style="font-size:18px">🖼️</span>':""}
             </div>
             <div style="font-size:10px;color:var(--muted)">${view}</div>

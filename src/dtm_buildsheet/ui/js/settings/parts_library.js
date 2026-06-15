@@ -136,7 +136,7 @@ function buildPmImageGrid(p){
       <!-- thumbnail / upload trigger -->
       <div class="pm-view-thumb ${hasImg?"has-file":""}" id="pmuz-${view}" title="Click to upload ${view} image">
         <input type="file" accept="image/*" data-view="${view}" class="pmuz-input" />
-        <img id="pmuz-prev-${view}" ${upld?`src="${upld.dataUrl}"`:imgUrl?`src="${imgUrl}" onerror="this.style.display='none'"`:""} />
+        <img id="pmuz-prev-${view}" ${upld?`src="${upld.dataUrl}"`:imgUrl?`src="${imgUrl}" onerror="this.removeAttribute('src')"`:""} />
         ${!hasImg?"<span>🖼️</span>":""}
         <div class="pm-view-label">${view}</div>
       </div>
