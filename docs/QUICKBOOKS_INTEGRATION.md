@@ -1,6 +1,6 @@
 # QuickBooks Online Integration — Design Document
 
-**Status**: Design / Pre-implementation  
+**Status**: Phase 1 complete — relay ready to deploy  
 **Last updated**: 2026-06-15  
 **Scope**: Internal app only (DTM Vehicle Builder ↔ single QBO company)
 
@@ -504,7 +504,7 @@ When `connection_status` is `disconnected` or the tokens are expired/missing, th
 
 ## Implementation Phases
 
-### Phase 1 — OAuth + Token Management ✅ Backend implemented (UI + relay pending)
+### Phase 1 — OAuth + Token Management ✅ Complete
 
 Implemented:
 - `adapters/quickbooks/credential_store.py`: OS-keychain secret blob via `msal-extensions` (in-memory fallback)
@@ -514,9 +514,7 @@ Implemented:
 - Server wiring; `.gitignore` entries
 - `tests/test_quickbooks_service.py` (hermetic: fake store + fake OAuth client)
 - Settings UI: `ui/js/settings/quickbooks.js` + `#stab-quickbooks` card (Connect / Disconnect / status + collapsible app-registration form). OAuth return handled by `qbConsumeReturnTab()` in `main.js`.
-
-Pending:
-- Deploy the hosted HTTPS relay endpoint (production redirect URI)
+- Hosted HTTPS relay: `relay/` — Netlify Serverless Function (`relay/netlify/functions/qb-callback.js`) + Vercel alternative (`relay/api/qb-callback.js`). See `relay/DEPLOY.md` for deployment steps.
 
 **Done when**: Full OAuth round-trip works against a sandbox company, tokens are stored in the keychain (never on disk), CSRF state validation rejects mismatched states, callback issues 302 (not HTML), token refresh correctly saves the rotated refresh token.
 

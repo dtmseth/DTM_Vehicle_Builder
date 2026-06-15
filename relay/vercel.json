@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/qb-callback.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/qb-callback",
+      "dest": "/api/qb-callback.js"
+    }
+  ]
+}

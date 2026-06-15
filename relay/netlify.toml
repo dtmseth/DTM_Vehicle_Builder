@@ -1,0 +1,7 @@
+[build]
+  functions = "netlify/functions"
+  publish   = "public"
+
+[functions]
+  # No bundler needed — plain CommonJS with no dependencies.
+  node_bundler = "nft"
