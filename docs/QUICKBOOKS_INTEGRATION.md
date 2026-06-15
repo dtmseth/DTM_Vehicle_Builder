@@ -140,36 +140,42 @@ The token refresh cycle runs automatically before any API call when `access_toke
 
 ---
 
-## Token Storage — OS Keychain via `keyring`
+## Token Storage — OS Keychain via `msal-extensions`
 
-This integration follows the same credential storage standard used by the existing M365/SharePoint integration: OS-native credential stores rather than manually managed encryption files. See `docs/EXTERNAL_CONNECTION_SECURITY.md` for the full standard.
+This integration reuses the exact credential-storage mechanism the existing M365/SharePoint integration already uses for its token cache (`adapters/cloud/msal_client.py`): `msal-extensions` encrypted persistence, backed by the OS-native credential store. This adds **zero new dependencies** (`msal-extensions` is already shipped) and keeps both integrations on one proven, PyInstaller-tested path. See `docs/EXTERNAL_CONNECTION_SECURITY.md` for the full standard.
 
-Intuit's security requirements mandate AES encryption of tokens at rest with the key stored separately. The OS keychain satisfies this requirement — the OS manages AES encryption and key storage natively, at the hardware security layer on supported platforms.
+Intuit's security requirements mandate AES encryption of tokens at rest with the key stored separately. The OS keychain satisfies this — the OS manages AES encryption and key storage natively, at the hardware security layer on supported platforms.
 
 | Platform | Storage |
 |----------|---------|
 | macOS | Keychain |
 | Windows | Windows Credential Locker (DPAPI) |
-| Linux | libsecret / Secret Service |
+| Linux | libsecret / Secret Service (in-memory fallback if absent) |
 
-### Credential Keys
+### Credential Blob
 
-All sensitive QB values are stored in the OS keychain under the service name `"DTM Vehicle Builder"`:
+All sensitive QB values are stored as a single encrypted JSON blob at
+`<app-data>/quickbooks_credentials.bin` (same app-data dir as the M365
+`msal_token_cache.bin`). The plaintext never touches the filesystem. The blob holds:
 
-| keyring key | Value |
-|-------------|-------|
-| `"qb_access_token"` | Current access token |
-| `"qb_refresh_token"` | Current refresh token |
-| `"qb_realm_id"` | QBO company ID |
-| `"qb_client_secret"` | OAuth client secret |
+| key | Value |
+|-----|-------|
+| `access_token` | Current access token |
+| `refresh_token` | Current refresh token |
+| `realm_id` | QBO company ID (Intuit requires realmID encrypted at rest) |
+| `client_secret` | OAuth client secret |
+
+Implemented by `app/adapters/quickbooks/credential_store.py` (`QuickBooksCredentialStore`).
 
 ### quickbooks_config.json
 
-Non-sensitive metadata only — stored as plain JSON, git-ignored, excluded from SharePoint mirror:
+Non-sensitive metadata only — stored as plain JSON in the workspace root (git-ignored; never written to the config-store or SharePoint mirror):
 
 ```json
 {
   "client_id": "ABxxxx",
+  "environment": "production",
+  "redirect_uri": "https://your-domain.com/.netlify/functions/qb-callback",
   "token_expiry_utc": "2026-06-15T17:30:00Z",
   "refresh_expiry_utc": "2026-09-24T14:00:00Z",
   "hard_expiry_utc": "2031-06-15T14:00:00Z",
@@ -182,26 +188,21 @@ Non-sensitive metadata only — stored as plain JSON, git-ignored, excluded from
 
 ### Implementation
 
-Add `keyring` to `pyproject.toml` dependencies:
+No new dependency. The store mirrors the M365 pattern:
 
 ```python
-# In quickbooks_service.py
-import keyring
+# app/adapters/quickbooks/credential_store.py (abridged)
+from msal_extensions import build_encrypted_persistence
 
-_SERVICE = "DTM Vehicle Builder"
+class QuickBooksCredentialStore:
+    def save(self, secrets: dict) -> None:
+        self._persistence().save(json.dumps(secrets))   # OS-keychain encrypted
 
-def _store(key: str, value: str) -> None:
-    keyring.set_password(_SERVICE, key, value)
-
-def _load(key: str) -> str | None:
-    return keyring.get_password(_SERVICE, key)
-
-def _delete(key: str) -> None:
-    try:
-        keyring.delete_password(_SERVICE, key)
-    except keyring.errors.PasswordDeleteError:
-        pass
+    def load(self) -> dict:
+        return json.loads(self._persistence().load())   # {} when absent
 ```
+
+When the keychain backend is unavailable (e.g. headless Linux without libsecret), the store falls back to a process-lifetime in-memory map — never plaintext on disk. Losing it on restart forces re-authorization, which is the correct secure behavior.
 
 On disconnect, call `_delete` for all four credential keys. On token refresh, call `_store("qb_refresh_token", new_token)` and `_store("qb_access_token", new_access_token)` immediately — never skip this step.
 
@@ -316,9 +317,14 @@ src/dtm_buildsheet/
   ui/js/settings/
     quickbooks.js                ← Settings → QuickBooks tab UI
 
-workspace/config/
+workspace/
   quickbooks_config.json         ← non-sensitive metadata + sync state (git-ignored, never synced)
-                                    Credentials stored in OS keychain via keyring — not in this file
+                                    Credentials stored in OS keychain via msal-extensions — not in this file
+
+src/dtm_buildsheet/app/
+  adapters/quickbooks/
+    credential_store.py          ← OS-keychain secret blob (msal-extensions encrypted persistence)
+    oauth_client.py              ← Intuit OAuth endpoints (discovery, exchange, refresh, revoke)
 ```
 
 ### Existing Files Modified
@@ -331,7 +337,7 @@ workspace/config/
 | `ui/js/main.js` | Wire QuickBooks tab init |
 | `config/schemas.py` | Add `quickbooks_config` schema + migration |
 | `parts_db.json` | Add `qb_item_id`, `qb_sku` fields per part entry |
-| `pyproject.toml` | Add `keyring` dependency |
+| `pyproject.toml` | No new dependency — reuses the existing `msal-extensions` |
 | `.gitignore` | Add `workspace/config/quickbooks_config.json` |
 
 ---
@@ -498,15 +504,21 @@ When `connection_status` is `disconnected` or the tokens are expired/missing, th
 
 ## Implementation Phases
 
-### Phase 1 — OAuth + Token Management (Build and test this before submitting the questionnaire)
+### Phase 1 — OAuth + Token Management ✅ Backend implemented (UI + relay pending)
 
-- Deploy hosted relay endpoint to a domain you control
-- `quickbooks_service.py`: AES key generation, encrypt/decrypt helpers, OAuth URL generation with CSRF state, callback handler (validate state → exchange code → encrypt tokens → 302 redirect), token refresh with rotation save, connection status
-- `quickbooks.py` routes: `/status`, `/auth-url`, `/callback`, `/disconnect`
-- `quickbooks_key.bin` + `quickbooks_config.json` schema + `.gitignore` entries
-- Settings UI: connection card only
+Implemented:
+- `adapters/quickbooks/credential_store.py`: OS-keychain secret blob via `msal-extensions` (in-memory fallback)
+- `adapters/quickbooks/oauth_client.py`: discovery document, code exchange, refresh, revoke — no token logging
+- `services/quickbooks_service.py`: settings save (secret→keychain, metadata→json), OAuth URL with CSRF state, callback completion (validate state → exchange → store), `ensure_access_token` with refresh-token rotation, disconnect, status
+- `routes/quickbooks.py`: `/status`, `/auth-url`, `/callback` (302-only), `/settings`, `/disconnect` — all `Cache-Control: no-store`
+- Server wiring; `.gitignore` entries
+- `tests/test_quickbooks_service.py` (hermetic: fake store + fake OAuth client)
 
-**Done when**: Full OAuth round-trip works against a sandbox company, tokens are encrypted on disk, CSRF state validation rejects mismatched states, callback issues 302 (not HTML), token refresh correctly saves the new refresh token.
+Pending:
+- Deploy the hosted HTTPS relay endpoint (production redirect URI)
+- Settings UI: connection card (Connect / Disconnect / status)
+
+**Done when**: Full OAuth round-trip works against a sandbox company, tokens are stored in the keychain (never on disk), CSRF state validation rejects mismatched states, callback issues 302 (not HTML), token refresh correctly saves the rotated refresh token.
 
 ### Phase 2 — Parts Sync
 
@@ -540,7 +552,7 @@ When `connection_status` is `disconnected` or the tokens are expired/missing, th
 
 - **Production redirect URI must be HTTPS on a real domain**: `localhost` is rejected by Intuit for Production keys. The hosted relay is required.
 - **Refresh token rotation is mandatory**: Save the newly issued refresh token (encrypted) on every refresh call. One missed rotation permanently breaks the connection.
-- **Credentials live in OS keychain, not in files**: `quickbooks_config.json` contains only non-sensitive metadata. All credential values (`qb_access_token`, `qb_refresh_token`, `qb_realm_id`, `qb_client_secret`) are stored via `keyring`. This satisfies Intuit's AES encryption requirement — the OS keychain handles encryption and key management natively.
+- **Credentials live in OS keychain, not in files**: `quickbooks_config.json` contains only non-sensitive metadata. All credential values (`access_token`, `refresh_token`, `realm_id`, `client_secret`) are stored as an encrypted blob via `msal-extensions` (same mechanism as the M365 token cache). This satisfies Intuit's AES encryption requirement — the OS keychain handles encryption and key management natively.
 - **Callback must 302 redirect**: Never return HTML that contains the authorization code or any token. Issue a server-side 302 to a clean URL after saving tokens.
 - **No QB data in logs**: Item names, prices, customer names, realm ID, and all token values must never appear in any log file.
 - **5-year hard expiry**: Set a calendar reminder. After 5 years, a one-time browser re-authorization is required.

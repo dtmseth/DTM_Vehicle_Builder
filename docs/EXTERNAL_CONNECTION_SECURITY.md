@@ -13,7 +13,7 @@ This document defines the mandatory security standard for every external connect
 |------------|-------------|--------|
 | Microsoft 365 / SharePoint | OAuth 2.0 via MSAL + OS keychain | ✅ Compliant |
 | GitHub | GitHub Actions secrets (server-side only) | ✅ Compliant |
-| QuickBooks Online | OAuth 2.0 via `keyring` + OS keychain | Planned — Phase 1 |
+| QuickBooks Online | OAuth 2.0 via `msal-extensions` encrypted persistence + OS keychain | ✅ Backend implemented (Phase 1) |
 
 ---
 
@@ -25,32 +25,27 @@ OAuth access tokens, refresh tokens, and client secrets must be stored in the OS
 
 | Platform | Storage Mechanism |
 |----------|------------------|
-| macOS | Keychain (via `keyring` or `msal_extensions`) |
+| macOS | Keychain |
 | Windows | Windows Credential Locker / DPAPI |
 | Linux | libsecret / Secret Service (falls back to in-memory if unavailable) |
 
-**Python implementation** — use the `keyring` library:
+**Python implementation** — use `msal-extensions` encrypted persistence (already a dependency; used by both the M365 token cache and the QuickBooks credential store). It selects the right OS backend automatically and avoids adding a second keychain library.
 
 ```python
-import keyring
+from msal_extensions import build_encrypted_persistence
 
-SERVICE = "DTM Vehicle Builder"
-
-def store_credential(key: str, value: str) -> None:
-    keyring.set_password(SERVICE, key, value)
-
-def load_credential(key: str) -> str | None:
-    return keyring.get_password(SERVICE, key)
-
-def delete_credential(key: str) -> None:
-    try:
-        keyring.delete_password(SERVICE, key)
-    except keyring.errors.PasswordDeleteError:
-        pass
+# Store one encrypted JSON blob per integration. The plaintext never
+# touches disk; the OS keychain holds the encryption key.
+persistence = build_encrypted_persistence(location)   # .bin sentinel path
+persistence.save(json.dumps(secrets))                 # encrypt + store
+secrets = json.loads(persistence.load())              # decrypt
 ```
 
-Store each credential under a distinct key, e.g.:
-- `"qb_refresh_token"`, `"qb_access_token"`, `"qb_realm_id"`, `"qb_client_secret"`
+Reference implementations:
+- M365 token cache: `adapters/cloud/msal_client.py` (`_build_token_cache`)
+- QuickBooks secret blob: `adapters/quickbooks/credential_store.py` (`QuickBooksCredentialStore`)
+
+When the keychain backend is unavailable (e.g. headless Linux without libsecret), fall back to a process-lifetime **in-memory** store — never plaintext on disk.
 
 ### Rule: Non-Secret Identifiers May Live in Plain JSON
 
@@ -178,19 +173,19 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | Token masking in logs | ✅ | `::add-mask::` used in workflows |
 | No direct connection from app | ✅ | App writes to SharePoint; GitHub Actions reads from there |
 
-### QuickBooks Online (Planned)
+### QuickBooks Online
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| OS keychain token storage | Planned — Phase 1 | Use `keyring` library |
-| CSRF state validation | Planned — Phase 1 | |
-| 302-only callback | Planned — Phase 1 | |
-| HTTPS relay for production redirect URI | Planned — Phase 1 | Hosted relay required |
-| No credentials in logs | Planned — Phase 1 | |
-| Token rotation | Planned — Phase 1 | QB rotates on every refresh |
-| Discovery document | Planned — Phase 1 | |
-| Cache-Control: no-store on QB routes | Planned — Phase 2 | |
-| textContent for QB data in UI | Planned — Phase 2 | |
+| OS keychain token storage | ✅ | `msal-extensions` encrypted blob, in-memory fallback |
+| CSRF state validation | ✅ | `secrets.compare_digest`, single-use state |
+| 302-only callback | ✅ | `routes/quickbooks.py` `_handle_callback` |
+| No credentials in logs | ✅ | OAuth client logs no tokens/bodies; service logs no secrets |
+| Token rotation | ✅ | Rotated refresh token saved on every refresh |
+| Discovery document | ✅ | `oauth_client._discover()` with static fallback |
+| Cache-Control: no-store on QB routes | ✅ | Set on all `/api/quickbooks/*` responses |
+| HTTPS relay for production redirect URI | Pending | Hosted relay to deploy before go-live |
+| textContent for QB data in UI | Pending — Phase 2 | Enforced when the parts UI lands |
 
 ---
 
@@ -198,7 +193,7 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 
 Any new integration must, before merging:
 
-1. Store all credentials in OS keychain via `keyring` (or an equivalent library that wraps the OS store)
+1. Store all credentials in the OS keychain via `msal-extensions` encrypted persistence (see `adapters/quickbooks/credential_store.py` for the pattern)
 2. Log no credential values, no token strings, no raw API response bodies
 3. If OAuth: implement CSRF state validation and 302-only callback
 4. If OAuth in production: HTTPS redirect URI (relay if needed for localhost apps)

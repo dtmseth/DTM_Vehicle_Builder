@@ -26,6 +26,7 @@ from .routes import preview as preview_routes
 from .routes import parts_db as parts_db_routes
 from .routes import presets as preset_routes
 from .routes import projects as project_routes
+from .routes import quickbooks as quickbooks_routes
 from .routes import templates as template_routes
 from .routes import updates as update_routes
 from .routes import validation as validation_routes
@@ -107,6 +108,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/quickbooks/"):
+            if not quickbooks_routes.route_quickbooks(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith("/ui/"):
             self._serve_static(path[len("/ui/"):])
         elif path == "/favicon.ico":
@@ -170,6 +174,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/quickbooks/"):
+            if not quickbooks_routes.route_quickbooks(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         else:
             self._send(404, b"Not found", "text/plain")
