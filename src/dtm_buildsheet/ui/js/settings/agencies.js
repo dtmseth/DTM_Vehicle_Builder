@@ -4,10 +4,39 @@
   let _agencies = [];
   let _editingId = null;
   let _pendingOnSuccess = null;
+  let _listWired = false;
+
+  // Attribute-safe escape (also handles quotes, which the shared esc() does
+  // not). Used for data-* attribute values rendered into HTML.
+  const escAttr = s => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function _wireList() {
+    if (_listWired) return;
+    const container = $("agency-list-container");
+    if (!container) return;
+    _listWired = true;
+    // Delegated so it survives innerHTML re-renders, and so agency names with
+    // apostrophes/quotes can never break a handler (the old inline-onclick
+    // string interpolation did — Sheriff's Office etc. became undeletable).
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      if (btn.dataset.act === "edit") {
+        agencyEdit(id);
+      } else if (btn.dataset.act === "del") {
+        const ag = _agencies.find(a => a.agency_id === id);
+        agencyDelete(id, ag ? ag.name : "");
+      }
+    });
+  }
 
   function _renderTable(list) {
     const container = $("agency-list-container");
     if (!container) return;
+    _wireList();
     if (!list.length) {
       container.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:0">No agencies yet. Add your first agency above.</p>`;
       return;
@@ -33,8 +62,8 @@
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_email)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.customer_since)}</td>
               <td style="padding:7px 8px;white-space:nowrap;text-align:right">
-                <button class="btn btn-secondary btn-sm" onclick="agencyEdit('${esc(a.agency_id)}')">Edit</button>
-                <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" onclick="agencyDelete('${esc(a.agency_id)}','${esc(a.name)}')">Delete</button>
+                <button class="btn btn-secondary btn-sm" data-act="edit" data-id="${escAttr(a.agency_id)}">Edit</button>
+                <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>
               </td>
             </tr>`).join("")}
         </tbody>
