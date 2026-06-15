@@ -154,7 +154,14 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                         planned.warnings.append(f"{view}: no location supplied for {part.name}")
                     continue
 
-            quantity_policy = spec.get("render_quantity_policy", "location_slots")
+            # Library entries (per-product) may override the part_type's policy.
+            # A spec like "front_scene" defaults to location_slots, but a Pioneer
+            # placed in that row is a single-head fixture-style product and
+            # should render as one centered icon, not a mirror pair.
+            quantity_policy = (
+                lib_entry.get("render_quantity_policy")
+                or spec.get("render_quantity_policy", "location_slots")
+            )
             slot_count = int(location.get("slot_count", 1))
 
             if quantity_policy == "single_per_line":
@@ -167,8 +174,12 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 slot_count = int(qty_overrides["slot_count"])
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
 
+            # single_per_line implies "one head, centered" by definition —
+            # otherwise a mirror-pattern location would still render two icons
+            # in opposite slots even when we only built one.
+            default_pattern = "single" if quantity_policy == "single_per_line" else location.get("pattern", "single")
             effective_pattern = co_overrides.get(
-                "pattern", qty_overrides.get("pattern", location.get("pattern", "single"))
+                "pattern", qty_overrides.get("pattern", default_pattern)
             )
             forced_side = co_overrides.get("side", "")
             if forced_side:

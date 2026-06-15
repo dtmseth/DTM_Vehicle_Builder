@@ -95,7 +95,8 @@
         "Front Scene",
         "Rear Scene"
       ],
-      "images": {}
+      "images": {},
+      "render_quantity_policy": "single_per_line"
     },
     {
       "part_id": "prewire",
