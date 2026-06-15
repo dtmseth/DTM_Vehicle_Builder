@@ -34,3 +34,5 @@ test_graph_connection.py
 # on disk. Defensive entries — in dev these already fall under workspace/.
 quickbooks_config.json
 src/dtm_buildsheet/resources/config/quickbooks_config.json
+quickbooks_items_cache.json
+src/dtm_buildsheet/resources/config/quickbooks_items_cache.json

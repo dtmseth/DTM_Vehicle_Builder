@@ -4,10 +4,12 @@ GET:
 - /api/quickbooks/status    — connection state (no secrets)
 - /api/quickbooks/auth-url  — start the OAuth handshake (returns a URL)
 - /api/quickbooks/callback  — OAuth redirect target; always 302s, never HTML
+- /api/quickbooks/items     — locally cached pulled items (no network)
 
 POST:
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
 - /api/quickbooks/disconnect  — revoke + clear stored tokens
+- /api/quickbooks/sync        — pull active Items from QBO into the cache
 
 All JSON responses set ``Cache-Control: no-store`` (security standard). The
 callback never echoes the authorization code or any token into an HTML body;
@@ -22,7 +24,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
-from ..services import quickbooks_service
+from ..services import qb_sync_service, quickbooks_service
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,12 @@ def route_quickbooks(
         return True
     if method == "GET" and path == "/api/quickbooks/callback":
         return _handle_callback(handler, paths)
+    if method == "GET" and path == "/api/quickbooks/items":
+        _send_json(handler, qb_sync_service.get_cached_items(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/sync":
+        _send_json(handler, qb_sync_service.sync_items(paths))
+        return True
     if method == "POST" and path == "/api/quickbooks/settings":
         _send_json(
             handler,

@@ -520,12 +520,23 @@ Implemented:
 
 ### Phase 2 — Parts Sync
 
-- `qb_sync_service.sync_items()`: pull Items, match by `qb_item_id`, write pending queue
-- `parts_db.json` schema additions
-- `quickbooks.py` routes: `/sync`, `/pending-items`, `/link-item`
-- Settings UI: sync status, uncategorized items queue, link/create UI
+Built in safe, non-destructive slices:
+
+**Slice A — read-only pull ✅ implemented**
+- `adapters/quickbooks/api_client.py`: read-only QBO Data API client (`fetch_active_items`, paginated, environment-aware base URL, no body logging)
+- `services/qb_sync_service.py`: `sync_items()` pulls active Items into `quickbooks_items_cache.json` (workspace root, git-ignored) and stamps `last_sync_utc`. Reads `parts_db.json` only to flag already-linked items; **never writes it**. `get_cached_items()` returns the cache with no network.
+- `quickbooks.py` routes: `POST /sync`, `GET /items` (both `Cache-Control: no-store`)
+- Settings UI: Parts Sync card (pull button, last-sync/counts summary, item list with linked/unlinked badges) inside the connected panel
+- `tests/test_qb_sync_service.py` (hermetic; asserts parts_db is byte-for-byte untouched by a sync)
+
+**Slice B — linking (pending)**
+- `quickbooks.py` route: `/link-item` → write `qb_item_id` onto a chosen VB product (explicit, opt-in, additive)
+- `parts_db.json` schema additions (`qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`)
+- Settings UI: link-to-existing-part / create-new-part actions in the queue
+
+**Slice C — reconciliation (pending, gated)**
+- Matched items update `sku` / `unit_price` / active status on linked parts; items absent from QBO get flagged `qb_inactive` (never deleted)
 - Background sync on app start + 30-minute poll
-- Ensure QB Item data is not written to application logs
 
 **Done when**: New QBO Items surface in the queue, linking persists and removes from queue, deactivated QBO Items get flagged `qb_inactive`.
 

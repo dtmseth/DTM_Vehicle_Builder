@@ -254,6 +254,13 @@ def get_realm_id(paths: AppPaths) -> str:
     return _store().load().get("realm_id", "")
 
 
+def set_last_sync(paths: AppPaths, when_iso: str) -> None:
+    """Record the timestamp of the most recent successful data sync."""
+    config = _load_config(paths)
+    config["last_sync_utc"] = when_iso
+    _save_config(paths, config)
+
+
 # ── disconnect / status ─────────────────────────────────────────────────────
 
 

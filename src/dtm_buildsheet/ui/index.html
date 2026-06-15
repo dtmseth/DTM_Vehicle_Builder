@@ -801,8 +801,28 @@
           Token renews: <span id="qb-token-renews" style="color:var(--navy);font-weight:600">—</span>
           · Hard expiry: <span id="qb-hard-expiry" style="color:var(--navy);font-weight:600">—</span>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Parts sync and project push arrive in Phase 2.</p>
         <button class="btn btn-secondary" id="qb-disconnect-btn" style="color:var(--red)">Disconnect</button>
+      </div>
+
+      <!-- Parts sync (read-only pull). Visible only when connected. -->
+      <div id="qb-sync-panel" hidden style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <span style="font-weight:700;color:var(--navy)">Parts Sync</span>
+          <button class="btn btn-secondary btn-sm" id="qb-sync-btn">
+            <span class="spinner" id="qb-sync-spinner" style="display:none"></span>
+            <span id="qb-sync-label">🔄 Pull items from QuickBooks</span>
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+          Pulls active Items from your QuickBooks company for review. This does not change any of
+          your existing part data — linking items to parts is a separate step.
+        </p>
+        <div id="qb-sync-summary" style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          Last sync: <span id="qb-last-sync" style="color:var(--navy);font-weight:600">never</span>
+          · <span id="qb-item-count" style="color:var(--navy);font-weight:600">0</span> items
+          (<span id="qb-linked-count">0</span> linked, <span id="qb-unlinked-count">0</span> unlinked)
+        </div>
+        <div id="qb-items-list" style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
       </div>
 
       <!-- Disconnected state -->
