@@ -223,7 +223,13 @@ def get_queued_installer(paths) -> Path | None:
     """Return the queued installer path if one is present, else None.
 
     Looks for ``.exe`` on Windows and ``.dmg`` on macOS; returns None
-    on other platforms where silent auto-install isn't implemented."""
+    on other platforms where silent auto-install isn't implemented.
+    Always returns None in dev — a queued file in dev would just nag
+    the user to restart for a version that's older than what they're
+    already running."""
+    from ...paths import _DEV
+    if _DEV:
+        return None
     suffix = _expected_installer_suffix()
     if suffix is None:
         return None
@@ -511,8 +517,15 @@ def download_pending_update_if_any(storage, paths, dismissed_versions: list[str]
     Runs on Windows (queues .exe) and macOS (queues .dmg). Other
     platforms are no-op until we add an installer pattern for them.
 
+    Dev launches (source checkout, not the bundled .app) never download:
+    dev IS the most-current copy, so any "newer" tag is by definition
+    older than the working tree.
+
     Returns a small dict the sync log uses; never raises.
     """
+    from ...paths import _DEV
+    if _DEV:
+        return {"skipped": "dev build"}
     if _expected_installer_suffix() is None:
         return {"skipped": f"no auto-update for {sys.platform}"}
     try:
@@ -555,6 +568,8 @@ def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
     state instead of guessing from a mix of /api/update/check and
     pending_update fields. Possible states:
 
+      - "dev_build" — running from a source checkout; auto-update is
+        disabled because dev IS the newest copy by definition.
       - "up_to_date" — nothing newer available, nothing queued
       - "downloading" — background sync is fetching the installer now
       - "ready" — installer is queued, restart will install it
@@ -562,7 +577,10 @@ def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
         configured for this platform. UI offers a manual download.
       - "platform_unsupported" — Linux (no installer pattern at all)
     """
+    from ...paths import _DEV
     current = get_embedded_version()
+    if _DEV:
+        return {"state": "dev_build", "current": current}
     pending = get_pending_update_info(paths)
     if pending:
         return {"state": "ready", "current": current, "ready_version": pending["version"]}

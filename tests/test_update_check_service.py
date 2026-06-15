@@ -15,6 +15,15 @@ from dtm_buildsheet.app.services.update_check_service import (
 from dtm_buildsheet.storage.base import StorageProvider
 
 
+# All tests in this file simulate a BUNDLED launch (queueing installers,
+# downloading releases, etc.). Force-disable the dev-checkout skip so the
+# under-test behavior actually runs even when pytest itself is executed
+# from a source checkout (where paths._DEV is True).
+@pytest.fixture(autouse=True)
+def _force_bundled_mode(monkeypatch):
+    monkeypatch.setattr("dtm_buildsheet.paths._DEV", False)
+
+
 # ── Fakes ────────────────────────────────────────────────────────────────────
 
 

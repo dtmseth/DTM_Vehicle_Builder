@@ -62,7 +62,7 @@
         show({ version: us.available_version }, us.current, "download");
         return;
       }
-      if (us?.state === "platform_unsupported") {
+      if (us?.state === "platform_unsupported" || us?.state === "dev_build") {
         hide();
         return;
       }

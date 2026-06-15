@@ -288,6 +288,11 @@ function _renderUpdateStateRow(state){
       txt = `✅ v${cur} (auto-update unavailable on this platform)`;
       title = "Auto-update isn't supported on this OS — download new releases manually when notified.";
       break;
+    case "dev_build":
+      txt = `🛠 Dev build · v${cur} (auto-update disabled)`;
+      color = "var(--muted)";
+      title = "You're running from a source checkout — dev IS the most-current copy, so auto-update is intentionally disabled.";
+      break;
     case "up_to_date":
     default:
       txt = `✅ Up to date · v${cur}`;
