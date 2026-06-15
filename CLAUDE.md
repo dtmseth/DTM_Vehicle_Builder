@@ -84,7 +84,7 @@ src/dtm_buildsheet/                ← the Python package
       generate_tab.js              ← Standalone build-sheet generator (in Settings → Tools)
       settings/
         agencies.js / fixtures.js / part_types.js / parts_library.js
-        placements.js / presets_mgr.js / sales_reps.js / size_rules.js / tools.js / vehicles.js
+        placements.js / presets_mgr.js / quickbooks.js / sales_reps.js / size_rules.js / tools.js / vehicles.js
 
   resources/
     config/*.json                  ← bundled defaults (copied to workspace on first run)
@@ -178,7 +178,7 @@ The app has two main tabs: **Projects** and **Settings**.
 ### Settings tab
 Two header tabs (General / Advanced) each surface their own set of outer stabs:
 
-- **General Settings**: `projects-defaults | agencies | sales-reps | presets`
+- **General Settings**: `projects-defaults | agencies | sales-reps | presets | quickbooks`
 - **Advanced Settings**: `placements | sizes | part-manager | vehicles | workbook-tools`
 
 Two of the Advanced outer stabs group multiple inner stabs (rendered as a thin inner-stab-bar above the content):
@@ -374,3 +374,4 @@ const api = (path, body) =>
 - **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud I/O, and `wiring.save_via_proposal` also refuses to enqueue when `PYTEST_CURRENT_TEST` is set. Tests that needed to assert queueing behavior have been updated to assert `"queued" not in result`. Bypassing these guards reintroduces the abc.json resurrection bug (root cause documented in v2.2.12 commit).
 - **parts_db.json is populated but not yet wired into production reads**. Phase 3 PR-2b seeded `parts_db.json` (5/106/186/48: types/part_types/products/manufacturers) and `legacy_workbook_index.json` (102/186 entries). Today only the Part Manager UI (Settings → Advanced → Part Manager → Database (v2)) and the schema validator read from these files. The build sheet generator, planner, manifest editor, rule engine, and excel reader all still drive off `workbook_rules.json` / `parts_library.json` / `vehicle_layouts.json` / `part_catalog.json`. PR-3 (manifest_editor dual-read) is the first consumer swap.
 - **Migration script has --push-to-cloud**. `tools/migrate_workbook_to_parts_db.py --write` writes via `Path.write_text()` which bypasses `save_config_file` and therefore SharePoint direct-mirror — meaning the next 60s shared-settings sync will silently overwrite the migration with whatever (older) copy SharePoint has. The `--push-to-cloud` flag re-saves the output through `save_config_file` to fire direct-mirror. Always use `--write --push-to-cloud` when you actually want the data to stick.
+- **QuickBooks credentials never touch disk or cloud**. Secrets (`client_secret`, `access_token`, `refresh_token`, `realm_id`) live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py` (msal-extensions encrypted persistence — same mechanism as the M365 token cache). `quickbooks_config.json` holds non-secret metadata only and is managed **directly** by `quickbooks_service.py` (workspace root), deliberately NOT through `save_config`/`config_service` — do NOT add it to `REQUIRED_CONFIG_FILES` or any cloud-mirror set, or you'll sync per-machine connection state across devices. The OAuth callback (`routes/quickbooks.py`) must stay 302-only (never echo the code/token as HTML). All `/api/quickbooks/*` responses set `Cache-Control: no-store`. See `docs/EXTERNAL_CONNECTION_SECURITY.md`.

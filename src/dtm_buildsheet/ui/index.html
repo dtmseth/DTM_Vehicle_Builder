@@ -89,6 +89,7 @@
     <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
     <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
     <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
+    <button class="stab" data-stab="quickbooks" data-stab-group="general">💵 QuickBooks</button>
   </div>
   <!-- Advanced Settings stab-bar — review-gated config changes -->
   <div class="stab-bar" id="stab-bar-advanced" hidden>
@@ -781,6 +782,71 @@
         <p style="font-size:13px;color:var(--muted)">Loading…</p>
       </div>
     </div>
+  </div>
+
+  <!-- ── QUICKBOOKS ── -->
+  <div id="stab-quickbooks" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>QuickBooks Online</span>
+        <span id="qb-status-badge" style="font-size:13px;font-weight:600;color:var(--muted)">● Not configured</span>
+      </div>
+
+      <!-- Connected state -->
+      <div id="qb-connected-panel" hidden>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">
+          Environment: <span id="qb-environment-label" style="color:var(--navy);font-weight:600">—</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">
+          Token renews: <span id="qb-token-renews" style="color:var(--navy);font-weight:600">—</span>
+          · Hard expiry: <span id="qb-hard-expiry" style="color:var(--navy);font-weight:600">—</span>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">Parts sync and project push arrive in Phase 2.</p>
+        <button class="btn btn-secondary" id="qb-disconnect-btn" style="color:var(--red)">Disconnect</button>
+      </div>
+
+      <!-- Disconnected state -->
+      <div id="qb-connect-row">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">
+          Authorize the app to connect to your QuickBooks company. You'll be taken to Intuit
+          to sign in, then returned here automatically.
+        </p>
+        <button class="btn btn-primary" id="qb-connect-btn">🔗 Connect to QuickBooks</button>
+        <p id="qb-connect-hint" style="font-size:12px;color:var(--orange,#b45309);margin:8px 0 0" hidden>
+          Enter your Client ID, Client Secret, and Redirect URI below first.
+        </p>
+      </div>
+    </div>
+
+    <details class="card" id="qb-creds-card" style="margin-top:14px">
+      <summary style="font-weight:700;color:var(--navy);cursor:pointer">⚙️ App registration (Client ID &amp; Secret)</summary>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 14px">
+        From your Intuit Developer dashboard (Production keys). The Client Secret is stored in
+        your operating system keychain — never on disk or in the cloud. See
+        docs/QUICKBOOKS_INTEGRATION.md.
+      </p>
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Client ID</label>
+      <input type="text" id="qb-client-id" placeholder="ABxxxxxxxxxxxxxxxx" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:12px" />
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Client Secret</label>
+      <input type="password" id="qb-client-secret" placeholder="Paste client secret" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:12px" />
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Environment</label>
+      <select id="qb-environment" style="width:100%;box-sizing:border-box;margin-bottom:12px">
+        <option value="production">Production (live company)</option>
+        <option value="sandbox">Sandbox (testing)</option>
+      </select>
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Redirect URI</label>
+      <input type="text" id="qb-redirect-uri" placeholder="https://your-domain.com/qb-callback" style="width:100%;box-sizing:border-box;margin-bottom:4px" />
+      <p style="font-size:11px;color:var(--muted);margin:0 0 14px">
+        Must exactly match a Redirect URI registered in your Intuit app. Production requires HTTPS;
+        sandbox may use http://localhost:7655/api/quickbooks/callback.
+      </p>
+
+      <button class="btn btn-primary" id="qb-save-settings">💾 Save Settings</button>
+    </details>
   </div>
 
   <!-- ── WORKBOOK TOOLS (renamed from Tools) ──
@@ -1687,6 +1753,7 @@
 <script src="/ui/js/settings/agencies.js"></script>
 <script src="/ui/js/settings/sales_reps.js"></script>
 <script src="/ui/js/settings/presets_mgr.js"></script>
+<script src="/ui/js/settings/quickbooks.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>
 <script src="/ui/js/manifest_editor.js"></script>
 

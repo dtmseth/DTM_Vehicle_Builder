@@ -33,6 +33,7 @@ const ALL_STAB_CONTENTS = [
   "stab-agencies",
   "stab-sales-reps",
   "stab-presets",
+  "stab-quickbooks",
   "stab-workbook-tools",
 ];
 
@@ -101,6 +102,7 @@ function _runStabSideEffects(stab) {
   if (stab === "fixtures" && typeof initFixtures === "function") initFixtures();
   if (stab === "sales-reps" && typeof initSalesRepsTab === "function") initSalesRepsTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
+  if (stab === "quickbooks" && typeof initQuickBooksTab === "function") initQuickBooksTab();
 }
 
 function switchTab(t) {

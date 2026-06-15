@@ -513,10 +513,10 @@ Implemented:
 - `routes/quickbooks.py`: `/status`, `/auth-url`, `/callback` (302-only), `/settings`, `/disconnect` — all `Cache-Control: no-store`
 - Server wiring; `.gitignore` entries
 - `tests/test_quickbooks_service.py` (hermetic: fake store + fake OAuth client)
+- Settings UI: `ui/js/settings/quickbooks.js` + `#stab-quickbooks` card (Connect / Disconnect / status + collapsible app-registration form). OAuth return handled by `qbConsumeReturnTab()` in `main.js`.
 
 Pending:
 - Deploy the hosted HTTPS relay endpoint (production redirect URI)
-- Settings UI: connection card (Connect / Disconnect / status)
 
 **Done when**: Full OAuth round-trip works against a sandbox company, tokens are stored in the keychain (never on disk), CSRF state validation rejects mismatched states, callback issues 302 (not HTML), token refresh correctly saves the rotated refresh token.
 
