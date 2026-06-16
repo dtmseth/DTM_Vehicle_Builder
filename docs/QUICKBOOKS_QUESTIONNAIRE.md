@@ -189,17 +189,26 @@ Before starting the questionnaire, complete Phase 1 of the integration (OAuth fl
 Before clicking submit:
 
 - [ ] Phase 1 integration is complete and tested against a sandbox company
-- [ ] Connect flow tested: OAuth round-trip works, tokens encrypted on disk
+- [ ] Connect flow tested: OAuth round-trip works, tokens stored in OS keychain
 - [ ] Disconnect flow tested: tokens cleared, connection status reflects disconnected
 - [ ] Reconnect flow tested: full OAuth flow works from disconnected state
-- [ ] AES-256 encryption confirmed on all token fields in `quickbooks_config.json`
-- [ ] Key stored in separate file (`quickbooks_key.bin`) from config
+- [ ] Token storage confirmed in OS keychain via `msal-extensions` (Keychain / DPAPI) — NOT a plaintext file; `quickbooks_config.json` holds non-secret metadata only
 - [ ] OAuth callback issues HTTP 302 (not HTML) after saving tokens
 - [ ] CSRF state validation confirmed working (tested with mismatched state)
-- [ ] Application logs reviewed — no tokens, realm IDs, or QB data visible
+- [ ] Refresh-token rotation confirmed (new refresh token saved on every refresh)
+- [ ] Application logs reviewed — no tokens, realm IDs, or QB data visible (only `intuit_tid`, status, timestamps)
 - [ ] `Cache-Control: no-store` header on all `/api/quickbooks/*` routes
 - [ ] HTTP TRACE rejected by local server
 - [ ] Production redirect URI registered in Intuit Developer Dashboard
-- [ ] Hosted relay endpoint deployed and tested end-to-end
-- [ ] `quickbooks_key.bin` and `quickbooks_config.json` in `.gitignore`
-- [ ] Both files confirmed absent from SharePoint mirror logic
+- [ ] Hosted relay endpoint deployed and tested end-to-end (see `relay/DEPLOY.md`)
+- [ ] `quickbooks_config.json` and `quickbooks_items_cache.json` in `.gitignore`
+- [ ] Both files confirmed absent from SharePoint mirror logic (managed directly by `quickbooks_service`, never via `config_service`/`save_config`)
+
+> **NOTE — implementation changed from the original design.** Earlier drafts of
+> this questionnaire referenced a manual AES key file (`quickbooks_key.bin`) and
+> AES-encrypted values inside `quickbooks_config.json`. That approach was
+> replaced before implementation with the OS-native credential store via
+> `msal-extensions` (same mechanism as the M365 token cache). All secret values
+> (`client_secret`, `access_token`, `refresh_token`, `realm_id`) live ONLY in the
+> keychain; `quickbooks_config.json` is non-secret metadata. The prose answers in
+> Sections 4 and 7 already reflect this — answer the live questionnaire from those.
