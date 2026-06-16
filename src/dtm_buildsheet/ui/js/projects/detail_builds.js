@@ -88,6 +88,7 @@ function _ptRenderBuildsTab(p) {
           <div class="proj-ind-card-badges">
             ${hasDraft  ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
+            ${(ind.qb_estimate_id || "").trim() ? `<span class="proj-confirmed-badge">📋 estimate</span>` : ""}
           </div>
           ${_ptRenderTimelineRow(ind)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
@@ -108,6 +109,10 @@ function _ptRenderBuildsTab(p) {
             </button>
             ${hasPdf ? `<button class="btn btn-secondary btn-sm"
               onclick="PT_buildOpenPdf('${pid}','${uid}','${iid}','ind')">📑 View PDF</button>` : ""}
+            <button class="btn btn-secondary btn-sm"${buildDis}
+              onclick="PT_buildCreateEstimate('${pid}','${uid}','${iid}')">
+              📋 ${(ind.qb_estimate_id || "").trim() ? "Re-estimate" : "QB Estimate"}
+            </button>
             <button class="btn btn-secondary btn-sm"
               onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Show in folder</button>
           </div>
@@ -164,6 +169,7 @@ function _ptRenderBuildsTab(p) {
     <div class="proj-builds-footer">
       <button class="btn btn-primary btn-sm" onclick="PT_generateAll()">⚡ Generate All</button>
       <button class="btn btn-secondary btn-sm" onclick="PT_exportAllPdf()">📄 Export All PDFs</button>
+      <button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">📋 Create QB Estimates</button>
     </div>
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
 
@@ -680,5 +686,211 @@ window.PT_startBuildIndividual = async function (projectId, unitIndex, individua
     await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "builds", updatedInd);
   } catch (e) {
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Unexpected error"), "err");
+  }
+};
+
+// ── QuickBooks estimate (per-vehicle) ──────────────────────────────────────
+// Validate the build's parts against QuickBooks, then draft a NON-POSTING
+// estimate. The backend blocks creation unless every part is linked to an
+// active, priced QuickBooks item, so the "blocked" path lists exactly what
+// needs attention. Estimates never post to the books.
+
+const _QB_EST_REASON = {
+  no_catalog_match: "No matching catalog product",
+  not_linked: "Not linked to a QuickBooks item",
+  qb_inactive: "Inactive in QuickBooks",
+  no_price: "No price in QuickBooks",
+};
+
+function _ptEstError(code) {
+  const m = {
+    not_connected: "Not connected to QuickBooks",
+    no_realm_id: "No company linked — reconnect to QuickBooks",
+    unknown_project: "Project not found",
+    unknown_unit: "Unit not found",
+    no_build: "Set up the build first",
+    no_billable_parts: "No billable parts in this build",
+    no_agency: "Assign an agency to this project first",
+    agency_not_in_qb: "The agency isn't in QuickBooks yet",
+    validation_failed: "Some parts aren't linked to QuickBooks",
+  };
+  return m[code] || ("Estimate failed: " + (code || "unknown error"));
+}
+
+function _ptMoney2(n) {
+  const v = Number(n);
+  return isNaN(v) ? "$0.00" : "$" + v.toFixed(2);
+}
+
+async function _ptQbConnected() {
+  try { const s = await api("/api/quickbooks/status"); return !!s?.connected; }
+  catch (_) { return false; }
+}
+
+function _ptEstModalEls() {
+  return {
+    modal:  $("qb-est-modal"),
+    title:  $("qb-est-title"),
+    body:   $("qb-est-body"),
+    create: $("qb-est-create"),
+    cancel: $("qb-est-cancel"),
+  };
+}
+
+function _ptOpenEstModal(title, bodyHtml, createLabel) {
+  if (!_PT._qbEstWired) {
+    _PT._qbEstWired = true;
+    const close = () => $("qb-est-modal")?.classList.remove("open");
+    $("qb-est-close")?.addEventListener("click", close);
+    $("qb-est-cancel")?.addEventListener("click", close);
+    $("qb-est-modal")?.addEventListener("click", (ev) => {
+      if (ev.target.id === "qb-est-modal") close();
+    });
+  }
+  const e = _ptEstModalEls();
+  if (e.title) e.title.textContent = title;
+  if (e.body)  e.body.innerHTML = bodyHtml;
+  if (e.create) {
+    e.create.style.display = createLabel ? "" : "none";
+    e.create.disabled = false;
+    e.create.onclick = null;
+    if (createLabel) e.create.textContent = createLabel;
+  }
+  e.modal?.classList.add("open");
+}
+
+function _ptLabelForInd(project, individualId) {
+  for (const u of (project.build_units || [])) {
+    const inds = u.individuals || [];
+    const idx = inds.findIndex(i => i.individual_id === individualId);
+    if (idx >= 0) return _ptUnitLabel(u, inds[idx], idx);
+  }
+  return individualId;
+}
+
+window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {
+  if (!individualId) { toast("Estimates are created per individual unit", "error"); return; }
+  if (!(await _ptQbConnected())) {
+    toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
+    return;
+  }
+  const statusEl = $("proj-action-status");
+  if (statusEl) _ptSetStatus(statusEl, "Checking parts against QuickBooks…", "ok");
+  let v;
+  try {
+    v = await api("/api/quickbooks/estimates/validate",
+      { project_id: projectId, individual_id: individualId });
+  } catch (e) { toast("Validation failed", "error"); return; }
+  if (statusEl) statusEl.style.display = "none";
+  if (!v?.ok) { toast(_ptEstError(v?.error), "error"); return; }
+
+  if (!v.can_create) {
+    const probs = v.problems || [];
+    if (!probs.length) { toast("No billable parts in this build", "error"); return; }
+    const rows = probs.map(p =>
+      `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="font-weight:600;color:var(--navy);min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(p.name || "(unnamed)")}${p.part_number ? ` <span style="color:var(--muted);font-weight:400">${esc(p.part_number)}</span>` : ""}</span>
+        <span style="color:var(--red);white-space:nowrap">${esc(_QB_EST_REASON[p.reason] || p.reason)}</span>
+      </div>`).join("");
+    _ptOpenEstModal("Estimate blocked",
+      `<p style="font-size:13px;margin:0 0 12px">This build can't be turned into an estimate yet — ${probs.length} part${probs.length === 1 ? "" : "s"} need attention. Link them to QuickBooks items in <strong>Settings → QuickBooks</strong>, re-pull, then try again.</p>
+       <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
+    return;
+  }
+
+  _ptOpenEstModal("Create QuickBooks estimate",
+    `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> in QuickBooks. It won't touch your books — turning it into an invoice is a separate step you take in QuickBooks.</p>
+     <div style="display:flex;gap:24px;font-size:13px;margin-bottom:14px">
+       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
+       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
+     </div>
+     <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
+     <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
+    "Create estimate");
+  const e = _ptEstModalEls();
+  if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+};
+
+async function _ptDoCreateEstimate(projectId, individualId) {
+  const e = _ptEstModalEls();
+  const memo = $("qb-est-memo")?.value || "";
+  if (e.create) { e.create.disabled = true; e.create.textContent = "Creating…"; }
+  try {
+    const res = await api("/api/quickbooks/estimates/create",
+      { project_id: projectId, individual_id: individualId, memo });
+    if (res?.ok) {
+      e.modal?.classList.remove("open");
+      toast(`Estimate created${res.doc_number ? " #" + res.doc_number : ""} · ${_ptMoney2(res.total)}`, "success");
+      await _ptLoadAll();
+      const updated = _PT.projects.find(p => p.project_id === projectId);
+      if (updated) { _PT.viewProject = updated; _ptRenderBuildsTab(updated); }
+    } else {
+      toast(_ptEstError(res?.error), "error");
+      if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+    }
+  } catch (err) {
+    toast("Estimate creation failed", "error");
+    if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+  }
+}
+
+window.PT_createEstimatesBatch = async function () {
+  if (!_PT.viewProject) return;
+  const project = _PT.viewProject;
+  if (!(await _ptQbConnected())) {
+    toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
+    return;
+  }
+  const inds = [];
+  for (const u of (project.build_units || []))
+    for (const ind of (u.individuals || []))
+      if (ind.draft_id) inds.push(ind);
+  if (!inds.length) { toast("No configured individual units to estimate", "error"); return; }
+  if (!confirm(
+    `Create QuickBooks estimates for ${inds.length} unit${inds.length === 1 ? "" : "s"}?\n\n` +
+    `Each becomes a non-posting draft estimate. Units with unlinked parts are skipped and reported.`
+  )) return;
+
+  const statusEl = $("proj-action-status");
+  const footerBtns = document.querySelectorAll(".proj-builds-footer .btn");
+  footerBtns.forEach(b => b.disabled = true);
+  if (statusEl) _ptSetStatus(statusEl, "Creating estimates…", "ok");
+  let res;
+  try {
+    res = await api("/api/quickbooks/estimates/create-batch", { project_id: project.project_id });
+  } catch (e) {
+    toast("Batch estimate failed", "error");
+    footerBtns.forEach(b => b.disabled = false);
+    if (statusEl) statusEl.style.display = "none";
+    return;
+  }
+  footerBtns.forEach(b => b.disabled = false);
+  if (!res?.ok) {
+    toast(_ptEstError(res?.error), "error");
+    if (statusEl) statusEl.style.display = "none";
+    return;
+  }
+
+  await _ptLoadAll();
+  const updated = _PT.projects.find(p => p.project_id === project.project_id);
+  if (updated) { _PT.viewProject = updated; _ptRenderBuildsTab(updated); }
+  if (statusEl) _ptSetStatus(statusEl,
+    `✅ ${res.created} created · ${res.blocked} blocked`, res.blocked ? "err" : "good");
+
+  const blocked = (res.results || []).filter(r => !r.ok);
+  if (blocked.length) {
+    const rows = blocked.map(r => {
+      const probCount = (r.problems || []).length;
+      const lbl = _ptLabelForInd(updated || project, r.individual_id);
+      return `<div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="font-weight:600;color:var(--navy)">${esc(lbl)}</span>
+        <span style="color:var(--red);margin-left:8px">${esc(_ptEstError(r.error))}${probCount ? ` (${probCount} part${probCount === 1 ? "" : "s"})` : ""}</span>
+      </div>`;
+    }).join("");
+    _ptOpenEstModal("Estimate results",
+      `<p style="font-size:13px;margin:0 0 12px"><strong>${res.created}</strong> estimate${res.created === 1 ? "" : "s"} created. <strong>${res.blocked}</strong> blocked — these units have parts not yet linked to QuickBooks:</p>
+       <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
+  } else {
+    toast(`${res.created} estimate${res.created === 1 ? "" : "s"} created`, "success");
   }
 };

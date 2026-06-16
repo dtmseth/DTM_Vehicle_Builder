@@ -1331,6 +1331,25 @@
   </div>
 </div>
 
+<!-- ══ QUICKBOOKS ESTIMATE MODAL ══
+     Drives the per-vehicle "Create QuickBooks Estimate" flow from the Builds
+     tab. Body content is rendered from JS (detail_builds.js): either a list of
+     blocking parts, a create-confirmation with line count + total, or a batch
+     result summary. -->
+<div class="modal-overlay" id="qb-est-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">
+      <span id="qb-est-title">QuickBooks Estimate</span>
+      <button class="modal-close" id="qb-est-close">×</button>
+    </div>
+    <div id="qb-est-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="qb-est-cancel">Close</button>
+      <button class="btn btn-primary" id="qb-est-create" style="display:none">Create estimate</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="sr-create-modal" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:380px">
     <div class="modal-title">Sales Rep
