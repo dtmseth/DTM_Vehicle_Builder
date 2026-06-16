@@ -9,7 +9,9 @@ is written.
 The QB export (`ProductsServicesList_*.csv`) is non-standard:
   - ``Product/Service Name`` holds the **part number** (the SKU column is empty).
   - ``Category`` holds the **manufacturer**.
-  - There is no price/description column — price comes from the API sync later.
+  - ``Sales Description`` holds the human-readable name, and ``Price`` / ``Cost``
+    the pricing. (The one thing the CSV lacks is the QBO *Item Id*, which only
+    the API sync provides — that Id is what an actual link/estimate needs.)
 
 Pass 1 (this file, today): MANUFACTURERS.
   Reconcile the export's ``Category`` values against parts_db manufacturers,
