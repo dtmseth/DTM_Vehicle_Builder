@@ -275,6 +275,45 @@
     },
     "whelen": {
       "label": "Whelen"
+    },
+    "jb_lund_dock": {
+      "label": "JB Lund Dock"
+    },
+    "pac_tool": {
+      "label": "Pac Tool"
+    },
+    "unity": {
+      "label": "Unity"
+    },
+    "federal_signal": {
+      "label": "Federal Signal"
+    },
+    "ram": {
+      "label": "RAM"
+    },
+    "go_rhino": {
+      "label": "Go Rhino"
+    },
+    "intermotive": {
+      "label": "InterMotive"
+    },
+    "fireninja_safety_equipment": {
+      "label": "FireNinja Safety Equipment"
+    },
+    "air_one_equipment": {
+      "label": "Air One Equipment"
+    },
+    "snowex": {
+      "label": "SnowEx"
+    },
+    "noptic": {
+      "label": "Noptic"
+    },
+    "lind": {
+      "label": "Lind"
+    },
+    "laird": {
+      "label": "Laird"
     }
   },
   "products": {
