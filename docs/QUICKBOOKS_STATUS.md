@@ -1,6 +1,6 @@
 # QuickBooks Integration — Session Handoff & Status
 
-**Last updated**: 2026-06-16
+**Last updated**: 2026-06-16 (session 2 — Slices 2 & 3, Estimates, parts-import tooling)
 **Branch**: `claude/quickbooks-integration-design-rcgula` (all QB work lives here; not yet merged to `main`)
 **Read order for a new session**: this file → `docs/QUICKBOOKS_INTEGRATION.md` (design + per-phase detail) → `docs/QUICKBOOKS_QUESTIONNAIRE.md` (Intuit answers) → `docs/EXTERNAL_CONNECTION_SECURITY.md` (security standard) → `relay/DEPLOY.md` (relay deploy).
 
@@ -10,16 +10,21 @@ This document is the single entry point. It records where we are, what's left, w
 
 ## 1. TL;DR — where we are
 
-The QuickBooks Online integration is an **internal, single-company** integration for the DTM Vehicle Builder desktop app. It does three things: (1) one-time OAuth connect, (2) sync the parts catalog from QBO Items, (3) sync QBO Customers into the app's Agencies. A per-vehicle costing bridge is designed but not built.
+The QuickBooks Online integration is an **internal, single-company** integration for the DTM Vehicle Builder desktop app. It now does: (1) one-time OAuth connect, (2) sync the parts catalog from QBO Items, (3) sync QBO Customers into the app's Agencies AND mirror agencies back up, (4) a per-vehicle sub-customer/job bridge, and (5) draft **non-posting Estimates** per vehicle from the chosen parts.
 
 | Phase | What | Status |
 |-------|------|--------|
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
-| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox** (returned sandbox placeholder items). B/C built + unit-tested, not yet exercised live. |
-| **3 — Customers ↔ Agencies + vehicle bridge** | QB Customers → Agencies down-sync (Slice 1) | ✅ Slice 1 built + **tested in sandbox by the owner** ("customer import worked"). Slices 2 & 3 NOT built (see §4). |
+| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox**. B/C built + unit-tested. Owner linked 2 items live (in parts_db). |
+| **3 — Customers ↔ Agencies + vehicle bridge** | Down-sync (Slice 1), agency→QB up-sync (Slice 2), per-vehicle job bridge (Slice 3) | ✅ **All three built.** Slice 1 tested in sandbox by owner. Slices 2 & 3 built + unit-tested (session 2), not yet exercised live. |
+| **Estimates** | Non-posting Estimate per vehicle from chosen parts; validate/create/batch + Builds-tab UI | ✅ Backend + UI built (session 2). Blocks unless every part is QB-linked. Not yet exercised live (needs synced items). |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ⛔ Not done. Requires sandbox test cycle confirmation + relay deploy (see §5, §6). |
 
 **Currently runs against the SANDBOX company using Development keys.** No Production keys, no relay deployed, questionnaire not submitted. Nothing is live against a real QBO company yet.
+
+**Write boundary now**: the app writes **Customers, sub-customers/jobs, and non-posting Estimates** — never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool also exists, hard-gated to `environment == "sandbox"`.)
+
+**Parts-import effort (in progress, session 2)**: folding the ~1,200-item QBO inventory CSV into the catalog incrementally. Pass 1 (manufacturers) done — `tools/qb_inventory_import.py` added 13 manufacturers (48→61) and emitted `tools/qb_category_to_manufacturer.json`. Next: Pass 2 (match items to products by Sales Description, per manufacturer). The owner chose to **seed the sandbox via API** (`tools/qb_seed_sandbox.py`) since the manual sandbox CSV import failed.
 
 ---
 
@@ -52,8 +57,25 @@ The QuickBooks Online integration is an **internal, single-company** integration
 - UI: "⬇️ Pull customers from QuickBooks" → preview → confirm (`N new, M updated`) → import; refreshes Agencies tab.
 - Tests: `tests/test_qb_customer_sync.py` (12).
 
+### Phase 3 Slice 2 — Agency → QB up-sync (session 2)
+- `api_client.create_customer()` / `update_customer()` (sparse) / `read_customer()` / `find_customer_by_display_name()` + `_build_customer_payload()`.
+- `agency_service.get_agency()` + `set_qb_customer_id()` (writes the link back WITHOUT going through `handle_save_agency`, so it can't re-trigger a push).
+- `qb_sync_service.push_agency()` (create when unlinked, sparse-update when linked, recreate when the linked id vanished) + `push_agency_in_background()` (no-ops under pytest / when disconnected). `handle_save_agency()` fires it after the SharePoint mirror.
+- Tests: `tests/test_qb_agency_push.py` (12).
+
+### Phase 3 Slice 3 — Per-vehicle job bridge (session 2)
+- `IndividualUnit` gains `qb_job_id` / `qb_estimate_id` / `qb_invoice_id` (`project_models.py` + `project_codec.py`).
+- `api_client.create_job(parent_id, display_name)` (Customer with `Job=true`+`ParentRef`).
+- `qb_sync_service.push_vehicle_job(project_id, individual_id)` — ensures the agency Customer exists (pushes it up if needed), creates/reuses a uniquely-named job, writes `qb_job_id` back. Idempotent.
+
+### Estimates (session 2)
+- `api_client.create_estimate()` + `fetch_income_accounts()` + `create_item()` (the last two only for the sandbox seeder).
+- `qb_estimate_service.py`: `resolve_build_lines()` (part→QB-item by part number, reading `qb_item_id`/`qb_unit_price`/`qb_inactive`), `validate_estimate()` (offline dry-run), `create_estimate()` (BLOCKS unless every part is linked/active/priced; ensures the job; writes `qb_estimate_id` back), `create_estimates_batch()`.
+- UI: per-vehicle **📋 QB Estimate** + footer **Create QB Estimates** on the Builds tab (`detail_builds.js`, `#qb-est-modal`).
+- Tests: `tests/test_qb_estimate_service.py` (13).
+
 ### Full route list (`/api/quickbooks/*`)
-`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET customers/preview` · `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` · `POST customers/import`
+`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET customers/preview` · `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` · `POST customers/import` · `POST push-vehicle-job` · `POST estimates/validate` · `POST estimates/create` · `POST estimates/create-batch`
 
 ---
 
@@ -64,17 +86,21 @@ The QuickBooks Online integration is an **internal, single-company** integration
 3. **Silent cloud-delete failures** → throttled (429) deletes were swallowed and reported success. Fixed: `delete_setting_from_cloud` retries with backoff and returns `True` for the no-cloud case; `handle_delete_agency` surfaces a `cloud_warning` the UI shows.
 4. **Undeletable records whose names contain apostrophes** (THE actual "can't delete imported agencies" cause). Inline `onclick="agencyDelete('id','Sheriff's Office')"` — `esc()` doesn't escape quotes, so the apostrophe broke the handler. Fixed in BOTH `agencies.js` and `sales_reps.js`: switched to `data-*` attributes + a delegated click listener. Tests: `tests/test_settings_mirror.py` (5).
 
-**Test totals**: 52 QB-specific tests pass. Full suite: 1562 pass, 1 pre-existing unrelated failure (`test_asset_manifest_asset_files_exist` — missing `Push Bumper Alone_side.png`, nothing to do with QB).
+**Test totals** (session 2): full suite **1593 pass, 1 skipped**. QB-specific: `test_quickbooks_service.py` (13), `test_qb_sync_service.py` (22), `test_qb_customer_sync.py` (12), `test_qb_agency_push.py` (12), `test_qb_estimate_service.py` (13), `test_qb_seed_sandbox.py` (5).
 
 ---
 
 ## 4. What's left to build
 
-### Phase 3 Slice 2 — Agency → QB push (up-sync) [DECIDED, not built]
-Owner chose **auto-mirror on save**: when an agency is created/edited and QB is connected, create/update the matching QB Customer in the background (same fire-and-forget pattern as the SharePoint mirror), and write `qb_customer_id` back. Skip silently if disconnected. NOTE: the owner asked to do the **down-sync first** (done); this up-sync is the agreed next step.
+### Phase 3 Slice 2 — Agency → QB up-sync ✅ BUILT (session 2). See §2.
 
-### Phase 3 Slice 3 — Per-vehicle job bridge [DESIGNED, not built; owner doesn't use sub-customers yet]
-**Critical QBO fact (verified):** the QBO v3 API **cannot create Projects** — `Customer.IsProject` is read-only. Per-unit costing must use **sub-customers (jobs)**: a `Customer` with `Job=true` + `ParentRef` to the agency's Customer. Time/costs log against those; they can be batch-converted to Projects in the QBO UI later. Plan: `push_vehicle_job()` ensures the agency Customer exists → creates one sub-customer/job per `IndividualUnit` → writes `qb_job_id` back to the unit. Needs `IndividualUnit`/`ProjectRecord` fields + a Builds-tab "Push to QuickBooks" per unit. Owner wants per-vehicle costing, NOT whole-VB-project costing.
+### Phase 3 Slice 3 — Per-vehicle job bridge ✅ BUILT (session 2). See §2.
+**Critical QBO fact (still true):** the v3 API cannot create Projects (`Customer.IsProject` is read-only) — we use sub-customers/jobs. **Correction to earlier optimism:** Intuit has heavily restricted job→Project conversion (no reliable API path; the in-UI convert is conditional/removed in places). Treat the **sub-customer as the durable per-vehicle container**, not a stepping stone to a "real" Project. It works functionally regardless (estimates attach; per-vehicle rollups by sub-customer).
+
+### Still to build
+- **Estimate → Invoice conversion** — intentionally left as an explicit user step in the QBO UI; an in-app guarded convert action is the future extension.
+- **Parts-import Pass 2+** — match the ~1,200 QBO items to products by Sales Description (per manufacturer), add part numbers / create products; then link by part number. Needs synced items (Item Ids) — hence the sandbox seeder.
+- **Builds-tab job push** is implicit (estimate creation ensures the job); no standalone "Push to QuickBooks" button was added.
 
 ### Deferred niceties
 - "Create new VB part from this item" (pre-fill Part Manager from a QB item) — Phase 2 link-to-existing is the shipped path.
@@ -111,7 +137,7 @@ Full prepared answers are in **`docs/QUICKBOOKS_QUESTIONNAIRE.md`**, organized b
 - **Info to have ready**: app name, category (Accounting/Internal), countries (US), # realms (**1**), host domain, Launch/Disconnect URLs, **Production redirect URI = the relay HTTPS URL**, dev redirect = localhost, scope `com.intuit.quickbooks.accounting`.
 - **§1 How your app operates**: internal-only desktop app; build sheets for emergency-vehicle upfits; syncs parts + customers; **1 company**; **does** integrate with other platforms (Microsoft SharePoint, GitHub) — *(the owner corrected this; if the questionnaire asks "integrate with other platforms," answer YES: SharePoint, GitHub)*; not public/app-store.
 - **§2 Data management**: QB data stored locally only (parts cache JSON); not shared with third parties; used only to operate the app; retained locally; user can disconnect (clears tokens).
-- **§3 API usage**: reads Items + Customers; writes Customers + Projects(=sub-customer jobs) only; **never** writes invoices/transactions/payments; minimum scope; handles errors; logs `intuit_tid` only.
+- **§3 API usage**: reads Items + Customers; writes Customers, sub-customer jobs, and **non-posting Estimates**; **never** writes Invoices/Payments/journal entries or any posting transaction; minimum scope; handles errors; logs `intuit_tid` only. *(Updated session 2: Estimates are now a write target — non-posting, so they don't touch the books. `docs/QUICKBOOKS_QUESTIONNAIRE.md` §3 already reflects this.)*
 - **§4 Authorization**: OAuth 2.0 auth-code; tokens in OS keychain via `msal-extensions`; **refresh-token rotation** on every refresh; **CSRF** via `state` (`secrets.token_urlsafe(32)` + `compare_digest`); connect/disconnect/reconnect tested in sandbox.
 - **§5 Error handling**: graceful API error messages; captures `intuit_tid`; structured local log, no secrets.
 - **§6 Legal**: no complaints/lawsuits; reviewed obligations; will comply with Intuit ToS; sanctions/export compliant; data used only for own company.
@@ -135,6 +161,10 @@ These are enforced today and must not regress (see `docs/EXTERNAL_CONNECTION_SEC
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert `save_settings_to_cloud_batch_in_background` to uploading a captured snapshot, or deletions resurrect.
 - **List action buttons use data-attributes + delegation, never inline `onclick` with interpolated names**: `esc()` does not escape quotes; apostrophes in names break inline handlers.
 - **`.gitignore`** covers `quickbooks_config.json` and `quickbooks_items_cache.json` (and the resources/config defensive paths).
+- **(session 2) Estimates are non-posting; never create posting transactions.** The app may write Customers, sub-customer jobs, and Estimates only — never Invoices/Payments/journal entries. Estimate→invoice conversion stays an explicit user action.
+- **(session 2) Item creation is sandbox-only.** `tools/qb_seed_sandbox.py` HARD-REFUSES unless `get_status().environment == "sandbox"`. Never create Items in a production realm.
+- **(session 2) Estimate write-back can't re-trigger pushes.** `agency_service.set_qb_customer_id` and the unit `qb_*_id` write-backs persist directly, NOT through `handle_save_agency`, so the agency up-sync can't loop.
+- **(session 2) Tool writes to `parts_db.json` must use `--push-to-cloud`.** A direct `Path.write_text` (or the tool without the flag) is reverted by the next 60s SharePoint sync. `tools/qb_inventory_import.py --push-to-cloud` re-saves through `save_config_file` so the mirror fires — same caveat as the migrate tool.
 
 ---
 
@@ -154,6 +184,15 @@ For Production later: deploy the relay (`relay/DEPLOY.md`), register the relay H
 ## 9. Commit trail (this branch, newest first)
 
 ```
+# session 2 (Slices 2-3, Estimates, parts import)
+41010dd Make QB manufacturer import stick: cloud-mirror + owner's link records
+c9c0dc6 Add sandbox inventory seeding tool (Item create, sandbox-gated)
+a77ca2e Fix qb_inventory_import docstring: CSV has Sales Description + Price/Cost
+b120e35 QB inventory import Pass 1: manufacturers
+aca3f01 Wire QuickBooks estimate buttons into the Builds tab
+b47b051 Phase 3 Slices 2-3 + Estimates: QuickBooks write backend
+# (977a2f9 = merge of the handoff-doc commit into this branch)
+# session 1
 dbe12de Fix undeletable agencies/reps whose names contain apostrophes
 893711b Fix imported agencies that resurrect after deletion
 a22a04e Phase 3 Slice 1: import QuickBooks Customers as agencies
