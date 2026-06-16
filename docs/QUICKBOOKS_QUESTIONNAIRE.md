@@ -77,14 +77,15 @@ Before starting the questionnaire, complete Phase 1 of the integration (OAuth fl
 > - Customers: to look up existing agency records when creating project scaffolds
 
 **What QuickBooks data does your app write?**
-> - Customers: we create a Customer record per agency when pushing a project, if one does not already exist
-> - Projects (Customers with Job=true): we create one project record per vehicle build for time tracking purposes
+> - Customers: we create a Customer record per agency when one does not already exist, and keep its contact fields in sync.
+> - Sub-customers / jobs (Customers with Job=true): we create one per vehicle build, as the per-vehicle project container.
+> - Estimates: we draft a non-posting Estimate per vehicle from the parts selected in the app, attached to that vehicle's sub-customer/job, for the user to review.
 
 **Does your app write to any financial records — invoices, transactions, payments, or journal entries?**
-> No. The app never writes to or modifies any financial records in QuickBooks.
+> No posting records. The app creates **Estimates**, which are non-posting documents in QuickBooks — they do not affect the general ledger, accounts receivable, or any balance. The app never creates or modifies Invoices, Payments, journal entries, or any other posting transaction. (If a user later chooses to turn an estimate into an invoice, they do so explicitly; the app does not do it automatically.)
 
 **Do you request only the scopes your app needs?**
-> Yes. We request only `com.intuit.quickbooks.accounting`, which is the minimum scope required for Item reads and Customer/Project writes.
+> Yes. We request only `com.intuit.quickbooks.accounting`, which is the minimum scope required for Item/Customer reads and Customer, sub-customer, and Estimate writes.
 
 **Does your app handle API errors?**
 > Yes. HTTP errors from the QBO API surface a user-visible error message in the application. The `intuit_tid` value from response headers is captured in the application log for troubleshooting. Errors are never exposed as raw stack traces or logged with sensitive data.

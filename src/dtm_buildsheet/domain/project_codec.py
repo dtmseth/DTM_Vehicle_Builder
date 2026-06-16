@@ -83,6 +83,9 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         pdf_path=str(d.get("pdf_path", "")),
         last_exported_at=str(d.get("last_exported_at", "")),
         last_exported_by=str(d.get("last_exported_by", "")),
+        qb_job_id=str(d.get("qb_job_id", "")),
+        qb_estimate_id=str(d.get("qb_estimate_id", "")),
+        qb_invoice_id=str(d.get("qb_invoice_id", "")),
     )
 
 

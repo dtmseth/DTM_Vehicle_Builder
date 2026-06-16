@@ -14,6 +14,10 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
+- /api/quickbooks/push-vehicle-job — create the per-vehicle sub-customer (job)
+- /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
+- /api/quickbooks/estimates/create — create one vehicle's estimate
+- /api/quickbooks/estimates/create-batch — create estimates for many vehicles
 
 All JSON responses set ``Cache-Control: no-store`` (security standard). The
 callback never echoes the authorization code or any token into an HTML body;
@@ -28,7 +32,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
-from ..services import qb_sync_service, quickbooks_service
+from ..services import qb_estimate_service, qb_sync_service, quickbooks_service
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +96,46 @@ def route_quickbooks(
         return True
     if method == "POST" and path == "/api/quickbooks/customers/import":
         _send_json(handler, qb_sync_service.import_customers(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/push-vehicle-job":
+        _send_json(
+            handler,
+            qb_sync_service.push_vehicle_job(
+                paths, body.get("project_id", ""), body.get("individual_id", "")
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/validate":
+        _send_json(
+            handler,
+            qb_estimate_service.validate_estimate(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/create":
+        _send_json(
+            handler,
+            qb_estimate_service.create_estimate(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
+                memo=body.get("memo", ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/create-batch":
+        _send_json(
+            handler,
+            qb_estimate_service.create_estimates_batch(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_ids=body.get("individual_ids") or None,
+                memo=body.get("memo", ""),
+            ),
+        )
         return True
     if method == "POST" and path == "/api/quickbooks/settings":
         _send_json(

@@ -1,7 +1,7 @@
 # QuickBooks Online Integration — Design Document
 
-**Status**: Phase 1 complete — relay ready to deploy  
-**Last updated**: 2026-06-15  
+**Status**: Phases 1–3 complete; Estimates backend complete (UI + invoice-convert pending)  
+**Last updated**: 2026-06-16  
 **Scope**: Internal app only (DTM Vehicle Builder ↔ single QBO company)
 
 ---
@@ -292,8 +292,9 @@ QBO Item names and descriptions are rendered in the categorization UI. All QB-so
 ### QB Data Usage Boundaries
 
 - The app reads Items and Customers from QBO.
-- The app writes Customers and Projects to QBO only.
-- The app never writes to Invoices, Transactions, Payments, or any financial record.
+- The app writes **Customers** (agencies + per-vehicle sub-customer/job containers) and **Estimates** to QBO.
+- Estimates are **non-posting** — they do not affect the general ledger, A/R, or any balance. The app creates them as drafts for review.
+- The app never writes Invoices, Transactions, Payments, or any *posting* financial record. (Converting an accepted estimate to an invoice, if added later, will be an explicit, separately-gated action — not an automatic side effect.)
 - QB data is stored only on the local machine in `parts_db.json` and `quickbooks_config.json`. It is never transmitted to any server other than Intuit's own API endpoints.
 - QB data is used only to operate the parts catalog and project management features of this app. It is never shared with third parties or used for secondary purposes.
 
@@ -312,7 +313,8 @@ src/dtm_buildsheet/
     services/
       quickbooks_service.py      ← QBO API client, OAuth flow, token lifecycle,
                                     AES encryption/decryption, CSRF state management
-      qb_sync_service.py         ← sync orchestration (parts, projects)
+      qb_sync_service.py         ← sync orchestration (parts, customers, vehicle jobs)
+      qb_estimate_service.py     ← part→line resolution, validation, Estimate drafting
 
   ui/js/settings/
     quickbooks.js                ← Settings → QuickBooks tab UI
@@ -473,7 +475,10 @@ VB does not manage time entries — it only creates the project scaffold. Techni
 | POST | `/api/quickbooks/sync` | Trigger manual parts sync |
 | GET | `/api/quickbooks/pending-items` | List unmatched QBO Items (for categorization queue) |
 | POST | `/api/quickbooks/link-item` | Link a QBO item_id to a VB part |
-| POST | `/api/quickbooks/push-project` | Push VB project to QBO as Customer + Project |
+| POST | `/api/quickbooks/push-vehicle-job` | Create/reuse the per-vehicle sub-customer (job) under the agency Customer |
+| POST | `/api/quickbooks/estimates/validate` | Dry-run a vehicle's estimate; report billable lines + blocking problems (no network) |
+| POST | `/api/quickbooks/estimates/create` | Create one vehicle's Estimate (blocks unless every part is QB-linked) |
+| POST | `/api/quickbooks/estimates/create-batch` | Create estimates for many vehicles; clean ones go through, blocked ones reported |
 
 ---
 
@@ -568,12 +573,35 @@ the QBO UI later.)
 - Settings UI: "⬇️ Pull customers from QuickBooks" → preview → confirm (`N new, M updated`) → import; refreshes the Agencies tab
 - `tests/test_qb_customer_sync.py` (create/link/fill, qb-id-over-name, idempotency, preview-no-write, qb_customer_id survives reload + user edit, orchestration)
 
-**Slice 2 — Agency → QB (up-sync, auto-mirror on save) [planned]**
-- On agency save, if connected, create/update the QB Customer in the background (same pattern as the SharePoint mirror). Write `qb_customer_id` back.
+**Slice 2 — Agency → QB (up-sync, auto-mirror on save) ✅ implemented**
+- `adapters/quickbooks/api_client.py`: Customer **writes** — `create_customer()` / `update_customer()` (sparse, echoes the current `SyncToken`) / `read_customer()`, plus `_build_customer_payload()` (maps VB agency fields → QBO Customer; splits `contact_name` into Given/Family so it round-trips with the down-sync). Customer is the integration's only write target; no financial entity is ever written. No response/body logging.
+- `services/agency_service.py`: `get_agency()` + `set_qb_customer_id()` — the latter writes the new `Customer.Id` back and cloud-mirrors it **without** going through `handle_save_agency`, so the write-back can't re-trigger a push.
+- `services/qb_sync_service.py`: `push_agency()` (create when unlinked, sparse-update when linked, recreate when the linked Id no longer exists in QBO) + `push_agency_in_background()` (daemon thread; no-ops under pytest and when not connected). `handle_save_agency()` fires it after the SharePoint mirror, mirroring the existing background-mirror pattern.
+- `tests/test_qb_agency_push.py` (payload mapping, create/update/recreate, not-connected, API-error surfacing, save-triggers-push, pytest no-op, set-id-doesn't-loop).
 
-**Slice 3 — Per-vehicle job bridge [planned, when sub-customers are in use]**
-- `push_vehicle_job()`: ensure the agency's Customer exists, create a sub-customer (job) per IndividualUnit under it, write `qb_job_id` back to the unit.
-- `IndividualUnit` / `ProjectRecord` additions; Builds tab "Push to QuickBooks" per unit.
+  *Deferred:* a one-shot "push all existing agencies" backfill — only agencies saved after this ships are mirrored up; pre-existing ones link via the down-sync.
+
+**Slice 3 — Per-vehicle job bridge ✅ implemented**
+- `domain/project_models.py`: `IndividualUnit` gains `qb_job_id` / `qb_estimate_id` / `qb_invoice_id`; `domain/project_codec.py` round-trips them.
+- `adapters/quickbooks/api_client.py`: `create_job(parent_id, display_name)` (a Customer with `Job=true` + `ParentRef`) and `find_customer_by_display_name()` (idempotency probe — DisplayName is globally unique in QBO).
+- `services/qb_sync_service.py`: `push_vehicle_job(project_id, individual_id)` — ensures the agency's Customer exists (pushing it up first if needed), computes a unique DisplayName (`<year> <model> · Unit N · Q<quote>`), creates or reuses the job, and writes `qb_job_id` back onto the unit. Idempotent.
+- `routes/quickbooks.py`: `POST /push-vehicle-job`.
+- One job per vehicle; QBO displays it nested under the customer and can batch-convert jobs to Projects in the QBO UI. (`Customer.IsProject` is read-only via the API, so a job is the only path.)
+
+### Phase 5 — Estimates (draft documents) ✅ backend implemented
+
+An **Estimate** is a non-posting QBO document — it never hits the books, which is why it's the right object for a reviewable "draft without sending." Converting an accepted estimate into an Invoice is a separate, explicit step (QBO UI today; a guarded in-app convert action is the future extension).
+
+- `adapters/quickbooks/api_client.py`: `create_estimate(payload)`.
+- `services/qb_estimate_service.py`:
+  - `resolve_build_lines(draft)` maps each included build part to a QuickBooks line by part number (model fallback), reading `qb_item_id` / `qb_unit_price` / `qb_inactive` off the linked catalog product. Anything unresolved/unlinked/inactive/unpriced becomes a *problem* with a reason code (`no_catalog_match`, `not_linked`, `qb_inactive`, `no_price`).
+  - `validate_estimate(project_id, individual_id)` — dry run, **no network**: returns `can_create`, `line_count`, `total`, and the `problems` list so the UI can show exactly what's blocking before connecting.
+  - `create_estimate(...)` — **blocks if there are any problems** (the chosen "block until all linked" policy), ensures the vehicle's job exists, builds the payload (lines attached to the job's `CustomerRef`), creates the Estimate, and writes `qb_estimate_id` back.
+  - `create_estimates_batch(...)` — per-vehicle; clean vehicles go through, vehicles with unbillable parts are reported (not partial-billed).
+- `routes/quickbooks.py`: `POST /estimates/validate`, `POST /estimates/create`, `POST /estimates/create-batch`.
+- `tests/test_qb_estimate_service.py` (resolution, block-on-problems, job bridge create/reuse/agency-first, estimate create + write-back, batch mixed).
+
+  *Not built:* the in-app estimate→invoice conversion, and the Builds-tab UI buttons that call these routes (wired next). Invoices are still never created directly by the app.
 
 **Done when (Slice 1)**: ✅ Pulling QB customers creates/links agencies, re-pull is idempotent, the user's existing agency data is never clobbered.
 

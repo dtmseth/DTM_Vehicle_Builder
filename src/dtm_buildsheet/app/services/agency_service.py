@@ -205,6 +205,34 @@ def handle_list_agencies(paths: AppPaths) -> dict:
     return {"ok": True, "agencies": [asdict(r) for r in load_agencies(paths)]}
 
 
+def get_agency(paths: AppPaths, agency_id: str) -> AgencyRecord | None:
+    """Return a single agency record from the cache, or None if absent."""
+    return _records(paths).get(agency_id)
+
+
+def set_qb_customer_id(paths: AppPaths, agency_id: str, qb_customer_id: str) -> bool:
+    """Stamp the QB Customer link onto an agency and persist + cloud-mirror it.
+
+    Used by the QuickBooks up-sync to write back the Id of a Customer it just
+    created. Deliberately does NOT go through ``handle_save_agency`` — that
+    would re-trigger the up-sync and loop. Returns False (no write) when the
+    agency is missing or the id is already what we'd set.
+    """
+    rec = _records(paths).get(agency_id)
+    if rec is None:
+        return False
+    qb_id = (qb_customer_id or "").strip()
+    if rec.qb_customer_id == qb_id:
+        return False
+    rec.qb_customer_id = qb_id
+    rec.updated_at = _utcnow()
+    _write_record(rec, paths)
+    serialized = json.dumps(asdict(rec), indent=2) + "\n"
+    from .shared_work_service import save_setting_to_cloud_in_background
+    save_setting_to_cloud_in_background(f"agencies/{rec.agency_id}.json", serialized)
+    return True
+
+
 def handle_search_agencies(query: str, paths: AppPaths) -> dict:
     query = query.strip()
     if not query:
@@ -287,6 +315,11 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
         save_setting_to_cloud_in_background(
             f"agencies/{record.agency_id}.json", serialized,
         )
+        # Mirror the agency up to QuickBooks (create/update the Customer) in the
+        # background, exactly like the SharePoint mirror above. No-ops unless
+        # QB is connected; stamps qb_customer_id back on first create.
+        from . import qb_sync_service
+        qb_sync_service.push_agency_in_background(paths, record.agency_id)
         return {"ok": True, "agency": asdict(record), **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}

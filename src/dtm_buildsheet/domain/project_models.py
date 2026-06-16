@@ -53,6 +53,13 @@ class IndividualUnit:
     pdf_path: str = ""
     last_exported_at: str = ""
     last_exported_by: str = ""
+    # QuickBooks per-vehicle bridge (Phase 3 Slice 3 / Estimates phase). The
+    # "project" for one vehicle is a QBO sub-customer (job) under the agency
+    # Customer; qb_estimate_id / qb_invoice_id point at the documents drafted
+    # against that job. Empty = not yet pushed to QuickBooks.
+    qb_job_id: str = ""
+    qb_estimate_id: str = ""
+    qb_invoice_id: str = ""
 
 
 @dataclass

@@ -301,6 +301,189 @@ def import_customers(paths: AppPaths) -> dict:
     return result
 
 
+# ── agency → customer up-sync (Phase 3, Slice 2) ─────────────────────────────
+#
+# The mirror in the other direction: when an agency is saved, create or update
+# its QB Customer in the background. This is the only place the integration
+# writes to QuickBooks. Bounded and re-entrancy-safe:
+#   - Connection-gated and pytest-gated (the background entry no-ops otherwise).
+#   - On first create, the new Customer.Id is written back via
+#     agency_service.set_qb_customer_id — NOT handle_save_agency — so the
+#     write-back never re-triggers another push.
+#   - Updates are sparse and touch only the contact fields the agency owns;
+#     QBO stays the source of truth for everything else on the Customer.
+
+
+def push_agency(paths: AppPaths, agency_id: str) -> dict:
+    """Create or update the QB Customer that mirrors a VB agency.
+
+    Returns ``{"ok": True, "qb_customer_id": id, "action": "created"|"updated"}``
+    or ``{"ok": False, "error": ...}``. Safe to call directly (tests) or via
+    ``push_agency_in_background``.
+    """
+    from . import agency_service
+
+    record = agency_service.get_agency(paths, agency_id)
+    if record is None:
+        return {"ok": False, "error": "unknown_agency"}
+
+    client, err = _build_client(paths)
+    if err:
+        return err
+
+    fields = {
+        "name": record.name,
+        "contact_name": record.contact_name,
+        "contact_email": record.contact_email,
+        "contact_phone": record.contact_phone,
+    }
+
+    try:
+        existing_id = (record.qb_customer_id or "").strip()
+        if existing_id:
+            current = client.read_customer(existing_id)
+            if current is not None:
+                client.update_customer(existing_id, current.get("SyncToken", "0"), fields)
+                logger.info("QB agency push: updated existing customer")
+                return {"ok": True, "qb_customer_id": existing_id, "action": "updated"}
+            # Linked Id no longer exists in QBO (deleted there) → recreate.
+        result = client.create_customer(fields)
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks agency push failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
+
+    new_id = result.get("qb_customer_id", "")
+    if new_id:
+        agency_service.set_qb_customer_id(paths, agency_id, new_id)
+    logger.info("QB agency push: created customer")
+    return {"ok": True, "qb_customer_id": new_id, "action": "created"}
+
+
+def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
+    """Fire ``push_agency`` on a daemon thread. No-ops under pytest or when
+    QuickBooks is not connected, so the agency save path can call it blindly."""
+    import os
+    import threading
+
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    try:
+        if not quickbooks_service.get_status(paths).get("connected"):
+            return
+    except Exception:  # noqa: BLE001 — never let a status read break the save
+        return
+
+    def _run():
+        try:
+            push_agency(paths, agency_id)
+        except Exception:  # noqa: BLE001 — background mirror must never raise
+            logger.warning("QuickBooks agency background push failed")
+
+    threading.Thread(target=_run, name="qb-agency-push", daemon=True).start()
+
+
+# ── per-vehicle job bridge (Phase 3, Slice 3) ────────────────────────────────
+#
+# Each individual vehicle becomes a QBO sub-customer ("job") under its agency's
+# Customer. That job is the per-vehicle "project" container estimates attach to.
+# (QBO's API cannot create real Projects — IsProject is read-only — so a job is
+# the only path; it nests under the customer and converts to a Project in the
+# QBO UI.) Creating a job ensures the agency's Customer exists first (pushing it
+# up if needed), then writes qb_job_id back onto the unit.
+
+
+def _find_individual(project, individual_id: str):
+    """Return (build_unit, individual) for the unit id, or (None, None)."""
+    for bu in project.build_units:
+        for ind in bu.individuals:
+            if ind.individual_id == individual_id:
+                return bu, ind
+    return None, None
+
+
+def _job_display_name(project, build_unit, unit) -> str:
+    """A unique, human-readable job name: '<year> <model> · Unit N · Q<quote>'.
+
+    QBO requires DisplayName to be globally unique, so we fold in the unit
+    number and quote number; if neither is present we suffix a short id slice
+    so two unnamed vehicles on one project don't collide.
+    """
+    year = (unit.year or project.customer.build_year or "").strip()
+    model = (unit.model or build_unit.vehicle_model or "").strip()
+    head = " ".join(p for p in (year, model) if p) or "Vehicle"
+    tail: list[str] = []
+    if unit.unit_number:
+        tail.append(f"Unit {unit.unit_number}")
+    if project.customer.quote_number:
+        tail.append(f"Q{project.customer.quote_number}")
+    if not tail:
+        tail.append(unit.individual_id[:8])
+    return f"{head} · " + " · ".join(tail)
+
+
+def push_vehicle_job(paths: AppPaths, project_id: str, individual_id: str) -> dict:
+    """Create (or reuse) the QBO sub-customer/job for one vehicle.
+
+    Ensures the agency's Customer exists first. Idempotent: if the unit already
+    carries a qb_job_id, or a job with the computed DisplayName already exists
+    in QBO, that one is reused rather than duplicated. Writes qb_job_id back.
+    """
+    from ...inputs import project_entry
+    from . import agency_service
+
+    try:
+        project = project_entry.load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": "unknown_project"}
+    build_unit, unit = _find_individual(project, individual_id)
+    if unit is None:
+        return {"ok": False, "error": "unknown_unit"}
+
+    agency_id = (project.customer.agency_id or "").strip()
+    agency = agency_service.get_agency(paths, agency_id) if agency_id else None
+    if agency is None:
+        return {"ok": False, "error": "no_agency"}
+
+    # Make sure the parent Customer exists in QBO (create it if this agency has
+    # never been pushed up). push_agency writes qb_customer_id back.
+    if not agency.qb_customer_id:
+        pushed = push_agency(paths, agency_id)
+        if not pushed.get("ok"):
+            return pushed
+        agency = agency_service.get_agency(paths, agency_id)
+    parent_id = agency.qb_customer_id
+    if not parent_id:
+        return {"ok": False, "error": "agency_not_in_qb"}
+
+    if unit.qb_job_id:
+        return {"ok": True, "qb_job_id": unit.qb_job_id, "action": "exists"}
+
+    client, err = _build_client(paths)
+    if err:
+        return err
+
+    name = _job_display_name(project, build_unit, unit)
+    try:
+        existing = client.find_customer_by_display_name(name)
+        if existing:
+            job_id = existing
+            action = "linked"
+        else:
+            job_id = client.create_job(parent_id, name).get("qb_customer_id", "")
+            action = "created"
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks vehicle-job push failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
+
+    if not job_id:
+        return {"ok": False, "error": "no_job_id"}
+
+    unit.qb_job_id = job_id
+    project_entry.save_project(project, paths)
+    logger.info("QB vehicle job %s", action)
+    return {"ok": True, "qb_job_id": job_id, "display_name": name, "action": action}
+
+
 # ── background sync (Slice C) ─────────────────────────────────────────────────
 
 _POLL_INTERVAL_SECONDS = 30 * 60
