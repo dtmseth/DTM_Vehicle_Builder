@@ -37,57 +37,88 @@ logger = logging.getLogger(__name__)
 # ── part → QuickBooks line resolution ────────────────────────────────────────
 
 
-def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
-    """Build (products, by_part_number, by_model) lookups from parts_db.
+def _qb_fields(spec: dict) -> dict:
+    """Pull the QB-owned fields off a product or part_number spec."""
+    return {
+        "qb_item_id": str(spec.get("qb_item_id", "")).strip(),
+        "qb_sku": str(spec.get("qb_sku", "")),
+        "qb_unit_price": spec.get("qb_unit_price"),
+        "qb_inactive": bool(spec.get("qb_inactive")),
+    }
 
-    Both lookups are keyed by lower/trimmed strings. by_part_number maps every
-    catalog part number to its product id; by_model maps each product's model
-    string. part_number is the stronger key (it's the actual SKU the user
-    picked); model is the fallback.
+
+def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
+    """Build (by_part_number, by_model, prod_qb) lookups from parts_db.
+
+    QB linkage is resolved **per part number** — each ``part_numbers[]`` entry
+    can carry its own ``qb_item_id`` / ``qb_unit_price`` (the SKU's price), which
+    is what an estimate must bill. A part_number entry that lacks its own QB
+    fields falls back to the product-level fields (the legacy one-to-one link
+    the Settings → QuickBooks "Link" button writes), so both models work.
+
+    - by_part_number: norm part number → resolved entry {product_id + qb fields}
+    - by_model:       norm model string → product_id (last-resort match)
+    - prod_qb:        product_id → product-level qb fields (for the model path)
     """
     doc = get_parts_db_service(paths).raw_doc()
     products = doc.get("products") or {}
-    by_part_number: dict[str, str] = {}
+    by_part_number: dict[str, dict] = {}
     by_model: dict[str, str] = {}
+    prod_qb: dict[str, dict] = {}
     for pid, spec in products.items():
-        model = str((spec or {}).get("model", "")).strip().lower()
+        spec = spec or {}
+        prod_fields = _qb_fields(spec)
+        prod_qb[pid] = prod_fields
+        model = str(spec.get("model", "")).strip().lower()
         if model:
             by_model.setdefault(model, pid)
-        for pn in (spec or {}).get("part_numbers") or []:
+        for pn in spec.get("part_numbers") or []:
             num = str((pn or {}).get("part_number", "")).strip().lower()
-            if num:
-                by_part_number.setdefault(num, pid)
-    return products, by_part_number, by_model
+            if not num:
+                continue
+            pn_fields = _qb_fields(pn or {})
+            # part_number fields win; fall back to product-level where empty.
+            entry = {
+                "product_id": pid,
+                "qb_item_id": pn_fields["qb_item_id"] or prod_fields["qb_item_id"],
+                "qb_sku": pn_fields["qb_sku"] or prod_fields["qb_sku"],
+                "qb_unit_price": (pn_fields["qb_unit_price"]
+                                  if pn_fields["qb_unit_price"] is not None
+                                  else prod_fields["qb_unit_price"]),
+                "qb_inactive": (pn_fields["qb_inactive"] if "qb_inactive" in (pn or {})
+                                else prod_fields["qb_inactive"]),
+            }
+            by_part_number.setdefault(num, entry)
+    return by_part_number, by_model, prod_qb
 
 
-def _resolve_part(draft_part, products, by_part_number, by_model) -> tuple[dict | None, str]:
+def _resolve_part(draft_part, by_part_number, by_model, prod_qb) -> tuple[dict | None, str]:
     """Resolve one DraftPart to a billable line, or return (None, reason).
 
     reason is one of: no_catalog_match, not_linked, qb_inactive, no_price.
     """
     pn = (draft_part.part_number or "").strip().lower()
-    pid = by_part_number.get(pn) if pn else None
-    if not pid:
+    entry = by_part_number.get(pn) if pn else None
+    if entry is None:
         key = pn or (draft_part.name or "").strip().lower()
         pid = by_model.get(key)
-    if not pid:
+        if pid:
+            entry = {"product_id": pid, **prod_qb[pid]}
+    if entry is None:
         return None, "no_catalog_match"
 
-    spec = products.get(pid) or {}
-    qb_item_id = str(spec.get("qb_item_id", "")).strip()
-    if not qb_item_id:
+    if not entry["qb_item_id"]:
         return None, "not_linked"
-    if spec.get("qb_inactive"):
+    if entry["qb_inactive"]:
         return None, "qb_inactive"
-    price = spec.get("qb_unit_price")
-    if price is None:
+    if entry["qb_unit_price"] is None:
         return None, "no_price"
 
     return {
-        "product_id": pid,
-        "qb_item_id": qb_item_id,
-        "qb_sku": str(spec.get("qb_sku", "")),
-        "unit_price": float(price),
+        "product_id": entry["product_id"],
+        "qb_item_id": entry["qb_item_id"],
+        "qb_sku": entry["qb_sku"],
+        "unit_price": float(entry["qb_unit_price"]),
     }, ""
 
 
@@ -97,13 +128,13 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     Only included parts are considered. A part with quantity <= 0 bills as 1
     (these are physical parts installed on the vehicle — at least one each).
     """
-    products, by_part_number, by_model = _resolution_index(paths)
+    by_part_number, by_model, prod_qb = _resolution_index(paths)
     lines: list[dict] = []
     problems: list[dict] = []
     for dp in draft.parts:
         if not dp.include:
             continue
-        resolved, reason = _resolve_part(dp, products, by_part_number, by_model)
+        resolved, reason = _resolve_part(dp, by_part_number, by_model, prod_qb)
         if reason:
             problems.append({
                 "name": dp.name,

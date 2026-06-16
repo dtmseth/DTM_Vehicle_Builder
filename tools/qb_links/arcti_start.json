@@ -1,0 +1,15 @@
+{
+  "manufacturer_id": "arcti_start",
+  "template_product": "arcti_start_1_button_1_way",
+  "new_products": [
+    { "product_id": "arcti_start_app_control", "model": "APP CONTROL" }
+  ],
+  "links": [
+    { "sku": "AS-Bolt1A", "product": "arcti_start_1_button_1_way", "vehicle_tags": ["any"] },
+    { "sku": "AS-Bolt 2", "product": "arcti_start_1_button_2_way", "vehicle_tags": ["any"] },
+    { "sku": "AS-Flex 1", "product": "arcti_start_4_button_1_way", "vehicle_tags": ["any"] },
+    { "sku": "AS-Flex 2", "product": "arcti_start_4_button_2_way", "vehicle_tags": ["any"] },
+    { "sku": "AS-Edge 2x", "product": "arcti_start_4_button_2_way", "vehicle_tags": ["any"] },
+    { "sku": "AS-Drone", "product": "arcti_start_app_control", "vehicle_tags": ["any"] }
+  ]
+}

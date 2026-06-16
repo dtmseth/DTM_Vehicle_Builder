@@ -158,6 +158,24 @@ def test_resolve_flags_unlinked_inactive_unpriced_unmatched(paths):
                        "DD": "no_price", "ZZ": "no_catalog_match"}
 
 
+def test_resolve_prices_per_part_number(paths):
+    # One product, two SKUs each with its own QB id + price (the catalog reality).
+    _write_parts_db(paths, {"p1": {
+        "manufacturer_id": "m", "model": "WIDGET",
+        "part_numbers": [
+            {"part_number": "SKU-A", "qb_item_id": "100", "qb_unit_price": 10.0},
+            {"part_number": "SKU-B", "qb_item_id": "200", "qb_unit_price": 25.0},
+        ],
+    }})
+    draft = new_draft(parts=[DraftPart(name="a", part_number="SKU-A", quantity=2),
+                             DraftPart(name="b", part_number="SKU-B")])
+    lines, problems = est.resolve_build_lines(paths, draft)
+    assert problems == []
+    by_id = {ln["qb_item_id"]: ln for ln in lines}
+    assert by_id["100"]["unit_price"] == 10.0 and by_id["100"]["amount"] == 20.0
+    assert by_id["200"]["unit_price"] == 25.0 and by_id["200"]["amount"] == 25.0
+
+
 def test_resolve_skips_excluded_and_defaults_qty(paths):
     _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 5.0)})
     draft = new_draft(parts=[
