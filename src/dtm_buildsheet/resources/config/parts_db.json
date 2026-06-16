@@ -328,7 +328,104 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB400"
+          "part_number": "BK0534BLE24",
+          "qb_item_id": "283",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "BLAZER"
+          ]
+        },
+        {
+          "part_number": "BK0534DRT191500CL",
+          "qb_item_id": "284",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "RAM-1500"
+          ]
+        },
+        {
+          "part_number": "BK0534DUR21",
+          "qb_item_id": "285",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "BK0534EPD18",
+          "qb_item_id": "286",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "EXPEDITION"
+          ]
+        },
+        {
+          "part_number": "BK0534FDT21F150",
+          "qb_item_id": "287",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "BK0534ITU20",
+          "qb_item_id": "288",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "BK0534TAH25",
+          "qb_item_id": "289",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "BK0535DUR21",
+          "qb_item_id": "290",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "BK0535ITU20",
+          "qb_item_id": "291",
+          "qb_sku": "",
+          "qb_unit_price": 579.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "BK0608ITU20",
+          "qb_item_id": "292",
+          "qb_sku": "",
+          "qb_unit_price": 639.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
         }
       ]
     },
@@ -343,7 +440,124 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB450L"
+          "part_number": "BK1001BLE24",
+          "qb_item_id": "293",
+          "qb_sku": "",
+          "qb_unit_price": 1459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "BLAZER"
+          ]
+        },
+        {
+          "part_number": "BK1001DUR21",
+          "qb_item_id": "294",
+          "qb_sku": "",
+          "qb_unit_price": 1459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "BK1001ITU20",
+          "qb_item_id": "295",
+          "qb_sku": "",
+          "qb_unit_price": 1459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "BK2017ITU20",
+          "qb_item_id": "296",
+          "qb_sku": "",
+          "qb_unit_price": 949.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "BK2019BLE24",
+          "qb_item_id": "297",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "BLAZER"
+          ]
+        },
+        {
+          "part_number": "BK2019CHT221500",
+          "qb_item_id": "298",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500"
+          ]
+        },
+        {
+          "part_number": "BK2019DRT191500CL",
+          "qb_item_id": "299",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "RAM-1500"
+          ]
+        },
+        {
+          "part_number": "BK2019EPD18",
+          "qb_item_id": "300",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "EXPEDITION"
+          ]
+        },
+        {
+          "part_number": "BK2019FDT21F150",
+          "qb_item_id": "301",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "BK2019ITU20",
+          "qb_item_id": "302",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "BK2019TAH25",
+          "qb_item_id": "303",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "BK2168TAH25",
+          "qb_item_id": "304",
+          "qb_sku": "",
+          "qb_unit_price": 1179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },
@@ -469,7 +683,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB5"
+          "part_number": "FK0400EPD18",
+          "qb_item_id": "525",
+          "qb_sku": "",
+          "qb_unit_price": 679.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "EXPEDITION"
+          ]
         }
       ]
     },
@@ -484,7 +705,54 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB9"
+          "part_number": "FK0402DUR21",
+          "qb_item_id": "526",
+          "qb_sku": "",
+          "qb_unit_price": 699.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "FK0402TAH21",
+          "qb_item_id": "527",
+          "qb_sku": "",
+          "qb_unit_price": 699.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "FK2271DUR21",
+          "qb_item_id": "528",
+          "qb_sku": "",
+          "qb_unit_price": 699.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "FK2271ITU25",
+          "qb_item_id": "529",
+          "qb_sku": "",
+          "qb_unit_price": 699.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "FK2271TAH21",
+          "qb_item_id": "530",
+          "qb_sku": "",
+          "qb_unit_price": 699.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },
@@ -492,14 +760,91 @@
       "manufacturer_id": "setina",
       "model": "PB10",
       "fits_part_types": [
-        "pit_bar"
+        "wing_wraps"
       ],
       "tag_ids": [],
       "description": "",
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB10"
+          "part_number": "HK2272DUR21",
+          "qb_item_id": "598",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "HK2272EPD22",
+          "qb_item_id": "599",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "EXPEDITION"
+          ]
+        },
+        {
+          "part_number": "HK2272FDT21F150",
+          "qb_item_id": "600",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "HK2272ITU25",
+          "qb_item_id": "601",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "HK2272TAH21",
+          "qb_item_id": "602",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "HK2273DUR21",
+          "qb_item_id": "603",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "HK2273ITU25",
+          "qb_item_id": "604",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "HK2273TAH21",
+          "qb_item_id": "605",
+          "qb_sku": "",
+          "qb_unit_price": 929.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },
@@ -529,7 +874,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB6"
+          "part_number": "HK0807CGR15",
+          "qb_item_id": "594",
+          "qb_sku": "",
+          "qb_unit_price": 739.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHARGER"
+          ]
         }
       ]
     },
@@ -544,7 +896,34 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "PB8"
+          "part_number": "HK0809CHT221500",
+          "qb_item_id": "595",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500"
+          ]
+        },
+        {
+          "part_number": "HK0809DRT191500",
+          "qb_item_id": "596",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "RAM-1500"
+          ]
+        },
+        {
+          "part_number": "HK0809TAH21",
+          "qb_item_id": "597",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },

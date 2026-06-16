@@ -51,6 +51,14 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
     products = parts_db.setdefault("products", {})
     actions: list[str] = []
 
+    # 0. Correct fits_part_types on existing products (re-categorization).
+    for pid, fits in (mapping.get("set_fits") or {}).items():
+        if pid not in products:
+            raise ValueError(f"set_fits references unknown product: {pid}")
+        if products[pid].get("fits_part_types") != fits:
+            products[pid]["fits_part_types"] = list(fits)
+            actions.append(f"~ {pid}: fits_part_types → {fits}")
+
     # 1. New products (copy fits_part_types from the template sibling).
     template_id = mapping.get("template_product")
     template = products.get(template_id, {}) if template_id else {}
