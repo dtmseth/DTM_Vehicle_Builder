@@ -117,6 +117,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("csv", type=Path, help="QuickBooks ProductsServicesList CSV")
     ap.add_argument("--write", action="store_true", help="apply changes to parts_db.json")
+    ap.add_argument("--push-to-cloud", action="store_true",
+                    help="after --write, re-save parts_db.json through save_config_file so "
+                         "the SharePoint direct-mirror fires (otherwise the next 60s sync "
+                         "reverts the direct write to the cloud's older copy)")
     args = ap.parse_args()
 
     if not args.csv.exists():
@@ -173,8 +177,24 @@ def main() -> int:
     print(f"\n✍  wrote {len(to_create)} new manufacturers to {PARTS_DB.relative_to(REPO)}")
     print(f"✍  wrote category→manufacturer map ({len(cat_to_mid)} entries) "
           f"to {CATEGORY_MAP_OUT.relative_to(REPO)}")
-    print("\nNote (dev): this is a direct file write. For the bundled/cloud app the "
-          "same change must go through save_config_file to mirror to SharePoint.")
+
+    if args.push_to_cloud:
+        # Re-save through save_config_file so the SharePoint direct-mirror fires.
+        # Without this the next shared-settings sync reverts parts_db.json to the
+        # cloud's (older) copy, dropping these manufacturers (the documented
+        # direct-write gotcha).
+        sys.path.insert(0, str(REPO / "src"))
+        from dtm_buildsheet.app.services.config_service import save_config_file
+        from dtm_buildsheet.paths import AppPaths
+        result = save_config_file("parts_db.json", parts_db, AppPaths())
+        if not result.get("ok"):
+            print(f"Cloud push failed: {result.get('error')}", file=sys.stderr)
+            return 3
+        tag = "queued for retry" if result.get("queued") else "direct-mirrored to SharePoint"
+        print(f"☁  parts_db.json → {tag}")
+    else:
+        print("\nNote (dev): direct file write only. Re-run with --push-to-cloud so the "
+              "change mirrors to SharePoint and survives the next sync.")
     return 0
 
 
