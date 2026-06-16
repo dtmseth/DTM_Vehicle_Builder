@@ -217,6 +217,31 @@ class QuickBooksApiClient:
         }
         return _customer_result(self._post("customer", payload))
 
+    def fetch_income_accounts(self) -> list[dict]:
+        """Return active Income accounts ``[{id, name}]``.
+
+        QBO requires an ``IncomeAccountRef`` on any sellable NonInventory/Service
+        Item, so the sandbox-seeding tool needs one to attach.
+        """
+        qr = self.query(
+            "SELECT Id, Name FROM Account WHERE AccountType = 'Income' "
+            "AND Active = true MAXRESULTS 100"
+        )
+        return [
+            {"id": str(a.get("Id", "")), "name": (a.get("Name") or "").strip()}
+            for a in (qr.get("Account", []) or [])
+        ]
+
+    def create_item(self, payload: dict) -> dict:
+        """Create an Item. Returns id + name.
+
+        Only the sandbox-seeding tool calls this, and that tool refuses to run
+        against a production realm — Item writes are a test-data convenience,
+        never part of the normal app flow.
+        """
+        raw = (self._post("item", payload) or {}).get("Item", {}) or {}
+        return {"qb_item_id": str(raw.get("Id", "")), "name": (raw.get("Name") or "").strip()}
+
     def create_estimate(self, payload: dict) -> dict:
         """Create an Estimate (non-posting draft). Returns id + doc number.
 
