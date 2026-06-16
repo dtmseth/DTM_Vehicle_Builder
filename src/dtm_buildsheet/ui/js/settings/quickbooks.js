@@ -103,6 +103,12 @@
       const sku = it.sku ? `<span style="color:var(--muted)">SKU ${esc(it.sku)}</span> · ` : "";
       const price = _money(it.unit_price);
       const priceHtml = price ? ` · <span style="color:var(--muted)">${esc(price)}</span>` : "";
+      // QBO items are named by part number, so lead with the Sales Description
+      // (when present) and demote the part number to the detail line.
+      const desc = (it.description || "").trim();
+      const partNo = esc(it.name || "(unnamed)");
+      const primary = desc ? esc(desc) : partNo;
+      const partNoHtml = desc ? `<span style="color:var(--muted)">${partNo}</span> · ` : "";
       let action;
       if (it.linked) {
         const partLabel = _productLabelById[it.linked_product_id] || it.linked_product_id || "part";
@@ -115,8 +121,8 @@
       return (
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px">' +
           '<div style="min-width:0">' +
-            `<div style="font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.name || "(unnamed)")}</div>` +
-            `<div style="font-size:11px">${sku}${esc(it.type || "")}${priceHtml}</div>` +
+            `<div style="font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${primary}</div>` +
+            `<div style="font-size:11px">${partNoHtml}${sku}${esc(it.type || "")}${priceHtml}</div>` +
           "</div>" +
           `<div style="flex:none;display:flex;align-items:center;white-space:nowrap">${action}</div>` +
         "</div>"
