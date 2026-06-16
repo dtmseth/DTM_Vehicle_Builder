@@ -132,7 +132,8 @@ docs/
   PROJECT_WORKFLOW.md              ← project → draft → output data flow and file ownership
   PACKAGING.md / PIPELINE.md
   EXTERNAL_CONNECTION_SECURITY.md ← mandatory security standard for all external API integrations
-  QUICKBOOKS_INTEGRATION.md       ← QuickBooks Online integration design
+  QUICKBOOKS_STATUS.md            ← QuickBooks session handoff: status, what's left, tests, invariants (READ FIRST)
+  QUICKBOOKS_INTEGRATION.md       ← QuickBooks Online integration design + per-phase detail
   QUICKBOOKS_QUESTIONNAIRE.md     ← Intuit App Assessment Questionnaire prepared answers
 ```
 
