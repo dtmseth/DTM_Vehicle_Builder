@@ -1,0 +1,70 @@
+{
+  "manufacturer_id": "setina",
+  "new_products": [
+    {
+      "product_id": "setina_single_weapon_lock",
+      "model": "SINGLE WEAPON LOCK",
+      "fits_part_types": [
+        "gun_lock"
+      ]
+    },
+    {
+      "product_id": "setina_dual_weapon_lock",
+      "model": "DUAL WEAPON LOCK",
+      "fits_part_types": [
+        "gun_lock"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "GK0068E",
+      "product": "setina_single_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK0069M",
+      "product": "setina_single_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK10271UHK",
+      "product": "setina_single_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK10301S1UHK",
+      "product": "setina_dual_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK10342UHK",
+      "product": "setina_dual_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK11191B1SHK",
+      "product": "setina_dual_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "GK2001E",
+      "product": "setina_dual_weapon_lock",
+      "vehicle_tags": [
+        "any"
+      ]
+    }
+  ]
+}

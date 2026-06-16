@@ -1,0 +1,19 @@
+{
+  "manufacturer_id": "setina",
+  "links": [
+    {
+      "sku": "QK0491DUR11",
+      "product": "setina_replacement_floor",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "QK0491ITU20",
+      "product": "setina_replacement_floor",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "manufacturer_id": "setina",
+  "new_products": [
+    {
+      "product_id": "setina_full_replacement_seat",
+      "model": "FULL REPLACEMENT SEAT",
+      "fits_part_types": [
+        "replacement_rear_seat"
+      ]
+    },
+    {
+      "product_id": "setina_full_cover_seat",
+      "model": "FULL COVER SEAT",
+      "fits_part_types": [
+        "replacement_rear_seat"
+      ]
+    },
+    {
+      "product_id": "setina_single_replacement_seat",
+      "model": "SINGLE REPLACEMENT SEAT",
+      "fits_part_types": [
+        "replacement_rear_seat"
+      ]
+    },
+    {
+      "product_id": "setina_seat_belt_retractor",
+      "model": "CENTER PULL SEAT BELT RETRACTOR",
+      "fits_part_types": [
+        "replacement_rear_seat"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "QK0465FDT15F150",
+      "product": "setina_single_replacement_seat",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "QK0496ITU25",
+      "product": "setina_full_cover_seat",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "QK0566DUR11",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "QK0566ITU20",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "QK0566ITU25",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "QK0634CGR11",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "QK0634DUR11",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "QK0634ITU20",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "QK0635DUR11",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "QK1224BLE24",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "QK1374TAH21",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "QK1576BLE24",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "QK1684BLE24",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "QK2023TAH21",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "QK2024TAH21",
+      "product": "setina_full_replacement_seat",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "QK2412TAH21",
+      "product": "setina_full_cover_seat",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "QK2414TAH21",
+      "product": "setina_full_cover_seat",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "SP13656",
+      "product": "setina_seat_belt_retractor",
+      "vehicle_tags": [
+        "any"
+      ]
+    }
+  ]
+}
