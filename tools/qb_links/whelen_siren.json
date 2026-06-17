@@ -1,0 +1,31 @@
+{
+  "manufacturer_id": "whelen",
+  "new_products": [
+    {"product_id": "whelen_alpha_sl",            "model": "ALPHA SL",            "fits_part_types": ["external_amp"]},
+    {"product_id": "whelen_external_amplifier",   "model": "WECANX EXTERNAL AMP",  "fits_part_types": ["external_amp"]},
+    {"product_id": "whelen_hhs_siren_amp",        "model": "HHS SIREN AMP",        "fits_part_types": ["external_amp"]},
+    {"product_id": "whelen_sa350mh",              "model": "SA-350MH",             "fits_part_types": ["siren_speaker"]},
+    {"product_id": "whelen_tactl5",               "model": "TACTL5",               "fits_part_types": ["control_head"]},
+    {"product_id": "whelen_core_control_point",   "model": "CORE CONTROL POINT",   "fits_part_types": ["control_head"]},
+    {"product_id": "whelen_vsg",                  "model": "CORE+ VSG",            "fits_part_types": ["cloud_antenna"]}
+  ],
+  "links": [
+    {"sku": "CHOWLER",  "product": "whelen_wcx_howler", "vehicle_tags": ["any"]},
+    {"sku": "CHWLFE29", "product": "whelen_wcx_howler", "vehicle_tags": ["PIU"]},
+    {"sku": "CHWLUNI",  "product": "whelen_wcx_howler", "vehicle_tags": ["any"]},
+    {"sku": "ALPHASL",  "product": "whelen_alpha_sl",          "vehicle_tags": ["any"]},
+    {"sku": "CEXAMP",   "product": "whelen_external_amplifier", "vehicle_tags": ["any"]},
+    {"sku": "HHS3200",  "product": "whelen_hhs_siren_amp", "vehicle_tags": ["any"]},
+    {"sku": "HHS3206",  "product": "whelen_hhs_siren_amp", "vehicle_tags": ["any"]},
+    {"sku": "HHS3207",  "product": "whelen_hhs_siren_amp", "vehicle_tags": ["any"]},
+    {"sku": "SA350MH",  "product": "whelen_sa350mh", "vehicle_tags": ["any"]},
+    {"sku": "TACTL5",   "product": "whelen_tactl5",  "vehicle_tags": ["any"]},
+    {"sku": "CCP",      "product": "whelen_core_control_point", "vehicle_tags": ["any"]},
+    {"sku": "CCP9",     "product": "whelen_core_control_point", "vehicle_tags": ["any"]},
+    {"sku": "CCPKT",    "product": "whelen_core_control_point", "vehicle_tags": ["any"]},
+    {"sku": "VSG1F1",   "product": "whelen_vsg", "vehicle_tags": ["any"]},
+    {"sku": "VSG1FR",   "product": "whelen_vsg", "vehicle_tags": ["any"]},
+    {"sku": "VSG1V1",   "product": "whelen_vsg", "vehicle_tags": ["any"]},
+    {"sku": "VSG1VR",   "product": "whelen_vsg", "vehicle_tags": ["any"]}
+  ]
+}
