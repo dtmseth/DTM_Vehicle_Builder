@@ -1,0 +1,14 @@
+{
+  "manufacturer_id": "whelen",
+  "new_products": [
+    {"product_id": "whelen_tracer_3_lamp",   "model": "TRACER 3 LAMP",   "fits_part_types": ["side_warning", "rear_warning"]},
+    {"product_id": "whelen_traffic_advisor",  "model": "TRAFFIC ADVISOR",  "fits_part_types": ["rear_warning"]}
+  ],
+  "links": [
+    {"sku": "TCRWX2", "product": "whelen_2_lamp_tracer",  "vehicle_tags": ["any"]},
+    {"sku": "TCRWX3", "product": "whelen_tracer_3_lamp",   "vehicle_tags": ["any"]},
+    {"sku": "TCRWX5", "product": "whelen_tracer_5_lamp",   "vehicle_tags": ["any"]},
+    {"sku": "TCRWX6", "product": "whelen_tracer_6_lamp",   "vehicle_tags": ["any"]},
+    {"sku": "TAC830", "product": "whelen_traffic_advisor", "vehicle_tags": ["any"]}
+  ]
+}
