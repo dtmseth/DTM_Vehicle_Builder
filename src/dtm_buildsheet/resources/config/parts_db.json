@@ -1186,7 +1186,94 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "VXE"
+          "part_number": "VX2D",
+          "qb_item_id": "1244",
+          "qb_sku": "",
+          "qb_unit_price": 150.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX2DX",
+          "qb_item_id": "1245",
+          "qb_sku": "",
+          "qb_unit_price": 157.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX2E",
+          "qb_item_id": "1246",
+          "qb_sku": "",
+          "qb_unit_price": 150.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX2EX",
+          "qb_item_id": "1247",
+          "qb_sku": "",
+          "qb_unit_price": 157.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX3BACX",
+          "qb_item_id": "1248",
+          "qb_sku": "",
+          "qb_unit_price": 177.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX3RACX",
+          "qb_item_id": "1249",
+          "qb_sku": "",
+          "qb_unit_price": 177.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VX3RBC",
+          "qb_item_id": "1250",
+          "qb_sku": "",
+          "qb_unit_price": 171.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VXTD",
+          "qb_item_id": "1251",
+          "qb_sku": "",
+          "qb_unit_price": 171.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "VXTE",
+          "qb_item_id": "1252",
+          "qb_sku": "",
+          "qb_unit_price": 171.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -1872,7 +1959,34 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "MIRROR BEAMS"
+          "part_number": "MBCT21",
+          "qb_item_id": "725",
+          "qb_sku": "",
+          "qb_unit_price": 495.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "MBDC11",
+          "qb_item_id": "726",
+          "qb_sku": "",
+          "qb_unit_price": 495.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHARGER"
+          ]
+        },
+        {
+          "part_number": "MBFX25",
+          "qb_item_id": "727",
+          "qb_sku": "",
+          "qb_unit_price": 495.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
         }
       ]
     },
@@ -2222,7 +2336,64 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "MINI T-SERIES"
+          "part_number": "TMS0A",
+          "qb_item_id": "1145",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "TMS0B",
+          "qb_item_id": "1146",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "TMS0D",
+          "qb_item_id": "1147",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "TMS0F",
+          "qb_item_id": "1148",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "TMS0R",
+          "qb_item_id": "1149",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "TMSOE",
+          "qb_item_id": "1150",
+          "qb_sku": "",
+          "qb_unit_price": 158.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2930,7 +3101,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CEM8"
+          "part_number": "CEM8",
+          "qb_item_id": "427",
+          "qb_sku": "",
+          "qb_unit_price": 227.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2945,7 +3123,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CEM16"
+          "part_number": "CEM16",
+          "qb_item_id": "425",
+          "qb_sku": "",
+          "qb_unit_price": 292.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2960,7 +3145,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CEM24"
+          "part_number": "CEM24",
+          "qb_item_id": "426",
+          "qb_sku": "",
+          "qb_unit_price": 399.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -6341,6 +6533,48 @@
           "qb_inactive": false,
           "vehicle_tags": [
             "any"
+          ]
+        }
+      ]
+    },
+    "whelen_ion_rear_pillar": {
+      "manufacturer_id": "whelen",
+      "model": "ION REAR PILLAR",
+      "fits_part_types": [
+        "rear_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "RPWD50",
+          "qb_item_id": "949",
+          "qb_sku": "",
+          "qb_unit_price": 1798.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "RPWD54",
+          "qb_item_id": "950",
+          "qb_sku": "",
+          "qb_unit_price": 2048.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "RPWT50",
+          "qb_item_id": "951",
+          "qb_sku": "",
+          "qb_unit_price": 2035.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
           ]
         }
       ]
