@@ -941,7 +941,164 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "ION"
+          "part_number": "IONA",
+          "qb_item_id": "623",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONB",
+          "qb_item_id": "624",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IOND",
+          "qb_item_id": "627",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONE",
+          "qb_item_id": "628",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONF",
+          "qb_item_id": "629",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONJ",
+          "qb_item_id": "631",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONR",
+          "qb_item_id": "632",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONB",
+          "qb_item_id": "1292",
+          "qb_sku": "",
+          "qb_unit_price": 190.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONR",
+          "qb_item_id": "1293",
+          "qb_sku": "",
+          "qb_unit_price": 190.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2D",
+          "qb_item_id": "613",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2E",
+          "qb_item_id": "614",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2F",
+          "qb_item_id": "615",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2J",
+          "qb_item_id": "616",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI2D",
+          "qb_item_id": "1286",
+          "qb_sku": "",
+          "qb_unit_price": 219.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI2E",
+          "qb_item_id": "1287",
+          "qb_sku": "",
+          "qb_unit_price": 219.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI3JC",
+          "qb_item_id": "1290",
+          "qb_sku": "",
+          "qb_unit_price": 257.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -1105,7 +1262,164 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "SURFACE MOUNT ION"
+          "part_number": "IONSMA",
+          "qb_item_id": "633",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSMB",
+          "qb_item_id": "634",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSMC",
+          "qb_item_id": "635",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSMD",
+          "qb_item_id": "636",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSME",
+          "qb_item_id": "637",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSMF",
+          "qb_item_id": "638",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSMR",
+          "qb_item_id": "639",
+          "qb_sku": "",
+          "qb_unit_price": 178.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONSMB",
+          "qb_item_id": "1294",
+          "qb_sku": "",
+          "qb_unit_price": 190.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONSMR",
+          "qb_item_id": "1295",
+          "qb_sku": "",
+          "qb_unit_price": 190.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2SMD",
+          "qb_item_id": "617",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2SME",
+          "qb_item_id": "618",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I2SMF",
+          "qb_item_id": "619",
+          "qb_sku": "",
+          "qb_unit_price": 206.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "I3SMJC",
+          "qb_item_id": "620",
+          "qb_sku": "",
+          "qb_unit_price": 243.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI2SMD",
+          "qb_item_id": "1288",
+          "qb_sku": "",
+          "qb_unit_price": 219.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI2SME",
+          "qb_item_id": "1289",
+          "qb_sku": "",
+          "qb_unit_price": 219.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XI3SMJC",
+          "qb_item_id": "1291",
+          "qb_sku": "",
+          "qb_unit_price": 257.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -5941,6 +6255,89 @@
           "qb_item_id": "1090",
           "qb_sku": "",
           "qb_unit_price": 1136.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        }
+      ]
+    },
+    "whelen_ion_v_series": {
+      "manufacturer_id": "whelen",
+      "model": "ION V-SERIES",
+      "fits_part_types": [
+        "front_side_warning",
+        "rear_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "IONV3A",
+          "qb_item_id": "641",
+          "qb_sku": "",
+          "qb_unit_price": 340.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONV3AW",
+          "qb_item_id": "642",
+          "qb_sku": "",
+          "qb_unit_price": 340.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONV3B",
+          "qb_item_id": "643",
+          "qb_sku": "",
+          "qb_unit_price": 340.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONV3R",
+          "qb_item_id": "644",
+          "qb_sku": "",
+          "qb_unit_price": 340.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONV3B",
+          "qb_item_id": "1296",
+          "qb_sku": "",
+          "qb_unit_price": 353.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "XONV3R",
+          "qb_item_id": "1297",
+          "qb_sku": "",
+          "qb_unit_price": 353.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        },
+        {
+          "part_number": "IONSV3A",
+          "qb_item_id": "640",
+          "qb_sku": "",
+          "qb_unit_price": 340.0,
           "qb_inactive": false,
           "vehicle_tags": [
             "any"
