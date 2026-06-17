@@ -1,0 +1,533 @@
+{
+  "manufacturer_id": "whelen",
+  "new_products": [
+    {
+      "product_id": "whelen_500_series",
+      "model": "500 SERIES TIR",
+      "fits_part_types": [
+        "forward_warning",
+        "side_warning"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "50A03ZCR",
+      "product": "whelen_500_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "50R03ZCR",
+      "product": "whelen_500_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "50S03ZAR",
+      "product": "whelen_500_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSA01FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSB01FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSC01FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSD02FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSE02FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSJ02FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSJC3FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSK02FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSKC3FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSM02FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSMC3FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PSR01FCR",
+      "product": "whelen_mega_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0A",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0B",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0BX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0C",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0D",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0DX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0E",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0EX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0J",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0JX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0K",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0KX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0M",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0MX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0R",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TMT0RX",
+      "product": "whelen_mini_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0A",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0B",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0BX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0C",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0D",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0DX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0E",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0EX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0F",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0J",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0JC",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0K",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0KC",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0KCX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0M",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0MCK",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0R",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TSS0RX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0A",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0AX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0B",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0BX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0C",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0D",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0DX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0E",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0EX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0FX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0J",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0JX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0K",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0KX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0M",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0MX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0R",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TST0RX",
+      "product": "whelen_t_series",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX609A",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX609B",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX609C",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX609R",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX9D",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX9E",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "VTX9F",
+      "product": "whelen_vertex",
+      "vehicle_tags": [
+        "any"
+      ]
+    }
+  ]
+}
