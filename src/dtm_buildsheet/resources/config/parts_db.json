@@ -3391,7 +3391,74 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "EQUIPMENT DRAWER"
+          "part_number": "TK0841TRV18",
+          "qb_item_id": "1137",
+          "qb_sku": "",
+          "qb_unit_price": 2059.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TRAVERSE"
+          ]
+        },
+        {
+          "part_number": "TK1261FDT15F150",
+          "qb_item_id": "1138",
+          "qb_sku": "",
+          "qb_unit_price": 2609.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "TK1261FDT15F150RW",
+          "qb_item_id": "1139",
+          "qb_sku": "",
+          "qb_unit_price": 2609.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "TK1338FDT15F150",
+          "qb_item_id": "1140",
+          "qb_sku": "",
+          "qb_unit_price": 4429.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ]
+        },
+        {
+          "part_number": "TK1339CHT191500",
+          "qb_item_id": "1141",
+          "qb_sku": "",
+          "qb_unit_price": 3459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500"
+          ]
+        },
+        {
+          "part_number": "TK1459CHT191500RW",
+          "qb_item_id": "1142",
+          "qb_sku": "",
+          "qb_unit_price": 2669.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500"
+          ]
+        },
+        {
+          "part_number": "TK1488TAH21",
+          "qb_item_id": "1143",
+          "qb_sku": "",
+          "qb_unit_price": 3199.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },
@@ -3406,7 +3473,24 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "EQUIPMENT TRAY"
+          "part_number": "TK0247TAH21",
+          "qb_item_id": "1135",
+          "qb_sku": "",
+          "qb_unit_price": 1359.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "TPA9289",
+          "qb_item_id": "1167",
+          "qb_sku": "",
+          "qb_unit_price": 389.99,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -3421,7 +3505,34 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "EQUIMPENT BOX"
+          "part_number": "TK0233DUR11",
+          "qb_item_id": "1132",
+          "qb_sku": "",
+          "qb_unit_price": 1879.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "TK0233ITU20",
+          "qb_item_id": "1133",
+          "qb_sku": "",
+          "qb_unit_price": 1879.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "TK0233TAH21",
+          "qb_item_id": "1134",
+          "qb_sku": "",
+          "qb_unit_price": 1879.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
         }
       ]
     },
@@ -3468,7 +3579,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "BOARD"
+          "part_number": "TK0661BLE24",
+          "qb_item_id": "1136",
+          "qb_sku": "",
+          "qb_unit_price": 429.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "BLAZER"
+          ]
         }
       ]
     },
@@ -4576,6 +4694,390 @@
           "qb_item_id": "101",
           "qb_sku": "",
           "qb_unit_price": 599.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        }
+      ]
+    },
+    "setina_ultimate_k9": {
+      "manufacturer_id": "setina",
+      "model": "ULTIMATE K9",
+      "fits_part_types": [
+        "k9_kennel"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "CK0406DUR11-10",
+          "qb_item_id": "434",
+          "qb_sku": "",
+          "qb_unit_price": 3899.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "CK2052TAH21-10",
+          "qb_item_id": "435",
+          "qb_sku": "",
+          "qb_unit_price": 4119.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "CK2386ITU20-10",
+          "qb_item_id": "436",
+          "qb_sku": "",
+          "qb_unit_price": 3889.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "CK2417TAH21-10",
+          "qb_item_id": "437",
+          "qb_sku": "",
+          "qb_unit_price": 4839.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        }
+      ]
+    },
+    "setina_k9_heat_alarm": {
+      "manufacturer_id": "setina",
+      "model": "K-9 HEAT ALARM",
+      "fits_part_types": [
+        "k9_heat_alarm_popper"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "EK0683TAH00",
+          "qb_item_id": "470",
+          "qb_sku": "",
+          "qb_unit_price": 2499.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        }
+      ]
+    },
+    "setina_k9_fan": {
+      "manufacturer_id": "setina",
+      "model": "K-9 FAN",
+      "fits_part_types": [
+        "k9_add_ons"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "EK0689DUR11",
+          "qb_item_id": "471",
+          "qb_sku": "",
+          "qb_unit_price": 449.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "EK0689ITU12",
+          "qb_item_id": "472",
+          "qb_sku": "",
+          "qb_unit_price": 449.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "EK0689TAH00",
+          "qb_item_id": "473",
+          "qb_sku": "",
+          "qb_unit_price": 449.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        }
+      ]
+    },
+    "setina_k9_dog_bowl": {
+      "manufacturer_id": "setina",
+      "model": "K-9 DOG BOWL",
+      "fits_part_types": [
+        "k9_add_ons"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "K9A13145",
+          "qb_item_id": "664",
+          "qb_sku": "",
+          "qb_unit_price": 41.99,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        }
+      ]
+    },
+    "setina_t_rail_mount_kit": {
+      "manufacturer_id": "setina",
+      "model": "T-RAIL MOUNT KIT",
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "GF1092DUR11",
+          "qb_item_id": "559",
+          "qb_sku": "",
+          "qb_unit_price": 289.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "GF1092ITU20",
+          "qb_item_id": "560",
+          "qb_sku": "",
+          "qb_unit_price": 289.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "GF1092TAH21",
+          "qb_item_id": "561",
+          "qb_sku": "",
+          "qb_unit_price": 289.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "GF1382CHT191500",
+          "qb_item_id": "562",
+          "qb_sku": "",
+          "qb_unit_price": 379.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500"
+          ]
+        }
+      ]
+    },
+    "setina_firearm_mount_transfer_kit": {
+      "manufacturer_id": "setina",
+      "model": "FIREARM MOUNT TRANSFER KIT",
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "GT0536ITU20",
+          "qb_item_id": "573",
+          "qb_sku": "",
+          "qb_unit_price": 89.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        }
+      ]
+    },
+    "setina_partition_transfer_kit": {
+      "manufacturer_id": "setina",
+      "model": "PARTITION TRANSFER KIT",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PT0185ITU20TM",
+          "qb_item_id": "893",
+          "qb_sku": "",
+          "qb_unit_price": 399.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "PT2185DUR11",
+          "qb_item_id": "894",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ]
+        },
+        {
+          "part_number": "PT2185ITU20TM",
+          "qb_item_id": "895",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        },
+        {
+          "part_number": "PT2185TAH21",
+          "qb_item_id": "896",
+          "qb_sku": "",
+          "qb_unit_price": 459.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        }
+      ]
+    },
+    "setina_module_relocation_plate": {
+      "manufacturer_id": "setina",
+      "model": "MODULE RELOCATION PLATE",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PP19159",
+          "qb_item_id": "870",
+          "qb_sku": "",
+          "qb_unit_price": 19.99,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ]
+        }
+      ]
+    },
+    "setina_lower_extension_panel": {
+      "manufacturer_id": "setina",
+      "model": "LOWER EXTENSION PANEL",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "ST0380CGR11",
+          "qb_item_id": "1074",
+          "qb_sku": "",
+          "qb_unit_price": 109.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHARGER"
+          ]
+        }
+      ]
+    },
+    "setina_upper_bracket_nut_plate": {
+      "manufacturer_id": "setina",
+      "model": "UPPER BRACKET NUT PLATE",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "WP14652",
+          "qb_item_id": "1279",
+          "qb_sku": "",
+          "qb_unit_price": 29.99,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
+        }
+      ]
+    },
+    "setina_cargo_bracket_kit": {
+      "manufacturer_id": "setina",
+      "model": "CARGO BRACKET KIT",
+      "fits_part_types": [
+        "equipment_tray"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "TF0237TRV24",
+          "qb_item_id": "1121",
+          "qb_sku": "",
+          "qb_unit_price": 179.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TRAVERSE"
+          ]
+        }
+      ]
+    },
+    "setina_cargo_box_transfer_kit": {
+      "manufacturer_id": "setina",
+      "model": "CARGO BOX TRANSFER KIT",
+      "fits_part_types": [
+        "equipment_tray"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "TT0242TAH21",
+          "qb_item_id": "1206",
+          "qb_sku": "",
+          "qb_unit_price": 159.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ]
+        },
+        {
+          "part_number": "TT0242TAH21K9",
+          "qb_item_id": "1207",
+          "qb_sku": "",
+          "qb_unit_price": 159.0,
           "qb_inactive": false,
           "vehicle_tags": [
             "TAHOE"
