@@ -1228,7 +1228,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "SA315P"
+          "part_number": "SA315P",
+          "qb_item_id": "962",
+          "qb_sku": "",
+          "qb_unit_price": 412.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -1245,7 +1252,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "SA315U"
+          "part_number": "SA315U",
+          "qb_item_id": "963",
+          "qb_sku": "",
+          "qb_unit_price": 412.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2053,7 +2067,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CORE"
+          "part_number": "C399",
+          "qb_item_id": "404",
+          "qb_sku": "",
+          "qb_unit_price": 1411.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2083,7 +2104,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CCTL5"
+          "part_number": "CCTL5",
+          "qb_item_id": "419",
+          "qb_sku": "",
+          "qb_unit_price": 473.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
@@ -2098,7 +2126,14 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CCTL6"
+          "part_number": "CCTL6",
+          "qb_item_id": "420",
+          "qb_sku": "",
+          "qb_unit_price": 473.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ]
         }
       ]
     },
