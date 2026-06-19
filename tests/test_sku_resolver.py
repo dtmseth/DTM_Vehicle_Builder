@@ -38,17 +38,18 @@ def test_single_color_matches_single_sku():
     assert res["all_matched"]
 
 
-def test_duo_combo_returns_all_variants_cheapest_first():
+def test_duo_combo_returns_all_variants_ion_rank_then_price():
     res = sku_resolver.match_heads(SKUS, [["red", "white"]])
     skus = [s["part_number"] for s in res["combos"][0]["skus"]]
-    # red/white matches IOND, I2D, XI2D — cheapest first
-    assert skus == ["IOND", "I2D", "XI2D"]
-    assert res["combos"][0]["default_sku"] == "IOND"
+    # I2_ preferred (rank 0), others normal (rank 1), IOND/IONE deprecated (rank 2)
+    # I2D rank=0 $206, XI2D rank=1 $219, IOND rank=2 $178
+    assert skus == ["I2D", "XI2D", "IOND"]
+    assert res["combos"][0]["default_sku"] == "I2D"
 
 
 def test_color_set_is_order_insensitive():
     a = sku_resolver.match_heads(SKUS, [["white", "red"]])
-    assert a["combos"][0]["default_sku"] == "IOND"
+    assert a["combos"][0]["default_sku"] == "I2D"
 
 
 def test_standard_split_groups_by_side():

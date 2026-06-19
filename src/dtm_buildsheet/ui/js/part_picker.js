@@ -10,7 +10,7 @@ let _pickerState = {
   tab: "part",
   types: [],
   filters: { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" },
-  config: { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [] },
+  config: { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [], _noColor: false },
   availAll: new Set(),
   search: "",
   products: [],            // [{product_id, model, manufacturer_label, skus:[...]}]
@@ -42,6 +42,13 @@ const _LIGHT_CATEGORIES = [
 const _TYPE_ICONS = { lights: "💡", equipment: "🔧", structural: "🏗️", k9: "🐕", extras: "⚡" };
 // Categories whose parts are color-configured (lights). Others pick a SKU directly.
 const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "roof_bar", "spotlight"]);
+
+function _ionRank(pn) {
+  if (!pn) return 1;
+  if (pn.startsWith("I2")) return 0;
+  if (pn.startsWith("IOND") || pn.startsWith("IONE")) return 2;
+  return 1;
+}
 
 // ── Public entry points ────────────────────────────────
 
@@ -92,7 +99,7 @@ function _pickerResetState() {
   _pickerState.tab = "part";
   _pickerState.step = 0;          // current left-pane wizard step
   _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" };
-  _pickerState.config = { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [] };
+  _pickerState.config = { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [], _noColor: false };
   _pickerState.search = "";
   _pickerState.products = [];
   _pickerState.expanded = new Set();
@@ -158,6 +165,19 @@ async function _pickerFetchProducts() {
     }
   _pickerState.availAll = avail;
   _pickerNormalizeConfig();
+  // Auto-select preferred brand if not already chosen.
+  if (!f.brand) {
+    const allBrands = [...new Set(_pickerState.products.map(p => p.manufacturer_label).filter(Boolean))];
+    if (allBrands.length > 1) {
+      const prefLighting = window._PT?.viewProject?.preferences?.lighting;
+      const prefBrands = (window._PT?.viewProject?.preferences?.lighting_brands || []).map(b => String(b).toLowerCase());
+      const match = allBrands.find(b => {
+        const bl = b.toLowerCase();
+        return (prefLighting && bl === String(prefLighting).toLowerCase()) || prefBrands.includes(bl);
+      });
+      if (match) f.brand = match;
+    }
+  }
   // Auto-expand when only one product remains.
   if (_pickerState.products.length === 1) _pickerState.expanded.add(_pickerState.products[0].product_id);
 }
@@ -192,16 +212,22 @@ function _pickerRenderFilters() {
 
   let content = "";
   if (cur.id === "type") {
-    content = `<div class="pf-pills pf-stack">` + _pickerState.types.map(t =>
+    const _TYPE_ORDER = ["lights", "structural", "equipment", "k9", "extras"];
+    const _buildType = (window._PT?.viewProject?.info?.BuildType || window._PT?.viewProject?.vehicle_info?.BuildType || "").toLowerCase();
+    const _isK9Build = _buildType.includes("k-9") || _buildType.includes("k9");
+    const _sortedTypes = [..._pickerState.types]
+      .filter(t => t.type_id !== "k9" || _isK9Build)
+      .sort((a, b) => {
+        const ai = _TYPE_ORDER.indexOf(a.type_id), bi = _TYPE_ORDER.indexOf(b.type_id);
+        return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+      });
+    content = `<div class="pf-pills pf-stack">` + _sortedTypes.map(t =>
       `<button class="pf-pill pf-big${f.type_id === t.type_id ? " active" : ""}" data-k="type" data-v="${esc(t.type_id)}" data-l="${esc(t.label)}">${_TYPE_ICONS[t.type_id] || "📦"} ${esc(t.label)}</button>`).join("") + `</div>`;
   } else if (cur.id === "category") {
     content = `<div class="pf-pills pf-stack">` + _LIGHT_CATEGORIES.map(c =>
       `<button class="pf-pill pf-big${f.category_id === c.id ? " active" : ""}" data-k="cat" data-v="${esc(c.id)}" data-l="${esc(c.label)}">${c.icon} ${esc(c.label)}</button>`).join("") + `</div>`;
   } else if (cur.id === "colors") {
-    const lenses = [["", "Any"], ["clear", "Clear"], ["colored", "Colored"], ["smoked", "Smoked"]];
-    content = `<div class="pf-group"><span class="pf-label">Lens</span><div class="pf-pills">` +
-      lenses.map(([v, l]) => `<button class="pf-pill${(f.lens || "") === v ? " active" : ""}" data-k="lens" data-v="${v}">${l}</button>`).join("") +
-      `</div></div>` + _pickerColorConfigHtml();
+    content = _pickerColorConfigHtml();
   }
 
   el.innerHTML = `<div class="pf-group pf-search"><input type="text" id="pf-search" placeholder="🔍 Search products / SKUs" value="${esc(_pickerState.search)}"></div>
@@ -213,9 +239,53 @@ function _pickerRenderFilters() {
 
 function _pickerColorConfigHtml() {
   const c = _pickerState.config;
+  const f = _pickerState.filters;
+  const cat = f.category_id;
+  const isSceneInterior = cat === "scene" || cat === "interior";
+  const isBar = cat === "interior_bar" || cat === "roof_bar";
   const slots = _COLORS_PER_HEAD[c.colorsPerHead];
   const seg = (k, v, label, active, disabled) =>
     `<button class="pf-pill${active ? " active" : ""}" data-k="${k}" data-v="${v}"${disabled ? " disabled" : ""}>${esc(label)}</button>`;
+
+  const countHtml = `<div class="pf-group"><span class="pf-label">Lightheads</span>
+      <div class="pf-pills"><button class="pf-pill" data-k="count" data-v="-1">−</button>
+      <span style="font-weight:700;padding:5px 4px">${c.count}</span>
+      <button class="pf-pill" data-k="count" data-v="1">+</button></div></div>`;
+
+  const lensHtml = `<div class="pf-group"><span class="pf-label">Lens</span><div class="pf-pills">
+      ${seg("lens", "", "All", (f.lens || "") === "")}
+      ${seg("lens", "clear", "Clear", (f.lens || "") === "clear")}
+      ${seg("lens", "smoked", "Smoked", (f.lens || "") === "smoked")}</div></div>`;
+
+  if (isBar) {
+    return countHtml + `<div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
+        ${seg("cph", "duo", "Duo", c.colorsPerHead !== "trio")}
+        ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>` + lensHtml;
+  }
+
+  const cphHtml = `<div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
+      ${seg("cph", "single", "Solo", c.colorsPerHead === "single")}
+      ${seg("cph", "duo", "Duo", c.colorsPerHead === "duo")}
+      ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>`;
+
+  if (isSceneInterior) {
+    const noColor = c._noColor === true;
+    const whiteSwatches = _PICKER_COLOR_ORDER.map(col => {
+      const d = _PICKER_COLORS[col];
+      const isWhite = col === "white";
+      const isSel = !noColor && c.uniform[0] === col;
+      return `<button class="picker-swatch${isSel ? " sel" : (isWhite ? "" : " dim")}" data-color="${col}" ${isWhite ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
+    }).join("");
+    const noneBtn = `<button class="picker-swatch${noColor ? " sel" : ""}" data-color="" title="No color (unlabeled)" style="background:#888;border-color:#666;font-size:9px;line-height:28px">—</button>`;
+    return countHtml + cphHtml +
+      `<div class="pf-group"><span class="pf-label">Color</span>` +
+      `<div class="picker-swatches" data-kind="uniform" data-slot="0">${whiteSwatches}${noneBtn}</div></div>` + lensHtml;
+  }
+
+  const modeHtml = `<div class="pf-group"><span class="pf-label">Mode</span><div class="pf-pills">
+      ${seg("mode", "uniform", "Uniform", c.mode === "uniform")}
+      ${seg("mode", "split", "Split", c.mode === "split", !c.splitAllowed)}
+      ${seg("mode", "custom", "Custom", c.mode === "custom")}</div></div>`;
 
   let sel = "";
   if (c.mode === "uniform") {
@@ -227,19 +297,7 @@ function _pickerColorConfigHtml() {
     sel = c.custom.map((arr, h) => `<div class="pf-group"><span class="pf-label">Head ${h + 1}</span>${_pickerSwatchMulti(h, arr, slots)}</div>`).join("");
   }
 
-  return `<div class="pf-group"><span class="pf-label">Lightheads</span>
-      <div class="pf-pills"><button class="pf-pill" data-k="count" data-v="-1">−</button>
-      <span style="font-weight:700;padding:5px 4px">${c.count}</span>
-      <button class="pf-pill" data-k="count" data-v="1">+</button></div></div>
-    <div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
-      ${seg("cph", "single", "Single", c.colorsPerHead === "single")}
-      ${seg("cph", "duo", "Duo", c.colorsPerHead === "duo")}
-      ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>
-    <div class="pf-group"><span class="pf-label">Mode</span><div class="pf-pills">
-      ${seg("mode", "uniform", "Uniform", c.mode === "uniform")}
-      ${seg("mode", "split", "Split", c.mode === "split", !c.splitAllowed)}
-      ${seg("mode", "custom", "Custom", c.mode === "custom")}</div></div>
-    ${sel}`;
+  return countHtml + cphHtml + modeHtml + sel + lensHtml;
 }
 
 function _pickerSwatchRow(kind, slot, selected) {
@@ -301,11 +359,16 @@ function _pickerWireFilters() {
   el.querySelectorAll(".picker-swatch").forEach(b => b.addEventListener("click", () => {
     if (b.disabled) return;
     const wrap = b.closest(".picker-swatches"), c = _pickerState.config, color = b.dataset.color, kind = wrap.dataset.kind;
-    if (kind === "uniform") c.uniform[parseInt(wrap.dataset.slot, 10)] = color;
-    else if (kind === "split") c.splitSecondary[parseInt(wrap.dataset.slot, 10)] = color;
-    else if (kind === "custom") {
-      const arr = c.custom[parseInt(wrap.dataset.head, 10)], max = _COLORS_PER_HEAD[c.colorsPerHead], i = arr.indexOf(color);
-      if (i >= 0) { if (arr.length > 1) arr.splice(i, 1); } else if (arr.length < max) arr.push(color);
+    if (color === "") {
+      c._noColor = true;
+    } else {
+      c._noColor = false;
+      if (kind === "uniform") c.uniform[parseInt(wrap.dataset.slot, 10)] = color;
+      else if (kind === "split") c.splitSecondary[parseInt(wrap.dataset.slot, 10)] = color;
+      else if (kind === "custom") {
+        const arr = c.custom[parseInt(wrap.dataset.head, 10)], max = _COLORS_PER_HEAD[c.colorsPerHead], i = arr.indexOf(color);
+        if (i >= 0) { if (arr.length > 1) arr.splice(i, 1); } else if (arr.length < max) arr.push(color);
+      }
     }
     _pickerState.skuChoices = {};   // colors changed → drop SKU overrides
     _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter();
@@ -316,8 +379,14 @@ function _pickerWireFilters() {
 
 function _pickerNormalizeConfig() {
   const c = _pickerState.config;
+  const cat = _pickerState.filters.category_id;
+  const isBar = cat === "interior_bar" || cat === "roof_bar";
+  const isSceneInterior = cat === "scene" || cat === "interior";
+  // Bar categories: enforce duo minimum (no single)
+  if (isBar && c.colorsPerHead === "single") c.colorsPerHead = "duo";
   const slots = _COLORS_PER_HEAD[c.colorsPerHead];
-  const firstAvail = _PICKER_COLOR_ORDER.find(x => _pickerState.availAll.has(x)) || "red";
+  const catDefault = isSceneInterior ? "white" : "red";
+  const firstAvail = _PICKER_COLOR_ORDER.find(x => _pickerState.availAll.has(x)) || catDefault;
   c.splitAllowed = (c.count % 2 === 0) && slots <= 2;
   if (c.mode === "split" && !c.splitAllowed) c.mode = "uniform";
   c.uniform = Array.from({ length: slots }, (_, i) => c.uniform[i] || firstAvail);
@@ -330,6 +399,7 @@ function _pickerNormalizeConfig() {
 
 function _pickerResolveHeads() {
   const c = _pickerState.config;
+  if (c._noColor) return [[]];
   if (c.mode === "uniform") return Array.from({ length: c.count }, () => [...c.uniform]);
   if (c.mode === "split") {
     const half = c.count / 2;
@@ -341,13 +411,13 @@ function _pickerResolveHeads() {
 // ── Product list (right) ───────────────────────────────
 
 function _skuSet(s) { return [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x.toLowerCase()).sort(); }
-function _headSet(h) { return [...new Set(h.map(x => x.toLowerCase()))].sort(); }
+function _headSet(h) { return [...new Set(h.map(x => x.toLowerCase()).filter(Boolean))].sort(); }
 function _eqSet(a, b) { return a.length === b.length && a.every((v, i) => v === b[i]); }
 
-function _skuMatchesAny(sku, headSets, lens) {
-  if (lens && sku.lens_type && sku.lens_type !== lens) return false;
+function _skuMatchesAny(sku, headSets) {
   const s = _skuSet(sku);
-  return headSets.some(hs => _eqSet(s, hs));
+  // "No color" selection matches any SKU
+  return headSets.some(hs => hs.length === 0 || _eqSet(s, hs));
 }
 
 function _pickerComboLabel(hs) { return hs.map(x => x[0].toUpperCase() + x.slice(1)).join("/"); }
@@ -363,15 +433,21 @@ function _pickerRenderProducts() {
   // Brand refine bar (lets the user switch between matched alternatives by brand).
   const brands = [...new Set(_pickerState.products.map(p => p.manufacturer_label).filter(Boolean))].sort();
   const pref = new Set((window._PT?.viewProject?.preferences?.lighting_brands || []).map(b => String(b).toLowerCase()));
+  // Auto-select preferred brand on first render only
+  if (!_pickerState._brandAutoSet && !f.brand && brands.length > 0) {
+    const prefBrand = brands.find(b => pref.has(b.toLowerCase()));
+    if (prefBrand) { f.brand = prefBrand; _pickerState._brandAutoSet = true; }
+  }
+  // When user explicitly picks "All", clear the auto-set flag so it sticks
+  if (f.brand && !_pickerState._brandAutoSet) _pickerState._brandAutoSet = true;
   let header = "";
   if (brands.length > 1) {
     header = `<div class="pp-brandbar"><span class="pf-label">Brand</span>` +
       `<button class="pf-pill${!f.brand ? " active" : ""}" data-brand="">All</button>` +
       brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${pref.has(b.toLowerCase()) ? "★ " : ""}${esc(b)}</button>`).join("") + `</div>`;
   }
-
   // A product matches when every chosen color combo has a matching SKU.
-  const isMatch = p => !usesColor || (headSets.length > 0 && headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs], f.lens))));
+  const isMatch = p => !usesColor || (headSets.length > 0 && headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs]))));
 
   let list = _pickerState.products;
   if (f.brand) list = list.filter(p => p.manufacturer_label === f.brand);
@@ -395,7 +471,7 @@ function _pickerRenderProducts() {
     const qb = p.skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
     let matchBadge = "";
     if (usesColor && headSets.length) {
-      const allMatch = headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs], f.lens)));
+      const allMatch = headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs])));
       matchBadge = allMatch ? `<span class="pp-match ok">match</span>` : `<span class="pp-match no">no exact</span>`;
     }
 
@@ -406,25 +482,26 @@ function _pickerRenderProducts() {
         bodyHtml = `<div class="pp-skus">` + headSets.map(hs => {
           const label = _pickerComboLabel(hs);
           const ordered = [...p.skus].sort((a, b) => {
-            const am = _skuMatchesAny(a, [hs], f.lens), bm = _skuMatchesAny(b, [hs], f.lens);
+            const am = _skuMatchesAny(a, [hs]), bm = _skuMatchesAny(b, [hs]);
             if (am !== bm) return am ? -1 : 1;
+            const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
+            if (ar !== br) return ar - br;
             return (a.price ?? 9e9) - (b.price ?? 9e9);
           });
-          const hasMatch = ordered.some(s => _skuMatchesAny(s, [hs], f.lens));
+          const hasMatch = ordered.some(s => _skuMatchesAny(s, [hs]));
           const key = hs.join(",");
           const chosen = _pickerState.skuChoices[key] || (ordered[0] && ordered[0].part_number) || "";
           const opts = ordered.map(s => {
             const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
-            const m = _skuMatchesAny(s, [hs], f.lens) ? "" : "  (other)";
+            const m = (cs && !_skuMatchesAny(s, [hs])) ? "  (other)" : "";
             return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.price != null ? " · $" + s.price : ""}${m}</option>`;
           }).join("");
           return `<div class="pp-sku"><span class="pp-sku-pn">${esc(label)}</span><select class="pp-override" data-combo="${esc(key)}">${opts}</select>${hasMatch ? "" : `<span class="pp-match no">no exact</span>`}</div>`;
         }).join("") + `</div>`;
       } else {
         bodyHtml = `<div class="pp-skus">` + p.skus.map(s => {
-          const matched = usesColor ? _skuMatchesAny(s, headSets, f.lens) : true;
-          const lensOk = !f.lens || !s.lens_type || s.lens_type === f.lens;
-          const cls = usesColor ? (matched ? "match" : "nomatch") : (lensOk ? "" : "nomatch");
+          const matched = usesColor ? _skuMatchesAny(s, headSets) : true;
+          const cls = usesColor ? (matched ? "match" : "nomatch") : "";
           const colors = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/") || "—";
           const pr = s.price != null ? `$${s.price}` : "";
           const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
@@ -552,28 +629,48 @@ function _pickerDrawLocation() {
 // Fractional (0–1) slot positions for a location — ported verbatim from
 // canvas.js getSlotPositions with box=[0,0,1,1] so mirror/horizontal spreads
 // render identically to the placement settings preview.
-function _pickerSlotPositions(loc) {
+function _pickerSlotPositions(loc, locationName) {
   const baseCx = loc.x, baseCy = loc.y;
   const pattern = loc.pattern || "single";
-  const slotCount = loc.slot_count || 1;
+  let slotCount = loc.slot_count || 1;
+  let slotIndices = null;
+
+  // For TOP TUBE, apply quantity_rules from the location to determine which
+  // dots are visible (mirrors the planner's per-location quantity_rules logic).
+  if (locationName && locationName.toUpperCase() === "TOP TUBE") {
+    const lightheadCount = _pickerState.config.count || 0;
+    const rules = loc.quantity_rules || [];
+    const match = rules.find(r => r.qty === lightheadCount);
+    if (match) {
+      if (match.slot_count) slotCount = match.slot_count;
+      if (match.slot_indices) slotIndices = match.slot_indices;
+    }
+  }
+
   if (slotCount <= 1 || pattern === "single") return [[baseCx, baseCy]];
   const rawSpacing = loc.h_spacing ?? loc.spacing;
   const spacing = (rawSpacing && rawSpacing > 0) ? rawSpacing : 0.06;
+  let positions;
   if (pattern === "horizontal") {
     const totalW = spacing * (slotCount - 1), startX = baseCx - totalW / 2;
-    return Array.from({ length: slotCount }, (_, i) => [startX + i * spacing, baseCy]);
-  }
-  if (pattern === "mirror") {
+    positions = Array.from({ length: slotCount }, (_, i) => [startX + i * spacing, baseCy]);
+  } else if (pattern === "mirror") {
     const centerX = 0.5, offsetX = Math.abs(baseCx - centerX);
-    if (slotCount === 2) return [[centerX - offsetX, baseCy], [centerX + offsetX, baseCy]];
-    const half = Math.floor(slotCount / 2), positions = [];
-    for (let i = 0; i < half; i++) {
-      const off = offsetX + i * spacing;
-      positions.push([centerX - off, baseCy]); positions.push([centerX + off, baseCy]);
+    if (slotCount === 2) {
+      positions = [[centerX - offsetX, baseCy], [centerX + offsetX, baseCy]];
+    } else {
+      const half = Math.floor(slotCount / 2);
+      positions = [];
+      for (let i = 0; i < half; i++) {
+        const off = offsetX + i * spacing;
+        positions.push([centerX - off, baseCy]); positions.push([centerX + off, baseCy]);
+      }
     }
-    return positions;
+  } else {
+    return [[baseCx, baseCy]];
   }
-  return [[baseCx, baseCy]];
+  if (slotIndices) return slotIndices.filter(i => i < positions.length).map(i => positions[i]);
+  return positions;
 }
 
 function _pickerPlaceDots() {
@@ -607,7 +704,7 @@ function _pickerPlaceDots() {
   dots.innerHTML = names.map(n => {
     const c = locs[n];
     const selected = loc.selected === n;
-    return _pickerSlotPositions(c).map(([fx, fy]) =>
+    return _pickerSlotPositions(c, n).map(([fx, fy]) =>
       `<button class="picker-dot${selected ? " sel" : ""}" data-name="${esc(n)}" style="left:${(fx * 100).toFixed(2)}%;top:${(fy * 100).toFixed(2)}%"></button>`
     ).join("");
   }).join("") + `<div class="picker-dot-tip" id="picker-dot-tip" hidden></div>`;

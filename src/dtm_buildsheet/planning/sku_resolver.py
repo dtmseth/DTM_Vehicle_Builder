@@ -29,6 +29,15 @@ from typing import Any
 _COLOR_ORDER = ["red", "blue", "white", "amber", "green", "purple"]
 
 
+def _ion_rank(part_number: str) -> int:
+    """Sort key: I2_ preferred (0), IOND/IONE deprecated (2), others normal (1)."""
+    if part_number.startswith("I2"):
+        return 0
+    if part_number.startswith(("IOND", "IONE")):
+        return 2
+    return 1
+
+
 def _color_key(colors: list[str]) -> tuple[str, ...]:
     """Order-insensitive key for a color set (drops blanks, dedupes)."""
     return tuple(sorted({c.lower() for c in colors if c}))
@@ -102,7 +111,7 @@ def match_heads(part_numbers: list[Any], heads: list[list[str]],
                 lens_type=lt,
                 qb=bool(getattr(pn, "qb_item_id", "")),
             ))
-        matches.sort(key=lambda s: (s.price if s.price is not None else 9e9, s.part_number))
+        matches.sort(key=lambda s: (_ion_rank(s.part_number), s.price if s.price is not None else 9e9, s.part_number))
         combos.append(Combo(
             colors=buckets[key],
             label=_color_label(buckets[key]),

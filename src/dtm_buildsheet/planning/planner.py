@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re as _re
 from pathlib import Path
 
 from ..config_loader import ConfigBundle
@@ -13,7 +14,7 @@ from .asset_resolver import resolve_asset_path, size_class_for_part
 from .color_resolver import resolve_color_token, resolve_profile
 from .fixture_resolver import resolve_fixture_entry
 from .location_resolver import apply_co_part_rules, resolve_normal_location
-from .quantity_resolver import apply_quantity_rules
+from .quantity_resolver import apply_quantity_rules, apply_quantity_rules_list
 
 _log = logging.getLogger(__name__)
 
@@ -24,6 +25,86 @@ _SUPPRESS_QTY_MISMATCH_LOCATIONS: frozenset[str] = frozenset({
     "TOP TUBE",
 })
 
+# Category → render_kind mapping for synthesized specs (parts not in
+# the legacy catalog but resolvable by part_type).
+_CATEGORY_RENDER_KIND: dict[str, str] = {
+    "warning":      "light",
+    "scene":        "light",
+    "interior":     "light",
+    "interior_bar": "bar",
+    "roof_bar":     "bar",
+    "spotlight":    "light",
+}
+
+
+def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
+    """Match a part name like 'Forward Warning 3' to its part_type.
+
+    Returns (part_type, base_name_without_number).  part_type is None
+    when no match is found.  The service must provide list_part_types().
+    """
+    base = _re.sub(r"\s+\d+$", "", name).strip()
+    if not base:
+        return None, name
+    for pt in svc.list_part_types():
+        if (pt.label or "").strip().lower() == base.lower():
+            return pt, base
+    # Fallback: try matching against the label with the trailing pattern
+    # stripped (some labels carry `{n}`).
+    for pt in svc.list_part_types():
+        label = (pt.label or "").strip()
+        label_base = _re.sub(r"\s+\{n\}$", "", label).strip()
+        if label_base.lower() == base.lower():
+            return pt, base
+    return None, name
+
+
+def _synthesize_spec(pt, location_key: str) -> dict:
+    """Build a render spec from a part_type for the planner.
+
+    The spec is a dict with the keys the planner's existing code paths
+    expect: part_id, display_name, category, render_kind, default_views,
+    asset_key, is_fixture, render_quantity_policy, etc.
+
+    render_kind is derived from the part_type's *category*, not from the
+    legacy catalog.  default_views is set to an empty list here — the
+    planner will resolve views from the location's coordinates instead.
+    """
+    cat = (pt.category or "").lower()
+    render_kind = _CATEGORY_RENDER_KIND.get(cat, "equipment")
+    return {
+        "part_id":                  pt.part_type_id,
+        "display_name":             pt.label,
+        "category":                 pt.category or cat,
+        "render_kind":              render_kind,
+        "default_views":            [],   # resolved from location — see _views_for_location
+        "asset_key":                pt.part_type_id,
+        "is_fixture":               False,
+        "render_quantity_policy":   "location_slots",
+        "accessory_of":             getattr(pt, "accessory_of", None),
+        "group_shapes":             False,
+        # Empty containers for code paths that iterate these unconditionally.
+        "model_remaps":             {},
+        "co_part_rules":            [],
+        "location_asset_rules":     {},
+        "size_per_view":            {},
+        "quantity_rules":           [],
+    }
+
+
+def _views_for_location(location_key: str, view_map: dict[str, dict]) -> list[str]:
+    """Return the view names where *location_key* has coordinates.
+
+    view_map is {view_name_lower: view_config}.  Only views where
+    location_key exists in view_config["locations"] are returned.
+    """
+    views: list[str] = []
+    for view_name, vcfg in sorted(view_map.items()):
+        locations = vcfg.get("locations") or {}
+        if location_key in locations:
+            views.append(view_name)
+    return views
+
 
 def build_plan(project, config: ConfigBundle) -> BuildPlan:
     manifest = config.asset_manifest
@@ -32,6 +113,16 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
     vehicle = layouts.get(vehicle_type, {})
     view_map = {k.lower(): v for k, v in vehicle.get("views", {}).items()}
     fixtures_map = vehicle.get("fixtures", {})
+
+    # Lazy-load parts_db_service only when a catalog miss occurs.
+    _parts_db_svc: object | None = None
+
+    def _get_svc():
+        nonlocal _parts_db_svc
+        if _parts_db_svc is None:
+            from ..app.services.parts_db_service import get_parts_db_service
+            _parts_db_svc = get_parts_db_service(config.paths)
+        return _parts_db_svc
 
     # Pre-pass: collect names of all included parts for co_part_rules
     present_part_names: set[str] = set()
@@ -57,20 +148,34 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             continue
 
         spec = config.parts_by_name.get(part.name.upper())
+        # ── category-level resolution ──────────────────────────────────
+        # When a part matches the legacy catalog, use that spec ONLY for
+        # legacy Excel imports (no line_id).  Picker-created parts with a
+        # line_id always resolve through the part_type so rendering
+        # parameters (quantity_rules, color_profile, asset_key) are not
+        # contaminated by catalog entries designed for specific locations.
+        if spec is not None and part.line_id:
+            spec = None
+
         if spec is None:
-            planned_parts.append(
-                PlannedPart(
-                    part_id="unmapped",
-                    part_name=part.name,
-                    category="unknown",
-                    render_kind="none",
-                    on_diagram=False,
-                    raw=part,
-                    warnings=[f"No part catalog entry for '{part.name}'"],
+            svc = _get_svc()
+            pt, base_name = _find_part_type_by_name(part.name, svc)
+            if pt is not None:
+                spec = _synthesize_spec(pt, part.location)
+            else:
+                planned_parts.append(
+                    PlannedPart(
+                        part_id="unmapped",
+                        part_name=part.name,
+                        category="unknown",
+                        render_kind="none",
+                        on_diagram=False,
+                        raw=part,
+                        warnings=[f"No part catalog entry for '{part.name}'"],
+                    )
                 )
-            )
-            warnings.append(f"Unmapped part: {part.name}")
-            continue
+                warnings.append(f"Unmapped part: {part.name}")
+                continue
 
         # Model-based remap: switch spec when the part number matches a model_remaps entry
         if part.part_number and spec.get("model_remaps"):
@@ -100,9 +205,32 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             planned_parts.append(planned)
             continue
 
-        default_views = spec.get("default_views", [])
-        if not default_views:
-            planned.warnings.append(f"No default views configured for '{part.name}'")
+        # Determine which views to render in: default_views from the catalog
+        # spec, OR resolved from the location's coordinates when the spec
+        # was synthesised (category-level parts).
+        catalog_views = spec.get("default_views", [])
+        if catalog_views:
+            render_views = catalog_views[:]
+        else:
+            # Synthesised spec — resolve views from location coordinates.
+            location_key = canonical_name(
+                part.location or spec.get("default_location_key", "")
+            ).strip().upper()
+            if location_key:
+                render_views = _views_for_location(location_key, view_map)
+                if not render_views:
+                    planned.warnings.append(
+                        f"No views found for location '{location_key}' in vehicle '{vehicle_type}'"
+                    )
+                    planned_parts.append(planned)
+                    continue
+            else:
+                planned.warnings.append(f"No location supplied for '{part.name}' — cannot resolve views")
+                planned_parts.append(planned)
+                continue
+
+        if not render_views:
+            planned.warnings.append(f"No views configured for '{part.name}'")
             planned_parts.append(planned)
             continue
 
@@ -131,7 +259,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             "asset_key", spec.get("asset_key") or spec.get("part_id", "")
         )
 
-        for view in default_views:
+        for view in render_views:
             view_config = view_map.get(view.lower(), {})
 
             if is_fixture:
@@ -163,6 +291,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 slot_count = max(1, part.quantity or 1)
 
             qty_overrides = apply_quantity_rules(spec, part.quantity)
+            if not qty_overrides:
+                loc_rules = location.get("quantity_rules")
+                if loc_rules:
+                    qty_overrides = apply_quantity_rules_list(loc_rules, part.quantity)
             if qty_overrides.get("slot_count"):
                 slot_count = int(qty_overrides["slot_count"])
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
@@ -236,6 +368,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 is_fixture=is_fixture,
                 slot_indices=slot_indices or None,
                 position_slot_count=position_slot_count,
+                line_id=part.line_id,
             )
 
             if quantity_policy == "location_slots":
@@ -266,18 +399,6 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                     asset_manifest=manifest,
                     fallback_images=lib_images,
                 )
-                if "wing wrap" in part.name.lower() or "wing_wrap_elitexd" in asset_path.lower():
-                    _log.info(
-                        "Wing Wrap asset resolution: part=%s part_number=%s view=%s "
-                        "render_kind=%s asset_key=%s lib_images=%s resolved_asset=%s",
-                        part.name,
-                        part.part_number,
-                        view,
-                        spec["render_kind"],
-                        effective_asset_key,
-                        lib_images,
-                        asset_path,
-                    )
                 instance = RenderInstance(
                     slot_index=index,
                     slot_role=slot_role,

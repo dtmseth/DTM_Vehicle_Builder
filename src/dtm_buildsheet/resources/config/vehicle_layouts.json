@@ -246,7 +246,11 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "h_spacing": 0.095
+              "h_spacing": 0.095,
+              "quantity_rules": [
+                {"qty": 2, "slot_count": 4, "slot_indices": [0, 3]},
+                {"qty": 4, "slot_count": 4}
+              ]
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -1234,7 +1238,11 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "h_spacing": 0.095
+              "h_spacing": 0.095,
+              "quantity_rules": [
+                {"qty": 2, "slot_count": 4, "slot_indices": [0, 3]},
+                {"qty": 4, "slot_count": 4}
+              ]
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -2257,7 +2265,11 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "h_spacing": 0.095
+              "h_spacing": 0.095,
+              "quantity_rules": [
+                {"qty": 2, "slot_count": 4, "slot_indices": [0, 3]},
+                {"qty": 4, "slot_count": 4}
+              ]
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -3281,7 +3293,11 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "h_spacing": 0.095
+              "h_spacing": 0.095,
+              "quantity_rules": [
+                {"qty": 2, "slot_count": 4, "slot_indices": [0, 3]},
+                {"qty": 4, "slot_count": 4}
+              ]
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
@@ -4288,7 +4304,11 @@
               "orientation": "h",
               "slot_count": 4,
               "pattern": "horizontal",
-              "h_spacing": 0.095
+              "h_spacing": 0.095,
+              "quantity_rules": [
+                {"qty": 2, "slot_count": 4, "slot_indices": [0, 3]},
+                {"qty": 4, "slot_count": 4}
+              ]
             },
             "CENTER PLATE OF PB": {
               "x": 0.5,
