@@ -53,8 +53,17 @@ function _meMakeRows(parts) {
     const statusLabel = p.new_or_used
       ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used))
       : "—";
-    return `<tr${_meStatusRowStyle(p.new_or_used)}>
-      <td style="font-weight:500;max-width:160px;word-break:break-word">${esc(p.name)}</td>
+    const comps = p.components || [];
+    // A part with concrete SKUs (added by the picker) is expandable. Clicking
+    // anywhere on the parent row toggles its child SKU rows (display-only — the
+    // build sheet sees just this parent).
+    const hasComps = comps.length > 0;
+    const caret = hasComps
+      ? `<span class="me-expand-caret" data-lid="${esc(p.line_id)}">▸</span>`
+      : `<span class="me-expand-spacer"></span>`;
+    const rowAttrs = hasComps ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
+    let html = `<tr${rowAttrs}${_meStatusRowStyle(p.new_or_used)}>
+      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(p.name)}${hasComps ? ` <span class="me-comp-count">(${comps.length})</span>` : ""}</td>
       <td style="color:var(--muted)">${esc(p.location || "—")}</td>
       <td>${esc(p.raw_color || "—")}</td>
       <td style="text-align:center">${p.quantity || "—"}</td>
@@ -66,12 +75,23 @@ function _meMakeRows(parts) {
         <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(p.line_id)}" title="Remove">✕</button>
       </td>
     </tr>`;
+    for (const cm of comps) {
+      const price = (cm.price != null) ? ` · $${cm.price}` : "";
+      html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
+        <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(cm.part_number || "")}</td>
+        <td></td>
+        <td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>
+        <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
+        <td colspan="4" style="font-size:11px;color:var(--muted)">${price}</td>
+      </tr>`;
+    }
+    return html;
   }).join("");
 }
 
 const _meThead = `<thead><tr>
   <th>Part</th><th>Location</th><th>Color</th><th style="text-align:center">Qty</th>
-  <th>Mfg / Model #</th><th>Status</th><th>Incl.</th><th></th>
+  <th>Mfg / Part #</th><th>Status</th><th>Incl.</th><th></th>
 </tr></thead>`;
 
 function _meRender() {
@@ -116,6 +136,7 @@ function _meRender() {
   }
   html += `<div class="me-add-bottom">
     <button class="btn btn-primary btn-sm" onclick="addPart()">+ Add Part</button>
+    <a href="#" onclick="addPartManual();return false" style="font-size:11px;color:var(--muted);margin-left:10px">add manually...</a>
   </div>`;
 
   container.innerHTML = html;
@@ -126,6 +147,19 @@ function _meRender() {
   );
   container.querySelectorAll(".me-del-btn").forEach(b =>
     b.addEventListener("click", () => deletePart(b.dataset.lid))
+  );
+  // Wire component expand/collapse — clicking anywhere on an expandable parent
+  // row toggles its child SKU rows (but not when an action button was clicked).
+  container.querySelectorAll("tr.me-parent-row").forEach(row =>
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".me-row-actions")) return;
+      const lid = row.dataset.lid;
+      const caret = row.querySelector(".me-expand-caret");
+      const open = caret ? caret.classList.toggle("open") : false;
+      if (caret) caret.textContent = open ? "▾" : "▸";
+      container.querySelectorAll(`tr.me-comp-row[data-parent="${lid}"]`)
+        .forEach(r => { r.hidden = !open; });
+    })
   );
   container.querySelectorAll(".me-cat-add-btn").forEach(b =>
     b.addEventListener("click", () => addPartInSection(b.dataset.section))
@@ -163,6 +197,16 @@ function _meGetStatus() {
 // ── modal open/close ─────────────────────────────────────
 
 async function addPart() {
+  // Open the intelligent picker (preferred path)
+  if (typeof openPicker === "function") {
+    try {
+      await openPicker();
+      return;
+    } catch(e) {
+      console.error("Picker failed, falling back to modal:", e);
+    }
+  }
+  // Fallback: old modal
   _meEditLineId = null;
   $("me-modal-title").textContent = "Add Part";
   $("me-name").value      = "";
@@ -172,6 +216,7 @@ async function addPart() {
   $("me-color").value     = "";
   $("me-qty").value       = 1;
   $("me-mfg").value       = "";
+  $("me-prod").value      = "";
   $("me-pn").value        = "";
   $("me-notes").value     = "";
   await _mePopulateDataLists();
@@ -181,9 +226,24 @@ async function addPart() {
   setTimeout(() => $("me-name").focus(), 50);
 }
 
+// Direct-to-modal fallback (bypasses picker)
+async function addPartManual() {
+  // Fake a non-function openPicker to force the fallback path
+  const saved = window.openPicker;
+  window.openPicker = undefined;
+  await addPart();
+  window.openPicker = saved;
+}
+
 async function openPartEditModal(lineId) {
   const part = (_meDraft?.parts || []).find(p => p.line_id === lineId);
   if (!part) return;
+  // Preferred: edit in the new picker panel.
+  if (typeof _pickerOpenEdit === "function") {
+    _pickerOpenEdit(part);
+    return;
+  }
+  // Fallback: old flat modal.
   _meEditLineId = lineId;
   $("me-modal-title").textContent  = "Edit Part";
   $("me-name").value      = part.name          || "";
@@ -195,6 +255,7 @@ async function openPartEditModal(lineId) {
   $("me-color").value     = part.raw_color      || "";
   $("me-qty").value       = part.quantity        ?? 0;
   $("me-mfg").value       = part.manufacturer   || "";
+  $("me-prod").value      = "";
   $("me-pn").value        = part.part_number     || "";
   $("me-notes").value     = part.notes           || "";
   await _mePopulateDataLists();
@@ -257,7 +318,27 @@ async function deletePart(lineId) {
 
 // ── datalist population ───────────────────────────────────
 
+let _meManifestCache = {};  // { partTypeName: {manufacturers, part_numbers, locations} }
+
+async function _meFetchManifestData(partName) {
+  if (!partName) return;
+  // Strip trailing sequence numbers to match parts_db labels
+  // "Forward Warning 1" → "Forward Warning"
+  const baseName = partName.replace(/\s+\d+$/, "").trim();
+  const key = baseName || partName;
+  if (_meManifestCache[key]) return;
+  try {
+    const res = await api(`/api/parts-db/manifest-data?part_type=${encodeURIComponent(key)}`);
+    if (res && !res.error) {
+      _meManifestCache[key] = res;
+    }
+  } catch(e) {
+    // fall through — will use workbook_rules fallback
+  }
+}
+
 async function _mePopulateDataLists() {
+  // Still load catalog for render_kind lookup and section grouping
   if (!_catalog?.parts) {
     const res = await api("/api/catalog");
     if (res?.parts) _catalog = res;
@@ -268,6 +349,7 @@ async function _mePopulateDataLists() {
   }
   _meRebuildSections();
 
+  // Populate part type dropdown from catalog (planner requires catalog names)
   const nameList = $("me-name-list");
   if (nameList && _catalog?.parts) {
     nameList.innerHTML = (_catalog.parts)
@@ -276,41 +358,105 @@ async function _mePopulateDataLists() {
       .join("");
   }
 
-  // Populate mfg and pn based on currently selected part type
   _meUpdateManufacturers($("me-name")?.value || "");
 }
 
-function _meUpdateManufacturers(partName) {
-  const rule = (_workbookRules?.part_rules || {})[partName];
-  const mfgs = rule?.manufacturer || [];
+async function _meUpdateManufacturers(partName) {
+  const baseName = (partName || "").replace(/\s+\d+$/, "").trim();
+  await _meFetchManifestData(partName);
+  const md = _meManifestCache[baseName || partName];
   const mfgList = $("me-mfg-list");
-  if (mfgList) mfgList.innerHTML = mfgs.map(m => `<option value="${esc(m)}">`).join("");
-  _meUpdatePartNumbers(partName, $("me-mfg")?.value || "");
+  if (!mfgList) return;
+  if (md?.manufacturers?.length) {
+    mfgList.innerHTML = md.manufacturers
+      .map(m => `<option value="${esc(m.label)}" data-mid="${esc(m.manufacturer_id||"")}">`)
+      .join("");
+  } else {
+    // Fallback to workbook_rules
+    const rule = (_workbookRules?.part_rules || {})[partName];
+    const mfgs = rule?.manufacturer || [];
+    mfgList.innerHTML = mfgs.map(m => `<option value="${esc(m)}">`).join("");
+  }
+  _meUpdatePartNumbers(partName, $("me-mfg")?.value || "", $("me-prod")?.value || "");
 }
 
-function _meUpdatePartNumbers(partName, mfgFilter) {
-  const rule   = (_workbookRules?.part_rules || {})[partName];
+function _meUpdateProducts(partName, mfgFilter) {
+const baseName = (partName || "").replace(/\s+\d+$/, "").trim();
+const md = _meManifestCache[baseName || partName];
+const prodList = $("me-prod-list");
+if (!prodList) return;
+if (md?.part_numbers?.length) {
+  let pns = md.part_numbers;
+  if (mfgFilter) {
+    const mfgOpt = document.querySelector(`#me-mfg-list option[value="${esc(mfgFilter)}"]`);
+    const mid = mfgOpt?.dataset?.mid || mfgFilter;
+    pns = pns.filter(p => (p.manufacturer_id || "") === mid
+                       || (p.manufacturer_id || "").toUpperCase() === mfgFilter.toUpperCase());
+  }
+  // Unique product models, preserving order
+  const seen = new Set();
+  const products = [];
+  for (const p of pns) {
+    const model = p.product_model || "";
+    if (model && !seen.has(model)) {
+      seen.add(model);
+      products.push(model);
+    }
+  }
+  prodList.innerHTML = products.map(m => `<option value="${esc(m)}">`).join("");
+} else {
+  prodList.innerHTML = "";
+}
+}
+
+function _meUpdatePartNumbers(partName, mfgFilter, prodFilter) {
+const baseName = (partName || "").replace(/\s+\d+$/, "").trim();
+const md = _meManifestCache[baseName || partName];
+const pnList = $("me-pn-list");
+if (!pnList) return;
+if (md?.part_numbers?.length) {
+  let pns = md.part_numbers;
+  if (mfgFilter) {
+    const mfgOpt = document.querySelector(`#me-mfg-list option[value="${esc(mfgFilter)}"]`);
+    const mid = mfgOpt?.dataset?.mid || mfgFilter;
+    pns = pns.filter(p => (p.manufacturer_id || "") === mid
+                       || (p.manufacturer_id || "").toUpperCase() === mfgFilter.toUpperCase());
+  }
+  if (prodFilter) {
+    pns = pns.filter(p => (p.product_model || "").toLowerCase() === prodFilter.toLowerCase());
+  }
+  pnList.innerHTML = pns.map(p => {
+    const price = p.qb_unit_price || p.price_usd;
+    const priceStr = price ? `  $${price}` : "";
+    const qb = p.qb_item_id ? " 🅀" : "";
+    return `<option value="${esc(p.part_number)}">${esc(p.part_number)}${priceStr}${qb}</option>`;
+  }).join("");
+} else {
+  const rule = (_workbookRules?.part_rules || {})[partName];
   const models = rule?.models || [];
-  const pnList = $("me-pn-list");
-  if (pnList) pnList.innerHTML = models.map(m => `<option value="${esc(m)}">`).join("");
+  pnList.innerHTML = models.map(m => `<option value="${esc(m)}">`).join("");
+}
 }
 
 function _meUpdateLocations(partName) {
-  const rule = (_workbookRules?.part_rules || {})[partName];
-  let locs = (rule?.locations || [])
-    .filter(l => !/^specify\s+loc/i.test(l));
-
+  const baseName = (partName || "").replace(/\s+\d+$/, "").trim();
+  const md = _meManifestCache[baseName || partName];
+  let locs = [];
+  if (md?.locations?.length) {
+    locs = md.locations.filter(l => !/^specify\s+loc/i.test(l));
+  }
+  if (!locs.length) {
+    const rule = (_workbookRules?.part_rules || {})[partName];
+    locs = (rule?.locations || []).filter(l => !/^specify\s+loc/i.test(l));
+  }
   const catalogPart = (_catalog?.parts || []).find(
     p => (p.display_name || "").toLowerCase() === (partName || "").toLowerCase()
   );
   if (!locs.length && catalogPart?.is_fixture) locs = ["Default"];
-
   if (typeof allKnownLocationNames === "function" && !locs.length) {
     locs = allKnownLocationNames();
   }
-
   locs.push("Set Manually");
-
   const locList = $("me-loc-list");
   if (locList) locList.innerHTML = locs.map(l => `<option value="${esc(l)}">`).join("");
 }
@@ -375,7 +521,16 @@ document.querySelectorAll(".me-status-btn").forEach(btn => {
   const mfgInput = $("me-mfg");
   if (mfgInput) {
     mfgInput.addEventListener("input", () => {
-      _meUpdatePartNumbers($("me-name")?.value || "", mfgInput.value);
+      const pn = $("me-name")?.value || "";
+      _meUpdateProducts(pn, mfgInput.value);
+      _meUpdatePartNumbers(pn, mfgInput.value, $("me-prod")?.value || "");
+    });
+  }
+  const prodInput = $("me-prod");
+  if (prodInput) {
+    prodInput.addEventListener("input", () => {
+      const pn = $("me-name")?.value || "";
+      _meUpdatePartNumbers(pn, $("me-mfg")?.value || "", prodInput.value);
     });
   }
 })();

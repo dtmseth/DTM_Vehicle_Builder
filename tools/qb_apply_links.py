@@ -9,7 +9,9 @@ curation, one per manufacturer) and:
     product, carrying the SKU's ``qb_item_id`` + ``qb_unit_price`` (read from
     the synced items cache) and its ``vehicle_tags``,
   - drops the descriptive placeholder part_number (the one equal to the product
-    model) once a real SKU lands on that product.
+    model) once a real SKU lands on that product,
+  - parses color, secondary_color, and lens_type from the QB item's
+    Sales Description (first) or SKU letter patterns (fallback).
 
 Linkage is per part number (a product can hold many SKUs, each its own price) —
 matching the catalog reality. Dry-run by default; ``--write`` saves through
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -33,9 +36,119 @@ CACHE = REPO / "workspace" / "quickbooks_items_cache.json"
 
 _QB_FIELDS = ("qb_item_id", "qb_sku", "qb_unit_price", "qb_inactive", "vehicle_tags")
 
+# Light part_type IDs — color/lens data only populated for products fitting these.
+# Dynamically loaded from parts_db types with type_id="lights".
+_LIGHT_PART_TYPE_IDS: set[str] = set()
+
+
+def _load_light_part_types(parts_db: dict) -> set[str]:
+    """Return the set of part_type_ids under type_id='lights'."""
+    pts = parts_db.get("part_types") or {}
+    return {pid for pid, pt in pts.items() if pt.get("type_id") == "lights"}
+
+
+# ── Color / lens parsing from QB item data ───────────────────────────────
+
+# Spelled-out names + common abbreviations.
+_COLOR_WORD: dict[str, str] = {
+    "RED": "red",
+    "BLUE": "blue", "BLU": "blue",
+    "AMBER": "amber", "AMB": "amber",
+    "WHITE": "white", "WHT": "white", "WHI": "white",
+    "GREEN": "green", "GRN": "green",
+    "PURPLE": "purple", "PRP": "purple", "PURP": "purple",
+}
+# Single-letter initials (Whelen compact codes: R-W, BAW, R/B/W, …).
+_COLOR_INITIAL: dict[str, str] = {
+    "R": "red", "B": "blue", "A": "amber", "W": "white", "G": "green", "P": "purple",
+}
+
+_SMOKE_RE = re.compile(r"\b(SMOKED|SMOKE|SMK)\b", re.IGNORECASE)
+_CLEAR_RE = re.compile(r"\b(CLEAR|CLR)\b", re.IGNORECASE)
+_LENS_STRIP_RE = re.compile(r"\b(SMOKED|SMOKE|SMK|CLEAR|CLR)\b", re.IGNORECASE)
+# Programmable multi-color bars (WeCanX): color is per-config, never one fixed set.
+_MULTICOLOR_RE = re.compile(r"WE\s?CAN\s?X|WCX|WECAN", re.IGNORECASE)
+# "DUO"/"TRIO"/"SPLIT" signals a color-combo follows — lets us trust a bare
+# initial run like "BAW" that has no separators.
+_COMBO_CTX_RE = re.compile(r"\b(DUO|TRIO|SPLIT|DUAL)\b", re.IGNORECASE)
+
+
+def _extract_colors(work: str, allow_bare_codes: bool) -> list[str]:
+    """Extract an ordered, de-duplicated color list (max 3) from a description.
+
+    Handles spelled-out names, abbreviations, and single-letter initials with
+    ``/``, ``-``, space, or no separator. Bare initial runs (no separator, e.g.
+    "BAW") are only trusted when a DUO/TRIO/SPLIT context is present, to avoid
+    false positives from model codes like "PB" or "MT".
+    """
+    colors: list[str] = []
+    for raw in re.split(r"[\s,]+", work.upper()):
+        tok = raw.strip().strip("-/")
+        if not tok:
+            continue
+        had_sep = ("/" in tok) or ("-" in tok)
+        for part in re.split(r"[-/]", tok):
+            part = re.sub(r"[^A-Z]", "", part)   # strip parens/punctuation: "(AMBER)" → "AMBER"
+            if not part:
+                continue
+            if part in _COLOR_WORD:
+                colors.append(_COLOR_WORD[part])
+            elif all(ch in _COLOR_INITIAL for ch in part) and 1 <= len(part) <= 3:
+                if len(part) == 1:
+                    if had_sep:                      # part of e.g. R/B/W
+                        colors.append(_COLOR_INITIAL[part])
+                elif had_sep or allow_bare_codes:    # "R-W" or "BAW" w/ TRIO ctx
+                    colors.extend(_COLOR_INITIAL[ch] for ch in part)
+            # else: model code / noise (BLK, MT, XLP, …) — ignore
+    seen: list[str] = []
+    for c in colors:
+        if c not in seen:
+            seen.append(c)
+    return seen[:3]
+
+
+def _parse_color_from_item(description: str, sku: str) -> dict[str, str]:
+    """Return {color, secondary_color, tertiary_color, lens_type} from QB data.
+
+    Sales Description is the source of truth. Lens: SMOKE/SMK/SMOKED → smoked,
+    CLEAR/CLR → clear, else (with a color) defaults clear. SKU prefix ``X`` is a
+    weak smoked fallback only. Programmable multi-color (WeCanX) bars get no
+    fixed color.
+    """
+    result = {"color": "", "secondary_color": "", "tertiary_color": "", "lens_type": ""}
+    desc = (description or "").upper().strip()
+    sku_upper = (sku or "").upper().strip()
+
+    # ── Lens ──
+    if _SMOKE_RE.search(desc):
+        result["lens_type"] = "smoked"
+    elif _CLEAR_RE.search(desc):
+        result["lens_type"] = "clear"
+
+    # ── Color ── (skip programmable multi-color bars entirely)
+    if not _MULTICOLOR_RE.search(desc):
+        work = _LENS_STRIP_RE.sub(" ", desc)
+        colors = _extract_colors(work, allow_bare_codes=bool(_COMBO_CTX_RE.search(desc)))
+        if colors:
+            result["color"] = colors[0]
+            if len(colors) > 1:
+                result["secondary_color"] = colors[1]
+            if len(colors) > 2:
+                result["tertiary_color"] = colors[2]
+
+    # ── Smoked fallback via SKU prefix X (only if desc gave no lens) ──
+    if not result["lens_type"] and sku_upper.startswith("X") and len(sku_upper) > 1:
+        result["lens_type"] = "smoked"
+
+    # ── Default to clear when a color is present but no lens stated ──
+    if not result["lens_type"] and result["color"]:
+        result["lens_type"] = "clear"
+
+    return result
+
 
 def load_cache_index() -> dict:
-    """name (part number) → {qb_item_id, unit_price, sku} from the synced cache."""
+    """name (part number) → {qb_item_id, unit_price, sku, description} from the synced cache."""
     if not CACHE.exists():
         print(f"items cache not found ({CACHE}). Pull items in the app first.", file=sys.stderr)
         sys.exit(2)
@@ -48,6 +161,10 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
 
     Raises ValueError on any unresolvable reference so nothing is half-applied.
     """
+    global _LIGHT_PART_TYPE_IDS
+    if not _LIGHT_PART_TYPE_IDS:
+        _LIGHT_PART_TYPE_IDS = _load_light_part_types(parts_db)
+
     products = parts_db.setdefault("products", {})
     actions: list[str] = []
 
@@ -96,6 +213,18 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
                   if str(p.get("part_number", "")).strip().lower() != model
                   or str(p.get("qb_item_id", "")).strip()]
 
+        # Parse color / lens from the QB item
+        desc = item.get("description") or item.get("sales_description") or ""
+        color_info = _parse_color_from_item(desc, sku)
+
+        # Only keep color/lens data for light products (fits at least one light part_type).
+        # Non-light items (partitions, seats, cargo decks) often have color-adjacent
+        # words in descriptions that produce false positives.
+        product_fits = set(spec.get("fits_part_types") or [])
+        is_light = bool(product_fits & _LIGHT_PART_TYPE_IDS)
+        if not is_light:
+            color_info = {"color": "", "secondary_color": "", "tertiary_color": "", "lens_type": ""}
+
         entry = {
             "part_number": sku,
             "qb_item_id": str(item.get("qb_item_id", "")),
@@ -103,15 +232,29 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
             "qb_unit_price": item.get("unit_price"),
             "qb_inactive": False,
             "vehicle_tags": list(link.get("vehicle_tags") or ["any"]),
+            "color": color_info["color"],
+            "secondary_color": color_info["secondary_color"],
+            "tertiary_color": color_info.get("tertiary_color", ""),
+            "lens_type": color_info["lens_type"],
         }
         existing = next((p for p in pns if p.get("part_number") == sku), None)
         if existing:
             existing.update(entry)
-            actions.append(f"~ {pid}: update {sku}  (${entry['qb_unit_price']})")
+            color_str = f" {entry['color']}"
+            if entry["secondary_color"]:
+                color_str += f"/{entry['secondary_color']}"
+            if entry["lens_type"]:
+                color_str += f" ({entry['lens_type']})"
+            actions.append(f"~ {pid}: update {sku}  (${entry['qb_unit_price']}{color_str})")
         else:
             pns.append(entry)
+            color_label = f" {entry['color']}"
+            if entry["secondary_color"]:
+                color_label += f"/{entry['secondary_color']}"
+            if entry["lens_type"]:
+                color_label += f" ({entry['lens_type']})"
             actions.append(f"+ {pid}: link {sku}  (${entry['qb_unit_price']}, "
-                           f"veh {entry['vehicle_tags']})")
+                           f"veh {entry['vehicle_tags']}{color_label})")
     return actions
 
 

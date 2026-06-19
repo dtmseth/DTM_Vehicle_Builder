@@ -1,11 +1,22 @@
 // ═══════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════
+// Returns parsed JSON. Non-2xx responses that still carry a JSON body
+// (e.g. {"error": ...} on a 400/404) resolve normally so callers can read
+// res.error — many do. Only a body that isn't JSON at all (a 500 HTML error
+// page) rejects, and it does so with the status + path so the failure is
+// diagnosable instead of surfacing as a generic "Error loading X."
 const api = (path, body) =>
   fetch(path, body !== undefined
     ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}
     : undefined
-  ).then(r => r.json());
+  ).then(async r => {
+    try {
+      return await r.json();
+    } catch (_) {
+      throw new Error(`${path} → ${r.status} ${r.statusText} (non-JSON response)`);
+    }
+  });
 
 async function apiSave(endpoint, data){
   const res = await api(endpoint, data);

@@ -1684,6 +1684,40 @@
   </div>
 </div>
 
+<!-- ── PART PICKER PANEL ── -->
+<div id="picker-panel" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="picker-container picker-container--wide">
+    <div class="picker-header">
+      <span id="picker-title">Add Part</span>
+      <button class="modal-close" onclick="pickerClose()" title="Close">✕</button>
+    </div>
+    <div class="picker-tabs">
+      <button class="picker-tab active" id="picker-tab-btn-part" data-tab="part">1 · Part</button>
+      <button class="picker-tab" id="picker-tab-btn-location" data-tab="location">2 · Location</button>
+    </div>
+    <!-- PART TAB: two-pane (filters | live product list) -->
+    <div class="picker-tabpane" id="picker-pane-part">
+      <div class="picker-twopane">
+        <div class="picker-filters" id="picker-filters"></div>
+        <div class="picker-products" id="picker-products"></div>
+      </div>
+    </div>
+    <!-- LOCATION TAB: vehicle diagram + clickable dots -->
+    <div class="picker-tabpane" id="picker-pane-location" hidden>
+      <div class="picker-loc-views" id="picker-loc-views"></div>
+      <div class="picker-loc-stage" id="picker-loc-stage">
+        <img id="picker-loc-img" alt="vehicle view">
+        <div class="picker-loc-dots" id="picker-loc-dots"></div>
+        <div class="picker-loc-btns" id="picker-loc-btns" hidden></div>
+      </div>
+    </div>
+    <div class="picker-footer" id="picker-footer">
+      <span id="picker-footer-text" class="picker-footer-text">Select a part type to begin</span>
+      <button class="btn btn-primary btn-sm" id="picker-add-btn" disabled>Add Part</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── BUILD MANIFEST EDIT MODAL ── -->
 <div id="me-modal" class="modal-overlay" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:500px">
@@ -1713,6 +1747,10 @@
         <input id="me-location" type="text" placeholder="e.g. Dash" list="me-loc-list" autocomplete="off">
         <datalist id="me-loc-list"></datalist>
       </div>
+      <div class="form-group">
+        <label>Color</label>
+        <input id="me-color" type="text" placeholder="e.g. Red/Blue">
+      </div>
       <div class="form-group" style="max-width:90px;flex:none">
         <label>Qty</label>
         <input id="me-qty" type="number" min="0" max="99" value="1">
@@ -1721,20 +1759,21 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>Color</label>
-        <input id="me-color" type="text" placeholder="e.g. Red/Blue">
-      </div>
-      <div class="form-group">
         <label>Manufacturer</label>
         <input id="me-mfg" type="text" placeholder="e.g. Whelen" list="me-mfg-list" autocomplete="off">
         <datalist id="me-mfg-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Product</label>
+        <input id="me-prod" type="text" placeholder="e.g. ION" list="me-prod-list" autocomplete="off">
+        <datalist id="me-prod-list"></datalist>
       </div>
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label>Part Number</label>
-        <input id="me-pn" type="text" placeholder="Search or enter model #" list="me-pn-list" autocomplete="off">
+        <input id="me-pn" type="text" placeholder="Search or enter part #" list="me-pn-list" autocomplete="off">
         <datalist id="me-pn-list"></datalist>
       </div>
       <div class="form-group">
@@ -1833,6 +1872,7 @@
 <script src="/ui/js/settings/quickbooks.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>
 <script src="/ui/js/manifest_editor.js"></script>
+<script src="/ui/js/part_picker.js"></script>
 
 <script src="/ui/js/projects/state.js"></script>
 <script src="/ui/js/projects/api.js"></script>

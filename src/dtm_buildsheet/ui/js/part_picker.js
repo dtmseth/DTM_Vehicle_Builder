@@ -1,0 +1,790 @@
+// ═══════════════════════════════════════════════════════
+// PART PICKER — two-pane (filters | live product list) + dot-picker location
+// Tabs: Part / Location. Same UI for Add and Edit. No typing except search.
+// ═══════════════════════════════════════════════════════
+
+let _pickerState = {
+  open: false,
+  editLineId: null,
+  editPart: null,
+  tab: "part",
+  types: [],
+  filters: { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" },
+  config: { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [] },
+  availAll: new Set(),
+  search: "",
+  products: [],            // [{product_id, model, manufacturer_label, skus:[...]}]
+  expanded: new Set(),     // product_ids whose SKU list is open
+  sel: null,               // { product_id, model, mfr, sku? }  current selection
+  loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, name_pattern: "", base_label: "" },
+  footerHandler: null,
+  _footerWired: false,
+};
+
+const _PICKER_COLORS = {
+  red:    { label: "Red",    hex: "#e53935" },
+  blue:   { label: "Blue",   hex: "#1e88e5" },
+  amber:  { label: "Amber",  hex: "#fb8c00" },
+  white:  { label: "White",  hex: "#fafafa", border: "#c2c2c2" },
+  green:  { label: "Green",  hex: "#43a047" },
+  purple: { label: "Purple", hex: "#8e24aa" },
+};
+const _PICKER_COLOR_ORDER = ["red", "blue", "amber", "white", "green", "purple"];
+const _COLORS_PER_HEAD = { single: 1, duo: 2, trio: 3 };
+const _LIGHT_CATEGORIES = [
+  { id: "warning",      label: "Warning",      icon: "🚨" },
+  { id: "scene",        label: "Scene",        icon: "💡" },
+  { id: "interior",     label: "Interior",     icon: "🏠" },
+  { id: "interior_bar", label: "Interior Bar", icon: "🪟" },
+  { id: "roof_bar",     label: "Roof Bar",     icon: "🚙" },
+  { id: "spotlight",    label: "Spotlight",    icon: "🔦" },
+];
+const _TYPE_ICONS = { lights: "💡", equipment: "🔧", structural: "🏗️", k9: "🐕", extras: "⚡" };
+// Categories whose parts are color-configured (lights). Others pick a SKU directly.
+const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "roof_bar", "spotlight"]);
+
+// ── Public entry points ────────────────────────────────
+
+async function openPicker() {
+  _pickerResetState();
+  _pickerOpenPanel("Add Part");
+  await _pickerLoadTypes();
+  await _pickerFetchProducts();
+  _pickerSwitchTab("part");
+}
+
+function pickerClose() {
+  _pickerState.open = false;
+  _pickerState.editLineId = null;
+  _pickerState.editPart = null;
+  const panel = $("picker-panel");
+  if (panel) panel.classList.remove("open");
+}
+
+async function _pickerOpenEdit(part) {
+  if (!part) return;
+  _pickerResetState();
+  _pickerState.editLineId = part.line_id;
+  _pickerState.editPart = part;
+  _pickerOpenPanel("Edit Part");
+  await _pickerLoadTypes();
+  // Best-effort prefill from the stored part.
+  _pickerState.filters.type_id = "lights";
+  await _pickerFetchProducts();
+  // Try to preselect the product by matching a component/part_number.
+  const pn = (part.components && part.components[0] && part.components[0].part_number) || part.part_number;
+  const prod = _pickerState.products.find(p => p.skus.some(s => s.part_number === pn));
+  if (prod) {
+    _pickerState.sel = { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label };
+    _pickerState.expanded.add(prod.product_id);
+  }
+  _pickerState.loc.preName = part.name;
+  _pickerState.loc.preLoc = part.location;
+  _pickerSwitchTab("part");
+}
+
+// ── Shell ──────────────────────────────────────────────
+
+function _pickerResetState() {
+  _pickerState.open = true;
+  _pickerState.editLineId = null;
+  _pickerState.editPart = null;
+  _pickerState.tab = "part";
+  _pickerState.step = 0;          // current left-pane wizard step
+  _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" };
+  _pickerState.config = { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [] };
+  _pickerState.search = "";
+  _pickerState.products = [];
+  _pickerState.expanded = new Set();
+  _pickerState.sel = null;
+  _pickerState.skuChoices = {};   // color-combo label → chosen part_number (override)
+  _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, name_pattern: "", base_label: "" };
+}
+
+function _pickerOpenPanel(title) {
+  const t = $("picker-title"); if (t) t.textContent = title;
+  const panel = $("picker-panel");
+  if (panel) panel.classList.add("open");
+  if (!_pickerState._footerWired) {
+    $("picker-add-btn")?.addEventListener("click", () => { if (_pickerState.footerHandler) _pickerState.footerHandler(); });
+    $("picker-tab-btn-part")?.addEventListener("click", () => _pickerSwitchTab("part"));
+    $("picker-tab-btn-location")?.addEventListener("click", () => _pickerSwitchTab("location"));
+    _pickerState._footerWired = true;
+  }
+}
+
+function _pickerSwitchTab(tab) {
+  _pickerState.tab = tab;
+  $("picker-tab-btn-part")?.classList.toggle("active", tab === "part");
+  $("picker-tab-btn-location")?.classList.toggle("active", tab === "location");
+  const pp = $("picker-pane-part"), pl = $("picker-pane-location");
+  if (pp) pp.hidden = tab !== "part";
+  if (pl) pl.hidden = tab !== "location";
+  if (tab === "part") {
+    _pickerRenderFilters();
+    _pickerRenderProducts();
+  } else {
+    _pickerRenderLocation();
+  }
+  _pickerUpdateFooter();
+}
+
+async function _pickerLoadTypes() {
+  try {
+    const res = await api("/api/parts-db/types");
+    _pickerState.types = res?.types || [];
+  } catch (e) { console.error("Picker: types failed:", e); _pickerState.types = []; }
+}
+
+// ── Data ───────────────────────────────────────────────
+
+async function _pickerFetchProducts() {
+  const f = _pickerState.filters;
+  try {
+    const url = `/api/parts-db/category-skus?type=${encodeURIComponent(f.type_id)}&category=${encodeURIComponent(f.category_id || "")}`;
+    const res = await api(url);
+    _pickerState.products = res?.products || [];
+  } catch (e) {
+    console.error("Picker: category-skus failed:", e);
+    _pickerState.products = [];
+  }
+  // Available colors across the loaded set (drives swatch availability).
+  const avail = new Set();
+  for (const p of _pickerState.products)
+    for (const s of p.skus) {
+      if (s.color) avail.add(s.color);
+      if (s.secondary_color) avail.add(s.secondary_color);
+      if (s.tertiary_color) avail.add(s.tertiary_color);
+    }
+  _pickerState.availAll = avail;
+  _pickerNormalizeConfig();
+  // Auto-expand when only one product remains.
+  if (_pickerState.products.length === 1) _pickerState.expanded.add(_pickerState.products[0].product_id);
+}
+
+// ── Filters pane (left) ────────────────────────────────
+
+// The left pane is a click-through wizard: one filter group per page, with the
+// product list narrowing live on the right. Steps depend on the type/category.
+function _pickerUsesColor() {
+  const f = _pickerState.filters;
+  return f.type_id === "lights" && f.category_id !== "" && _COLOR_CATEGORIES.has(f.category_id);
+}
+function _pickerSteps() {
+  const f = _pickerState.filters;
+  const steps = [{ id: "type", label: "Part type" }];
+  if (f.type_id === "lights") steps.push({ id: "category", label: "Light type" });
+  if (_pickerUsesColor()) steps.push({ id: "colors", label: "Colors & options" });
+  return steps;
+}
+
+function _pickerRenderFilters() {
+  const el = $("picker-filters");
+  if (!el) return;
+  const f = _pickerState.filters;
+  const steps = _pickerSteps();
+  _pickerState.step = Math.max(0, Math.min(_pickerState.step, steps.length - 1));
+  const cur = steps[_pickerState.step];
+
+  const crumbs = steps.map((s, i) =>
+    `<button class="pf-crumb${i === _pickerState.step ? " active" : ""}${i < _pickerState.step ? " done" : ""}" data-step="${i}">${esc(s.label)}</button>`
+  ).join(`<span class="pf-crumb-sep">›</span>`);
+
+  let content = "";
+  if (cur.id === "type") {
+    content = `<div class="pf-pills pf-stack">` + _pickerState.types.map(t =>
+      `<button class="pf-pill pf-big${f.type_id === t.type_id ? " active" : ""}" data-k="type" data-v="${esc(t.type_id)}" data-l="${esc(t.label)}">${_TYPE_ICONS[t.type_id] || "📦"} ${esc(t.label)}</button>`).join("") + `</div>`;
+  } else if (cur.id === "category") {
+    content = `<div class="pf-pills pf-stack">` + _LIGHT_CATEGORIES.map(c =>
+      `<button class="pf-pill pf-big${f.category_id === c.id ? " active" : ""}" data-k="cat" data-v="${esc(c.id)}" data-l="${esc(c.label)}">${c.icon} ${esc(c.label)}</button>`).join("") + `</div>`;
+  } else if (cur.id === "colors") {
+    const lenses = [["", "Any"], ["clear", "Clear"], ["colored", "Colored"], ["smoked", "Smoked"]];
+    content = `<div class="pf-group"><span class="pf-label">Lens</span><div class="pf-pills">` +
+      lenses.map(([v, l]) => `<button class="pf-pill${(f.lens || "") === v ? " active" : ""}" data-k="lens" data-v="${v}">${l}</button>`).join("") +
+      `</div></div>` + _pickerColorConfigHtml();
+  }
+
+  el.innerHTML = `<div class="pf-group pf-search"><input type="text" id="pf-search" placeholder="🔍 Search products / SKUs" value="${esc(_pickerState.search)}"></div>
+    <div class="pf-crumbs">${crumbs}</div>
+    ${_pickerState.step > 0 ? `<button class="pf-back" id="pf-back">← Back</button>` : ""}
+    <div class="pf-stepbody">${content}</div>`;
+  _pickerWireFilters();
+}
+
+function _pickerColorConfigHtml() {
+  const c = _pickerState.config;
+  const slots = _COLORS_PER_HEAD[c.colorsPerHead];
+  const seg = (k, v, label, active, disabled) =>
+    `<button class="pf-pill${active ? " active" : ""}" data-k="${k}" data-v="${v}"${disabled ? " disabled" : ""}>${esc(label)}</button>`;
+
+  let sel = "";
+  if (c.mode === "uniform") {
+    sel = c.uniform.map((s, i) => `<div class="pf-group"><span class="pf-label">${slots > 1 ? "Color " + (i + 1) : "Color"}</span>${_pickerSwatchRow("uniform", i, s)}</div>`).join("");
+  } else if (c.mode === "split") {
+    sel = `<div class="pf-group"><span class="pf-label">Primary</span><span style="font-size:11px;color:var(--muted)">🔴 Red driver · 🔵 Blue passenger</span></div>`;
+    sel += c.splitSecondary.map((s, i) => `<div class="pf-group"><span class="pf-label">${c.splitSecondary.length > 1 ? "Secondary " + (i + 1) : "Secondary"}</span>${_pickerSwatchRow("split", i, s)}</div>`).join("");
+  } else {
+    sel = c.custom.map((arr, h) => `<div class="pf-group"><span class="pf-label">Head ${h + 1}</span>${_pickerSwatchMulti(h, arr, slots)}</div>`).join("");
+  }
+
+  return `<div class="pf-group"><span class="pf-label">Lightheads</span>
+      <div class="pf-pills"><button class="pf-pill" data-k="count" data-v="-1">−</button>
+      <span style="font-weight:700;padding:5px 4px">${c.count}</span>
+      <button class="pf-pill" data-k="count" data-v="1">+</button></div></div>
+    <div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
+      ${seg("cph", "single", "Single", c.colorsPerHead === "single")}
+      ${seg("cph", "duo", "Duo", c.colorsPerHead === "duo")}
+      ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>
+    <div class="pf-group"><span class="pf-label">Mode</span><div class="pf-pills">
+      ${seg("mode", "uniform", "Uniform", c.mode === "uniform")}
+      ${seg("mode", "split", "Split", c.mode === "split", !c.splitAllowed)}
+      ${seg("mode", "custom", "Custom", c.mode === "custom")}</div></div>
+    ${sel}`;
+}
+
+function _pickerSwatchRow(kind, slot, selected) {
+  const c = _pickerState.config;
+  return `<div class="picker-swatches" data-kind="${kind}" data-slot="${slot}">` +
+    _PICKER_COLOR_ORDER.map(col => {
+      const avail = c.__allowAll || _pickerState.availAll.has(col);
+      const d = _PICKER_COLORS[col];
+      return `<button class="picker-swatch${selected === col ? " sel" : ""}${avail ? "" : " dim"}" data-color="${col}" ${avail ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
+    }).join("") + `</div>`;
+}
+
+function _pickerSwatchMulti(head, arr, max) {
+  return `<div class="picker-swatches" data-kind="custom" data-head="${head}">` +
+    _PICKER_COLOR_ORDER.map(col => {
+      const avail = _pickerState.availAll.has(col);
+      const d = _PICKER_COLORS[col];
+      return `<button class="picker-swatch${arr.includes(col) ? " sel" : ""}${avail ? "" : " dim"}" data-color="${col}" ${avail ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
+    }).join("") + `<span style="font-size:11px;color:var(--muted)">${arr.length}/${max}</span></div>`;
+}
+
+function _pickerWireFilters() {
+  const el = $("picker-filters");
+  if (!el) return;
+  $("pf-search")?.addEventListener("input", e => { _pickerState.search = e.target.value; _pickerRenderProducts(); });
+  $("pf-back")?.addEventListener("click", () => { _pickerState.step = Math.max(0, _pickerState.step - 1); _pickerRenderFilters(); });
+  el.querySelectorAll(".pf-crumb").forEach(b => b.addEventListener("click", () => {
+    const i = parseInt(b.dataset.step, 10);
+    if (i <= _pickerState.step) { _pickerState.step = i; _pickerRenderFilters(); }
+  }));
+
+  el.querySelectorAll(".pf-pill").forEach(b => b.addEventListener("click", async () => {
+    if (b.disabled) return;
+    const k = b.dataset.k, v = b.dataset.v;
+    const f = _pickerState.filters, c = _pickerState.config;
+    if (k === "type") {
+      f.type_id = v; f.type_label = b.dataset.l; f.category_id = ""; f.category_label = "";
+      _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
+      await _pickerFetchProducts();
+      const steps = _pickerSteps();
+      _pickerState.step = Math.min(1, steps.length - 1);   // advance to next step
+      _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return;
+    }
+    if (k === "cat") {
+      f.category_id = v; f.category_label = b.dataset.l;
+      _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
+      await _pickerFetchProducts();
+      const steps = _pickerSteps();
+      const ci = steps.findIndex(s => s.id === "colors");
+      _pickerState.step = ci >= 0 ? ci : _pickerState.step;  // advance to colors if present
+      _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return;
+    }
+    if (k === "lens") { f.lens = v; _pickerRenderFilters(); _pickerRenderProducts(); return; }
+    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "mode") { c.mode = v; _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+  }));
+
+  el.querySelectorAll(".picker-swatch").forEach(b => b.addEventListener("click", () => {
+    if (b.disabled) return;
+    const wrap = b.closest(".picker-swatches"), c = _pickerState.config, color = b.dataset.color, kind = wrap.dataset.kind;
+    if (kind === "uniform") c.uniform[parseInt(wrap.dataset.slot, 10)] = color;
+    else if (kind === "split") c.splitSecondary[parseInt(wrap.dataset.slot, 10)] = color;
+    else if (kind === "custom") {
+      const arr = c.custom[parseInt(wrap.dataset.head, 10)], max = _COLORS_PER_HEAD[c.colorsPerHead], i = arr.indexOf(color);
+      if (i >= 0) { if (arr.length > 1) arr.splice(i, 1); } else if (arr.length < max) arr.push(color);
+    }
+    _pickerState.skuChoices = {};   // colors changed → drop SKU overrides
+    _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+}
+
+// ── Color config helpers (ported) ──────────────────────
+
+function _pickerNormalizeConfig() {
+  const c = _pickerState.config;
+  const slots = _COLORS_PER_HEAD[c.colorsPerHead];
+  const firstAvail = _PICKER_COLOR_ORDER.find(x => _pickerState.availAll.has(x)) || "red";
+  c.splitAllowed = (c.count % 2 === 0) && slots <= 2;
+  if (c.mode === "split" && !c.splitAllowed) c.mode = "uniform";
+  c.uniform = Array.from({ length: slots }, (_, i) => c.uniform[i] || firstAvail);
+  c.splitSecondary = Array.from({ length: Math.max(0, slots - 1) }, (_, i) => c.splitSecondary[i] || (_pickerState.availAll.has("white") ? "white" : firstAvail));
+  c.custom = Array.from({ length: c.count }, (_, h) => {
+    const cur = (c.custom[h] || []).slice(0, slots);
+    return cur.length ? cur : [firstAvail];
+  });
+}
+
+function _pickerResolveHeads() {
+  const c = _pickerState.config;
+  if (c.mode === "uniform") return Array.from({ length: c.count }, () => [...c.uniform]);
+  if (c.mode === "split") {
+    const half = c.count / 2;
+    return Array.from({ length: c.count }, (_, h) => [h < half ? "red" : "blue", ...c.splitSecondary]);
+  }
+  return c.custom.map(a => [...a]);
+}
+
+// ── Product list (right) ───────────────────────────────
+
+function _skuSet(s) { return [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x.toLowerCase()).sort(); }
+function _headSet(h) { return [...new Set(h.map(x => x.toLowerCase()))].sort(); }
+function _eqSet(a, b) { return a.length === b.length && a.every((v, i) => v === b[i]); }
+
+function _skuMatchesAny(sku, headSets, lens) {
+  if (lens && sku.lens_type && sku.lens_type !== lens) return false;
+  const s = _skuSet(sku);
+  return headSets.some(hs => _eqSet(s, hs));
+}
+
+function _pickerComboLabel(hs) { return hs.map(x => x[0].toUpperCase() + x.slice(1)).join("/"); }
+
+function _pickerRenderProducts() {
+  const el = $("picker-products");
+  if (!el) return;
+  const f = _pickerState.filters;
+  const usesColor = _pickerUsesColor();
+  const headSets = usesColor ? [...new Map(_pickerResolveHeads().map(h => [_headSet(h).join(","), _headSet(h)])).values()] : [];
+  const q = _pickerState.search.trim().toLowerCase();
+
+  // Brand refine bar (lets the user switch between matched alternatives by brand).
+  const brands = [...new Set(_pickerState.products.map(p => p.manufacturer_label).filter(Boolean))].sort();
+  const pref = new Set((window._PT?.viewProject?.preferences?.lighting_brands || []).map(b => String(b).toLowerCase()));
+  let header = "";
+  if (brands.length > 1) {
+    header = `<div class="pp-brandbar"><span class="pf-label">Brand</span>` +
+      `<button class="pf-pill${!f.brand ? " active" : ""}" data-brand="">All</button>` +
+      brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${pref.has(b.toLowerCase()) ? "★ " : ""}${esc(b)}</button>`).join("") + `</div>`;
+  }
+
+  // A product matches when every chosen color combo has a matching SKU.
+  const isMatch = p => !usesColor || (headSets.length > 0 && headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs], f.lens))));
+
+  let list = _pickerState.products;
+  if (f.brand) list = list.filter(p => p.manufacturer_label === f.brand);
+  if (q) list = list.filter(p => p.model.toLowerCase().includes(q) || p.skus.some(s => (s.part_number || "").toLowerCase().includes(q)));
+  list = [...list].sort((a, b) => {
+    const am = isMatch(a), bm = isMatch(b);            // matching products first
+    if (am !== bm) return am ? -1 : 1;
+    const ap = pref.has((a.manufacturer_label || "").toLowerCase()), bp = pref.has((b.manufacturer_label || "").toLowerCase());
+    if (ap !== bp) return ap ? -1 : 1;                  // then preferred brand
+    return a.model.localeCompare(b.model);
+  });
+
+  if (!list.length) { el.innerHTML = header + `<div style="color:var(--muted);text-align:center;padding:40px">No products match these filters.</div>`; _pickerWireBrand(el); return; }
+  if (list.length === 1) _pickerState.expanded.add(list[0].product_id);
+
+  el.innerHTML = header + list.map(p => {
+    const open = _pickerState.expanded.has(p.product_id);
+    const selected = _pickerState.sel && _pickerState.sel.product_id === p.product_id;
+    const prices = p.skus.map(s => s.price).filter(v => v != null);
+    const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
+    const qb = p.skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
+    let matchBadge = "";
+    if (usesColor && headSets.length) {
+      const allMatch = headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs], f.lens)));
+      matchBadge = allMatch ? `<span class="pp-match ok">match</span>` : `<span class="pp-match no">no exact</span>`;
+    }
+
+    // Body: color categories → per-combo SKU dropdown (override); else → SKU pick list.
+    let bodyHtml = "";
+    if (open) {
+      if (usesColor && selected) {
+        bodyHtml = `<div class="pp-skus">` + headSets.map(hs => {
+          const label = _pickerComboLabel(hs);
+          const ordered = [...p.skus].sort((a, b) => {
+            const am = _skuMatchesAny(a, [hs], f.lens), bm = _skuMatchesAny(b, [hs], f.lens);
+            if (am !== bm) return am ? -1 : 1;
+            return (a.price ?? 9e9) - (b.price ?? 9e9);
+          });
+          const hasMatch = ordered.some(s => _skuMatchesAny(s, [hs], f.lens));
+          const key = hs.join(",");
+          const chosen = _pickerState.skuChoices[key] || (ordered[0] && ordered[0].part_number) || "";
+          const opts = ordered.map(s => {
+            const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
+            const m = _skuMatchesAny(s, [hs], f.lens) ? "" : "  (other)";
+            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.price != null ? " · $" + s.price : ""}${m}</option>`;
+          }).join("");
+          return `<div class="pp-sku"><span class="pp-sku-pn">${esc(label)}</span><select class="pp-override" data-combo="${esc(key)}">${opts}</select>${hasMatch ? "" : `<span class="pp-match no">no exact</span>`}</div>`;
+        }).join("") + `</div>`;
+      } else {
+        bodyHtml = `<div class="pp-skus">` + p.skus.map(s => {
+          const matched = usesColor ? _skuMatchesAny(s, headSets, f.lens) : true;
+          const lensOk = !f.lens || !s.lens_type || s.lens_type === f.lens;
+          const cls = usesColor ? (matched ? "match" : "nomatch") : (lensOk ? "" : "nomatch");
+          const colors = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/") || "—";
+          const pr = s.price != null ? `$${s.price}` : "";
+          const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
+          const pick = !usesColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
+          return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(colors)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pick}</div>`;
+        }).join("") + `</div>`;
+      }
+    }
+
+    return `<div class="pp-row${selected ? " sel" : ""}" data-pid="${esc(p.product_id)}">
+      <div class="pp-head" data-pid="${esc(p.product_id)}">
+        <span class="pp-caret">${open ? "▾" : "▸"}</span>
+        <span class="pp-name">${esc(p.model)}</span>
+        <span class="pp-mfr">${esc(p.manufacturer_label)}</span>
+        <span class="pp-meta">${p.skus.length} SKU${p.skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}</span>
+        ${matchBadge}${qb}
+      </div>${bodyHtml}
+    </div>`;
+  }).join("");
+
+  _pickerWireBrand(el);
+  el.querySelectorAll(".pp-head").forEach(h => h.addEventListener("click", () => {
+    const pid = h.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
+    const wasOpen = _pickerState.expanded.has(pid);
+    if (wasOpen && (!usesColor || (_pickerState.sel && _pickerState.sel.product_id === pid))) _pickerState.expanded.delete(pid);
+    else _pickerState.expanded.add(pid);
+    if (usesColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
+    _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const pid = btn.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
+    _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
+    _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll(".pp-override").forEach(sel => sel.addEventListener("change", () => {
+    _pickerState.skuChoices[sel.dataset.combo] = sel.value;
+    _pickerUpdateFooter();
+  }));
+}
+
+function _pickerWireBrand(el) {
+  el.querySelectorAll("[data-brand]").forEach(b => b.addEventListener("click", () => {
+    _pickerState.filters.brand = b.dataset.brand;
+    _pickerRenderProducts();
+  }));
+}
+
+// ── Location tab (vehicle diagram + dots) ──────────────
+
+const _INTERIOR_PZ = new Set(["interior", "rear_interior"]);
+
+async function _pickerRenderLocation() {
+  const f = _pickerState.filters;
+  const loc = _pickerState.loc;
+  loc.vehicle = (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "PIU";
+  if (!loc.layouts) {
+    try { loc.layouts = await api("/api/layouts"); } catch (e) { console.error("Picker: layouts failed:", e); loc.layouts = {}; }
+  }
+  try {
+    // Product- AND vehicle-scoped: only placements this product can take that
+    // also render in the planner's views for this vehicle (so they all load).
+    const pid = _pickerState.sel ? _pickerState.sel.product_id : "";
+    const res = await api(`/api/parts-db/category-locations?type=${encodeURIComponent(f.type_id)}&category=${encodeURIComponent(f.category_id || "")}&product=${encodeURIComponent(pid)}&vehicle=${encodeURIComponent(loc.vehicle)}`);
+    loc.locByName = {};
+    for (const l of (res?.locations || [])) loc.locByName[l.location.toUpperCase()] = l;
+  } catch (e) { console.error("Picker: category-locations failed:", e); loc.locByName = {}; }
+  _pickerDrawLocation();
+}
+
+function _pickerDrawLocation() {
+  const loc = _pickerState.loc;
+  const layoutViews = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
+  // Interior placements for this category (drives whether internal view shows).
+  const interiorLocs = Object.values(loc.locByName).filter(l => _INTERIOR_PZ.has(l.placement_zone));
+  // Exterior views that actually have a category-relevant dot.
+  const extViews = Object.keys(layoutViews).filter(vk => {
+    if (vk.startsWith("internal")) return false;
+    const locs = layoutViews[vk].locations || {};
+    return Object.keys(locs).some(n => loc.locByName[n.toUpperCase()] && !_INTERIOR_PZ.has(loc.locByName[n.toUpperCase()].placement_zone));
+  });
+  const viewList = [...extViews];
+  if (interiorLocs.length) viewList.push("interior");
+  if (!viewList.includes(loc.view)) loc.view = viewList[0] || "front";
+
+  const bar = $("picker-loc-views");
+  if (bar) {
+    bar.innerHTML = viewList.map(v => {
+      const label = v === "interior" ? "Interior" : ((layoutViews[v]?.label) || v);
+      return `<button class="pf-pill${loc.view === v ? " active" : ""}" data-view="${esc(v)}">${esc(label)}</button>`;
+    }).join("");
+    bar.querySelectorAll(".pf-pill").forEach(b => b.addEventListener("click", () => { loc.view = b.dataset.view; _pickerDrawLocation(); }));
+  }
+
+  const img = $("picker-loc-img"), dots = $("picker-loc-dots"), btns = $("picker-loc-btns");
+  if (loc.view === "interior") {
+    if (img) img.style.display = "none";
+    if (dots) dots.hidden = true;
+    if (btns) {
+      btns.hidden = false;
+      btns.innerHTML = interiorLocs.map(l =>
+        `<button class="pf-pill pf-big${loc.selected === l.location ? " active" : ""}" data-iloc="${esc(l.location)}">${esc(_pickerTitleCase(l.location))}</button>`).join("");
+      btns.querySelectorAll("[data-iloc]").forEach(b => b.addEventListener("click", () => {
+        loc.selected = b.dataset.iloc;
+        const e = loc.locByName[b.dataset.iloc.toUpperCase()] || {};
+        loc.name_pattern = e.name_pattern || ""; loc.base_label = e.base_label || "";
+        loc.catalog_names = e.catalog_names || [];
+        _pickerDrawLocation(); _pickerUpdateFooter();
+      }));
+    }
+    _pickerUpdateFooter();
+    return;
+  }
+  // Exterior: image + dots
+  if (btns) btns.hidden = true;
+  if (dots) dots.hidden = false;
+  if (img) {
+    img.style.display = "";
+    img.onload = () => _pickerPlaceDots();
+    img.src = `/assets/vehicles/${loc.vehicle}_${loc.view}.png`;
+    if (img.complete) _pickerPlaceDots();
+  }
+}
+
+// Fractional (0–1) slot positions for a location — ported verbatim from
+// canvas.js getSlotPositions with box=[0,0,1,1] so mirror/horizontal spreads
+// render identically to the placement settings preview.
+function _pickerSlotPositions(loc) {
+  const baseCx = loc.x, baseCy = loc.y;
+  const pattern = loc.pattern || "single";
+  const slotCount = loc.slot_count || 1;
+  if (slotCount <= 1 || pattern === "single") return [[baseCx, baseCy]];
+  const rawSpacing = loc.h_spacing ?? loc.spacing;
+  const spacing = (rawSpacing && rawSpacing > 0) ? rawSpacing : 0.06;
+  if (pattern === "horizontal") {
+    const totalW = spacing * (slotCount - 1), startX = baseCx - totalW / 2;
+    return Array.from({ length: slotCount }, (_, i) => [startX + i * spacing, baseCy]);
+  }
+  if (pattern === "mirror") {
+    const centerX = 0.5, offsetX = Math.abs(baseCx - centerX);
+    if (slotCount === 2) return [[centerX - offsetX, baseCy], [centerX + offsetX, baseCy]];
+    const half = Math.floor(slotCount / 2), positions = [];
+    for (let i = 0; i < half; i++) {
+      const off = offsetX + i * spacing;
+      positions.push([centerX - off, baseCy]); positions.push([centerX + off, baseCy]);
+    }
+    return positions;
+  }
+  return [[baseCx, baseCy]];
+}
+
+function _pickerPlaceDots() {
+  const loc = _pickerState.loc;
+  const stage = $("picker-loc-stage"), img = $("picker-loc-img"), dots = $("picker-loc-dots");
+  if (!stage || !img || !dots) return;
+  // Position the dot overlay onto the ACTUAL rendered image box (same idea as
+  // placement settings' getImageBox/contain). getBoundingClientRect reflects
+  // exactly what the browser drew, so dots line up regardless of letterboxing.
+  const sr = stage.getBoundingClientRect(), ir = img.getBoundingClientRect();
+  const w = ir.width, h = ir.height;
+  if (!w || !h) return;   // image not laid out yet
+  dots.style.left = (ir.left - sr.left) + "px";
+  dots.style.top = (ir.top - sr.top) + "px";
+  dots.style.right = "auto"; dots.style.bottom = "auto";  // override inset:0
+  dots.style.width = w + "px";
+  dots.style.height = h + "px";
+
+  const locs = loc.layouts?.vehicles?.[loc.vehicle]?.views?.[loc.view]?.locations || {};
+  const names = Object.keys(locs).filter(n => {
+    const e = loc.locByName[n.toUpperCase()];
+    return e && !_INTERIOR_PZ.has(e.placement_zone);
+  });
+  if (!names.length) {
+    dots.innerHTML = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted)">No mapped locations for this view.</div>`;
+    return;
+  }
+  // Draw every slot for each location (mirror/horizontal spreads), mirroring
+  // placement settings exactly — a location with pattern:mirror shows its
+  // driver+passenger dots, not one centered dot. Clicking any selects it.
+  dots.innerHTML = names.map(n => {
+    const c = locs[n];
+    const selected = loc.selected === n;
+    return _pickerSlotPositions(c).map(([fx, fy]) =>
+      `<button class="picker-dot${selected ? " sel" : ""}" data-name="${esc(n)}" style="left:${(fx * 100).toFixed(2)}%;top:${(fy * 100).toFixed(2)}%"></button>`
+    ).join("");
+  }).join("") + `<div class="picker-dot-tip" id="picker-dot-tip" hidden></div>`;
+
+  const tip = $("picker-dot-tip");
+  const allDots = [...dots.querySelectorAll(".picker-dot")];
+  allDots.forEach(d => {
+    // Instant custom tooltip + highlight ALL slots of this location (mirror pair).
+    d.addEventListener("mouseenter", () => {
+      allDots.forEach(o => { if (o.dataset.name === d.dataset.name) o.classList.add("hover"); });
+      if (tip) {
+        tip.textContent = _pickerTitleCase(d.dataset.name);
+        tip.style.left = d.style.left;
+        tip.style.top = d.style.top;
+        tip.hidden = false;
+      }
+    });
+    d.addEventListener("mouseleave", () => {
+      allDots.forEach(o => o.classList.remove("hover"));
+      if (tip) tip.hidden = true;
+    });
+    d.addEventListener("click", () => {
+      loc.selected = d.dataset.name;
+      const entry = loc.locByName[d.dataset.name.toUpperCase()] || {};
+      loc.name_pattern = entry.name_pattern || "";
+      loc.base_label = entry.base_label || "";
+      loc.catalog_names = entry.catalog_names || [];
+      _pickerPlaceDots();
+      _pickerUpdateFooter();
+    });
+  });
+}
+
+function _pickerTitleCase(s) {
+  const small = new Set(["of", "and", "the", "a", "in", "on"]);
+  return String(s).toLowerCase().split(/\s+/).map((w, i) => (small.has(w) && i > 0) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+// ── Footer (context-dependent primary action) ──────────
+
+// A row of lighthead swatches showing exactly what's about to be added —
+// one head per lighthead, in the chosen order, stacked by its colors.
+function _pickerHeadsPreviewHtml() {
+  if (!_pickerUsesColor()) return "";
+  const heads = _pickerResolveHeads();
+  return `<span class="picker-foot-heads">` + heads.map(h => {
+    const segs = h.map(col => { const d = _PICKER_COLORS[col] || { hex: "#999" }; return `<span style="background:${d.hex};border:1px solid ${d.border || "rgba(0,0,0,.18)"}"></span>`; }).join("");
+    return `<span class="picker-foot-head" title="${esc(h.map(c => c[0].toUpperCase() + c.slice(1)).join("/"))}">${segs}</span>`;
+  }).join("") + `</span>`;
+}
+
+function _pickerUpdateFooter() {
+  const text = $("picker-footer-text"), btn = $("picker-add-btn");
+  if (!text || !btn) return;
+  const sel = _pickerState.sel, loc = _pickerState.loc;
+  const usesColor = _pickerUsesColor();
+  const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
+  const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
+  if (_pickerState.tab === "part") {
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>` : `<span class="picker-foot-label">Pick a product</span>`;
+    btn.textContent = "Choose location →";
+    btn.disabled = !sel;
+    _pickerState.footerHandler = sel ? () => _pickerSwitchTab("location") : null;
+  } else {
+    const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>` : `<span class="picker-foot-label">Pick a product first</span>`;
+    btn.textContent = "Add Part";
+    btn.disabled = !(sel && loc.selected);
+    _pickerState.footerHandler = (sel && loc.selected) ? _pickerDoAdd : null;
+  }
+}
+
+// ── Resolve + add ──────────────────────────────────────
+
+function _pickerColorFields() {
+  const c = _pickerState.config;
+  const cap = arr => arr.map(x => x.charAt(0).toUpperCase() + x.slice(1)).join("/");
+  if (c.mode === "uniform") return { raw_color: cap(c.uniform) };
+  if (c.mode === "split") {
+    const d = cap(["red", ...c.splitSecondary]), p = cap(["blue", ...c.splitSecondary]);
+    return { raw_color: `${d} / ${p}`, driver_color: d, passenger_color: p };
+  }
+  const labels = [...new Set(_pickerResolveHeads().map(h => cap(h)))];
+  return { raw_color: labels.join(", ") };
+}
+
+// Pick the exact build-sheet name the planner will render: the lowest-numbered
+// catalog name for this part_type not already in the draft (e.g. "Forward
+// Warning 1" then "2"). Falls back to the pattern if no catalog names.
+function _pickerChooseName(loc) {
+  const used = new Set(((typeof _meDraft !== "undefined" && _meDraft) ? (_meDraft.parts || []) : [])
+    .map(p => (p.name || "").trim().toLowerCase()));
+  const cnames = loc.catalog_names || [];
+  for (const n of cnames) if (!used.has(n.toLowerCase())) return n;
+  if (cnames.length) return cnames[cnames.length - 1];   // all used → reuse last
+  return _pickerSequencedName(loc.name_pattern, loc.base_label);
+}
+
+function _pickerSequencedName(pattern, base) {
+  pattern = pattern || "";
+  if (pattern.includes("{n}")) {
+    const prefix = pattern.split("{n}")[0].trim().toLowerCase();
+    let max = 0;
+    for (const p of (typeof _meDraft !== "undefined" && _meDraft ? _meDraft.parts || [] : [])) {
+      const nm = (p.name || "").trim().toLowerCase();
+      if (prefix && nm.startsWith(prefix)) { const n = parseInt(nm.slice(prefix.length).trim(), 10); if (!isNaN(n)) max = Math.max(max, n); }
+    }
+    return pattern.replace("{n}", String(max + 1));
+  }
+  return pattern || base || "Part";
+}
+
+async function _pickerDoAdd() {
+  const sel = _pickerState.sel, loc = _pickerState.loc, f = _pickerState.filters;
+  if (!sel || !loc.selected) return;
+  const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
+  if (!draftId) { toast("No active build", "error"); return; }
+  const usesColor = f.type_id === "lights" && _COLOR_CATEGORIES.has(f.category_id);
+  const product = _pickerState.products.find(p => p.product_id === sel.product_id);
+  const locName = loc.selected;   // raw layout key (planner upper-cases to match)
+  const baseName = _pickerChooseName(loc) || sel.model;
+
+  let combos, colorFields = {}, totalHeads = 0;
+  if (usesColor) {
+    // match heads → combos (server, for correctness)
+    const heads = _pickerResolveHeads();
+    totalHeads = heads.length;
+    let m;
+    try { m = await api("/api/parts-db/match-skus", { product_id: sel.product_id, heads, lens: f.lens || "" }); }
+    catch (e) { console.error(e); toast("Match failed", "error"); return; }
+    const skuById = {};
+    (product?.skus || []).forEach(s => { skuById[s.part_number] = s; });
+    combos = (m.combos || []).map(cb => {
+      const key = (cb.colors || []).map(c => c.toLowerCase()).sort().join(",");
+      const override = _pickerState.skuChoices[key];
+      const pn = override || cb.default_sku;
+      if (!pn) return null;   // no match and no override for this combo
+      const price = (skuById[pn] && skuById[pn].price) ?? (cb.skus[0] && cb.skus[0].price) ?? null;
+      return { colors: cb.colors, part_number: pn, quantity: cb.count, price };
+    }).filter(Boolean);
+    if (!combos.length) { toast("No SKU chosen for those colors — pick one on the right, or adjust colors/lens", "error"); return; }
+    colorFields = _pickerColorFields();
+  } else {
+    const sku = sel.sku || (product && product.skus[0] && product.skus[0].part_number);
+    if (!sku) { toast("Pick a SKU", "error"); return; }
+    const skuObj = product.skus.find(s => s.part_number === sku) || {};
+    combos = [{ colors: [], part_number: sku, quantity: 1, price: skuObj.price || null }];
+    totalHeads = 1;
+  }
+
+  const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
+  let resolved;
+  try {
+    resolved = await api("/api/parts-db/resolve-selection", {
+      product_model: sel.model, manufacturer_label: sel.mfr || "",
+      location: locName, base_name: baseName, lens: f.lens || "",
+      combos, color_fields: colorFields, total_heads: totalHeads,
+    });
+  } catch (e) { console.error("resolve failed:", e); toast("Resolve failed", "error"); if (btn) btn.disabled = false; return; }
+
+  const rows = resolved.rows || [];
+  if (!rows.length) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
+
+  let ok = 0;
+  for (const row of rows) {
+    try {
+      const endpoint = _pickerState.editLineId
+        ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
+        : `/api/draft/${draftId}/part`;
+      const r = await api(endpoint, row);
+      if (r?.ok) ok++;
+    } catch (e) { console.error("add row failed:", e); }
+  }
+  if (!ok) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
+  toast(_pickerState.editLineId ? "Part updated" : "Part added", "success");
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  pickerClose();
+  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+}

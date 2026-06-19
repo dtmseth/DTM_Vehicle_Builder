@@ -68,6 +68,10 @@ class DraftPart:
     passenger_color: str = ""
     center_color: str = ""
     placement_overrides: dict[str, Any] = field(default_factory=dict)
+    # UI-only breakdown of the concrete SKUs this line represents (set by the
+    # part picker). Shown as expandable children in the manifest, but NOT passed
+    # to the planner/renderer — the build sheet sees only the simple parent line.
+    components: list[dict[str, Any]] = field(default_factory=list)
     line_id: str = ""
 
 
@@ -181,6 +185,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         passenger_color=_s(body.get("passenger_color", "")),
         center_color=_s(body.get("center_color", "")),
         placement_overrides=body.get("placement_overrides") if isinstance(body.get("placement_overrides"), dict) else {},
+        components=body.get("components") if isinstance(body.get("components"), list) else [],
         line_id=line_id or str(uuid.uuid4()),
     )
 

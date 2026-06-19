@@ -425,7 +425,16 @@ def _hyd_part_number(spec: dict) -> PartNumber:
                        friendly_name=spec.get("friendly_name", ""),
                        options=dict(spec.get("options") or {}),
                        qty_on_hand=spec.get("qty_on_hand"),
-                       price_usd=spec.get("price_usd"))
+                       price_usd=spec.get("price_usd"),
+                       color=spec.get("color", ""),
+                       secondary_color=spec.get("secondary_color", ""),
+                       tertiary_color=spec.get("tertiary_color", ""),
+                       lens_type=spec.get("lens_type", ""),
+                       qb_item_id=str(spec.get("qb_item_id", "")),
+                       qb_sku=str(spec.get("qb_sku", "")),
+                       qb_unit_price=spec.get("qb_unit_price"),
+                       qb_inactive=bool(spec.get("qb_inactive", False)),
+                       vehicle_tags=list(spec.get("vehicle_tags") or []))
 
 
 def _hyd_product(pid: str, spec: dict) -> Product:
@@ -450,6 +459,7 @@ def _hyd_part_type(pid: str, spec: dict) -> PartType:
         part_type_id=pid,
         label=spec.get("label", pid),
         type_id=spec.get("type_id", ""),
+        category=spec.get("category", ""),
         tree_positions=tree_positions,
         tag_ids=list(spec.get("tag_ids") or []),
         max_count=spec.get("max_count"),
