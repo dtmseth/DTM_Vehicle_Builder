@@ -137,6 +137,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
             }
 
         parts_out: list[dict] = []
+        seen_keys: set[str] = set()
         for pp in plan.planned_parts:
             if not pp.on_diagram or not pp.placements:
                 continue
@@ -166,7 +167,10 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     icon_h_pct = 0.02
 
                 slot_count = len(pl.instances) or 1
-                override_key = f"{pl.part_id}:{pl.view}"
+                override_key = f"{pl.line_id or pl.part_id}:{pl.view}"
+                if override_key in seen_keys:
+                    pl.warnings.append(f"Duplicate placement key: {override_key}")
+                seen_keys.add(override_key)
 
                 # Compute per-instance slot positions using the same logic as render_ppt.py.
                 anchor_x = (pl.anchor or {}).get("x", 0.0)
@@ -242,6 +246,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "manufacturer": getattr(pp.raw, "manufacturer", "") or "",
                     "part_number":  getattr(pp.raw, "part_number", "") or "",
                     "placements":   placements_out,
+                    "warnings":     pp.warnings,
                 })
 
         return {

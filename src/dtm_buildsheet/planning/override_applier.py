@@ -8,7 +8,7 @@ from ..domain.plan_models import BuildPlan
 def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
     """Return a deep copy of *plan* with per-placement overrides applied.
 
-    Override key format: "{part_id}:{view}".
+    Override key format: "{line_id or part_id}:{view}".
     Supported override fields:
         visible (bool)      — False removes the placement from the plan
         rotation (float)    — replaces PlannedPlacement.rotation
@@ -29,7 +29,7 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
     for pp in plan_copy.planned_parts:
         kept = []
         for pl in pp.placements:
-            key = f"{pl.part_id}:{pl.view}"
+            key = f"{pl.line_id or pl.part_id}:{pl.view}"
             ov = overrides.get(key)
             if not ov:
                 kept.append(pl)

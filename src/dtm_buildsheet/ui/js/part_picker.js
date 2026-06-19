@@ -694,15 +694,9 @@ function _pickerColorFields() {
   return { raw_color: labels.join(", ") };
 }
 
-// Pick the exact build-sheet name the planner will render: the lowest-numbered
-// catalog name for this part_type not already in the draft (e.g. "Forward
-// Warning 1" then "2"). Falls back to the pattern if no catalog names.
+// Pick the next auto-sequenced name by counting existing draft parts with the
+// same base name (e.g. 2 existing "Forward Warning *" → "Forward Warning 3").
 function _pickerChooseName(loc) {
-  const used = new Set(((typeof _meDraft !== "undefined" && _meDraft) ? (_meDraft.parts || []) : [])
-    .map(p => (p.name || "").trim().toLowerCase()));
-  const cnames = loc.catalog_names || [];
-  for (const n of cnames) if (!used.has(n.toLowerCase())) return n;
-  if (cnames.length) return cnames[cnames.length - 1];   // all used → reuse last
   return _pickerSequencedName(loc.name_pattern, loc.base_label);
 }
 

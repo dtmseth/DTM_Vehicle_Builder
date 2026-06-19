@@ -554,6 +554,21 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         part_number  = pp.raw.part_number,
                     ))
 
+            # Parts with planner warnings always appear in the "not shown" area so
+            # the warning text is visible on the slide regardless of render status.
+            if pp.warnings:
+                w_key = (pp.part_name, "warnings")
+                if w_key not in seen_unrendered:
+                    seen_unrendered.add(w_key)
+                    raw = pp.raw
+                    extra_unrendered.append(_legend_item(
+                        pp.part_name,
+                        raw.location or "?",
+                        "; ".join(pp.warnings),
+                        manufacturer = raw.manufacturer,
+                        part_number  = raw.part_number,
+                    ))
+
         # Bumper sub-items (pit_bar, wing_wraps) already show under Push Bumper via
         # the accessory_map; remove their standalone cards to save legend space.
         _BUMPER_SUB_KWS = {"pit bar", "wing wrap", "wire cover"}
