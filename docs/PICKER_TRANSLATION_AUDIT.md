@@ -121,6 +121,128 @@ schema-correct. (Follow-up if you want auto-suggest.)
 
 ---
 
+## 8. ⭐ DIRECTION CHANGE — placements are category-level, no slot limits (2026-06-19)
+
+**Owner decision (supersedes the per-part-type / catalog-slot approach in §2 & §7).**
+The old system is still constraining the new schema. Fix it at the foundation:
+
+- **Placements are chosen at the CATEGORY level.** Every **Warning** light offers the
+  same pool of warning placements; every **Scene** light the same scene pool; etc.
+  A product does NOT get its placement list from its `fits_part_types` or from the
+  catalog's `default_views`.
+- **No instance limits.** You can add 4+ Forward Warnings (all ION, or mixed), any
+  number of any category part. The catalog's fixed slots ("Forward Warning 1/2",
+  "Side Warning 1/2/3", "Front Side Warning" = 1) must NOT cap anything. Names must
+  auto-sequence arbitrarily (Forward Warning 1, 2, 3, 4, …).
+- **Any product → any location in its category, by default.** If a specific product
+  can't take a location, or a location only accepts specific products, that's an
+  **exception rule**, added as needed — not the default. Known exceptions to model
+  later: **Under Mirror** (only specific workbook-named models), **light-bar**
+  placements, **spotlight** placements, **thermal-camera** placements.
+- **Stop deriving behavior from the legacy catalog.** The catalog's per-name
+  `default_views`, fixed numbered slots, and name→spec lookup are exactly what cap
+  us. The new schema (parts_db `categories`, `placements`, `allowed_placements`,
+  `max_count`) is meant to own this.
+
+### What this requires (for the next session to design + build)
+
+1. **Category → placement pool** in parts_db (the schema's intended home), e.g. a
+   per-category list of placement location keys (sourced from `vehicle_layouts`
+   per vehicle). The picker offers that pool after product+SKU, location-last.
+2. **Exception rules**: location → allowed products/part_types (and the reverse).
+   Model the four known ones above when their data is ready; default is "no
+   restriction."
+3. **Unlimited, arbitrary naming.** Drop the catalog-slot cap. A part's build-sheet
+   name should sequence per category/zone without a ceiling. Decide the naming
+   convention (e.g. "Forward Warning {n}" with n unbounded) and where it's authored.
+4. **Planner/renderer must resolve by part_type/category, not exact catalog name.**
+   This is the crux. Today `planner.build_plan` looks up `spec` by the part *name*
+   and reads `default_views`, `asset_key`, etc. "Forward Warning 3" isn't in the
+   catalog → `render_kind=none` → silent drop. The resolver must strip the sequence
+   number / key off the part_type so any count renders, and a part should render in
+   whatever view(s) its chosen **location** has coords (not a fixed `default_views`).
+5. **Unique part identity.** `override_key = part_id:view` (preview_service.py:169)
+   collides for same-named parts. Key by the draft `line_id` so duplicates/many
+   instances never overwrite each other.
+6. **No silent failures (Q4).** Plumb `PlannedPart.warnings` to the manifest row +
+   build sheet "not shown" area, and warn explicitly when a part can't place.
+
+### Open questions to resolve with the owner (next session)
+- **Q5 — naming convention** for unlimited instances: is "Forward Warning 1..N" the
+  pattern for every warning regardless of sub-type (forward/side/rear/pit/mirror)?
+  Or does the zone/sub-type still drive the base name? How is the base name chosen
+  when placement is category-level (no part_type picked)?
+- **Q6 — build-sheet rendering of arbitrary counts.** Does the PPT template have
+  fixed named rows/anchors (which would also cap us), or can it render N dynamic
+  rows? This determines how deep the renderer change goes. **Investigate
+  `render_ppt.py` / the template before building.**
+- **Q7 — category placement pools per vehicle.** Pools come from `vehicle_layouts`
+  (each vehicle has different located placements). Confirm the pool is
+  "all located placements in the views relevant to the category" for the draft's
+  vehicle, with exceptions subtracted.
+
+---
+
+## 7. Part/location combos that silently don't render (2026-06-19) — SUPERSEDED by §8 direction
+
+**Report:** ION / Mini T / Mega T added to FOG LIGHT AREA show nothing in the
+preview or PPT, with no "not shown" note. VXE at FOG LIGHT AREA works. ION works
+at TOP TUBE / TOP OF PUSH BUMPER.
+
+**Root cause — one design flaw with two symptoms.** The picker offers a location
+to a part_type using the broad `default_views ∩ layout` fallback (every location
+visible in the part's render view), instead of the location's *true owner*. FOG
+LIGHT AREA is curated (workbook rule) as a **Front Side Warning** location. Only
+VXE/Surface-Mount-ION fit `front_side_warning`, so for them it's correct. ION,
+Mini T, Mega T do **not** fit front_side_warning, so the fallback mis-assigns FOG
+LIGHT AREA to whatever part_type they *do* fit:
+
+- **ION → `forward_warning`.** But the catalog defines only **two** forward-warning
+  slots ("Forward Warning 1/2"), and the draft already used both (TOP TUBE, TOP OF
+  PUSH BUMPER). `_pickerChooseName` ran out of unused catalog names and **silently
+  reused "Forward Warning 2"** — a duplicate. The preview/PPT key placements by
+  `override_key = part_id:view` (preview_service.py:169); two "Forward Warning 2"
+  in the front view collide on the same key, so the new one is silently dropped.
+  (The planner *does* produce both — the loss is downstream at the override/render
+  layer.) This is why the 1st and 2nd ION work but the 3rd vanishes — it has
+  nothing to do with the location itself.
+
+- **Mini T / Mega T → `side_warning`** (they don't fit forward/front-side). Side
+  Warning renders **only in the side view**. So the part *does* render — just on
+  the side view, not the front view where the user is looking. It looks missing
+  but isn't. (Verified: Mini T @ FOG LIGHT AREA → "Side Warning 1", view=`side`.)
+
+**Why this is the schema-translation gap:** the new schema has `allowed_placements`
+(per part_type) and `max_count` — both **empty/None for every light part_type**.
+Those are exactly the fields that should encode "which locations this part_type
+owns" and "how many instances exist." With them empty, the picker falls back to
+the view heuristic, which over-offers locations to the wrong part_types and can't
+enforce capacity. The old workbook never hit this because its parts came pre-named
+into fixed slots.
+
+**Fix direction (NOT yet implemented — per your instruction):**
+1. Drive location offering from **curated per-part-type ownership** (populate
+   `allowed_placements`, or use the workbook-rule location lists as the owner
+   set) instead of the `default_views` fallback. Then FOG LIGHT AREA is only
+   offered for front-side-warning-capable products (VXE), and a location always
+   maps to the part_type that actually renders it.
+2. **Enforce `max_count` / catalog slot capacity.** When a part_type's slots are
+   exhausted, the picker must stop offering it (or clearly warn) rather than
+   silently reusing a name.
+3. Make `override_key`/part identity **unique per added part** (e.g. include the
+   draft `line_id`) so two same-named parts can't collide in the render.
+
+**Q4 — surface failures, never silent (you asked for this):** anywhere a part
+fails to find a location, asset, view, or unique slot, it must produce a visible
+warning (in the manifest row and/or build sheet "not shown" area). Today the
+planner *records* per-part warnings (`PlannedPart.warnings`) but the UI/PPT don't
+surface them, and the override-key collision drops a part with **no** warning at
+all. Recommend: (a) plumb `PlannedPart.warnings` through to the manifest + build
+sheet, and (b) add an explicit "could not place / duplicate slot" warning at the
+point of collision.
+
+---
+
 ## 6. Other observations (for later, not blocking)
 
 - **Placement breadth for multi-fit products.** Products like ION fit four warning
