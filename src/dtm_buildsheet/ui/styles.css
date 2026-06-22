@@ -308,6 +308,18 @@
     .picker-type-btn .picker-type-desc{font-size:11px;color:var(--muted)}
     .picker-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;border-top:1px solid var(--border);background:#fafbfc;border-radius:0 0 12px 12px;flex-shrink:0}
     .picker-footer-text{font-size:13px;color:var(--muted)}
+    /* Accessories bar — deliberately attention-grabbing so it can't be missed. */
+    .picker-accessories{flex-shrink:0;border-top:2px solid var(--accent);background:#fff7ed;padding:12px 26px;max-height:34vh;overflow-y:auto}
+    .pa-banner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#9a3412;margin-bottom:10px}
+    .pa-banner .pa-chip{background:#fb923c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px}
+    .pa-rows{display:flex;flex-direction:column;gap:8px}
+    .pa-row{display:flex;align-items:center;gap:10px}
+    .pa-row label{flex:0 0 130px;font-size:12px;font-weight:600;color:var(--text)}
+    .pa-row label .pa-req{color:#dc2626;margin-left:3px}
+    .pa-row select{flex:1;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:7px;background:#fff}
+    .pa-row select.pa-unset{border-color:#fb923c;background:#fffbeb}
+    .pa-row select.pa-chosen{border-color:#16a34a;background:#f0fdf4}
+    .picker-foot-acc{color:#c2410c;font-weight:600}
     .picker-product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
     .picker-prod-btn{display:flex;gap:12px;align-items:flex-start;padding:14px;background:#fff;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:left;width:100%}
     .picker-prod-btn:hover{border-color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.08);transform:translateY(-1px)}
@@ -439,6 +451,8 @@
     .me-expand-spacer{display:inline-block;width:24px}
     .me-comp-count{font-size:11px;color:var(--muted);font-weight:400}
     .me-comp-row td{background:#fafbfc;border-top:1px dashed var(--border)}
+    .me-acc-row td{background:#fff7ed}
+    .me-acc-tag{display:inline-block;background:#fb923c;color:#fff;border-radius:8px;padding:0 7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-right:4px}
 
     /* toast */
     .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200;transform:translateY(80px);opacity:0;transition:.3s}

@@ -226,15 +226,21 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
             return {"ok": False, "error": f"Part not found: {line_id}"}
         idx, removed = result
         draft.parts.pop(idx)
+        # Cascade: remove accessory child lines whose parent is this part.
+        children = [p for p in draft.parts if getattr(p, "parent_line_id", "") == line_id]
+        for child in children:
+            draft.parts.remove(child)
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_removed",
             "line_id": line_id,
             "name": removed.name,
+            "cascaded_accessories": len(children),
             "at": draft.updated_at,
         })
         save_draft(draft, paths.workspace_drafts_dir)
-        return {"ok": True, "draft_id": draft_id, "line_id": line_id, "draft_summary": draft_summary(draft)}
+        return {"ok": True, "draft_id": draft_id, "line_id": line_id,
+                "cascaded_accessories": len(children), "draft_summary": draft_summary(draft)}
     except FileNotFoundError:
         return {"ok": False, "error": f"Draft not found: {draft_id}"}
     except Exception as exc:

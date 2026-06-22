@@ -1,14 +1,14 @@
 {
   "manufacturer_id": "whelen",
   "new_products": [
-    {"product_id": "whelen_century", "model": "CENTURY", "fits_part_types": ["roof_light_bar"]}
+    {"product_id": "whelen_century", "model": "Mini Century", "fits_part_types": ["roof_light_bar"]}
   ],
   "links": [
     {"sku": "BB2SP3J",  "product": "whelen_liberty", "vehicle_tags": ["any"]},
     {"sku": "EB2DDDD",  "product": "whelen_legacy",  "vehicle_tags": ["any"]},
     {"sku": "EB2DEDE",  "product": "whelen_legacy",  "vehicle_tags": ["any"]},
     {"sku": "EB8DEDE",  "product": "whelen_legacy",  "vehicle_tags": ["any"]},
-    {"sku": "ET9DEDEP", "product": "whelen_legacy",  "vehicle_tags": ["any"]},
+    {"sku": "ET9DEDEP", "product": "whelen_mini_legacy", "vehicle_tags": ["any"]},
     {"sku": "MCFLED2A", "product": "whelen_freedom", "vehicle_tags": ["any"]},
     {"sku": "MCFLED2R", "product": "whelen_freedom", "vehicle_tags": ["any"]},
     {"sku": "MC23PA",   "product": "whelen_century", "vehicle_tags": ["any"]}

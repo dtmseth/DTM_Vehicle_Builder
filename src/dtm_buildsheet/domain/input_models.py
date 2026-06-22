@@ -21,6 +21,7 @@ class PartInput:
     driver_color: str = ""
     passenger_color: str = ""
     center_color: str = ""
+    line_id: str = ""
 
 
 @dataclass

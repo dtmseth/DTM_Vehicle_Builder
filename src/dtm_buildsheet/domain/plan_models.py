@@ -48,6 +48,7 @@ class PlannedPlacement:
     position_slot_count: int | None = None
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    line_id: str = ""
 
 
 @dataclass

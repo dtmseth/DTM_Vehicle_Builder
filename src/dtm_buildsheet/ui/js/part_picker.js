@@ -17,6 +17,9 @@ let _pickerState = {
   expanded: new Set(),     // product_ids whose SKU list is open
   sel: null,               // { product_id, model, mfr, sku? }  current selection
   loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, name_pattern: "", base_label: "" },
+  accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
+  accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
+  accLoadedFor: null,      // product_id accessories were loaded for
   footerHandler: null,
   _footerWired: false,
 };
@@ -106,6 +109,9 @@ function _pickerResetState() {
   _pickerState.sel = null;
   _pickerState.skuChoices = {};   // color-combo label → chosen part_number (override)
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, name_pattern: "", base_label: "" };
+  _pickerState.accessories = [];
+  _pickerState.accessoryChoices = {};
+  _pickerState.accLoadedFor = null;
 }
 
 function _pickerOpenPanel(title) {
@@ -133,6 +139,7 @@ function _pickerSwitchTab(tab) {
   } else {
     _pickerRenderLocation();
   }
+  _pickerRenderAccessories();
   _pickerUpdateFooter();
 }
 
@@ -422,6 +429,12 @@ function _skuMatchesAny(sku, headSets) {
 
 function _pickerComboLabel(hs) { return hs.map(x => x[0].toUpperCase() + x.slice(1)).join("/"); }
 
+// A product is color-configured only if at least one SKU carries a color.
+// Programmable (WeCanX) bars have none → picked directly by SKU.
+function _pickerProductHasColor(p) {
+  return (p.skus || []).some(s => s.color || s.secondary_color || s.tertiary_color);
+}
+
 function _pickerRenderProducts() {
   const el = $("picker-products");
   if (!el) return;
@@ -469,8 +482,11 @@ function _pickerRenderProducts() {
     const prices = p.skus.map(s => s.price).filter(v => v != null);
     const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
     const qb = p.skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
+    // Programmable bars (WeCanX) carry no per-SKU colors → fall back to direct
+    // SKU selection even inside a color category, so they stay pickable.
+    const pColor = usesColor && _pickerProductHasColor(p);
     let matchBadge = "";
-    if (usesColor && headSets.length) {
+    if (pColor && headSets.length) {
       const allMatch = headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs])));
       matchBadge = allMatch ? `<span class="pp-match ok">match</span>` : `<span class="pp-match no">no exact</span>`;
     }
@@ -478,7 +494,7 @@ function _pickerRenderProducts() {
     // Body: color categories → per-combo SKU dropdown (override); else → SKU pick list.
     let bodyHtml = "";
     if (open) {
-      if (usesColor && selected) {
+      if (pColor && selected) {
         bodyHtml = `<div class="pp-skus">` + headSets.map(hs => {
           const label = _pickerComboLabel(hs);
           const ordered = [...p.skus].sort((a, b) => {
@@ -500,12 +516,12 @@ function _pickerRenderProducts() {
         }).join("") + `</div>`;
       } else {
         bodyHtml = `<div class="pp-skus">` + p.skus.map(s => {
-          const matched = usesColor ? _skuMatchesAny(s, headSets) : true;
-          const cls = usesColor ? (matched ? "match" : "nomatch") : "";
+          const matched = pColor ? _skuMatchesAny(s, headSets) : true;
+          const cls = pColor ? (matched ? "match" : "nomatch") : "";
           const colors = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/") || "—";
           const pr = s.price != null ? `$${s.price}` : "";
           const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
-          const pick = !usesColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
+          const pick = !pColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
           return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(colors)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pick}</div>`;
         }).join("") + `</div>`;
       }
@@ -528,14 +544,19 @@ function _pickerRenderProducts() {
     const wasOpen = _pickerState.expanded.has(pid);
     if (wasOpen && (!usesColor || (_pickerState.sel && _pickerState.sel.product_id === pid))) _pickerState.expanded.delete(pid);
     else _pickerState.expanded.add(pid);
-    if (usesColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
+    // Color products select on head-click; no-color (programmable) products
+    // select via the per-SKU "Select" pill instead.
+    const pColor = usesColor && _pickerProductHasColor(p);
+    if (pColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
     _pickerRenderProducts(); _pickerUpdateFooter();
+    if (pColor) _pickerLoadAccessories(pid);
   }));
   el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const pid = btn.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
     _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
     _pickerRenderProducts(); _pickerUpdateFooter();
+    _pickerLoadAccessories(pid);
   }));
   el.querySelectorAll(".pp-override").forEach(sel => sel.addEventListener("change", () => {
     _pickerState.skuChoices[sel.dataset.combo] = sel.value;
@@ -756,24 +777,111 @@ function _pickerHeadsPreviewHtml() {
   }).join("") + `</span>`;
 }
 
+// ── Accessories (Phase 5) ──────────────────────────────
+
+// Fetch + render the accessories for the selected product. Edit mode is not
+// handled yet, so the section stays hidden there.
+async function _pickerLoadAccessories(productId) {
+  if (!productId || _pickerState.editLineId) {
+    _pickerState.accessories = []; _pickerState.accessoryChoices = {};
+    _pickerState.accLoadedFor = productId || null;
+    _pickerRenderAccessories(); _pickerUpdateFooter(); return;
+  }
+  if (_pickerState.accLoadedFor === productId) return;   // already loaded
+  _pickerState.accLoadedFor = productId;
+  try {
+    const res = await api(`/api/parts-db/accessories?product_id=${encodeURIComponent(productId)}`);
+    _pickerState.accessories = (res && res.accessories) || [];
+  } catch (e) { console.error("accessories load failed:", e); _pickerState.accessories = []; }
+  // Reset to unset so every category demands an explicit decision.
+  _pickerState.accessoryChoices = {};
+  for (const g of _pickerState.accessories) _pickerState.accessoryChoices[g.category] = "";
+  _pickerRenderAccessories();
+  _pickerUpdateFooter();
+}
+
+function _pickerAccLabel(opt, sku) {
+  const colors = [sku.color, sku.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
+  const price = sku.price != null ? ` · $${sku.price}` : "";
+  return `${opt.model} · ${sku.part_number}${colors ? " · " + colors : ""}${price}`;
+}
+
+function _pickerRenderAccessories() {
+  const el = $("picker-accessories");
+  if (!el) return;
+  const groups = _pickerState.accessories || [];
+  if (!groups.length) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  const rows = groups.map(g => {
+    const val = _pickerState.accessoryChoices[g.category] || "";
+    let opts = `<option value=""${val === "" ? " selected" : ""} disabled>— Choose —</option>`;
+    if (!g.required) opts += `<option value="none"${val === "none" ? " selected" : ""}>— None needed —</option>`;
+    for (const o of g.options) for (const s of (o.skus || [])) {
+      const v = `${o.product_id}::${s.part_number}`;
+      opts += `<option value="${esc(v)}"${val === v ? " selected" : ""}>${esc(_pickerAccLabel(o, s))}</option>`;
+    }
+    return `<div class="pa-row"><label>${esc(g.label)}${g.required ? '<span class="pa-req">*</span>' : ""}</label>`
+         + `<select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}">${opts}</select></div>`;
+  }).join("");
+  const pending = !_accessoriesSatisfied();
+  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">${groups.length}</span>`
+    + `${pending ? "This part has accessories — choose each one to continue" : "Accessories set ✓"}</div>`
+    + `<div class="pa-rows">${rows}</div>`;
+  el.querySelectorAll("select[data-cat]").forEach(sel => sel.addEventListener("change", () => {
+    _pickerState.accessoryChoices[sel.dataset.cat] = sel.value;
+    _pickerRenderAccessories(); _pickerUpdateFooter();
+  }));
+}
+
+function _accessoriesSatisfied() {
+  for (const g of (_pickerState.accessories || [])) {
+    const v = _pickerState.accessoryChoices[g.category];
+    if (!v) return false;                        // not yet addressed
+    if (g.required && v === "none") return false;
+  }
+  return true;
+}
+
+// Build the accessory part rows chosen for the current selection.
+function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
+  const rows = [];
+  for (const g of (_pickerState.accessories || [])) {
+    const v = _pickerState.accessoryChoices[g.category];
+    if (!v || v === "none") continue;
+    const [pidPart, sku] = v.split("::");
+    const opt = g.options.find(o => o.product_id === pidPart);
+    if (!opt) continue;
+    rows.push({
+      name: `${parentName} · ${opt.model}`,
+      location: locName, manufacturer: opt.manufacturer_label || "",
+      part_number: sku, quantity: 1, new_or_used: "New", source: "",
+      parent_line_id: parentLineId || "",
+    });
+  }
+  return rows;
+}
+
 function _pickerUpdateFooter() {
   const text = $("picker-footer-text"), btn = $("picker-add-btn");
   if (!text || !btn) return;
   const sel = _pickerState.sel, loc = _pickerState.loc;
   const usesColor = _pickerUsesColor();
+  const accOk = _accessoriesSatisfied();
+  const hasAcc = (_pickerState.accessories || []).length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
+  const accHint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
   if (_pickerState.tab === "part") {
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>` : `<span class="picker-foot-label">Pick a product</span>`;
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${accHint}` : `<span class="picker-foot-label">Pick a product</span>`;
     btn.textContent = "Choose location →";
-    btn.disabled = !sel;
-    _pickerState.footerHandler = sel ? () => _pickerSwitchTab("location") : null;
+    btn.disabled = !(sel && accOk);
+    _pickerState.footerHandler = (sel && accOk) ? () => _pickerSwitchTab("location") : null;
   } else {
     const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>` : `<span class="picker-foot-label">Pick a product first</span>`;
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${accHint}` : `<span class="picker-foot-label">Pick a product first</span>`;
     btn.textContent = "Add Part";
-    btn.disabled = !(sel && loc.selected);
-    _pickerState.footerHandler = (sel && loc.selected) ? _pickerDoAdd : null;
+    btn.disabled = !(sel && loc.selected && accOk);
+    _pickerState.footerHandler = (sel && loc.selected && accOk) ? _pickerDoAdd : null;
   }
 }
 
@@ -816,8 +924,11 @@ async function _pickerDoAdd() {
   if (!sel || !loc.selected) return;
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
-  const usesColor = f.type_id === "lights" && _COLOR_CATEGORIES.has(f.category_id);
   const product = _pickerState.products.find(p => p.product_id === sel.product_id);
+  // Color path only for color-configured products; a direct SKU pick (sel.sku,
+  // e.g. a programmable bar) always uses the simple single-SKU path.
+  const usesColor = f.type_id === "lights" && _COLOR_CATEGORIES.has(f.category_id)
+    && !sel.sku && _pickerProductHasColor(product || { skus: [] });
   const locName = loc.selected;   // raw layout key (planner upper-cases to match)
   const baseName = _pickerChooseName(loc) || sel.model;
 
@@ -862,17 +973,26 @@ async function _pickerDoAdd() {
   const rows = resolved.rows || [];
   if (!rows.length) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
 
-  let ok = 0;
+  let ok = 0, parentLineId = "";
   for (const row of rows) {
     try {
       const endpoint = _pickerState.editLineId
         ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
         : `/api/draft/${draftId}/part`;
       const r = await api(endpoint, row);
-      if (r?.ok) ok++;
+      if (r?.ok) { ok++; if (!parentLineId && r.line_id) parentLineId = r.line_id; }
     } catch (e) { console.error("add row failed:", e); }
   }
   if (!ok) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
+
+  // Accessories → their own child lines under the parent (new adds only).
+  if (!_pickerState.editLineId) {
+    const accRows = _pickerChosenAccessoryRows(baseName, locName, parentLineId);
+    for (const arow of accRows) {
+      try { await api(`/api/draft/${draftId}/part`, arow); }
+      catch (e) { console.error("add accessory failed:", e); }
+    }
+  }
   toast(_pickerState.editLineId ? "Part updated" : "Part added", "success");
   if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   pickerClose();

@@ -73,6 +73,10 @@ class DraftPart:
     # to the planner/renderer — the build sheet sees only the simple parent line.
     components: list[dict[str, Any]] = field(default_factory=list)
     line_id: str = ""
+    # Set on accessory lines (lighthead/bracket/cable) added with a primary part;
+    # equals the parent part's line_id. Used to nest in the manifest and to
+    # cascade-delete. Empty for ordinary top-level parts.
+    parent_line_id: str = ""
 
 
 @dataclass
@@ -187,6 +191,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         placement_overrides=body.get("placement_overrides") if isinstance(body.get("placement_overrides"), dict) else {},
         components=body.get("components") if isinstance(body.get("components"), list) else [],
         line_id=line_id or str(uuid.uuid4()),
+        parent_line_id=_s(body.get("parent_line_id", "")),
     )
 
 
@@ -222,6 +227,7 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
             driver_color=dp.driver_color,
             passenger_color=dp.passenger_color,
             center_color=dp.center_color,
+            line_id=dp.line_id,
         )
         for dp in draft.parts
     ]

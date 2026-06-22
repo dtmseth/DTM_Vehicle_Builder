@@ -1,0 +1,106 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 4b: create new product families + fold per user review. all-warning = forward/front_side/pit_bar/side/rear/lower_liftgate. all-scene = front/side/rear scene. 4in flat folded into round lightheads; L31/L32 split; M08DT = Harley ION-T array (own product); Traffic Advisor 2250 + Mirror-Beam + RPW heads + IONHD3FM + ITL12 folded into existing. FST/RST + Tracer lightheads deferred to Phase 5 accessories. System 109 (SYS109) held pending identification.",
+  "new_products": [
+    {"product_id": "whelen_micron",            "model": "Micron",        "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_responder_lp",       "model": "Responder LP",  "fits_part_types": ["roof_light_bar"]},
+    {"product_id": "whelen_700_series",         "model": "700 Series",    "fits_part_types": ["front_scene","side_scene","rear_scene"]},
+    {"product_id": "whelen_900_series",         "model": "900 Series",    "fits_part_types": ["front_scene","side_scene","rear_scene","forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_avenger_2",          "model": "Avenger II",    "fits_part_types": ["forward_warning"]},
+    {"product_id": "whelen_round_lighthead",    "model": "Round Lighthead","fits_part_types": ["rear_seat_cargo_lights","cargo_lighting","lower_liftgate_warning"]},
+    {"product_id": "whelen_fluorent_plus",      "model": "Fluorent+",     "fits_part_types": ["cargo_lighting"]},
+    {"product_id": "whelen_r416_beacon",        "model": "R416 Beacon",   "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_par46",              "model": "PAR-46",        "fits_part_types": ["front_scene"]},
+    {"product_id": "whelen_par32",              "model": "PAR-32",        "fits_part_types": ["front_scene"]},
+    {"product_id": "whelen_l31",                "model": "L31",           "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_l32",                "model": "L32",           "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_v2_series",          "model": "V2 Series",     "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_linz_v_series",      "model": "LINZ V-Series", "fits_part_types": ["forward_warning","front_side_warning","pit_bar_warning","side_warning","rear_warning","lower_liftgate_warning"]},
+    {"product_id": "whelen_strip_lite_plus",    "model": "Strip-Lite+",   "fits_part_types": ["cargo_lighting"]},
+    {"product_id": "whelen_wing_plow_light",    "model": "Wing Plow Light","fits_part_types": ["front_scene"]},
+    {"product_id": "whelen_ion_t_hd_array",     "model": "ION-T HD Array","fits_part_types": ["forward_warning"]},
+    {"product_id": "whelen_wecan_control_point","model": "WeCan Universal Control Point","fits_part_types": ["control_head"]},
+    {"product_id": "whelen_ws321_mic",          "model": "WS-321 Mic",    "fits_part_types": ["pa_mic"]}
+  ],
+  "links": [
+    {"sku": "MCRNSA",  "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSB",  "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSBX", "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSD",  "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSF",  "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSR",  "product": "whelen_micron", "vehicle_tags": ["any"]},
+    {"sku": "MCRNSRX", "product": "whelen_micron", "vehicle_tags": ["any"]},
+
+    {"sku": "R1LPMF",  "product": "whelen_responder_lp", "vehicle_tags": ["any"]},
+    {"sku": "R1LPPA",  "product": "whelen_responder_lp", "vehicle_tags": ["any"]},
+    {"sku": "R2LPHPA", "product": "whelen_responder_lp", "vehicle_tags": ["any"]},
+    {"sku": "R2LPPA",  "product": "whelen_responder_lp", "vehicle_tags": ["any"]},
+
+    {"sku": "704BTT",   "product": "whelen_700_series", "vehicle_tags": ["any"]},
+    {"sku": "704BU",    "product": "whelen_700_series", "vehicle_tags": ["any"]},
+    {"sku": "70B02FCR", "product": "whelen_700_series", "vehicle_tags": ["any"]},
+    {"sku": "70R02FCR", "product": "whelen_700_series", "vehicle_tags": ["any"]},
+
+    {"sku": "90RC5FCR", "product": "whelen_900_series", "vehicle_tags": ["any"]},
+
+    {"sku": "AVC21RB", "product": "whelen_avenger_2", "vehicle_tags": ["any"]},
+    {"sku": "AVC22DD", "product": "whelen_avenger_2", "vehicle_tags": ["any"]},
+    {"sku": "AVC22EE", "product": "whelen_avenger_2", "vehicle_tags": ["any"]},
+
+    {"sku": "3SBCCDCR", "product": "whelen_round_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "3SC0CDCR", "product": "whelen_round_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "3SRCCDCR", "product": "whelen_round_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "2FC00ZCR", "product": "whelen_round_lighthead", "vehicle_tags": ["any"]},
+
+    {"sku": "F54PC", "product": "whelen_fluorent_plus", "vehicle_tags": ["any"]},
+    {"sku": "F63PC", "product": "whelen_fluorent_plus", "vehicle_tags": ["any"]},
+
+    {"sku": "R416BF", "product": "whelen_r416_beacon", "vehicle_tags": ["any"]},
+    {"sku": "R416RF", "product": "whelen_r416_beacon", "vehicle_tags": ["any"]},
+
+    {"sku": "P46FLC", "product": "whelen_par46", "vehicle_tags": ["any"]},
+    {"sku": "P46SC",  "product": "whelen_par46", "vehicle_tags": ["any"]},
+    {"sku": "P32F2RB","product": "whelen_par32", "vehicle_tags": ["any"]},
+
+    {"sku": "L31HRF", "product": "whelen_l31", "vehicle_tags": ["any"]},
+    {"sku": "L32LAF", "product": "whelen_l32", "vehicle_tags": ["any"]},
+
+    {"sku": "V23ATPB", "product": "whelen_v2_series", "vehicle_tags": ["any"]},
+
+    {"sku": "LINSV2A",  "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+    {"sku": "LINSV2B",  "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+    {"sku": "LINSV2BX", "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+    {"sku": "LINSV2R",  "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+    {"sku": "LINSV2RX", "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+    {"sku": "LINV2A",   "product": "whelen_linz_v_series", "vehicle_tags": ["any"]},
+
+    {"sku": "PSCOMPH", "product": "whelen_strip_lite_plus", "vehicle_tags": ["any"]},
+    {"sku": "WPLOW1A", "product": "whelen_wing_plow_light", "vehicle_tags": ["any"]},
+    {"sku": "M08DT",   "product": "whelen_ion_t_hd_array", "vehicle_tags": ["any"]},
+    {"sku": "WCCP",    "product": "whelen_wecan_control_point", "vehicle_tags": ["any"]},
+    {"sku": "WSMIC321","product": "whelen_ws321_mic", "vehicle_tags": ["any"]},
+
+    {"sku": "TA2230F", "product": "whelen_traffic_advisor", "vehicle_tags": ["any"]},
+    {"sku": "TA2240F", "product": "whelen_traffic_advisor", "vehicle_tags": ["any"]},
+    {"sku": "WX2230",  "product": "whelen_traffic_advisor", "vehicle_tags": ["any"]},
+
+    {"sku": "MBI2D",   "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBI2E",   "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBXI2D",  "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBXI2E",  "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBXI2J",  "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBIONVB", "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBIONVR", "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBXONVB", "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+    {"sku": "MBXONVR", "product": "whelen_mirror_beams", "vehicle_tags": ["any"]},
+
+    {"sku": "OEI2D",   "product": "whelen_ion_rear_pillar", "vehicle_tags": ["any"]},
+    {"sku": "OEI2E",   "product": "whelen_ion_rear_pillar", "vehicle_tags": ["any"]},
+    {"sku": "OEI2K",   "product": "whelen_ion_rear_pillar", "vehicle_tags": ["any"]},
+    {"sku": "OEI2M",   "product": "whelen_ion_rear_pillar", "vehicle_tags": ["any"]},
+    {"sku": "OEI3RBA", "product": "whelen_ion_rear_pillar", "vehicle_tags": ["any"]},
+
+    {"sku": "IONHD3FM", "product": "whelen_ion_v_series", "vehicle_tags": ["any"]},
+    {"sku": "ITL12",    "product": "whelen_liberty", "vehicle_tags": ["any"]}
+  ]
+}

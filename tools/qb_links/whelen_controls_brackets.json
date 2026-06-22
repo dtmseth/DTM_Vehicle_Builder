@@ -1,0 +1,9 @@
+{
+  "manufacturer_id": "whelen",
+  "links": [
+    {"sku": "CCTL7", "product": "whelen_cctl7", "vehicle_tags": ["any"]},
+    {"sku": "CCTL9", "product": "whelen_cctl9", "vehicle_tags": ["any"]},
+    {"sku": "SAK1",  "product": "whelen_sak1",  "vehicle_tags": ["any"]},
+    {"sku": "SAK9",  "product": "whelen_sak9",  "vehicle_tags": ["any"]}
+  ]
+}

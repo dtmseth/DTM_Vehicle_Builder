@@ -375,3 +375,36 @@ class TestGenerateAfterMutation:
         # Should convert without error
         project = draft_to_project_input(final)
         assert len(project.parts) == 1
+
+
+def test_remove_parent_cascades_accessories(tmp_path):
+    paths = _paths(tmp_path)
+    parent = DraftPart(name="ION", location="Grille", line_id="PARENT")
+    a1 = DraftPart(name="ION · Bracket", location="Grille", line_id="A1", parent_line_id="PARENT")
+    a2 = DraftPart(name="ION · Cable", location="Grille", line_id="A2", parent_line_id="PARENT")
+    other = DraftPart(name="Siren", location="Engine", line_id="OTHER")
+    draft = _saved_draft(paths, [parent, a1, a2, other])
+
+    res = handle_remove_part_from_draft(draft.draft_id, "PARENT", paths)
+    assert res["ok"] is True
+    assert res["cascaded_accessories"] == 2
+    remaining = {p.name for p in load_draft(draft.draft_id, paths.workspace_drafts_dir).parts}
+    assert remaining == {"Siren"}
+
+
+def test_remove_accessory_child_leaves_parent(tmp_path):
+    paths = _paths(tmp_path)
+    parent = DraftPart(name="ION", location="Grille", line_id="PARENT")
+    a1 = DraftPart(name="ION · Bracket", location="Grille", line_id="A1", parent_line_id="PARENT")
+    draft = _saved_draft(paths, [parent, a1])
+
+    res = handle_remove_part_from_draft(draft.draft_id, "A1", paths)
+    assert res["ok"] is True
+    assert res.get("cascaded_accessories", 0) == 0
+    remaining = {p.name for p in load_draft(draft.draft_id, paths.workspace_drafts_dir).parts}
+    assert remaining == {"ION"}
+
+
+def test_parent_line_id_round_trips_through_payload(tmp_path):
+    part = draft_part_from_payload({"name": "Bracket", "parent_line_id": "PARENT"}, _paths(tmp_path))
+    assert part.parent_line_id == "PARENT"

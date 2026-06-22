@@ -48,22 +48,34 @@ function _meStatusRowStyle(status) {
 }
 
 function _meMakeRows(parts) {
-  return parts.map(p => {
+  // Accessory lines (parent_line_id set) nest under their parent's caret rather
+  // than appearing as their own top-level rows.
+  const childrenByParent = {};
+  for (const p of parts) {
+    const pid = p.parent_line_id || "";
+    if (pid) (childrenByParent[pid] = childrenByParent[pid] || []).push(p);
+  }
+  const topLevel = parts.filter(p => {
+    const pid = p.parent_line_id || "";
+    return !pid || !parts.some(x => x.line_id === pid);   // orphan children fall back to top-level
+  });
+
+  return topLevel.map(p => {
     const mfgModel = [p.manufacturer, p.part_number].filter(Boolean).join(" / ") || "—";
     const statusLabel = p.new_or_used
       ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used))
       : "—";
     const comps = p.components || [];
-    // A part with concrete SKUs (added by the picker) is expandable. Clicking
-    // anywhere on the parent row toggles its child SKU rows (display-only — the
-    // build sheet sees just this parent).
-    const hasComps = comps.length > 0;
-    const caret = hasComps
+    const kids = childrenByParent[p.line_id] || [];
+    // Expandable if it has concrete SKUs (display-only) or accessory children.
+    const childCount = comps.length + kids.length;
+    const expandable = childCount > 0;
+    const caret = expandable
       ? `<span class="me-expand-caret" data-lid="${esc(p.line_id)}">▸</span>`
       : `<span class="me-expand-spacer"></span>`;
-    const rowAttrs = hasComps ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
+    const rowAttrs = expandable ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
     let html = `<tr${rowAttrs}${_meStatusRowStyle(p.new_or_used)}>
-      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(p.name)}${hasComps ? ` <span class="me-comp-count">(${comps.length})</span>` : ""}</td>
+      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(p.name)}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}</td>
       <td style="color:var(--muted)">${esc(p.location || "—")}</td>
       <td>${esc(p.raw_color || "—")}</td>
       <td style="text-align:center">${p.quantity || "—"}</td>
@@ -75,6 +87,7 @@ function _meMakeRows(parts) {
         <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(p.line_id)}" title="Remove">✕</button>
       </td>
     </tr>`;
+    // Display-only SKU breakdown (the build sheet sees just the parent).
     for (const cm of comps) {
       const price = (cm.price != null) ? ` · $${cm.price}` : "";
       html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
@@ -83,6 +96,23 @@ function _meMakeRows(parts) {
         <td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>
         <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
         <td colspan="4" style="font-size:11px;color:var(--muted)">${price}</td>
+      </tr>`;
+    }
+    // Accessory child lines — real parts, individually editable/removable.
+    for (const c of kids) {
+      const cMfgModel = [c.manufacturer, c.part_number].filter(Boolean).join(" / ") || "—";
+      html += `<tr class="me-comp-row me-acc-row" data-parent="${esc(p.line_id)}" hidden>
+        <td style="padding-left:24px;font-size:12px"><span class="me-acc-tag">accessory</span> ${esc(c.name)}</td>
+        <td style="color:var(--muted);font-size:12px">${esc(c.location || "—")}</td>
+        <td></td>
+        <td style="text-align:center;font-size:12px">${c.quantity || "—"}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(cMfgModel)}</td>
+        <td></td>
+        <td><span class="badge ${c.include ? "badge-on" : "badge-off"}">${c.include ? "Yes" : "No"}</span></td>
+        <td class="me-row-actions">
+          <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(c.line_id)}" title="Edit">≡</button>
+          <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(c.line_id)}" title="Remove">✕</button>
+        </td>
       </tr>`;
     }
     return html;
@@ -305,12 +335,17 @@ async function savePartEdit() {
 }
 
 async function deletePart(lineId) {
-  if (!confirm("Remove this part from the build?")) return;
+  const kids = (_meDraft?.parts || []).filter(p => p.parent_line_id === lineId);
+  const prompt = kids.length
+    ? `This part has ${kids.length} accessor${kids.length === 1 ? "y" : "ies"} — remove them too?`
+    : "Remove this part from the build?";
+  if (!confirm(prompt)) return;
 
   const res = await api("/api/draft/" + _meDraftId + "/part/" + lineId + "/delete", {});
   if (!res.ok) { toast(res.error || "Delete failed", "error"); return; }
 
-  toast("Part removed", "success");
+  const n = res.cascaded_accessories || 0;
+  toast(n ? `Part + ${n} accessor${n === 1 ? "y" : "ies"} removed` : "Part removed", "success");
   if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   await loadDraftManifest(_meDraftId);
   if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);

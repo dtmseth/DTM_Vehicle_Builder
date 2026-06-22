@@ -27,6 +27,7 @@ class EquipmentPreferences:
     slick_top: bool = False
     mixed_brands: bool = False
     notes: str = ""
+    lens: str = ""              # agency default lens type: "clear", "colored", "smoked"
 
 
 @dataclass

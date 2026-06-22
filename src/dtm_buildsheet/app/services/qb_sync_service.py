@@ -44,9 +44,12 @@ def _parts_db_path(paths: AppPaths) -> Path:
 def _linked_map(paths: AppPaths) -> dict[str, str]:
     """Map qb_item_id → product_id for VB products already linked (read-only).
 
-    Returns an empty map if parts_db.json is absent or has no QB links yet —
-    which is the current state, so nothing is ever treated as linked until the
-    owner explicitly links it.
+    Links live on each product's ``part_numbers[]`` entries (a product can hold
+    many SKUs, each its own ``qb_item_id``). A legacy top-level ``qb_item_id`` is
+    also honored for backward compatibility. Reads parts_db.json straight off disk
+    so it reflects the current catalog — including links written by the offline
+    ``qb_apply_links`` tool — without depending on any in-process cache. Returns an
+    empty map if parts_db.json is absent or has no QB links yet.
     """
     path = _parts_db_path(paths)
     if not path.exists():
@@ -60,10 +63,33 @@ def _linked_map(paths: AppPaths) -> dict[str, str]:
     products = db.get("products", {}) if isinstance(db, dict) else {}
     if isinstance(products, dict):
         for product_id, product in products.items():
-            qb_id = str((product or {}).get("qb_item_id", "")).strip()
-            if qb_id:
-                linked[qb_id] = product_id
+            product = product or {}
+            # New schema: qb_item_id per part_number entry.
+            for pn in product.get("part_numbers", []) or []:
+                qb_id = str((pn or {}).get("qb_item_id", "")).strip()
+                if qb_id:
+                    linked[qb_id] = product_id
+            # Legacy schema: single top-level qb_item_id.
+            top = str(product.get("qb_item_id", "")).strip()
+            if top:
+                linked[top] = product_id
     return linked
+
+
+def _enrich_with_links(items: list[dict], linked: dict[str, str]) -> tuple[list[dict], int]:
+    """Stamp ``linked`` / ``linked_product_id`` onto each item from the link map.
+
+    parts_db is the source of truth for link state, so this recomputes it rather
+    than trusting any ``linked`` flag previously baked into the cache.
+    """
+    enriched = []
+    linked_count = 0
+    for item in items:
+        product_id = linked.get(str(item.get("qb_item_id", "")))
+        if product_id:
+            linked_count += 1
+        enriched.append({**item, "linked": bool(product_id), "linked_product_id": product_id or ""})
+    return enriched, linked_count
 
 
 def _read_cache(paths: AppPaths) -> dict:
@@ -119,14 +145,7 @@ def sync_items(paths: AppPaths) -> dict:
         logger.warning("QuickBooks item sync failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    linked = _linked_map(paths)
-    enriched = []
-    linked_count = 0
-    for item in items:
-        product_id = linked.get(item["qb_item_id"])
-        if product_id:
-            linked_count += 1
-        enriched.append({**item, "linked": bool(product_id), "linked_product_id": product_id or ""})
+    enriched, linked_count = _enrich_with_links(items, _linked_map(paths))
 
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cache = {"last_sync_utc": now_iso, "item_count": len(enriched), "items": enriched}
@@ -144,17 +163,21 @@ def sync_items(paths: AppPaths) -> dict:
 
 
 def get_cached_items(paths: AppPaths) -> dict:
-    """Return the locally cached pull (no network). Safe to call anytime."""
+    """Return the locally cached pull (no network). Safe to call anytime.
+
+    Link state is recomputed from the live parts_db on every read, so newly
+    linked/unlinked parts show immediately without re-pulling from QuickBooks.
+    """
     cache = _read_cache(paths)
     items = cache.get("items", [])
-    linked = sum(1 for i in items if i.get("linked"))
+    enriched, linked_count = _enrich_with_links(items, _linked_map(paths))
     return {
         "ok": True,
         "last_sync_utc": cache.get("last_sync_utc"),
-        "item_count": cache.get("item_count", len(items)),
-        "linked": linked,
-        "unlinked": len(items) - linked,
-        "items": items,
+        "item_count": cache.get("item_count", len(enriched)),
+        "linked": linked_count,
+        "unlinked": len(enriched) - linked_count,
+        "items": enriched,
     }
 
 

@@ -63,19 +63,18 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
-**Status snapshot** (2026-06-12):
+**Status snapshot** (2026-06-17):
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
-- 🟡 **Phase 3** — schema + service + migration + Part Manager UI all landed; dual-read consumer swap (PR-3) is the only remaining gate to "Phase 3 done."
+- 🟡 **Phase 3** — schema + service + migration + Part Manager UI all landed. Dual-read consumer swap was split into a larger **Intelligent Part Picker** project (9 chunks, see `docs/PART_PICKER_PLAN.md`). The original PR-3 (manifest_editor dual-read swap) is now Chunk 2 of that plan.
   - PR-1 (parts_db.json service + dual-read scaffolding): commit `cbc18d4`.
   - PR-2a (schema revision — manufacturer-centric hierarchy): commit `5f4189b`.
   - PR-2b (1–3/4): migration script + tests; hand-tables iteration; schema v2 redesign — commits `befb52d`, `368c040`, `6b68847`.
   - PR-2b (4/4): Part Manager UI + migration seed — commits `7157c13`, `01ada6d`.
-    - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 48 manufacturers · 186 products · 106 part_types · 59 placements.
-    - legacy_workbook_index.json populated: 102 part_type→products · 186 model→product.
-    - Migration ran with `--push-to-cloud`, so SharePoint direct-mirror fired and the sync won't clobber.
-  - **Next**: PR-3 (manifest_editor dual-read swap), then Phase 4 consumer migrations.
+    - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements.
+    - 417 QB-linked SKUs across 3 manufacturers (Setina, Whelen, Arctic Start).
+  - **Next**: Debug Chunk 5 (products grid JS bug). Chunks 1-4 working. Chunk 5 backend verified (26 products for lights/front via Python), but JS fetch silently fails. See `docs/PART_PICKER_PLAN.md` §11 Debugging Notes.
 - 🟢 **Phase 8 MVP brought forward** (out of order) so the owner can review the migration output through a UI instead of by hand. The Part Manager UI is the read-only tree + edit-modal MVP described in §Phase 8; inventory/pricing/separate-app questions still deferred to the full Phase 8.
 
 ### Phase 0 — Foundation Refactor
@@ -367,24 +366,22 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ---
 
-### Phase 3 — `parts_db.json` (Schema, Migration, Dual-Read)
+### Phase 3 — `parts_db.json` (Schema, Migration, Intelligent Part Picker)
 
-**Current status (2026-06-12)** — read this first if you're picking up Phase 3 work:
+**Current status (2026-06-17)** — read this first if you're picking up Phase 3 work:
 
-- ✅ `domain/parts_db_models.py` — 13 dataclasses (Type, Section, Zone, SubZone, BuildAttribute, Tag, Manufacturer, Product, PartNumber, PartType, TreePosition, Placement, PlacementZone, PreferenceFilter, Color, Service).
-- ✅ `app/services/parts_db_service.py` — 23 typed queries + `validate_placement(part_type_id, product_id, location_id)`. Three-tier fallback (parts_db → legacy_workbook_index → workbook_rules).
-- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`. Full doc GET + POST.
-- ✅ `config/schemas.py::_validate_parts_db` — top-level shape + per-product/per-part-type required-key validation. Deep validation deferred to Phase 4.
-- ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot script, owner-editable hand-tables, refuses `--write` while orphans remain. `--push-to-cloud` flag re-saves through `save_config_file` so SharePoint direct-mirror fires (added 2026-06-12).
-- ✅ `parts_db.json` seeded (5/106/186/48), `legacy_workbook_index.json` seeded (102/186). Both cloud-pushed.
-- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) at Settings → Advanced → Part Manager → Database (v2) — read-only tree + edit modals for part_type/product/manufacturer/tag.
-- ⏳ **PR-3 (the only remaining Phase 3 work)** — `manifest_editor.js` dual-read swap. Until this lands, no production reader of build-sheet output touches `parts_db.json` — it's edit-only via the Part Manager.
+- ✅ `domain/parts_db_models.py` — 13 dataclasses.
+- ✅ `app/services/parts_db_service.py` — 23 typed queries + 3-tier fallback.
+- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`.
+- ✅ `config/schemas.py::_validate_parts_db` — top-level validation.
+- ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
+- ✅ `parts_db.json` seeded (5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements). 417 QB-linked SKUs.
+- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) — admin read-only tree browser.
+- 🟡 **Intelligent Part Picker** — replaces the flat "Add Part" modal with a tree-guided picker that surfaces part hierarchy, QB pricing, vehicle compatibility, and color configuration. Full design at `docs/PART_PICKER_PLAN.md`. 9 chunks. Chunk 2 (rewire flat modal to parts_db) is the original PR-3 scope — but the plan goes further, replacing the modal entirely with a guided picker + search + translation layer.
 
-**What "PR-3 dual-read" means concretely**: in `manifest_editor.js::_mePopulateDataLists` (and the equivalent dropdown-population paths), call `/api/parts-db/manufacturers`, `/api/parts-db/products`, `/api/parts-db/part-types?…` instead of (or in addition to) the existing workbook_rules / parts_library fetches. Compatibility-filter products by the selected part_type using `pt.allowed_products` + `product.fits_part_types`. Keep workbook_rules fallback paths intact — they're the third tier in `parts_db_service` already.
+**Goal**: `parts_db.json` is the authoritative data source for the build flow. The QB-linked part catalog is visible and usable when adding parts to builds.
 
-**Goal**: stand up the canonical parts database. Existing config files still work as fallback during transition; new code reads from `parts_db.json`.
-
-**Exit condition**: `parts_db.json` exists in the settings repo with the full set of parts/manufacturers/models/colors/locations currently spread across `workbook_rules.json`, `parts_library.json`, and `vehicle_layouts.json`, plus the new fields lights need (power outputs, color asset map). A backend service exposes typed queries. At least one consumer (likely `manifest_editor.js`) reads from it.
+**Exit condition**: A user clicks "Add Part" and gets an intelligent picker — not a flat form. They can browse by hierarchy, search by SKU/name, see prices and QB linkage, configure colors for multi-lighthead placements, and have their selection resolved into correct PartInput records.
 
 **Why this comes after the cloud go-live**: the schema migration is large enough to warrant team-wide review and visibility before it lands. With the cloud already live, the parts_db.json bootstrap goes through a normal PR — everyone sees it land, the owner reviews it carefully, and any subsequent additions take the same review path.
 
@@ -402,15 +399,17 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 - Add a thin REST endpoint set (`/api/parts-db/*`) for the frontend, or extend manifest-editor bootstrap to include the merged data.
 - **Do not** delete anything from `workbook_rules.json` yet. Consumers keep reading the old structure as fallback until Phase 4 swaps them over.
 
-### Phase 4 — Migrate Consumers; Workbook Template Becomes a Consumer
+### Phase 4 — Migrate Remaining Consumers; Workbook Template Becomes a Consumer
 
 **Goal**: every consumer of domain data reads from `parts_db.json`. `workbook_rules.json` is stripped to layout-only (`template_sections` + `_row`).
+
+**Note**: Consumer #1 (`manifest_editor.js`) is being replaced by the Intelligent Part Picker (Phase 3, Chunks 2-9). The Part Picker reads from `parts_db.json` natively. The flat modal is removed in the final chunk. The remaining 5 consumers follow the original plan.
 
 **Exit condition**: removing `manufacturer`/`models`/`locations`/`colors`/`quantities`/`lens` fields from `workbook_rules.json.part_rules` does not break the app or the regenerated template. The workbook export still produces a fully-populated blank template with all current dropdowns, but pulling from `parts_db.json`.
 
 **Work**:
-- One PR per consumer. Order matters — start with the leaves, end with `template_builder.py`:
-  1. `manifest_editor.js` — switch dropdowns to query `parts_db_service`.
+- One PR per consumer. Order matters — start with the leaves, end with `template_builder.py`. Consumer #1 is handled by the Part Picker (Phase 3):
+  1. ~~`manifest_editor.js`~~ — replaced by Intelligent Part Picker (Phase 3). Already reads from parts_db.
   2. `projects/api.js` — switch lighting-brand derivation to query `parts_db_service`.
   3. `state.js` — drop the workbook-rules fetch for domain data; keep it only for `template_sections`.
   4. `part_types.js` — when adding a new part type, propose a PR adding it to `parts_db.json`. The new part appears in both the manifest editor and the regenerated workbook template automatically once merged.

@@ -664,87 +664,6 @@
         }
       ]
     },
-    "stalker_specify_model": {
-      "manufacturer_id": "stalker",
-      "model": "SPECIFY MODEL",
-      "fits_part_types": [
-        "push_bumper",
-        "pit_bar",
-        "wing_wraps",
-        "forward_warning",
-        "front_side_warning",
-        "front_side_bracket",
-        "pit_bar_warning",
-        "headlight_flasher",
-        "front_scene",
-        "siren_speaker",
-        "external_amp",
-        "howler",
-        "front_dome_light",
-        "cradle_point",
-        "cloud_antenna",
-        "mirror_warning",
-        "front_interior_light_bar",
-        "side_warning",
-        "rear_interior_light_bar",
-        "rear_warning",
-        "rear_scene",
-        "lower_liftgate_warning",
-        "lower_liftgate_warning_bracket",
-        "tail_light_flasher",
-        "radar_display_unit",
-        "front_radar_antenna_mount",
-        "rear_radar_antenna_mount",
-        "thermal_imager",
-        "thermal_imager_monitor",
-        "light_controller",
-        "control_head",
-        "vehicle_interface",
-        "expansion_module",
-        "radio_head",
-        "console",
-        "special_face_plate",
-        "arm_rest",
-        "motion_attachment",
-        "printer",
-        "printer_mount",
-        "aux_12v_ports",
-        "camera_dvr",
-        "front_partition",
-        "chicago_barrier",
-        "rear_seat_lights",
-        "rear_seat_cargo_lights",
-        "rear_seat_divider",
-        "rear_window_bars",
-        "replacement_rear_seat",
-        "rear_partition",
-        "bullet_proof_door_panel",
-        "bullet_proof_door_window",
-        "cargo_lighting",
-        "equipment_tray",
-        "gun_lock",
-        "gun_lock_bracket",
-        "k9_kennel",
-        "k9_heat_alarm_popper",
-        "auto_eject",
-        "cloud_system_tray",
-        "arges_face",
-        "arges_controller",
-        "arges_mount",
-        "floor_mats",
-        "seat_covers",
-        "window_tint",
-        "harness"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SPECIFY MODEL"
-        }
-      ]
-    },
     "westin_pit_bars": {
       "manufacturer_id": "westin",
       "model": "PIT BARS",
@@ -1094,7 +1013,9 @@
         "forward_warning",
         "side_warning",
         "rear_warning",
-        "lower_liftgate_warning"
+        "lower_liftgate_warning",
+        "front_side_warning",
+        "pit_bar_warning"
       ],
       "tag_ids": [],
       "description": "",
@@ -1326,24 +1247,9 @@
         }
       ]
     },
-    "whelen_t_ion": {
-      "manufacturer_id": "whelen",
-      "model": "T-ION",
-      "fits_part_types": [
-        "forward_warning"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "T-ION"
-        }
-      ]
-    },
     "whelen_2_lamp_tracer": {
       "manufacturer_id": "whelen",
-      "model": "2 LAMP TRACER",
+      "model": "Tracer 2-Lamp",
       "fits_part_types": [
         "forward_warning"
       ],
@@ -1603,7 +1509,7 @@
     },
     "whelen_surface_mount_ion": {
       "manufacturer_id": "whelen",
-      "model": "SURFACE MOUNT ION",
+      "model": "ION Surface Mount",
       "fits_part_types": [
         "front_side_warning",
         "pit_bar_warning"
@@ -1838,38 +1744,6 @@
         }
       ]
     },
-    "whelen_standard_mount_ion": {
-      "manufacturer_id": "whelen",
-      "model": "STANDARD MOUNT ION",
-      "fits_part_types": [
-        "front_side_warning",
-        "pit_bar_warning"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "STANDARD MOUNT ION"
-        }
-      ]
-    },
-    "whelen_t_series_ion": {
-      "manufacturer_id": "whelen",
-      "model": "T-SERIES ION",
-      "fits_part_types": [
-        "front_side_warning",
-        "pit_bar_warning"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "T-SERIES ION"
-        }
-      ]
-    },
     "soundoff_n_force": {
       "manufacturer_id": "soundoff",
       "model": "N-FORCE",
@@ -1888,7 +1762,7 @@
     },
     "whelen_vertex": {
       "manufacturer_id": "whelen",
-      "model": "VERTEX",
+      "model": "Vertex",
       "fits_part_types": [
         "front_side_warning",
         "pit_bar_warning",
@@ -2016,7 +1890,7 @@
     },
     "whelen_field_series": {
       "manufacturer_id": "whelen",
-      "model": "FIELD SERIES",
+      "model": "Field Series",
       "fits_part_types": [
         "front_scene",
         "rear_scene"
@@ -2041,120 +1915,9 @@
         }
       ]
     },
-    "whelen_pioneer": {
-      "manufacturer_id": "whelen",
-      "model": "PIONEER",
-      "fits_part_types": [
-        "front_scene",
-        "rear_scene"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "MPBB",
-          "qb_item_id": "778",
-          "qb_sku": "",
-          "qb_unit_price": 528.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "MPPBBS",
-          "qb_item_id": "780",
-          "qb_sku": "",
-          "qb_unit_price": 750.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "NP6BB",
-          "qb_item_id": "783",
-          "qb_sku": "",
-          "qb_unit_price": 336.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "PBH203",
-          "qb_item_id": "829",
-          "qb_sku": "",
-          "qb_unit_price": 435.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "white",
-          "secondary_color": "",
-          "lens_type": "clear",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "PFH2",
-          "qb_item_id": "833",
-          "qb_sku": "",
-          "qb_unit_price": 1871.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "white",
-          "secondary_color": "",
-          "lens_type": "clear",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "PSL1BB",
-          "qb_item_id": "886",
-          "qb_sku": "",
-          "qb_unit_price": 528.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
-        },
-        {
-          "part_number": "PSL2BB",
-          "qb_item_id": "887",
-          "qb_sku": "",
-          "qb_unit_price": 1074.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
-        }
-      ]
-    },
     "whelen_sa315p": {
       "manufacturer_id": "whelen",
-      "model": "SA315P",
+      "model": "SA315P Speaker",
       "fits_part_types": [
         "siren_speaker"
       ],
@@ -2182,7 +1945,7 @@
     },
     "whelen_sa315u": {
       "manufacturer_id": "whelen",
-      "model": "SA315U",
+      "model": "SA315U Speaker",
       "fits_part_types": [
         "siren_speaker"
       ],
@@ -2219,7 +1982,18 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "SAK1"
+          "part_number": "SAK1",
+          "qb_item_id": "966",
+          "qb_sku": "",
+          "qb_unit_price": 53.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
@@ -2234,7 +2008,18 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "SAK9"
+          "part_number": "SAK9",
+          "qb_item_id": "981",
+          "qb_sku": "",
+          "qb_unit_price": 53.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
@@ -2257,7 +2042,7 @@
     },
     "whelen_wcx_howler": {
       "manufacturer_id": "whelen",
-      "model": "WCX HOWLER",
+      "model": "Howler WCX",
       "fits_part_types": [
         "howler"
       ],
@@ -2410,7 +2195,7 @@
     },
     "whelen_u_series": {
       "manufacturer_id": "whelen",
-      "model": "U-SERIES",
+      "model": "U-Series",
       "fits_part_types": [
         "mirror_warning"
       ],
@@ -2534,7 +2319,7 @@
     },
     "whelen_mirror_beams": {
       "manufacturer_id": "whelen",
-      "model": "MIRROR BEAMS",
+      "model": "Mirror-Beam",
       "fits_part_types": [
         "mirror_warning"
       ],
@@ -2583,6 +2368,132 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "MBI2D",
+          "qb_item_id": "728",
+          "qb_sku": "",
+          "qb_unit_price": 32.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MBI2E",
+          "qb_item_id": "729",
+          "qb_sku": "",
+          "qb_unit_price": 32.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MBXI2D",
+          "qb_item_id": "732",
+          "qb_sku": "",
+          "qb_unit_price": 45.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "MBXI2E",
+          "qb_item_id": "733",
+          "qb_sku": "",
+          "qb_unit_price": 45.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MBXI2J",
+          "qb_item_id": "734",
+          "qb_sku": "",
+          "qb_unit_price": 45.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "MBIONVB",
+          "qb_item_id": "730",
+          "qb_sku": "",
+          "qb_unit_price": 117.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MBIONVR",
+          "qb_item_id": "731",
+          "qb_sku": "",
+          "qb_unit_price": 117.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MBXONVB",
+          "qb_item_id": "735",
+          "qb_sku": "",
+          "qb_unit_price": 129.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "MBXONVR",
+          "qb_item_id": "736",
+          "qb_sku": "",
+          "qb_unit_price": 129.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
         }
       ]
     },
@@ -2603,7 +2514,7 @@
     },
     "whelen_fst": {
       "manufacturer_id": "whelen",
-      "model": "FST",
+      "model": "Inner Edge FST",
       "fits_part_types": [
         "front_interior_light_bar"
       ],
@@ -2877,11 +2788,23 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "lighthead",
+          "product_id": "whelen_ie_lighthead",
+          "required": true
+        },
+        {
+          "category": "shroud",
+          "product_id": "whelen_ie_shroud",
+          "required": false
+        }
       ]
     },
     "whelen_xlp": {
       "manufacturer_id": "whelen",
-      "model": "XLP",
+      "model": "Inner Edge XLP",
       "fits_part_types": [
         "front_interior_light_bar",
         "rear_interior_light_bar"
@@ -2950,30 +2873,19 @@
         }
       ]
     },
-    "whelen_t_ions_w_shorud": {
-      "manufacturer_id": "whelen",
-      "model": "T-IONS W/SHORUD",
-      "fits_part_types": [
-        "front_interior_light_bar"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "T-IONS W/SHORUD"
-        }
-      ]
-    },
     "whelen_t_series": {
       "manufacturer_id": "whelen",
-      "model": "T-SERIES",
+      "model": "T-Series",
       "fits_part_types": [
         "side_warning",
         "rear_warning",
         "lower_liftgate_warning",
         "rear_seat_cargo_lights",
-        "cargo_lighting"
+        "cargo_lighting",
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "front_interior_light_bar"
       ],
       "tag_ids": [],
       "description": "",
@@ -3487,7 +3399,7 @@
     },
     "whelen_mega_t_series": {
       "manufacturer_id": "whelen",
-      "model": "MEGA T-SERIES",
+      "model": "Mega T-Series",
       "fits_part_types": [
         "side_warning",
         "rear_warning",
@@ -3671,7 +3583,7 @@
     },
     "whelen_mini_t_series": {
       "manufacturer_id": "whelen",
-      "model": "MINI T-SERIES",
+      "model": "Mini T-Series",
       "fits_part_types": [
         "side_warning",
         "rear_warning",
@@ -4011,7 +3923,7 @@
     },
     "whelen_tracer_5_lamp": {
       "manufacturer_id": "whelen",
-      "model": "TRACER 5 LAMP",
+      "model": "Tracer 5-Lamp",
       "fits_part_types": [
         "side_warning",
         "rear_warning"
@@ -4038,7 +3950,7 @@
     },
     "whelen_tracer_6_lamp": {
       "manufacturer_id": "whelen",
-      "model": "TRACER 6 LAMP",
+      "model": "Tracer 6-Lamp",
       "fits_part_types": [
         "side_warning"
       ],
@@ -4111,7 +4023,7 @@
     },
     "whelen_legacy": {
       "manufacturer_id": "whelen",
-      "model": "LEGACY",
+      "model": "Legacy",
       "fits_part_types": [
         "roof_light_bar"
       ],
@@ -4160,26 +4072,12 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
-        },
-        {
-          "part_number": "ET9DEDEP",
-          "qb_item_id": "509",
-          "qb_sku": "",
-          "qb_unit_price": 2368.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "lens_type": "",
-          "tertiary_color": ""
         }
       ]
     },
     "whelen_liberty": {
       "manufacturer_id": "whelen",
-      "model": "LIBERTY",
+      "model": "Liberty II",
       "fits_part_types": [
         "roof_light_bar"
       ],
@@ -4200,12 +4098,26 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "ITL12",
+          "qb_item_id": "655",
+          "qb_sku": "",
+          "qb_unit_price": 513.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
     "whelen_9x_edge": {
       "manufacturer_id": "whelen",
-      "model": "9X EDGE",
+      "model": "Edge 9X",
       "fits_part_types": [
         "roof_light_bar"
       ],
@@ -4235,7 +4147,7 @@
     },
     "whelen_freedom": {
       "manufacturer_id": "whelen",
-      "model": "FREEDOM",
+      "model": "Micro Freedom",
       "fits_part_types": [
         "roof_light_bar"
       ],
@@ -4275,7 +4187,7 @@
     },
     "whelen_rst": {
       "manufacturer_id": "whelen",
-      "model": "RST",
+      "model": "Inner Edge RST",
       "fits_part_types": [
         "rear_interior_light_bar"
       ],
@@ -4423,6 +4335,18 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "lighthead",
+          "product_id": "whelen_ie_lighthead",
+          "required": true
+        },
+        {
+          "category": "shroud",
+          "product_id": "whelen_ie_shroud",
+          "required": false
+        }
       ]
     },
     "dtm_license_plate_bracket": {
@@ -4468,36 +4392,6 @@
       "part_numbers": [
         {
           "part_number": "TWIST LOCK ADAPTOR"
-        }
-      ]
-    },
-    "whelen_am_900": {
-      "manufacturer_id": "whelen",
-      "model": "AM-900",
-      "fits_part_types": [
-        "rear_scene"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "AM-900"
-        }
-      ]
-    },
-    "whelen_flashed_with_core": {
-      "manufacturer_id": "whelen",
-      "model": "FLASHED WITH CORE",
-      "fits_part_types": [
-        "tail_light_flasher"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FLASHED WITH CORE"
         }
       ]
     },
@@ -4636,7 +4530,7 @@
     },
     "whelen_core": {
       "manufacturer_id": "whelen",
-      "model": "CORE",
+      "model": "CenCom Core",
       "fits_part_types": [
         "light_controller"
       ],
@@ -4658,20 +4552,12 @@
           "lens_type": "",
           "tertiary_color": ""
         }
-      ]
-    },
-    "whelen_blueprint": {
-      "manufacturer_id": "whelen",
-      "model": "BLUEPRINT",
-      "fits_part_types": [
-        "light_controller"
       ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+      "accessories": [
         {
-          "part_number": "BLUEPRINT"
+          "category": "cable",
+          "product_id": "whelen_core_canport_cable",
+          "required": false
         }
       ]
     },
@@ -4738,7 +4624,18 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CCTL7"
+          "part_number": "CCTL7",
+          "qb_item_id": "421",
+          "qb_sku": "",
+          "qb_unit_price": 473.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
@@ -4768,7 +4665,18 @@
       "images": {},
       "part_numbers": [
         {
-          "part_number": "CCTL9"
+          "part_number": "CCTL9",
+          "qb_item_id": "422",
+          "qb_sku": "",
+          "qb_unit_price": 473.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
@@ -7040,24 +6948,9 @@
         }
       ]
     },
-    "arcti_start_specify": {
-      "manufacturer_id": "arcti_start",
-      "model": "SPECIFY",
-      "fits_part_types": [
-        "remote_start"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SPECIFY"
-        }
-      ]
-    },
     "whelen_pro_focus": {
       "manufacturer_id": "whelen",
-      "model": "PRO-FOCUS",
+      "model": "ProFocus",
       "fits_part_types": [
         "arges_face"
       ],
@@ -7162,21 +7055,6 @@
         }
       ]
     },
-    "whelen_vehicle_specific_mount": {
-      "manufacturer_id": "whelen",
-      "model": "VEHICLE SPECIFIC MOUNT",
-      "fits_part_types": [
-        "arges_mount"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "VEHICLE SPECIFIC MOUNT"
-        }
-      ]
-    },
     "whelen_light_bar_mount": {
       "manufacturer_id": "whelen",
       "model": "LIGHT BAR MOUNT",
@@ -7192,22 +7070,6 @@
         }
       ]
     },
-    "whelen_center_of_dash": {
-      "manufacturer_id": "whelen",
-      "model": "CENTER OF DASH",
-      "fits_part_types": [
-        "photo_eye",
-        "gpd"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "CENTER OF DASH"
-        }
-      ]
-    },
     "whelen_rear_view_mirror_plastic": {
       "manufacturer_id": "whelen",
       "model": "REAR VIEW MIRROR PLASTIC",
@@ -7220,36 +7082,6 @@
       "part_numbers": [
         {
           "part_number": "REAR VIEW MIRROR PLASTIC"
-        }
-      ]
-    },
-    "whelen_in_light_bar": {
-      "manufacturer_id": "whelen",
-      "model": "IN LIGHT BAR",
-      "fits_part_types": [
-        "photo_eye"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "IN LIGHT BAR"
-        }
-      ]
-    },
-    "whelen_specify_location": {
-      "manufacturer_id": "whelen",
-      "model": "SPECIFY LOCATION",
-      "fits_part_types": [
-        "photo_eye"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SPECIFY LOCATION"
         }
       ]
     },
@@ -7280,21 +7112,6 @@
       "part_numbers": [
         {
           "part_number": "ROOF MOUNTED"
-        }
-      ]
-    },
-    "globesat_specify_loaction": {
-      "manufacturer_id": "globesat",
-      "model": "SPECIFY LOACTION",
-      "fits_part_types": [
-        "gpd"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SPECIFY LOACTION"
         }
       ]
     },
@@ -8357,7 +8174,7 @@
     },
     "whelen_century": {
       "manufacturer_id": "whelen",
-      "model": "CENTURY",
+      "model": "Mini Century",
       "fits_part_types": [
         "roof_light_bar"
       ],
@@ -8378,12 +8195,124 @@
           "secondary_color": "",
           "lens_type": "clear",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "MC11MA",
+          "qb_item_id": "737",
+          "qb_sku": "",
+          "qb_unit_price": 494.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC11PA",
+          "qb_item_id": "738",
+          "qb_sku": "",
+          "qb_unit_price": 464.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC11SA",
+          "qb_item_id": "739",
+          "qb_sku": "",
+          "qb_unit_price": 453.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC16MA",
+          "qb_item_id": "740",
+          "qb_sku": "",
+          "qb_unit_price": 571.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC16MCG",
+          "qb_item_id": "741",
+          "qb_sku": "",
+          "qb_unit_price": 675.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "green",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC16MF",
+          "qb_item_id": "742",
+          "qb_sku": "",
+          "qb_unit_price": 552.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC16PA",
+          "qb_item_id": "743",
+          "qb_sku": "",
+          "qb_unit_price": 505.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MC16PCA",
+          "qb_item_id": "744",
+          "qb_sku": "",
+          "qb_unit_price": 505.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
         }
       ]
     },
     "whelen_alpha_sl": {
       "manufacturer_id": "whelen",
-      "model": "ALPHA SL",
+      "model": "Alpha SL",
       "fits_part_types": [
         "external_amp"
       ],
@@ -8409,7 +8338,7 @@
     },
     "whelen_external_amplifier": {
       "manufacturer_id": "whelen",
-      "model": "WECANX EXTERNAL AMP",
+      "model": "WeCanX External Amp",
       "fits_part_types": [
         "external_amp"
       ],
@@ -8435,7 +8364,7 @@
     },
     "whelen_hhs_siren_amp": {
       "manufacturer_id": "whelen",
-      "model": "HHS SIREN AMP",
+      "model": "HHS Siren Amp",
       "fits_part_types": [
         "external_amp"
       ],
@@ -8489,7 +8418,7 @@
     },
     "whelen_sa350mh": {
       "manufacturer_id": "whelen",
-      "model": "SA-350MH",
+      "model": "SA-350MH Speaker",
       "fits_part_types": [
         "siren_speaker"
       ],
@@ -8541,7 +8470,7 @@
     },
     "whelen_core_control_point": {
       "manufacturer_id": "whelen",
-      "model": "CORE CONTROL POINT",
+      "model": "Core Control Point",
       "fits_part_types": [
         "control_head"
       ],
@@ -8595,7 +8524,7 @@
     },
     "whelen_vsg": {
       "manufacturer_id": "whelen",
-      "model": "CORE+ VSG",
+      "model": "Core+ VSG",
       "fits_part_types": [
         "cloud_antenna"
       ],
@@ -8663,7 +8592,7 @@
     },
     "whelen_outer_edge": {
       "manufacturer_id": "whelen",
-      "model": "OUTER EDGE",
+      "model": "Outer Edge",
       "fits_part_types": [
         "rear_interior_light_bar"
       ],
@@ -8689,7 +8618,7 @@
     },
     "whelen_tracer_3_lamp": {
       "manufacturer_id": "whelen",
-      "model": "TRACER 3 LAMP",
+      "model": "Tracer 3-Lamp",
       "fits_part_types": [
         "side_warning",
         "rear_warning"
@@ -8716,7 +8645,7 @@
     },
     "whelen_traffic_advisor": {
       "manufacturer_id": "whelen",
-      "model": "TRAFFIC ADVISOR",
+      "model": "Traffic Advisor",
       "fits_part_types": [
         "rear_warning"
       ],
@@ -8737,12 +8666,54 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "TA2230F",
+          "qb_item_id": "1088",
+          "qb_sku": "",
+          "qb_unit_price": 1155.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TA2240F",
+          "qb_item_id": "1089",
+          "qb_sku": "",
+          "qb_unit_price": 1260.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "WX2230",
+          "qb_item_id": "1283",
+          "qb_sku": "",
+          "qb_unit_price": 1166.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
     "whelen_ion_v_series": {
       "manufacturer_id": "whelen",
-      "model": "ION V-SERIES",
+      "model": "ION V-Series",
       "fits_part_types": [
         "front_side_warning",
         "rear_warning"
@@ -8848,12 +8819,26 @@
           "secondary_color": "",
           "lens_type": "clear",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "IONHD3FM",
+          "qb_item_id": "630",
+          "qb_sku": "",
+          "qb_unit_price": 33.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     },
     "whelen_ion_rear_pillar": {
       "manufacturer_id": "whelen",
-      "model": "ION REAR PILLAR",
+      "model": "ION Rear Pillar",
       "fits_part_types": [
         "rear_warning"
       ],
@@ -8902,12 +8887,82 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
+        },
+        {
+          "part_number": "OEI2D",
+          "qb_item_id": "819",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "OEI2E",
+          "qb_item_id": "820",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "OEI2K",
+          "qb_item_id": "821",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "OEI2M",
+          "qb_item_id": "822",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "OEI3RBA",
+          "qb_item_id": "823",
+          "qb_sku": "",
+          "qb_unit_price": 16.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "white",
+          "lens_type": "clear"
         }
       ]
     },
     "whelen_m2": {
       "manufacturer_id": "whelen",
-      "model": "M2 SERIES",
+      "model": "M2 Series",
       "fits_part_types": [
         "front_side_warning"
       ],
@@ -8989,7 +9044,7 @@
     },
     "whelen_m4": {
       "manufacturer_id": "whelen",
-      "model": "M4 SERIES",
+      "model": "M4 Series",
       "fits_part_types": [
         "front_side_warning"
       ],
@@ -9113,7 +9168,7 @@
     },
     "whelen_m6": {
       "manufacturer_id": "whelen",
-      "model": "M6 SERIES",
+      "model": "M6 Series",
       "fits_part_types": [
         "front_side_warning"
       ],
@@ -9195,7 +9250,7 @@
     },
     "whelen_m7": {
       "manufacturer_id": "whelen",
-      "model": "M7 SERIES",
+      "model": "M7 Series",
       "fits_part_types": [
         "front_side_warning"
       ],
@@ -9235,7 +9290,7 @@
     },
     "whelen_m9_scene": {
       "manufacturer_id": "whelen",
-      "model": "M9 SCENE",
+      "model": "M9 Scene",
       "fits_part_types": [
         "front_scene",
         "rear_scene"
@@ -9276,7 +9331,7 @@
     },
     "whelen_ez_scene": {
       "manufacturer_id": "whelen",
-      "model": "EZ SCENE LIGHT",
+      "model": "EZ Scene Light",
       "fits_part_types": [
         "front_scene",
         "rear_scene"
@@ -9317,7 +9372,7 @@
     },
     "whelen_summit_flood": {
       "manufacturer_id": "whelen",
-      "model": "SUMMIT FLOOD",
+      "model": "Summit Flood",
       "fits_part_types": [
         "front_scene",
         "rear_scene"
@@ -9372,7 +9427,7 @@
     },
     "whelen_500_series": {
       "manufacturer_id": "whelen",
-      "model": "500 SERIES TIR",
+      "model": "500 Series TIR6",
       "fits_part_types": [
         "forward_warning",
         "side_warning"
@@ -9422,6 +9477,1314 @@
           "secondary_color": "",
           "lens_type": "clear",
           "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_mini_legacy": {
+      "manufacturer_id": "whelen",
+      "model": "Mini Legacy",
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "ET9DEDEP",
+          "qb_item_id": "509",
+          "qb_sku": "",
+          "qb_unit_price": 2368.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_pioneer_micro": {
+      "manufacturer_id": "whelen",
+      "model": "Pioneer Micro",
+      "fits_part_types": [
+        "front_scene",
+        "rear_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "MPBB",
+          "qb_item_id": "778",
+          "qb_sku": "",
+          "qb_unit_price": 528.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        },
+        {
+          "part_number": "MPPBBS",
+          "qb_item_id": "780",
+          "qb_sku": "",
+          "qb_unit_price": 750.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_pioneer_nano": {
+      "manufacturer_id": "whelen",
+      "model": "Pioneer Nano",
+      "fits_part_types": [
+        "front_scene",
+        "rear_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "NP6BB",
+          "qb_item_id": "783",
+          "qb_sku": "",
+          "qb_unit_price": 336.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_pioneer_plus": {
+      "manufacturer_id": "whelen",
+      "model": "Pioneer Plus",
+      "fits_part_types": [
+        "front_scene",
+        "rear_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PBH203",
+          "qb_item_id": "829",
+          "qb_sku": "",
+          "qb_unit_price": 435.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "white",
+          "secondary_color": "",
+          "lens_type": "clear",
+          "tertiary_color": ""
+        },
+        {
+          "part_number": "PFH2",
+          "qb_item_id": "833",
+          "qb_sku": "",
+          "qb_unit_price": 1871.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "white",
+          "secondary_color": "",
+          "lens_type": "clear",
+          "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_pioneer_slimline": {
+      "manufacturer_id": "whelen",
+      "model": "Pioneer SlimLine",
+      "fits_part_types": [
+        "front_scene",
+        "rear_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PSL1BB",
+          "qb_item_id": "886",
+          "qb_sku": "",
+          "qb_unit_price": 528.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        },
+        {
+          "part_number": "PSL2BB",
+          "qb_item_id": "887",
+          "qb_sku": "",
+          "qb_unit_price": 1074.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "lens_type": "",
+          "tertiary_color": ""
+        }
+      ]
+    },
+    "whelen_micron": {
+      "manufacturer_id": "whelen",
+      "model": "Micron",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "MCRNSA",
+          "qb_item_id": "749",
+          "qb_sku": "",
+          "qb_unit_price": 161.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MCRNSB",
+          "qb_item_id": "750",
+          "qb_sku": "",
+          "qb_unit_price": 161.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MCRNSBX",
+          "qb_item_id": "751",
+          "qb_sku": "",
+          "qb_unit_price": 174.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "MCRNSD",
+          "qb_item_id": "752",
+          "qb_sku": "",
+          "qb_unit_price": 964.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MCRNSF",
+          "qb_item_id": "753",
+          "qb_sku": "",
+          "qb_unit_price": 168.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MCRNSR",
+          "qb_item_id": "754",
+          "qb_sku": "",
+          "qb_unit_price": 161.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "MCRNSRX",
+          "qb_item_id": "755",
+          "qb_sku": "",
+          "qb_unit_price": 174.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        }
+      ]
+    },
+    "whelen_responder_lp": {
+      "manufacturer_id": "whelen",
+      "model": "Responder LP",
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "R1LPMF",
+          "qb_item_id": "927",
+          "qb_sku": "",
+          "qb_unit_price": 647.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "R1LPPA",
+          "qb_item_id": "928",
+          "qb_sku": "",
+          "qb_unit_price": 617.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "R2LPHPA",
+          "qb_item_id": "929",
+          "qb_sku": "",
+          "qb_unit_price": 888.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "R2LPPA",
+          "qb_item_id": "930",
+          "qb_sku": "",
+          "qb_unit_price": 795.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_700_series": {
+      "manufacturer_id": "whelen",
+      "model": "700 Series",
+      "fits_part_types": [
+        "front_scene",
+        "side_scene",
+        "rear_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "704BTT",
+          "qb_item_id": "163",
+          "qb_sku": "",
+          "qb_unit_price": 211.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "704BU",
+          "qb_item_id": "164",
+          "qb_sku": "",
+          "qb_unit_price": 245.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "70B02FCR",
+          "qb_item_id": "165",
+          "qb_sku": "",
+          "qb_unit_price": 244.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "70R02FCR",
+          "qb_item_id": "166",
+          "qb_sku": "",
+          "qb_unit_price": 244.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_900_series": {
+      "manufacturer_id": "whelen",
+      "model": "900 Series",
+      "fits_part_types": [
+        "front_scene",
+        "side_scene",
+        "rear_scene",
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "90RC5FCR",
+          "qb_item_id": "237",
+          "qb_sku": "",
+          "qb_unit_price": 240.56,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_avenger_2": {
+      "manufacturer_id": "whelen",
+      "model": "Avenger II",
+      "fits_part_types": [
+        "forward_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "AVC21RB",
+          "qb_item_id": "275",
+          "qb_sku": "",
+          "qb_unit_price": 447.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "AVC22DD",
+          "qb_item_id": "276",
+          "qb_sku": "",
+          "qb_unit_price": 486.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "AVC22EE",
+          "qb_item_id": "277",
+          "qb_sku": "",
+          "qb_unit_price": 486.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_round_lighthead": {
+      "manufacturer_id": "whelen",
+      "model": "Round Lighthead",
+      "fits_part_types": [
+        "rear_seat_cargo_lights",
+        "cargo_lighting",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "3SBCCDCR",
+          "qb_item_id": "137",
+          "qb_sku": "",
+          "qb_unit_price": 104.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "3SC0CDCR",
+          "qb_item_id": "138",
+          "qb_sku": "",
+          "qb_unit_price": 96.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "white",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "3SRCCDCR",
+          "qb_item_id": "139",
+          "qb_sku": "",
+          "qb_unit_price": 104.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "2FC00ZCR",
+          "qb_item_id": "96",
+          "qb_sku": "",
+          "qb_unit_price": 239.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "white",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_fluorent_plus": {
+      "manufacturer_id": "whelen",
+      "model": "Fluorent+",
+      "fits_part_types": [
+        "cargo_lighting"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "F54PC",
+          "qb_item_id": "519",
+          "qb_sku": "",
+          "qb_unit_price": 435.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "F63PC",
+          "qb_item_id": "520",
+          "qb_sku": "",
+          "qb_unit_price": 500.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_r416_beacon": {
+      "manufacturer_id": "whelen",
+      "model": "R416 Beacon",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "R416BF",
+          "qb_item_id": "931",
+          "qb_sku": "",
+          "qb_unit_price": 1036.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "R416RF",
+          "qb_item_id": "932",
+          "qb_sku": "",
+          "qb_unit_price": 1036.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_par46": {
+      "manufacturer_id": "whelen",
+      "model": "PAR-46",
+      "fits_part_types": [
+        "front_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "P46FLC",
+          "qb_item_id": "827",
+          "qb_sku": "",
+          "qb_unit_price": 314.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "purple",
+          "secondary_color": "amber",
+          "tertiary_color": "red",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "P46SC",
+          "qb_item_id": "828",
+          "qb_sku": "",
+          "qb_unit_price": 314.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "purple",
+          "secondary_color": "amber",
+          "tertiary_color": "red",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_par32": {
+      "manufacturer_id": "whelen",
+      "model": "PAR-32",
+      "fits_part_types": [
+        "front_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "P32F2RB",
+          "qb_item_id": "826",
+          "qb_sku": "",
+          "qb_unit_price": 750.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_l31": {
+      "manufacturer_id": "whelen",
+      "model": "L31",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "L31HRF",
+          "qb_item_id": "665",
+          "qb_sku": "",
+          "qb_unit_price": 750.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_l32": {
+      "manufacturer_id": "whelen",
+      "model": "L32",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "L32LAF",
+          "qb_item_id": "666",
+          "qb_sku": "",
+          "qb_unit_price": 499.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_v2_series": {
+      "manufacturer_id": "whelen",
+      "model": "V2 Series",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "V23ATPB",
+          "qb_item_id": "1229",
+          "qb_sku": "",
+          "qb_unit_price": 355.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_linz_v_series": {
+      "manufacturer_id": "whelen",
+      "model": "LINZ V-Series",
+      "fits_part_types": [
+        "forward_warning",
+        "front_side_warning",
+        "pit_bar_warning",
+        "side_warning",
+        "rear_warning",
+        "lower_liftgate_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "LINSV2A",
+          "qb_item_id": "676",
+          "qb_sku": "",
+          "qb_unit_price": 309.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "LINSV2B",
+          "qb_item_id": "677",
+          "qb_sku": "",
+          "qb_unit_price": 309.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "LINSV2BX",
+          "qb_item_id": "678",
+          "qb_sku": "",
+          "qb_unit_price": 322.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "LINSV2R",
+          "qb_item_id": "679",
+          "qb_sku": "",
+          "qb_unit_price": 309.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "LINSV2RX",
+          "qb_item_id": "680",
+          "qb_sku": "",
+          "qb_unit_price": 322.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "LINV2A",
+          "qb_item_id": "681",
+          "qb_sku": "",
+          "qb_unit_price": 296.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_strip_lite_plus": {
+      "manufacturer_id": "whelen",
+      "model": "Strip-Lite+",
+      "fits_part_types": [
+        "cargo_lighting"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PSCOMPH",
+          "qb_item_id": "878",
+          "qb_sku": "",
+          "qb_unit_price": 175.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_wing_plow_light": {
+      "manufacturer_id": "whelen",
+      "model": "Wing Plow Light",
+      "fits_part_types": [
+        "front_scene"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "WPLOW1A",
+          "qb_item_id": "1281",
+          "qb_sku": "",
+          "qb_unit_price": 274.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "amber",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_ion_t_hd_array": {
+      "manufacturer_id": "whelen",
+      "model": "ION-T HD Array",
+      "fits_part_types": [
+        "forward_warning"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "M08DT",
+          "qb_item_id": "690",
+          "qb_sku": "",
+          "qb_unit_price": 988.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_wecan_control_point": {
+      "manufacturer_id": "whelen",
+      "model": "WeCan Universal Control Point",
+      "fits_part_types": [
+        "control_head"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "WCCP",
+          "qb_item_id": "1258",
+          "qb_sku": "",
+          "qb_unit_price": 227.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_ws321_mic": {
+      "manufacturer_id": "whelen",
+      "model": "WS-321 Mic",
+      "fits_part_types": [
+        "pa_mic"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "WSMIC321",
+          "qb_item_id": "1282",
+          "qb_sku": "",
+          "qb_unit_price": 190.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_ie_lighthead": {
+      "manufacturer_id": "whelen",
+      "model": "Inner Edge Lighthead",
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "ISSB",
+          "qb_item_id": "650",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "ISSR",
+          "qb_item_id": "651",
+          "qb_sku": "",
+          "qb_unit_price": 0.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "ISTRBA",
+          "qb_item_id": "653",
+          "qb_sku": "",
+          "qb_unit_price": 123.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "ISTRBC",
+          "qb_item_id": "654",
+          "qb_sku": "",
+          "qb_unit_price": 123.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "ISDD",
+          "qb_item_id": "645",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "ISDE",
+          "qb_item_id": "646",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "ISDJ",
+          "qb_item_id": "647",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "ISDK",
+          "qb_item_id": "648",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "ISDM",
+          "qb_item_id": "649",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "ISTBCA",
+          "qb_item_id": "652",
+          "qb_sku": "",
+          "qb_unit_price": 123.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "amber",
+          "lens_type": "clear"
+        }
+      ]
+    },
+    "whelen_ie_shroud": {
+      "manufacturer_id": "whelen",
+      "model": "Inner Edge Shroud",
+      "fits_part_types": [
+        "shroud"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "THSG1",
+          "qb_item_id": "1122",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "THSG2",
+          "qb_item_id": "1123",
+          "qb_sku": "",
+          "qb_unit_price": 69.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_core_canport_cable": {
+      "manufacturer_id": "whelen",
+      "model": "CenCom Core CANPORT Cable",
+      "fits_part_types": [
+        "cable"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "C399K2",
+          "qb_item_id": "405",
+          "qb_sku": "",
+          "qb_unit_price": 177.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "C399K4",
+          "qb_item_id": "407",
+          "qb_sku": "",
+          "qb_unit_price": 64.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "C399K5",
+          "qb_item_id": "408",
+          "qb_sku": "",
+          "qb_unit_price": 177.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
         }
       ]
     }
@@ -9481,7 +10844,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Wire Covers",
       "sequence_scope": "global",
-      "accessory_of": "push_bumper"
+      "accessory_of": "push_bumper",
+      "accessory_category": "other"
     },
     "forward_warning": {
       "label": "Forward Warning",
@@ -9504,7 +10868,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "FW {n} Bracket",
       "sequence_scope": "global",
-      "accessory_of": "forward_warning"
+      "accessory_of": "forward_warning",
+      "accessory_category": "bracket_mount"
     },
     "front_side_warning": {
       "label": "Front Side Warning",
@@ -9527,7 +10892,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Front Side Brackets",
       "sequence_scope": "global",
-      "accessory_of": "front_side_warning"
+      "accessory_of": "front_side_warning",
+      "accessory_category": "bracket_mount"
     },
     "pit_bar_warning": {
       "label": "Pit Bar Warning",
@@ -9593,7 +10959,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Siren Speaker Bracket",
       "sequence_scope": "global",
-      "accessory_of": "siren_speaker"
+      "accessory_of": "siren_speaker",
+      "accessory_category": "bracket_mount"
     },
     "external_amp": {
       "label": "External Amp",
@@ -9646,7 +11013,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Pa Mic Clip",
       "sequence_scope": "global",
-      "accessory_of": "pa_mic"
+      "accessory_of": "pa_mic",
+      "accessory_category": "bracket_mount"
     },
     "preemption": {
       "label": "Preemption",
@@ -9733,7 +11101,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Mirror Warning Bracket {n}",
       "sequence_scope": "global",
-      "accessory_of": "mirror_warning"
+      "accessory_of": "mirror_warning",
+      "accessory_category": "bracket_mount"
     },
     "front_interior_light_bar": {
       "label": "Interior Light Bar",
@@ -9774,7 +11143,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Side Warning Bracket {n}",
       "sequence_scope": "global",
-      "accessory_of": "side_warning"
+      "accessory_of": "side_warning",
+      "accessory_category": "bracket_mount"
     },
     "side_scene": {
       "label": "Side Scene",
@@ -9839,7 +11209,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Rear Warning Bracket {n}",
       "sequence_scope": "global",
-      "accessory_of": "rear_warning"
+      "accessory_of": "rear_warning",
+      "accessory_category": "bracket_mount"
     },
     "rear_scene": {
       "label": "Rear Scene",
@@ -9876,7 +11247,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Lower Lift Gate Warning Bracket",
       "sequence_scope": "global",
-      "accessory_of": "lower_liftgate_warning"
+      "accessory_of": "lower_liftgate_warning",
+      "accessory_category": "bracket_mount"
     },
     "tail_light_flasher": {
       "label": "Tail Light Flasher",
@@ -9916,7 +11288,8 @@
       ],
       "workbook_label_pattern": "Front Radar Antenna Mount",
       "sequence_scope": "global",
-      "accessory_of": "radar_display_unit"
+      "accessory_of": "radar_display_unit",
+      "accessory_category": "bracket_mount"
     },
     "rear_radar_antenna_mount": {
       "label": "Rear Radar Antenna Mount",
@@ -9927,7 +11300,8 @@
       ],
       "workbook_label_pattern": "Rear Radar Antenna Mount",
       "sequence_scope": "global",
-      "accessory_of": "radar_display_unit"
+      "accessory_of": "radar_display_unit",
+      "accessory_category": "bracket_mount"
     },
     "radar_interface_cable": {
       "label": "Radar Interface Cable",
@@ -10179,7 +11553,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Printer Mount",
       "sequence_scope": "global",
-      "accessory_of": "printer"
+      "accessory_of": "printer",
+      "accessory_category": "bracket_mount"
     },
     "printer_power": {
       "label": "Printer Power",
@@ -10193,7 +11568,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Printer Power",
       "sequence_scope": "global",
-      "accessory_of": "printer"
+      "accessory_of": "printer",
+      "accessory_category": "flasher_power"
     },
     "printer_usb": {
       "label": "Printer USB",
@@ -10207,7 +11583,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Printer USB",
       "sequence_scope": "global",
-      "accessory_of": "printer"
+      "accessory_of": "printer",
+      "accessory_category": "cable"
     },
     "aux_12v_ports": {
       "label": "12v Aux Ports",
@@ -10353,7 +11730,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Front Partition Transfer Kit",
       "sequence_scope": "global",
-      "accessory_of": "front_partition"
+      "accessory_of": "front_partition",
+      "accessory_category": "other"
     },
     "rear_seat_lights": {
       "label": "Rear Seat Lights",
@@ -10558,7 +11936,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Gunlock Bracket {n}",
       "sequence_scope": "global",
-      "accessory_of": "gun_lock"
+      "accessory_of": "gun_lock",
+      "accessory_category": "bracket_mount"
     },
     "k9_kennel": {
       "label": "K-9 Kennel",
@@ -10713,7 +12092,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Arges Mount",
       "sequence_scope": "global",
-      "accessory_of": "arges_controller"
+      "accessory_of": "arges_controller",
+      "accessory_category": "bracket_mount"
     },
     "photo_eye": {
       "label": "Photo Eye",
@@ -10862,6 +12242,41 @@
       ],
       "workbook_label_pattern": "Radio Speaker",
       "sequence_scope": "global"
+    },
+    "lighthead": {
+      "label": "Lighthead",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "lighthead"
+    },
+    "cable": {
+      "label": "Cable",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "cable"
+    },
+    "flange": {
+      "label": "Flange",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "flange"
+    },
+    "shroud": {
+      "label": "Shroud",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "shroud"
+    },
+    "flasher_power": {
+      "label": "Flasher / Power",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "flasher_power"
     }
   },
   "placements": {
@@ -10987,7 +12402,6 @@
     "SIDE OF PUSH BUMPER": {
       "placement_zone": "primary_front"
     },
-    "SPECIFY LOCATION": {},
     "SPOT LIGHT MOUNT": {},
     "TAIL LIGHTS": {
       "placement_zone": "rear"
@@ -11178,6 +12592,29 @@
         "purple"
       ],
       "color_display_form": "label"
+    }
+  },
+  "accessory_categories": {
+    "lighthead": {
+      "label": "Lighthead"
+    },
+    "bracket_mount": {
+      "label": "Bracket / Mount"
+    },
+    "cable": {
+      "label": "Cable"
+    },
+    "flange": {
+      "label": "Flange"
+    },
+    "shroud": {
+      "label": "Shroud"
+    },
+    "flasher_power": {
+      "label": "Flasher / Power"
+    },
+    "other": {
+      "label": "Other"
     }
   }
 }

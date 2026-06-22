@@ -176,6 +176,25 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
             products[pid]["fits_part_types"] = list(fits)
             actions.append(f"~ {pid}: fits_part_types → {fits}")
 
+    # 0b. Rename existing products' display model (proper Whelen name vs the
+    #     uppercase workbook string). model feeds naming_rules.product_display_name.
+    for pid, new_model in (mapping.get("rename") or {}).items():
+        if pid not in products:
+            raise ValueError(f"rename references unknown product: {pid}")
+        old_model = products[pid].get("model", "")
+        if old_model != new_model:
+            products[pid]["model"] = new_model
+            actions.append(f"~ {pid}: model {old_model!r} → {new_model!r}")
+
+    # 0c. Wire product-level accessories (Phase 5). Each entry:
+    #     {"category": <accessory_category>, "product_id": <accessory product>,
+    #      "required": bool}. Surfaced as per-category dropdowns in the picker.
+    for pid, accs in (mapping.get("set_accessories") or {}).items():
+        if pid not in products:
+            raise ValueError(f"set_accessories references unknown product: {pid}")
+        products[pid]["accessories"] = list(accs)
+        actions.append(f"~ {pid}: accessories → {[a.get('product_id') for a in accs]}")
+
     # 1. New products (copy fits_part_types from the template sibling).
     template_id = mapping.get("template_product")
     template = products.get(template_id, {}) if template_id else {}
@@ -255,6 +274,36 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
                 color_label += f" ({entry['lens_type']})"
             actions.append(f"+ {pid}: link {sku}  (${entry['qb_unit_price']}, "
                            f"veh {entry['vehicle_tags']}{color_label})")
+
+    # 3. Move an already-linked part_number from one product to another (splits).
+    #    Relocates the existing entry verbatim (keeps qb data + parsed color/lens).
+    for mv in (mapping.get("move") or []):
+        sku, src, dst = mv["sku"], mv["from"], mv["to"]
+        if src not in products:
+            raise ValueError(f"move 'from' references unknown product: {src}")
+        if dst not in products:
+            raise ValueError(f"move 'to' references unknown product: {dst}")
+        src_pns = products[src].setdefault("part_numbers", [])
+        entry = next((p for p in src_pns if p.get("part_number") == sku), None)
+        if entry is None:
+            raise ValueError(f"move: {sku!r} not found on {src}")
+        src_pns.remove(entry)
+        dst_pns = products[dst].setdefault("part_numbers", [])
+        if not any(p.get("part_number") == sku for p in dst_pns):
+            dst_pns.append(entry)
+        actions.append(f"→ move {sku}: {src} ⇒ {dst}")
+
+    # 4. Delete products (only when emptied of real SKUs — safety guard).
+    for pid in (mapping.get("delete_products") or []):
+        if pid not in products:
+            continue
+        leftover = [p for p in (products[pid].get("part_numbers") or [])
+                    if str(p.get("qb_item_id", "")).strip()]
+        if leftover:
+            raise ValueError(f"refusing to delete {pid}: still holds linked SKUs "
+                             f"{[p['part_number'] for p in leftover]}")
+        del products[pid]
+        actions.append(f"- delete product {pid}")
     return actions
 
 

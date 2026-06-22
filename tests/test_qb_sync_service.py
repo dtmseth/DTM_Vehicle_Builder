@@ -178,6 +178,11 @@ def _link_fakes(paths, monkeypatch):
         # Mirror the real pipeline: persisted doc becomes what the next
         # raw_doc() returns (production reloads from disk after invalidate()).
         fake_svc._doc = data
+        # _linked_map reads parts_db.json straight off disk, so persist there too
+        # (production's save_config_file writes the file).
+        if filename == "parts_db.json":
+            (paths.workspace_config_dir / filename).write_text(
+                json.dumps(data, indent=2), encoding="utf-8")
         return {"ok": True}
 
     import dtm_buildsheet.app.services.config_service as cfg

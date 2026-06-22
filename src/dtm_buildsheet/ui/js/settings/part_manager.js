@@ -336,7 +336,22 @@ function _pdbRenderProductDetail(id){
     <div>${_pdbChips((p.tag_ids||[]).map(t=>tags[t]?.label||t))}</div>
     <div class="pdb-section-title">Part numbers (${pns.length})</div>
     <div class="pdb-compat-list">
-      ${pns.length ? pns.map(pn => `<div class="pdb-compat-row"><strong>${esc(pn.part_number)}</strong>${pn.friendly_name?` · ${esc(pn.friendly_name)}`:""}${pn.price_usd?` · $${esc(pn.price_usd)}`:""}</div>`).join("") : '<span style="color:var(--muted)">none</span>'}
+      ${pns.length ? pns.map(pn => {
+        const parts = [`<strong>${esc(pn.part_number)}</strong>`];
+        if(pn.color) {
+          let colorStr = pn.color;
+          if(pn.secondary_color) colorStr += `/${pn.secondary_color}`;
+          parts.push(`<span style="color:var(--muted)">${colorStr}</span>`);
+        }
+        if(pn.lens_type) parts.push(`<span class="chip">${esc(pn.lens_type)}</span>`);
+        const price = pn.qb_unit_price || pn.price_usd;
+        if(price) parts.push(`<span style="color:var(--accent);font-weight:500">$${esc(price)}</span>`);
+        if(pn.qb_item_id) parts.push('<span class="chip" style="background:var(--green);color:#fff">QB</span>');
+        if(pn.vehicle_tags?.length && !(pn.vehicle_tags.length===1&&pn.vehicle_tags[0]==="any")) {
+          parts.push(`<span class="chip">${esc(pn.vehicle_tags.join(", "))}</span>`);
+        }
+        return `<div class="pdb-compat-row">${parts.join(" · ")}</div>`;
+      }).join("") : '<span style="color:var(--muted)">none</span>'}
     </div>
   `;
 }

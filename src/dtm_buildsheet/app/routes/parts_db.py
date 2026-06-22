@@ -30,23 +30,23 @@ _CATEGORY_LOCATIONS_PATH = f"{_PREFIX}/category-locations"
 _CATEGORY_SKUS_PATH = f"{_PREFIX}/category-skus"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
+_ACCESSORIES_PATH = f"{_PREFIX}/accessories"
 
 
 # Physical placement_zones relevant to each light category — drives the
-# location-last step. Cargo-window/rear-interior spots count as side warning
-# per the usage-based categorization. Judgment map; tune in parts_db later.
+# location-last step. Sub-zones (primary_front, front_corner, etc.) are
+# collapsed to tree-level views (front/side/rear/roof/interior) because
+# category-level placements accept all locations in a view.
 _CATEGORY_PLACEMENT_ZONES = {
-    "warning": ["primary_front", "front_corner", "front_side", "side",
-                "rear_side", "rear", "rear_corner", "rear_interior"],
-    "scene": ["primary_front", "front_side", "side", "rear", "roof"],
-    "interior": ["interior", "rear_interior"],
-    "interior_bar": ["interior", "rear_interior", "roof"],
-    "roof_bar": ["roof"],
-    "spotlight": ["primary_front", "front_side", "side"],
+    "warning":   ["front", "side", "rear"],
+    "scene":     ["front", "side", "rear", "roof"],
+    "interior":  ["interior"],
+    "interior_bar": ["interior", "roof"],
+    "roof_bar":  ["roof"],
+    "spotlight": ["front", "side"],
 }
-# placement_zone → broad tree zone, used to pick a part_type when no legacy
-# location mapping exists. rear_side/rear_interior → side (cargo window = side
-# warning per the usage rule).
+# placement_zone → broad tree zone.  Used by _resolve_category_locations to
+# test whether a placement's sub-zone belongs to a category's view(s).
 _PLACEMENT_ZONE_TO_TREE = {
     "primary_front": "front", "front_corner": "front", "front_side": "front",
     "side": "side", "rear_side": "side", "rear_interior": "side",
@@ -122,35 +122,34 @@ def _primary_part_type(candidates: list, zone_id: str):
 def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
     """Locations for the category's location-last step.
 
-    Each location resolves to a part_type (for naming/render): legacy
-    location→part_type map first, then the broad-zone primary, then any
-    candidate. Returns dicts with location + part_type_id + name_pattern.
+    Each location resolves to a canonical part_type based solely on its
+    tree zone: front→Forward Warning, side→Side Warning, rear→Rear Warning.
+    Legacy fine-grained part_types (Front Side Warning, Pit Bar Warning,
+    Lower Lift Gate Warning, etc.) are intentionally collapsed per owner
+    direction — all warning-category locations use the same 3 names.
     """
     candidates = [pt for pt in svc.list_part_types()
                   if pt.type_id == type_id and _pt_in_category(pt, category)]
     if not candidates:
         return []
-    # Legacy location → part_type (curated, most reliable where present).
-    legacy: dict[str, object] = {}
-    for pt in candidates:
-        for loc in svc.locations_by_legacy_name(pt.label):
-            legacy.setdefault(loc.upper(), pt)
 
-    def pick(pz: str):
-        tree = _PLACEMENT_ZONE_TO_TREE.get(pz, "")
-        if tree:
-            kw = _TREE_PRIMARY_KEYWORD.get(tree, "")
-            # Prefer a candidate sitting in that tree zone…
-            for pt in candidates:
+    # Build fast lookup: tree_zone → canonical part_type for naming.
+    # Prefer an exact label match (case-insensitive) to the zone's keyword.
+    _zone_keyword = {"front": "forward warning", "side": "side warning", "rear": "rear warning"}
+    zone_pt: dict[str, object] = {}
+    for tree, kw in _zone_keyword.items():
+        for pt in candidates:
+            if (pt.label or "").strip().lower() == kw:
                 if any(p.zone == tree for p in pt.tree_positions):
-                    if not kw or kw in (pt.label or "").lower():
-                        return pt
-            # …then one whose label matches the zone keyword.
-            if kw:
-                for pt in candidates:
-                    if kw in (pt.label or "").lower():
-                        return pt
-        return candidates[0]
+                    zone_pt[tree] = pt
+                    break
+        # Fallback: any candidate in the tree zone whose label contains the keyword
+        if tree not in zone_pt and kw:
+            for pt in candidates:
+                if kw in (pt.label or "").lower():
+                    if any(p.zone == tree for p in pt.tree_positions):
+                        zone_pt[tree] = pt
+                        break
 
     doc = svc.raw_doc()
     placements_doc = doc.get("placements") or {}
@@ -158,15 +157,18 @@ def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
     out: list[dict] = []
     for loc, spec in placements_doc.items():
         pz = spec.get("placement_zone", "")
-        if pzones and pz not in pzones:
+        tree_zone = _PLACEMENT_ZONE_TO_TREE.get(pz, "")
+        if tree_zone not in pzones:
             continue
-        pt = legacy.get(loc.upper()) or pick(pz)
+        pt = zone_pt.get(tree_zone)
+        if pt is None:
+            continue
         out.append({
             "location": loc,
             "placement_zone": pz,
-            "part_type_id": pt.part_type_id if pt else "",
-            "name_pattern": (pt.workbook_label_pattern if pt else "") or (pt.label if pt else ""),
-            "base_label": pt.label if pt else "",
+            "part_type_id": pt.part_type_id,
+            "name_pattern": (pt.workbook_label_pattern or pt.label),
+            "base_label": pt.label,
         })
     out.sort(key=lambda x: x["location"])
     return out
@@ -266,6 +268,79 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
                 "catalog_names": catalog_names,
             })
     out.sort(key=lambda x: x["location"])
+    return out
+
+
+def _resolve_accessories(svc, product_id: str) -> list[dict]:
+    """Resolve a product's accessories, grouped by accessory_category.
+
+    Two sources, unioned: product-level ``accessories`` (explicit, may be
+    ``required``) and part_type-level (any product fitting an accessory part_type
+    whose ``accessory_of`` matches one of this product's ``fits_part_types``).
+    Returns ``[{category, label, required, options:[{product_id, model, skus}]}]``
+    ordered by the accessory_categories vocabulary.
+    """
+    doc = svc.raw_doc()
+    products = doc.get("products") or {}
+    part_types = doc.get("part_types") or {}
+    acc_cats = doc.get("accessory_categories") or {}
+    mfrs = doc.get("manufacturers") or {}
+    prod = products.get(product_id)
+    if not prod:
+        return []
+
+    groups: dict[str, dict] = {}
+
+    def add(category: str, acc_pid: str, required: bool) -> None:
+        if not category or not acc_pid or acc_pid == product_id or acc_pid not in products:
+            return
+        g = groups.setdefault(category, {"required": False, "option_ids": []})
+        if required:
+            g["required"] = True
+        if acc_pid not in g["option_ids"]:
+            g["option_ids"].append(acc_pid)
+
+    # 1. Product-level accessories.
+    for a in prod.get("accessories") or []:
+        add(a.get("category"), a.get("product_id"), bool(a.get("required")))
+
+    # 2. Part_type-level: accessory part_types whose parent is one of our fits.
+    fits = set(prod.get("fits_part_types") or [])
+    if fits:
+        acc_pt_cat = {pt_id: (pt.get("accessory_category") or "other")
+                      for pt_id, pt in part_types.items()
+                      if pt.get("accessory_of") in fits}
+        if acc_pt_cat:
+            for apid, ap in products.items():
+                ap_fits = set(ap.get("fits_part_types") or [])
+                for pt_id, cat in acc_pt_cat.items():
+                    if pt_id in ap_fits:
+                        add(cat, apid, False)
+
+    out: list[dict] = []
+    for cat_id in acc_cats:                      # vocabulary order
+        g = groups.get(cat_id)
+        if not g:
+            continue
+        options = []
+        for apid in g["option_ids"]:
+            ap = products.get(apid) or {}
+            mfr = mfrs.get(ap.get("manufacturer_id"), {})
+            skus = [{
+                "part_number": pn.get("part_number"),
+                "price": pn.get("qb_unit_price") if pn.get("qb_unit_price") is not None else pn.get("price_usd"),
+                "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
+                "lens_type": pn.get("lens_type", ""),
+            } for pn in (ap.get("part_numbers") or [])]
+            options.append({
+                "product_id": apid, "model": ap.get("model", apid),
+                "manufacturer_label": mfr.get("label", ap.get("manufacturer_id", "")),
+                "skus": skus,
+            })
+        out.append({
+            "category": cat_id, "label": acc_cats[cat_id].get("label", cat_id),
+            "required": g["required"], "options": options,
+        })
     return out
 
 
@@ -523,6 +598,16 @@ def route_parts_db(
         send_json(handler, {"mode": "part_type", "placements": out})
         return True
 
+    if method == "GET" and path == _ACCESSORIES_PATH:
+        # A product's accessories, grouped by category — drives the picker's
+        # per-type accessory dropdowns.
+        product_id = qs.get("product_id", [""])[0]
+        if not product_id:
+            send_json(handler, {"error": "missing product_id"}, status=400)
+            return True
+        send_json(handler, {"accessories": _resolve_accessories(svc, product_id)})
+        return True
+
     if method == "GET" and path == _CATEGORY_SKUS_PATH:
         # Products + their SKUs for one category (drives the two-pane live list).
         type_id = qs.get("type", [""])[0]
@@ -530,6 +615,13 @@ def route_parts_db(
         if not type_id:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
+        from ..services.config_service import load_config_file
+        catalog_parts = (load_config_file("part_catalog.json", paths).get("parts") or [])
+        catalog_fixture_ids = {p["part_id"] for p in catalog_parts if p.get("is_fixture")}
+        catalog_default_locs = {
+            p["part_id"]: p["default_location_key"]
+            for p in catalog_parts if p.get("default_location_key")
+        }
         mfrs_doc = svc.raw_doc().get("manufacturers") or {}
         pt_ids = [pt.part_type_id for pt in svc.list_part_types()
                   if pt.type_id == type_id and _pt_in_category(pt, category)]
@@ -550,30 +642,34 @@ def route_parts_db(
                         "price": pn.qb_unit_price or pn.price_usd,
                         "qb": bool(pn.qb_item_id),
                     })
+                fits = p.fits_part_types or []
+                is_fixture = bool(fits) and all(pt_id in catalog_fixture_ids for pt_id in fits)
+                default_loc = next(
+                    (catalog_default_locs[pt_id] for pt_id in fits if pt_id in catalog_default_locs),
+                    ""
+                )
                 out.append({
                     "product_id": p.product_id, "model": p.model,
                     "manufacturer_id": p.manufacturer_id,
                     "manufacturer_label": mfr.get("label", p.manufacturer_id),
                     "skus": skus,
+                    "fits_part_types": fits,
+                    "is_fixture": is_fixture,
+                    "default_location": default_loc,
                 })
         out.sort(key=lambda x: x["model"])
         send_json(handler, {"products": out})
         return True
 
     if method == "GET" and path == _CATEGORY_LOCATIONS_PATH:
-        # Location-last step: where does the chosen part go? Product-scoped when
-        # a product_id is given (uses fits_part_types), else category-wide.
+        # Location-last step: category-wide placement pool (category-level
+        # placements — any product goes in any location in its category).
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
-        product_id = qs.get("product", [""])[0]
-        vehicle = qs.get("vehicle", [""])[0]
         if not type_id:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
-        if product_id and vehicle:
-            locs = _resolve_product_locations(svc, paths, type_id, category, product_id, vehicle)
-        else:
-            locs = _resolve_category_locations(svc, type_id, category)
+        locs = _resolve_category_locations(svc, type_id, category)
         send_json(handler, {"locations": locs})
         return True
 

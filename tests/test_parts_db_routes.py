@@ -239,3 +239,58 @@ class TestSave:
         route_parts_db(h, "POST", "/api/parts-db", dict(_SYNTHETIC_DB), paths)
         assert h.status == 200
         assert h.body_json()["ok"] is True
+
+
+class _FakeAccSvc:
+    """Minimal svc stub exposing raw_doc() for _resolve_accessories."""
+    def __init__(self, doc): self._doc = doc
+    def raw_doc(self): return self._doc
+
+
+def test_resolve_accessories_product_and_part_type_level():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+    doc = {
+        "accessory_categories": {"lighthead": {"label": "Lighthead"},
+                                  "bracket_mount": {"label": "Bracket / Mount"}},
+        "manufacturers": {"whelen": {"label": "Whelen"}},
+        "part_types": {
+            "forward_warning": {"label": "Forward Warning", "type_id": "lights"},
+            "fw_bracket": {"label": "FW Bracket", "type_id": "lights",
+                           "accessory_of": "forward_warning",
+                           "accessory_category": "bracket_mount"},
+            "lighthead": {"label": "Lighthead", "type_id": "lights",
+                          "accessory_category": "lighthead"},
+        },
+        "products": {
+            "whelen_fst": {"manufacturer_id": "whelen", "model": "Inner Edge FST",
+                           "fits_part_types": ["forward_warning"],
+                           "accessories": [{"category": "lighthead",
+                                            "product_id": "whelen_ie_lighthead",
+                                            "required": True}]},
+            "whelen_ie_lighthead": {"manufacturer_id": "whelen", "model": "IE Lighthead",
+                                    "fits_part_types": ["lighthead"],
+                                    "part_numbers": [{"part_number": "ISDD", "qb_item_id": "9",
+                                                      "qb_unit_price": 63.0}]},
+            "dtm_bracket": {"manufacturer_id": "whelen", "model": "L Bracket",
+                            "fits_part_types": ["fw_bracket"],
+                            "part_numbers": [{"part_number": "LBR", "qb_unit_price": 12.0}]},
+        },
+    }
+    out = _resolve_accessories(_FakeAccSvc(doc), "whelen_fst")
+    cats = {g["category"]: g for g in out}
+    # product-level lighthead, required, with its SKU
+    assert cats["lighthead"]["required"] is True
+    assert cats["lighthead"]["options"][0]["product_id"] == "whelen_ie_lighthead"
+    assert cats["lighthead"]["options"][0]["skus"][0]["part_number"] == "ISDD"
+    # part_type-level bracket pulled in via accessory_of, not required
+    assert cats["bracket_mount"]["required"] is False
+    assert cats["bracket_mount"]["options"][0]["product_id"] == "dtm_bracket"
+    # vocabulary order: lighthead before bracket_mount
+    assert [g["category"] for g in out] == ["lighthead", "bracket_mount"]
+
+
+def test_resolve_accessories_none_for_plain_product():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+    doc = {"accessory_categories": {}, "manufacturers": {}, "part_types": {},
+           "products": {"p": {"manufacturer_id": "m", "model": "P", "fits_part_types": []}}}
+    assert _resolve_accessories(_FakeAccSvc(doc), "p") == []
