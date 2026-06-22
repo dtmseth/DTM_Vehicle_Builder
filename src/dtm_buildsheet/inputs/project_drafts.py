@@ -78,6 +78,10 @@ class DraftPart:
     # equals the parent part's line_id. Used to nest in the manifest and to
     # cascade-delete. Empty for ordinary top-level parts.
     parent_line_id: str = ""
+    # On accessory lines: the accessory_category and the PARENT product_id, so the
+    # manifest can offer a category-scoped swap dropdown when editing one.
+    accessory_category: str = ""
+    accessory_parent_product: str = ""
 
 
 @dataclass
@@ -226,6 +230,8 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         components=body.get("components") if isinstance(body.get("components"), list) else [],
         line_id=line_id or str(uuid.uuid4()),
         parent_line_id=_s(body.get("parent_line_id", "")),
+        accessory_category=_s(body.get("accessory_category", "")),
+        accessory_parent_product=_s(body.get("accessory_parent_product", "")),
     )
 
 

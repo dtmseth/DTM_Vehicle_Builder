@@ -573,7 +573,11 @@ function _pickerWireBrand(el) {
 
 // ── Location tab (vehicle diagram + dots) ──────────────
 
-const _INTERIOR_PZ = new Set(["interior", "rear_interior"]);
+// Only the dash/headliner "interior" zone uses the synthetic Interior view.
+// rear_interior placements (cargo/rear windows, rear interior light bar) have
+// real coordinates in the exterior side/rear/top views, so they render there as
+// normal dots — classifying them as interior hid them entirely.
+const _INTERIOR_PZ = new Set(["interior"]);
 
 async function _pickerRenderLocation() {
   const f = _pickerState.filters;
@@ -845,6 +849,7 @@ function _accessoriesSatisfied() {
 // Build the accessory part rows chosen for the current selection.
 function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   const rows = [];
+  const parentProduct = _pickerState.sel ? _pickerState.sel.product_id : "";
   for (const g of (_pickerState.accessories || [])) {
     const v = _pickerState.accessoryChoices[g.category];
     if (!v || v === "none") continue;
@@ -856,6 +861,8 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
       location: locName, manufacturer: opt.manufacturer_label || "",
       part_number: sku, quantity: 1, new_or_used: "New", source: "",
       parent_line_id: parentLineId || "",
+      accessory_category: g.category,
+      accessory_parent_product: parentProduct,
     });
   }
   return rows;

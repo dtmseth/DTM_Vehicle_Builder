@@ -163,6 +163,8 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
         draft = load_draft(draft_id, paths.workspace_drafts_dir)
         part = draft_part_from_payload(body, paths)
         draft.parts.append(part)
+        if not part.parent_line_id:   # accessory lines keep their parent-derived name
+            renumber_parts(draft)
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_added",

@@ -256,6 +256,59 @@ async function addPart() {
   setTimeout(() => $("me-name").focus(), 50);
 }
 
+// Swap an accessory line within its category — a single dropdown, no full picker.
+async function _meEditAccessory(part) {
+  let groups = [];
+  try {
+    const res = await api(`/api/parts-db/accessories?product_id=${encodeURIComponent(part.accessory_parent_product)}`);
+    groups = (res && res.accessories) || [];
+  } catch (e) { console.error("accessory options failed:", e); toast("Could not load accessory options", "error"); return; }
+  const g = groups.find(x => x.category === part.accessory_category);
+  if (!g) { toast("No options for this accessory", "error"); return; }
+  const parent = (_meDraft?.parts || []).find(p => p.line_id === part.parent_line_id);
+  const parentName = parent ? parent.name : (part.name.split(" · ")[0] || "Part");
+
+  const opts = [];
+  for (const o of g.options) for (const s of (o.skus || [])) {
+    const colors = [s.color, s.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
+    const label = `${o.model} · ${s.part_number}${colors ? " · " + colors : ""}${s.lens_type ? " · " + s.lens_type : ""}${s.price != null ? " · $" + s.price : ""}`;
+    opts.push({ value: `${o.product_id}::${s.part_number}`, label, model: o.model, mfr: o.manufacturer_label || "", sku: s.part_number });
+  }
+  const cur = opts.find(o => o.sku === part.part_number);
+
+  const ov = document.createElement("div");
+  ov.className = "me-acc-edit-ov";
+  ov.innerHTML = `<div class="me-acc-edit">
+    <div class="me-acc-edit-h">Swap ${esc(g.label)} for ${esc(parentName)}</div>
+    <select id="me-acc-edit-sel">
+      ${opts.map(o => `<option value="${esc(o.value)}"${cur && cur.value === o.value ? " selected" : ""}>${esc(o.label)}</option>`).join("")}
+      ${g.required ? "" : `<option value="__remove__">— Remove this accessory —</option>`}
+    </select>
+    <div class="me-acc-edit-btns">
+      <button class="btn btn-secondary btn-sm" id="me-acc-cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="me-acc-save">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelector("#me-acc-cancel").addEventListener("click", close);
+  ov.querySelector("#me-acc-save").addEventListener("click", async () => {
+    const val = ov.querySelector("#me-acc-edit-sel").value;
+    close();
+    if (val === "__remove__") { await deletePart(part.line_id); return; }
+    const o = opts.find(x => x.value === val);
+    if (!o || o.sku === part.part_number) return;   // unchanged
+    const body = { ...part, part_number: o.sku, manufacturer: o.mfr, name: `${parentName} · ${o.model}` };
+    const r = await api(`/api/draft/${_meDraftId}/part/${part.line_id}/update`, body);
+    if (!r?.ok) { toast(r?.error || "Update failed", "error"); return; }
+    toast("Accessory updated", "success");
+    if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+    await loadDraftManifest(_meDraftId);
+    if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);
+  });
+}
+
 // Direct-to-modal fallback (bypasses picker)
 async function addPartManual() {
   // Fake a non-function openPicker to force the fallback path
@@ -268,6 +321,10 @@ async function addPartManual() {
 async function openPartEditModal(lineId) {
   const part = (_meDraft?.parts || []).find(p => p.line_id === lineId);
   if (!part) return;
+  // Accessory line → focused category-scoped swap, not the full part picker.
+  if (part.parent_line_id && part.accessory_parent_product && part.accessory_category) {
+    return _meEditAccessory(part);
+  }
   // Preferred: edit in the new picker panel.
   if (typeof _pickerOpenEdit === "function") {
     _pickerOpenEdit(part);

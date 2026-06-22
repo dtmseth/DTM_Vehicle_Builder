@@ -428,3 +428,23 @@ def test_renumber_closes_gaps_on_delete(tmp_path):
         "Forward Warning 2 · Bracket",
         "Side Warning 1",
     ]
+
+
+def test_accessory_fields_round_trip(tmp_path):
+    part = draft_part_from_payload(
+        {"name": "ION · Bracket", "parent_line_id": "P",
+         "accessory_category": "bracket_mount", "accessory_parent_product": "whelen_ion"},
+        _paths(tmp_path))
+    assert part.accessory_category == "bracket_mount"
+    assert part.accessory_parent_product == "whelen_ion"
+
+
+def test_renumber_on_add_closes_gap(tmp_path):
+    paths = _paths(tmp_path)
+    draft = _saved_draft(paths, [
+        DraftPart(name="Forward Warning 1", line_id="F1"),
+        DraftPart(name="Forward Warning 2", line_id="F2"),
+    ])
+    handle_add_part_to_draft(draft.draft_id, {"name": "Forward Warning 5"}, paths)
+    names = sorted(p.name for p in load_draft(draft.draft_id, paths.workspace_drafts_dir).parts)
+    assert names == ["Forward Warning 1", "Forward Warning 2", "Forward Warning 3"]

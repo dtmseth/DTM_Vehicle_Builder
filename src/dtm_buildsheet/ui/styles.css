@@ -453,6 +453,11 @@
     .me-comp-row td{background:#fafbfc;border-top:1px dashed var(--border)}
     .me-acc-row td{background:#fff7ed}
     .me-acc-tag{display:inline-block;background:#fb923c;color:#fff;border-radius:8px;padding:0 7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-right:4px}
+    .me-acc-edit-ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000}
+    .me-acc-edit{background:#fff;border-radius:12px;padding:18px 20px;min-width:380px;max-width:90vw;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .me-acc-edit-h{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
+    .me-acc-edit select{width:100%;padding:8px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:#fff}
+    .me-acc-edit-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 
     /* toast */
     .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:200;transform:translateY(80px);opacity:0;transition:.3s}
