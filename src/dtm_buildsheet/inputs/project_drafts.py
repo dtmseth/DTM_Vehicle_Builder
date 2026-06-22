@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -121,6 +122,39 @@ def _ensure_line_ids(draft: BuildDraft) -> None:
     for part in draft.parts:
         if not part.line_id:
             part.line_id = str(uuid.uuid4())
+
+
+_NUMBERED_NAME = re.compile(r"^(.*?)\s+(\d+)\s*$")
+
+
+def renumber_parts(draft: BuildDraft) -> None:
+    """Re-sequence numbered top-level parts so each base name runs 1..n with no
+    gaps (e.g. after deleting "Forward Warning 2", "...3" becomes "...2").
+
+    Only top-level parts (no parent_line_id) are renumbered; accessory child
+    lines follow their parent's name, so when a parent is renumbered its
+    children's "<parent> · <accessory>" prefix is updated to match.
+    """
+    groups: dict[str, list] = {}
+    for p in draft.parts:
+        if getattr(p, "parent_line_id", ""):
+            continue
+        m = _NUMBERED_NAME.match(p.name or "")
+        if m:
+            groups.setdefault(m.group(1).strip(), []).append(p)
+
+    for base, plist in groups.items():
+        plist.sort(key=lambda p: int(_NUMBERED_NAME.match(p.name).group(2)))
+        for i, p in enumerate(plist, 1):
+            new_name = f"{base} {i}"
+            if p.name == new_name:
+                continue
+            old_name = p.name
+            p.name = new_name
+            # Keep accessory children's display prefix in sync.
+            for c in draft.parts:
+                if getattr(c, "parent_line_id", "") == p.line_id and c.name.startswith(old_name + " · "):
+                    c.name = new_name + c.name[len(old_name):]
 
 
 def draft_from_project_input(project: ProjectInput, draft_id: str | None = None) -> BuildDraft:

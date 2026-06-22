@@ -33,6 +33,7 @@ from ...inputs.project_drafts import (
     draft_summary,
     draft_to_project_input,
     find_part_by_line_id,
+    renumber_parts,
     list_drafts,
     load_draft,
     new_draft,
@@ -230,6 +231,7 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
         children = [p for p in draft.parts if getattr(p, "parent_line_id", "") == line_id]
         for child in children:
             draft.parts.remove(child)
+        renumber_parts(draft)   # close gaps left in numbered sequences
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_removed",

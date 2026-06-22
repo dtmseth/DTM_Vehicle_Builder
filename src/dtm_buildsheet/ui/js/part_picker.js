@@ -873,9 +873,17 @@ function _pickerUpdateFooter() {
   const accHint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
   if (_pickerState.tab === "part") {
     text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${accHint}` : `<span class="picker-foot-label">Pick a product</span>`;
-    btn.textContent = "Choose location →";
-    btn.disabled = !(sel && accOk);
-    _pickerState.footerHandler = (sel && accOk) ? () => _pickerSwitchTab("location") : null;
+    if (_pickerState.editLineId) {
+      // Editing: save the part change directly (location keeps its current value
+      // unless the user visits the Location tab to change it).
+      btn.textContent = "Save edits";
+      btn.disabled = !(sel && accOk);
+      _pickerState.footerHandler = (sel && accOk) ? _pickerDoAdd : null;
+    } else {
+      btn.textContent = "Choose location →";
+      btn.disabled = !(sel && accOk);
+      _pickerState.footerHandler = (sel && accOk) ? () => _pickerSwitchTab("location") : null;
+    }
   } else {
     const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
     text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${accHint}` : `<span class="picker-foot-label">Pick a product first</span>`;
@@ -921,6 +929,11 @@ function _pickerSequencedName(pattern, base) {
 
 async function _pickerDoAdd() {
   const sel = _pickerState.sel, loc = _pickerState.loc, f = _pickerState.filters;
+  // When editing, fall back to the part's existing location if the user didn't
+  // open the Location tab to change it (so "Save edits" works from the Part tab).
+  if (!loc.selected && _pickerState.editLineId && _pickerState.editPart) {
+    loc.selected = _pickerState.editPart.location;
+  }
   if (!sel || !loc.selected) return;
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }

@@ -408,3 +408,23 @@ def test_remove_accessory_child_leaves_parent(tmp_path):
 def test_parent_line_id_round_trips_through_payload(tmp_path):
     part = draft_part_from_payload({"name": "Bracket", "parent_line_id": "PARENT"}, _paths(tmp_path))
     assert part.parent_line_id == "PARENT"
+
+
+def test_renumber_closes_gaps_on_delete(tmp_path):
+    paths = _paths(tmp_path)
+    parts = [
+        DraftPart(name="Forward Warning 1", line_id="F1"),
+        DraftPart(name="Forward Warning 2", line_id="F2"),
+        DraftPart(name="Forward Warning 3", line_id="F3"),
+        DraftPart(name="Forward Warning 3 · Bracket", line_id="A", parent_line_id="F3"),
+        DraftPart(name="Side Warning 1", line_id="S1"),
+    ]
+    draft = _saved_draft(paths, parts)
+    handle_remove_part_from_draft(draft.draft_id, "F2", paths)
+    names = [p.name for p in load_draft(draft.draft_id, paths.workspace_drafts_dir).parts]
+    assert names == [
+        "Forward Warning 1",
+        "Forward Warning 2",
+        "Forward Warning 2 · Bracket",
+        "Side Warning 1",
+    ]
