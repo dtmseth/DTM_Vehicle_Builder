@@ -1,0 +1,38 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b BATCH 1: auto-resolving bracket_mount accessories. Three groups, each fitting an EXISTING accessory part_type so they attach to their parents via the part_type-level path (no set_accessories needed): (1) SA-315/SA-350 siren mount kits -> siren_speaker_bracket (accessory_of=siren_speaker); (2) U-Series under-mirror mounts -> mirror_warning_bracket (accessory_of=mirror_warning); (3) Tracer L-bracket links onto the existing whelen_tracer_l_brackets_x2_per (fw_bracket). All SKUs vehicle_tags=['any'] per sak1/sak9 + slice precedent; vehicle is captured in the QB description. Vehicle-tag refinement deferred (vocab doesn't cover Super-Duty/Mustang/etc., so tagging could hide kits). NOTE: deliberately NO rename of whelen_tracer_l_brackets_x2_per here -- the placeholder part_number drop keys off the current model, so renaming before the TCRLBKT link would orphan the old placeholder as a junk no-price SKU. Cosmetic rename deferred to a later pass (safe once the placeholder is gone).",
+
+  "new_products": [
+    {"product_id": "whelen_sa315_mount_kit", "model": "SA-315 Siren Speaker Mount Kit", "fits_part_types": ["siren_speaker_bracket"]},
+    {"product_id": "whelen_sa350m_mount_kit", "model": "SA-350M Siren Speaker Mount Kit", "fits_part_types": ["siren_speaker_bracket"]},
+    {"product_id": "whelen_u_mirror_mount",   "model": "U-Series Under-Mirror Mount",     "fits_part_types": ["mirror_warning_bracket"]}
+  ],
+
+  "links": [
+    {"sku": "SAK37",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK47",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK54CM",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK61AD",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK63D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK63P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK64D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK64P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK67D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK70",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK72P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK73",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK75D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK75P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+
+    {"sku": "SA350MB1", "product": "whelen_sa350m_mount_kit", "vehicle_tags": ["any"]},
+
+    {"sku": "U18013",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18044",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18047",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18050",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18054",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18059",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+
+    {"sku": "TCRLBKT",  "product": "whelen_tracer_l_brackets_x2_per", "vehicle_tags": ["any"]}
+  ]
+}
