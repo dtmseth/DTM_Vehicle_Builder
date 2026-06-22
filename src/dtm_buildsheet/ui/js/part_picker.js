@@ -510,7 +510,7 @@ function _pickerRenderProducts() {
           const opts = ordered.map(s => {
             const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
             const m = (cs && !_skuMatchesAny(s, [hs])) ? "  (other)" : "";
-            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.price != null ? " · $" + s.price : ""}${m}</option>`;
+            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}${m}</option>`;
           }).join("");
           return `<div class="pp-sku"><span class="pp-sku-pn">${esc(label)}</span><select class="pp-override" data-combo="${esc(key)}">${opts}</select>${hasMatch ? "" : `<span class="pp-match no">no exact</span>`}</div>`;
         }).join("") + `</div>`;

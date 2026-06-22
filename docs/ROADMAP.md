@@ -474,6 +474,28 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 - Make `render_ppt.py` iterate the vehicle's view collection rather than hardcoded names. Per-view slide layout is config-driven — a slide template keyed by view name with a default fallback.
 - Add `view_kind: "exterior" | "interior" | "top_down" | "console"` to each view in `vehicle_layouts.json`. Some part categories may filter by view_kind (e.g., interior-only equipment).
 
+### Phase 6.5 — Interior Light Bar Enhancements
+
+Captured from owner feedback during the Whelen catalog + accessories work (2026-06).
+
+**Two-piece front interior light bar.** Front interior light bars are physically two
+pieces (driver + passenger). The builder should let the user choose **one, the other,
+or both** — and when only one, **which side** it mounts on. Today a front interior bar
+is a single placement; this needs the placement/picker to model the left/right split and
+the preview/PPT to render only the chosen side(s).
+
+**Auto-populated lighthead rendering for interior bars.** Replace the static front/rear
+interior-light-bar image assets with an **auto-generated group of small lightheads** —
+the same mechanism used for Tracers, just much smaller. This makes the bar's **colors
+visible** in the preview and lets the renderer draw **one side or the other** (ties into
+the two-piece capability above). Driven by the bar's selected color config rather than a
+fixed image.
+
+*Related fix already shipped:* the `front_interior_light_bar` / `rear_interior_light_bar`
+part_types had the ambiguous shared label "Interior Light Bar", which broke catalog +
+location-rule matching (interior bars couldn't be placed). Labels are now
+"Front Interior Light Bar" / "Rear Interior Light Bar".
+
 ### Phase 7 — Free-Form Vehicle Wizard
 
 **Goal**: a guided multi-step wizard for building a vehicle from scratch with no preset. Replaces "fit parts into named slots" with "add part to location, app figures out the rest."
