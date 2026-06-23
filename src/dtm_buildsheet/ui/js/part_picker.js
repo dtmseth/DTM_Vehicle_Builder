@@ -807,7 +807,11 @@ async function _pickerLoadAccessories(productId) {
 function _pickerAccLabel(opt, sku) {
   const colors = [sku.color, sku.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
   const price = sku.price != null ? ` · $${sku.price}` : "";
-  return `${opt.model} · ${sku.part_number}${colors ? " · " + colors : ""}${price}`;
+  // Prefer a curated short description (friendly_name) so installers don't have
+  // to decipher part numbers; fall back to the product model. SKU + price always
+  // shown so the orderable number stays visible.
+  const lead = sku.friendly_name || opt.model;
+  return `${lead} · ${sku.part_number}${colors ? " · " + colors : ""}${price}`;
 }
 
 function _pickerRenderAccessories() {

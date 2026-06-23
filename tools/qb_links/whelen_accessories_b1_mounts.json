@@ -9,30 +9,30 @@
   ],
 
   "links": [
-    {"sku": "SAK37",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK47",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK54CM",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK61AD",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK63D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK63P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK64D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK64P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK67D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK70",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK72P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK73",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK75D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
-    {"sku": "SAK75P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SAK37",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Charger '11-23"},
+    {"sku": "SAK47",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Ram 1500 '12-18 / Classic '19-24, pass"},
+    {"sku": "SAK54CM",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Durango '15-25, center (dual)"},
+    {"sku": "SAK61AD",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Ford F-250/350/450/550 '17-26, driver"},
+    {"sku": "SAK63D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe '17-20, driver"},
+    {"sku": "SAK63P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe '17-20, pass"},
+    {"sku": "SAK64D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Expedition SSV '18-21, driver"},
+    {"sku": "SAK64P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Expedition SSV '18-21, pass"},
+    {"sku": "SAK67D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Mustang '24-25, driver"},
+    {"sku": "SAK70",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe/Silverado/Suburban '19-26, driver or pass"},
+    {"sku": "SAK72P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Mach-E '21-25, pass"},
+    {"sku": "SAK73",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "F-150 PPV '21-26 / Expedition '22-24, center"},
+    {"sku": "SAK75D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "PIU '25, driver grille"},
+    {"sku": "SAK75P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "PIU '25, pass grille"},
 
-    {"sku": "SA350MB1", "product": "whelen_sa350m_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "SA350MB1", "product": "whelen_sa350m_mount_kit", "vehicle_tags": ["any"], "friendly_name": "SA350M mounting kit"},
 
-    {"sku": "U18013",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
-    {"sku": "U18044",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
-    {"sku": "U18047",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
-    {"sku": "U18050",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
-    {"sku": "U18054",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
-    {"sku": "U18059",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"]},
+    {"sku": "U18013",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Silverado 1500/2500 '19-24"},
+    {"sku": "U18044",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Durango '13-24"},
+    {"sku": "U18047",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "F-150 PPV '22-24 / Lightning '22-23"},
+    {"sku": "U18050",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "PIU '20-25"},
+    {"sku": "U18054",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Tahoe '21-24 / Suburban '24"},
+    {"sku": "U18059",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Blazer EV PPV '24"},
 
-    {"sku": "TCRLBKT",  "product": "whelen_tracer_l_brackets_x2_per", "vehicle_tags": ["any"]}
+    {"sku": "TCRLBKT",  "product": "whelen_tracer_l_brackets_x2_per", "vehicle_tags": ["any"], "friendly_name": "Tracer L-bracket kit (2 per)"}
   ]
 }

@@ -278,6 +278,11 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
             "tertiary_color": color_info.get("tertiary_color", ""),
             "lens_type": color_info["lens_type"],
         }
+        # Optional curated short description shown in the accessory picker dropdown.
+        # Only written when the link supplies it, so re-applying a mapping that
+        # omits it never wipes a name set elsewhere (part-manager UI / earlier run).
+        if link.get("friendly_name") is not None:
+            entry["friendly_name"] = link["friendly_name"]
         existing = next((p for p in pns if p.get("part_number") == sku), None)
         if existing:
             existing.update(entry)

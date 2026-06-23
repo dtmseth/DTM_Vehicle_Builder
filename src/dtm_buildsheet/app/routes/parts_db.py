@@ -328,6 +328,7 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             mfr = mfrs.get(ap.get("manufacturer_id"), {})
             skus = [{
                 "part_number": pn.get("part_number"),
+                "friendly_name": pn.get("friendly_name", ""),
                 "price": pn.get("qb_unit_price") if pn.get("qb_unit_price") is not None else pn.get("price_usd"),
                 "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
                 "lens_type": pn.get("lens_type", ""),
