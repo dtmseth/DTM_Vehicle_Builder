@@ -1,6 +1,6 @@
 {
   "manufacturer_id": "whelen",
-  "_note": "Phase 5b BATCH 1: auto-resolving bracket_mount accessories. Three groups, each fitting an EXISTING accessory part_type so they attach to their parents via the part_type-level path (no set_accessories needed): (1) SA-315/SA-350 siren mount kits -> siren_speaker_bracket (accessory_of=siren_speaker); (2) U-Series under-mirror mounts -> mirror_warning_bracket (accessory_of=mirror_warning); (3) Tracer L-bracket links onto the existing whelen_tracer_l_brackets_x2_per (fw_bracket). All SKUs vehicle_tags=['any'] per sak1/sak9 + slice precedent; vehicle is captured in the QB description. Vehicle-tag refinement deferred (vocab doesn't cover Super-Duty/Mustang/etc., so tagging could hide kits). NOTE: deliberately NO rename of whelen_tracer_l_brackets_x2_per here -- the placeholder part_number drop keys off the current model, so renaming before the TCRLBKT link would orphan the old placeholder as a junk no-price SKU. Cosmetic rename deferred to a later pass (safe once the placeholder is gone).",
+  "_note": "Phase 5b BATCH 1: auto-resolving bracket_mount accessories. Three groups, each fitting an EXISTING accessory part_type so they attach to their parents via the part_type-level path (no set_accessories needed): (1) SA-315/SA-350 siren mount kits -> siren_speaker_bracket (accessory_of=siren_speaker); (2) U-Series under-mirror mounts -> mirror_warning_bracket (accessory_of=mirror_warning); (3) Tracer L-bracket links onto the existing whelen_tracer_l_brackets_x2_per (fw_bracket). Each SKU carries vehicle_tags drawn from the VehicleType vocab (PIU/TAHOE/DURANGO/F-150/CHEVY-1500/RAM-1500/CHARGER/EXPEDITION/BLAZER/MACH-E) plus coined granular tags for vehicles without diagrams yet (SUPER-DUTY/MUSTANG/SUBURBAN/SILVERADO-HD/F-150-LIGHTNING); multi-tag where a kit spans vehicles. Genuinely universal kits (SA350MB1, Tracer L-bracket) stay ['any']. Drives the part picker's 'Only show vehicle-compatible parts' toggle. NOTE: deliberately NO rename of whelen_tracer_l_brackets_x2_per here -- the placeholder part_number drop keys off the current model, so renaming before the TCRLBKT link would orphan the old placeholder as a junk no-price SKU. Cosmetic rename deferred to a later pass (safe once the placeholder is gone).",
 
   "new_products": [
     {"product_id": "whelen_sa315_mount_kit", "model": "SA-315 Siren Speaker Mount Kit", "fits_part_types": ["siren_speaker_bracket"]},
@@ -9,29 +9,29 @@
   ],
 
   "links": [
-    {"sku": "SAK37",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Charger '11-23"},
-    {"sku": "SAK47",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Ram 1500 '12-18 / Classic '19-24, pass"},
-    {"sku": "SAK54CM",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Durango '15-25, center (dual)"},
-    {"sku": "SAK61AD",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Ford F-250/350/450/550 '17-26, driver"},
-    {"sku": "SAK63D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe '17-20, driver"},
-    {"sku": "SAK63P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe '17-20, pass"},
-    {"sku": "SAK64D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Expedition SSV '18-21, driver"},
-    {"sku": "SAK64P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Expedition SSV '18-21, pass"},
-    {"sku": "SAK67D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Mustang '24-25, driver"},
-    {"sku": "SAK70",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Tahoe/Silverado/Suburban '19-26, driver or pass"},
-    {"sku": "SAK72P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Mach-E '21-25, pass"},
-    {"sku": "SAK73",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "F-150 PPV '21-26 / Expedition '22-24, center"},
-    {"sku": "SAK75D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "PIU '25, driver grille"},
-    {"sku": "SAK75P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["any"], "friendly_name": "PIU '25, pass grille"},
+    {"sku": "SAK37",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["CHARGER"], "friendly_name": "Charger '11-23"},
+    {"sku": "SAK47",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["RAM-1500"], "friendly_name": "Ram 1500 '12-18 / Classic '19-24, pass"},
+    {"sku": "SAK54CM",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["DURANGO"], "friendly_name": "Durango '15-25, center (dual)"},
+    {"sku": "SAK61AD",  "product": "whelen_sa315_mount_kit", "vehicle_tags": ["SUPER-DUTY"], "friendly_name": "Ford F-250/350/450/550 '17-26, driver"},
+    {"sku": "SAK63D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '17-20, driver"},
+    {"sku": "SAK63P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '17-20, pass"},
+    {"sku": "SAK64D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["EXPEDITION"], "friendly_name": "Expedition SSV '18-21, driver"},
+    {"sku": "SAK64P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["EXPEDITION"], "friendly_name": "Expedition SSV '18-21, pass"},
+    {"sku": "SAK67D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["MUSTANG"], "friendly_name": "Mustang '24-25, driver"},
+    {"sku": "SAK70",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["TAHOE", "CHEVY-1500", "SUBURBAN"], "friendly_name": "Tahoe/Silverado/Suburban '19-26, driver or pass"},
+    {"sku": "SAK72P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["MACH-E"], "friendly_name": "Mach-E '21-25, pass"},
+    {"sku": "SAK73",    "product": "whelen_sa315_mount_kit", "vehicle_tags": ["F-150", "EXPEDITION"], "friendly_name": "F-150 PPV '21-26 / Expedition '22-24, center"},
+    {"sku": "SAK75D",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["PIU"], "friendly_name": "PIU '25, driver grille"},
+    {"sku": "SAK75P",   "product": "whelen_sa315_mount_kit", "vehicle_tags": ["PIU"], "friendly_name": "PIU '25, pass grille"},
 
     {"sku": "SA350MB1", "product": "whelen_sa350m_mount_kit", "vehicle_tags": ["any"], "friendly_name": "SA350M mounting kit"},
 
-    {"sku": "U18013",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Silverado 1500/2500 '19-24"},
-    {"sku": "U18044",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Durango '13-24"},
-    {"sku": "U18047",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "F-150 PPV '22-24 / Lightning '22-23"},
-    {"sku": "U18050",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "PIU '20-25"},
-    {"sku": "U18054",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Tahoe '21-24 / Suburban '24"},
-    {"sku": "U18059",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["any"], "friendly_name": "Blazer EV PPV '24"},
+    {"sku": "U18013",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["CHEVY-1500", "SILVERADO-HD"], "friendly_name": "Silverado 1500/2500 '19-24"},
+    {"sku": "U18044",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["DURANGO"], "friendly_name": "Durango '13-24"},
+    {"sku": "U18047",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["F-150", "F-150-LIGHTNING"], "friendly_name": "F-150 PPV '22-24 / Lightning '22-23"},
+    {"sku": "U18050",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["PIU"], "friendly_name": "PIU '20-25"},
+    {"sku": "U18054",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["TAHOE", "SUBURBAN"], "friendly_name": "Tahoe '21-24 / Suburban '24"},
+    {"sku": "U18059",   "product": "whelen_u_mirror_mount", "vehicle_tags": ["BLAZER"], "friendly_name": "Blazer EV PPV '24"},
 
     {"sku": "TCRLBKT",  "product": "whelen_tracer_l_brackets_x2_per", "vehicle_tags": ["any"], "friendly_name": "Tracer L-bracket kit (2 per)"}
   ]

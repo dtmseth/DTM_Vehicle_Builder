@@ -332,6 +332,7 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                 "price": pn.get("qb_unit_price") if pn.get("qb_unit_price") is not None else pn.get("price_usd"),
                 "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
                 "lens_type": pn.get("lens_type", ""),
+                "vehicle_tags": list(pn.get("vehicle_tags") or []),
             } for pn in (ap.get("part_numbers") or [])]
             options.append({
                 "product_id": apid, "model": ap.get("model", apid),
@@ -638,10 +639,12 @@ def route_parts_db(
                 for pn in p.part_numbers:
                     skus.append({
                         "part_number": pn.part_number,
+                        "friendly_name": pn.friendly_name,
                         "color": pn.color, "secondary_color": pn.secondary_color,
                         "tertiary_color": pn.tertiary_color, "lens_type": pn.lens_type,
                         "price": pn.qb_unit_price or pn.price_usd,
                         "qb": bool(pn.qb_item_id),
+                        "vehicle_tags": list(pn.vehicle_tags or []),
                     })
                 fits = p.fits_part_types or []
                 is_fixture = bool(fits) and all(pt_id in catalog_fixture_ids for pt_id in fits)

@@ -20,6 +20,7 @@ let _pickerState = {
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
   accLoadedFor: null,      // product_id accessories were loaded for
+  vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   footerHandler: null,
   _footerWired: false,
 };
@@ -112,6 +113,23 @@ function _pickerResetState() {
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
   _pickerState.accLoadedFor = null;
+  try {                            // persisted toggle; default ON
+    const v = localStorage.getItem("pp_vehicle_only");
+    _pickerState.vehicleOnly = v === null ? true : v === "1";
+  } catch { _pickerState.vehicleOnly = true; }
+}
+
+// ── Vehicle compatibility ──────────────────────────────
+// The draft's VehicleType string is the same vocabulary as a SKU's
+// vehicle_tags. A SKU is compatible when it carries no tags, an "any" tag,
+// or the selected vehicle's tag. Empty vehicle (none selected) = show all.
+function _pickerVehicle() {
+  return (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "";
+}
+function _skuCompatible(s, veh) {
+  if (!veh) return true;
+  const tags = (s.vehicle_tags || []).map(t => String(t).toUpperCase());
+  return !tags.length || tags.includes("ANY") || tags.includes(String(veh).toUpperCase());
 }
 
 function _pickerOpenPanel(title) {
@@ -453,11 +471,17 @@ function _pickerRenderProducts() {
   }
   // When user explicitly picks "All", clear the auto-set flag so it sticks
   if (f.brand && !_pickerState._brandAutoSet) _pickerState._brandAutoSet = true;
+  const veh = _pickerVehicle();
+  const vehFiltering = _pickerState.vehicleOnly && !!veh;
   let header = "";
   if (brands.length > 1) {
     header = `<div class="pp-brandbar"><span class="pf-label">Brand</span>` +
       `<button class="pf-pill${!f.brand ? " active" : ""}" data-brand="">All</button>` +
       brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${pref.has(b.toLowerCase()) ? "★ " : ""}${esc(b)}</button>`).join("") + `</div>`;
+  }
+  if (veh) {
+    header += `<label class="pp-vehtoggle"><input type="checkbox" id="pp-veh-only"${_pickerState.vehicleOnly ? " checked" : ""}>`
+      + `<span>Only show ${esc(veh)}-compatible parts</span></label>`;
   }
   // A product matches when every chosen color combo has a matching SKU.
   const isMatch = p => !usesColor || (headSets.length > 0 && headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs]))));
@@ -465,6 +489,8 @@ function _pickerRenderProducts() {
   let list = _pickerState.products;
   if (f.brand) list = list.filter(p => p.manufacturer_label === f.brand);
   if (q) list = list.filter(p => p.model.toLowerCase().includes(q) || p.skus.some(s => (s.part_number || "").toLowerCase().includes(q)));
+  // Vehicle-compat: drop products with no SKU that fits the selected vehicle.
+  if (vehFiltering) list = list.filter(p => p.skus.some(s => _skuCompatible(s, veh)));
   list = [...list].sort((a, b) => {
     const am = isMatch(a), bm = isMatch(b);            // matching products first
     if (am !== bm) return am ? -1 : 1;
@@ -479,9 +505,11 @@ function _pickerRenderProducts() {
   el.innerHTML = header + list.map(p => {
     const open = _pickerState.expanded.has(p.product_id);
     const selected = _pickerState.sel && _pickerState.sel.product_id === p.product_id;
-    const prices = p.skus.map(s => s.price).filter(v => v != null);
+    // SKUs shown for this product, narrowed to the selected vehicle when filtering.
+    const skus = vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus;
+    const prices = skus.map(s => s.price).filter(v => v != null);
     const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
-    const qb = p.skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
+    const qb = skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
     // Programmable bars (WeCanX) carry no per-SKU colors → fall back to direct
     // SKU selection even inside a color category, so they stay pickable.
     const pColor = usesColor && _pickerProductHasColor(p);
@@ -497,7 +525,7 @@ function _pickerRenderProducts() {
       if (pColor && selected) {
         bodyHtml = `<div class="pp-skus">` + headSets.map(hs => {
           const label = _pickerComboLabel(hs);
-          const ordered = [...p.skus].sort((a, b) => {
+          const ordered = [...skus].sort((a, b) => {
             const am = _skuMatchesAny(a, [hs]), bm = _skuMatchesAny(b, [hs]);
             if (am !== bm) return am ? -1 : 1;
             const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
@@ -515,7 +543,7 @@ function _pickerRenderProducts() {
           return `<div class="pp-sku"><span class="pp-sku-pn">${esc(label)}</span><select class="pp-override" data-combo="${esc(key)}">${opts}</select>${hasMatch ? "" : `<span class="pp-match no">no exact</span>`}</div>`;
         }).join("") + `</div>`;
       } else {
-        bodyHtml = `<div class="pp-skus">` + p.skus.map(s => {
+        bodyHtml = `<div class="pp-skus">` + skus.map(s => {
           const matched = pColor ? _skuMatchesAny(s, headSets) : true;
           const cls = pColor ? (matched ? "match" : "nomatch") : "";
           const colors = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/") || "—";
@@ -532,13 +560,20 @@ function _pickerRenderProducts() {
         <span class="pp-caret">${open ? "▾" : "▸"}</span>
         <span class="pp-name">${esc(p.model)}</span>
         <span class="pp-mfr">${esc(p.manufacturer_label)}</span>
-        <span class="pp-meta">${p.skus.length} SKU${p.skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}</span>
+        <span class="pp-meta">${skus.length} SKU${skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}</span>
         ${matchBadge}${qb}
       </div>${bodyHtml}
     </div>`;
   }).join("");
 
   _pickerWireBrand(el);
+  const vt = el.querySelector("#pp-veh-only");
+  if (vt) vt.addEventListener("change", () => {
+    _pickerState.vehicleOnly = vt.checked;
+    try { localStorage.setItem("pp_vehicle_only", vt.checked ? "1" : "0"); } catch {}
+    _pickerRenderProducts();
+    _pickerRenderAccessories();
+  });
   el.querySelectorAll(".pp-head").forEach(h => h.addEventListener("click", () => {
     const pid = h.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
     const wasOpen = _pickerState.expanded.has(pid);
@@ -820,12 +855,17 @@ function _pickerRenderAccessories() {
   const groups = _pickerState.accessories || [];
   if (!groups.length) { el.hidden = true; el.innerHTML = ""; return; }
   el.hidden = false;
+  const veh = _pickerVehicle();
+  const vehFiltering = _pickerState.vehicleOnly && !!veh;
   const rows = groups.map(g => {
     const val = _pickerState.accessoryChoices[g.category] || "";
     let opts = `<option value=""${val === "" ? " selected" : ""} disabled>— Choose —</option>`;
     if (!g.required) opts += `<option value="none"${val === "none" ? " selected" : ""}>— None needed —</option>`;
     for (const o of g.options) for (const s of (o.skus || [])) {
+      // Vehicle-compat: hide accessory SKUs that don't fit the selected vehicle,
+      // unless it's the currently-chosen one (never hide a live selection).
       const v = `${o.product_id}::${s.part_number}`;
+      if (vehFiltering && val !== v && !_skuCompatible(s, veh)) continue;
       opts += `<option value="${esc(v)}"${val === v ? " selected" : ""}>${esc(_pickerAccLabel(o, s))}</option>`;
     }
     return `<div class="pa-row"><label>${esc(g.label)}${g.required ? '<span class="pa-req">*</span>' : ""}</label>`

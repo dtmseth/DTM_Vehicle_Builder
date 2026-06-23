@@ -8,20 +8,20 @@
     {"product_id": "whelen_lightbar_mount_kit", "model": "Lightbar Mount Kit", "fits_part_types": ["bracket"]}
   ],
   "links": [
-    {"sku": "MKEZ82",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "E-Z mount: Charger '11-23, 48-50\""},
-    {"sku": "MKEZ86",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "E-Z mount: Ram 1500 '12-25 / 2500-3500 '19-24, 54-56\""},
-    {"sku": "MKEZ101",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "E-Z mount: Tahoe '21-24 / Silverado HD '23-24, 54-56\""},
-    {"sku": "MKEZ105",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "E-Z mount: PIU '20-25, 54-56\""},
+    {"sku": "MKEZ82",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["CHARGER"], "friendly_name": "E-Z mount: Charger '11-23, 48-50\""},
+    {"sku": "MKEZ86",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["RAM-1500", "RAM-HD"], "friendly_name": "E-Z mount: Ram 1500 '12-25 / 2500-3500 '19-24, 54-56\""},
+    {"sku": "MKEZ101",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["TAHOE", "SILVERADO-HD"], "friendly_name": "E-Z mount: Tahoe '21-24 / Silverado HD '23-24, 54-56\""},
+    {"sku": "MKEZ105",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["PIU"], "friendly_name": "E-Z mount: PIU '20-25, 54-56\""},
     {"sku": "MKJA101",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Adjustable mount kit #101"},
-    {"sku": "STPKT85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Strap kit: Durango '18-21, 48\" Legacy"},
-    {"sku": "STPKT93",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Strap kit: GM SUVs '15+ (Tahoe/Suburban/Yukon)"},
-    {"sku": "STPKT94",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Adjustable strap kit: F-150"},
-    {"sku": "STPKT98",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Strap kit: Expedition SSV '22, 54\" Legacy"},
-    {"sku": "STPKT101", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Strap kit: Tahoe, 54\" Legacy WCX Duo"},
-    {"sku": "STPKT105", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Strap kit: PIU '20-21, 54\" Legacy WCX Duo"},
-    {"sku": "CMK93",    "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Ceridian strap kit: Tahoe '15+"},
+    {"sku": "STPKT85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["DURANGO"], "friendly_name": "Strap kit: Durango '18-21, 48\" Legacy"},
+    {"sku": "STPKT93",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["TAHOE", "SUBURBAN", "YUKON"], "friendly_name": "Strap kit: GM SUVs '15+ (Tahoe/Suburban/Yukon)"},
+    {"sku": "STPKT94",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["F-150"], "friendly_name": "Adjustable strap kit: F-150"},
+    {"sku": "STPKT98",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["EXPEDITION"], "friendly_name": "Strap kit: Expedition SSV '22, 54\" Legacy"},
+    {"sku": "STPKT101", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["TAHOE"], "friendly_name": "Strap kit: Tahoe, 54\" Legacy WCX Duo"},
+    {"sku": "STPKT105", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["PIU"], "friendly_name": "Strap kit: PIU '20-21, 54\" Legacy WCX Duo"},
+    {"sku": "CMK93",    "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["TAHOE"], "friendly_name": "Ceridian strap kit: Tahoe '15+"},
     {"sku": "RMKAJ#",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Adjustable foot kit w/ strap (specify #)"},
-    {"sku": "RMKEZ85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Replacement mount kit: Durango '11-20"}
+    {"sku": "RMKEZ85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["DURANGO"], "friendly_name": "Replacement mount kit: Durango '11-20"}
   ],
   "set_accessories": {
     "whelen_legacy":       [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}],

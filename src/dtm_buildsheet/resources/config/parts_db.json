@@ -10852,7 +10852,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "CHARGER"
           ],
           "color": "",
           "secondary_color": "",
@@ -10867,7 +10867,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "RAM-1500"
           ],
           "color": "",
           "secondary_color": "",
@@ -10882,7 +10882,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "color": "",
           "secondary_color": "",
@@ -10897,7 +10897,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "SUPER-DUTY"
           ],
           "color": "",
           "secondary_color": "",
@@ -10912,7 +10912,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "color": "",
           "secondary_color": "",
@@ -10927,7 +10927,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "color": "",
           "secondary_color": "",
@@ -10942,7 +10942,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "EXPEDITION"
           ],
           "color": "",
           "secondary_color": "",
@@ -10957,7 +10957,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "EXPEDITION"
           ],
           "color": "",
           "secondary_color": "",
@@ -10972,7 +10972,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "MUSTANG"
           ],
           "color": "",
           "secondary_color": "",
@@ -10987,7 +10987,9 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE",
+            "CHEVY-1500",
+            "SUBURBAN"
           ],
           "color": "",
           "secondary_color": "",
@@ -11002,7 +11004,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "MACH-E"
           ],
           "color": "",
           "secondary_color": "",
@@ -11017,7 +11019,8 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "EXPEDITION"
           ],
           "color": "",
           "secondary_color": "",
@@ -11032,7 +11035,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "color": "",
           "secondary_color": "",
@@ -11047,7 +11050,7 @@
           "qb_unit_price": 53.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "color": "",
           "secondary_color": "",
@@ -11101,7 +11104,8 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "CHEVY-1500",
+            "SILVERADO-HD"
           ],
           "color": "",
           "secondary_color": "",
@@ -11116,7 +11120,7 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "color": "",
           "secondary_color": "",
@@ -11131,7 +11135,8 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "F-150-LIGHTNING"
           ],
           "color": "",
           "secondary_color": "",
@@ -11146,7 +11151,7 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "color": "",
           "secondary_color": "",
@@ -11161,7 +11166,8 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE",
+            "SUBURBAN"
           ],
           "color": "",
           "secondary_color": "",
@@ -11176,7 +11182,7 @@
           "qb_unit_price": 35.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "BLAZER"
           ],
           "color": "",
           "secondary_color": "",
@@ -11203,7 +11209,7 @@
           "qb_unit_price": 100.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "CHARGER"
           ],
           "color": "",
           "secondary_color": "",
@@ -11218,7 +11224,8 @@
           "qb_unit_price": 100.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "RAM-1500",
+            "RAM-HD"
           ],
           "color": "",
           "secondary_color": "",
@@ -11233,7 +11240,8 @@
           "qb_unit_price": 100.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE",
+            "SILVERADO-HD"
           ],
           "color": "",
           "secondary_color": "",
@@ -11248,7 +11256,7 @@
           "qb_unit_price": 100.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "color": "",
           "secondary_color": "",
@@ -11278,7 +11286,7 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "color": "",
           "secondary_color": "",
@@ -11293,7 +11301,9 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE",
+            "SUBURBAN",
+            "YUKON"
           ],
           "color": "",
           "secondary_color": "",
@@ -11308,7 +11318,7 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "F-150"
           ],
           "color": "",
           "secondary_color": "",
@@ -11323,7 +11333,7 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "EXPEDITION"
           ],
           "color": "",
           "secondary_color": "",
@@ -11338,7 +11348,7 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "color": "",
           "secondary_color": "",
@@ -11353,7 +11363,7 @@
           "qb_unit_price": 122.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "color": "",
           "secondary_color": "",
@@ -11368,7 +11378,7 @@
           "qb_unit_price": 100.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "color": "",
           "secondary_color": "",
@@ -11398,7 +11408,7 @@
           "qb_unit_price": 203.0,
           "qb_inactive": false,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "color": "",
           "secondary_color": "",
