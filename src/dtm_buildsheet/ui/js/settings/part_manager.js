@@ -527,7 +527,9 @@ function _pdbPartNumberRow(pn, idx){
   return `<div class="pdb-pn-row" data-idx="${idx}" data-pn-preserve="${preserve}">
     <input type="text" data-pn-field="part_number" placeholder="Part #" value="${esc(pn.part_number||"")}" />
     <input type="text" data-pn-field="friendly_name" placeholder="Friendly name" value="${esc(pn.friendly_name||"")}" />
-    <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01" value="${pn.price_usd ?? ""}" style="max-width:90px" />
+    <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01"
+      value="${(pn.qb_unit_price ?? pn.price_usd) ?? ""}" style="max-width:90px"
+      ${linked?'readonly title="Price synced from QuickBooks (qb_unit_price)"':''} />
     <label class="pdb-pn-pending" title="Pre-added before it exists in QuickBooks — usable now, flagged on the estimate until the QB item is created">
       <input type="checkbox" data-pn-field="qb_pending" ${pn.qb_pending?"checked":""} ${linked?"disabled":""} /> Pending QB
     </label>
@@ -635,9 +637,14 @@ function _pdbCollectFormData(kind){
       const price = row.querySelector('[data-pn-field="price_usd"]').value.trim();
       const pending = row.querySelector('[data-pn-field="qb_pending"]').checked;
       // Preserve all original fields; override only what the form edits.
+      const linked = !!orig.qb_item_id;
       const out = { ...orig, part_number: pn };
       if(fn) out.friendly_name = fn; else delete out.friendly_name;
-      if(price !== "") out.price_usd = Number(price); else delete out.price_usd;
+      // Price is hand-set only for non-QB parts; QB-linked prices are owned by
+      // qb_unit_price (synced) and the field is read-only, so leave it untouched.
+      if(!linked){
+        if(price !== "") out.price_usd = Number(price); else delete out.price_usd;
+      }
       if(pending) out.qb_pending = true; else delete out.qb_pending;
       return out;
     }).filter(pn => pn.part_number);
