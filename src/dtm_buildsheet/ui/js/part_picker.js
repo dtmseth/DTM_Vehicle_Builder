@@ -20,6 +20,7 @@ let _pickerState = {
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
   accLoadedFor: null,      // product_id accessories were loaded for
+  tracer: { active: false, mode: "trio", secondary: "white", preview: null, loading: false },
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   footerHandler: null,
   _footerWired: false,
@@ -113,6 +114,7 @@ function _pickerResetState() {
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
   _pickerState.accLoadedFor = null;
+  _pickerState.tracer = { active: false, mode: "trio", secondary: "white", preview: null, loading: false };
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -588,7 +590,7 @@ function _pickerRenderProducts() {
     const pColor = usesColor && _pickerProductHasColor(p);
     if (pColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
     _pickerRenderProducts(); _pickerUpdateFooter();
-    if (pColor) _pickerLoadAccessories(pid);
+    if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); }
   }));
   el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -596,6 +598,7 @@ function _pickerRenderProducts() {
     _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
     _pickerRenderProducts(); _pickerUpdateFooter();
     _pickerLoadAccessories(pid);
+    _pickerLoadTracer(pid);
   }));
   el.querySelectorAll(".pp-override").forEach(sel => sel.addEventListener("change", () => {
     _pickerState.skuChoices[sel.dataset.combo] = sel.value;
@@ -895,6 +898,90 @@ function _accessoriesSatisfied() {
   return true;
 }
 
+// ── Tracer / head-parent config ────────────────────────
+// Tracers (and bars with child lightheads) replace the color matrix with a
+// simple Standard Duo / Standard Trio + White/Amber choice; the server resolves
+// the exact housings + head SKUs. See docs/TRACER_LIGHTHEAD_SELECTION.md.
+const _TRACER_LAMP_RE = /\b\d+\s*-?\s*lamp\b/i;
+
+function _pickerIsTracer(product) {
+  return !!product && _TRACER_LAMP_RE.test(product.model || "");
+}
+
+async function _pickerLoadTracer(productId) {
+  const t = _pickerState.tracer;
+  const product = _pickerState.products.find(p => p.product_id === productId);
+  if (!productId || _pickerState.editLineId || !_pickerIsTracer(product)) {
+    _pickerState.tracer = { active: false, mode: t.mode, secondary: t.secondary, preview: null, loading: false };
+    _pickerRenderTracer(); return;
+  }
+  _pickerState.tracer = { ...t, active: true, preview: null, loading: true };
+  _pickerRenderTracer();
+  await _pickerFetchTracerPreview();
+}
+
+async function _pickerFetchTracerPreview() {
+  const t = _pickerState.tracer, sel = _pickerState.sel;
+  if (!t.active || !sel) return;
+  const lens = (_pickerState.filters.lens === "smoked") ? "smoked" : "clear";
+  t.loading = true; _pickerRenderTracer();
+  try {
+    const qs = `product_id=${encodeURIComponent(sel.product_id)}&mode=${t.mode}&secondary=${t.secondary}&lens=${lens}`;
+    t.preview = await api(`/api/parts-db/tracer-heads?${qs}`);
+  } catch (e) {
+    console.error("tracer resolve failed:", e);
+    t.preview = { ok: false, error: "request_failed", lines: [], problems: [] };
+  }
+  t.loading = false;
+  _pickerRenderTracer(); _pickerUpdateFooter();
+}
+
+function _pickerRenderTracer() {
+  const el = $("picker-tracer"); if (!el) return;
+  const t = _pickerState.tracer;
+  if (!t.active) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  const lens = (_pickerState.filters.lens === "smoked") ? "smoked" : "clear";
+  const pill = (k, v, label, on) =>
+    `<button class="pf-pill${on ? " active" : ""}" data-tk="${k}" data-tv="${v}">${esc(label)}</button>`;
+  const p = t.preview;
+  let body = "";
+  if (t.loading) body = `<div class="pt-preview muted">Resolving…</div>`;
+  else if (p && p.ok) {
+    body = `<div class="pt-preview">` + (p.lines || []).map(l => {
+      const pend = l.pending ? ` <span class="pp-pending">pending QB</span>` : "";
+      const role = l.role ? " · " + l.role : "";
+      return `<div class="pt-line"><span class="pt-qty">${l.qty}×</span> <span class="pt-sku">${esc(l.sku)}</span> <span class="pt-role">${esc(l.kind)}${esc(role)}</span>${pend}</div>`;
+    }).join("") + `</div>`;
+  } else if (p) {
+    const probs = (p.problems || []).map(pr =>
+      pr.reason === "missing_head_sku"
+        ? `Need a ${esc((pr.colors || []).join("/"))} ${esc(pr.lens)} ${esc(pr.role)} head — not in the catalog yet.`
+        : esc(pr.detail || pr.reason)).join("<br>");
+    body = `<div class="pt-preview err">⚠ Can't build this combo yet:<br>${probs}</div>`;
+  }
+  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">⚡</span>Tracer lightheads — choose a configuration</div>
+    <div class="pt-rows">
+      <div class="pf-group"><span class="pf-label">Heads</span><div class="pf-pills">
+        ${pill("mode", "duo", "Standard Duo", t.mode === "duo")}
+        ${pill("mode", "trio", "Standard Trio", t.mode === "trio")}</div></div>
+      <div class="pf-group"><span class="pf-label">Secondary color</span><div class="pf-pills">
+        ${pill("secondary", "white", "White", t.secondary === "white")}
+        ${pill("secondary", "amber", "Amber", t.secondary === "amber")}</div></div>
+      <div class="pf-group"><span class="pf-label">Lens</span><span class="pt-lens">${esc(lens)} · from filter</span></div>
+    </div>${body}`;
+  el.querySelectorAll("[data-tk]").forEach(b => b.addEventListener("click", () => {
+    _pickerState.tracer[b.dataset.tk] = b.dataset.tv;
+    _pickerFetchTracerPreview();
+  }));
+}
+
+function _pickerTracerSatisfied() {
+  const t = _pickerState.tracer;
+  if (!t.active) return true;
+  return !!(t.preview && t.preview.ok);
+}
+
 // Build the accessory part rows chosen for the current selection.
 function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   const rows = [];
@@ -923,29 +1010,33 @@ function _pickerUpdateFooter() {
   const sel = _pickerState.sel, loc = _pickerState.loc;
   const usesColor = _pickerUsesColor();
   const accOk = _accessoriesSatisfied();
+  const tracerOk = _pickerTracerSatisfied();
+  const ready = accOk && tracerOk;            // all required sub-choices addressed
   const hasAcc = (_pickerState.accessories || []).length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
-  const accHint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
+  let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
+  if (sel && _pickerState.tracer.active && !tracerOk)
+    hint += ' <span class="picker-foot-acc">· configure lightheads</span>';
   if (_pickerState.tab === "part") {
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${accHint}` : `<span class="picker-foot-label">Pick a product</span>`;
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
     if (_pickerState.editLineId) {
       // Editing: save the part change directly (location keeps its current value
       // unless the user visits the Location tab to change it).
       btn.textContent = "Save edits";
-      btn.disabled = !(sel && accOk);
-      _pickerState.footerHandler = (sel && accOk) ? _pickerDoAdd : null;
+      btn.disabled = !(sel && ready);
+      _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
     } else {
       btn.textContent = "Choose location →";
-      btn.disabled = !(sel && accOk);
-      _pickerState.footerHandler = (sel && accOk) ? () => _pickerSwitchTab("location") : null;
+      btn.disabled = !(sel && ready);
+      _pickerState.footerHandler = (sel && ready) ? () => _pickerSwitchTab("location") : null;
     }
   } else {
     const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${accHint}` : `<span class="picker-foot-label">Pick a product first</span>`;
+    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${hint}` : `<span class="picker-foot-label">Pick a product first</span>`;
     btn.textContent = "Add Part";
-    btn.disabled = !(sel && loc.selected && accOk);
-    _pickerState.footerHandler = (sel && loc.selected && accOk) ? _pickerDoAdd : null;
+    btn.disabled = !(sel && loc.selected && ready);
+    _pickerState.footerHandler = (sel && loc.selected && ready) ? _pickerDoAdd : null;
   }
 }
 
@@ -993,6 +1084,11 @@ async function _pickerDoAdd() {
   if (!sel || !loc.selected) return;
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
+
+  // Tracer path: the resolver gives housings + per-side heads; add each housing
+  // as a parent line, its heads nested beneath, with a Duo/Trio tag.
+  if (_pickerState.tracer.active) { await _pickerAddTracer(draftId); return; }
+
   const product = _pickerState.products.find(p => p.product_id === sel.product_id);
   // Color path only for color-configured products; a direct SKU pick (sel.sku,
   // e.g. a programmable bar) always uses the simple single-SKU path.
@@ -1063,6 +1159,58 @@ async function _pickerDoAdd() {
     }
   }
   toast(_pickerState.editLineId ? "Part updated" : "Part added", "success");
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  pickerClose();
+  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+}
+
+// Add a resolved tracer: each housing → a parent line tagged Duo/Trio, its
+// heads nested beneath as lighthead children. Re-resolves server-side so the
+// add matches the latest choice (mode/secondary/lens).
+async function _pickerAddTracer(draftId) {
+  const sel = _pickerState.sel, loc = _pickerState.loc, t = _pickerState.tracer;
+  const locName = loc.selected;
+  const baseName = _pickerChooseName(loc) || sel.model;
+  const lens = (_pickerState.filters.lens === "smoked") ? "smoked" : "clear";
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
+
+  let res;
+  try {
+    const qs = `product_id=${encodeURIComponent(sel.product_id)}&mode=${t.mode}&secondary=${t.secondary}&lens=${lens}`;
+    res = await api(`/api/parts-db/tracer-heads?${qs}`);
+  } catch (e) { console.error("tracer resolve failed:", e); toast("Resolve failed", "error"); if (btn) btn.disabled = false; return; }
+  if (!res || !res.ok) { toast("Can't build this tracer config yet", "error"); if (btn) btn.disabled = false; return; }
+
+  const modeLabel = (t.mode === "trio" ? "Trio" : "Duo") + " · " + cap(t.secondary);
+  let added = 0;
+  for (const h of res.housings || []) {
+    const sideTag = h.side === "front" ? "" : ` (${cap(h.side)})`;
+    let parentLineId = "";
+    try {
+      const r = await api(`/api/draft/${draftId}/part`, {
+        name: `${baseName}${sideTag} · ${modeLabel}`, location: locName,
+        manufacturer: sel.mfr || "", part_number: h.sku, quantity: h.qty || 1,
+        new_or_used: "New", source: "",
+      });
+      if (r?.ok) { added++; parentLineId = r.line_id || ""; }
+    } catch (e) { console.error("tracer housing add failed:", e); }
+    for (const hd of (h.heads || [])) {
+      if (hd.missing || !hd.sku) continue;
+      const colors = (hd.colors || []).map(cap).join("/");
+      try {
+        await api(`/api/draft/${draftId}/part`, {
+          name: `${baseName} · ${cap(hd.role)} ${colors}`, location: locName,
+          manufacturer: sel.mfr || "", part_number: hd.sku, quantity: hd.qty || 1,
+          new_or_used: "New", source: "", parent_line_id: parentLineId,
+          accessory_category: "lighthead", accessory_parent_product: sel.product_id,
+        });
+      } catch (e) { console.error("tracer head add failed:", e); }
+    }
+  }
+  if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
+  toast("Tracer added", "success");
   if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   pickerClose();
   if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
