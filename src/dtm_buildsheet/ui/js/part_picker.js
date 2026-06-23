@@ -69,6 +69,12 @@ function pickerClose() {
   _pickerState.open = false;
   _pickerState.editLineId = null;
   _pickerState.editPart = null;
+  // Clear the tracer + accessory panels so they don't persist into the next open.
+  _pickerState.tracer = { active: false, mode: _pickerState.tracer.mode,
+                          secondary: _pickerState.tracer.secondary, preview: null, loading: false };
+  _pickerState.accessories = []; _pickerState.accLoadedFor = null;
+  _pickerRenderTracer();
+  const acc = $("picker-accessories"); if (acc) { acc.hidden = true; acc.innerHTML = ""; }
   const panel = $("picker-panel");
   if (panel) panel.classList.remove("open");
 }
@@ -912,10 +918,35 @@ function _accessoriesSatisfied() {
 // Tracers (and bars with child lightheads) replace the color matrix with a
 // simple Standard Duo / Standard Trio + White/Amber choice; the server resolves
 // the exact housings + head SKUs. See docs/TRACER_LIGHTHEAD_SELECTION.md.
-const _TRACER_LAMP_RE = /\b\d+\s*-?\s*lamp\b/i;
+const _TRACER_LAMP_RE = /\b(\d+)\s*-?\s*lamp\b/i;
 
 function _pickerIsTracer(product) {
   return !!product && _TRACER_LAMP_RE.test(product.model || "");
+}
+function _pickerTracerLamps(product) {
+  const m = product ? _TRACER_LAMP_RE.exec(product.model || "") : null;
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+// 5/6-lamp tracers mount on the running boards — auto-select that location so
+// the user doesn't have to (smaller tracers stay manual, e.g. 2-lamp = front).
+async function _pickerTracerAutoLocation() {
+  const sel = _pickerState.sel, loc = _pickerState.loc, f = _pickerState.filters;
+  const product = _pickerState.products.find(p => p.product_id === (sel || {}).product_id);
+  if (!sel || _pickerTracerLamps(product) < 5 || loc.selected) return;
+  loc.vehicle = (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "PIU";
+  try {
+    const res = await api(`/api/parts-db/category-locations?type=${encodeURIComponent(f.type_id)}`
+      + `&category=${encodeURIComponent(f.category_id || "")}&product=${encodeURIComponent(sel.product_id)}`
+      + `&vehicle=${encodeURIComponent(loc.vehicle)}`);
+    const rb = (res?.locations || []).find(l => /run|board|rocker/i.test(l.location));
+    if (rb && !loc.selected) {
+      loc.selected = rb.location;
+      loc.name_pattern = rb.name_pattern || ""; loc.base_label = rb.base_label || "";
+      loc.catalog_names = rb.catalog_names || [];
+      _pickerUpdateFooter();
+    }
+  } catch (e) { console.error("tracer auto-location failed:", e); }
 }
 
 async function _pickerLoadTracer(productId) {
@@ -927,6 +958,7 @@ async function _pickerLoadTracer(productId) {
   }
   _pickerState.tracer = { ...t, active: true, preview: null, loading: true };
   _pickerRenderTracer();
+  _pickerTracerAutoLocation();
   await _pickerFetchTracerPreview();
 }
 
@@ -1034,6 +1066,12 @@ function _pickerUpdateFooter() {
       // Editing: save the part change directly (location keeps its current value
       // unless the user visits the Location tab to change it).
       btn.textContent = "Save edits";
+      btn.disabled = !(sel && ready);
+      _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
+    } else if (loc.selected && _pickerState.tracer.active) {
+      // Tracer auto-located to the running boards → add directly; the user can
+      // still open the Location tab to change it.
+      btn.textContent = "Add Part";
       btn.disabled = !(sel && ready);
       _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
     } else {
@@ -1193,31 +1231,33 @@ async function _pickerAddTracer(draftId) {
   } catch (e) { console.error("tracer resolve failed:", e); toast("Resolve failed", "error"); if (btn) btn.disabled = false; return; }
   if (!res || !res.ok) { toast("Can't build this tracer config yet", "error"); if (btn) btn.disabled = false; return; }
 
+  // One grouped unit: the housing is the parent line (qty rolled up across both
+  // running-board sides); every head nests beneath it. Uses the resolver's flat,
+  // rolled-up `lines` so a 5-lamp pair is one tidy group, not scattered rows.
   const modeLabel = (t.mode === "trio" ? "Trio" : "Duo") + " · " + cap(t.secondary);
-  let added = 0;
-  for (const h of res.housings || []) {
-    const sideTag = h.side === "front" ? "" : ` (${cap(h.side)})`;
-    let parentLineId = "";
+  const housing = (res.lines || []).find(l => l.kind === "housing");
+  const heads = (res.lines || []).filter(l => l.kind === "head" && l.sku);
+  if (!housing) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
+
+  let parentLineId = "", added = 0;
+  try {
+    const r = await api(`/api/draft/${draftId}/part`, {
+      name: `${baseName} · ${modeLabel}`, location: locName,
+      manufacturer: sel.mfr || "", part_number: housing.sku, quantity: housing.qty || 1,
+      new_or_used: "New", source: "",
+    });
+    if (r?.ok) { added++; parentLineId = r.line_id || ""; }
+  } catch (e) { console.error("tracer housing add failed:", e); }
+  for (const hd of heads) {
+    const colors = (hd.colors || []).map(cap).join("/");
     try {
-      const r = await api(`/api/draft/${draftId}/part`, {
-        name: `${baseName}${sideTag} · ${modeLabel}`, location: locName,
-        manufacturer: sel.mfr || "", part_number: h.sku, quantity: h.qty || 1,
-        new_or_used: "New", source: "",
+      await api(`/api/draft/${draftId}/part`, {
+        name: `${baseName} · ${cap(hd.role)} ${colors}`, location: locName,
+        manufacturer: sel.mfr || "", part_number: hd.sku, quantity: hd.qty || 1,
+        new_or_used: "New", source: "", parent_line_id: parentLineId,
+        accessory_category: "lighthead", accessory_parent_product: sel.product_id,
       });
-      if (r?.ok) { added++; parentLineId = r.line_id || ""; }
-    } catch (e) { console.error("tracer housing add failed:", e); }
-    for (const hd of (h.heads || [])) {
-      if (hd.missing || !hd.sku) continue;
-      const colors = (hd.colors || []).map(cap).join("/");
-      try {
-        await api(`/api/draft/${draftId}/part`, {
-          name: `${baseName} · ${cap(hd.role)} ${colors}`, location: locName,
-          manufacturer: sel.mfr || "", part_number: hd.sku, quantity: hd.qty || 1,
-          new_or_used: "New", source: "", parent_line_id: parentLineId,
-          accessory_category: "lighthead", accessory_parent_product: sel.product_id,
-        });
-      } catch (e) { console.error("tracer head add failed:", e); }
-    }
+    } catch (e) { console.error("tracer head add failed:", e); }
   }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
   toast("Tracer added", "success");
