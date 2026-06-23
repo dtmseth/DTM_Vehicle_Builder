@@ -1,7 +1,9 @@
 # Lighthead selection for tracers & lightbars (design)
 
 **Status:** plan locked 2026-06-23 (Seth). Tracers first; lightbars are the same engine,
-deferred pending per-bar research. Not yet implemented.
+deferred pending per-bar research. **Head data staged** (batch 11 real heads + batch 12
+pending heads; all four Duo/Trio · White/Amber configs buildable). **Engine + Duo/Trio/Custom
+UX not yet built.** Validated against Estimate 1959 — see "Observed in practice" below.
 
 ## Problem
 
@@ -58,16 +60,40 @@ standard Duo/Trio, pre-select that pill when the tracer opens.
 
 `N` = lamp count. Where a pair is generated, totals are per pair.
 
+Clear lens shown; `TCRXX…` = smoked equivalents for smoked builds. Pending-QB heads
+(batch 12) marked ⧗.
+
 | Config | Driver housing | Passenger housing |
 |---|---|---|
 | **Duo · White** | `1× TCRWXPD` (R/W) + `(N-1)× TCRWXSD` | `1× TCRWXPE` (B/W) + `(N-1)× TCRWXSE` |
-| **Duo · Amber** | `1× TCRWXPK` (R/A) + `(N-1)× TCRWXSK` | ⚠️ `1× <B/A primary — MISSING>` + `(N-1)× TCRWXSM` |
-| **Trio · White** | `1× <R/B/W primary> + (N-1)× <R/B/W secondary>` | same | 
-| **Trio · Amber** | `1× <R/B/A primary> + (N-1)× <R/B/A secondary>` | same |
+| **Duo · Amber** | `1× TCRWXPK` (R/A) + `(N-1)× TCRWXSK` | `1× TCRWXPM`⧗ (B/A) + `(N-1)× TCRWXSM` |
+| **Trio · White** | `1× TCRWXPJC`⧗ (R/B/W) + `(N-1)× TCRWXSJC`⧗ | same |
+| **Trio · Amber** | `1× TCRWXPJA`⧗ (R/B/A) + `(N-1)× TCRWXSJA`⧗ | same |
 | **2-lamp front · Duo · White** | single housing: `TCRWXPD` (slot 1) + `TCRWXSE` (slot 2) | — |
 
-**Only Duo·White (and Duo·Amber driver) is fully buildable from QB today.** The rest
-depend on heads that don't exist in QuickBooks yet — see "Data gaps" below.
+All four configs are now buildable: the heads missing from QB were added as **pending-QB
+parts** (batch 12, `whelen_accessories_b12_pending_tracer_heads.json`) — usable now, flagged
+on the estimate. Smoked trio `TCRXXPJC` (R/B/W) is a real QB SKU (batch 11).
+
+## Observed in practice — Estimate 1959 (Drone PIU, all-trio smoked)
+
+Real estimate from the sales team, confirms the structure and one decision:
+- **Line shape:** housing line(s) + a **separate head line, qty = total lamp positions.**
+  FST `BSFW50ZT`×1 → heads `ISTBCA`×10; tracer `TCRWX5`**×2** → heads `TCRXXPJC`**×10**
+  (= 2 housings × 5). Confirms the **auto-pair-of-housings** rule and **qty = lamps ×
+  housings**, and that a smoked build pulls the `TCRXX…` SKUs.
+- **Primary/secondary:** the estimate listed *all* heads as the **primary** SKU
+  (`TCRXXPJC×10`). **Decision (Seth): the engine does the spec-correct split instead** —
+  `1 primary + (N-1) secondary` per housing (cheaper; secondary heads omit the lamp
+  driver). This is why batch 11 split into `whelen_tracer_wcx_primary` /
+  `_secondary` products — keep both.
+- **A color error slipped through:** the RST heads were quoted `B/W/A` but should have been
+  `B/R/W`. Exactly the manual mistake auto-resolution prevents — motivation for this
+  feature. (Nail the FST-vs-RST front/rear default when we build the Inner Edge rules; for
+  tracers the secondary color is a manual White/Amber selector so the user still confirms.)
+- **Pending-QB notation:** the sales lead confirmed the "note it in the description" method
+  works for her. We keep the **DescriptionOnly** estimate note (not a placeholder-billed
+  item) — matches how she already handles `MISC PART` / `INSTALL SUPPLIES` lines.
 
 ## Manifest & estimate output
 
