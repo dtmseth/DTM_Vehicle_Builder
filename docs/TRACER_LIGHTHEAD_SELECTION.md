@@ -2,8 +2,10 @@
 
 **Status:** plan locked 2026-06-23 (Seth). Tracers first; lightbars are the same engine,
 deferred pending per-bar research. **Head data staged** (batch 11 real heads + batch 12
-pending heads; all four Duo/Trio · White/Amber configs buildable). **Engine + Duo/Trio/Custom
-UX not yet built.** Validated against Estimate 1959 — see "Observed in practice" below.
+pending heads; all four Duo/Trio · White/Amber configs buildable). **Resolution engine BUILT**
+— `app/services/lighthead_resolver.py::resolve_tracer` (pure + tested against real parts_db).
+**Remaining:** API endpoint + the Duo/Trio/Custom picker UX + nested manifest line + Duo/Trio
+build-sheet tag. Validated against Estimate 1959 — see "Observed in practice" below.
 
 ## Problem
 
