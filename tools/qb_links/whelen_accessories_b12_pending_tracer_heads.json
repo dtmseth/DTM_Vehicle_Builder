@@ -1,0 +1,11 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 12: the missing Tracer WCX heads needed for full Duo+Amber and Trio (White/Amber) coverage — added as PENDING-QB parts (qb_pending=true, hand-set price, no qb_item_id) because they aren't in DTM's QuickBooks yet. Part numbers + colors confirmed from the official Whelen Tracer WeCanX spec (code key: M=Blue/Amber duo, JC=Red/Blue/White trio, JA=Red/Blue/Amber trio; TCRWX=clear). Primaries go on whelen_tracer_wcx_primary, secondaries on whelen_tracer_wcx_secondary. They are usable/billable immediately and flagged on the estimate as 'create item' until the QB user adds them. No friendly_name — lightheads read off color+lens per convention. See docs/PENDING_QB_PARTS.md + docs/TRACER_LIGHTHEAD_SELECTION.md.",
+  "pending_parts": [
+    {"product": "whelen_tracer_wcx_primary",   "part_number": "TCRWXPM",  "price": 59.0,  "vehicle_tags": ["any"], "color": "blue", "secondary_color": "amber", "lens_type": "clear"},
+    {"product": "whelen_tracer_wcx_primary",   "part_number": "TCRWXPJC", "price": 116.0, "vehicle_tags": ["any"], "color": "red", "secondary_color": "blue", "tertiary_color": "white", "lens_type": "clear"},
+    {"product": "whelen_tracer_wcx_secondary", "part_number": "TCRWXSJC", "price": 116.0, "vehicle_tags": ["any"], "color": "red", "secondary_color": "blue", "tertiary_color": "white", "lens_type": "clear"},
+    {"product": "whelen_tracer_wcx_primary",   "part_number": "TCRWXPJA", "price": 116.0, "vehicle_tags": ["any"], "color": "red", "secondary_color": "blue", "tertiary_color": "amber", "lens_type": "clear"},
+    {"product": "whelen_tracer_wcx_secondary", "part_number": "TCRWXSJA", "price": 116.0, "vehicle_tags": ["any"], "color": "red", "secondary_color": "blue", "tertiary_color": "amber", "lens_type": "clear"}
+  ]
+}

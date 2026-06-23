@@ -12923,6 +12923,57 @@
           "secondary_color": "blue",
           "tertiary_color": "white",
           "lens_type": "smoked"
+        },
+        {
+          "part_number": "TCRWXPM",
+          "friendly_name": "",
+          "price_usd": 59.0,
+          "qb_item_id": "",
+          "qb_sku": "",
+          "qb_unit_price": null,
+          "qb_inactive": false,
+          "qb_pending": true,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPJC",
+          "friendly_name": "",
+          "price_usd": 116.0,
+          "qb_item_id": "",
+          "qb_sku": "",
+          "qb_unit_price": null,
+          "qb_inactive": false,
+          "qb_pending": true,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPJA",
+          "friendly_name": "",
+          "price_usd": 116.0,
+          "qb_item_id": "",
+          "qb_sku": "",
+          "qb_unit_price": null,
+          "qb_inactive": false,
+          "qb_pending": true,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "amber",
+          "lens_type": "clear"
         }
       ]
     },
@@ -13061,6 +13112,40 @@
           "secondary_color": "white",
           "tertiary_color": "",
           "lens_type": "smoked"
+        },
+        {
+          "part_number": "TCRWXSJC",
+          "friendly_name": "",
+          "price_usd": 116.0,
+          "qb_item_id": "",
+          "qb_sku": "",
+          "qb_unit_price": null,
+          "qb_inactive": false,
+          "qb_pending": true,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSJA",
+          "friendly_name": "",
+          "price_usd": 116.0,
+          "qb_item_id": "",
+          "qb_sku": "",
+          "qb_unit_price": null,
+          "qb_inactive": false,
+          "qb_pending": true,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "amber",
+          "lens_type": "clear"
         }
       ]
     }
