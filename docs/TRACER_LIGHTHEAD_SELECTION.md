@@ -87,10 +87,11 @@ Real estimate from the sales team, confirms the structure and one decision:
   `1 primary + (N-1) secondary` per housing (cheaper; secondary heads omit the lamp
   driver). This is why batch 11 split into `whelen_tracer_wcx_primary` /
   `_secondary` products — keep both.
-- **A color error slipped through:** the RST heads were quoted `B/W/A` but should have been
-  `B/R/W`. Exactly the manual mistake auto-resolution prevents — motivation for this
-  feature. (Nail the FST-vs-RST front/rear default when we build the Inner Edge rules; for
-  tracers the secondary color is a manual White/Amber selector so the user still confirms.)
+- **A color error slipped through:** the FST heads were quoted `B/W/A` but should have been
+  `R/B/W`. Exactly the manual mistake auto-resolution prevents — motivation for this feature.
+  **Confirmed Inner Edge front/rear default (Seth):** front gets white → **FST = R/B/W**;
+  rear gets amber → **RST = R/B/A**. (Consistent with the general rule: front/sides → white,
+  rear → amber. For tracers the secondary color stays a manual White/Amber selector.)
 - **Pending-QB notation:** the sales lead confirmed the "note it in the description" method
   works for her. We keep the **DescriptionOnly** estimate note (not a placeholder-billed
   item) — matches how she already handles `MISC PART` / `INSTALL SUPPLIES` lines.

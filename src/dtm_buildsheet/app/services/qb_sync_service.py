@@ -213,9 +213,17 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
     if not cache.get("last_sync_utc"):
         # Never reconcile against an empty/never-synced cache — that would flag
         # every linked part inactive.
-        return {"ok": True, "updated": 0, "flagged_inactive": 0, "reactivated": 0, "skipped": "no_sync"}
+        return {"ok": True, "updated": 0, "flagged_inactive": 0, "reactivated": 0,
+                "reconciled_pending": 0, "skipped": "no_sync"}
 
     active_by_id = {i["qb_item_id"]: i for i in cache.get("items", [])}
+    # name/sku → item, for matching pending parts that have now appeared in QBO.
+    active_by_name: dict[str, dict] = {}
+    for it in cache.get("items", []):
+        for key in (it.get("name"), it.get("sku")):
+            k = str(key or "").strip().lower()
+            if k:
+                active_by_name.setdefault(k, it)
 
     svc = get_parts_db_service(paths)
     doc = copy.deepcopy(svc.raw_doc())
@@ -225,6 +233,7 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
     updated = 0
     flagged_inactive = 0
     reactivated = 0
+    reconciled_pending = 0
 
     for product in products.values():
         qb_id = str(product.get("qb_item_id", "")).strip()
@@ -254,7 +263,25 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
                 product["qb_last_synced"] = now_iso
                 flagged_inactive += 1
 
-    total_changed = updated + flagged_inactive
+    # Reconcile pending-QB parts: a SKU pre-added with qb_pending=true that has
+    # now appeared in QBO gets linked (fill qb_item_id/sku/price, clear the flag)
+    # so it stops billing as a "create item" note. Matches the part_number against
+    # the QB item name or sku, like the link tool. See docs/PENDING_QB_PARTS.md.
+    for product in products.values():
+        for pn in (product.get("part_numbers") or []):
+            if not pn.get("qb_pending"):
+                continue
+            item = active_by_name.get(str(pn.get("part_number", "")).strip().lower())
+            if item is None:
+                continue
+            pn["qb_item_id"] = str(item.get("qb_item_id", ""))
+            pn["qb_sku"] = item.get("sku", "")
+            pn["qb_unit_price"] = item.get("unit_price")
+            pn["qb_pending"] = False
+            pn["qb_last_synced"] = now_iso
+            reconciled_pending += 1
+
+    total_changed = updated + flagged_inactive + reconciled_pending
     if total_changed:
         result = save_config_file("parts_db.json", doc, paths)
         if not result.get("ok"):
@@ -262,14 +289,15 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
         svc.invalidate()
 
     logger.info(
-        "QB reconcile: %d updated, %d flagged inactive, %d reactivated",
-        updated, flagged_inactive, reactivated,
+        "QB reconcile: %d updated, %d flagged inactive, %d reactivated, %d pending linked",
+        updated, flagged_inactive, reactivated, reconciled_pending,
     )
     return {
         "ok": True,
         "updated": updated,
         "flagged_inactive": flagged_inactive,
         "reactivated": reactivated,
+        "reconciled_pending": reconciled_pending,
     }
 
 

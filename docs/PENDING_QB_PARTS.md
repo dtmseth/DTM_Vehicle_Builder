@@ -1,8 +1,8 @@
 # Pending-QB parts (design)
 
-**Status:** plan locked 2026-06-23 (Seth). **Foundation implemented** 2026-06-23 —
-model flag, tool op, estimate resolution + push, API payloads, picker chip, tests.
-**Remaining:** auto-reconciliation on QB items sync; part-manager UI editing.
+**Status:** plan locked 2026-06-23 (Seth). **Implemented** 2026-06-23 — model flag, tool
+op, estimate resolution + push, API payloads, picker chip, **auto-reconciliation on QB
+sync**, tests. **Remaining:** part-manager UI editing (toggle `qb_pending` + set price).
 
 ## Goal
 
@@ -60,11 +60,15 @@ loop automatically once the QB user creates the item.
   sku payloads; a "pending QB" chip in the part picker (primary rows + accessory dropdown).
 - **Part-manager editor (TODO):** let a user toggle `qb_pending` + set `price_usd` by hand.
 
-## Reconciliation (TODO)
+## Reconciliation (implemented)
 
-On the QB items sync, for any `qb_pending` part whose `part_number` now matches a synced QB
-item: fill `qb_item_id` + `qb_unit_price`, clear `qb_pending`, surface "N pending resolved".
-Hook into `qb_sync_service` items pull. **Not yet implemented.**
+`qb_sync_service.reconcile_linked_parts` (run after every items pull via `run_full_sync`)
+walks all `part_numbers`: for any `qb_pending` entry whose `part_number` now matches a synced
+QB item by **name or sku** (case-insensitive), it fills `qb_item_id` + `qb_sku` +
+`qb_unit_price`, sets `qb_last_synced`, and clears `qb_pending`. Returns `reconciled_pending`
+in the stats. Writes through `save_config_file` (SharePoint mirror) only when something
+changed — so once the QB user creates the item, the pending flag clears itself on the next
+sync and the part bills normally.
 
 ## Open questions
 

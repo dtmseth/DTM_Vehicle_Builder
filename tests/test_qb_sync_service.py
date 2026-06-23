@@ -298,6 +298,33 @@ def test_reconcile_reactivates_returning_item(paths, _link_fakes):
     assert _link_fakes["saved"]["data"]["products"]["whelen_lib2"]["qb_inactive"] is False
 
 
+def test_reconcile_links_pending_part_when_sku_appears(paths, _link_fakes):
+    # A product carries a pre-added pending-QB part (no qb_item_id yet).
+    prod = _link_fakes["svc"].raw_doc()["products"]["whelen_lib2"]
+    prod["part_numbers"] = [{
+        "part_number": "TCRWXPJC", "qb_pending": True, "price_usd": 116.0,
+        "qb_item_id": "", "color": "red", "secondary_color": "blue", "tertiary_color": "white",
+    }]
+
+    # Not in QBO yet → nothing reconciled.
+    res = sync.reconcile_linked_parts(paths)
+    assert res["reconciled_pending"] == 0
+
+    # The QB user creates the item; it appears in the next pull.
+    cache = sync._read_cache(paths)
+    cache["items"].append({"qb_item_id": "99", "name": "TCRWXPJC", "sku": "TCRWXPJC",
+                           "description": "", "unit_price": 116.0, "type": "Inventory"})
+    sync._write_cache(paths, cache)
+
+    res = sync.reconcile_linked_parts(paths)
+    assert res["reconciled_pending"] == 1
+    pn = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]["part_numbers"][0]
+    assert pn["qb_item_id"] == "99"
+    assert pn["qb_pending"] is False
+    assert pn["qb_unit_price"] == 116.0
+    assert pn["qb_sku"] == "TCRWXPJC"
+
+
 def test_reconcile_never_touches_unlinked_parts(paths, _link_fakes):
     # No links at all → reconcile writes nothing.
     res = sync.reconcile_linked_parts(paths)
