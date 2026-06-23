@@ -1,0 +1,50 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 11: Tracer WCX lightheads. Per Seth, the Tracer products (warning lights) are the parents of all tracer lightheads. Two lighthead-category products — Primary and Secondary — each holding the DUO/TRIO color SKUs (clear + smoked), wired as lighthead accessories of all four Tracer products (2/3/5/6-Lamp). Mirrors the Inner Edge FST/RST lighthead pattern: primary required:true (a bar needs heads), secondary required:false (second color optional). Colors are set EXPLICITLY here because the auto-parser reads 'WCX TRACER' as a programmable multi-color bar and skips extraction. The TCRWXP#/TCRWXS# order-code placeholders are intentionally skipped (the concrete colored SKUs cover them). set_accessories preserves the tracer_mount_kit wired in batch 10 on the 3/5/6-lamp tracers.",
+  "new_products": [
+    {"product_id": "whelen_tracer_wcx_primary",   "model": "Tracer WCX Primary Lighthead",   "fits_part_types": ["lighthead"]},
+    {"product_id": "whelen_tracer_wcx_secondary", "model": "Tracer WCX Secondary Lighthead", "fits_part_types": ["lighthead"]}
+  ],
+  "links": [
+    {"sku": "TCRWXPD",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXPE",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXPJ",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "blue",  "lens_type": "clear"},
+    {"sku": "TCRWXPK",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "amber", "lens_type": "clear"},
+    {"sku": "TCRWXPKC", "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "amber", "tertiary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXPMC", "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "amber", "tertiary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRXXPD",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "white", "lens_type": "smoked"},
+    {"sku": "TCRXXPE",  "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "white", "lens_type": "smoked"},
+    {"sku": "TCRXXPJC", "product": "whelen_tracer_wcx_primary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "blue",  "tertiary_color": "white", "lens_type": "smoked"},
+
+    {"sku": "TCRWXSD",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXSE",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXSJ",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "blue",  "lens_type": "clear"},
+    {"sku": "TCRWXSK",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "amber", "lens_type": "clear"},
+    {"sku": "TCRWXSM",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "amber", "lens_type": "clear"},
+    {"sku": "TCRWXSKC", "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "amber", "tertiary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRWXSMC", "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "amber", "tertiary_color": "white", "lens_type": "clear"},
+    {"sku": "TCRXXSD",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "red",  "secondary_color": "white", "lens_type": "smoked"},
+    {"sku": "TCRXXSE",  "product": "whelen_tracer_wcx_secondary", "vehicle_tags": ["any"], "color": "blue", "secondary_color": "white", "lens_type": "smoked"}
+  ],
+  "set_accessories": {
+    "whelen_2_lamp_tracer": [
+      {"category": "lighthead", "product_id": "whelen_tracer_wcx_primary",   "required": true},
+      {"category": "lighthead", "product_id": "whelen_tracer_wcx_secondary", "required": false}
+    ],
+    "whelen_tracer_3_lamp": [
+      {"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit",        "required": false},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_primary",   "required": true},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_secondary", "required": false}
+    ],
+    "whelen_tracer_5_lamp": [
+      {"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit",        "required": false},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_primary",   "required": true},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_secondary", "required": false}
+    ],
+    "whelen_tracer_6_lamp": [
+      {"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit",        "required": false},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_primary",   "required": true},
+      {"category": "lighthead",     "product_id": "whelen_tracer_wcx_secondary", "required": false}
+    ]
+  }
+}

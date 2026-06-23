@@ -266,6 +266,13 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
         if not is_light:
             color_info = {"color": "", "secondary_color": "", "tertiary_color": "", "lens_type": ""}
 
+        # Explicit color/lens overrides from the link — for SKUs the auto-parser
+        # can't read (e.g. "WCX TRACER" heads, where WCX trips the programmable
+        # multi-color guard yet the head has a fixed R/W color combo).
+        for _k in ("color", "secondary_color", "tertiary_color", "lens_type"):
+            if link.get(_k) is not None:
+                color_info[_k] = link[_k]
+
         entry = {
             "part_number": sku,
             "qb_item_id": str(item.get("qb_item_id", "")),

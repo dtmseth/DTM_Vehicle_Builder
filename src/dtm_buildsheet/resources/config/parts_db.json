@@ -1283,6 +1283,18 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_primary",
+          "required": true
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_secondary",
+          "required": false
+        }
       ]
     },
     "soundoff_nforce": {
@@ -4009,6 +4021,16 @@
           "category": "bracket_mount",
           "product_id": "whelen_tracer_mount_kit",
           "required": false
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_primary",
+          "required": true
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_secondary",
+          "required": false
         }
       ]
     },
@@ -4041,6 +4063,16 @@
         {
           "category": "bracket_mount",
           "product_id": "whelen_tracer_mount_kit",
+          "required": false
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_primary",
+          "required": true
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_secondary",
           "required": false
         }
       ]
@@ -8746,6 +8778,16 @@
           "category": "bracket_mount",
           "product_id": "whelen_tracer_mount_kit",
           "required": false
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_primary",
+          "required": true
+        },
+        {
+          "category": "lighthead",
+          "product_id": "whelen_tracer_wcx_secondary",
+          "required": false
         }
       ]
     },
@@ -12743,6 +12785,282 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "Twist-in adapter kit"
+        }
+      ]
+    },
+    "whelen_tracer_wcx_primary": {
+      "manufacturer_id": "whelen",
+      "model": "Tracer WCX Primary Lighthead",
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "TCRWXPD",
+          "qb_item_id": "1102",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPE",
+          "qb_item_id": "1103",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPJ",
+          "qb_item_id": "1104",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPK",
+          "qb_item_id": "1105",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPKC",
+          "qb_item_id": "1106",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXPMC",
+          "qb_item_id": "1107",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRXXPD",
+          "qb_item_id": "1116",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "TCRXXPE",
+          "qb_item_id": "1117",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "TCRXXPJC",
+          "qb_item_id": "1118",
+          "qb_sku": "",
+          "qb_unit_price": 129.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "white",
+          "lens_type": "smoked"
+        }
+      ]
+    },
+    "whelen_tracer_wcx_secondary": {
+      "manufacturer_id": "whelen",
+      "model": "Tracer WCX Secondary Lighthead",
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "TCRWXSD",
+          "qb_item_id": "1109",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSE",
+          "qb_item_id": "1110",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSJ",
+          "qb_item_id": "1111",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "blue",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSK",
+          "qb_item_id": "1112",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSM",
+          "qb_item_id": "1114",
+          "qb_sku": "",
+          "qb_unit_price": 59.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSKC",
+          "qb_item_id": "1113",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "amber",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRWXSMC",
+          "qb_item_id": "1115",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "amber",
+          "tertiary_color": "white",
+          "lens_type": "clear"
+        },
+        {
+          "part_number": "TCRXXSD",
+          "qb_item_id": "1119",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "red",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "smoked"
+        },
+        {
+          "part_number": "TCRXXSE",
+          "qb_item_id": "1120",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "blue",
+          "secondary_color": "white",
+          "tertiary_color": "",
+          "lens_type": "smoked"
         }
       ]
     }
