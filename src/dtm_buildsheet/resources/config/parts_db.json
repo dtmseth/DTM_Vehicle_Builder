@@ -2106,6 +2106,13 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_howler_mount_bracket",
+          "required": false
+        }
       ]
     },
     "whelen_wc_howler": {
@@ -2123,6 +2130,13 @@
         {
           "part_number": "WC HOWLER"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_howler_mount_bracket",
+          "required": false
+        }
       ]
     },
     "whelen_lc_howler": {
@@ -2139,6 +2153,13 @@
       "part_numbers": [
         {
           "part_number": "LC HOWLER"
+        }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_howler_mount_bracket",
+          "required": false
         }
       ]
     },
@@ -11415,6 +11436,52 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "Replacement mount kit: Durango '11-20"
+        }
+      ]
+    },
+    "whelen_howler_mount_bracket": {
+      "manufacturer_id": "whelen",
+      "model": "Howler Mounting Bracket",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "HWLRB32",
+          "qb_item_id": "611",
+          "qb_sku": "",
+          "qb_unit_price": 274.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE",
+            "SUBURBAN"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Tahoe PPV/SSV '21-24 / Suburban '24"
+        },
+        {
+          "part_number": "HWLRB35",
+          "qb_item_id": "612",
+          "qb_sku": "",
+          "qb_unit_price": 274.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150",
+            "F-150-LIGHTNING",
+            "SUPER-DUTY",
+            "EXPEDITION"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "F-150 '15-25 / Lightning '22-24 / Super-Duty '17-25 / Expedition '18-24"
         }
       ]
     }
