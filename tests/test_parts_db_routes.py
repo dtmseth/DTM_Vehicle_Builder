@@ -294,3 +294,35 @@ def test_resolve_accessories_none_for_plain_product():
     doc = {"accessory_categories": {}, "manufacturers": {}, "part_types": {},
            "products": {"p": {"manufacturer_id": "m", "model": "P", "fits_part_types": []}}}
     assert _resolve_accessories(_FakeAccSvc(doc), "p") == []
+
+
+def test_tracer_heads_endpoint(tmp_path):
+    """The tracer-heads endpoint wires query params → resolver → JSON."""
+    db = json.loads(json.dumps(_SYNTHETIC_DB))   # deep copy (keeps required top-level keys)
+    db["products"].update({
+        "tracer5": {"manufacturer_id": "whelen", "model": "Tracer 5-Lamp",
+                    "fits_part_types": [], "part_numbers": [{"part_number": "TCRWX5"}],
+                    "accessories": [{"category": "lighthead", "product_id": "prim"},
+                                    {"category": "lighthead", "product_id": "sec"}]},
+        "prim": {"manufacturer_id": "whelen", "model": "Tracer WCX Primary Lighthead",
+                 "fits_part_types": [], "part_numbers": [
+                     {"part_number": "TCRWXPD", "color": "red", "secondary_color": "white", "lens_type": "clear"},
+                     {"part_number": "TCRWXPE", "color": "blue", "secondary_color": "white", "lens_type": "clear"}]},
+        "sec": {"manufacturer_id": "whelen", "model": "Tracer WCX Secondary Lighthead",
+                "fits_part_types": [], "part_numbers": [
+                    {"part_number": "TCRWXSD", "color": "red", "secondary_color": "white", "lens_type": "clear"},
+                    {"part_number": "TCRWXSE", "color": "blue", "secondary_color": "white", "lens_type": "clear"}]},
+    })
+    h = FakeHandler("/api/parts-db/tracer-heads?product_id=tracer5&mode=duo&secondary=white")
+    route_parts_db(h, "GET", "/api/parts-db/tracer-heads", {}, _paths(tmp_path, db))
+    body = h.body_json()
+    assert body["ok"] is True
+    assert body["lamp_count"] == 5
+    qty = {l["sku"]: l["qty"] for l in body["lines"]}
+    assert qty == {"TCRWX5": 2, "TCRWXPD": 1, "TCRWXSD": 4, "TCRWXPE": 1, "TCRWXSE": 4}
+
+
+def test_tracer_heads_endpoint_missing_product_id(tmp_path):
+    h = FakeHandler("/api/parts-db/tracer-heads")
+    route_parts_db(h, "GET", "/api/parts-db/tracer-heads", {}, _paths(tmp_path))
+    assert h.status == 400

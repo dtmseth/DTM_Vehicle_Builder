@@ -31,6 +31,7 @@ _CATEGORY_SKUS_PATH = f"{_PREFIX}/category-skus"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
+_TRACER_HEADS_PATH = f"{_PREFIX}/tracer-heads"
 
 
 # Physical placement_zones relevant to each light category — drives the
@@ -609,6 +610,24 @@ def route_parts_db(
             send_json(handler, {"error": "missing product_id"}, status=400)
             return True
         send_json(handler, {"accessories": _resolve_accessories(svc, product_id)})
+        return True
+
+    if method == "GET" and path == _TRACER_HEADS_PATH:
+        # Resolve a tracer housing + Duo/Trio + White/Amber into concrete
+        # housings + head SKUs (qty rolled up). Drives the tracer picker's
+        # Standard Duo / Standard Trio pills. See docs/TRACER_LIGHTHEAD_SELECTION.md.
+        from ..services.lighthead_resolver import resolve_tracer
+        product_id = qs.get("product_id", [""])[0]
+        if not product_id:
+            send_json(handler, {"error": "missing product_id"}, status=400)
+            return True
+        result = resolve_tracer(
+            svc.raw_doc(), product_id,
+            mode=qs.get("mode", ["duo"])[0],
+            secondary_color=qs.get("secondary", ["white"])[0],
+            lens=qs.get("lens", ["clear"])[0],
+        )
+        send_json(handler, result)
         return True
 
     if method == "GET" and path == _CATEGORY_SKUS_PATH:
