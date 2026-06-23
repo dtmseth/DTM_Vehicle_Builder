@@ -860,7 +860,7 @@ function _pickerAccLabel(opt, sku) {
 function _pickerRenderAccessories() {
   const el = $("picker-accessories");
   if (!el) return;
-  const groups = _pickerState.accessories || [];
+  const groups = _pickerVisibleAccessoryGroups();
   if (!groups.length) { el.hidden = true; el.innerHTML = ""; return; }
   el.hidden = false;
   const veh = _pickerVehicle();
@@ -889,8 +889,18 @@ function _pickerRenderAccessories() {
   }));
 }
 
+// Accessory groups the picker actually shows. The tracer panel owns lighthead
+// selection, so for tracers the (redundant, required) lighthead dropdown is
+// hidden — brackets/cables/etc. still show.
+function _pickerVisibleAccessoryGroups() {
+  const groups = _pickerState.accessories || [];
+  if (_pickerState.tracer && _pickerState.tracer.active)
+    return groups.filter(g => g.category !== "lighthead");
+  return groups;
+}
+
 function _accessoriesSatisfied() {
-  for (const g of (_pickerState.accessories || [])) {
+  for (const g of _pickerVisibleAccessoryGroups()) {
     const v = _pickerState.accessoryChoices[g.category];
     if (!v) return false;                        // not yet addressed
     if (g.required && v === "none") return false;
@@ -986,7 +996,7 @@ function _pickerTracerSatisfied() {
 function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   const rows = [];
   const parentProduct = _pickerState.sel ? _pickerState.sel.product_id : "";
-  for (const g of (_pickerState.accessories || [])) {
+  for (const g of _pickerVisibleAccessoryGroups()) {
     const v = _pickerState.accessoryChoices[g.category];
     if (!v || v === "none") continue;
     const [pidPart, sku] = v.split("::");
@@ -1012,7 +1022,7 @@ function _pickerUpdateFooter() {
   const accOk = _accessoriesSatisfied();
   const tracerOk = _pickerTracerSatisfied();
   const ready = accOk && tracerOk;            // all required sub-choices addressed
-  const hasAcc = (_pickerState.accessories || []).length > 0;
+  const hasAcc = _pickerVisibleAccessoryGroups().length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
   let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
