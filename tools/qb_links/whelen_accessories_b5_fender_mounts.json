@@ -1,0 +1,18 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 5: ARG fender mounts. Vehicle-specific driver/passenger fender brackets that carry a front-side warning lighthead. One 'Fender Mount' product fits the EXISTING front_side_bracket part_type (accessory_of=front_side_warning), so it auto-resolves as a bracket_mount accessory under every front_side_warning light (ION, Vertex, M-series, Micron, etc.) — no set_accessories needed. The vehicle-compat filter narrows the dropdown to the build's vehicle. friendly_name + vehicle_tags per convention.",
+  "new_products": [
+    {"product_id": "whelen_fender_mount", "model": "Fender Mount", "fits_part_types": ["front_side_bracket"]}
+  ],
+  "links": [
+    {"sku": "ARG44AD", "product": "whelen_fender_mount", "vehicle_tags": ["DURANGO"], "friendly_name": "Durango '15-25, driver"},
+    {"sku": "ARG47CD", "product": "whelen_fender_mount", "vehicle_tags": ["F-150"], "friendly_name": "F-150 PPV '21-26, driver"},
+    {"sku": "ARG47DD", "product": "whelen_fender_mount", "vehicle_tags": ["SUPER-DUTY"], "friendly_name": "F-250/350/450/550/600 Super-Duty '23-26, driver"},
+    {"sku": "ARG47ED", "product": "whelen_fender_mount", "vehicle_tags": ["F-150-LIGHTNING"], "friendly_name": "F-150 Lightning '22-25, driver"},
+    {"sku": "ARG49D",  "product": "whelen_fender_mount", "vehicle_tags": ["CHEVY-1500"], "friendly_name": "Silverado 1500 PPV '19-26, driver"},
+    {"sku": "ARG50D",  "product": "whelen_fender_mount", "vehicle_tags": ["PIU"], "friendly_name": "PIU '20-25, driver"},
+    {"sku": "ARG50P",  "product": "whelen_fender_mount", "vehicle_tags": ["PIU"], "friendly_name": "PIU '20-25, passenger"},
+    {"sku": "ARG54D",  "product": "whelen_fender_mount", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '21-26, driver"},
+    {"sku": "ARG54P",  "product": "whelen_fender_mount", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '21-26, passenger"}
+  ]
+}

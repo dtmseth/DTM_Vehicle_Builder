@@ -1,0 +1,19 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 6: singleton brackets with a confidently-identified parent. Three product-level wirings (each fits a generic accessory type): M2 license-plate bracket -> whelen_m2 (M2-specific, so NOT auto-resolved across all front_side lights); Avenger dual headliner mount -> whelen_avenger_2; 4\" round grommet mount -> whelen_round_lighthead as a `flange` accessory (medium confidence on the round-light match; harmless/optional). All vehicle-agnostic -> ['any']. DELIBERATELY EXCLUDED (parent not confidently identifiable, flagged for human curation): FSBBB (bail bracket 'per FSB light array' — no clear FSB product), SP123BMC ($497 chrome bumper mount — no clear parent).",
+  "new_products": [
+    {"product_id": "whelen_m2_lp_bracket",       "model": "M2 License-Plate Bracket",   "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_avenger_headliner",   "model": "Avenger Headliner Mount",     "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_round_grommet_mount", "model": "4\" Round Grommet Mount",     "fits_part_types": ["flange"]}
+  ],
+  "links": [
+    {"sku": "M2KTHD1",  "product": "whelen_m2_lp_bracket",       "vehicle_tags": ["any"], "friendly_name": "M2 license-plate mount bracket"},
+    {"sku": "AVBKT5D",  "product": "whelen_avenger_headliner",   "vehicle_tags": ["any"], "friendly_name": "Dual headliner mount kit"},
+    {"sku": "2GROMMET", "product": "whelen_round_grommet_mount", "vehicle_tags": ["any"], "friendly_name": "4\" round grommet mount"}
+  ],
+  "set_accessories": {
+    "whelen_m2":             [{"category": "bracket_mount", "product_id": "whelen_m2_lp_bracket",       "required": false}],
+    "whelen_avenger_2":      [{"category": "bracket_mount", "product_id": "whelen_avenger_headliner",   "required": false}],
+    "whelen_round_lighthead":[{"category": "flange",        "product_id": "whelen_round_grommet_mount", "required": false}]
+  }
+}

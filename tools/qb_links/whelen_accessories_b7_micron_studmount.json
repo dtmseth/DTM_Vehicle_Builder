@@ -1,0 +1,11 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 7: Micron stud-mount heads — NOT accessories. These are SKUs of the Micron product itself ('STUD MOUNT MICRON <color>'), the stud-mount variant alongside the existing MCRNS* surface-mount SKUs. Link them as part_numbers onto whelen_micron; the apply tool auto-parses color + lens from the QB description (micron fits light part_types). friendly_name='Stud mount' clarifies the mount style beyond the color the picker already shows. Vehicle-agnostic lightheads -> ['any'].",
+  "links": [
+    {"sku": "MCRNTA",  "product": "whelen_micron", "vehicle_tags": ["any"], "friendly_name": "Stud mount"},
+    {"sku": "MCRNTB",  "product": "whelen_micron", "vehicle_tags": ["any"], "friendly_name": "Stud mount"},
+    {"sku": "MCRNTBX", "product": "whelen_micron", "vehicle_tags": ["any"], "friendly_name": "Stud mount"},
+    {"sku": "MCRNTR",  "product": "whelen_micron", "vehicle_tags": ["any"], "friendly_name": "Stud mount"},
+    {"sku": "MCRNTRX", "product": "whelen_micron", "vehicle_tags": ["any"], "friendly_name": "Stud mount"}
+  ]
+}
