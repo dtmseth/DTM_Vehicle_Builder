@@ -1,6 +1,6 @@
 # Whelen: remaining unlinked SKUs (need catalog decisions)
 
-After Phase 5b accessory wiring (batches 1–10), **65 Whelen SKUs remain unlinked**.
+After Phase 5b accessory wiring (batches 1–11), **47 Whelen SKUs remain unlinked**.
 These were deliberately *not* wired — they aren't simple accessories of an existing
 product; each bucket needs a catalog decision (a new primary product, a color-variant
 lighthead family, or a judgment about parent identity). Recommendations below.
@@ -8,14 +8,11 @@ lighthead family, or a judgment about parent identity). Recommendations below.
 Find the live list any time with the standard query (handoff doc) — filter to
 `description` starting "WHELEN" with no `qb_item_id` in parts_db.
 
-## Tracer WCX lightheads (20) — biggest item, treat like FST/RST heads
-`TCRWXP*` (primary), `TCRWXS*` (secondary), `TCRXX*` (smoked) — DUO/TRIO color-variant
-lightheads for the Tracer WCX system, plus the `#`-placeholder order codes
-(`TCRWXP#`, `TCRWXS#`). These are *lightheads*, not brackets. **Recommend:** create
-`whelen_tracer_wcx_primary` + `whelen_tracer_wcx_secondary` products fitting `lighthead`
-(or SKUs on a Tracer WCX bar product if one is modeled), let the apply tool parse
-color/lens, wire as `lighthead` accessories of the Tracer WCX parent. Mirrors the
-slice's Inner Edge lighthead pattern. Drop the `#` placeholder SKUs (order-code stubs).
+## ~~Tracer WCX lightheads~~ — DONE (batch 11)
+Wired in `whelen_accessories_b11_tracer_wcx_heads.json`: 18 concrete color SKUs split
+into `whelen_tracer_wcx_primary` / `whelen_tracer_wcx_secondary` (lighthead), accessories
+of all four tracer products. Only the two `#` order-code placeholders (`TCRWXP#`,
+`TCRWXS#`) stay unlinked — intentional (concrete colored SKUs cover them).
 
 ## Primary products (not accessories) — need their own catalog entries
 - **V2V sync modules (2):** `CV2V`, `CLBV2V` ($371) → fit the existing `v2v_sync`

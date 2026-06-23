@@ -1,8 +1,9 @@
 # Handoff: bulk-wire the remaining Whelen accessories (finish Phase 5b)
 
-> **STATUS (done):** Batches 1–10 wired the entire bracket_mount group, all
-> flanges, the cable accessories, and the Micron stud-mount heads (mapping files
-> `tools/qb_links/whelen_accessories_b1..b10*.json`). Every link now carries a
+> **STATUS (done):** Batches 1–11 wired the entire bracket_mount group, all
+> flanges, the cable accessories, the Micron stud-mount heads, and the Tracer WCX
+> lightheads (mapping files `tools/qb_links/whelen_accessories_b1..b11*.json`).
+> Every link now carries a
 > `friendly_name` (short human description, shown in the picker) and real
 > `vehicle_tags`; the picker gained a persisted **"Only show <Vehicle>-compatible
 > parts"** toggle (SKU-level filter, parts + accessories). A generic `bracket`
