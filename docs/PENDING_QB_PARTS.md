@@ -1,8 +1,8 @@
 # Pending-QB parts (design)
 
 **Status:** plan locked 2026-06-23 (Seth). **Implemented** 2026-06-23 — model flag, tool
-op, estimate resolution + push, API payloads, picker chip, **auto-reconciliation on QB
-sync**, tests. **Remaining:** part-manager UI editing (toggle `qb_pending` + set price).
+op, estimate resolution + push, API payloads, picker chip, auto-reconciliation on QB sync,
+**part-manager editing**, tests. Feature complete.
 
 ## Goal
 
@@ -58,7 +58,12 @@ loop automatically once the QB user creates the item.
   `qb_item_id`. Idempotent.
 - **Model/API/UI (implemented):** `PartNumber.qb_pending`; exposed on accessory + primary
   sku payloads; a "pending QB" chip in the part picker (primary rows + accessory dropdown).
-- **Part-manager editor (TODO):** let a user toggle `qb_pending` + set `price_usd` by hand.
+- **Part-manager editor (implemented):** each part-number row has a **"Pending QB"**
+  checkbox + the existing price field; the checkbox is disabled (with a green "QB" chip)
+  once the SKU is linked. The product save now **preserves every per-SKU field** the form
+  doesn't expose (qb_item_id, color, lens, vehicle_tags, …) by round-tripping the original
+  SKU through an `encodeURIComponent`'d row attribute — previously a save rebuilt
+  `part_numbers` from only part#/friendly_name/price and silently dropped the rest.
 
 ## Reconciliation (implemented)
 

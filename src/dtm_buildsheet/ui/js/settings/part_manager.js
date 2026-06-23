@@ -518,10 +518,20 @@ function _pdbProductForm(p){
 }
 
 function _pdbPartNumberRow(pn, idx){
-  return `<div class="pdb-pn-row" data-idx="${idx}">
+  pn = pn || {};
+  const linked = !!pn.qb_item_id;
+  // Stash the full original SKU so save preserves fields the form doesn't expose
+  // (qb_item_id, color, vehicle_tags, lens, …). encodeURIComponent keeps it
+  // attribute-safe (friendly names contain quotes/apostrophes).
+  const preserve = encodeURIComponent(JSON.stringify(pn));
+  return `<div class="pdb-pn-row" data-idx="${idx}" data-pn-preserve="${preserve}">
     <input type="text" data-pn-field="part_number" placeholder="Part #" value="${esc(pn.part_number||"")}" />
     <input type="text" data-pn-field="friendly_name" placeholder="Friendly name" value="${esc(pn.friendly_name||"")}" />
     <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01" value="${pn.price_usd ?? ""}" style="max-width:90px" />
+    <label class="pdb-pn-pending" title="Pre-added before it exists in QuickBooks — usable now, flagged on the estimate until the QB item is created">
+      <input type="checkbox" data-pn-field="qb_pending" ${pn.qb_pending?"checked":""} ${linked?"disabled":""} /> Pending QB
+    </label>
+    ${linked?'<span class="chip" style="background:var(--green);color:#fff">QB</span>':""}
     <button type="button" class="btn btn-danger btn-sm pdbf-pn-del">✕</button>
   </div>`;
 }
@@ -618,12 +628,17 @@ function _pdbCollectFormData(kind){
   }
   if(kind === "product"){
     const pns = [...$("pdbf-part-numbers").querySelectorAll(".pdb-pn-row")].map(row => {
+      let orig = {};
+      try { orig = JSON.parse(decodeURIComponent(row.dataset.pnPreserve || "")) || {}; } catch {}
       const pn = row.querySelector('[data-pn-field="part_number"]').value.trim();
       const fn = row.querySelector('[data-pn-field="friendly_name"]').value.trim();
       const price = row.querySelector('[data-pn-field="price_usd"]').value.trim();
-      const out = { part_number: pn };
-      if(fn) out.friendly_name = fn;
-      if(price) out.price_usd = Number(price);
+      const pending = row.querySelector('[data-pn-field="qb_pending"]').checked;
+      // Preserve all original fields; override only what the form edits.
+      const out = { ...orig, part_number: pn };
+      if(fn) out.friendly_name = fn; else delete out.friendly_name;
+      if(price !== "") out.price_usd = Number(price); else delete out.price_usd;
+      if(pending) out.qb_pending = true; else delete out.qb_pending;
       return out;
     }).filter(pn => pn.part_number);
     return {

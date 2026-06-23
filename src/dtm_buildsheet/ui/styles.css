@@ -730,6 +730,8 @@
 
     .pdb-tree-pos-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;margin-bottom:6px}
     .pdb-tree-pos-row select{padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px}
-    .pdb-pn-row{display:flex;gap:6px;margin-bottom:6px}
+    .pdb-pn-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
     .pdb-pn-row input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px}
+    .pdb-pn-pending{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;color:var(--muted);cursor:pointer;user-select:none}
+    .pdb-pn-pending input{flex:0 0 auto;width:14px;height:14px;padding:0;cursor:pointer;accent-color:#9a6700}
 
