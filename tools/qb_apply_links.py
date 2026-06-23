@@ -309,6 +309,41 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
             actions.append(f"+ {pid}: link {sku}  (${entry['qb_unit_price']}, "
                            f"veh {entry['vehicle_tags']}{color_label})")
 
+    # 2b. Pending-QB parts: a real, orderable SKU declared BEFORE it exists in
+    #     QuickBooks. No cache lookup (the item isn't synced yet) — price is given.
+    #     Writes qb_pending=true + price_usd, no qb_item_id. Usable/billable now;
+    #     the QB items sync reconciles it later. See docs/PENDING_QB_PARTS.md.
+    for pp in (mapping.get("pending_parts") or []):
+        sku = pp["part_number"]
+        pid = pp["product"]
+        if pid not in products:
+            raise ValueError(f"pending_part references unknown product: {pid}")
+        if pp.get("price") is None:
+            raise ValueError(f"pending_part {sku!r} needs a price (no QB to pull from)")
+        pns = products[pid].setdefault("part_numbers", [])
+        entry = {
+            "part_number": sku,
+            "friendly_name": pp.get("friendly_name", ""),
+            "price_usd": pp["price"],
+            "qb_item_id": "",
+            "qb_sku": "",
+            "qb_unit_price": None,
+            "qb_inactive": False,
+            "qb_pending": True,
+            "vehicle_tags": list(pp.get("vehicle_tags") or ["any"]),
+            "color": pp.get("color", ""),
+            "secondary_color": pp.get("secondary_color", ""),
+            "tertiary_color": pp.get("tertiary_color", ""),
+            "lens_type": pp.get("lens_type", ""),
+        }
+        existing = next((p for p in pns if p.get("part_number") == sku), None)
+        if existing:
+            existing.update(entry)
+            actions.append(f"~ {pid}: update pending {sku}  (${pp['price']})")
+        else:
+            pns.append(entry)
+            actions.append(f"⧗ {pid}: pending {sku}  (${pp['price']}, not yet in QB)")
+
     # 3. Move an already-linked part_number from one product to another (splits).
     #    Relocates the existing entry verbatim (keeps qb data + parsed color/lens).
     for mv in (mapping.get("move") or []):

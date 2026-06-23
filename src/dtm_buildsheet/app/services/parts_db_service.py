@@ -434,6 +434,7 @@ def _hyd_part_number(spec: dict) -> PartNumber:
                        qb_sku=str(spec.get("qb_sku", "")),
                        qb_unit_price=spec.get("qb_unit_price"),
                        qb_inactive=bool(spec.get("qb_inactive", False)),
+                       qb_pending=bool(spec.get("qb_pending", False)),
                        vehicle_tags=list(spec.get("vehicle_tags") or []))
 
 

@@ -186,6 +186,58 @@ def test_resolve_skips_excluded_and_defaults_qty(paths):
     assert len(lines) == 1 and lines[0]["qty"] == 1 and lines[0]["amount"] == 5.0
 
 
+# ── pending-QB parts (docs/PENDING_QB_PARTS.md) ───────────────────────────────
+
+
+def _pending_product(model, part_number, price, **extra):
+    return {"manufacturer_id": "m", "model": model,
+            "part_numbers": [{"part_number": part_number, "qb_pending": True,
+                              "price_usd": price, **extra}]}
+
+
+def test_resolve_pending_part_bills_with_price_and_flag(paths):
+    # No qb_item_id, but qb_pending + price_usd → billable line flagged pending.
+    _write_parts_db(paths, {"trio": _pending_product("Trio WCX", "TCRWXPJC", 116.0)})
+    draft = new_draft(parts=[DraftPart(name="Trio head", part_number="TCRWXPJC", quantity=3)])
+    lines, problems = est.resolve_build_lines(paths, draft)
+    assert problems == []
+    assert len(lines) == 1
+    ln = lines[0]
+    assert ln["pending"] is True and ln["qb_item_id"] == ""
+    assert ln["unit_price"] == 116.0 and ln["amount"] == 348.0
+
+
+def test_pending_part_posts_as_description_only_line(paths):
+    lines = [
+        {"name": "Liberty", "part_number": "WL", "qb_item_id": "1", "qb_sku": "WL",
+         "unit_price": 10.0, "qty": 1, "amount": 10.0, "pending": False},
+        {"name": "Trio head", "part_number": "TCRWXPJC", "qb_item_id": "", "qb_sku": "",
+         "unit_price": 116.0, "qty": 2, "amount": 232.0, "pending": True},
+    ]
+    payload = est._build_estimate_payload("CUST1", lines)
+    qb_lines = payload["Line"]
+    assert qb_lines[0]["DetailType"] == "SalesItemLineDetail"
+    assert qb_lines[1]["DetailType"] == "DescriptionOnly"
+    assert "ItemRef" not in qb_lines[1].get("SalesItemLineDetail", {})
+    assert "TCRWXPJC" in qb_lines[1]["Description"]
+    assert "NOT IN QB INVENTORY" in qb_lines[1]["Description"]
+
+
+def test_validate_reports_pending_but_can_create(paths):
+    _write_parts_db(paths, {
+        "linked": _linked_product("A", "AA", "1", 10.0),
+        "trio": _pending_product("Trio", "BB", 116.0),
+    })
+    aid = _make_agency(paths, qb_customer_id="CUST1")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA"),
+                                     DraftPart(name="t", part_number="BB")])
+    res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
+    assert res["can_create"] is True            # pending is not a blocker
+    assert res["pending_count"] == 1
+    assert res["pending"][0]["part_number"] == "BB"
+    assert res["total"] == 126.0
+
+
 # ── validate (offline, no network) ────────────────────────────────────────────
 
 

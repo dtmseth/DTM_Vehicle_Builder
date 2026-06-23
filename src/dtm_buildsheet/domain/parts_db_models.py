@@ -128,6 +128,10 @@ class PartNumber:
     qb_sku: str = ""
     qb_unit_price: float | None = None
     qb_inactive: bool = False
+    # Pre-added before it exists in QuickBooks: usable in builds and billable
+    # (via price_usd), but flagged on the estimate as "create item" and
+    # auto-reconciled when the SKU later appears in QB. See docs/PENDING_QB_PARTS.md.
+    qb_pending: bool = False
     vehicle_tags: list[str] = field(default_factory=list)
 
 

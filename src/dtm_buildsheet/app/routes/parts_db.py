@@ -333,6 +333,7 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                 "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
                 "lens_type": pn.get("lens_type", ""),
                 "vehicle_tags": list(pn.get("vehicle_tags") or []),
+                "qb_pending": bool(pn.get("qb_pending")),
             } for pn in (ap.get("part_numbers") or [])]
             options.append({
                 "product_id": apid, "model": ap.get("model", apid),
@@ -644,6 +645,7 @@ def route_parts_db(
                         "tertiary_color": pn.tertiary_color, "lens_type": pn.lens_type,
                         "price": pn.qb_unit_price or pn.price_usd,
                         "qb": bool(pn.qb_item_id),
+                        "qb_pending": bool(pn.qb_pending),
                         "vehicle_tags": list(pn.vehicle_tags or []),
                     })
                 fits = p.fits_part_types or []

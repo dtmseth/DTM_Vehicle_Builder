@@ -553,7 +553,8 @@ function _pickerRenderProducts() {
           const pr = s.price != null ? `$${s.price}` : "";
           const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
           const pick = !pColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
-          return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(desc)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pick}</div>`;
+          const pend = s.qb_pending ? `<span class="pp-pending" title="Not in QuickBooks yet — usable now, flagged on the estimate">pending QB</span>` : "";
+          return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(desc)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pend}${pick}</div>`;
         }).join("") + `</div>`;
       }
     }
@@ -849,7 +850,8 @@ function _pickerAccLabel(opt, sku) {
   // to decipher part numbers; fall back to the product model. SKU + price always
   // shown so the orderable number stays visible.
   const lead = sku.friendly_name || opt.model;
-  return `${lead} · ${sku.part_number}${colors ? " · " + colors : ""}${price}`;
+  const pend = sku.qb_pending ? " · ⧗ pending QB" : "";
+  return `${lead} · ${sku.part_number}${colors ? " · " + colors : ""}${price}${pend}`;
 }
 
 function _pickerRenderAccessories() {

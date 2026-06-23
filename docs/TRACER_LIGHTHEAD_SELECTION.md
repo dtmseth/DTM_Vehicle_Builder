@@ -79,18 +79,35 @@ depend on heads that don't exist in QuickBooks yet — see "Data gaps" below.
 - **Build-sheet tag:** the parent line's Duo/Trio (+ secondary color) is the only
   user-facing summary needed on the sheet.
 
-## Data gaps (block Trio and passenger-side Amber)
+## Whelen color-code key (from the official Tracer WeCanX spec)
 
-QuickBooks is missing these logical heads; the standard Trio is **R/B/W** but only the
-smoked primary (`TCRXXPJC`) exists:
-- Primary **Blue/Amber** duo head (secondary `TCRWXSM` exists; no primary)
-- **R/B/W trio:** clear primary, clear secondary, smoked secondary (only smoked primary
-  `TCRXXPJC` exists)
-- **R/B/A trio** (amber): primary + secondary, clear + smoked
+Part numbers: `TCRWX` = clear lens, `TCRXX` = smoked lens · `P` = primary (slot 1),
+`S` = secondary (slots 2–6) · then the color code:
+- **Solo `*`:** A=Amber, B=Blue, C=White, G=Green, R=Red
+- **Duo `#`:** D=R/W, E=B/W, F=A/W, J=R/B, **K=R/A**, L=R/G, **M=B/A**, P=A/G
+- **Trio `#*`:** **JA=R/B/A**, **JC=R/B/W**, KC=R/A/W, KG=R/A/G, LC=R/G/W, MC=B/A/W,
+  MG=B/A/G, NC=B/G/W, PC=G/A/W
 
-These are added via the **[pending-QB-part mechanism](PENDING_QB_PARTS.md)** so Trio/Amber
-work immediately and the estimate flags the missing SKUs for the QB user to resolve.
-Exact Whelen part numbers TBD — Seth to supply or pull from Whelen spec sheets.
+So standard **Duo** = D/E (white) or K/M (amber); standard **Trio** = **JC** (white) or
+**JA** (amber).
+
+## Data gaps → add as pending-QB parts (SKUs confirmed)
+
+These heads are needed for full Duo·Amber and Trio coverage but aren't in DTM's QB yet.
+Add via the **[pending-QB-part mechanism](PENDING_QB_PARTS.md)** (real SKU + price, no
+`qb_item_id`) so they work immediately and the estimate flags them. Clear lens shown;
+smoked (`TCRXX…`) variants exist if needed (`TCRXXPJC` smoked-primary R/B/W is already in
+QB from batch 11).
+
+| Role | Part # | Colors | Lens | Price |
+|---|---|---|---|---|
+| Duo passenger-amber, **primary** | `TCRWXPM`  | Blue/Amber       | clear | $59  |
+| Trio White, **primary**          | `TCRWXPJC` | Red/Blue/White   | clear | $116 |
+| Trio White, **secondary**        | `TCRWXSJC` | Red/Blue/White   | clear | $116 |
+| Trio Amber, **primary**          | `TCRWXPJA` | Red/Blue/Amber   | clear | $116 |
+| Trio Amber, **secondary**        | `TCRWXSJA` | Red/Blue/Amber   | clear | $116 |
+
+(`TCRWXSM` B/A secondary, and `TCRWXSK`/`TCRWXPK` R/A, are already in QB.)
 
 ## Lightbars (deferred — same engine)
 

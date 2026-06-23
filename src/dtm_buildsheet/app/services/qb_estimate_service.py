@@ -44,6 +44,8 @@ def _qb_fields(spec: dict) -> dict:
         "qb_sku": str(spec.get("qb_sku", "")),
         "qb_unit_price": spec.get("qb_unit_price"),
         "qb_inactive": bool(spec.get("qb_inactive")),
+        "qb_pending": bool(spec.get("qb_pending")),
+        "price_usd": spec.get("price_usd"),
     }
 
 
@@ -87,6 +89,8 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
                                   else prod_fields["qb_unit_price"]),
                 "qb_inactive": (pn_fields["qb_inactive"] if "qb_inactive" in (pn or {})
                                 else prod_fields["qb_inactive"]),
+                "qb_pending": pn_fields["qb_pending"],
+                "price_usd": pn_fields["price_usd"],
             }
             by_part_number.setdefault(num, entry)
     return by_part_number, by_model, prod_qb
@@ -108,6 +112,20 @@ def _resolve_part(draft_part, by_part_number, by_model, prod_qb) -> tuple[dict |
         return None, "no_catalog_match"
 
     if not entry["qb_item_id"]:
+        # Pending-QB part: usable + billable now (via price_usd), flagged so the
+        # estimate tells the reviewer to create the item. See docs/PENDING_QB_PARTS.md.
+        if entry.get("qb_pending"):
+            price = (entry["qb_unit_price"] if entry["qb_unit_price"] is not None
+                     else entry.get("price_usd"))
+            if price is None:
+                return None, "no_price"
+            return {
+                "product_id": entry["product_id"],
+                "qb_item_id": "",
+                "qb_sku": entry["qb_sku"],
+                "unit_price": float(price),
+                "pending": True,
+            }, ""
         return None, "not_linked"
     if entry["qb_inactive"]:
         return None, "qb_inactive"
@@ -119,6 +137,7 @@ def _resolve_part(draft_part, by_part_number, by_model, prod_qb) -> tuple[dict |
         "qb_item_id": entry["qb_item_id"],
         "qb_sku": entry["qb_sku"],
         "unit_price": float(entry["qb_unit_price"]),
+        "pending": False,
     }, ""
 
 
@@ -146,16 +165,37 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
         lines.append({
             **resolved,
             "name": dp.name,
+            "part_number": dp.part_number,
             "qty": qty,
             "amount": round(resolved["unit_price"] * qty, 2),
         })
     return lines, problems
 
 
+def _pending_note(ln: dict) -> str:
+    """Reviewer-facing note for a part that isn't a QB inventory item yet."""
+    sku = (ln.get("part_number") or "").strip()
+    return (f"⚠ NOT IN QB INVENTORY — create item {sku or ln['name']}: "
+            f"{ln['name']} — {ln['qty']} × ${ln['unit_price']:.2f} "
+            f"(= ${ln['amount']:.2f})")
+
+
 def _build_estimate_payload(customer_ref: str, lines: list[dict], *, memo: str = "") -> dict:
-    """Assemble the QBO Estimate request body from resolved lines."""
-    qb_lines = [
-        {
+    """Assemble the QBO Estimate request body from resolved lines.
+
+    Pending-QB parts (no qb_item_id) post as DescriptionOnly lines carrying a
+    "create item" note — visible to the reviewer, no ItemRef required, no billed
+    amount until the QB user creates the item. See docs/PENDING_QB_PARTS.md.
+    """
+    qb_lines = []
+    for ln in lines:
+        if ln.get("pending"):
+            qb_lines.append({
+                "DetailType": "DescriptionOnly",
+                "Description": _pending_note(ln),
+            })
+            continue
+        qb_lines.append({
             "DetailType": "SalesItemLineDetail",
             "Amount": ln["amount"],
             "Description": ln["name"],
@@ -164,9 +204,7 @@ def _build_estimate_payload(customer_ref: str, lines: list[dict], *, memo: str =
                 "Qty": ln["qty"],
                 "UnitPrice": ln["unit_price"],
             },
-        }
-        for ln in lines
-    ]
+        })
     payload: dict = {"CustomerRef": {"value": str(customer_ref)}, "Line": qb_lines}
     if memo:
         payload["CustomerMemo"] = {"value": memo}
@@ -216,12 +254,17 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
 
     lines, problems = resolve_build_lines(paths, draft)
     total = round(sum(ln["amount"] for ln in lines), 2)
+    pending = [{"name": ln["name"], "part_number": ln.get("part_number", ""),
+                "amount": ln["amount"]} for ln in lines if ln.get("pending")]
     return {
         "ok": True,
         "can_create": not problems and bool(lines),
         "line_count": len(lines),
         "total": total,
         "problems": problems,
+        # Billable but not yet a QB inventory item — created as a flagged note.
+        "pending": pending,
+        "pending_count": len(pending),
     }
 
 
@@ -270,12 +313,14 @@ def create_estimate(paths: AppPaths, *, project_id: str, individual_id: str, mem
     from ...inputs import project_entry
     project_entry.save_project(project, paths)
     total = round(sum(ln["amount"] for ln in lines), 2)
-    logger.info("QB estimate created: %d lines", len(lines))
+    pending_count = sum(1 for ln in lines if ln.get("pending"))
+    logger.info("QB estimate created: %d lines (%d pending)", len(lines), pending_count)
     return {
         "ok": True,
         "qb_estimate_id": estimate_id,
         "doc_number": result.get("doc_number", ""),
         "line_count": len(lines),
+        "pending_count": pending_count,
         "total": total,
     }
 
