@@ -1,5 +1,17 @@
 # Handoff: bulk-wire the remaining Whelen accessories (finish Phase 5b)
 
+> **STATUS (done):** Batches 1–10 wired the entire bracket_mount group, all
+> flanges, the cable accessories, and the Micron stud-mount heads (mapping files
+> `tools/qb_links/whelen_accessories_b1..b10*.json`). Every link now carries a
+> `friendly_name` (short human description, shown in the picker) and real
+> `vehicle_tags`; the picker gained a persisted **"Only show <Vehicle>-compatible
+> parts"** toggle (SKU-level filter, parts + accessories). A generic `bracket`
+> accessory part_type + a `new_part_types` op were added to the toolchain.
+> **What's left:** 65 SKUs that need catalog decisions (primary products, the
+> Tracer WCX lighthead family, assemblies, options) — see
+> [WHELEN_REMAINING_UNLINKED.md](WHELEN_REMAINING_UNLINKED.md). The bulk
+> *accessory* wiring this handoff describes is complete.
+
 The accessories *feature* is fully built and shipped (schema, API, picker UI, draft
 nesting, swap-edit). What remains is **data**: only 3 accessory products are wired so
 far (the slice). This task attaches the rest of Whelen's accessory SKUs to their parent
