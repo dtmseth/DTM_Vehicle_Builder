@@ -36,6 +36,16 @@ _CATEGORY_RENDER_KIND: dict[str, str] = {
     "spotlight":    "light",
 }
 
+# Tracer housing SKUs render as their fixed lamp-row shape (tracer_Nlamp:
+# group_shapes, slot_count = lamp count). The legacy catalog remaps "<N>-LAMP
+# TRACER" model strings, but picker-created parts resolve through a synthesized
+# spec with no model_remaps, so map the parts_db housing SKUs here too.
+_TRACER_RENDER_BY_SKU: dict[str, str] = {
+    "TCRWX2": "tracer_2lamp",
+    "TCRWX5": "tracer_5lamp",
+    "TCRWX6": "tracer_6lamp",
+}
+
 
 def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
     """Match a part name like 'Forward Warning 3' to its part_type.
@@ -183,6 +193,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             remapped_id = spec["model_remaps"].get(model_key)
             if remapped_id and remapped_id in config.parts_by_id:
                 spec = config.parts_by_id[remapped_id]
+
+        # Tracer housings always render as their lamp-row shape, even when the
+        # line was picker-created (synthesized spec carries no model_remaps).
+        if part.part_number:
+            tracer_id = _TRACER_RENDER_BY_SKU.get((part.part_number or "").strip().upper())
+            if tracer_id and tracer_id in config.parts_by_id:
+                spec = config.parts_by_id[tracer_id]
 
         accessory_parents = spec.get("accessory_of")
         planned = PlannedPart(

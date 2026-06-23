@@ -143,3 +143,34 @@ def test_test_build_plans_successfully(test_build_input, config):
     plan = build_plan(test_build_input, config)
     assert isinstance(plan, BuildPlan)
     assert len(plan.planned_parts) > 0
+
+
+# ── tracer housing SKUs render as their lamp-row shape (picker-created) ────────
+
+def _tracer_plan(config, sku, qty=2):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU"},
+        parts=[PartInput(name="Side Warning 1", part_number=sku, location="ON RUNNING BOARD",
+                         quantity=qty, line_id="t1", raw_color="Red/Blue/White", lens="clear")],
+        notes={})
+    return build_plan(proj, config)
+
+
+def test_tracer_sku_remaps_to_lamp_row_render(config):
+    # TCRWX5 (picker-created, synthesized side_warning spec) must remap to the
+    # tracer_5lamp render: 5 lamp shapes in a row, on the diagram.
+    plan = _tracer_plan(config, "TCRWX5")
+    pp = next(p for p in plan.planned_parts if p.raw.part_number == "TCRWX5")
+    assert pp.part_id == "tracer_5lamp"
+    assert pp.on_diagram is True
+    slots = sum(len(getattr(pl, "instances", []) or []) for pl in (pp.placements or []))
+    assert slots == 5
+
+
+def test_tracer_6lamp_sku_remaps(config):
+    plan = _tracer_plan(config, "TCRWX6")
+    pp = next(p for p in plan.planned_parts if p.raw.part_number == "TCRWX6")
+    assert pp.part_id == "tracer_6lamp"
+    slots = sum(len(getattr(pl, "instances", []) or []) for pl in (pp.placements or []))
+    assert slots == 6
