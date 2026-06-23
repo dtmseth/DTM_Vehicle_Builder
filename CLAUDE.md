@@ -33,6 +33,8 @@ bash packaging/build_macos.sh                  # package Mac app
 | [docs/PACKAGING.md](docs/PACKAGING.md) | PyInstaller builds |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, QuickBooks integration plan |
 | [docs/EXTERNAL_CONNECTION_SECURITY.md](docs/EXTERNAL_CONNECTION_SECURITY.md) | Security standards for API integrations |
+| [docs/TRACER_LIGHTHEAD_SELECTION.md](docs/TRACER_LIGHTHEAD_SELECTION.md) | Planned Duo/Trio/Custom lighthead auto-selection for tracers/bars |
+| [docs/PENDING_QB_PARTS.md](docs/PENDING_QB_PARTS.md) | Planned: use parts before they exist in QuickBooks |
 
 ## QuickBooks (conditionally relevant)
 
