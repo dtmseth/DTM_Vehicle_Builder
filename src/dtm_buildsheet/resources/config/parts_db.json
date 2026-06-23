@@ -1251,6 +1251,11 @@
           "category": "bracket_mount",
           "product_id": "whelen_ion_grille_mount",
           "required": false
+        },
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_ion_lp_bracket",
+          "required": false
         }
       ]
     },
@@ -1895,6 +1900,11 @@
         {
           "category": "flange",
           "product_id": "whelen_vertex_flange",
+          "required": false
+        },
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_vertex_adapter",
           "required": false
         }
       ]
@@ -3993,6 +4003,13 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_tracer_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_tracer_6_lamp": {
@@ -4018,6 +4035,13 @@
           "secondary_color": "",
           "lens_type": "",
           "tertiary_color": ""
+        }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_tracer_mount_kit",
+          "required": false
         }
       ]
     },
@@ -8716,6 +8740,13 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_tracer_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_traffic_advisor": {
@@ -9966,6 +9997,13 @@
           "lens_type": "smoked",
           "friendly_name": "Stud mount"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_micron_lp_bracket",
+          "required": false
+        }
       ]
     },
     "whelen_responder_lp": {
@@ -10628,6 +10666,13 @@
           "tertiary_color": "",
           "lens_type": "clear"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_linz_mirror_mount",
+          "required": false
+        }
       ]
     },
     "whelen_strip_lite_plus": {
@@ -10659,6 +10704,11 @@
         {
           "category": "flange",
           "product_id": "whelen_strip_lite_flange",
+          "required": false
+        },
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_strip_lite_mount",
           "required": false
         }
       ]
@@ -11821,6 +11871,36 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "T-Series mounting wedges"
+        },
+        {
+          "part_number": "TIONHDRS",
+          "qb_item_id": "1128",
+          "qb_sku": "",
+          "qb_unit_price": 28.52,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Rear saddlebag mount (motorcycle)"
+        },
+        {
+          "part_number": "TIONHDSS",
+          "qb_item_id": "1129",
+          "qb_sku": "",
+          "qb_unit_price": 69.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Side saddlebag mount (motorcycle)"
         }
       ]
     },
@@ -12000,7 +12080,7 @@
     },
     "whelen_avenger_headliner": {
       "manufacturer_id": "whelen",
-      "model": "Avenger Headliner Mount",
+      "model": "Avenger Mount Kit",
       "fits_part_types": [
         "bracket"
       ],
@@ -12022,6 +12102,21 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "Dual headliner mount kit"
+        },
+        {
+          "part_number": "AVBKT2",
+          "qb_item_id": "273",
+          "qb_sku": "",
+          "qb_unit_price": 22.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Dual rear-view mirror mount kit"
         }
       ]
     },
@@ -12364,6 +12459,290 @@
           "tertiary_color": "",
           "lens_type": "",
           "friendly_name": "Mic extension cable"
+        }
+      ]
+    },
+    "whelen_linz_mirror_mount": {
+      "manufacturer_id": "whelen",
+      "model": "Linz V-Series Mirror Mount",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "LSVBKT13",
+          "qb_item_id": "684",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500",
+            "SILVERADO-HD"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Silverado 1500/2500 '14-18"
+        },
+        {
+          "part_number": "LSVBKT42",
+          "qb_item_id": "685",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "RAM-1500"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Ram 1500 Classic '19-24"
+        },
+        {
+          "part_number": "LSVBKT44",
+          "qb_item_id": "686",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "DURANGO"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Durango '13-25"
+        },
+        {
+          "part_number": "LSVBKT50",
+          "qb_item_id": "687",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Ford Utility '20-25"
+        },
+        {
+          "part_number": "LSVBKT54",
+          "qb_item_id": "688",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Tahoe '21-24"
+        },
+        {
+          "part_number": "LSVBKT59",
+          "qb_item_id": "689",
+          "qb_sku": "",
+          "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "BLAZER"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Blazer '24"
+        }
+      ]
+    },
+    "whelen_tracer_mount_kit": {
+      "manufacturer_id": "whelen",
+      "model": "Tracer Mounting Kit",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "TCRB47",
+          "qb_item_id": "1092",
+          "qb_sku": "",
+          "qb_unit_price": 110.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "F-150"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "F-150"
+        },
+        {
+          "part_number": "TCRB49",
+          "qb_item_id": "1093",
+          "qb_sku": "",
+          "qb_unit_price": 63.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "CHEVY-1500",
+            "SILVERADO-HD"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Silverado 1500 '19-24 / 2500-3500 '23-24"
+        },
+        {
+          "part_number": "TCRB50",
+          "qb_item_id": "1094",
+          "qb_sku": "",
+          "qb_unit_price": 51.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "PIU"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "PIU '20-25"
+        },
+        {
+          "part_number": "TCRB54A",
+          "qb_item_id": "1095",
+          "qb_sku": "",
+          "qb_unit_price": 110.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "TAHOE"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Tahoe '21-24"
+        }
+      ]
+    },
+    "whelen_ion_lp_bracket": {
+      "manufacturer_id": "whelen",
+      "model": "ION License-Plate Bracket",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "IONBKT1",
+          "qb_item_id": "625",
+          "qb_sku": "",
+          "qb_unit_price": 45.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Horizontal license-plate bracket"
+        }
+      ]
+    },
+    "whelen_micron_lp_bracket": {
+      "manufacturer_id": "whelen",
+      "model": "Micron License-Plate Bracket",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "MCRNB2",
+          "qb_item_id": "748",
+          "qb_sku": "",
+          "qb_unit_price": 45.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Horizontal license-plate bracket"
+        }
+      ]
+    },
+    "whelen_strip_lite_mount": {
+      "manufacturer_id": "whelen",
+      "model": "Strip-Lite+ Mount Kit",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PSBKT90",
+          "qb_item_id": "876",
+          "qb_sku": "",
+          "qb_unit_price": 32.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "90\u00b0 mount kit"
+        }
+      ]
+    },
+    "whelen_vertex_adapter": {
+      "manufacturer_id": "whelen",
+      "model": "Vertex Adapter Kit",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "VTXADAPT",
+          "qb_item_id": "1242",
+          "qb_sku": "",
+          "qb_unit_price": 16.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "Twist-in adapter kit"
         }
       ]
     }

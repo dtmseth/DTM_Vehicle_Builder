@@ -1,0 +1,51 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 10: remaining brackets/adapters from the 'other' bucket that have a confident parent. Linz V-Series mirror mounts -> whelen_linz_v_series; Tracer vehicle mount kits -> the 3/5/6-lamp tracers; ION & Micron license-plate brackets -> their lights; Strip-Lite+ 90° mount and Vertex twist-in adapter -> their lights; T-ION saddlebag mounts appended to the existing ION-T Mount Kit; AVBKT2 mirror mount appended to the Avenger mount product (renamed Headliner Mount -> Mount Kit since it now holds both). set_accessories lists preserve previously-wired accessories (set_accessories REPLACES). friendly_name + vehicle_tags per convention.",
+  "rename": {
+    "whelen_avenger_headliner": "Avenger Mount Kit"
+  },
+  "new_products": [
+    {"product_id": "whelen_linz_mirror_mount", "model": "Linz V-Series Mirror Mount", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_tracer_mount_kit",  "model": "Tracer Mounting Kit",        "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_ion_lp_bracket",    "model": "ION License-Plate Bracket",  "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_micron_lp_bracket", "model": "Micron License-Plate Bracket","fits_part_types": ["bracket"]},
+    {"product_id": "whelen_strip_lite_mount",  "model": "Strip-Lite+ Mount Kit",      "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_vertex_adapter",    "model": "Vertex Adapter Kit",         "fits_part_types": ["bracket"]}
+  ],
+  "links": [
+    {"sku": "LSVBKT13", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["CHEVY-1500", "SILVERADO-HD"], "friendly_name": "Silverado 1500/2500 '14-18"},
+    {"sku": "LSVBKT42", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["RAM-1500"], "friendly_name": "Ram 1500 Classic '19-24"},
+    {"sku": "LSVBKT44", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["DURANGO"], "friendly_name": "Durango '13-25"},
+    {"sku": "LSVBKT50", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["PIU"], "friendly_name": "Ford Utility '20-25"},
+    {"sku": "LSVBKT54", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '21-24"},
+    {"sku": "LSVBKT59", "product": "whelen_linz_mirror_mount", "vehicle_tags": ["BLAZER"], "friendly_name": "Blazer '24"},
+
+    {"sku": "TCRB47",  "product": "whelen_tracer_mount_kit", "vehicle_tags": ["F-150"], "friendly_name": "F-150"},
+    {"sku": "TCRB49",  "product": "whelen_tracer_mount_kit", "vehicle_tags": ["CHEVY-1500", "SILVERADO-HD"], "friendly_name": "Silverado 1500 '19-24 / 2500-3500 '23-24"},
+    {"sku": "TCRB50",  "product": "whelen_tracer_mount_kit", "vehicle_tags": ["PIU"], "friendly_name": "PIU '20-25"},
+    {"sku": "TCRB54A", "product": "whelen_tracer_mount_kit", "vehicle_tags": ["TAHOE"], "friendly_name": "Tahoe '21-24"},
+
+    {"sku": "IONBKT1", "product": "whelen_ion_lp_bracket",    "vehicle_tags": ["any"], "friendly_name": "Horizontal license-plate bracket"},
+    {"sku": "MCRNB2",  "product": "whelen_micron_lp_bracket", "vehicle_tags": ["any"], "friendly_name": "Horizontal license-plate bracket"},
+    {"sku": "PSBKT90", "product": "whelen_strip_lite_mount",  "vehicle_tags": ["any"], "friendly_name": "90° mount kit"},
+    {"sku": "VTXADAPT","product": "whelen_vertex_adapter",    "vehicle_tags": ["any"], "friendly_name": "Twist-in adapter kit"},
+
+    {"sku": "TIONHDRS", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Rear saddlebag mount (motorcycle)"},
+    {"sku": "TIONHDSS", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Side saddlebag mount (motorcycle)"},
+
+    {"sku": "AVBKT2", "product": "whelen_avenger_headliner", "vehicle_tags": ["any"], "friendly_name": "Dual rear-view mirror mount kit"}
+  ],
+  "set_accessories": {
+    "whelen_linz_v_series":   [{"category": "bracket_mount", "product_id": "whelen_linz_mirror_mount", "required": false}],
+    "whelen_tracer_3_lamp":   [{"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit", "required": false}],
+    "whelen_tracer_5_lamp":   [{"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit", "required": false}],
+    "whelen_tracer_6_lamp":   [{"category": "bracket_mount", "product_id": "whelen_tracer_mount_kit", "required": false}],
+    "whelen_micron":          [{"category": "bracket_mount", "product_id": "whelen_micron_lp_bracket", "required": false}],
+    "whelen_ion":             [{"category": "bracket_mount", "product_id": "whelen_ion_grille_mount", "required": false},
+                               {"category": "bracket_mount", "product_id": "whelen_ion_lp_bracket",   "required": false}],
+    "whelen_strip_lite_plus": [{"category": "flange",        "product_id": "whelen_strip_lite_flange", "required": false},
+                               {"category": "bracket_mount", "product_id": "whelen_strip_lite_mount",  "required": false}],
+    "whelen_vertex":          [{"category": "flange",        "product_id": "whelen_vertex_flange",   "required": false},
+                               {"category": "bracket_mount", "product_id": "whelen_vertex_adapter",  "required": false}]
+  }
+}
