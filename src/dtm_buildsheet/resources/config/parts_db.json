@@ -4084,6 +4084,13 @@
           "lens_type": "",
           "tertiary_color": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_lightbar_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_liberty": {
@@ -4124,6 +4131,13 @@
           "tertiary_color": "",
           "lens_type": ""
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_lightbar_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_9x_edge": {
@@ -4139,6 +4153,13 @@
         {
           "part_number": "9X EDGE"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_lightbar_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_cenator": {
@@ -4153,6 +4174,13 @@
       "part_numbers": [
         {
           "part_number": "CENATOR"
+        }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_lightbar_mount_kit",
+          "required": false
         }
       ]
     },
@@ -9848,6 +9876,13 @@
           "tertiary_color": "",
           "lens_type": "clear"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_lightbar_mount_kit",
+          "required": false
+        }
       ]
     },
     "whelen_700_series": {
@@ -11118,6 +11153,214 @@
           "qb_item_id": "1216",
           "qb_sku": "",
           "qb_unit_price": 35.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        }
+      ]
+    },
+    "whelen_lightbar_mount_kit": {
+      "manufacturer_id": "whelen",
+      "model": "Lightbar Mount Kit",
+      "fits_part_types": [
+        "bracket"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "MKEZ82",
+          "qb_item_id": "767",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "MKEZ86",
+          "qb_item_id": "768",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "MKEZ101",
+          "qb_item_id": "765",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "MKEZ105",
+          "qb_item_id": "766",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "MKJA101",
+          "qb_item_id": "769",
+          "qb_sku": "",
+          "qb_unit_price": 71.3,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT85",
+          "qb_item_id": "1077",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT93",
+          "qb_item_id": "1078",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT94",
+          "qb_item_id": "1079",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT98",
+          "qb_item_id": "1080",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT101",
+          "qb_item_id": "1075",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "STPKT105",
+          "qb_item_id": "1076",
+          "qb_sku": "",
+          "qb_unit_price": 122.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "CMK93",
+          "qb_item_id": "440",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "RMKAJ#",
+          "qb_item_id": "945",
+          "qb_sku": "",
+          "qb_unit_price": 228.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": ""
+        },
+        {
+          "part_number": "RMKEZ85",
+          "qb_item_id": "946",
+          "qb_sku": "",
+          "qb_unit_price": 203.0,
           "qb_inactive": false,
           "vehicle_tags": [
             "any"
@@ -12618,6 +12861,13 @@
       "tree_positions": [],
       "tag_ids": [],
       "accessory_category": "flasher_power"
+    },
+    "bracket": {
+      "label": "Bracket / Mount",
+      "type_id": "lights",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "bracket_mount"
     }
   },
   "placements": {

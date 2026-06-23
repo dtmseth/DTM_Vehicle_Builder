@@ -195,6 +195,28 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
         products[pid]["accessories"] = list(accs)
         actions.append(f"~ {pid}: accessories → {[a.get('product_id') for a in accs]}")
 
+    # 0d. New part_types (generic accessory slots, e.g. the bracket_mount home
+    #     for product-level lightbar/howler/ION mount kits). Idempotent: skipped
+    #     if the id already exists. Each entry carries the fields verbatim
+    #     (label, type_id, accessory_category, optional accessory_of/pattern).
+    part_types = parts_db.setdefault("part_types", {})
+    for npt in mapping.get("new_part_types", []):
+        ptid = npt["part_type_id"]
+        if ptid in part_types:
+            continue
+        spec = {
+            "label": npt["label"],
+            "type_id": npt.get("type_id", "lights"),
+            "tree_positions": list(npt.get("tree_positions") or []),
+            "tag_ids": list(npt.get("tag_ids") or []),
+        }
+        for k in ("workbook_label_pattern", "sequence_scope", "accessory_of",
+                  "accessory_category", "category"):
+            if npt.get(k) is not None:
+                spec[k] = npt[k]
+        part_types[ptid] = spec
+        actions.append(f"+ new part_type {ptid}  (label {npt['label']!r})")
+
     # 1. New products (copy fits_part_types from the template sibling).
     template_id = mapping.get("template_product")
     template = products.get(template_id, {}) if template_id else {}

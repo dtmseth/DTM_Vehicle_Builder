@@ -1,0 +1,33 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 2: roof-lightbar mount/strap kits. Adds the generic `bracket` accessory part_type (bracket_mount home with no accessory_of, so it never auto-resolves) — the product-level analogue of the lighthead/cable/flange/shroud/flasher_power generics. One 'Lightbar Mount Kit' product holds all 14 vehicle-specific SKUs (E-Z mounts, strap kits, adjustable feet); wired bracket_mount onto the five full-size roof bars (Legacy, Liberty II, Cenator, Responder LP, Edge 9X). Mini/Micro bars excluded — different/integrated mounting. required:false (a bar can ship without a vehicle-specific kit).",
+  "new_part_types": [
+    {"part_type_id": "bracket", "label": "Bracket / Mount", "type_id": "lights", "accessory_category": "bracket_mount"}
+  ],
+  "new_products": [
+    {"product_id": "whelen_lightbar_mount_kit", "model": "Lightbar Mount Kit", "fits_part_types": ["bracket"]}
+  ],
+  "links": [
+    {"sku": "MKEZ82",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "MKEZ86",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "MKEZ101",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "MKEZ105",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "MKJA101",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT93",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT94",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT98",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT101", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "STPKT105", "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "CMK93",    "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "RMKAJ#",   "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]},
+    {"sku": "RMKEZ85",  "product": "whelen_lightbar_mount_kit", "vehicle_tags": ["any"]}
+  ],
+  "set_accessories": {
+    "whelen_legacy":       [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}],
+    "whelen_liberty":      [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}],
+    "whelen_cenator":      [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}],
+    "whelen_responder_lp": [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}],
+    "whelen_9x_edge":      [{"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false}]
+  }
+}
