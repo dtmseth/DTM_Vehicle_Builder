@@ -1102,6 +1102,15 @@ function _pickerColorFields() {
   return { raw_color: labels.join(", ") };
 }
 
+// Color summary for a tracer parent line (build-sheet color + icon tint). Trio
+// is uniform red/blue/secondary; duo splits driver red / passenger blue.
+function _tracerColorFields(t) {
+  const sec = t.secondary === "amber" ? "Amber" : "White";
+  if (t.mode === "trio") return { raw_color: `Red/Blue/${sec}` };
+  const d = `Red/${sec}`, p = `Blue/${sec}`;
+  return { raw_color: `${d} / ${p}`, driver_color: d, passenger_color: p };
+}
+
 // Pick the next auto-sequenced name by counting existing draft parts with the
 // same base name (e.g. 2 existing "Forward Warning *" → "Forward Warning 3").
 function _pickerChooseName(loc) {
@@ -1234,20 +1243,27 @@ async function _pickerAddTracer(draftId) {
   // One grouped unit: the housing is the parent line (qty rolled up across both
   // running-board sides); every head nests beneath it. Uses the resolver's flat,
   // rolled-up `lines` so a 5-lamp pair is one tidy group, not scattered rows.
-  const modeLabel = (t.mode === "trio" ? "Trio" : "Duo") + " · " + cap(t.secondary);
   const housing = (res.lines || []).find(l => l.kind === "housing");
   const heads = (res.lines || []).filter(l => l.kind === "head" && l.sku);
   if (!housing) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
 
+  // Parent line: the NAME must stay a clean part-type label (e.g. "Side Warning
+  // 1") so the planner matches it to a part_type and renders it. The Duo/Trio +
+  // colors live in raw_color/lens/notes (which also color the rendered icon).
+  const colorFields = _tracerColorFields(t);
   let parentLineId = "", added = 0;
   try {
     const r = await api(`/api/draft/${draftId}/part`, {
-      name: `${baseName} · ${modeLabel}`, location: locName,
+      name: baseName, location: locName,
       manufacturer: sel.mfr || "", part_number: housing.sku, quantity: housing.qty || 1,
-      new_or_used: "New", source: "",
+      new_or_used: "New", source: "", lens,
+      notes: `Standard ${t.mode === "trio" ? "Trio" : "Duo"}`,
+      ...colorFields,
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
   } catch (e) { console.error("tracer housing add failed:", e); }
+  // Heads nest beneath (descriptive names → intentionally don't match a
+  // part_type, so they don't render as their own icons).
   for (const hd of heads) {
     const colors = (hd.colors || []).map(cap).join("/");
     try {
@@ -1258,6 +1274,11 @@ async function _pickerAddTracer(draftId) {
         accessory_category: "lighthead", accessory_parent_product: sel.product_id,
       });
     } catch (e) { console.error("tracer head add failed:", e); }
+  }
+  // Chosen accessories (e.g. the mounting bracket) → nested under the housing too.
+  for (const arow of _pickerChosenAccessoryRows(baseName, locName, parentLineId)) {
+    try { await api(`/api/draft/${draftId}/part`, arow); }
+    catch (e) { console.error("tracer accessory add failed:", e); }
   }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
   toast("Tracer added", "success");
