@@ -546,11 +546,14 @@ function _pickerRenderProducts() {
         bodyHtml = `<div class="pp-skus">` + skus.map(s => {
           const matched = pColor ? _skuMatchesAny(s, headSets) : true;
           const cls = pColor ? (matched ? "match" : "nomatch") : "";
-          const colors = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/") || "—";
+          // Friendly name leads the description (clarifies non-light parts); falls
+          // back to color/lens, which is description enough for lightheads.
+          const colorBits = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/");
+          const desc = [s.friendly_name, colorBits].filter(Boolean).join(" · ") || "—";
           const pr = s.price != null ? `$${s.price}` : "";
           const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
           const pick = !pColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
-          return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(colors)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pick}</div>`;
+          return `<div class="pp-sku ${cls}"><span class="pp-sku-pn">${esc(s.part_number)}</span><span class="pp-sku-c">${esc(desc)}${s.lens_type ? " · " + esc(s.lens_type) : ""}</span><span class="pp-mfr">${pr}</span>${pick}</div>`;
         }).join("") + `</div>`;
       }
     }
