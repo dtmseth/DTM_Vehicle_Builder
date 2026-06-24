@@ -895,14 +895,20 @@ function _pickerRenderAccessories() {
   }));
 }
 
-// Accessory groups the picker actually shows. The tracer panel owns lighthead
-// selection, so for tracers the (redundant, required) lighthead dropdown is
-// hidden — brackets/cables/etc. still show.
+// Accessory groups the picker actually shows. For tracers: the panel owns
+// lighthead selection (hide that dropdown), and the bracket dropdown is narrowed
+// to the tracer-specific mounting products (the L-brackets + vehicle kits) —
+// the generic side/rear-warning brackets pulled in by part_type auto-resolve
+// are noise for a tracer.
 function _pickerVisibleAccessoryGroups() {
   const groups = _pickerState.accessories || [];
-  if (_pickerState.tracer && _pickerState.tracer.active)
-    return groups.filter(g => g.category !== "lighthead");
-  return groups;
+  if (!(_pickerState.tracer && _pickerState.tracer.active)) return groups;
+  return groups
+    .filter(g => g.category !== "lighthead")
+    .map(g => g.category === "bracket_mount"
+      ? { ...g, options: (g.options || []).filter(o => /tracer/i.test(o.product_id)) }
+      : g)
+    .filter(g => g.category !== "bracket_mount" || (g.options || []).length);
 }
 
 function _accessoriesSatisfied() {

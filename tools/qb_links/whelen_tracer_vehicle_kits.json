@@ -1,0 +1,16 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Add the remaining vehicle-specific Whelen tracer running-board mounting kits (from the official spec) to whelen_tracer_mount_kit, each vehicle-tagged. None are in DTM's QuickBooks yet, so they're added as PENDING-QB parts (qb_pending). PRICES ARE $0 PLACEHOLDERS — set real prices in the part manager, or they auto-reconcile when the SKUs appear in QB. friendly_name notes the vehicle + tracer lamp size. TCRLBKT1/2/3 (under-lightbar single/dual + F-150 hitch mounts) are intentionally NOT added here — different mounting scenario with different quantity rules than the running-board L-bracket.",
+  "pending_parts": [
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB35",  "price": 0.0, "vehicle_tags": ["CHARGER"],            "friendly_name": "Charger '15-23 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB44",  "price": 0.0, "vehicle_tags": ["DURANGO"],            "friendly_name": "Durango '15-25 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB42",  "price": 0.0, "vehicle_tags": ["RAM-1500", "RAM-HD"], "friendly_name": "Ram 1500 '15-24 / 2500-3500 '19-24 (6-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB59",  "price": 0.0, "vehicle_tags": ["BLAZER"],             "friendly_name": "Blazer EV PPV '24 (6-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB54S", "price": 0.0, "vehicle_tags": ["SUBURBAN"],           "friendly_name": "Suburban '21-26 (6-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB45",  "price": 0.0, "vehicle_tags": ["TAHOE"],              "friendly_name": "Tahoe '09-20 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB34",  "price": 0.0, "vehicle_tags": ["PIU"],                "friendly_name": "PIU '13-19 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB57",  "price": 0.0, "vehicle_tags": ["MACH-E"],             "friendly_name": "Mach-E '21-25 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB56",  "price": 0.0, "vehicle_tags": ["TESLA"],              "friendly_name": "Tesla Model Y '21-22 (5-lamp)"},
+    {"product": "whelen_tracer_mount_kit", "part_number": "TCRB51",  "price": 0.0, "vehicle_tags": ["RAM-1500"],           "friendly_name": "Ram 1500 SSV '25 (6-lamp)"}
+  ]
+}

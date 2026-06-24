@@ -256,6 +256,19 @@ async function addPart() {
   setTimeout(() => $("me-name").focus(), 50);
 }
 
+// Tracer bracket quantity by kind: an "L" bracket needs (lamps + 1) per housing
+// (Whelen: N-lamp housing → N+1), a vehicle-specific/other kit one per housing.
+// Returns null when the parent isn't a tracer housing (leave qty unchanged).
+function _meTracerBracketQty(part, parent, sku) {
+  if (!parent || part.accessory_category !== "bracket_mount") return null;
+  const m = /TCRWX(\d+)/i.exec(parent.part_number || "");
+  if (!m) return null;
+  const lamps = parseInt(m[1], 10) || 0;
+  const housings = parent.quantity || 1;
+  const s = (sku || "").toUpperCase();
+  return (s.includes("LBKT") || s.includes("L BRACKET")) ? (lamps + 1) * housings : housings;
+}
+
 // Swap an accessory line within its category — a single dropdown, no full picker.
 async function _meEditAccessory(part) {
   let groups = [];
@@ -268,8 +281,14 @@ async function _meEditAccessory(part) {
   const parent = (_meDraft?.parts || []).find(p => p.line_id === part.parent_line_id);
   const parentName = parent ? parent.name : (part.name.split(" · ")[0] || "Part");
 
+  // For a tracer housing, narrow brackets to the tracer-specific kits (same as
+  // the picker) so the generic side/rear-warning brackets don't clutter the swap.
+  let gOptions = g.options || [];
+  if (part.accessory_category === "bracket_mount" && /TCRWX\d/i.test(parent?.part_number || ""))
+    gOptions = gOptions.filter(o => /tracer/i.test(o.product_id));
+
   const opts = [];
-  for (const o of g.options) for (const s of (o.skus || [])) {
+  for (const o of gOptions) for (const s of (o.skus || [])) {
     const colors = [s.color, s.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
     const label = `${o.model} · ${s.part_number}${colors ? " · " + colors : ""}${s.lens_type ? " · " + s.lens_type : ""}${s.price != null ? " · $" + s.price : ""}`;
     opts.push({ value: `${o.product_id}::${s.part_number}`, label, model: o.model, mfr: o.manufacturer_label || "", sku: s.part_number });
@@ -300,6 +319,8 @@ async function _meEditAccessory(part) {
     const o = opts.find(x => x.value === val);
     if (!o || o.sku === part.part_number) return;   // unchanged
     const body = { ...part, part_number: o.sku, manufacturer: o.mfr, name: `${parentName} · ${o.model}` };
+    const q = _meTracerBracketQty(part, parent, o.sku);   // recompute tracer bracket qty
+    if (q != null) body.quantity = q;
     const r = await api(`/api/draft/${_meDraftId}/part/${part.line_id}/update`, body);
     if (!r?.ok) { toast(r?.error || "Update failed", "error"); return; }
     toast("Accessory updated", "success");
