@@ -1,0 +1,7 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Add the universal Whelen 'L' bracket (TCRLBKT) to the tracer mounting-kit dropdown (whelen_tracer_mount_kit, wired to the 3/5/6-lamp tracers) so it sits alongside the vehicle-specific TCRB* kits. The 2-lamp tracer already surfaces TCRLBKT via whelen_tracer_l_brackets_x2_per (fw_bracket auto-resolve), and mount_kit isn't wired to the 2-lamp, so no double-listing. Quantity is computed in the picker: L-brackets need (lamp_count + 1) per housing; vehicle-specific kits need one per housing. See docs/TRACER_LIGHTHEAD_SELECTION.md.",
+  "links": [
+    {"sku": "TCRLBKT", "product": "whelen_tracer_mount_kit", "vehicle_tags": ["any"], "friendly_name": "\"L\" brackets (universal; qty by lamp count)"}
+  ]
+}

@@ -1281,8 +1281,19 @@ async function _pickerAddTracer(draftId) {
       });
     } catch (e) { console.error("tracer head add failed:", e); }
   }
-  // Chosen accessories (e.g. the mounting bracket) → nested under the housing too.
+  // Chosen accessories (e.g. the mounting bracket) → nested under the housing.
+  // Bracket quantity depends on the kind: an "L" bracket needs (lamps + 1) per
+  // housing (Whelen: N-lamp housing → N+1 brackets); a vehicle-specific or other
+  // mounting kit needs one per housing.
+  const lamps = res.lamp_count || 0;
+  const numHousings = (res.housings || []).length || 1;
   for (const arow of _pickerChosenAccessoryRows(baseName, locName, parentLineId)) {
+    if (arow.accessory_category === "bracket_mount") {
+      const sku = (arow.part_number || "").toUpperCase();
+      arow.quantity = (sku.includes("LBKT") || sku.includes("L BRACKET"))
+        ? (lamps + 1) * numHousings
+        : numHousings;
+    }
     try { await api(`/api/draft/${draftId}/part`, arow); }
     catch (e) { console.error("tracer accessory add failed:", e); }
   }
