@@ -1102,13 +1102,15 @@ function _pickerColorFields() {
   return { raw_color: labels.join(", ") };
 }
 
-// Color summary for a tracer parent line (build-sheet color + icon tint). Trio
-// is uniform red/blue/secondary; duo splits driver red / passenger blue.
+// Color for a tracer parent line. Tracer lamps render as UNIFORM slots (each
+// head already carries its full combo), so raw_color must be a single combo
+// that resolves to a lamphead asset — not a driver/passenger split (which the
+// uniform resolver can't read, leaving the lamps as bare dots). Trio =
+// red/blue/secondary; duo renders the driver combo (red/secondary) on the
+// running-board side view.
 function _tracerColorFields(t) {
   const sec = t.secondary === "amber" ? "Amber" : "White";
-  if (t.mode === "trio") return { raw_color: `Red/Blue/${sec}` };
-  const d = `Red/${sec}`, p = `Blue/${sec}`;
-  return { raw_color: `${d} / ${p}`, driver_color: d, passenger_color: p };
+  return { raw_color: t.mode === "trio" ? `Red/Blue/${sec}` : `Red/${sec}` };
 }
 
 // Pick the next auto-sequenced name by counting existing draft parts with the
@@ -1251,13 +1253,17 @@ async function _pickerAddTracer(draftId) {
   // 1") so the planner matches it to a part_type and renders it. The Duo/Trio +
   // colors live in raw_color/lens/notes (which also color the rendered icon).
   const colorFields = _tracerColorFields(t);
+  const secCap = t.secondary === "amber" ? "Amber" : "White";
+  // raw_color renders one uniform combo; notes carry the full Duo split for the sheet.
+  const notes = t.mode === "trio"
+    ? `Standard Trio · Red/Blue/${secCap}`
+    : `Standard Duo · driver Red/${secCap} / passenger Blue/${secCap}`;
   let parentLineId = "", added = 0;
   try {
     const r = await api(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName,
       manufacturer: sel.mfr || "", part_number: housing.sku, quantity: housing.qty || 1,
-      new_or_used: "New", source: "", lens,
-      notes: `Standard ${t.mode === "trio" ? "Trio" : "Duo"}`,
+      new_or_used: "New", source: "", lens, notes,
       ...colorFields,
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
