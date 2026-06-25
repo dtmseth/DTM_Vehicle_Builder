@@ -1024,7 +1024,9 @@ function _pickerRenderTracer() {
   if (isCustom) {
     const cust = t.custom || {};
     const total = Object.values(cust).reduce((a, b) => a + b, 0);
-    const expect = _pickerTracerLamps(_pickerState.products.find(x => x.product_id === (_pickerState.sel || {}).product_id));
+    const lampN = _pickerTracerLamps(_pickerState.products.find(x => x.product_id === (_pickerState.sel || {}).product_id));
+    const pairCount = (lampN && lampN !== 2) ? 2 : 1;     // running-board pair vs 2-lamp front
+    const expect = lampN * pairCount;                     // total heads for the full build
     const rows = _pickerTracerHeadList().map(h => {
       const q = cust[h.sku] || 0;
       const pend = h.pending ? ` <span class="pp-pending">pending</span>` : "";
@@ -1034,12 +1036,12 @@ function _pickerRenderTracer() {
         <span class="pt-sku">${esc(h.sku)}</span>
         <span class="pt-role">${esc(h.role)} · ${esc(h.colors || "—")} · ${esc(h.lens)}${pend}</span></div>`;
     }).join("");
-    // Running-board tracers (anything but the 2-lamp front) mount on both sides;
-    // Custom builds one housing, so flag that the real total is ×2.
-    const pairNote = (expect && expect !== 2)
-      ? `<div class="pt-cust-note">Heads up: a running-board tracer mounts both sides — ${expect} lamps × 2 = ${expect * 2} heads for the full build. This covers one housing; add the tracer again for the other side (you own the final order count).</div>`
+    // Running-board tracers (anything but the 2-lamp front) auto-add both
+    // housings; the user picks the full head count (lamps × 2) here.
+    const pairNote = (pairCount > 1)
+      ? `<div class="pt-cust-note">Running-board tracer: both housings (driver + passenger) are added automatically — pick the full ${lampN} × 2 = ${expect} heads here.</div>`
       : "";
-    body = `<div class="pt-cust-hint">${total} head${total === 1 ? "" : "s"} selected${expect ? ` · this housing has ${expect} lamp${expect === 1 ? "" : "s"}` : ""}</div>`
+    body = `<div class="pt-cust-hint">${total}${expect ? ` of ${expect}` : ""} head${total === 1 ? "" : "s"} selected</div>`
       + pairNote
       + `<div class="pt-preview">${rows || "No heads available"}</div>`;
   } else if (t.loading) body = `<div class="pt-preview muted">Resolving…</div>`;
@@ -1317,8 +1319,8 @@ async function _pickerAddTracer(draftId) {
     });
     if (!headRows.length) { toast("Pick at least one head", "error"); if (btn) btn.disabled = false; return; }
     lamps = _pickerTracerLamps(product);
-    numHousings = 1;            // custom = single housing (add twice for a pair)
-    housingQty = 1;
+    numHousings = (lamps && lamps !== 2) ? 2 : 1;   // running-board pair auto-added, like standard
+    housingQty = numHousings;
     colorFields = { raw_color: (headRows[0].colors || []).join("/") };   // tint the lamp row
     notes = "Custom heads";
   } else {
