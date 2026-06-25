@@ -1034,7 +1034,13 @@ function _pickerRenderTracer() {
         <span class="pt-sku">${esc(h.sku)}</span>
         <span class="pt-role">${esc(h.role)} · ${esc(h.colors || "—")} · ${esc(h.lens)}${pend}</span></div>`;
     }).join("");
+    // Running-board tracers (anything but the 2-lamp front) mount on both sides;
+    // Custom builds one housing, so flag that the real total is ×2.
+    const pairNote = (expect && expect !== 2)
+      ? `<div class="pt-cust-note">Heads up: a running-board tracer mounts both sides — ${expect} lamps × 2 = ${expect * 2} heads for the full build. This covers one housing; add the tracer again for the other side (you own the final order count).</div>`
+      : "";
     body = `<div class="pt-cust-hint">${total} head${total === 1 ? "" : "s"} selected${expect ? ` · this housing has ${expect} lamp${expect === 1 ? "" : "s"}` : ""}</div>`
+      + pairNote
       + `<div class="pt-preview">${rows || "No heads available"}</div>`;
   } else if (t.loading) body = `<div class="pt-preview muted">Resolving…</div>`;
   else if (p && p.ok) {
