@@ -332,6 +332,7 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                 "friendly_name": pn.get("friendly_name", ""),
                 "price": pn.get("qb_unit_price") if pn.get("qb_unit_price") is not None else pn.get("price_usd"),
                 "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
+                "tertiary_color": pn.get("tertiary_color", ""),
                 "lens_type": pn.get("lens_type", ""),
                 "vehicle_tags": list(pn.get("vehicle_tags") or []),
                 "qb_pending": bool(pn.get("qb_pending")),

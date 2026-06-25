@@ -856,7 +856,7 @@ async function _pickerLoadAccessories(productId) {
 }
 
 function _pickerAccLabel(opt, sku) {
-  const colors = [sku.color, sku.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
+  const colors = [sku.color, sku.secondary_color, sku.tertiary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
   const price = sku.price != null ? ` · $${sku.price}` : "";
   // Prefer a curated short description (friendly_name) so installers don't have
   // to decipher part numbers; fall back to the product model. SKU + price always
@@ -1053,6 +1053,8 @@ function _pickerRenderTracer() {
   const secRow = isCustom ? "" : `<div class="pf-group"><span class="pf-label">Secondary color</span><div class="pf-pills">
         ${pill("secondary", "white", "White", t.secondary === "white")}
         ${pill("secondary", "amber", "Amber", t.secondary === "amber")}</div></div>`;
+  // Preserve the head-list scroll position across the re-render (qty steppers).
+  const _prevScroll = (el.querySelector(".pt-preview") || {}).scrollTop || 0;
   el.innerHTML = `<div class="pa-banner"><span class="pa-chip">⚡</span>Tracer lightheads — choose a configuration</div>
     <div class="pt-rows">
       <div class="pf-group"><span class="pf-label">Heads</span><div class="pf-pills">
@@ -1062,6 +1064,7 @@ function _pickerRenderTracer() {
       ${secRow}
       <div class="pf-group"><span class="pf-label">Lens</span><span class="pt-lens">${esc(lens)} · from filter</span></div>
     </div>${body}`;
+  const _pv = el.querySelector(".pt-preview"); if (_pv) _pv.scrollTop = _prevScroll;
   el.querySelectorAll("[data-tk]").forEach(b => b.addEventListener("click", () => {
     _pickerState.tracer[b.dataset.tk] = b.dataset.tv;
     if (_pickerState.tracer.mode === "custom") { _pickerRenderTracer(); _pickerUpdateFooter(); }
