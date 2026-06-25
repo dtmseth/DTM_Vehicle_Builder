@@ -20,7 +20,7 @@ let _pickerState = {
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
   accLoadedFor: null,      // product_id accessories were loaded for
-  tracer: { active: false, mode: "trio", secondary: "white", preview: null, loading: false },
+  tracer: { active: false, mode: "trio", secondary: "white", custom: {}, preview: null, loading: false },
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   footerHandler: null,
   _footerWired: false,
@@ -120,7 +120,7 @@ function _pickerResetState() {
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
   _pickerState.accLoadedFor = null;
-  _pickerState.tracer = { active: false, mode: "trio", secondary: "white", preview: null, loading: false };
+  _pickerState.tracer = { active: false, mode: "trio", secondary: "white", custom: {}, preview: null, loading: false };
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -849,6 +849,9 @@ async function _pickerLoadAccessories(productId) {
   _pickerState.accessoryChoices = {};
   for (const g of _pickerState.accessories) _pickerState.accessoryChoices[g.category] = "";
   _pickerRenderAccessories();
+  // Custom tracer mode reads its head list from the lighthead accessory group;
+  // refresh the panel now that it's loaded.
+  if (_pickerState.tracer.active && _pickerState.tracer.mode === "custom") _pickerRenderTracer();
   _pickerUpdateFooter();
 }
 
@@ -959,18 +962,41 @@ async function _pickerLoadTracer(productId) {
   const t = _pickerState.tracer;
   const product = _pickerState.products.find(p => p.product_id === productId);
   if (!productId || _pickerState.editLineId || !_pickerIsTracer(product)) {
-    _pickerState.tracer = { active: false, mode: t.mode, secondary: t.secondary, preview: null, loading: false };
+    _pickerState.tracer = { active: false, mode: t.mode, secondary: t.secondary, custom: {}, preview: null, loading: false };
     _pickerRenderTracer(); return;
   }
-  _pickerState.tracer = { ...t, active: true, preview: null, loading: true };
+  // Fresh custom selection per product; keep the standard mode/secondary choice.
+  _pickerState.tracer = { ...t, active: true, custom: {}, preview: null, loading: true };
   _pickerRenderTracer();
   _pickerTracerAutoLocation();
-  await _pickerFetchTracerPreview();
+  if (t.mode === "custom") { _pickerState.tracer.loading = false; _pickerRenderTracer(); _pickerUpdateFooter(); }
+  else await _pickerFetchTracerPreview();
+}
+
+// Flat list of every selectable tracer head (from the lighthead accessory group)
+// for Custom mode: {sku, product_id, role, colors, lens, pending}.
+function _pickerTracerHeadList() {
+  const lg = (_pickerState.accessories || []).find(g => g.category === "lighthead");
+  if (!lg) return [];
+  const cap = c => c ? c[0].toUpperCase() + c.slice(1) : c;
+  const out = [];
+  for (const o of (lg.options || [])) {
+    const role = /secondary/i.test((o.product_id || "") + (o.model || "")) ? "secondary" : "primary";
+    for (const s of (o.skus || [])) {
+      out.push({
+        sku: s.part_number, product_id: o.product_id, role,
+        colors: [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(cap).join("/"),
+        lens: s.lens_type || "clear", pending: !!s.qb_pending,
+      });
+    }
+  }
+  // Primary first, then secondary; clear before smoked.
+  return out.sort((a, b) => (a.role === b.role ? (a.lens > b.lens ? 1 : -1) : (a.role === "primary" ? -1 : 1)));
 }
 
 async function _pickerFetchTracerPreview() {
   const t = _pickerState.tracer, sel = _pickerState.sel;
-  if (!t.active || !sel) return;
+  if (!t.active || !sel || t.mode === "custom") return;   // custom resolves locally
   const lens = (_pickerState.filters.lens === "smoked") ? "smoked" : "clear";
   t.loading = true; _pickerRenderTracer();
   try {
@@ -993,8 +1019,24 @@ function _pickerRenderTracer() {
   const pill = (k, v, label, on) =>
     `<button class="pf-pill${on ? " active" : ""}" data-tk="${k}" data-tv="${v}">${esc(label)}</button>`;
   const p = t.preview;
+  const isCustom = t.mode === "custom";
   let body = "";
-  if (t.loading) body = `<div class="pt-preview muted">Resolving…</div>`;
+  if (isCustom) {
+    const cust = t.custom || {};
+    const total = Object.values(cust).reduce((a, b) => a + b, 0);
+    const expect = _pickerTracerLamps(_pickerState.products.find(x => x.product_id === (_pickerState.sel || {}).product_id));
+    const rows = _pickerTracerHeadList().map(h => {
+      const q = cust[h.sku] || 0;
+      const pend = h.pending ? ` <span class="pp-pending">pending</span>` : "";
+      return `<div class="pt-cust${q ? " on" : ""}">
+        <span class="pt-cust-qty"><button class="pf-pill" data-cq="${esc(h.sku)}" data-cd="-1">−</button>`
+        + `<b>${q}</b><button class="pf-pill" data-cq="${esc(h.sku)}" data-cd="1">+</button></span>
+        <span class="pt-sku">${esc(h.sku)}</span>
+        <span class="pt-role">${esc(h.role)} · ${esc(h.colors || "—")} · ${esc(h.lens)}${pend}</span></div>`;
+    }).join("");
+    body = `<div class="pt-cust-hint">${total} head${total === 1 ? "" : "s"} selected${expect ? ` · this housing has ${expect} lamp${expect === 1 ? "" : "s"}` : ""}</div>`
+      + `<div class="pt-preview">${rows || "No heads available"}</div>`;
+  } else if (t.loading) body = `<div class="pt-preview muted">Resolving…</div>`;
   else if (p && p.ok) {
     body = `<div class="pt-preview">` + (p.lines || []).map(l => {
       const pend = l.pending ? ` <span class="pp-pending">pending QB</span>` : "";
@@ -1008,25 +1050,36 @@ function _pickerRenderTracer() {
         : esc(pr.detail || pr.reason)).join("<br>");
     body = `<div class="pt-preview err">⚠ Can't build this combo yet:<br>${probs}</div>`;
   }
+  const secRow = isCustom ? "" : `<div class="pf-group"><span class="pf-label">Secondary color</span><div class="pf-pills">
+        ${pill("secondary", "white", "White", t.secondary === "white")}
+        ${pill("secondary", "amber", "Amber", t.secondary === "amber")}</div></div>`;
   el.innerHTML = `<div class="pa-banner"><span class="pa-chip">⚡</span>Tracer lightheads — choose a configuration</div>
     <div class="pt-rows">
       <div class="pf-group"><span class="pf-label">Heads</span><div class="pf-pills">
         ${pill("mode", "duo", "Standard Duo", t.mode === "duo")}
-        ${pill("mode", "trio", "Standard Trio", t.mode === "trio")}</div></div>
-      <div class="pf-group"><span class="pf-label">Secondary color</span><div class="pf-pills">
-        ${pill("secondary", "white", "White", t.secondary === "white")}
-        ${pill("secondary", "amber", "Amber", t.secondary === "amber")}</div></div>
+        ${pill("mode", "trio", "Standard Trio", t.mode === "trio")}
+        ${pill("mode", "custom", "Custom", isCustom)}</div></div>
+      ${secRow}
       <div class="pf-group"><span class="pf-label">Lens</span><span class="pt-lens">${esc(lens)} · from filter</span></div>
     </div>${body}`;
   el.querySelectorAll("[data-tk]").forEach(b => b.addEventListener("click", () => {
     _pickerState.tracer[b.dataset.tk] = b.dataset.tv;
-    _pickerFetchTracerPreview();
+    if (_pickerState.tracer.mode === "custom") { _pickerRenderTracer(); _pickerUpdateFooter(); }
+    else _pickerFetchTracerPreview();
+  }));
+  el.querySelectorAll("[data-cq]").forEach(b => b.addEventListener("click", () => {
+    const sku = b.dataset.cq, d = parseInt(b.dataset.cd, 10);
+    const c = _pickerState.tracer.custom = _pickerState.tracer.custom || {};
+    c[sku] = Math.max(0, (c[sku] || 0) + d);
+    if (!c[sku]) delete c[sku];
+    _pickerRenderTracer(); _pickerUpdateFooter();
   }));
 }
 
 function _pickerTracerSatisfied() {
   const t = _pickerState.tracer;
   if (!t.active) return true;
+  if (t.mode === "custom") return Object.values(t.custom || {}).some(q => q > 0);
   return !!(t.preview && t.preview.ok);
 }
 
@@ -1241,34 +1294,53 @@ async function _pickerAddTracer(draftId) {
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
 
-  let res;
-  try {
-    const qs = `product_id=${encodeURIComponent(sel.product_id)}&mode=${t.mode}&secondary=${t.secondary}&lens=${lens}`;
-    res = await api(`/api/parts-db/tracer-heads?${qs}`);
-  } catch (e) { console.error("tracer resolve failed:", e); toast("Resolve failed", "error"); if (btn) btn.disabled = false; return; }
-  if (!res || !res.ok) { toast("Can't build this tracer config yet", "error"); if (btn) btn.disabled = false; return; }
-
-  // One grouped unit: the housing is the parent line (qty rolled up across both
-  // running-board sides); every head nests beneath it. Uses the resolver's flat,
-  // rolled-up `lines` so a 5-lamp pair is one tidy group, not scattered rows.
-  const housing = (res.lines || []).find(l => l.kind === "housing");
-  const heads = (res.lines || []).filter(l => l.kind === "head" && l.sku);
-  if (!housing) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
+  // Normalize to {housingSku, housingQty, headRows, lamps, numHousings,
+  // colorFields, notes} from either the standard resolver or the custom picks.
+  let housingSku, housingQty, headRows, lamps, numHousings, colorFields, notes;
+  if (t.mode === "custom") {
+    const product = _pickerState.products.find(p => p.product_id === sel.product_id);
+    housingSku = sel.sku || (product && product.skus && product.skus[0] && product.skus[0].part_number);
+    if (!housingSku) { toast("Pick a tracer", "error"); if (btn) btn.disabled = false; return; }
+    const byId = {}; _pickerTracerHeadList().forEach(h => { byId[h.sku] = h; });
+    headRows = Object.entries(t.custom || {}).filter(([, q]) => q > 0).map(([sku, qty]) => {
+      const h = byId[sku] || {};
+      return { sku, qty, role: h.role || "", colors: (h.colors || "").split("/").filter(Boolean) };
+    });
+    if (!headRows.length) { toast("Pick at least one head", "error"); if (btn) btn.disabled = false; return; }
+    lamps = _pickerTracerLamps(product);
+    numHousings = 1;            // custom = single housing (add twice for a pair)
+    housingQty = 1;
+    colorFields = { raw_color: (headRows[0].colors || []).join("/") };   // tint the lamp row
+    notes = "Custom heads";
+  } else {
+    let res;
+    try {
+      const qs = `product_id=${encodeURIComponent(sel.product_id)}&mode=${t.mode}&secondary=${t.secondary}&lens=${lens}`;
+      res = await api(`/api/parts-db/tracer-heads?${qs}`);
+    } catch (e) { console.error("tracer resolve failed:", e); toast("Resolve failed", "error"); if (btn) btn.disabled = false; return; }
+    if (!res || !res.ok) { toast("Can't build this tracer config yet", "error"); if (btn) btn.disabled = false; return; }
+    const housing = (res.lines || []).find(l => l.kind === "housing");
+    if (!housing) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
+    housingSku = housing.sku; housingQty = housing.qty || 1;
+    headRows = (res.lines || []).filter(l => l.kind === "head" && l.sku)
+      .map(l => ({ sku: l.sku, qty: l.qty, role: l.role, colors: l.colors || [] }));
+    lamps = res.lamp_count || 0;
+    numHousings = (res.housings || []).length || 1;
+    colorFields = _tracerColorFields(t);
+    const secCap = t.secondary === "amber" ? "Amber" : "White";
+    notes = t.mode === "trio"
+      ? `Standard Trio · Red/Blue/${secCap}`
+      : `Standard Duo · driver Red/${secCap} / passenger Blue/${secCap}`;
+  }
 
   // Parent line: the NAME must stay a clean part-type label (e.g. "Side Warning
-  // 1") so the planner matches it to a part_type and renders it. The Duo/Trio +
-  // colors live in raw_color/lens/notes (which also color the rendered icon).
-  const colorFields = _tracerColorFields(t);
-  const secCap = t.secondary === "amber" ? "Amber" : "White";
-  // raw_color renders one uniform combo; notes carry the full Duo split for the sheet.
-  const notes = t.mode === "trio"
-    ? `Standard Trio · Red/Blue/${secCap}`
-    : `Standard Duo · driver Red/${secCap} / passenger Blue/${secCap}`;
+  // 1") so the planner matches it to a part_type and renders it. Config + colors
+  // live in raw_color/lens/notes (which also color the rendered icon).
   let parentLineId = "", added = 0;
   try {
     const r = await api(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName,
-      manufacturer: sel.mfr || "", part_number: housing.sku, quantity: housing.qty || 1,
+      manufacturer: sel.mfr || "", part_number: housingSku, quantity: housingQty,
       new_or_used: "New", source: "", lens, notes,
       ...colorFields,
     });
@@ -1276,11 +1348,12 @@ async function _pickerAddTracer(draftId) {
   } catch (e) { console.error("tracer housing add failed:", e); }
   // Heads nest beneath (descriptive names → intentionally don't match a
   // part_type, so they don't render as their own icons).
-  for (const hd of heads) {
+  for (const hd of headRows) {
     const colors = (hd.colors || []).map(cap).join("/");
+    const label = [cap(hd.role), colors].filter(Boolean).join(" ");
     try {
       await api(`/api/draft/${draftId}/part`, {
-        name: `${baseName} · ${cap(hd.role)} ${colors}`, location: locName,
+        name: `${baseName} · ${label}`, location: locName,
         manufacturer: sel.mfr || "", part_number: hd.sku, quantity: hd.qty || 1,
         new_or_used: "New", source: "", parent_line_id: parentLineId,
         accessory_category: "lighthead", accessory_parent_product: sel.product_id,
@@ -1291,8 +1364,6 @@ async function _pickerAddTracer(draftId) {
   // Bracket quantity depends on the kind: an "L" bracket needs (lamps + 1) per
   // housing (Whelen: N-lamp housing → N+1 brackets); a vehicle-specific or other
   // mounting kit needs one per housing.
-  const lamps = res.lamp_count || 0;
-  const numHousings = (res.housings || []).length || 1;
   for (const arow of _pickerChosenAccessoryRows(baseName, locName, parentLineId)) {
     if (arow.accessory_category === "bracket_mount") {
       const sku = (arow.part_number || "").toUpperCase();

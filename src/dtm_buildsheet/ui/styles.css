@@ -321,6 +321,12 @@
     .pt-qty{font-weight:700;min-width:28px}
     .pt-sku{font-family:ui-monospace,monospace;font-weight:600}
     .pt-role{color:var(--muted);font-size:11px}
+    .pt-cust-hint{font-size:11px;color:var(--muted);margin-bottom:6px}
+    .pt-cust{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px}
+    .pt-cust.on{font-weight:600}
+    .pt-cust-qty{display:inline-flex;align-items:center;gap:6px;min-width:74px}
+    .pt-cust-qty .pf-pill{padding:1px 7px;line-height:1.2}
+    .pt-cust-qty b{min-width:14px;text-align:center}
     .picker-accessories{flex-shrink:0;border-top:2px solid var(--accent);background:#fff7ed;padding:12px 26px;max-height:34vh;overflow-y:auto}
     .pa-banner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#9a3412;margin-bottom:10px}
     .pa-banner .pa-chip{background:#fb923c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px}
