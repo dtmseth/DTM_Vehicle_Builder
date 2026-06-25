@@ -21,6 +21,7 @@ let _pickerState = {
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
   accLoadedFor: null,      // product_id accessories were loaded for
   tracer: { active: false, mode: "trio", secondary: "white", custom: {}, preview: null, loading: false },
+  lightbar: { active: false, setup: "standard", edition: "clear", notes: "" },
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   footerHandler: null,
   _footerWired: false,
@@ -73,7 +74,8 @@ function pickerClose() {
   _pickerState.tracer = { active: false, mode: _pickerState.tracer.mode,
                           secondary: _pickerState.tracer.secondary, preview: null, loading: false };
   _pickerState.accessories = []; _pickerState.accLoadedFor = null;
-  _pickerRenderTracer();
+  _pickerState.tracer.active = false; _pickerState.lightbar.active = false;
+  _pickerRenderTracer(); _pickerRenderLightbar();
   const acc = $("picker-accessories"); if (acc) { acc.hidden = true; acc.innerHTML = ""; }
   const panel = $("picker-panel");
   if (panel) panel.classList.remove("open");
@@ -121,6 +123,7 @@ function _pickerResetState() {
   _pickerState.accessoryChoices = {};
   _pickerState.accLoadedFor = null;
   _pickerState.tracer = { active: false, mode: "trio", secondary: "white", custom: {}, preview: null, loading: false };
+  _pickerState.lightbar = { active: false, setup: "standard", edition: "clear", notes: "" };
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -596,7 +599,7 @@ function _pickerRenderProducts() {
     const pColor = usesColor && _pickerProductHasColor(p);
     if (pColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
     _pickerRenderProducts(); _pickerUpdateFooter();
-    if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); }
+    if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
   }));
   el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -605,6 +608,7 @@ function _pickerRenderProducts() {
     _pickerRenderProducts(); _pickerUpdateFooter();
     _pickerLoadAccessories(pid);
     _pickerLoadTracer(pid);
+    _pickerLoadLightbar(pid);
   }));
   el.querySelectorAll(".pp-override").forEach(sel => sel.addEventListener("change", () => {
     _pickerState.skuChoices[sel.dataset.combo] = sel.value;
@@ -1094,6 +1098,65 @@ function _pickerTracerSatisfied() {
   return !!(t.preview && t.preview.ok);
 }
 
+// ── Roof lightbar config ───────────────────────────────
+// Roof bars are ordered as whole configured SKUs (the colors are baked into the
+// part number). The panel adds a Standard/Custom setup tag, a Clear/Smoked/
+// Midnight edition, and a "notes for ordering" box for Custom builds — so the
+// sales rep knows whether to order the normal config or read special notes.
+function _pickerIsLightbar(product) {
+  return !!product && (product.fits_part_types || []).includes("roof_light_bar");
+}
+
+function _pickerLoadLightbar(productId) {
+  const lb = _pickerState.lightbar;
+  const product = _pickerState.products.find(p => p.product_id === productId);
+  if (!productId || _pickerState.editLineId || !_pickerIsLightbar(product)) {
+    _pickerState.lightbar = { active: false, setup: lb.setup, edition: lb.edition, notes: "" };
+    _pickerRenderLightbar(); return;
+  }
+  _pickerState.lightbar = { active: true, setup: lb.setup, edition: lb.edition, notes: "" };
+  _pickerRenderLightbar(); _pickerUpdateFooter();
+}
+
+function _pickerRenderLightbar() {
+  const el = $("picker-lightbar"); if (!el) return;
+  const lb = _pickerState.lightbar;
+  if (!lb.active) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  const pill = (k, v, label, on) =>
+    `<button class="pf-pill${on ? " active" : ""}" data-lk="${k}" data-lv="${v}">${esc(label)}</button>`;
+  const customBox = lb.setup === "custom"
+    ? `<div class="pf-group" style="align-items:flex-start"><span class="pf-label">Order notes</span>`
+      + `<textarea id="lb-notes" class="lb-notes" placeholder="What's different from the standard config? (goes on the estimate for ordering)">${esc(lb.notes || "")}</textarea></div>`
+    : "";
+  const midnightNote = lb.edition === "midnight"
+    ? `<div class="pt-cust-note">Midnight Edition needs <b>black straps</b> — pick a black-strap mount in the accessories below to complete it.</div>`
+    : "";
+  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">🚙</span>Roof lightbar — setup & edition</div>
+    <div class="pt-rows">
+      <div class="pf-group"><span class="pf-label">Setup</span><div class="pf-pills">
+        ${pill("setup", "standard", "Standard", lb.setup === "standard")}
+        ${pill("setup", "custom", "Custom", lb.setup === "custom")}</div></div>
+      <div class="pf-group"><span class="pf-label">Edition</span><div class="pf-pills">
+        ${pill("edition", "clear", "Clear lens", lb.edition === "clear")}
+        ${pill("edition", "smoked", "Smoked lens", lb.edition === "smoked")}
+        ${pill("edition", "midnight", "Midnight", lb.edition === "midnight")}</div></div>
+    </div>${customBox}${midnightNote}`;
+  el.querySelectorAll("[data-lk]").forEach(b => b.addEventListener("click", () => {
+    _pickerState.lightbar[b.dataset.lk] = b.dataset.lv;
+    _pickerRenderLightbar(); _pickerUpdateFooter();
+  }));
+  const ta = el.querySelector("#lb-notes");
+  if (ta) ta.addEventListener("input", () => { _pickerState.lightbar.notes = ta.value; _pickerUpdateFooter(); });
+}
+
+function _pickerLightbarSatisfied() {
+  const lb = _pickerState.lightbar;
+  if (!lb.active) return true;
+  if (lb.setup === "custom" && !(lb.notes || "").trim()) return false;   // custom needs order notes
+  return true;
+}
+
 // Build the accessory part rows chosen for the current selection.
 function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   const rows = [];
@@ -1123,13 +1186,16 @@ function _pickerUpdateFooter() {
   const usesColor = _pickerUsesColor();
   const accOk = _accessoriesSatisfied();
   const tracerOk = _pickerTracerSatisfied();
-  const ready = accOk && tracerOk;            // all required sub-choices addressed
+  const lightbarOk = _pickerLightbarSatisfied();
+  const ready = accOk && tracerOk && lightbarOk;   // all required sub-choices addressed
   const hasAcc = _pickerVisibleAccessoryGroups().length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
   let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
   if (sel && _pickerState.tracer.active && !tracerOk)
     hint += ' <span class="picker-foot-acc">· configure lightheads</span>';
+  if (sel && _pickerState.lightbar.active && !lightbarOk)
+    hint += ' <span class="picker-foot-acc">· add order notes</span>';
   if (_pickerState.tab === "part") {
     text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
     if (_pickerState.editLineId) {
@@ -1217,6 +1283,7 @@ async function _pickerDoAdd() {
   // Tracer path: the resolver gives housings + per-side heads; add each housing
   // as a parent line, its heads nested beneath, with a Duo/Trio tag.
   if (_pickerState.tracer.active) { await _pickerAddTracer(draftId); return; }
+  if (_pickerState.lightbar.active) { await _pickerAddLightbar(draftId); return; }
 
   const product = _pickerState.products.find(p => p.product_id === sel.product_id);
   // Color path only for color-configured products; a direct SKU pick (sel.sku,
@@ -1387,6 +1454,45 @@ async function _pickerAddTracer(draftId) {
   }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
   toast("Tracer added", "success");
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  pickerClose();
+  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+}
+
+// Add a roof lightbar: the chosen configured SKU plus the setup/edition tags.
+// The Standard/Custom + edition + order notes ride on the part's lens/notes so
+// the build sheet and estimate carry them for ordering.
+async function _pickerAddLightbar(draftId) {
+  const sel = _pickerState.sel, loc = _pickerState.loc, lb = _pickerState.lightbar;
+  const locName = loc.selected;
+  if (!sel.sku) { toast("Pick a lightbar SKU", "error"); return; }
+  if (!locName) { toast("Choose a location", "error"); return; }
+  const baseName = _pickerChooseName(loc) || sel.model;
+  const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
+
+  const editionLabel = { clear: "Clear lens", smoked: "Smoked lens", midnight: "Midnight Edition" }[lb.edition] || "";
+  const lens = lb.edition === "clear" ? "clear" : "smoked";   // smoked + midnight both smoked-lens
+  const noteParts = [lb.setup === "custom" ? "Custom setup" : "Standard setup", editionLabel];
+  if (lb.edition === "midnight") noteParts.push("black straps required");
+  if (lb.setup === "custom" && (lb.notes || "").trim()) noteParts.push("Order notes: " + lb.notes.trim());
+  const notes = noteParts.filter(Boolean).join(" · ");
+
+  let parentLineId = "", added = 0;
+  try {
+    const r = await api(`/api/draft/${draftId}/part`, {
+      name: baseName, location: locName, manufacturer: sel.mfr || "",
+      part_number: sel.sku, quantity: 1, new_or_used: "New", source: "", lens, notes,
+    });
+    if (r?.ok) { added++; parentLineId = r.line_id || ""; }
+  } catch (e) { console.error("lightbar add failed:", e); }
+  if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
+  // Chosen accessories (mount kit / straps) → nested under the bar.
+  for (const arow of _pickerChosenAccessoryRows(baseName, locName, parentLineId)) {
+    try { await api(`/api/draft/${draftId}/part`, arow); }
+    catch (e) { console.error("lightbar accessory add failed:", e); }
+  }
+  toast("Lightbar added", "success");
   if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   pickerClose();
   if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
