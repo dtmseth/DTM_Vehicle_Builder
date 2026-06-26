@@ -1,0 +1,23 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Fix ITL12 mis-classification: it's a Liberty II take-down LIGHT option (PL26: 'Two Long 12 Super-LED Take-Down Lights'), not a standalone roof bar. Was a part_number under whelen_liberty so it showed as a selectable bar. Reclassify as an accessory: new 'takedown' accessory_category (added directly to parts_db), new accessory part_type bar_takedown (accessory-only — no tree_positions/category, so it never surfaces as a top-level pickable, mirroring 'bracket'), new product whelen_liberty_takedown holding ITL12 (moved verbatim, keeps qb_item_id/price), wired under whelen_liberty as a 'takedown' accessory dropdown. set_accessories REPLACES the list, so the existing bracket_mount entry is re-declared alongside it.",
+
+  "new_part_types": [
+    {"part_type_id": "bar_takedown", "label": "Take-Down / Alley", "type_id": "lights", "accessory_category": "takedown"}
+  ],
+
+  "new_products": [
+    {"product_id": "whelen_liberty_takedown", "model": "Liberty II Take-Downs", "fits_part_types": ["bar_takedown"], "description": "Take-down / alley light option for the Liberty II roof bar."}
+  ],
+
+  "move": [
+    {"sku": "ITL12", "from": "whelen_liberty", "to": "whelen_liberty_takedown"}
+  ],
+
+  "set_accessories": {
+    "whelen_liberty": [
+      {"category": "bracket_mount", "product_id": "whelen_lightbar_mount_kit", "required": false},
+      {"category": "takedown", "product_id": "whelen_liberty_takedown", "required": false}
+    ]
+  }
+}

@@ -48,9 +48,11 @@ Full-size roof bars filter by vehicle via per-SKU `vehicle_tags` (exact match vs
 wildcard). **Rule: 48" → Durango only; 54" → everything else** → 54" SKUs carry
 `["PIU","TRAVERSE","TAHOE","F-150"]`, 48" carry `["DURANGO"]`. Applied to Legacy, Liberty
 (`BB2SP3J`), and Edge 9X. **When a new vehicle type is added, extend the 54" tag lists.**
-Mini/micro/Responder LP bars stay `["any"]`. Left untagged on purpose: `ITL12` (a takedown
-*option* mis-filed as a Liberty bar — data smell, revisit) and SoundOff `M-POWER` (non-Whelen,
-no length data). Reference: [WHELEN_PRICE_LIST_PL26.md](reference/WHELEN_PRICE_LIST_PL26.md)
+Mini/micro/Responder LP bars stay `["any"]`. `ITL12` was a takedown *option* mis-filed as a
+Liberty bar — **fixed 2026-06-26**: moved to a new `whelen_liberty_takedown` accessory product
+(new `takedown` accessory category + `bar_takedown` part_type), wired as a "Take-Down / Alley
+Lights" dropdown on the Liberty bar. SoundOff `M-POWER` left untagged (non-Whelen, no length
+data). Reference: [WHELEN_PRICE_LIST_PL26.md](reference/WHELEN_PRICE_LIST_PL26.md)
 is the full PL26.0WL price list (all SKUs/prices, grep-able).
 6. **Custom tracer color tint:** a Custom build tints the rendered lamp row by the *first*
    picked head's colors only (mixed-color customs render one tint). Fine for now; revisit if
