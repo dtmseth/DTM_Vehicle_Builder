@@ -1104,7 +1104,11 @@ function _pickerTracerSatisfied() {
 // Midnight edition, and a "notes for ordering" box for Custom builds — so the
 // sales rep knows whether to order the normal config or read special notes.
 function _pickerIsLightbar(product) {
-  return !!product && (product.fits_part_types || []).includes("roof_light_bar");
+  if (!product || !(product.fits_part_types || []).includes("roof_light_bar")) return false;
+  // Mini/micro bars are fixed-config single SKUs (color/lens baked in) — no
+  // setup or lens/edition choice, so they skip the config panel.
+  if (/\b(mini|micro)\b/i.test(product.model || "")) return false;
+  return true;
 }
 
 function _pickerLoadLightbar(productId) {
