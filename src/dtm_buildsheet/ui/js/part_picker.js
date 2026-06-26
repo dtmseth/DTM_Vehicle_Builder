@@ -47,7 +47,9 @@ const _LIGHT_CATEGORIES = [
 ];
 const _TYPE_ICONS = { lights: "💡", equipment: "🔧", structural: "🏗️", k9: "🐕", extras: "⚡" };
 // Categories whose parts are color-configured (lights). Others pick a SKU directly.
-const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "roof_bar", "spotlight"]);
+// Roof bars are ordered as whole configured SKUs (colors baked in), so they're
+// NOT a color-config category — no head-color preview/matrix, just pick the SKU.
+const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "spotlight"]);
 
 function _ionRank(pn) {
   if (!pn) return 1;
@@ -597,6 +599,7 @@ function _pickerRenderProducts() {
     // Color products select on head-click; no-color (programmable) products
     // select via the per-SKU "Select" pill instead.
     const pColor = usesColor && _pickerProductHasColor(p);
+    if (pColor && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
     if (pColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
     _pickerRenderProducts(); _pickerUpdateFooter();
     if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
@@ -604,6 +607,7 @@ function _pickerRenderProducts() {
   el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const pid = btn.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
+    if (!_pickerState.sel || _pickerState.sel.product_id !== pid) _pickerResetLocation();
     _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
     _pickerRenderProducts(); _pickerUpdateFooter();
     _pickerLoadAccessories(pid);
@@ -1111,15 +1115,53 @@ function _pickerIsLightbar(product) {
   return true;
 }
 
+// Clear the chosen location (on product switch) so a prior auto-located
+// fixture/tracer spot doesn't leak onto the next product.
+function _pickerResetLocation() {
+  const loc = _pickerState.loc;
+  loc.selected = null; loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
+}
+
+function _pickerSelIsRoofBar() {
+  const sel = _pickerState.sel;
+  const p = sel && _pickerState.products.find(x => x.product_id === sel.product_id);
+  return !!p && (p.fits_part_types || []).includes("roof_light_bar");
+}
+
 function _pickerLoadLightbar(productId) {
   const lb = _pickerState.lightbar;
   const product = _pickerState.products.find(p => p.product_id === productId);
-  if (!productId || _pickerState.editLineId || !_pickerIsLightbar(product)) {
-    _pickerState.lightbar = { active: false, setup: lb.setup, edition: lb.edition, notes: "" };
-    _pickerRenderLightbar(); return;
-  }
-  _pickerState.lightbar = { active: true, setup: lb.setup, edition: lb.edition, notes: "" };
+  const showPanel = !_pickerState.editLineId && _pickerIsLightbar(product);   // full-size bars
+  _pickerState.lightbar = { active: showPanel, setup: lb.setup, edition: lb.edition, notes: "" };
   _pickerRenderLightbar(); _pickerUpdateFooter();
+  // Every roof bar (mini or full) is a fixture → auto-resolve its roof location.
+  if (productId && !_pickerState.editLineId && product
+      && (product.fits_part_types || []).includes("roof_light_bar")) _pickerLightbarAutoLocation();
+}
+
+// Roof bars are fixtures — they always go in the one roof spot, so auto-resolve
+// the location instead of asking. The roof-bar location key is consistent across
+// vehicles ("ROOF LIGHT BAR"); the name must be "Light Bar N" to match the
+// roof_light_bar part_type for rendering.
+async function _pickerLightbarAutoLocation() {
+  const loc = _pickerState.loc;
+  if (loc.selected) return;
+  loc.vehicle = (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "PIU";
+  if (!loc.layouts) { try { loc.layouts = await api("/api/layouts"); } catch (e) { loc.layouts = {}; } }
+  const views = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
+  let key = "";
+  for (const v of Object.values(views)) {
+    for (const n of Object.keys(v.locations || {})) {
+      if (/roof.*light.*bar|roof\s*bar/i.test(n)) { key = n; break; }
+    }
+    if (key) break;
+  }
+  if (loc.selected) return;
+  loc.selected = key || "ROOF LIGHT BAR";
+  loc.name_pattern = "Light Bar {n}";   // matches roof_light_bar part_type label (renders)
+  loc.base_label = "Light Bar";
+  loc.catalog_names = [];
+  _pickerUpdateFooter();
 }
 
 function _pickerRenderLightbar() {
@@ -1208,8 +1250,8 @@ function _pickerUpdateFooter() {
       btn.textContent = "Save edits";
       btn.disabled = !(sel && ready);
       _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
-    } else if (loc.selected && _pickerState.tracer.active) {
-      // Tracer auto-located to the running boards → add directly; the user can
+    } else if (loc.selected && (_pickerState.tracer.active || _pickerSelIsRoofBar())) {
+      // Tracer / fixture lightbar auto-located → add directly; the user can
       // still open the Location tab to change it.
       btn.textContent = "Add Part";
       btn.disabled = !(sel && ready);
