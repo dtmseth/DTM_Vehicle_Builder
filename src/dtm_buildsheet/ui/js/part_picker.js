@@ -1126,9 +1126,10 @@ function _pickerTracerSatisfied() {
 // sales rep knows whether to order the normal config or read special notes.
 function _pickerIsLightbar(product) {
   if (!product || !(product.fits_part_types || []).includes("roof_light_bar")) return false;
-  // Mini/micro bars are fixed-config single SKUs (color/lens baked in) — no
-  // setup or lens/edition choice, so they skip the config panel.
-  if (/\b(mini|micro)\b/i.test(product.model || "")) return false;
+  // Mini/micro bars and the low-profile Responder LP are fixed-config single
+  // SKUs (color/lens baked in, no smoked/midnight variants) — no setup or
+  // lens/edition choice, so they skip the config panel.
+  if (/\b(mini|micro)\b|responder\s*lp/i.test(product.model || "")) return false;
   return true;
 }
 

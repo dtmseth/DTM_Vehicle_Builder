@@ -194,9 +194,16 @@ Legacy). Black-strap kits `STPBK85/93/94/98/101/105` added as **pending-QB** on
 `whelen_lightbar_mount_kit` (mirror the STPKT vehicle tags; $0 placeholder prices).
 
 **Known gaps / TODO:**
-- **Cenator & Edge 9X** still carry placeholder SKUs (no real QB SKU) — need real part #s.
-- **Midnight → black straps** is a reminder, **not enforced** (add not blocked).
-- **Responder LP** still shows the config panel; its SKUs look fixed-config like the minis
-  — confirm whether it should skip the panel too.
-- Pending-QB SKUs (TCRB*, STPBK*, tracer heads) have **$0 placeholder prices**.
+- **Edge 9X** wired 2026-06-26 (6 pending-QB SKUs: short `9XS`/tall `9XT` × 48"/54" ×
+  R/W,Duo-R/B). **Cenator** still a placeholder — real bar (live on whelen.com, dropped from
+  printed PL26); blocked on Seth choosing the config(s).
+- **Full-size bar vehicle tags** (Seth, 2026-06-26): 48"→Durango, 54"→everything else.
+  Applied to Legacy/Liberty/Edge 9X. See `docs/NEXT_SESSION_LIGHTBARS.md`.
+- **Midnight → black straps**: **decided 2026-06-26 (Seth) to keep as a reminder, not
+  enforced** (add not blocked).
+- **Responder LP**: **resolved 2026-06-26** — now skips the config panel like the minis
+  (`responder lp` added to the `_pickerIsLightbar` skip regex; its `R1LP*`/`R2LP*` SKUs are
+  fixed-config).
+- Pending-QB SKUs (TCRB*, STPBK*, tracer heads) keep **$0 placeholder prices** — decided
+  2026-06-26 (Seth) to let them reconcile from QB rather than hand-set.
 - More bar SKUs / configs may be wanted beyond the few currently wired.
