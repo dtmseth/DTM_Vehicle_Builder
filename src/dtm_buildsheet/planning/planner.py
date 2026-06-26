@@ -46,6 +46,14 @@ _TRACER_RENDER_BY_SKU: dict[str, str] = {
     "TCRWX6": "tracer_6lamp",
 }
 
+# Bar part_types → their bar_assets key (the synthesized spec otherwise uses the
+# part_type_id, which has no bar_assets entry → blank render).
+_BAR_ASSET_KEY: dict[str, str] = {
+    "roof_light_bar": "roof",
+    "front_interior_light_bar": "interior-front",
+    "rear_interior_light_bar": "interior-rear",
+}
+
 
 def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
     """Match a part name like 'Forward Warning 3' to its part_type.
@@ -82,13 +90,17 @@ def _synthesize_spec(pt, location_key: str) -> dict:
     """
     cat = (pt.category or "").lower()
     render_kind = _CATEGORY_RENDER_KIND.get(cat, "equipment")
+    # Bars draw from bar_assets keyed by asset_key, which differs from the
+    # part_type_id (e.g. roof_light_bar → "roof"); without this the synthesized
+    # spec resolves no bar asset and the bar renders blank.
+    asset_key = _BAR_ASSET_KEY.get(pt.part_type_id, pt.part_type_id)
     return {
         "part_id":                  pt.part_type_id,
         "display_name":             pt.label,
         "category":                 pt.category or cat,
         "render_kind":              render_kind,
         "default_views":            [],   # resolved from location — see _views_for_location
-        "asset_key":                pt.part_type_id,
+        "asset_key":                asset_key,
         "is_fixture":               False,
         "render_quantity_policy":   "location_slots",
         "accessory_of":             getattr(pt, "accessory_of", None),

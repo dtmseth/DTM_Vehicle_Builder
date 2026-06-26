@@ -174,3 +174,18 @@ def test_tracer_6lamp_sku_remaps(config):
     assert pp.part_id == "tracer_6lamp"
     slots = sum(len(getattr(pl, "instances", []) or []) for pl in (pp.placements or []))
     assert slots == 6
+
+
+def test_roof_bar_resolves_bar_asset(config):
+    # Picker-created roof bar (synthesized spec) must resolve a bar_assets image
+    # (asset_key "roof"), not render blank.
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU"},
+        parts=[PartInput(name="Light Bar 1", part_number="EB2DEDE", location="ROOF LIGHT BAR",
+                         quantity=1, line_id="b1", lens="smoked")],
+        notes={})
+    pp = next(p for p in build_plan(proj, config).planned_parts if p.raw.part_number == "EB2DEDE")
+    assert pp.render_kind == "bar" and pp.on_diagram is True
+    assets = [i.asset_path for pl in (pp.placements or []) for i in (getattr(pl, "instances", []) or [])]
+    assert assets and all(a for a in assets), "bar should resolve an asset in every placement"

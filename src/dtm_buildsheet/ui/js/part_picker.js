@@ -607,8 +607,10 @@ function _pickerRenderProducts() {
   el.querySelectorAll(".pp-head").forEach(h => h.addEventListener("click", () => {
     const pid = h.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
     const wasOpen = _pickerState.expanded.has(pid);
+    // Single-expansion: opening a product collapses any other expanded one, so a
+    // previously-selected product can't linger with a stale SKU list.
     if (wasOpen && (!usesColor || (_pickerState.sel && _pickerState.sel.product_id === pid))) _pickerState.expanded.delete(pid);
-    else _pickerState.expanded.add(pid);
+    else _pickerState.expanded = new Set([pid]);
     // Color products select on head-click; no-color (programmable) products
     // select via the per-SKU "Select" pill instead.
     const pColor = usesColor && _pickerProductHasColor(p);
@@ -621,6 +623,7 @@ function _pickerRenderProducts() {
     e.stopPropagation();
     const pid = btn.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
     if (!_pickerState.sel || _pickerState.sel.product_id !== pid) _pickerResetLocation();
+    _pickerState.expanded = new Set([pid]);   // keep only this product expanded
     _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
     _pickerRenderProducts(); _pickerUpdateFooter();
     _pickerLoadAccessories(pid);
