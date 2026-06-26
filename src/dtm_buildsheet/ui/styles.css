@@ -332,6 +332,8 @@
     .picker-accessories{flex-shrink:0;border-top:2px solid var(--accent);background:#fff7ed;padding:12px 26px;max-height:34vh;overflow-y:auto}
     .pa-banner{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#9a3412;margin-bottom:10px}
     .pa-banner .pa-chip{background:#fb923c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px}
+    .pa-close{margin-left:auto;border:none;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:5px}
+    .pa-close:hover{background:rgba(0,0,0,.08);color:var(--text)}
     .pa-rows{display:flex;flex-direction:column;gap:8px}
     .pa-row{display:flex;align-items:center;gap:10px}
     .pa-row label{flex:0 0 130px;font-size:12px;font-weight:600;color:var(--text)}

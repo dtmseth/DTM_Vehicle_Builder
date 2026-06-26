@@ -83,6 +83,19 @@ function pickerClose() {
   if (panel) panel.classList.remove("open");
 }
 
+// Cancel the current product selection and close the bottom config panels
+// (tracer / lightbar / accessories) so they stop blocking the product list.
+function _pickerClearSelection() {
+  _pickerState.sel = null;
+  _pickerState.tracer.active = false;
+  _pickerState.lightbar.active = false;
+  _pickerState.accessories = []; _pickerState.accessoryChoices = {}; _pickerState.accLoadedFor = null;
+  _pickerResetLocation();
+  _pickerRenderProducts();
+  _pickerRenderTracer(); _pickerRenderLightbar(); _pickerRenderAccessories();
+  _pickerUpdateFooter();
+}
+
 async function _pickerOpenEdit(part) {
   if (!part) return;
   _pickerResetState();
@@ -898,7 +911,8 @@ function _pickerRenderAccessories() {
   }).join("");
   const pending = !_accessoriesSatisfied();
   el.innerHTML = `<div class="pa-banner"><span class="pa-chip">${groups.length}</span>`
-    + `${pending ? "This part has accessories — choose each one to continue" : "Accessories set ✓"}</div>`
+    + `${pending ? "This part has accessories — choose each one to continue" : "Accessories set ✓"}`
+    + `<button class="pa-close" onclick="_pickerClearSelection()" title="Close">✕</button></div>`
     + `<div class="pa-rows">${rows}</div>`;
   el.querySelectorAll("select[data-cat]").forEach(sel => sel.addEventListener("change", () => {
     _pickerState.accessoryChoices[sel.dataset.cat] = sel.value;
@@ -1071,7 +1085,7 @@ function _pickerRenderTracer() {
         ${pill("secondary", "amber", "Amber", t.secondary === "amber")}</div></div>`;
   // Preserve the head-list scroll position across the re-render (qty steppers).
   const _prevScroll = (el.querySelector(".pt-preview") || {}).scrollTop || 0;
-  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">⚡</span>Tracer lightheads — choose a configuration</div>
+  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">⚡</span>Tracer lightheads — choose a configuration<button class="pa-close" onclick="_pickerClearSelection()" title="Close">✕</button></div>
     <div class="pt-rows">
       <div class="pf-group"><span class="pf-label">Heads</span><div class="pf-pills">
         ${pill("mode", "duo", "Standard Duo", t.mode === "duo")}
@@ -1178,7 +1192,7 @@ function _pickerRenderLightbar() {
   const midnightNote = lb.edition === "midnight"
     ? `<div class="pt-cust-note">Midnight Edition needs <b>black straps</b> — pick a black-strap mount in the accessories below to complete it.</div>`
     : "";
-  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">🚙</span>Roof lightbar — setup & edition</div>
+  el.innerHTML = `<div class="pa-banner"><span class="pa-chip">🚙</span>Roof lightbar — setup & edition<button class="pa-close" onclick="_pickerClearSelection()" title="Close">✕</button></div>
     <div class="pt-rows">
       <div class="pf-group"><span class="pf-label">Setup</span><div class="pf-pills">
         ${pill("setup", "standard", "Standard", lb.setup === "standard")}
