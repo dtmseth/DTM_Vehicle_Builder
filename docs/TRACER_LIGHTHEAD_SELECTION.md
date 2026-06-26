@@ -1,6 +1,15 @@
 # Lighthead selection for tracers & lightbars (design)
 
-**Status:** plan locked 2026-06-23 (Seth). Tracers first; lightbars are the same engine,
+> **STATUS 2026-06-26 — both features SHIPPED & user-verified in the GUI.**
+> - **Tracers:** full Standard Duo / Standard Trio / Custom head builder (engine +
+>   API + picker panel + planner render + brackets). See sections below.
+> - **Roof lightbars:** SKU-picker + config panel (Setup, Edition, order notes) —
+>   bars turned out to be whole configured SKUs, NOT a head builder. See "Roof
+>   lightbars (implemented)" near the bottom.
+> Remaining/known gaps are listed in each section and in the new-session prompt
+> (`docs/NEXT_SESSION_LIGHTBARS.md`).
+
+**Original plan:** locked 2026-06-23 (Seth). Tracers first; lightbars are the same engine,
 deferred pending per-bar research. **Head data staged** (batch 11 real heads + batch 12
 pending heads; all four Duo/Trio · White/Amber configs buildable). **Resolution engine BUILT**
 — `app/services/lighthead_resolver.py::resolve_tracer` (pure + tested against real parts_db).
@@ -153,3 +162,41 @@ Capture each bar's slot layout (front_count / rear_count per size) before wiring
   accessories. May want an explicit `head_parent: true` + a `slot_count` source later.
 - The current `split` color mode (driver red / passenger blue + secondary) is the
   building block — reuse its logic, drive it from the pills instead of the matrix.
+
+## Roof lightbars (implemented 2026-06-26)
+
+Research finding: roof bars are **not** the tracer head-builder — they're ordered as
+**whole configured SKUs** (the colors/heads are baked into the part number, e.g. Legacy
+`EB2DEDE` = 54" Duo Red/Blue; the SKU description even states "white front / amber rear").
+So Seth's model = **pick the SKU + a config tag**, not Duo/Trio heads.
+
+**Picker UX** (`#picker-lightbar` panel, `_pickerIsLightbar`/`_pickerLoadLightbar`/
+`_pickerRenderLightbar`/`_pickerAddLightbar` in `part_picker.js`), shown for full-size
+`roof_light_bar` products:
+- **Setup: Standard / Custom** — Custom reveals a required **"notes for ordering"**
+  textarea that rides on the part `notes` for the sales rep (Add gated until filled).
+- **Edition: Clear / Smoked / Midnight** — Midnight flags **black straps required** and
+  prompts picking a black-strap mount; `lens` = smoked for smoked+midnight.
+- On Add: the chosen SKU + setup/edition/notes (folded into `lens`+`notes`) + the chosen
+  mount kit. Bar is named "Light Bar N" (matches `roof_light_bar` part_type → renders).
+- `roof_bar` is **not** a color-config category (no head-color preview/matrix for bars).
+- Bars are **fixtures** → auto-located to "ROOF LIGHT BAR" (named "Light Bar N"); no
+  location prompt. Applies to mini bars too (they otherwise can't be located).
+- **Mini/micro bars** (Mini Legacy, Mini Century, Micro Freedom) are fixed-config single
+  SKUs → no config panel; they add through the normal SKU flow.
+
+**Render fix:** the synthesized spec set `asset_key = part_type_id`, but `bar_assets` is
+keyed `roof`/`interior-front`/`interior-rear` — so picker-created bars drew blank.
+`planner.py::_BAR_ASSET_KEY` maps bar part_types to their asset key.
+
+**Data:** friendly names on real full-size bar SKUs (Legacy/Liberty/Micro Freedom/Mini
+Legacy). Black-strap kits `STPBK85/93/94/98/101/105` added as **pending-QB** on
+`whelen_lightbar_mount_kit` (mirror the STPKT vehicle tags; $0 placeholder prices).
+
+**Known gaps / TODO:**
+- **Cenator & Edge 9X** still carry placeholder SKUs (no real QB SKU) — need real part #s.
+- **Midnight → black straps** is a reminder, **not enforced** (add not blocked).
+- **Responder LP** still shows the config panel; its SKUs look fixed-config like the minis
+  — confirm whether it should skip the panel too.
+- Pending-QB SKUs (TCRB*, STPBK*, tracer heads) have **$0 placeholder prices**.
+- More bar SKUs / configs may be wanted beyond the few currently wired.
