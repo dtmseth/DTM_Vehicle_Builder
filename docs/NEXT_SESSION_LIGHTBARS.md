@@ -28,10 +28,11 @@ the pending-QB mechanism: [PENDING_QB_PARTS.md](PENDING_QB_PARTS.md).
 2. **Edge 9X** — **DONE 2026-06-26**: `"9X EDGE"` placeholder removed; 6 made-to-order SKUs
    wired as pending-QB on `whelen_9x_edge` (short `9XS` + tall `9XT`, lengths 48"/54",
    colors `DDDD`=R/W & `DEDE`=Duo R/B — mirrors Legacy). $0 placeholder prices (list prices
-   in [reference doc](reference/WHELEN_PRICE_LIST_PL26.md) if set later). **Cenator** still
-   a placeholder (`"CENATOR"`): it's a real Whelen bar (dropped from the printed PL26 list
-   but live on whelen.com — TY/TB/TP/TJ SOLO/DUO WeCanX, T-series TRIO, CV/CX standard).
-   **Blocked on Seth picking which Cenator series/length/color config(s) to wire.**
+   in [reference doc](reference/WHELEN_PRICE_LIST_PL26.md) if set later). **Cenator** —
+   **DONE 2026-06-26**: discontinued (Seth), Whelen dropped it from PL26 and DTM no longer
+   sells it. Retired by emptying `whelen_cenator.fits_part_types` (→ never offered in the
+   picker) while keeping the product + SKU data for reference; description records why.
+   Re-add `roof_light_bar` to fits if it ever returns.
 3. **Midnight Edition → black straps**: **Decided 2026-06-26 (Seth): keep reminder only,
    not enforced** — the picker shows the "needs black straps" note but Add isn't blocked.
 4. ~~**Responder LP** config panel~~ — **DONE 2026-06-26**: Responder LP now skips the

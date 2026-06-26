@@ -1,0 +1,7 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Cenator is discontinued (Seth, 2026-06-26): Whelen dropped it from the printed PL26 list and DTM no longer sells it. Keep the product + placeholder SKU data for reference, but make it non-selectable by emptying fits_part_types so it's never offered in the roof-bar picker (a product is only listed when a category part_type is in its fits). The product description records why. Re-add 'roof_light_bar' here if it ever returns.",
+  "set_fits": {
+    "whelen_cenator": []
+  }
+}

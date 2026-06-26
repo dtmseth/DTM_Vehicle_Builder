@@ -195,8 +195,8 @@ Legacy). Black-strap kits `STPBK85/93/94/98/101/105` added as **pending-QB** on
 
 **Known gaps / TODO:**
 - **Edge 9X** wired 2026-06-26 (6 pending-QB SKUs: short `9XS`/tall `9XT` × 48"/54" ×
-  R/W,Duo-R/B). **Cenator** still a placeholder — real bar (live on whelen.com, dropped from
-  printed PL26); blocked on Seth choosing the config(s).
+  R/W,Duo-R/B). **Cenator** retired 2026-06-26 (discontinued) — `fits_part_types` emptied so
+  it's never offered; data kept for reference.
 - **Full-size bar vehicle tags** (Seth, 2026-06-26): 48"→Durango, 54"→everything else.
   Applied to Legacy/Liberty/Edge 9X. See `docs/NEXT_SESSION_LIGHTBARS.md`.
 - **Midnight → black straps**: **decided 2026-06-26 (Seth) to keep as a reminder, not
