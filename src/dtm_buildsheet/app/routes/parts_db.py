@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import copy
+import re
 from dataclasses import asdict
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
@@ -32,6 +35,7 @@ _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
 _TRACER_HEADS_PATH = f"{_PREFIX}/tracer-heads"
+_EDIT_PREFIX = f"{_PREFIX}/edit"
 
 
 # Physical placement_zones relevant to each light category — drives the
@@ -318,6 +322,12 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                     if pt_id in ap_fits:
                         add(cat, apid, False)
 
+    # 3. Child-side: products that declare THIS product as a parent via the
+    #    product-level Accessory Role (accessory_of_products on the child).
+    for apid, ap in products.items():
+        if product_id in (ap.get("accessory_of_products") or []):
+            add(ap.get("accessory_category") or "other", apid, bool(ap.get("accessory_required")))
+
     out: list[dict] = []
     for cat_id in acc_cats:                      # vocabulary order
         g = groups.get(cat_id)
@@ -347,6 +357,353 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             "required": g["required"], "options": options,
         })
     return out
+
+
+# ── Granular edit endpoints (Part Manager SKU grid + hierarchy) ──────────────
+# The client sends a small patch; the server applies it to the full doc and
+# persists via save_config_file (keeping _validate_parts_db + the SharePoint
+# mirror). Tiny network payload, no fragile whole-document round-trips.
+
+_PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
+                        "reviewed", "accessory_category", "accessory_of_products", "accessory_required"}
+_SKU_EDIT_FIELDS = {
+    "part_number", "friendly_name", "color", "secondary_color", "tertiary_color",
+    "lens_type", "price_usd", "qb_pending", "vehicle_tags",
+}
+_PART_TYPE_EDIT_FIELDS = {
+    "label", "type_id", "category", "tree_positions", "tag_ids", "max_count",
+    "accessory_of", "accessories", "allowed_products", "allowed_placements",
+    "workbook_label_pattern", "sequence_scope",
+}
+
+
+def _slugify(s: str) -> str:
+    out = re.sub(r"[^a-z0-9]+", "_", (s or "").strip().lower()).strip("_")
+    return out or "item"
+
+
+def _unique_key(base: str, existing) -> str:
+    if base not in existing:
+        return base
+    i = 2
+    while f"{base}_{i}" in existing:
+        i += 1
+    return f"{base}_{i}"
+
+
+def _clean_tree_positions(positions) -> list[dict]:
+    """Drop blank rows; guarantee the section+zone keys the validator requires."""
+    out: list[dict] = []
+    for pos in positions or []:
+        if not isinstance(pos, dict):
+            continue
+        section, zone, sub_zone = pos.get("section") or "", pos.get("zone") or "", pos.get("sub_zone") or ""
+        if not section and not zone and not sub_zone:
+            continue
+        entry = {"section": section, "zone": zone}
+        if sub_zone:
+            entry["sub_zone"] = sub_zone
+        out.append(entry)
+    return out
+
+
+def _sku_at(product: dict, index: int, expect: str = ""):
+    """Resolve a SKU index, tolerating a shifted index when `expect`
+    (the part_number) is supplied. Returns (part_numbers_list, resolved_index)."""
+    pns = product.setdefault("part_numbers", [])
+    if 0 <= index < len(pns) and (not expect or pns[index].get("part_number") == expect):
+        return pns, index
+    if expect:
+        for i, pn in enumerate(pns):
+            if pn.get("part_number") == expect:
+                return pns, i
+    raise ValueError(f"part number index {index} not found")
+
+
+def _apply_sku_fields(pn: dict, fields: dict) -> None:
+    linked = bool(pn.get("qb_item_id"))
+    for k, v in fields.items():
+        if k not in _SKU_EDIT_FIELDS:
+            continue
+        if k == "price_usd":
+            if linked:
+                continue   # QB owns the price on linked SKUs (qb_unit_price)
+            pn[k] = None if (v is None or v == "") else float(v)
+        elif k == "qb_pending":
+            if v:
+                pn[k] = True
+            else:
+                pn.pop("qb_pending", None)
+        else:
+            pn[k] = v
+
+
+def _mutate_parts_db(svc, paths, mutate):
+    """Deep-copy the doc, run mutate(doc) -> payload, then persist + invalidate.
+    `mutate` may raise ValueError(message) to signal a 400."""
+    doc = copy.deepcopy(svc.raw_doc())
+    payload = mutate(doc) or {}
+    meta = doc.setdefault("metadata", {})
+    meta["last_updated"] = datetime.now(timezone.utc).isoformat()
+    meta["updated_by"] = "part-manager-ui"
+    result = save_config_file("parts_db.json", doc, paths)
+    if not result.get("ok"):
+        raise ValueError(result.get("error") or "save failed")
+    svc.invalidate()
+    payload["ok"] = True
+    return payload
+
+
+def _handle_edit(svc, paths, sub: str, body: dict) -> dict:
+    def products_of(doc):
+        return doc.setdefault("products", {})
+
+    if sub == "product-update":
+        pid, fields = body.get("product_id", ""), (body.get("fields") or {})
+
+        def m(doc):
+            p = products_of(doc).get(pid)
+            if p is None:
+                raise ValueError(f"unknown product_id: {pid}")
+            for k, v in fields.items():
+                if k in _PRODUCT_EDIT_FIELDS:
+                    p[k] = v
+            return {"product_id": pid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "product-create":
+        model = (body.get("model") or "").strip()
+        if not model:
+            raise ValueError("model is required")
+        mid = body.get("manufacturer_id") or ""
+
+        def m(doc):
+            products = products_of(doc)
+            base = (_slugify(mid) + "_" + _slugify(model)) if mid else _slugify(model)
+            pid = _unique_key(base, products)
+            products[pid] = {
+                "manufacturer_id": mid,
+                "model": model,
+                "description": body.get("description") or "",
+                "fits_part_types": list(body.get("fits_part_types") or []),
+                "tag_ids": list(body.get("tag_ids") or []),
+                "part_numbers": list(body.get("part_numbers") or []),
+            }
+            return {"product_id": pid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "product-delete":
+        pid = body.get("product_id", "")
+
+        def m(doc):
+            if pid not in products_of(doc):
+                raise ValueError(f"unknown product_id: {pid}")
+            del doc["products"][pid]
+            return {"product_id": pid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "sku-update":
+        pid = body.get("product_id", "")
+        index = int(body.get("index", -1))
+        expect = body.get("expect_part_number", "") or ""
+        fields = body.get("fields") or {}
+
+        def m(doc):
+            p = products_of(doc).get(pid)
+            if p is None:
+                raise ValueError(f"unknown product_id: {pid}")
+            pns, i = _sku_at(p, index, expect)
+            _apply_sku_fields(pns[i], fields)
+            return {"product_id": pid, "index": i}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "sku-add":
+        pid = body.get("product_id", "")
+        sku = body.get("sku") or {}
+
+        def m(doc):
+            p = products_of(doc).get(pid)
+            if p is None:
+                raise ValueError(f"unknown product_id: {pid}")
+            new = {"part_number": (sku.get("part_number") or "").strip() or "NEW-SKU"}
+            _apply_sku_fields(new, sku)
+            p.setdefault("part_numbers", []).append(new)
+            return {"product_id": pid, "index": len(p["part_numbers"]) - 1}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "sku-delete":
+        pid = body.get("product_id", "")
+        index = int(body.get("index", -1))
+        expect = body.get("expect_part_number", "") or ""
+
+        def m(doc):
+            p = products_of(doc).get(pid)
+            if p is None:
+                raise ValueError(f"unknown product_id: {pid}")
+            pns, i = _sku_at(p, index, expect)
+            pns.pop(i)
+            return {"product_id": pid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "sku-move":
+        src = body.get("from_product_id", "")
+        dst = body.get("to_product_id", "")
+        index = int(body.get("index", -1))
+        expect = body.get("expect_part_number", "") or ""
+
+        def m(doc):
+            products = products_of(doc)
+            ps, pd = products.get(src), products.get(dst)
+            if ps is None or pd is None:
+                raise ValueError("unknown source or destination product")
+            pns, i = _sku_at(ps, index, expect)
+            pd.setdefault("part_numbers", []).append(pns.pop(i))
+            return {"from_product_id": src, "to_product_id": dst}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "sku-bulk":
+        targets = body.get("targets") or []
+        op = body.get("op") or "set"
+        fields = body.get("fields") or {}
+
+        def m(doc):
+            products = products_of(doc)
+            by_pid: dict[str, list[int]] = {}
+            for t in targets:
+                by_pid.setdefault(t.get("product_id", ""), []).append(int(t.get("index", -1)))
+            count = 0
+            for pid, idxs in by_pid.items():
+                p = products.get(pid)
+                if p is None:
+                    continue
+                pns = p.setdefault("part_numbers", [])
+                if op == "delete":
+                    for i in sorted(set(idxs), reverse=True):
+                        if 0 <= i < len(pns):
+                            pns.pop(i)
+                            count += 1
+                else:
+                    for i in set(idxs):
+                        if 0 <= i < len(pns):
+                            _apply_sku_fields(pns[i], fields)
+                            count += 1
+            return {"count": count}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "manufacturer-create":
+        label = (body.get("label") or "").strip()
+        if not label:
+            raise ValueError("label is required")
+
+        def m(doc):
+            mfrs = doc.setdefault("manufacturers", {})
+            mid = _unique_key(_slugify(label), mfrs)
+            entry = {"label": label}
+            if body.get("website"):
+                entry["website"] = body["website"]
+            mfrs[mid] = entry
+            return {"manufacturer_id": mid, "label": label}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "tag-create":
+        label = (body.get("label") or "").strip()
+        if not label:
+            raise ValueError("label is required")
+
+        def m(doc):
+            tags = doc.setdefault("tags", {})
+            tid = _unique_key(_slugify(label), tags)
+            tags[tid] = {"label": label}
+            return {"tag_id": tid, "label": label}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "part-type-create":
+        label = (body.get("label") or "").strip()
+        type_id = (body.get("type_id") or "").strip()
+        if not label or not type_id:
+            raise ValueError("label and type_id are required")
+
+        def m(doc):
+            pts = doc.setdefault("part_types", {})
+            ptid = _unique_key(_slugify(label), pts)
+            pts[ptid] = {
+                "label": label,
+                "type_id": type_id,
+                "category": body.get("category") or "",
+                "tree_positions": _clean_tree_positions(body.get("tree_positions")),
+                "tag_ids": list(body.get("tag_ids") or []),
+                "workbook_label_pattern": body.get("workbook_label_pattern") or "{label}",
+                "sequence_scope": body.get("sequence_scope") or "global",
+            }
+            return {"part_type_id": ptid, "label": label}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "part-type-update":
+        ptid, fields = body.get("part_type_id", ""), (body.get("fields") or {})
+
+        def m(doc):
+            pt = doc.setdefault("part_types", {}).get(ptid)
+            if pt is None:
+                raise ValueError(f"unknown part_type_id: {ptid}")
+            for k, v in fields.items():
+                if k not in _PART_TYPE_EDIT_FIELDS:
+                    continue
+                if k == "tree_positions":
+                    pt[k] = _clean_tree_positions(v)
+                elif k == "max_count":
+                    pt[k] = None if (v is None or v == "") else int(v)
+                else:
+                    pt[k] = v
+            return {"part_type_id": ptid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "seed-light-tags":
+        # Tag products as "light" where the data already implies it (a SKU has a
+        # color, or it fits a light-category part_type). Creates the tag if
+        # missing. Idempotent; the owner corrects individual products afterward.
+        light_cats = {"warning", "scene", "interior", "interior_bar", "roof_bar", "spotlight"}
+
+        def m(doc):
+            tags = doc.setdefault("tags", {})
+            lid = next((tid for tid, t in tags.items()
+                        if tid == "light" or (t.get("label") or "").strip().lower() == "light"), None)
+            if lid is None:
+                lid = "light"
+                tags[lid] = {"label": "Light"}
+            part_types = doc.get("part_types") or {}
+            n = 0
+            for p in (doc.get("products") or {}).values():
+                if lid in (p.get("tag_ids") or []):
+                    continue
+                has_color = any((pn.get("color") or "").strip() for pn in (p.get("part_numbers") or []))
+                fits_light = any((part_types.get(ptid, {}).get("category") in light_cats)
+                                 for ptid in (p.get("fits_part_types") or []))
+                if has_color or fits_light:
+                    p.setdefault("tag_ids", []).append(lid)
+                    n += 1
+            return {"count": n, "light_tag_id": lid}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "backfill-descriptions":
+        # Fill empty SKU sales descriptions (friendly_name) from the QB items
+        # cache for every QB-linked SKU. Never overwrites a hand-curated name.
+        from ..services.qb_sync_service import get_cached_items
+        items = (get_cached_items(paths).get("items") or [])
+        desc_by_id = {str(it.get("qb_item_id")): (it.get("description") or "").strip()
+                      for it in items if it.get("description")}
+
+        def m(doc):
+            n = 0
+            for p in (doc.get("products") or {}).values():
+                for pn in (p.get("part_numbers") or []):
+                    qid = str(pn.get("qb_item_id") or "")
+                    if qid and not (pn.get("friendly_name") or "").strip() and desc_by_id.get(qid):
+                        pn["friendly_name"] = desc_by_id[qid]
+                        n += 1
+            return {"count": n}
+        return _mutate_parts_db(svc, paths, m)
+
+    raise ValueError(f"unknown edit action: {sub}")
 
 
 def route_parts_db(
@@ -616,7 +973,7 @@ def route_parts_db(
     if method == "GET" and path == _TRACER_HEADS_PATH:
         # Resolve a tracer housing + Duo/Trio + White/Amber into concrete
         # housings + head SKUs (qty rolled up). Drives the tracer picker's
-        # Standard Duo / Standard Trio pills. See docs/TRACER_LIGHTHEAD_SELECTION.md.
+        # Standard Duo / Standard Trio pills. See docs/PARTS_DB_AND_PICKER.md.
         from ..services.lighthead_resolver import resolve_tracer
         product_id = qs.get("product_id", [""])[0]
         if not product_id:
@@ -825,6 +1182,14 @@ def route_parts_db(
         product_id = body.get("product_id", "")
         location_id = body.get("location_id", "")
         send_json(handler, svc.validate_placement(part_type_id, product_id, location_id))
+        return True
+
+    if method == "POST" and path.startswith(_EDIT_PREFIX + "/"):
+        sub = path[len(_EDIT_PREFIX) + 1:]
+        try:
+            send_json(handler, _handle_edit(svc, paths, sub, body))
+        except ValueError as exc:
+            send_json(handler, {"ok": False, "error": str(exc)}, status=400)
         return True
 
     return False

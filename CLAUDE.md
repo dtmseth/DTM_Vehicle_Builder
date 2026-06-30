@@ -31,14 +31,13 @@ bash packaging/build_macos.sh                  # package Mac app
 | [docs/PROJECT_WORKFLOW.md](docs/PROJECT_WORKFLOW.md) | Project → draft → output data flow |
 | [docs/FEATURE_INVENTORY.md](docs/FEATURE_INVENTORY.md) | Every feature and non-obvious rule |
 | [docs/PACKAGING.md](docs/PACKAGING.md) | PyInstaller builds |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, QuickBooks integration plan |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, critical path, QB-as-foundation framing |
+| [docs/PARTS_DB_AND_PICKER.md](docs/PARTS_DB_AND_PICKER.md) | parts_db schema, Part Picker, accessories, tracers/bars, pending-QB, data backlog |
 | [docs/EXTERNAL_CONNECTION_SECURITY.md](docs/EXTERNAL_CONNECTION_SECURITY.md) | Security standards for API integrations |
-| [docs/TRACER_LIGHTHEAD_SELECTION.md](docs/TRACER_LIGHTHEAD_SELECTION.md) | Planned Duo/Trio/Custom lighthead auto-selection for tracers/bars |
-| [docs/PENDING_QB_PARTS.md](docs/PENDING_QB_PARTS.md) | Planned: use parts before they exist in QuickBooks |
 
 ## QuickBooks (conditionally relevant)
 
-If working on QuickBooks: read [docs/QUICKBOOKS_INTEGRATION.md](docs/QUICKBOOKS_INTEGRATION.md)
-and [docs/QUICKBOOKS_STATUS.md](docs/QUICKBOOKS_STATUS.md).
+If working on QuickBooks: read [docs/QUICKBOOKS.md](docs/QUICKBOOKS.md) (single hub — status,
+design, security invariants, App Assessment answers).
 
 Secrets never touch disk/cloud — OS keychain only via `credential_store.py`.

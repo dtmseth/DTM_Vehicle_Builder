@@ -96,6 +96,32 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
     return by_part_number, by_model, prod_qb
 
 
+def _unbilled_keys(paths: AppPaths) -> set[str]:
+    """Normalized part-number + model keys of products tagged ``unbilled``.
+
+    Agency-supplied items (cameras, radios) that the shop installs but never
+    bills — they need no QB item and must not appear on an estimate.
+    """
+    doc = get_parts_db_service(paths).raw_doc()
+    tags = doc.get("tags") or {}
+    uid = next((tid for tid, t in tags.items()
+                if tid == "unbilled" or (t.get("label") or "").strip().lower() == "unbilled"), None)
+    if not uid:
+        return set()
+    keys: set[str] = set()
+    for spec in (doc.get("products") or {}).values():
+        if uid not in ((spec or {}).get("tag_ids") or []):
+            continue
+        model = str((spec or {}).get("model", "")).strip().lower()
+        if model:
+            keys.add(model)
+        for pn in (spec or {}).get("part_numbers") or []:
+            num = str((pn or {}).get("part_number", "")).strip().lower()
+            if num:
+                keys.add(num)
+    return keys
+
+
 def _resolve_part(draft_part, by_part_number, by_model, prod_qb) -> tuple[dict | None, str]:
     """Resolve one DraftPart to a billable line, or return (None, reason).
 
@@ -113,7 +139,7 @@ def _resolve_part(draft_part, by_part_number, by_model, prod_qb) -> tuple[dict |
 
     if not entry["qb_item_id"]:
         # Pending-QB part: usable + billable now (via price_usd), flagged so the
-        # estimate tells the reviewer to create the item. See docs/PENDING_QB_PARTS.md.
+        # estimate tells the reviewer to create the item. See docs/PARTS_DB_AND_PICKER.md.
         if entry.get("qb_pending"):
             price = (entry["qb_unit_price"] if entry["qb_unit_price"] is not None
                      else entry.get("price_usd"))
@@ -148,10 +174,16 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     (these are physical parts installed on the vehicle — at least one each).
     """
     by_part_number, by_model, prod_qb = _resolution_index(paths)
+    unbilled = _unbilled_keys(paths)
     lines: list[dict] = []
     problems: list[dict] = []
     for dp in draft.parts:
         if not dp.include:
+            continue
+        # Unbilled parts (agency-supplied cameras/radios etc., tagged "unbilled"):
+        # tracked on the build but never quoted — skip with no line and no problem.
+        if (str(dp.part_number or "").strip().lower() in unbilled
+                or str(dp.name or "").strip().lower() in unbilled):
             continue
         resolved, reason = _resolve_part(dp, by_part_number, by_model, prod_qb)
         if reason:
@@ -185,7 +217,7 @@ def _build_estimate_payload(customer_ref: str, lines: list[dict], *, memo: str =
 
     Pending-QB parts (no qb_item_id) post as DescriptionOnly lines carrying a
     "create item" note — visible to the reviewer, no ItemRef required, no billed
-    amount until the QB user creates the item. See docs/PENDING_QB_PARTS.md.
+    amount until the QB user creates the item. See docs/PARTS_DB_AND_PICKER.md.
     """
     qb_lines = []
     for ln in lines:

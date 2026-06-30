@@ -26,6 +26,7 @@ const ALL_STAB_CONTENTS = [
   "stab-placements",
   "stab-fixtures",
   "stab-sizes",
+  "stab-sku-grid",
   "stab-catalog",
   "stab-parts",
   "stab-parts-db",
@@ -41,7 +42,7 @@ const ALL_STAB_CONTENTS = [
 // First entry in `stabs` is the default pane when the outer stab activates.
 const INNER_STAB_GROUPS = {
   "placements":   { bar: "inner-stab-bar-placements",    stabs: ["placements", "fixtures"] },
-  "part-manager": { bar: "inner-stab-bar-part-manager",  stabs: ["catalog", "parts", "parts-db"] },
+  "part-manager": { bar: "inner-stab-bar-part-manager",  stabs: ["sku-grid", "parts-db", "catalog", "parts"] },
 };
 
 // Default stab selected when each header tab activates for the first time.
@@ -101,6 +102,7 @@ function _runStabSideEffects(stab) {
   if (stab === "workbook-tools" && typeof loadTemplateInfo === "function") loadTemplateInfo();
   if (stab === "fixtures" && typeof initFixtures === "function") initFixtures();
   if (stab === "sales-reps" && typeof initSalesRepsTab === "function") initSalesRepsTab();
+  if (stab === "sku-grid" && typeof initSkuGridTab === "function") initSkuGridTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
   if (stab === "quickbooks" && typeof initQuickBooksTab === "function") initQuickBooksTab();
 }

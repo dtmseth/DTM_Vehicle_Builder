@@ -757,3 +757,75 @@
     .pdb-pn-pending{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;color:var(--muted);cursor:pointer;user-select:none}
     .pdb-pn-pending input{flex:0 0 auto;width:14px;height:14px;padding:0;cursor:pointer;accent-color:#9a6700}
 
+    /* ── SKU Review Grid ─────────────────────────────────────────────── */
+    .skg-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    .skg-tb-sel,.skg-tb-input{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff}
+    .skg-tb-input{min-width:220px}
+    .skg-body{display:flex;flex-direction:column;gap:6px}
+    .skg-prod{border:1px solid var(--border);border-radius:7px;overflow:hidden;background:#fff}
+    .skg-prod.open{border-color:var(--accent)}
+    .skg-prod-head{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;user-select:none}
+    .skg-prod-head:hover{background:#f7f8fb}
+    .skg-caret{color:var(--muted);font-size:11px;width:10px}
+    .skg-prod-model{font-weight:600;font-size:13px;color:var(--text)}
+    .skg-prod-mfr{font-size:12px;color:var(--muted)}
+    .skg-prod-badges{margin-left:6px;font-size:11px;color:var(--muted)}
+    .skg-warn{color:var(--red);font-weight:500}
+    .skg-prod-body{padding:10px 12px 12px;border-top:1px solid var(--border);background:#fbfcfe}
+    .skg-prod-fields{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .skg-fl{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-weight:500}
+    .skg-fl-wide{flex:1;min-width:200px}
+    .skg-in{padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff;color:var(--text)}
+    .skg-in[readonly]{background:#f1f2f6;color:var(--muted)}
+    .skg-prod-rels{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+    .skg-rel{flex:1;min-width:240px}
+    .skg-rel-label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px}
+    .skg-chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+    .skg-chip{display:inline-flex;align-items:center;gap:4px;background:#eef1f7;border:1px solid var(--border);border-radius:11px;padding:2px 4px 2px 9px;font-size:11px;color:var(--text)}
+    .skg-chip-sm{font-size:10px;padding:1px 3px 1px 7px}
+    .skg-chip button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0 2px}
+    .skg-chip button:hover{color:var(--red)}
+    .skg-add{padding:3px 6px;border:1px dashed var(--border);border-radius:11px;font-size:11px;background:#fff;color:var(--muted);cursor:pointer}
+    .skg-add-sm{font-size:10px;padding:2px 5px}
+    .skg-muted{color:var(--muted);font-size:11px}
+    .skg-sku-head,.skg-sku{display:grid;gap:6px;align-items:center}
+    .skg-sku-table.skg-light .skg-sku-head,.skg-sku-table.skg-light .skg-sku{grid-template-columns:20px 100px minmax(96px,1fr) 60px 60px 60px 62px 64px 28px 46px}
+    .skg-sku-table.skg-plain .skg-sku-head,.skg-sku-table.skg-plain .skg-sku{grid-template-columns:22px 140px minmax(160px,1fr) 82px 34px 54px}
+    .skg-sku-head{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);padding:4px 2px;border-bottom:1px solid var(--border)}
+    .skg-skus{display:flex;flex-direction:column}
+    .skg-sku{padding:5px 2px;border-bottom:1px solid #eef0f4}
+    .skg-sku .skg-in{width:100%}
+    .skg-price{text-align:right}
+    .skg-pend{display:flex;justify-content:center}
+    .skg-qb{font-size:9px;font-weight:700;color:#fff;background:var(--green);border-radius:3px;padding:1px 4px;text-align:center}
+    .skg-sku-btns{display:flex;gap:2px;justify-content:flex-end}
+    .skg-sku-btns button{border:1px solid var(--border);background:#fff;border-radius:4px;cursor:pointer;font-size:11px;width:22px;height:22px;color:var(--muted)}
+    .skg-sku-btns button:hover{border-color:var(--accent);color:var(--text)}
+    .skg-vehtags{grid-column:1 / -1;display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:2px 0 4px 28px}
+    .skg-vt-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+    .skg-prod-actions{display:flex;gap:8px;margin-top:10px}
+    .skg-bulk{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;margin-bottom:10px;background:#eef4ff;border:1px solid var(--accent);border-radius:7px}
+    .skg-bulk-count{font-size:12px;font-weight:600;color:var(--navy)}
+    .skg-move-list{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow:auto}
+    .skg-move-opt{text-align:left;padding:7px 10px;border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;font-size:12px;color:var(--text)}
+    .skg-move-opt:hover{border-color:var(--accent);background:#f5f8ff}
+    .skg-badge{font-size:10px;font-weight:600;border-radius:10px;padding:1px 8px;white-space:nowrap}
+    .skg-ready{background:#e6f6ec;color:#166534}
+    .skg-needs{background:#fdeccf;color:#92591b}
+    .skg-complete{margin-left:auto;display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap;cursor:pointer}
+    .skg-complete input{width:14px;height:14px;cursor:pointer;accent-color:#166534}
+    .skg-prod.skg-reviewed{border-color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+    .skg-prod.skg-reviewed .skg-prod-head{background:#f0faf3}
+    .skg-pill{font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap}
+    .skg-pill-qb{background:var(--green);color:#fff}
+    .skg-pill-pend{background:#e0922f;color:#fff}
+    .skg-pill-none{background:#cbd2dc;color:#33384a}
+    .skg-qbsrc{grid-column:1 / -1;display:flex;gap:7px;align-items:center;padding:3px 0 1px 28px}
+    .skg-qbtxt{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .skg-toggle{flex-direction:row;align-items:center;gap:5px;font-weight:600;color:var(--text)}
+    .skg-toggle input{width:14px;height:14px;cursor:pointer;accent-color:var(--navy)}
+    .skg-acc{background:#ede9fe;color:#5b21b6}
+    .skg-unbilled{background:#e2e8f0;color:#334155}
+    .skg-pill-unbilled{background:#64748b;color:#fff}
+    .skg-acc-row{display:flex;gap:8px;align-items:center}
+

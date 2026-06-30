@@ -7,6 +7,6 @@ Two thin, side-effecting adapters used by ``services/quickbooks_service.py``:
 - ``oauth_client`` — stateless HTTP client for Intuit's OAuth 2.0 endpoints
   (discovery document, code exchange, refresh, revoke).
 
-See ``docs/QUICKBOOKS_INTEGRATION.md`` and
+See ``docs/QUICKBOOKS.md`` and
 ``docs/EXTERNAL_CONNECTION_SECURITY.md``.
 """

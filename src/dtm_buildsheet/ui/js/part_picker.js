@@ -951,7 +951,7 @@ function _accessoriesSatisfied() {
 // ── Tracer / head-parent config ────────────────────────
 // Tracers (and bars with child lightheads) replace the color matrix with a
 // simple Standard Duo / Standard Trio + White/Amber choice; the server resolves
-// the exact housings + head SKUs. See docs/TRACER_LIGHTHEAD_SELECTION.md.
+// the exact housings + head SKUs. See docs/PARTS_DB_AND_PICKER.md.
 const _TRACER_LAMP_RE = /\b(\d+)\s*-?\s*lamp\b/i;
 
 function _pickerIsTracer(product) {

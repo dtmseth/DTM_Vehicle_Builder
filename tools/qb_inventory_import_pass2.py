@@ -17,7 +17,7 @@ Policy (locked with Seth, 2026-06-26):
   - **Mechanism = pending-QB** (`pending_parts`): each item is added as a real,
     orderable `part_number` carrying the CSV **Price** and `qb_pending=true`
     (the CSV has no QBO Item Id — only an API sync provides that). It reconciles
-    to the Item Id automatically once items are synced. See docs/PENDING_QB_PARTS.md.
+    to the Item Id automatically once items are synced. See docs/PARTS_DB_AND_PICKER.md.
   - **Granularity = one product per SKU**, conservative attach: an item only
     attaches to an existing product when that product's model is a confident
     match; otherwise it gets its own new product (model from the cleaned Sales

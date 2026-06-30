@@ -4,7 +4,7 @@ housings + lighthead SKUs from a simple Duo/Trio + secondary-color choice.
 The user picks only **Standard Duo / Standard Trio** and a **White/Amber**
 secondary color; this turns that into the exact housing SKUs and per-slot head
 SKUs with quantities, following the locked rules in
-``docs/TRACER_LIGHTHEAD_SELECTION.md``:
+``docs/PARTS_DB_AND_PICKER.md``:
 
 - slot count = housing lamp count; slot 1 = a **primary** head, slots 2..N
   **secondary** (cheaper, no lamp driver);

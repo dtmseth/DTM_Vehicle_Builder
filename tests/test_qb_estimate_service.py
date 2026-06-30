@@ -186,7 +186,7 @@ def test_resolve_skips_excluded_and_defaults_qty(paths):
     assert len(lines) == 1 and lines[0]["qty"] == 1 and lines[0]["amount"] == 5.0
 
 
-# ── pending-QB parts (docs/PENDING_QB_PARTS.md) ───────────────────────────────
+# ── pending-QB parts (docs/PARTS_DB_AND_PICKER.md) ───────────────────────────────
 
 
 def _pending_product(model, part_number, price, **extra):

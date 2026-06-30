@@ -108,9 +108,10 @@
     <button class="inner-stab" data-inner-stab="fixtures" data-inner-group="placements">Fixtures</button>
   </div>
   <div class="inner-stab-bar" id="inner-stab-bar-part-manager" hidden>
-    <button class="inner-stab active" data-inner-stab="catalog" data-inner-group="part-manager">Part Types</button>
-    <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library</button>
-    <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Database (v2)</button>
+    <button class="inner-stab active" data-inner-stab="sku-grid" data-inner-group="part-manager">Review (SKUs)</button>
+    <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Hierarchy</button>
+    <button class="inner-stab" data-inner-stab="catalog" data-inner-group="part-manager">Part Types (legacy)</button>
+    <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library (legacy)</button>
   </div>
 
   <!-- ── PROJECTS (General Settings) ── -->
@@ -639,6 +640,50 @@
   </div>
 
   <!-- ── PARTS DB (v2 tree editor) ── -->
+  <!-- ── SKU REVIEW GRID (parts_db spreadsheet editor) ── -->
+  <div id="stab-sku-grid" hidden>
+    <div class="card">
+      <div class="card-title">SKU Review
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="skg-meta" style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0"></span>
+          <button class="btn btn-secondary btn-sm" id="skg-reload">↺ Reload</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        Brand-sorted catalog. Expand a product to edit every SKU inline. Edits save immediately to
+        <code>parts_db.json</code> (cloud-mirrored). Use the filters to target what still needs attention.
+      </p>
+      <div class="skg-toolbar">
+        <select id="skg-brand" class="skg-tb-sel" title="Filter by brand"></select>
+        <input id="skg-search" class="skg-tb-input" type="text" placeholder="Search SKU, name, or model…" />
+        <select id="skg-qb" class="skg-tb-sel" title="Filter by QuickBooks backing">
+          <option value="">QB: all</option>
+          <option value="in_qb">QB: in QB</option>
+          <option value="pending">QB: pending</option>
+          <option value="none">QB: not in QB</option>
+        </select>
+        <select id="skg-readiness" class="skg-tb-sel" title="Filter by app-readiness (home + description + lights:color)">
+          <option value="">Readiness: any</option>
+          <option value="ready">Ready</option>
+          <option value="needs">Needs data</option>
+        </select>
+        <select id="skg-review" class="skg-tb-sel" title="Filter by manual review status">
+          <option value="">Review: any</option>
+          <option value="complete">Complete</option>
+          <option value="incomplete">Incomplete</option>
+        </select>
+        <span id="skg-count" style="font-size:12px;color:var(--muted)"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-secondary btn-sm" id="skg-seed-lights" title="Tag products as Light where a SKU has a color or fits a light part type">⚡ Seed light tags</button>
+        <button class="btn btn-secondary btn-sm" id="skg-backfill" title="Fill empty Sales Descriptions from the QuickBooks cache">⤵ Descriptions from QB</button>
+        <button class="btn btn-secondary btn-sm" id="skg-add-product">+ Product</button>
+      </div>
+      <div id="skg-bulk" class="skg-bulk" hidden></div>
+      <div id="skg-empty" hidden style="padding:20px;color:var(--muted);font-size:13px">No products match the current filters.</div>
+      <div id="skg-body" class="skg-body"></div>
+    </div>
+  </div>
+
   <div id="stab-parts-db" hidden>
     <div class="card">
       <div class="card-title">Parts Database
@@ -679,6 +724,21 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" id="pdb-modal-cancel">Cancel</button>
         <button class="btn btn-primary" id="pdb-modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SKU GRID modal (create-new entities + move SKU) ── -->
+  <div class="modal-overlay" id="skg-modal">
+    <div class="modal" style="width:460px">
+      <div class="modal-title">
+        <span id="skg-modal-title">Create</span>
+        <button class="modal-close" id="skg-modal-close">×</button>
+      </div>
+      <div id="skg-modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="skg-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="skg-modal-save">Create</button>
       </div>
     </div>
   </div>
@@ -1875,6 +1935,7 @@
 <script src="/ui/js/settings/part_types.js"></script>
 <script src="/ui/js/settings/parts_library.js"></script>
 <script src="/ui/js/settings/part_manager.js"></script>
+<script src="/ui/js/settings/sku_grid.js"></script>
 <script src="/ui/js/settings/vehicles.js"></script>
 <script src="/ui/js/settings/tools.js"></script>
 <script src="/ui/js/settings/agencies.js"></script>

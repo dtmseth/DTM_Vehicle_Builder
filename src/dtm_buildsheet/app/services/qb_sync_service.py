@@ -266,7 +266,7 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
     # Reconcile pending-QB parts: a SKU pre-added with qb_pending=true that has
     # now appeared in QBO gets linked (fill qb_item_id/sku/price, clear the flag)
     # so it stops billing as a "create item" note. Matches the part_number against
-    # the QB item name or sku, like the link tool. See docs/PENDING_QB_PARTS.md.
+    # the QB item name or sku, like the link tool. See docs/PARTS_DB_AND_PICKER.md.
     for product in products.values():
         for pn in (product.get("part_numbers") or []):
             if not pn.get("qb_pending"):

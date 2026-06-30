@@ -1,6 +1,6 @@
 """Tracer head-resolution engine — validated against the real wired parts_db.
 
-Exercises the locked rules in docs/TRACER_LIGHTHEAD_SELECTION.md against the
+Exercises the locked rules in docs/PARTS_DB_AND_PICKER.md against the
 actual Tracer housings + heads (batches 11/12), so a regression in the wiring
 or the color rules trips here.
 """

@@ -25,6 +25,48 @@ Around those two ideas, five thematic pillars:
 
 ---
 
+## Current Direction & Critical Path (set 2026-06-29)
+
+Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
+[PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
+
+**QuickBooks is the *foundation* of the parts system, not a side integration.** `parts_db.json` now
+references parts at **SKU granularity** — real vendor part numbers + QB pricing — a fundamentally
+different basis than the old "product name / part type" model. The Part Picker and every downstream
+consumer depend on real QB data being in the DB, so the QB Item import sits *under* Phase 3 (it feeds
+the canonical DB), not beside it. Finalizing the picker against pre-QB data means building against
+data that's being deprecated. *Food on the shelves before the doors open.*
+
+**The Part Picker is ~80% built, not blocked.** Chunks 1–7 are done and working for Whelen lights.
+Remaining: Chunk 8 (search), Chunk 9 (polish + remove the flat modal), and non-light/no-color
+coverage. The old "Chunk 5 JS bug / blocked" notes are stale — that was a server-side `AttributeError`,
+fixed.
+
+**The real bottleneck was data-review throughput** — now addressed: the **Parts Manager SKU Review grid
+is shipped** (brand-sorted, every-field-inline-editable, QB-source read-only view, light/unbilled tags,
+accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md)
+§2.5). The owner can now curate SKUs self-service.
+
+### Near-term critical path (in order, updated 2026-06-30)
+1. ✅ **Parts Manager SKU Review grid** — *shipped* ("Phase 8 editing-UI brought forward"). Owner curates
+   SKUs/tags/accessories/readiness without prompting Claude per item.
+2. ⭐ **Picker + placement cluster** *(NEXT — blocks testing)* — interrelated, do as one focused turn:
+   **(#4)** migrate the per-part placement data lost from the old workbook (root cause — do first);
+   **(#7)** stop the picker prompting for a location when there's none + add a dropdown location selector
+   for interior parts; **(#5)** scene lights must not default-filter by red; **(#8b)** picker shows
+   "SKU — description". Full spec: [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §7 "NEXT FOCUSED TURN".
+3. **Kit SKUs** *(after the picker cluster)* — mark a SKU as a kit that includes other SKUs (data + UI +
+   estimate behavior). Scope before building.
+4. **QB Pass-2 import** *(parallel/feeding)* — reviewed through the Parts Manager grid. Fills the shelves.
+5. **Finish the Part Picker** *(then)* — Chunks 8–9 + non-light coverage, against final SKU data.
+6. **Phase 4 consumer migration** *(then)* — strip domain fields from `workbook_rules.json`.
+
+**QB go-live** (deploy relay + submit the Intuit questionnaire — see [QUICKBOOKS.md](QUICKBOOKS.md))
+is a discrete, externally-gated track. Run it when the owner chooses; it is *not* advanced by the
+import grind and must not block it.
+
+---
+
 ## 2. Guiding Principles
 
 These are constraints on **how** we move toward the vision. Override them only with stated reason.
@@ -67,15 +109,11 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
-- 🟡 **Phase 3** — schema + service + migration + Part Manager UI all landed. Dual-read consumer swap was split into a larger **Intelligent Part Picker** project (9 chunks, see `docs/PART_PICKER_PLAN.md`). The original PR-3 (manifest_editor dual-read swap) is now Chunk 2 of that plan.
-  - PR-1 (parts_db.json service + dual-read scaffolding): commit `cbc18d4`.
-  - PR-2a (schema revision — manufacturer-centric hierarchy): commit `5f4189b`.
-  - PR-2b (1–3/4): migration script + tests; hand-tables iteration; schema v2 redesign — commits `befb52d`, `368c040`, `6b68847`.
-  - PR-2b (4/4): Part Manager UI + migration seed — commits `7157c13`, `01ada6d`.
-    - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements.
-    - 417 QB-linked SKUs across 3 manufacturers (Setina, Whelen, Arctic Start).
-  - **Next**: Debug Chunk 5 (products grid JS bug). Chunks 1-4 working. Chunk 5 backend verified (26 products for lights/front via Python), but JS fetch silently fails. See `docs/PART_PICKER_PLAN.md` §11 Debugging Notes.
-- 🟢 **Phase 8 MVP brought forward** (out of order) so the owner can review the migration output through a UI instead of by hand. The Part Manager UI is the read-only tree + edit-modal MVP described in §Phase 8; inventory/pricing/separate-app questions still deferred to the full Phase 8.
+- 🟡 **Phase 3** — schema + service + migration landed; **Intelligent Part Picker ~80% built** (Chunks 1–7 done, working for Whelen lights; Chunks 8–9 + non-light coverage remain). The QB Item import is the *foundation* feeding this (see Current Direction above). Full status: `docs/PARTS_DB_AND_PICKER.md`.
+  - PR-1/2a/2b (service + schema + migration + Part Manager seed): commits `cbc18d4`, `5f4189b`, `befb52d`, `368c040`, `6b68847`, `7157c13`, `01ada6d`.
+  - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements; 417+ QB-linked SKUs (Setina, Whelen, Arctic Start; Gamber pilot pending).
+  - **Next** (critical path): **Parts Manager revamp** for self-service data review → continue QB Pass-2 import → finish picker Chunks 8–9 + non-light coverage → Phase 4 consumer migration.
+- 🟢 **Phase 8 MVP brought forward** (out of order): the read-only tree + edit-modal Part Manager (Settings → Advanced → Part Manager → Database v2). **Being revamped now** into a two-view editor (SKU grid + hierarchy) — see §Phase 8. Inventory/pricing/separate-app questions still deferred to the full Phase 8.
 
 ### Phase 0 — Foundation Refactor
 
@@ -377,7 +415,7 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 - ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
 - ✅ `parts_db.json` seeded (5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements). 417 QB-linked SKUs.
 - ✅ Part Manager UI (`ui/js/settings/part_manager.js`) — admin read-only tree browser.
-- 🟡 **Intelligent Part Picker** — replaces the flat "Add Part" modal with a tree-guided picker that surfaces part hierarchy, QB pricing, vehicle compatibility, and color configuration. Full design at `docs/PART_PICKER_PLAN.md`. 9 chunks. Chunk 2 (rewire flat modal to parts_db) is the original PR-3 scope — but the plan goes further, replacing the modal entirely with a guided picker + search + translation layer.
+- 🟢 **Intelligent Part Picker — ~80% built.** Chunks 1–7 done and working for Whelen lights (data foundation, rewired modal, picker shell, smart nav, products grid, color configurator, SKU resolver/translation). Remaining: Chunk 8 (search), Chunk 9 (polish + remove the flat modal), and non-light/no-color coverage. Full design + chunk status: `docs/PARTS_DB_AND_PICKER.md`. (The old "Chunk 5 JS bug" was a server-side `AttributeError`, fixed.)
 
 **Goal**: `parts_db.json` is the authoritative data source for the build flow. The QB-linked part catalog is visible and usable when adding parts to builds.
 
@@ -521,6 +559,22 @@ location-rule matching (interior bars couldn't be placed). Labels are now
 ### Phase 8 — Parts Manager (Same DB, Separate App or Tab)
 
 **MVP slice shipped early (2026-06-12)**: the read-only tree + edit-modal slice was brought forward as part of Phase 3 PR-2b (4/4) so the owner could review the migration output (~165 model→manufacturer mappings, ~106 part_type tree positions) through a UI instead of by hand. Lives at Settings → Advanced → Part Manager → Database (v2); see `src/dtm_buildsheet/ui/js/settings/part_manager.js`. The remaining Phase 8 work below — inventory, pricing, low-stock indicators, the storage-split decision — is still open and depends on Phases 4–7.
+
+**Editing-UI revamp brought forward (2026-06-29, on the critical path)**: the read-only MVP can't do
+fast self-service review of the ~1,200-item QB import — and that review throughput is the current
+bottleneck (see Current Direction). The revamp replaces today's three-tab Part Manager with **two
+complementary views**:
+- **SKU Review Grid** — brand-sorted, spreadsheet-style; expand a product to see all its SKUs inline;
+  every field editable (each value-set field is a selector populated from `parts_db.json` with a
+  "+ Create new…" option + a validating modal when more than a name is needed — never type-and-guess);
+  move SKUs between products; add/delete; bulk actions; filters to target "what still needs attention."
+- **Hierarchy editor** — the editable tree that controls how products sort/place in the Part Picker
+  (`tree_positions`, `fits_part_types`, ordering).
+
+Backend: granular PATCH-style endpoints (replacing today's whole-document POST), all routed through
+`save_config_file` (SharePoint-mirror invariant). The two legacy tabs (Part Types, Parts Library)
+stay until the Phase 4 consumer cutover. This is the *editing* slice of Phase 8; inventory/pricing/
+low-stock remain the later full-Phase-8 work.
 
 **Goal**: a UI for managing the parts database itself — friendly names, model numbers, sub-models, inventory quantities, prices. May be its own app; will share the same `parts_db.json`.
 
@@ -686,7 +740,12 @@ Over-engineering for variants we haven't planned is a real risk. Guardrails:
 
 ## 7. Domain Schema: `parts_db.json`
 
-Sketched schema. Lock it in Phase 3 before writing the migration script.
+> **This is the original sketch (kept for design rationale). The schema as actually built has
+> diverged — the live shape (Type → Section → Zone → Part Type → Product → Part Number, plus
+> manufacturers/tags/placements/accessory_categories) is documented in
+> [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §1, which is the single source of truth.**
+
+Sketched schema (early draft):
 
 **Three orthogonal axes** (this was the schema's biggest mistake in the first draft — they were conflated):
 

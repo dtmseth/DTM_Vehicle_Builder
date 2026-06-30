@@ -13,7 +13,7 @@ Responsibilities:
 Secrets (``client_secret``, ``access_token``, ``refresh_token``,
 ``realm_id``) live ONLY in the keychain. This module never logs them.
 
-See ``docs/QUICKBOOKS_INTEGRATION.md``.
+See ``docs/QUICKBOOKS.md``.
 """
 
 from __future__ import annotations

@@ -312,7 +312,7 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
     # 2b. Pending-QB parts: a real, orderable SKU declared BEFORE it exists in
     #     QuickBooks. No cache lookup (the item isn't synced yet) — price is given.
     #     Writes qb_pending=true + price_usd, no qb_item_id. Usable/billable now;
-    #     the QB items sync reconciles it later. See docs/PENDING_QB_PARTS.md.
+    #     the QB items sync reconciles it later. See docs/PARTS_DB_AND_PICKER.md.
     for pp in (mapping.get("pending_parts") or []):
         sku = pp["part_number"]
         pid = pp["product"]
