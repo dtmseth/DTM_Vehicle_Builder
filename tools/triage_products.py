@@ -161,6 +161,8 @@ def build(pdb: dict) -> list[dict]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="apply HIGH-confidence proposals")
+    ap.add_argument("--apply-types", default="",
+                    help="comma-separated part_type_ids: apply MEDIUM proposals in those buckets")
     ap.add_argument("--tier", default="high", choices=["high", "medium", "low", "none", "all"])
     args = ap.parse_args()
 
@@ -190,16 +192,21 @@ def main() -> int:
             if len(items) > 6:
                 print(f"       … +{len(items)-6} more")
 
-    if not args.write:
+    apply_types = {t.strip() for t in args.apply_types.split(",") if t.strip()}
+    if not args.write and not apply_types:
         print(f"\nfull proposal → {OUT.relative_to(REPO)}")
-        print("(dry run — re-run with --write to apply HIGH-confidence proposals)")
+        print("(dry run — --write applies HIGH; --apply-types a,b applies those MEDIUM buckets)")
         return 0
 
-    # Apply high-confidence: set fits_part_types + light tag.
+    # Apply: high-confidence (with --write) and/or approved medium buckets.
     light_id = _light_tag_id(pdb)
     applied = 0
     for r in rows:
-        if r["confidence"] != "high" or not r["part_type_id"]:
+        if not r["part_type_id"]:
+            continue
+        ok = (args.write and r["confidence"] == "high") or \
+             (r["confidence"] == "medium" and r["part_type_id"] in apply_types)
+        if not ok:
             continue
         p = pdb["products"][r["product_id"]]
         p["fits_part_types"] = [r["part_type_id"]]
@@ -216,7 +223,7 @@ def main() -> int:
     if not res.get("ok"):
         print(f"Save failed: {res.get('error')}", file=sys.stderr)
         return 3
-    print(f"\n✓ applied {applied} high-confidence homes "
+    print(f"\n✓ applied {applied} homes "
           f"({'queued' if res.get('queued') else 'saved'})")
     return 0
 
