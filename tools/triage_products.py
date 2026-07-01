@@ -39,7 +39,7 @@ OUT = REPO / "tools" / "triage_products.json"
 RULES: list[tuple[str, str, str, str]] = [
     # ---- weapons / gun locks (santa_cruz) — brackets before bare locks ----
     (r"GUN ?LOCK BRACKET|OVER ?HEAD.*GUN ?LOCK|GUN ?LOCK.*BRACKET", "gun_lock_bracket", "high", "gun-lock bracket"),
-    (r"\b(MUZZLE|BUTT PLATE|INSERT FOR .*GUNLOCK|GUN LOCK SOLENOID|SOLENOID|BARREL KEY|#\w* ?KEY|KEY OVERRIDE|MAGNET RESISTANT|FLAT BAR|RACK UPRIGHT)", "gun_lock_bracket", "medium", "gun-lock part/accessory"),
+    (r"\b(MUZZLE|BUTT PLATE|INSERT FOR .*GUNLOCK|GUN LOCK SOLENOID|BARREL KEY|#\w+ ?KEY|KEY OVERRIDE|MAGNET RESISTANT|FLAT BAR|RACK UPRIGHT)", "gun_lock_bracket", "medium", "gun-lock part/accessory"),
     (r"\b(GUN ?LOCK|GUNLOCK|SHOTGUN LOCK|WEAPON BARREL|RIFLE LOCK|UNIVERSAL GUN)", "gun_lock", "high", "gun lock"),
     # ---- console-area accessories (specific) BEFORE the bare CONSOLE rule ----
     (r"FACE ?PLATE", "special_face_plate", "high", "faceplate"),

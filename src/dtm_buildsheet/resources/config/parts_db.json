@@ -14227,7 +14227,9 @@
     "kussmaul_091_18wp_120": {
       "manufacturer_id": "kussmaul",
       "model": "NON-WATERPROOF 15 AMP 120 VOLT NEMA 5-15P AUTO EJECT 12 VOLT SOLENOID BLACK COVER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "auto_eject"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},

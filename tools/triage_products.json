@@ -50,30 +50,10 @@
   "light": true
  },
  {
-  "product_id": "whelen_01_086a664_00",
-  "model": "ASSY, FINAL HOWLER SIREN",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN ASSY, FINAL HOWLER SIREN",
-  "part_type_id": "howler",
-  "confidence": "high",
-  "note": "howler",
-  "light": false
- },
- {
   "product_id": "kussmaul_091_18wp_120",
   "model": "NON-WATERPROOF 15 AMP 120 VOLT NEMA 5-15P AUTO EJECT 12 VOLT SOLENOID BLACK COVER",
   "manufacturer_id": "kussmaul",
   "desc": "KUSSMAUL NON-WATERPROOF 15 AMP 120 VOLT NEMA 5-15P AUTO EJECT 12 VOLT SOLENOID BLACK COVER",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "kussmaul_091_55_20_120",
-  "model": "SUPER AUTO EJECT 20 AMP - WEATHERPROOF (SPECIFY COVER COLOR)",
-  "manufacturer_id": "kussmaul",
-  "desc": "KUSSMAUL SUPER AUTO EJECT 20 AMP - WEATHERPROOF (SPECIFY COVER COLOR)",
   "part_type_id": "auto_eject",
   "confidence": "high",
   "note": "auto eject",
@@ -260,16 +240,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_18540",
-  "model": "HEADS UP SMARTPHONE DOCK BRACKET",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON HEADS UP SMARTPHONE DOCK BRACKET",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "unity_189",
   "model": "BRACKET UNITY # 189",
   "manufacturer_id": "unity",
@@ -287,16 +257,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_19865",
-  "model": "ACE K9 HOT'N POP FACEPLATE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON ACE K9 HOT'N POP FACEPLATE",
-  "part_type_id": "special_face_plate",
-  "confidence": "high",
-  "note": "faceplate",
   "light": false
  },
  {
@@ -397,26 +357,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_20_1800_pe",
-  "model": "MICRO DASH PREEMPTION SPLIT KIT",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MICRO DASH PREEMPTION SPLIT KIT",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_20_1800_pek",
-  "model": "MICRO DASH PREEMPTION DASH MOUNT KIT",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MICRO DASH PREEMPTION DASH MOUNT KIT",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
   "light": false
  },
  {
@@ -707,16 +647,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_3003_6177",
-  "model": "MARINCO GUEST 5 AMP 1 BANK 12V ONBOARD BATTERY CHARGER",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MARINCO GUEST 5 AMP 1 BANK 12V ONBOARD BATTERY CHARGER",
-  "part_type_id": "battery_tender",
-  "confidence": "high",
-  "note": "battery charger/tender",
   "light": false
  },
  {
@@ -1120,16 +1050,6 @@
   "light": false
  },
  {
-  "product_id": "gtt_492h",
-  "model": "492H OPTICAL EMITTER, SELF CONTAINED NON CODED",
-  "manufacturer_id": "gtt",
-  "desc": "GTT 492H OPTICAL EMITTER, SELF CONTAINED NON CODED",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
-  "light": false
- },
- {
   "product_id": "go_rhino_4l61a_m1",
   "model": "LIGHT MASK PLATE FOR TEXTURED ALUMINUM LIGHT READY PUSHBUMPER 4 WHELEN IONS",
   "manufacturer_id": "go_rhino",
@@ -1220,16 +1140,6 @@
   "light": true
  },
  {
-  "product_id": "gamber_johnson_7110_1013",
-  "model": "SIDE ARMREST - VEHICLE SPECIFIC CONSOLE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON SIDE ARMREST - VEHICLE SPECIFIC CONSOLE",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7110_1201",
   "model": "2015+ TAHOE WINGS",
   "manufacturer_id": "gamber_johnson",
@@ -1240,36 +1150,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7110_1213",
-  "model": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7110_1385",
-  "model": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0006",
-  "model": "BROTHER ARM REST PRINTER MOUNT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON BROTHER ARM REST PRINTER MOUNT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7160_0085",
   "model": "29\" LONG BASE PLATE",
   "manufacturer_id": "gamber_johnson",
@@ -1277,16 +1157,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0126",
-  "model": "PEDESTAL PRINTER MOUNT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON PEDESTAL PRINTER MOUNT",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
   "light": false
  },
  {
@@ -1320,26 +1190,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7160_0250",
-  "model": "NOTEPAD V UNIVERSAL COMPUTER CRADLE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON NOTEPAD V UNIVERSAL COMPUTER CRADLE",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0321",
-  "model": "FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
-  "part_type_id": "special_face_plate",
-  "confidence": "high",
-  "note": "faceplate",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7160_0332",
   "model": "SHORT INTERIOR POCKET",
   "manufacturer_id": "gamber_johnson",
@@ -1347,56 +1197,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0338",
-  "model": "FULL SIZE FACEPLATE FOR FEDERAL SIGNAL SMART SIREN",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON FULL SIZE FACEPLATE FOR FEDERAL SIGNAL SMART SIREN",
-  "part_type_id": "special_face_plate",
-  "confidence": "high",
-  "note": "faceplate",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0339",
-  "model": "FULL SIZE FACEPLATE FOR WHELEN CENCOM/CARBIDE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON FULL SIZE FACEPLATE FOR WHELEN CENCOM/CARBIDE",
-  "part_type_id": "special_face_plate",
-  "confidence": "high",
-  "note": "faceplate",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0392",
-  "model": "CANON AND HP PRINTER MOUNT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON CANON AND HP PRINTER MOUNT",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0429",
-  "model": "REAR VEHICLE SPECIFIC ARMREST",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON REAR VEHICLE SPECIFIC ARMREST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_0430",
-  "model": "EXTERNAL PRINTER MOUNT ARMREST - VEHICLE SPECIFIC CONSOLE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON EXTERNAL PRINTER MOUNT ARMREST - VEHICLE SPECIFIC CONSOLE",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
   "light": false
  },
  {
@@ -1480,26 +1280,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7160_1299_00",
-  "model": "NOTEPAD TOUCH UNIVERSAL TABLET CRADLE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON NOTEPAD TOUCH UNIVERSAL TABLET CRADLE",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_1299_10",
-  "model": "NOTEPAD TOUCH XL UNIVERSAL TABLET CRADDLE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON NOTEPAD TOUCH XL UNIVERSAL TABLET CRADDLE",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7160_1325",
   "model": "2019+ CHEVROLET SILVERADO/GMC SIERRA LEG KIT (NEW BODY STYLE)",
   "manufacturer_id": "gamber_johnson",
@@ -1540,36 +1320,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7160_1460",
-  "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_1491",
-  "model": "WHELEN ARGES SPOTLIGHT FACEPLATE",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON WHELEN ARGES SPOTLIGHT FACEPLATE",
-  "part_type_id": "special_face_plate",
-  "confidence": "high",
-  "note": "faceplate",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_1626",
-  "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7160_1634",
   "model": "2021+ CHEVROLET TAHOE LEG KIT",
   "manufacturer_id": "gamber_johnson",
@@ -1577,26 +1327,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_1982_10",
-  "model": "DELL RUGED LAPTOP VEHICLE DOCKING STATION, FULL PORT, NO RF 14 RUGGED LAPTOP (5404/5414/5420/5424/5430)",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON DELL RUGED LAPTOP VEHICLE DOCKING STATION, FULL PORT, NO RF 14 RUGGED LAPTOP (5404/5414/5420/5424/5430)",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7160_2022",
-  "model": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
   "light": false
  },
  {
@@ -1610,36 +1340,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7170_0250",
-  "model": "PANASONIC TOUGHBOOK 54/55 DOCKING STATION WITH LIND 120W AUTO BARE WIRE LEADS POWER SUPPLY, NO RF",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON PANASONIC TOUGHBOOK 54/55 DOCKING STATION WITH LIND 120W AUTO BARE WIRE LEADS POWER SUPPLY, NO RF",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0536",
-  "model": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY, NO RF",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY, NO RF",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0537",
-  "model": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY TRI RF",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY TRI RF",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7170_0567_00",
   "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
   "manufacturer_id": "gamber_johnson",
@@ -1650,56 +1350,6 @@
   "light": false
  },
  {
-  "product_id": "gamber_johnson_7170_0734_00",
-  "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0734_02",
-  "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0734_04",
-  "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0734_09",
-  "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0784_07",
-  "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_7170_0814_01",
   "model": "2020-2025 FORD POLICE INTERCEPTOR UTILITY PEDESTAL KIT WITH MONGOOSE SLIDE ARM",
   "manufacturer_id": "gamber_johnson",
@@ -1707,96 +1357,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0882_02",
-  "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0882_03",
-  "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0884_00",
-  "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0884_03",
-  "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_0886_00",
-  "model": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_1062_00",
-  "model": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_1090_10",
-  "model": "DELL RUGGED LAPTOP DOCKING STATION, NO RF, FULL PORT REPLICATION WITH LIND 120W AUTO POWER ADAPTER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON DELL RUGGED LAPTOP DOCKING STATION, NO RF, FULL PORT REPLICATION WITH LIND 120W AUTO POWER ADAPTER",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_1164_01",
-  "model": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7170_1179_00",
-  "model": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
   "light": false
  },
  {
@@ -1817,16 +1377,6 @@
   "part_type_id": "cable",
   "confidence": "low",
   "note": "cable",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_7300_0468",
-  "model": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
   "light": false
  },
  {
@@ -2160,36 +1710,6 @@
   "light": false
  },
  {
-  "product_id": "havis_c_1800",
-  "model": "18\" ENCLOSED CONSOLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS 18\" ENCLOSED CONSOLE",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_1810",
-  "model": "18\" ENCLOSED 10\" HIGH CONSOLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS 18\" ENCLOSED 10\" HIGH CONSOLE",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_3010",
-  "model": "30\" ENCLOSED 10\" HIGH CONSOLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS 30\" ENCLOSED 10\" HIGH CONSOLE",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
   "product_id": "feniex_c_4010",
   "model": "4200 MINI CONTROLLER",
   "manufacturer_id": "feniex",
@@ -2267,76 +1787,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "havis_c_arm_1001",
-  "model": "INTERNAL MOUNT ARMREST WITH LOCKABLE ACCESSORY POCKET",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS INTERNAL MOUNT ARMREST WITH LOCKABLE ACCESSORY POCKET",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arm_102",
-  "model": "SIDE MOUNT ARMREST",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS SIDE MOUNT ARMREST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arm_103",
-  "model": "ARMREST FOR TOP MOUNT",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS ARMREST FOR TOP MOUNT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arpb_1014",
-  "model": "BROTHER ARM REST PRINTER BRACKET: TOP MOUNT",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS BROTHER ARM REST PRINTER BRACKET: TOP MOUNT",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arpb_1015",
-  "model": "BROTHER POCKETJET ROLL-FEED PRINTER MOUNT AND ARMREST: PEDESTAL",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS BROTHER POCKETJET ROLL-FEED PRINTER MOUNT AND ARMREST: PEDESTAL",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arpb_1017",
-  "model": "BROTHER POCKETJET PRINTER MOUNT AND ARMREST: FLAT SURFACE MOUNTING",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS BROTHER POCKETJET PRINTER MOUNT AND ARMREST: FLAT SURFACE MOUNTING",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
-  "light": false
- },
- {
-  "product_id": "havis_c_arpb_1038",
-  "model": "BROTHER POCKETJET PRINTER MOUNT WITH SIDE MOUNTED FLIP-UP ARMREST",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS BROTHER POCKETJET PRINTER MOUNT WITH SIDE MOUNTED FLIP-UP ARMREST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
   "light": false
  },
  {
@@ -2560,16 +2010,6 @@
   "light": false
  },
  {
-  "product_id": "havis_c_ohc_inut_1",
-  "model": "OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
   "product_id": "havis_c_pm_1001",
   "model": "BROTHER PRINTER HOLDER",
   "manufacturer_id": "havis",
@@ -2617,156 +2057,6 @@
   "part_type_id": "cable",
   "confidence": "low",
   "note": "cable",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_0820_blzr_ev",
-  "model": "VEHICLE-SPECIFIC 28\u2033 ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 28\u2033 ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1012_inut_2",
-  "model": "VEHICLE-SPECIFIC 22\u2033 ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 22\u2033 ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1012_tah_1",
-  "model": "VEHICLE-SPECIFIC 22\u2033 ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 22\u2033 ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1100_f150_2",
-  "model": "VEHICLE-SPECIFIC 11\u2033 UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 11\u2033 UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1210_inut",
-  "model": "VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1300_mstg",
-  "model": "VEHICLE-SPECIFIC 13\u2033 FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 13\u2033 FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_1400_inut_1",
-  "model": "VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_2000_dur_1",
-  "model": "VEHICLE-SPECIFIC 20\u2033 FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 20\u2033 FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vs_2300_dur",
-  "model": "VEHICLE-SPECIFIC 23\u2033 FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 23\u2033 FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsw_1005_tah_pm",
-  "model": "VEHICLE-SPECIFIC 15\u2033 WIDE ANGLED 15\u2033 CONSOLE WITH INTERNAL POCKETJET 6 & 7 PRINTER MOUNT FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 15\u2033 WIDE ANGLED 15\u2033 CONSOLE WITH INTERNAL POCKETJET 6 & 7 PRINTER MOUNT FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsw_1012_tah_1",
-  "model": "VEHICLE-SPECIFIC 22\u2033 WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 22\u2033 WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsw_2600_silv",
-  "model": "VEHICLE-SPECIFIC 26\u2033 WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VEHICLE-SPECIFIC 26\u2033 WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsx_1800_inut",
-  "model": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsx_1800_inut_pm",
-  "model": "VSX CONSOLE WITH FRONT PRINTER MOUNT FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS VSX CONSOLE WITH FRONT PRINTER MOUNT FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
-  "light": false
- },
- {
-  "product_id": "havis_c_vsx_1800_tah_pm",
-  "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT OR INTEGRATED STORAGE BIN FOR 2021-2024 CHEVY TAHOE PPV & SSV",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT OR INTEGRATED STORAGE BIN FOR 2021-2024 CHEVY TAHOE PPV & SSV",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
   "light": false
  },
  {
@@ -2858,16 +2148,6 @@
   "confidence": "low",
   "note": "light, type unclear",
   "light": true
- },
- {
-  "product_id": "whelen_clbv2v",
-  "model": "LIGHTBAR-MOUNTED V2V SYNC MODULE",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN LIGHTBAR-MOUNTED V2V SYNC MODULE",
-  "part_type_id": "v2v_sync",
-  "confidence": "high",
-  "note": "V2V sync",
-  "light": false
  },
  {
   "product_id": "qb_unassigned_clpsm",
@@ -2980,26 +2260,6 @@
   "light": false
  },
  {
-  "product_id": "whelen_cv2v",
-  "model": "VEHICLE-TO-VEHICLE SYNC MODULE",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN VEHICLE-TO-VEHICLE SYNC MODULE",
-  "part_type_id": "v2v_sync",
-  "confidence": "high",
-  "note": "V2V sync",
-  "light": false
- },
- {
-  "product_id": "lind_de2045_1342",
-  "model": "20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
-  "manufacturer_id": "lind",
-  "desc": "LIND 20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_de2045i_2542",
   "model": "ISOLATED POWER ADAPTER FOR DELL LATITUDE",
   "manufacturer_id": "qb_unassigned",
@@ -3030,16 +2290,6 @@
   "light": false
  },
  {
-  "product_id": "havis_ds_dell_436n",
-  "model": "DOCKING STATION FOR DELL PRO RUGGED 14\u2033 AND 13\u2033, 5430, 7330, 5420, 5424, & 7424 NOTEBOOKS WITH STANDARD PORT REPLICATION & HAVIS POWER SUPPLY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS DOCKING STATION FOR DELL PRO RUGGED 14\u2033 AND 13\u2033, 5430, 7330, 5420, 5424, & 7424 NOTEBOOKS WITH STANDARD PORT REPLICATION & HAVIS POWER SUPPLY",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "gamber_johnson_ds_lower_9",
   "model": "9\" LOWER POLE",
   "manufacturer_id": "gamber_johnson",
@@ -3047,26 +2297,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "havis_ds_pan_434",
-  "model": "DOCKING STATION FOR PANASONIC TOUGHBOOK 55 LAPTOP WITH STANDARD PORT REPLICATION",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS DOCKING STATION FOR PANASONIC TOUGHBOOK 55 LAPTOP WITH STANDARD PORT REPLICATION",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
-  "product_id": "havis_ds_pan_435n",
-  "model": "DOCKING STATION FOR PANASONIC TOUGHBOOK 55 LAPTOP WITH STANDARD PORT REPLICATION & HAVIS POWER SUPPLY",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS DOCKING STATION FOR PANASONIC TOUGHBOOK 55 LAPTOP WITH STANDARD PORT REPLICATION & HAVIS POWER SUPPLY",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
   "light": false
  },
  {
@@ -3550,16 +2780,6 @@
   "light": true
  },
  {
-  "product_id": "qb_unassigned_exterior_preemption",
-  "model": "EXTERIOR MOUNT PREEMPTION KIT",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "EXTERIOR MOUNT PREEMPTION KIT",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_ezpf_interc_suv",
   "model": "E/Z-RIDER K9 PLATFORM UNIT FOR AN INTERCEPTOR SUV .125 ALUMINUM BODY DOUBLE WALLED FRONT WITH \u00be\u201d BARS FOR ADDED PROTECTION MILL FINISH ALUMINUM FOR EASY CLEANING SURFACE PUNCHED GRATE STYLE REAR WINDOW FOR CLEAR REAR VIEW PUNCHED GRATE STYLE WINDOW GUARDS IN REAR FOR OFFICER VISION AND EASY COOL GUARD ATTACHMENT POLY CARBONATE WINGS TO KEEP THE K9 FROM REACHING VEHICLE INTERIOR MATTE BLACK POWDER COAT FINISH ALL UNITS COME WITH A RUBBER MAT SLIDING CENTER DOOR FOR EMERGENCY EXIT *INCLUDES WINDOW GUARDS AND DOOR PANELS* ** 57\"W X 29\"D X 40\"H **",
   "manufacturer_id": "qb_unassigned",
@@ -3890,26 +3110,6 @@
   "light": false
  },
  {
-  "product_id": "5_0_fab_dtm_glb1u",
-  "model": "OVER HEAD GUN LOCK BRACKET",
-  "manufacturer_id": "5_0_fab_dtm",
-  "desc": "DTM OVER HEAD GUN LOCK BRACKET",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "high",
-  "note": "gun-lock bracket",
-  "light": false
- },
- {
-  "product_id": "5_0_fab_dtm_glbs20fpiu",
-  "model": "OVER HEAD REAR GUN LOCK BRACKET FOR USE WITH SETINA 12VS 2020+ FORD PIU",
-  "manufacturer_id": "5_0_fab_dtm",
-  "desc": "DTM OVER HEAD REAR GUN LOCK BRACKET FOR USE WITH SETINA 12VS 2020+ FORD PIU",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "high",
-  "note": "gun-lock bracket",
-  "light": false
- },
- {
   "product_id": "feniex_gpl_49",
   "model": "FUSION GPL 49 INCH LIGHT BAR DUAL COLOR INCLUDES FOOT MOUNT KIT WITH VEHICLE SPECIFIC STRAPS",
   "manufacturer_id": "feniex",
@@ -4010,16 +3210,6 @@
   "light": false
  },
  {
-  "product_id": "ace_k_9_h_nklb_p",
-  "model": "NO K9 LEFT BEHIND",
-  "manufacturer_id": "ace_k_9",
-  "desc": "ACE K9 NO K9 LEFT BEHIND",
-  "part_type_id": "k9_heat_alarm_popper",
-  "confidence": "high",
-  "note": "k9 heat alarm",
-  "light": false
- },
- {
   "product_id": "whelen_h35sn12",
   "model": "SNAP-IN HALO.BULB 35W/12V AXL.",
   "manufacturer_id": "whelen",
@@ -4027,16 +3217,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "ace_k_9_ha_2520",
-  "model": "HEAT ALARM PRO TEMPERATURE ALARM SYSTEM, INCLUDES HORN, LIGHT, AND SIREN ACTIVATION, DUAL WINDOW DROP",
-  "manufacturer_id": "ace_k_9",
-  "desc": "ACE K-9 HEAT ALARM PRO TEMPERATURE ALARM SYSTEM, INCLUDES HORN, LIGHT, AND SIREN ACTIVATION, DUAL WINDOW DROP",
-  "part_type_id": "k9_heat_alarm_popper",
-  "confidence": "high",
-  "note": "k9 heat alarm",
   "light": false
  },
  {
@@ -4080,16 +3260,6 @@
   "light": false
  },
  {
-  "product_id": "brother_headrest_printer_mount",
-  "model": "CAB SOLUTIONS PADDED HEADREST PRINTER MOUNT FOR BROTHER POCKETJET",
-  "manufacturer_id": "brother",
-  "desc": "CAB SOLUTIONS PADDED HEADREST PRINTER MOUNT FOR BROTHER POCKETJET",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
-  "light": false
- },
- {
   "product_id": "federal_signal_hkb_fpiu20",
   "model": "HOOK KIT 2020 FORD UTILITY",
   "manufacturer_id": "federal_signal",
@@ -4127,16 +3297,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "ace_k_9_hp_5020",
-  "model": "HOT-N-POP\u00ae PRO TEMPERATURE ALARM & DOOR OPENING SYSTEM INCLUDES HORN ACTIVATION SIREN ACTIVATION DUAL WINDOW DROP ONE DOOR POP REMOTE WITH HOLSTER",
-  "manufacturer_id": "ace_k_9",
-  "desc": "ACE K9 HOT-N-POP\u00ae PRO TEMPERATURE ALARM & DOOR OPENING SYSTEM INCLUDES HORN ACTIVATION SIREN ACTIVATION DUAL WINDOW DROP ONE DOOR POP REMOTE WITH HOLSTER",
-  "part_type_id": "k9_heat_alarm_popper",
-  "confidence": "high",
-  "note": "k9 heat alarm",
   "light": false
  },
  {
@@ -4300,16 +3460,6 @@
   "light": false
  },
  {
-  "product_id": "qb_unassigned_lb_preemption_kit",
-  "model": "LIGHTBAR PREEMPTION KIT - INCLUDES STROBE TUBE, PREEMPTION POWER SUPPLY AND WIRING",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "LIGHTBAR PREEMPTION KIT - INCLUDES STROBE TUBE, PREEMPTION POWER SUPPLY AND WIRING",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
-  "light": true
- },
- {
   "product_id": "5_0_fab_dtm_lbwsl21tah",
   "model": "LIGHT BRACKET WHELEN STRIP LIGHT FOR 2021 TAHOE",
   "manufacturer_id": "5_0_fab_dtm",
@@ -4370,16 +3520,6 @@
   "light": true
  },
  {
-  "product_id": "havis_lps_211",
-  "model": "MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "whelen_m1batt",
   "model": "MOTORCYCLE NO-SPILL BATTERY",
   "manufacturer_id": "whelen",
@@ -4397,16 +3537,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "whelen_m4b6chrg",
-  "model": "M4B6 BATTERY CHARGER RIGHT",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN M4B6 BATTERY CHARGER RIGHT",
-  "part_type_id": "battery_tender",
-  "confidence": "high",
-  "note": "battery charger/tender",
   "light": false
  },
  {
@@ -4457,16 +3587,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "gamber_johnson_mcs_armrest",
-  "model": "HEAVY DUTY PEDESTAL ARMREST",
-  "manufacturer_id": "gamber_johnson",
-  "desc": "GAMBER JOHNSON HEAVY DUTY PEDESTAL ARMREST",
-  "part_type_id": "arm_rest",
-  "confidence": "high",
-  "note": "armrest",
   "light": false
  },
  {
@@ -4527,16 +3647,6 @@
   "part_type_id": "radio_mic_clip",
   "confidence": "medium",
   "note": "mic clip",
-  "light": false
- },
- {
-  "product_id": "patrol_pc_mnt_prn_ur_ap_pj",
-  "model": "URPM ULTRA RUGGED PRINTER MOUNT WITH ADAPTER PLATE FOR BROTHER POCKETJET 7 & 8 SERIES PRINTERS - LIMITED LIFETIME WARRANTY",
-  "manufacturer_id": "patrol_pc",
-  "desc": "PATROL PC URPM ULTRA RUGGED PRINTER MOUNT WITH ADAPTER PLATE FOR BROTHER POCKETJET 7 & 8 SERIES PRINTERS - LIMITED LIFETIME WARRANTY",
-  "part_type_id": "printer_mount",
-  "confidence": "high",
-  "note": "printer mount",
   "light": false
  },
  {
@@ -5010,16 +4120,6 @@
   "light": false
  },
  {
-  "product_id": "havis_pkg_vsx_1800_tah_pm_5",
-  "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
-  "part_type_id": "docking_station",
-  "confidence": "high",
-  "note": "docking/cradle",
-  "light": false
- },
- {
   "product_id": "whelen_plf46",
   "model": "PROGRAMMABLE LIGHT FLASHER",
   "manufacturer_id": "whelen",
@@ -5077,16 +4177,6 @@
   "part_type_id": "front_side_warning",
   "confidence": "medium",
   "note": "surface/fascia warning light",
-  "light": false
- },
- {
-  "product_id": "nova_preemption_light_head",
-  "model": "LIGHT HEAD FOR NOVA PREEMPTION KIT",
-  "manufacturer_id": "nova",
-  "desc": "LIGHT HEAD FOR NOVA PREEMPTION KIT",
-  "part_type_id": "preemption",
-  "confidence": "high",
-  "note": "preemption",
   "light": false
  },
  {
@@ -5490,26 +4580,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_1",
-  "model": "PUMP SHOTGUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ PUMP SHOTGUN LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1_ar",
-  "model": "LARGE GUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ LARGE GUN LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_1201",
   "model": "INSERT FOR SC-1 GUNLOCK",
   "manufacturer_id": "santa_cruz",
@@ -5527,16 +4597,6 @@
   "part_type_id": "gun_lock_bracket",
   "confidence": "medium",
   "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "schumacher_sc_1300",
-  "model": "ELECTRIC 1.5A CAR BATTERY CHARGER AND MAINTAINER, 3-IN-1 SOLUTION, FOR 6V/12V POWER SPORT, AUTOMOTIVE, AND MARINE BATTERIES",
-  "manufacturer_id": "schumacher",
-  "desc": "SCHUMACHER ELECTRIC 1.5A CAR BATTERY CHARGER AND MAINTAINER, 3-IN-1 SOLUTION, FOR 6V/12V POWER SPORT, AUTOMOTIVE, AND MARINE BATTERIES",
-  "part_type_id": "battery_tender",
-  "confidence": "high",
-  "note": "battery charger/tender",
   "light": false
  },
  {
@@ -5610,16 +4670,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_1b",
-  "model": "WEAPON BARREL GUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ WEAPON BARREL GUN LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_2",
   "model": "SHOTGUN LOCK WITHOUT KEY OVERRIDE",
   "manufacturer_id": "santa_cruz",
@@ -5667,16 +4717,6 @@
   "part_type_id": "gun_lock_bracket",
   "confidence": "medium",
   "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_5",
-  "model": "STANDARD UNIVERSAL GUNLOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ STANDARD UNIVERSAL GUNLOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
   "light": false
  },
  {
@@ -5730,36 +4770,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_6060",
-  "model": "BARREL & BUFFER INSERT FOR SC-6 UNIVERSAL GUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ BARREL & BUFFER INSERT FOR SC-6 UNIVERSAL GUN LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_6061",
-  "model": "AR-15 BUFFER TUBE INSERT FOR SC-1 GUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ AR-15 BUFFER TUBE INSERT FOR SC-1 GUN LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_7009_a",
-  "model": "ADJUSTABLE GUN LOCK TIMER",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ ADJUSTABLE GUN LOCK TIMER",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_7100",
   "model": "RAPID ACCESS RFID SYSTEM FOR ANY GUN RACK",
   "manufacturer_id": "santa_cruz",
@@ -5767,16 +4777,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_917_5",
-  "model": "RAPID-ADJUST UNIVERSAL GUN RACK WITH SC-6 XL LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ RAPID-ADJUST UNIVERSAL GUN RACK WITH SC-6 XL LOCK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
   "light": false
  },
  {
@@ -5910,16 +4910,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_920_d_ar_ar",
-  "model": "UNIVERSAL RAIL LARGE RIFLE LOCK GUN RACK WITH 2 SC-1-AR LOCKS",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ UNIVERSAL RAIL LARGE RIFLE LOCK GUN RACK WITH 2 SC-1-AR LOCKS",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_920_d_ar_b",
   "model": "UNIVERSAL RAIL DUAL RACK WITH BOTH SC-1-AR & SC-1-B LOCKS",
   "manufacturer_id": "santa_cruz",
@@ -5970,16 +4960,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_922_5",
-  "model": "FREE STANDING UNIVERSAL GUN RACK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ FREE STANDING UNIVERSAL GUN RACK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_922_ar",
   "model": "FREE STANDING LARGE LOCK GUN RACK",
   "manufacturer_id": "santa_cruz",
@@ -6010,16 +4990,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_922_d_5_5",
-  "model": "FREE STANDING DUAL UNIVERSAL GUN RACK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ FREE STANDING DUAL UNIVERSAL GUN RACK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_9222lr",
   "model": "FREE STANDING GUN RACK BASE",
   "manufacturer_id": "santa_cruz",
@@ -6047,26 +5017,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_924_5",
-  "model": "COVERT OVERHEAD UNIVERSAL GUN RACK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ COVERT OVERHEAD UNIVERSAL GUN RACK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_924_d_5_5",
-  "model": "COVERT OVERHEAD DUAL UNIVERSAL GUN RACK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ COVERT OVERHEAD DUAL UNIVERSAL GUN RACK",
-  "part_type_id": "gun_lock",
-  "confidence": "high",
-  "note": "gun lock",
   "light": false
  },
  {
@@ -6400,46 +5350,6 @@
   "light": false
  },
  {
-  "product_id": "tiger_tough_t0512017_iw_blk",
-  "model": "FORD POLICE INTERCEPTOR DRIVERS SEAT COVER",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH FORD POLICE INTERCEPTOR DRIVERS SEAT COVER",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_t0512032_iw_blk",
-  "model": "FORD F-150 RESPONDER DRIVERS SEAT COVER",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH FORD F-150 RESPONDER DRIVERS SEAT COVER",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_t0611031_iw_blk",
-  "model": "SEAT COVER SET - BLACK TACTICAL- FOR 2021+ CHEVY TAHOE PPV/SSV",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH SEAT COVER SET - BLACK TACTICAL- FOR 2021+ CHEVY TAHOE PPV/SSV",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_t0612013_iw_blk",
-  "model": "DRIVER'S SIDE SEAT COVER FOR CHEVY TAHOE PPV/SSV",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH DRIVER'S SIDE SEAT COVER FOR CHEVY TAHOE PPV/SSV",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
   "product_id": "whelen_tcrwxp",
   "model": "DUO PRIMARY LIGHTHEAD FOR TRACER WCX (REPLACE # WITH COLOR)",
   "manufacturer_id": "whelen",
@@ -6477,16 +5387,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_tint",
-  "model": "WINDOW TINT",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "WINDOW TINT",
-  "part_type_id": "window_tint",
-  "confidence": "high",
-  "note": "window tint",
   "light": false
  },
  {
@@ -6587,46 +5487,6 @@
   "part_type_id": "siren_speaker",
   "confidence": "medium",
   "note": "siren/speaker",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_w0521045_iw_blk",
-  "model": "BUCKET SEAT COVERZS FOR FORD TRUCK",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH BUCKET SEAT COVERZS FOR FORD TRUCK",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_w0523028_iw_blk",
-  "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-  "part_type_id": "console",
-  "confidence": "high",
-  "note": "console",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_w0555062_iw_blk",
-  "model": "REAR SEAT COVERS FOR FORD TRUCK",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH REAR SEAT COVERS FOR FORD TRUCK",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
-  "light": false
- },
- {
-  "product_id": "tiger_tough_w0721000_iw_blk",
-  "model": "BUCKET SEAT COVERS FOR RAM TRUCK",
-  "manufacturer_id": "tiger_tough",
-  "desc": "TIGER TOUGH BUCKET SEAT COVERS FOR RAM TRUCK",
-  "part_type_id": "seat_covers",
-  "confidence": "high",
-  "note": "seat covers",
   "light": false
  },
  {
