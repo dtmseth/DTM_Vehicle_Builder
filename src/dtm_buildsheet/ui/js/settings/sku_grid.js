@@ -29,6 +29,7 @@ async function initSkuGridTab() {
   await _skgLoadQb();
   _skgWireOnce();
   _skgPopulateBrandFilter();
+  _skgPopulateTreeFilters();
   _skgRender();
 }
 
@@ -175,15 +176,83 @@ function _skgPopulateBrandFilter() {
   sel.value = prev;
 }
 
+// Tree membership of a product, derived from its part-types (fits_part_types):
+// which Type / Section / Zone / Part-type it belongs to. Products with no
+// part-type home (e.g. freshly-imported QB items) have empty sets.
+const _SKG_TYPE_ORDER = ["lights", "structural", "equipment", "k9", "extras"];
+
+function _skgProductTree(p) {
+  const fits = p.fits_part_types || [];
+  const types = new Set(), sections = new Set(), zones = new Set();
+  for (const ptid of fits) {
+    const pt = _skg?.part_types?.[ptid];
+    if (!pt) continue;
+    if (pt.type_id) types.add(pt.type_id);
+    for (const pos of (pt.tree_positions || [])) {
+      if (pos.section) sections.add(pos.section);
+      if (pos.zone) zones.add(pos.zone);
+    }
+  }
+  return { types, sections, zones, pts: new Set(fits), hasHome: fits.length > 0 };
+}
+
+// Populate the Type/Section/Zone/Part-type selects. Section/Zone/Part-type
+// options cascade off the chosen Type (like the part picker); current
+// selections are preserved when still valid.
+function _skgPopulateTreeFilters() {
+  const typeSel = $("skg-type"), secSel = $("skg-section"), zoneSel = $("skg-zone"), ptSel = $("skg-pt");
+  if (!typeSel) return;
+  const pts = _skg?.part_types || {};
+  const curType = typeSel.value, curSec = secSel.value, curZone = zoneSel.value, curPt = ptSel.value;
+
+  const typesPresent = new Set(Object.values(pts).map(pt => pt.type_id).filter(Boolean));
+  const typeOpts = _SKG_TYPE_ORDER.filter(t => typesPresent.has(t))
+    .concat([...typesPresent].filter(t => !_SKG_TYPE_ORDER.includes(t)));
+  typeSel.innerHTML = `<option value="">All types</option>` +
+    typeOpts.map(t => `<option value="${esc(t)}">${esc(_skg?.types?.[t]?.label || t)}</option>`).join("") +
+    `<option value="__none__">— No part-type —</option>`;
+  typeSel.value = curType;
+
+  const scoped = Object.entries(pts).filter(([, pt]) =>
+    !curType || curType === "__none__" || pt.type_id === curType);
+  const secSet = new Set(), zoneSet = new Set();
+  for (const [, pt] of scoped) for (const pos of (pt.tree_positions || [])) {
+    if (pos.section) secSet.add(pos.section);
+    if (pos.zone) zoneSet.add(pos.zone);
+  }
+  const fill = (sel, ids, labelOf, cur, allLabel, none) => {
+    const sorted = [...ids].sort((a, b) => labelOf(a).localeCompare(labelOf(b)));
+    sel.innerHTML = `<option value="">${allLabel}</option>` +
+      sorted.map(id => `<option value="${esc(id)}">${esc(labelOf(id))}</option>`).join("") +
+      (none ? `<option value="__none__">${none}</option>` : "");
+    sel.value = (cur === "__none__" && none) || ids.has(cur) ? cur : "";
+  };
+  fill(secSel, secSet, s => _skg?.sections?.[s]?.label || s, curSec, "All sections", "");
+  fill(zoneSel, zoneSet, z => _skg?.zones?.[z]?.label || z, curZone, "All zones", "");
+  const ptIds = new Set(scoped.map(([id]) => id));
+  fill(ptSel, ptIds, id => _skg?.part_types?.[id]?.label || id, curPt, "All part-types", "— No part-type —");
+}
+
 function _skgFiltered() {
   const brand = $("skg-brand")?.value || "";
   const q = ($("skg-search")?.value || "").trim().toLowerCase();
   const qb = $("skg-qb")?.value || "";
   const readiness = $("skg-readiness")?.value || "";
   const review = $("skg-review")?.value || "";
+  const ftype = $("skg-type")?.value || "", fsec = $("skg-section")?.value || "";
+  const fzone = $("skg-zone")?.value || "", fpt = $("skg-pt")?.value || "";
   const out = [];
   for (const [pid, p] of Object.entries(_skg?.products || {})) {
     if (brand && p.manufacturer_id !== brand) continue;
+    if (ftype || fsec || fzone || fpt) {
+      const tr = _skgProductTree(p);
+      if (ftype === "__none__") { if (tr.hasHome) continue; }
+      else if (ftype && !tr.types.has(ftype)) continue;
+      if (fsec && !tr.sections.has(fsec)) continue;
+      if (fzone && !tr.zones.has(fzone)) continue;
+      if (fpt === "__none__") { if (tr.hasHome) continue; }
+      else if (fpt && !tr.pts.has(fpt)) continue;
+    }
     if (review === "complete" && !p.reviewed) continue;
     if (review === "incomplete" && p.reviewed) continue;
     if (readiness) {
@@ -453,8 +522,12 @@ function _skgWireOnce() {
   if (_skgWired) return;
   _skgWired = true;
 
-  $("skg-reload")?.addEventListener("click", async () => { await _skgLoad(); await _skgLoadQb(); _skgPopulateBrandFilter(); _skgRender(); toast("Reloaded", "success"); });
+  $("skg-reload")?.addEventListener("click", async () => { await _skgLoad(); await _skgLoadQb(); _skgPopulateBrandFilter(); _skgPopulateTreeFilters(); _skgRender(); toast("Reloaded", "success"); });
   $("skg-brand")?.addEventListener("change", _skgRender);
+  $("skg-type")?.addEventListener("change", () => { _skgPopulateTreeFilters(); _skgRender(); });
+  $("skg-section")?.addEventListener("change", _skgRender);
+  $("skg-zone")?.addEventListener("change", _skgRender);
+  $("skg-pt")?.addEventListener("change", _skgRender);
   $("skg-qb")?.addEventListener("change", _skgRender);
   $("skg-readiness")?.addEventListener("change", _skgRender);
   $("skg-review")?.addEventListener("change", _skgRender);
