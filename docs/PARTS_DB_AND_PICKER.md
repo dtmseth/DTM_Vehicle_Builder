@@ -42,9 +42,11 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
 
-**Current population** (approx): 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers ·
-227 products · 106 part_types · 59 placements · ~546 part_numbers. **417+ QB-linked SKUs** (Whelen,
-Setina, Arctic Start, Gamber pilot pending). Whelen catalog ≈ 91 products, named/split/deduped.
+**Current population** (approx, post full-QB import 2026-07-01): 5 types · 2 sections · 8 zones ·
+62 manufacturers · **932 products** · 113 part_types · 59 placements · **~1,290 QB-linked SKUs**
+(the full sandbox QBO inventory). ~673 of those products have **no part-type home yet** — the
+curation queue (filter the SKU grid to "— No part-type —"). Every part_type now carries a
+`location_mode` + (text mode) `location_options`. Import tool: `tools/qb_import_all.py`.
 
 **Write invariant:** all `parts_db.json` writes go through `save_config_file(...)` (or
 `tools/qb_apply_links.py --write`, or `tools/qb_inventory_import*.py --push-to-cloud`). A direct
@@ -138,8 +140,14 @@ Tests: `tests/test_parts_db_edit_routes.py`, `tests/test_qb_estimate_unbilled.py
 - Brand-sorted; expand a product to edit **every field inline**. Value-set fields are **selectors
   populated from `parts_db.json`** (brand, part-types, tags, vehicle-tags, colors, lens), each with a
   **"+ Create new…"** option that opens a **validating modal** when more than a name is needed.
-- **Move a SKU between products**, add/delete products + SKUs, **bulk** actions (set lens / clear pending /
-  delete), and **filters**: brand · QB state · readiness (ready/needs) · review (complete/incomplete) · search.
+- **Move a SKU between products** (incl. **"➕ Create new product…"** inline), add/delete products +
+  SKUs, **bulk** actions (set lens / clear pending / delete), and **filters**: brand · **Type · Section ·
+  Zone · Part-type** (part-picker-style tree filters, cascading; "— No part-type —" surfaces the import
+  queue) · QB state · readiness (ready/needs) · review (complete/incomplete) · search.
+- **Light bars** (roof/interior/visor) are exempt from the "needs color" readiness check — their color
+  is baked into the configured SKU.
+- **Part-type locations** are edited in the **Hierarchy** editor (mode = placement/text + options),
+  not here — locations are a part_type concept, not per-product (see §4-location below).
 - **Read-only QB-source line** under each SKU (from the `/api/quickbooks/items` cache by `qb_item_id`):
   name · sku · sales description · price · type — so decisions are made against real QB data.
 - **Sales Description** = the `friendly_name` field (relabeled). **⤵ Descriptions from QB** backfills it
@@ -312,33 +320,31 @@ Tracer Trio / passenger-Amber heads.
 - **Resolved (for the record):** Edge 9X wired (pending-QB); Cenator retired (discontinued);
   Responder LP skips the config panel; ITL12 reclassified as a Liberty take-down accessory.
 
-### ⭐ NEXT FOCUSED TURN — Picker + placement cluster (locked priority, 2026-06-30)
+### Picker + placement cluster — SHIPPED (2026-07-01)
 
-These four are interrelated (all touch placement data + `part_picker.js`) and **block the owner's
-testing**. Tackle them together as one focused turn. Start with #4 — it's the root of #7.
+The interrelated cluster that had blocked build-flow testing is done:
 
-1. **#4 — Placement data lost in migration (root cause; do first).** The old workbook tied specific
-   parts to specific placements; some of that did not carry into `parts_db.json`. **Audit** where the
-   legacy placement data lives — `part_catalog.json` (`default_views`, `default_location_key`,
-   `is_fixture`) and `workbook_rules.json` location lists — vs. what `parts_db` part_types/products
-   carry (`allowed_placements` is empty for most; see §6 and audit notes). Migrate the missing
-   per-part placement associations into parts_db so picker placements match the old builds. This is a
-   data + (likely) `tools/` migration task; review the diff before applying via `save_config_file`.
-2. **#7 — Picker location step is wrong for two cases.** (a) It **still prompts for a location on parts
-   that have none to pick** — skip the location step when the resolved placement set is empty (fixtures
-   like roof bars already auto-locate; extend that). (b) **Interior parts need a dropdown-list location
-   selector** (not the vehicle-diagram dot picker) because interior views have no coords
-   (`vehicle_layouts` internal.* views have 0 located placements — see §6). Build a dropdown fallback
-   for interior/no-coord placements so the owner can keep testing. Depends on #4's placement data.
-3. **#5 — Scene lights default-filtered to red.** In the picker color configurator, scene products
-   default to "Standard Split" (red driver/blue passenger). Scene lights are white — they must **not**
-   pre-apply any color filter; the user just picks color splits as normal. Fix the default for the
-   `scene` category in `part_picker.js` (the color-config / `_pickerRenderColorConfig` path).
-4. **#8b — Picker should show "SKU — description".** When selecting a part, show the SKU **and** its
-   sales description; description is optional (some SKUs/models are self-descriptive). Display-only tweak
-   in the picker's SKU rows.
+1. **#4/#7 — Location model rebuilt at the part_type level (the real fix).** The "70 lost
+   placements" framing was a partial misdiagnosis: external-light placements were essentially
+   complete; what was missing was per-part-type locations for **non-light** parts. Locations now live
+   on the part_type with a **`location_mode`**: `placement` (external/visual — lights, bumpers, arges,
+   sirens: the location tells the preview *where to draw*; coordinate-driven) vs `text` (interior/
+   equipment: a curated **pick-list** printed on the sheet, no visual placement). `location_options`
+   holds the text list. The non-light picker location step now renders a **dropdown** (curated options,
+   or a **free-text field** when a part_type has none) instead of a blank vehicle diagram. Seeded from
+   the workbook by `tools/seed_part_type_locations.py` (22 placement · 91 text · 27 with options);
+   editable in the **Part Manager Hierarchy** editor (mode selector + add/remove options). Resolver:
+   `_resolve_product_locations` prefers `location_options`; `category-locations` routes non-lights to
+   it. Validation in `config/schemas.py`; edit action `part-type-update` whitelists the fields.
+2. **#5 — Scene no-color filter.** Root cause was server-side: `sku_resolver.match_heads` treated an
+   empty head (the picker's "No color" choice) as "match only colorless SKUs" — inverted. Fixed to
+   match all; scene/interior now **default to no color filter** (`part_picker.js`).
+3. **#8b — SKU sales description** already renders on non-light SKU rows (`friendly_name`).
 
-### Kit SKUs (#3 — after the picker cluster)
+**Still open:** #7(a) auto-skip the location step for a part with *zero* options (currently shows the
+free-text field — acceptable, low priority).
+
+### Kit SKUs (after the picker cluster)
 Let a SKU be marked a **kit** that **includes other SKUs**. New per-SKU concept (e.g. `is_kit: true` +
 `kit_skus: [part_number…]`) — needs: data model + SKU-grid UI (mark kit + pick members) + a decision on
 estimate behavior (does the kit bill as one line, or expand to its components?). Scope before building.

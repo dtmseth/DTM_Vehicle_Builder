@@ -36,16 +36,17 @@ relay deployed, questionnaire not submitted. Nothing is live against a real QBO 
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
 hard-gated to `environment == "sandbox"`.)
 
-**Parts-import effort (in progress)**: folding the ~1,200-item QBO inventory CSV into the catalog
-incrementally. Pass 1 (manufacturers) done — `tools/qb_inventory_import.py` added 13 manufacturers
-(48→61). Pass 2 tooling (`tools/qb_inventory_import_pass2.py`) is a **proposer, not a writer**: per
-manufacturer it emits a reviewable `qb_apply_links.py` mapping (`tools/qb_links/qb_inv_<mid>.json`)
-+ a report; never touches `parts_db` directly. **Policy (locked w/ Seth):** mechanism = **pending-QB**
-(each item added as an orderable `part_number` with CSV Price + `qb_pending=true`; reconciles to the
-QBO Item Id on sync); granularity = **one product per SKU**, conservative attach. Profile: 1284 rows
-→ 620 already in parts_db, 581 new, 83 unmapped. Pilot: Gamber Johnson → 72 new products proposed
-(validates, **not yet applied** pending owner review); Setina → nothing new (160 already in db).
-**The review bottleneck is what the Parts Manager revamp targets** — see [ROADMAP.md](ROADMAP.md).
+**Parts-import effort — FULL import done (2026-07-01).** The whole synced QBO item cache is now in
+`parts_db`. `tools/qb_import_all.py` bulk-created **+670 products** (262→932) for every item not
+already present — one product per SKU, each carrying its real QB linkage (id / sku / price) + the QB
+description as sales description. Manufacturer inferred from the description; 136 un-inferrable items
+landed under a holding **"Unassigned (QB Import)"** manufacturer for triage. New products have **no
+part-type home** (fits_part_types=[]) → they show as "Needs: home" in the SKU grid, filterable via the
+new **"— No part-type —"** tree filter. These items ARE in QB, so they're QB-linked (not pending-QB).
+*(Earlier incremental path — Pass 1 manufacturers, Pass 2 per-manufacturer proposer
+`tools/qb_inventory_import_pass2.py`, Gamber pilot — is superseded for bulk visibility; the
+pending-QB mechanism remains for parts not yet in QB.)* Next: curate the queue (assign part-types,
+merge SKU variants, reassign the holding bucket) via the SKU grid.
 
 ---
 
