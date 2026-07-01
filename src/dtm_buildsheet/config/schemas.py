@@ -342,6 +342,22 @@ def _validate_parts_db(normalized: dict) -> None:
                     raise ValueError(
                         f"parts_db.json part_type '{pt_id}' tree_positions[{idx}] missing '{k}'"
                     )
+        # Optional location model (per-part-type, see docs/PARTS_DB_AND_PICKER.md):
+        # location_mode is 'placement' (visual, coordinate-driven — lights/bumpers)
+        # or 'text' (a curated pick-list of mount locations — interior/equipment).
+        lmode = spec.get("location_mode")
+        if lmode is not None and lmode not in ("placement", "text"):
+            raise ValueError(
+                f"parts_db.json part_type '{pt_id}' location_mode must be "
+                f"'placement' or 'text' (got {lmode!r})"
+            )
+        lopts = spec.get("location_options")
+        if lopts is not None and not (
+            isinstance(lopts, list) and all(isinstance(x, str) for x in lopts)
+        ):
+            raise ValueError(
+                f"parts_db.json part_type '{pt_id}' location_options must be a list of strings"
+            )
 
 
 def _validate_legacy_workbook_index(normalized: dict) -> None:

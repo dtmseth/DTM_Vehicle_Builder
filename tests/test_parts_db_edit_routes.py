@@ -174,6 +174,23 @@ class TestEntityCreate:
         p = _paths(tmp_path)
         assert _post(p, "part-type-create", {"label": "x"}).status == 400
 
+    def test_part_type_location_fields_persist(self, tmp_path):
+        p = _paths(tmp_path)
+        h = _post(p, "part-type-update", {"part_type_id": "forward_warning", "fields": {
+            "location_mode": "text",
+            "location_options": ["  IN CONSOLE ", "on dash", "in console", ""],  # trim + de-dupe + drop blank
+        }})
+        assert h.body()["ok"]
+        pt = _doc(p)["part_types"]["forward_warning"]
+        assert pt["location_mode"] == "text"
+        assert pt["location_options"] == ["IN CONSOLE", "on dash"]
+
+    def test_part_type_bad_location_mode_rejected(self, tmp_path):
+        p = _paths(tmp_path)
+        h = _post(p, "part-type-update", {"part_type_id": "forward_warning",
+                                          "fields": {"location_mode": "bogus"}})
+        assert h.status == 400 and not h.body()["ok"]
+
 
 class TestReviewAndBackfill:
     def test_reviewed_flag(self, tmp_path):

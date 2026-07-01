@@ -251,12 +251,15 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
         # the picker assigns the lowest unused one (e.g. Forward Warning 1, 2).
         catalog_names = sorted(
             (p.get("display_name") or "").strip() for p in cparts if (p.get("display_name") or "").strip())
-        # Curated locations: the per-part-type option list the old build sheet
-        # offered (workbook_rules), minus the free-text "specify" placeholders.
-        # These drive the picker's location DROPDOWN for non-diagram parts — the
-        # placement data that was lost when the picker only offered diagram dots.
-        ruled = [l.upper() for l in svc.locations_by_legacy_name(pt.label)
-                 if "SPECIFY" not in l.upper()]
+        # Curated locations, in precedence: the part_type's editable
+        # location_options (Part Manager) → the legacy workbook list (minus
+        # "specify" placeholders). These drive the picker's location DROPDOWN for
+        # non-diagram parts — the placement data the picker used to lose.
+        raw_pt = (doc.get("part_types") or {}).get(pt.part_type_id) or {}
+        edited = [str(l).strip().upper() for l in (raw_pt.get("location_options") or [])
+                  if str(l).strip()]
+        ruled = edited or [l.upper() for l in svc.locations_by_legacy_name(pt.label)
+                           if "SPECIFY" not in l.upper()]
         if ruled:
             cand = ruled
         elif renders:
@@ -385,6 +388,7 @@ _PART_TYPE_EDIT_FIELDS = {
     "label", "type_id", "category", "tree_positions", "tag_ids", "max_count",
     "accessory_of", "accessories", "allowed_products", "allowed_placements",
     "workbook_label_pattern", "sequence_scope",
+    "location_mode", "location_options",
 }
 
 
@@ -663,6 +667,16 @@ def _handle_edit(svc, paths, sub: str, body: dict) -> dict:
                     pt[k] = _clean_tree_positions(v)
                 elif k == "max_count":
                     pt[k] = None if (v is None or v == "") else int(v)
+                elif k == "location_options":
+                    # De-dupe, trim, drop blanks; preserve order.
+                    seen: set[str] = set()
+                    opts: list[str] = []
+                    for x in (v or []):
+                        s = str(x).strip()
+                        if s and s.upper() not in seen:
+                            seen.add(s.upper())
+                            opts.append(s)
+                    pt[k] = opts
                 else:
                     pt[k] = v
             return {"part_type_id": ptid}

@@ -296,6 +296,12 @@ function _pdbRenderPartTypeDetail(id){
       ${_pdbField("Workbook label", pt.workbook_label_pattern)}
       ${_pdbField("Sequence scope", pt.sequence_scope)}
     </div>
+    <div class="pdb-section-title">Location</div>
+    <div>${(pt.location_mode || "text") === "placement"
+      ? '<span class="chip">Placement — drawn on the build preview</span>'
+      : '<span class="chip">Text — pick-list</span> ' + ((pt.location_options||[]).length
+          ? _pdbChips(pt.location_options)
+          : '<span style="color:var(--muted)">no options yet</span>')}</div>
     <div class="pdb-section-title">Tree positions</div>
     <div>${treePos.length ? treePos.map(t=>`<span class="chip">${esc(t)}</span>`).join(" ") : '<span style="color:var(--muted)">none</span>'}</div>
     <div class="pdb-section-title">Tags</div>
@@ -457,6 +463,21 @@ function _pdbPartTypeForm(pt){
       <input type="text" id="pdbf-wbpat" value="${esc(pt.workbook_label_pattern||"")}" placeholder="e.g. Forward Warning {n}" />
     </div>
     <div class="modal-section">
+      <div class="modal-section-title">Location</div>
+      <div class="form-group" style="max-width:340px">
+        <label>Location mode</label>
+        <select id="pdbf-locmode">
+          <option value="placement"${(pt.location_mode||"")==="placement"?" selected":""}>Placement — visual, drawn on the build preview</option>
+          <option value="text"${(pt.location_mode||"")!=="placement"?" selected":""}>Text — pick-list printed on the sheet</option>
+        </select>
+      </div>
+      <div id="pdbf-locopts-wrap">
+        <label>Location options <span style="font-weight:400;color:var(--muted)">(text mode — the mount options a builder can pick)</span></label>
+        <div id="pdbf-locopts">${(pt.location_options||[]).map(_pdbLocOptRow).join("")}</div>
+        <button type="button" class="btn btn-secondary btn-sm" id="pdbf-add-locopt">+ Add location</button>
+      </div>
+    </div>
+    <div class="modal-section">
       <div class="modal-section-title">Tree positions</div>
       <div id="pdbf-tree-positions">${treePositionsHtml}</div>
       <button type="button" class="btn btn-secondary btn-sm" id="pdbf-add-pos">+ Add position</button>
@@ -478,6 +499,13 @@ function _pdbPartTypeForm(pt){
       <div class="compat-chips" id="pdbf-accessories">${_pdbCheckboxList("acc", _pdb.part_types, pt.accessories)}</div>
     </div>
   `;
+}
+
+function _pdbLocOptRow(val){
+  return `<div class="pdb-locopt-row" style="display:flex;gap:6px;margin-bottom:5px">
+    <input type="text" data-locopt value="${esc(val||"")}" placeholder="e.g. IN CENTER CONSOLE" style="flex:1" />
+    <button type="button" class="btn btn-danger btn-sm pdbf-locopt-del">✕</button>
+  </div>`;
 }
 
 function _pdbTreePosRow(pos, idx){
@@ -571,6 +599,18 @@ function _pdbWireModalBody(kind){
       _pdbWirePosRow(container.lastElementChild);
     });
     $("pdbf-tree-positions").querySelectorAll(".pdb-tree-pos-row").forEach(_pdbWirePosRow);
+
+    // Location options: show only in text mode; add/remove rows.
+    const locWrap = $("pdbf-locopts-wrap"), locMode = $("pdbf-locmode");
+    const syncLocMode = () => { if(locWrap) locWrap.style.display = locMode.value === "text" ? "" : "none"; };
+    locMode?.addEventListener("change", syncLocMode);
+    syncLocMode();
+    $("pdbf-add-locopt")?.addEventListener("click", () => {
+      const c = $("pdbf-locopts");
+      c.insertAdjacentHTML("beforeend", _pdbLocOptRow(""));
+      _pdbWireLocOptRow(c.lastElementChild);
+    });
+    $("pdbf-locopts").querySelectorAll(".pdb-locopt-row").forEach(_pdbWireLocOptRow);
   }
 
   if(kind === "product"){
@@ -586,6 +626,10 @@ function _pdbWireModalBody(kind){
 
 function _pdbWirePosRow(row){
   row.querySelector(".pdbf-pos-del").addEventListener("click", () => row.remove());
+}
+
+function _pdbWireLocOptRow(row){
+  row.querySelector(".pdbf-locopt-del").addEventListener("click", () => row.remove());
 }
 
 function _pdbWirePnRow(row){
@@ -626,6 +670,10 @@ function _pdbCollectFormData(kind){
       allowed_placements: _pdbCollectChecked("pdbf-allowed-placements", "apl"),
       workbook_label_pattern: $("pdbf-wbpat").value.trim(),
       sequence_scope: $("pdbf-seq").value.trim() || "global",
+      location_mode: $("pdbf-locmode").value || "text",
+      location_options: $("pdbf-locmode").value === "text"
+        ? [...$("pdbf-locopts").querySelectorAll("[data-locopt]")].map(i => i.value.trim()).filter(Boolean)
+        : [],
     };
   }
   if(kind === "product"){
