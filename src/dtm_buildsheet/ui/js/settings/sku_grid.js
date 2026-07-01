@@ -74,6 +74,14 @@ function _skgIsLight(p) {
   return (p.fits_part_types || []).some(ptid => (_skg?.part_types?.[ptid]?.type_id) === "lights");
 }
 
+// Light bars (roof / interior bar) are ordered as whole configured SKUs with the
+// color baked into the part number (e.g. Legacy EB2DEDE) — they carry no per-SKU
+// color tag, so the readiness check must NOT require a color for them.
+const _SKG_BAR_CATS = new Set(["roof_bar", "interior_bar", "visor_bar"]);
+function _skgIsBar(p) {
+  return (p.fits_part_types || []).some(ptid => _SKG_BAR_CATS.has(_skg?.part_types?.[ptid]?.category));
+}
+
 // Accessory part_types (brackets/flanges/etc.) — kept OUT of the placement
 // selector; product→product accessory links live in the Accessory Role section.
 function _skgIsAccessoryPt(ptid) {
@@ -115,7 +123,9 @@ function _skgReady(p) {
     missing.push("home");
   }
   if (!pns.length) missing.push("SKUs");
-  if (_skgIsLight(p) && pns.some(pn => !(pn.color || "").trim())) missing.push("color");
+  // Lights need a color per SKU — except light bars, whose color is baked into
+  // the configured part number (no per-SKU color tag to require).
+  if (_skgIsLight(p) && !_skgIsBar(p) && pns.some(pn => !(pn.color || "").trim())) missing.push("color");
   return { ready: missing.length === 0, missing };
 }
 
@@ -740,7 +750,11 @@ function _skgCreatePartType(onCreated) {
       await _skgLoad(); _skgCloseModal(); onCreated && onCreated(res.part_type_id);
     });
 }
-function _skgCreateProduct() {
+// `onCreated(product_id)` (optional) lets callers chain off a fresh product —
+// e.g. the SKU-move flow creating a new destination. Guarded with typeof so the
+// click-handler's event object isn't mistaken for a callback.
+function _skgCreateProduct(onCreated) {
+  const cb = typeof onCreated === "function" ? onCreated : null;
   const mfrOpts = _skgMfrsSorted().map(([id, m]) => [id, m.label || id]);
   _skgOpenModal("Create product", `
     <label class="skg-fl">Model<input id="skg-np-model" class="skg-in" placeholder="e.g. ION"></label>
@@ -752,6 +766,7 @@ function _skgCreateProduct() {
       const res = await _skgEdit("product-create", { model, manufacturer_id: $("skg-np-mfr").value, description: $("skg-np-desc").value.trim() });
       if (!res) return;
       await _skgLoad(); _skgPopulateBrandFilter(); _skgCloseModal();
+      if (cb) { cb(res.product_id); return; }
       _skgExpanded.add(res.product_id);
       _skgRender();
       $("skg-body")?.querySelector(`.skg-prod[data-pid="${CSS.escape(res.product_id)}"]`)?.scrollIntoView({ block: "center" });
@@ -759,22 +774,30 @@ function _skgCreateProduct() {
 }
 function _skgOpenMove(pid, idx, expect) {
   const others = _skgProductsSorted().filter(([id]) => id !== pid);
+  const moveTo = async dst => {
+    const res = await _skgEdit("sku-move", { from_product_id: pid, to_product_id: dst, index: idx, expect_part_number: expect });
+    if (res) { _skgExpanded.add(dst); await _skgLoad(); _skgCloseModal(); _skgRender(); }
+  };
+  const createOpt = `<button class="skg-move-opt skg-move-new" data-create="1">➕ Create new product…</button>`;
   const list = others.map(([id, p]) =>
     `<button class="skg-move-opt" data-target="${esc(id)}">${esc(_skgMfrLabel(p.manufacturer_id))} · ${esc(p.model || id)}</button>`).join("");
   _skgOpenModal(`Move "${expect || "SKU"}" to…`, `
     <input id="skg-move-search" class="skg-in" placeholder="Search product…" style="margin-bottom:8px">
-    <div id="skg-move-list" class="skg-move-list">${list}</div>`, null, "");
+    <div id="skg-move-list" class="skg-move-list">${createOpt}${list}</div>`, null, "");
   const search = $("skg-move-search");
   const listEl = $("skg-move-list");
   search?.addEventListener("input", () => {
     const q = search.value.toLowerCase();
-    listEl.querySelectorAll(".skg-move-opt").forEach(b => { b.hidden = q && !b.textContent.toLowerCase().includes(q); });
+    // Keep the create option visible while filtering existing products.
+    listEl.querySelectorAll(".skg-move-opt").forEach(b => {
+      if (b.dataset.create) return;
+      b.hidden = q && !b.textContent.toLowerCase().includes(q);
+    });
   });
   listEl?.addEventListener("click", async e => {
     const opt = e.target.closest(".skg-move-opt");
     if (!opt) return;
-    const dst = opt.dataset.target;
-    const res = await _skgEdit("sku-move", { from_product_id: pid, to_product_id: dst, index: idx, expect_part_number: expect });
-    if (res) { _skgExpanded.add(dst); await _skgLoad(); _skgCloseModal(); _skgRender(); }
+    if (opt.dataset.create) { _skgCreateProduct(newPid => moveTo(newPid)); return; }
+    moveTo(opt.dataset.target);
   });
 }

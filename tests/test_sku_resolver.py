@@ -52,6 +52,27 @@ def test_color_set_is_order_insensitive():
     assert a["combos"][0]["default_sku"] == "I2D"
 
 
+def test_no_color_filter_matches_every_sku():
+    # The picker's "No color" choice sends one empty head ([[]]). Every SKU
+    # must match (scene/interior lights are white and need no color filter) —
+    # NOT just the colorless ones (the inverted-filter bug we fixed).
+    scene_skus = SKUS + [_PN("M9SCENE", qb_unit_price=120.0, qb_item_id="9")]
+    res = sku_resolver.match_heads(scene_skus, [[]])
+    assert len(res["combos"]) == 1
+    combo = res["combos"][0]
+    assert combo["matched"]
+    assert combo["count"] == 1
+    matched_pns = {s["part_number"] for s in combo["skus"]}
+    assert matched_pns == {s.part_number for s in scene_skus}  # all of them
+    assert res["all_matched"]
+
+
+def test_no_color_filter_still_respects_lens():
+    res = sku_resolver.match_heads(SKUS, [[]], lens="smoked")
+    matched_pns = {s["part_number"] for s in res["combos"][0]["skus"]}
+    assert matched_pns == {"XI2D"}  # only the smoked SKU
+
+
 def test_standard_split_groups_by_side():
     # 4 heads: R/W R/W B/W B/W → two combos of 2 each
     heads = [["red", "white"], ["red", "white"], ["blue", "white"], ["blue", "white"]]

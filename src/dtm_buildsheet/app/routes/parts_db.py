@@ -174,6 +174,7 @@ def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
             "part_type_id": pt.part_type_id,
             "name_pattern": (pt.workbook_label_pattern or pt.label),
             "base_label": pt.label,
+            "has_coords": True,
         })
     out.sort(key=lambda x: x["location"])
     return out
@@ -238,31 +239,40 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
     seen: set[str] = set()
     for pt in fit:
         cparts = _catalog_parts_for_label(catalog_parts, pt.label)
-        # Skip non-rendering part_types (e.g. Tail/Headlight Flasher — line items
-        # that flash existing vehicle lights, no diagram icon): they have no
-        # placement and would never load in the preview.
-        if not any((p.get("render_kind") or "none") != "none" for p in cparts):
-            continue
         dviews: set[str] = set()
         for p in cparts:
             dviews |= set(p.get("default_views") or [])
-        if not dviews:
-            continue   # part doesn't render anywhere → nothing to offer
+        # Does this part_type render a diagram icon anywhere? Lights/structural do;
+        # most equipment + interior parts (radios, consoles, gun racks) do not —
+        # they're line items with a mount location but no dot on the vehicle view.
+        renders = bool(dviews) and any(
+            (p.get("render_kind") or "none") != "none" for p in cparts)
         # The exact names the planner renders (catalog display_names), sorted so
         # the picker assigns the lowest unused one (e.g. Forward Warning 1, 2).
         catalog_names = sorted(
             (p.get("display_name") or "").strip() for p in cparts if (p.get("display_name") or "").strip())
-        # Candidate locations: curated rule first, else everything in the part's views.
-        ruled = [l.upper() for l in svc.locations_by_legacy_name(pt.label)]
+        # Curated locations: the per-part-type option list the old build sheet
+        # offered (workbook_rules), minus the free-text "specify" placeholders.
+        # These drive the picker's location DROPDOWN for non-diagram parts — the
+        # placement data that was lost when the picker only offered diagram dots.
+        ruled = [l.upper() for l in svc.locations_by_legacy_name(pt.label)
+                 if "SPECIFY" not in l.upper()]
         if ruled:
-            cand = [k for k in ruled if loc_views.get(k, set()) & dviews]
-        else:
+            cand = ruled
+        elif renders:
+            # Diagram part with no curated list: any location that has coordinates
+            # in one of the part's render views (so the dot loads in the preview).
             cand = [k for k, vs in loc_views.items() if vs & dviews]
+        else:
+            cand = []   # no curated list and nothing renders → needs no location
         for key in cand:
             if key in seen:
                 continue
             seen.add(key)
             pz = (placements_doc.get(key) or {}).get("placement_zone", "")
+            # A location shows as a diagram dot only if it has coords in one of the
+            # part's render views; otherwise the picker offers it in the dropdown.
+            has_coords = renders and bool(loc_views.get(key, set()) & dviews)
             out.append({
                 "location": key,
                 "placement_zone": pz,
@@ -271,6 +281,7 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
                 "name_pattern": pt.workbook_label_pattern or pt.label,
                 "base_label": pt.label,
                 "catalog_names": catalog_names,
+                "has_coords": has_coords,
             })
     out.sort(key=lambda x: x["location"])
     return out
@@ -1045,14 +1056,22 @@ def route_parts_db(
         return True
 
     if method == "GET" and path == _CATEGORY_LOCATIONS_PATH:
-        # Location-last step: category-wide placement pool (category-level
-        # placements — any product goes in any location in its category).
+        # Location step.
+        #   lights      → category-wide placement pool (coords drive diagram dots).
+        #   non-lights  → the selected product's own curated location list (each
+        #                 part_type's options), surfaced as a dropdown because these
+        #                 placements have no diagram coordinates.
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
+        product_id = qs.get("product", [""])[0]
+        vehicle = qs.get("vehicle", [""])[0]
         if not type_id:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
-        locs = _resolve_category_locations(svc, type_id, category)
+        if type_id == "lights":
+            locs = _resolve_category_locations(svc, type_id, category)
+        else:
+            locs = _resolve_product_locations(svc, paths, type_id, category, product_id, vehicle)
         send_json(handler, {"locations": locs})
         return True
 

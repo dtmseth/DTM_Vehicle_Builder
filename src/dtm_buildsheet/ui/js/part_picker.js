@@ -394,6 +394,10 @@ function _pickerWireFilters() {
     }
     if (k === "cat") {
       f.category_id = v; f.category_label = b.dataset.l;
+      // Scene/interior lights are white — default to NO color filter (all SKUs
+      // match); the user opts into a color only if they want one. Other light
+      // categories keep the normal per-color selection.
+      c._noColor = (v === "scene" || v === "interior");
       _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
       await _pickerFetchProducts();
       const steps = _pickerSteps();
@@ -471,7 +475,7 @@ function _skuMatchesAny(sku, headSets) {
   return headSets.some(hs => hs.length === 0 || _eqSet(s, hs));
 }
 
-function _pickerComboLabel(hs) { return hs.map(x => x[0].toUpperCase() + x.slice(1)).join("/"); }
+function _pickerComboLabel(hs) { return hs.length ? hs.map(x => x[0].toUpperCase() + x.slice(1)).join("/") : "Any color"; }
 
 // A product is color-configured only if at least one SKU carries a color.
 // Programmable (WeCanX) bars have none → picked directly by SKU.
@@ -672,42 +676,70 @@ async function _pickerRenderLocation() {
 function _pickerDrawLocation() {
   const loc = _pickerState.loc;
   const layoutViews = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
-  // Interior placements for this category (drives whether internal view shows).
-  const interiorLocs = Object.values(loc.locByName).filter(l => _INTERIOR_PZ.has(l.placement_zone));
+  // A location shows as a diagram dot only if it has coordinates (has_coords from
+  // the server; back-compat: a dash/headliner interior zone is dropdown too).
+  // Everything else — equipment mounts, console/partition, interior lights — is
+  // chosen from a DROPDOWN, the per-part-type option list the old build sheet had.
+  const _isDot = l => l.has_coords === true ||
+    (l.has_coords === undefined && !_INTERIOR_PZ.has(l.placement_zone));
+  const dropdownLocs = Object.values(loc.locByName).filter(l => !_isDot(l));
   // Exterior views that actually have a category-relevant dot.
   const extViews = Object.keys(layoutViews).filter(vk => {
     if (vk.startsWith("internal")) return false;
     const locs = layoutViews[vk].locations || {};
-    return Object.keys(locs).some(n => loc.locByName[n.toUpperCase()] && !_INTERIOR_PZ.has(loc.locByName[n.toUpperCase()].placement_zone));
+    return Object.keys(locs).some(n => { const e = loc.locByName[n.toUpperCase()]; return e && _isDot(e); });
   });
+  // Non-diagram parts get a "Location" step: a dropdown of their options, or —
+  // when the part_type has no preset locations at all — a free-text field, so the
+  // user can always specify a mount point (never a blank vehicle view).
+  const noPreset = !extViews.length && !dropdownLocs.length;
   const viewList = [...extViews];
-  if (interiorLocs.length) viewList.push("interior");
-  if (!viewList.includes(loc.view)) loc.view = viewList[0] || "front";
+  if (dropdownLocs.length || noPreset) viewList.push("location");
+  if (!viewList.includes(loc.view)) loc.view = viewList[0] || "location";
 
   const bar = $("picker-loc-views");
   if (bar) {
     bar.innerHTML = viewList.map(v => {
-      const label = v === "interior" ? "Interior" : ((layoutViews[v]?.label) || v);
+      const label = v === "location" ? "Location" : ((layoutViews[v]?.label) || v);
       return `<button class="pf-pill${loc.view === v ? " active" : ""}" data-view="${esc(v)}">${esc(label)}</button>`;
     }).join("");
     bar.querySelectorAll(".pf-pill").forEach(b => b.addEventListener("click", () => { loc.view = b.dataset.view; _pickerDrawLocation(); }));
   }
 
   const img = $("picker-loc-img"), dots = $("picker-loc-dots"), btns = $("picker-loc-btns");
-  if (loc.view === "interior") {
+  if (loc.view === "location") {
+    // No-diagram locations (equipment mounts, interior lights, console/partition):
+    // a dropdown of the part's own location options — the lost workbook behavior.
     if (img) img.style.display = "none";
     if (dots) dots.hidden = true;
     if (btns) {
       btns.hidden = false;
-      btns.innerHTML = interiorLocs.map(l =>
-        `<button class="pf-pill pf-big${loc.selected === l.location ? " active" : ""}" data-iloc="${esc(l.location)}">${esc(_pickerTitleCase(l.location))}</button>`).join("");
-      btns.querySelectorAll("[data-iloc]").forEach(b => b.addEventListener("click", () => {
-        loc.selected = b.dataset.iloc;
-        const e = loc.locByName[b.dataset.iloc.toUpperCase()] || {};
-        loc.name_pattern = e.name_pattern || ""; loc.base_label = e.base_label || "";
-        loc.catalog_names = e.catalog_names || [];
-        _pickerDrawLocation(); _pickerUpdateFooter();
-      }));
+      if (dropdownLocs.length) {
+        const sorted = [...dropdownLocs].sort((a, b) => a.location.localeCompare(b.location));
+        const opts = sorted.map(l =>
+          `<option value="${esc(l.location)}"${loc.selected === l.location ? " selected" : ""}>${esc(_pickerTitleCase(l.location))}</option>`).join("");
+        btns.innerHTML = `<div class="pf-group"><span class="pf-label">Location</span>` +
+          `<select id="picker-loc-select" class="pf-select"><option value="">— Select location —</option>${opts}</select></div>`;
+        const selEl = $("picker-loc-select");
+        if (selEl) selEl.addEventListener("change", () => {
+          loc.selected = selEl.value;
+          const e = loc.locByName[(selEl.value || "").toUpperCase()] || {};
+          loc.name_pattern = e.name_pattern || ""; loc.base_label = e.base_label || "";
+          loc.catalog_names = e.catalog_names || [];
+          _pickerUpdateFooter();
+        });
+      } else {
+        // No preset locations for this part_type → free-text (workbook behavior).
+        btns.innerHTML = `<div class="pf-group"><span class="pf-label">Location</span>` +
+          `<input id="picker-loc-text" class="pf-select" placeholder="Type the mount location…" value="${esc(loc.selected || "")}">` +
+          `<span class="pf-hint">No preset locations for this part — type where it mounts.</span></div>`;
+        const txt = $("picker-loc-text");
+        if (txt) txt.addEventListener("input", () => {
+          loc.selected = txt.value.trim();
+          loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
+          _pickerUpdateFooter();
+        });
+      }
     }
     _pickerUpdateFooter();
     return;
@@ -1293,6 +1325,8 @@ function _pickerUpdateFooter() {
 function _pickerColorFields() {
   const c = _pickerState.config;
   const cap = arr => arr.map(x => x.charAt(0).toUpperCase() + x.slice(1)).join("/");
+  // No color filter: the chosen SKU carries its own color; don't force a label.
+  if (c._noColor) return { raw_color: "" };
   if (c.mode === "uniform") return { raw_color: cap(c.uniform) };
   if (c.mode === "split") {
     const d = cap(["red", ...c.splitSecondary]), p = cap(["blue", ...c.splitSecondary]);

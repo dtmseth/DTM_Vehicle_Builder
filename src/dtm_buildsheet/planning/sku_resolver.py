@@ -99,7 +99,11 @@ def match_heads(part_numbers: list[Any], heads: list[list[str]],
             have = {c for c in (getattr(pn, "color", ""),
                                 getattr(pn, "secondary_color", ""),
                                 getattr(pn, "tertiary_color", "")) if c}
-            if {c.lower() for c in have} != want:
+            # An empty `want` is the picker's "no color filter" choice: every SKU
+            # matches (scene/interior lights are white and need no filter). Only a
+            # non-empty want requires exact color-set equality. Without this guard,
+            # an empty want matched ONLY colorless SKUs — the inverted-filter bug.
+            if want and {c.lower() for c in have} != want:
                 continue
             lt = getattr(pn, "lens_type", "") or ""
             if lens and lt and lt != lens:
