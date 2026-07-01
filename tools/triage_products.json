@@ -50,16 +50,6 @@
   "light": true
  },
  {
-  "product_id": "kussmaul_091_18wp_120",
-  "model": "NON-WATERPROOF 15 AMP 120 VOLT NEMA 5-15P AUTO EJECT 12 VOLT SOLENOID BLACK COVER",
-  "manufacturer_id": "kussmaul",
-  "desc": "KUSSMAUL NON-WATERPROOF 15 AMP 120 VOLT NEMA 5-15P AUTO EJECT 12 VOLT SOLENOID BLACK COVER",
-  "part_type_id": "auto_eject",
-  "confidence": "high",
-  "note": "auto eject",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_1001_b",
   "model": "HOOKLOK ( SOLD IN PAIRS )",
   "manufacturer_id": "qb_unassigned",
