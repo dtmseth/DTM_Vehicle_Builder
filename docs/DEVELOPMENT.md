@@ -33,9 +33,38 @@ I/O — never bypass these guards.
 Add tests with every new system-level behavior. Focus: domain logic, config validation,
 rule evaluation, planning, preview overrides, export services.
 
+## Guardrail checks
+
+Import boundaries are enforced by [import-linter](https://import-linter.readthedocs.io/)
+(contracts live in `pyproject.toml` under `[tool.importlinter]` — see
+`docs/AUDIT_REFACTOR_ROADMAP.md` §4 / §8.1 Step 2):
+
+```bash
+.venv/bin/lint-imports                        # import-boundary contracts
+```
+
+The grandfathered baseline in `pyproject.toml` may only shrink — never add a new
+`BASELINE` entry to satisfy the lint; fix the import instead. When a baselined
+import is fixed, delete its entry (the linter errors on unmatched ignores).
+
+Security scans (run in CI; locally install once with
+`.venv/bin/pip install pip-audit bandit`):
+
+```bash
+.venv/bin/pip-audit --skip-editable           # dependency vulnerabilities
+.venv/bin/bandit -r src/dtm_buildsheet        # static security scan (report-only)
+```
+
 ## CI
 
-GitHub Actions (`.github/workflows/build.yml`) — triggered on every push to `main`:
+GitHub Actions:
+
+`.github/workflows/checks.yml` — triggered on every PR and push to `main`:
+- **import-linter**: import-boundary contracts (fails on any new violation)
+- **pip-audit**: known-vulnerability audit of resolved dependencies
+- **bandit**: static security scan, report-only first pass
+
+`.github/workflows/build.yml` — triggered on every push to `main`:
 - **Mac job**: PyInstaller → `.app` → `.dmg` (drag-to-Applications)
 - **Windows job**: PyInstaller → Inno Setup → `.exe` installer
 

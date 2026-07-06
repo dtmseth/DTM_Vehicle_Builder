@@ -32,6 +32,7 @@ packaging-win = [
 dev = [
   "pytest>=9.0",
   "bump-my-version>=0.28",
+  "import-linter>=2.3,<3",
 ]
 
 [project.scripts]
@@ -62,6 +63,129 @@ dtm_buildsheet = [
   "resources/templates/*.pptx",
   "resources/templates/*.xlsx",
   "resources/assets/**/*",
+]
+
+# ---------------------------------------------------------------------------
+# Import-boundary guardrails (AUDIT_REFACTOR_ROADMAP.md §4 / §8.1 Step 2).
+# Run locally: .venv/bin/lint-imports
+#
+# BASELINE RULE: every `ignore_imports` entry below is either a permanent
+# architectural allowance (marked ALLOWED) or a grandfathered violation
+# (marked BASELINE, with the §8.1 step that retires it). The baseline may
+# ONLY SHRINK — never add a new BASELINE entry; fix the import instead.
+# When a baselined import is fixed, delete its entry (the linter errors on
+# unmatched ignores, so a stale entry fails the lint).
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "dtm_buildsheet"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layered core (§4): app → inputs → config → storage → planning → rules → domain → utils"
+type = "layers"
+containers = ["dtm_buildsheet"]
+# Derived from the real import graph (not aspiration): config imports storage,
+# planning imports rules, so those pairs are ordered, not independent siblings.
+# naming/paths are the pure utility floor. Legacy shims, generator, and the
+# renderer modules (render_ppt, ppt_helpers, template_builder, reporting) are
+# deliberately outside the layers; the shims are policed by the forbidden
+# contract below, the rest join the layering as §8.1 Steps 4/6 clean them up.
+layers = [
+  "app",
+  "inputs",
+  "config",
+  "storage",
+  "planning",
+  "rules",
+  "domain",
+  "naming : paths",
+]
+ignore_imports = [
+  # BASELINE — retired by §8.1 Step 4 (parts-DB repository extraction below app/):
+  "dtm_buildsheet.planning.planner -> dtm_buildsheet.app.services.parts_db_service",
+  # BASELINE — planning must import domain only; ConfigBundle/model_lookup_keys
+  # move below planning with the Step 4 repository seam (else Phase E via Step 7 ledger):
+  "dtm_buildsheet.planning.planner -> dtm_buildsheet.config.loader",
+  # BASELINE — legacy-shim import inside modern planning; retired by §8.1 Step 6
+  # (also baselined in the forbidden-shim contract below):
+  "dtm_buildsheet.planning.planner -> dtm_buildsheet.config_loader",
+  # BASELINE — inputs lazy-import app.services.shared_work_service for cloud
+  # mirroring (upward dependency); Phase E finding via §8.1 Step 7 ledger:
+  "dtm_buildsheet.inputs.project_drafts -> dtm_buildsheet.app.services.shared_work_service",
+  "dtm_buildsheet.inputs.project_entry -> dtm_buildsheet.app.services.shared_work_service",
+]
+
+[[tool.importlinter.contracts]]
+name = "Forbidden (§4, absolute): no module imports the legacy shims"
+type = "forbidden"
+source_modules = [
+  "dtm_buildsheet.app",
+  "dtm_buildsheet.config",
+  "dtm_buildsheet.domain",
+  "dtm_buildsheet.inputs",
+  "dtm_buildsheet.planning",
+  "dtm_buildsheet.rules",
+  "dtm_buildsheet.storage",
+  "dtm_buildsheet.generator",
+  "dtm_buildsheet.generator_cli",
+  "dtm_buildsheet.naming",
+  "dtm_buildsheet.paths",
+  "dtm_buildsheet.ppt_helpers",
+  "dtm_buildsheet.render_ppt",
+  "dtm_buildsheet.reporting",
+  "dtm_buildsheet.template_builder",
+  "dtm_buildsheet.__main__",
+]
+forbidden_modules = [
+  "dtm_buildsheet.planner",
+  "dtm_buildsheet.models",
+  "dtm_buildsheet.config_loader",
+  "dtm_buildsheet.config_store",
+  "dtm_buildsheet.config_validation",
+  "dtm_buildsheet.input_reader",
+  "dtm_buildsheet.gui_server",
+]
+# Allowed callers outside this graph need no entries here: tests/ and
+# packaging/pyinstaller/launch_gui.py (gui_server entry point) are not part
+# of the src package, and the root __init__ (which re-exports gui_server.main
+# as run_gui; retired by §8.1 Step 6c) cannot be a source without including
+# the whole package.
+ignore_imports = [
+  # BASELINE — `python -m dtm_buildsheet` boots through the gui_server shim,
+  # mirroring the [project.scripts] entry point; retired by §8.1 Step 6c:
+  "dtm_buildsheet.__main__ -> dtm_buildsheet.gui_server",
+  # ALLOWED (grandfathered known consumers, §0) — retired by §8.1 Step 6a:
+  "dtm_buildsheet.generator -> dtm_buildsheet.config_loader",
+  "dtm_buildsheet.generator -> dtm_buildsheet.input_reader",
+  "dtm_buildsheet.generator -> dtm_buildsheet.planner",
+  # ALLOWED (grandfathered known consumer, §0) — retired by §8.1 Step 6b:
+  "dtm_buildsheet.template_builder -> dtm_buildsheet.config_store",
+  # BASELINE (discovered) — modern service still loads workbooks via the
+  # input_reader shim; retired by §8.1 Step 6a alongside generator cutover:
+  "dtm_buildsheet.app.services.generation_service -> dtm_buildsheet.input_reader",
+  # BASELINE (discovered) — planning imports ConfigBundle from the shim;
+  # retired by §8.1 Step 6:
+  "dtm_buildsheet.planning.planner -> dtm_buildsheet.config_loader",
+]
+
+[[tool.importlinter.contracts]]
+name = "External I/O (§4): Graph/QB/keychain clients only behind app.adapters ports"
+type = "forbidden"
+source_modules = ["dtm_buildsheet"]
+forbidden_modules = [
+  "requests",
+  "msal",
+  "msal_extensions",
+]
+ignore_imports = [
+  # ALLOWED — the adapters ARE the ports (§4):
+  "dtm_buildsheet.app.adapters.** -> requests",
+  "dtm_buildsheet.app.adapters.** -> msal",
+  "dtm_buildsheet.app.adapters.** -> msal_extensions",
+  # BASELINE (discovered) — services call Graph/HTTP directly instead of an
+  # adapter port; Phase E findings via §8.1 Step 7 ledger:
+  "dtm_buildsheet.app.services.exports_upload_service -> requests",
+  "dtm_buildsheet.app.services.build_state_service -> requests",
 ]
 
 [tool.bumpversion]
