@@ -65,6 +65,14 @@ accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER
 is a discrete, externally-gated track. Run it when the owner chooses; it is *not* advanced by the
 import grind and must not block it.
 
+**Audit & refactor track (adopted 2026-07-06)**: a codebase-wide audit/refactor runs *interleaved*
+with the critical path above — see [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 for
+the ordered steps. In short: regression pins + import guardrails land *before* the picker cluster;
+a parts-DB repository extraction gates kit SKUs (the one place refactor precedes feature); legacy
+shim cutover/retirement and the breadth audit are interstitial work between feature turns. It never
+reorders this critical path — if the two documents disagree, this file wins and the audit roadmap
+gets revised.
+
 ---
 
 ## 2. Guiding Principles
