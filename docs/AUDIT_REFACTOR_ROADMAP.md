@@ -422,6 +422,48 @@ and whether renderer cleanup (`ppt_helpers.py`) ever earns a slot.
 no step above may touch the SKU-grid save path or parts_db schema outside the pins while
 curation is in flight.
 
+### 8.2 Model & effort allocation (Pro plan)
+
+**Principle: spend top-model tokens on decisions, cheap-model tokens on keystrokes.** The
+plan's own structure enforces this — judgment gets frozen into durable artifacts (specs,
+lint contracts, pins, ledger entries, doc updates), and once frozen, execution against those
+artifacts is mechanical work a smaller model does reliably because the pins catch its
+mistakes. A design error poisons everything downstream; an execution error turns CI red.
+
+**Per-step allocation** (design = the thinking/spec/interface work; execute = writing the
+code/tests against the spec):
+
+| Work | Design | Execute |
+|---|---|---|
+| Step 0 manifest/ledger tooling | — (spec is in this doc) | Sonnet |
+| Step 1a golden-master digest (normalization spec — subtle: PPTX nondeterminism) | Opus | Sonnet |
+| Step 1b contract snapshots | — | Sonnet |
+| Step 1c smoke harness (cloud isolation, reset strategy) | Opus | Sonnet |
+| Step 2 lint contracts + baseline | Opus (small, highest leverage per token) | Sonnet |
+| Step 3 ⭐ picker cluster | Opus plan-mode | Sonnet |
+| Step 4 repository extraction (the load-bearing seam) | Opus (interface + boundary) | Sonnet (mechanical move) |
+| Step 5 ⭐ kit SKUs (data model + estimate behavior) | Opus | Sonnet |
+| Step 6 legacy cutover/retirement | — (protocol is §2.2) | Sonnet |
+| Step 7 breadth audit Pass 1 (classify + ledger) | — | Sonnet |
+| Ledger triage / Phase E dispositions | Opus | — |
+| §6 security boundary sessions | Opus | Sonnet (regression tests) |
+| Peer-review rounds of plans/designs | Opus | — |
+
+**Session hygiene (this is where most tokens actually go):**
+- One step or slice per session, started fresh. Long meandering sessions burn context
+  re-reading; the ledger/manifest/docs exist precisely so a new session boots from a few
+  small files instead of chat history.
+- End every session by writing state *down* (ledger entry, doc update, committed pins) —
+  never rely on conversation memory as the handoff.
+- Read only the docs the slice names (the CLAUDE.md doc table is the router). Don't let a
+  session "explore"; Pass 1 exists so exploration happens once.
+- Plan-mode with Opus, then execute with Sonnet in the same or a fresh session, is the
+  standard rhythm for ⭐ feature turns.
+- Escalate mid-task only on *judgment* failures (wrong approach, subtle design question) —
+  never on mechanical failures (red tests, lint errors), which Sonnet should just iterate on.
+- Reserve extended thinking for design sessions; grind work (test migration, mechanical
+  moves, snapshot recording) needs none.
+
 ---
 
 ## 9. Instructions to the Peer-Review Agent
@@ -455,3 +497,4 @@ can be dispositioned in this document's next revision.
 | 1.2 | 2026-07-06 | Peer review round 2 — no blockers; two should-fixes applied. §1.1 entry-point census now includes the packaging roots (`pyproject.toml` `[project.scripts]` and `packaging/pyinstaller/launch_gui.py`, which the installed app boots through). Stale phase wording purged: "Phase 2 UI cutover" / "Phase-2 cutover plan" → Phase 4 consumer migration (§2.2, Phase D); "cloud go-live" / "cloud phases" → shipped cloud sync / QB Pass-2 (§5, Phase E). **Plan is execution-ready**; next step is Phase A (Instrument). |
 | 1.3 | 2026-07-06 | Peer review round 3 (fresh reviewer) — five findings, all accepted after repo verification, one reframed. **#1 cloud-mutation risk (filed blocking)**: partially stale — pytest cloud paths are already hard-guarded by `PYTEST_CURRENT_TEST`/`DTM_ALLOW_CLOUD_IN_TESTS` in wiring + three services (existing code, from a real incident); the genuine gap was the browser smoke suite driving the live app on a cloud-enabled dev workspace. §3.1 now: guard is a preserve-invariant; smoke suite runs cloud-disabled in an isolated workspace and asserts zero Graph traffic; cloud behavior tested only via mocks/sandbox. **#2**: Phase C now exempts retirement-slated legacy modules (fixed-by-D disposition) unless exploitable now. **#3**: smoke flows mandated to hard-reload between boundaries (DOM-singleton state bleed). **#4**: absolute forbidden-import contract on legacy shims for new/modernized code, alongside the shrink-only baseline. **#5**: verified Windows target exists (`build_windows.ps1`, `build-windows` CI job, Inno EXE); §2.2 cutover gate generalized to all target-OS artifacts, Windows verified via CI. |
 | 1.4 | 2026-07-06 | Added §8.1 concrete execution plan: the phases converted into ordered, real steps with file targets and definitions of done (audit workspace → pins → guardrails → ⭐picker cluster → parts-DB repository extraction → ⭐kit SKUs → legacy cutover → breadth audit in the gaps). Rationale: the near-term work is dominated by knowns verified in review rounds 1–3; only islands/duplication/security findings still wait on the Phase B ledger. QB Pass-2 curation declared always-in-flight; SKU-grid save path and parts_db schema untouchable outside the pins. |
+| 1.5 | 2026-07-06 | Added §8.2 model & effort allocation: decisions on the top model, keystrokes on the workhorse; per-step design/execute table; session-hygiene rules (fresh session per slice, state written to ledger/docs not chat, plan-with-Opus → execute-with-Sonnet rhythm, escalate on judgment failures only). |
