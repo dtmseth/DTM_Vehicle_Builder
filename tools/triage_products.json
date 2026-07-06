@@ -360,26 +360,6 @@
   "light": false
  },
  {
-  "product_id": "stalker_200_0244_00",
-  "model": "KA-BAND ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER KA-BAND ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_0245_00",
-  "model": "TALL ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER TALL ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "stalker_200_0622_00",
   "model": "VSS INSTALLATION KIT",
   "manufacturer_id": "stalker",
@@ -410,46 +390,6 @@
   "light": false
  },
  {
-  "product_id": "stalker_200_0986_00",
-  "model": "DUAL PIVOT ARM ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER DUAL PIVOT ARM ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1062_00",
-  "model": "2015-2019 FORD PIU ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2015-2019 FORD PIU ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1064_00",
-  "model": "2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1088_00",
-  "model": "TAHOE ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER TAHOE ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "stalker_200_1089_00",
   "model": "TAHOE DISPLAY MOUNT",
   "manufacturer_id": "stalker",
@@ -457,46 +397,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "generic bracket/mount",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1090_00",
-  "model": "2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1321_00",
-  "model": "2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1342_00",
-  "model": "2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
-  "product_id": "stalker_200_1378_00",
-  "model": "2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
   "light": false
  },
  {
@@ -690,16 +590,6 @@
   "light": false
  },
  {
-  "product_id": "westin_36_2125",
-  "model": "PUSH BUMPER ELITE 2020-2026 FORD POLCE INTERCEPTOR UTILITY",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 2020-2026 FORD POLCE INTERCEPTOR UTILITY",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
   "product_id": "westin_36_2125pb",
   "model": "PIT BAR ELITE 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
   "manufacturer_id": "westin",
@@ -730,16 +620,6 @@
   "light": false
  },
  {
-  "product_id": "westin_36_4045",
-  "model": "PUSH BUMPER ELITE 2021-2026 CHEVROLET TAHOE PPV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 2021-2026 CHEVROLET TAHOE PPV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
   "product_id": "westin_36_4045pb",
   "model": "PIT BAR ELITE 2021-2025 CHEVROLET TAHOE PPV",
   "manufacturer_id": "westin",
@@ -747,26 +627,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "westin_36_4045wc",
-  "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 CHEVROLET TAHOE PPV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE WIRE COVER 2021-2026 CHEVROLET TAHOE PPV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_4075",
-  "model": "PUSH BUMPER ELITE 2021-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 2021-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
   "light": false
  },
  {
@@ -790,16 +650,6 @@
   "light": false
  },
  {
-  "product_id": "westin_36_4075wc",
-  "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
   "product_id": "westin_36_52065w",
   "model": "WING WRAP ELITEXD 2015-2026 FORD F-150",
   "manufacturer_id": "westin",
@@ -807,26 +657,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "westin_36_52065wc",
-  "model": "PUSH BUMPER ELITEXD WIRE COVER 2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITEXD WIRE COVER 2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_52135",
-  "model": "PUSH BUMPER ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
   "light": false
  },
  {
@@ -850,26 +680,6 @@
   "light": false
  },
  {
-  "product_id": "westin_36_52135wc",
-  "model": "PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_54085",
-  "model": "PUSH BUMPER ELITEXD 2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITEXD 2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
   "product_id": "westin_36_54085pb",
   "model": "PIT BAR ELITEXD 2015-2026 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
   "manufacturer_id": "westin",
@@ -877,86 +687,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "westin_36_6005",
-  "model": "PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6005s4",
-  "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6005smp2",
-  "model": "PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6005w2",
-  "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6005w4",
-  "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6015",
-  "model": "PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL 2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL 2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6015w2",
-  "model": "PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "westin_36_6015w4",
-  "model": "PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-  "manufacturer_id": "westin",
-  "desc": "WESTIN PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
   "light": false
  },
  {
@@ -1077,26 +807,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "go_rhino_5168whdt",
-  "model": "STEEL WRAPS FOR 2021+ CHEVY TAHOE PUSH BUMPER BLACK",
-  "manufacturer_id": "go_rhino",
-  "desc": "GO RHINO STEEL WRAPS FOR 2021+ CHEVY TAHOE PUSH BUMPER BLACK",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
- },
- {
-  "product_id": "go_rhino_5344a_4l61",
-  "model": "2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
-  "manufacturer_id": "go_rhino",
-  "desc": "GO RHINO 2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
   "light": false
  },
  {
@@ -1380,26 +1090,6 @@
   "light": false
  },
  {
-  "product_id": "stalker_806_0022_00",
-  "model": "DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY",
-  "part_type_id": "radar_display_unit",
-  "confidence": "medium",
-  "note": "radar display",
-  "light": false
- },
- {
-  "product_id": "stalker_806_0036_00",
-  "model": "DSR 2 ANETNNA RADAR",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER DSR 2 ANETNNA RADAR",
-  "part_type_id": "radar_display_unit",
-  "confidence": "medium",
-  "note": "radar display",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_8060_led",
   "model": "PELICAN MODEL 8060 LED RECHARGEABLE FLASHLIGHT",
   "manufacturer_id": "qb_unassigned",
@@ -1437,16 +1127,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "generic bracket/mount",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_951688",
-  "model": "MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
   "light": false
  },
  {
@@ -1510,36 +1190,6 @@
   "light": false
  },
  {
-  "product_id": "american_aluminum_ameralu_25_wx36_dx27_h",
-  "model": "COLLAPSIBLE CRATE 25\"Wx36\"Dx27\"H",
-  "manufacturer_id": "american_aluminum",
-  "desc": "AMERICAN ALUMINUM COLLAPSIBLE CRATE 25\"Wx36\"Dx27\"H",
-  "part_type_id": "k9_kennel",
-  "confidence": "medium",
-  "note": "k9 crate/kennel",
-  "light": false
- },
- {
-  "product_id": "american_aluminum_ameralu_27_wx42_dx30_h",
-  "model": "COLLAPSIBLE CRATE 27\"Wx42\"Dx30\"H",
-  "manufacturer_id": "american_aluminum",
-  "desc": "AMERICAN ALUMINUM COLLAPSIBLE CRATE 27\"Wx42\"Dx30\"H",
-  "part_type_id": "k9_kennel",
-  "confidence": "medium",
-  "note": "k9 crate/kennel",
-  "light": false
- },
- {
-  "product_id": "american_aluminum_ameralu_32_w_x_48_l_x_35_h",
-  "model": "COLLAPSIBLE CRATE 32\"W x 48\"L x 35\"H",
-  "manufacturer_id": "american_aluminum",
-  "desc": "AMERICAN ALUMINUM COLLAPSIBLE CRATE 32\"W x 48\"L x 35\"H",
-  "part_type_id": "k9_kennel",
-  "confidence": "medium",
-  "note": "k9 crate/kennel",
-  "light": false
- },
- {
   "product_id": "american_aluminum_ameralu_vault",
   "model": "ACCESSORIES SINGLE DRAWER VAULT MATTE BLACK POWDER COAT",
   "manufacturer_id": "american_aluminum",
@@ -1567,36 +1217,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "angel_armor_angarm_00001",
-  "model": "LEVEL 3A BALLISTIC DOOR PANEL FOR 2013-2019 FORD UNTILITY DRIVERS SIDE FRONT",
-  "manufacturer_id": "angel_armor",
-  "desc": "ANGEL ARMOR LEVEL 3A BALLISTIC DOOR PANEL FOR 2013-2019 FORD UNTILITY DRIVERS SIDE FRONT",
-  "part_type_id": "bullet_proof_door_panel",
-  "confidence": "medium",
-  "note": "ballistic panel (door vs window \u2014 verify)",
-  "light": false
- },
- {
-  "product_id": "angel_armor_angarm_00339",
-  "model": "LEVEL 3A BALLISTIC DOOR PANEL FOR 2020+ FORD UNTILITY DRIVERS SIDE FRONT",
-  "manufacturer_id": "angel_armor",
-  "desc": "ANGEL ARMOR LEVEL 3A BALLISTIC DOOR PANEL FOR 2020+ FORD UNTILITY DRIVERS SIDE FRONT",
-  "part_type_id": "bullet_proof_door_panel",
-  "confidence": "medium",
-  "note": "ballistic panel (door vs window \u2014 verify)",
-  "light": false
- },
- {
-  "product_id": "angel_armor_angarm_00358",
-  "model": "LEVEL 3+ BALLISTIC DOOR PANEL FOR 2020+ FORD UTILITY DRIVER SIDE",
-  "manufacturer_id": "angel_armor",
-  "desc": "ANGEL ARMOR LEVEL 3+ BALLISTIC DOOR PANEL FOR 2020+ FORD UTILITY DRIVER SIDE",
-  "part_type_id": "bullet_proof_door_panel",
-  "confidence": "medium",
-  "note": "ballistic panel (door vs window \u2014 verify)",
   "light": false
  },
  {
@@ -1688,16 +1308,6 @@
   "confidence": "medium",
   "note": "lighthead",
   "light": true
- },
- {
-  "product_id": "setina_c",
-  "model": "PB450L4 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 4 TOTAL LIGHTS: 2 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
-  "manufacturer_id": "setina",
-  "desc": "SETINA PB450L4 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 4 TOTAL LIGHTS: 2 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
-  "part_type_id": "push_bumper",
-  "confidence": "medium",
-  "note": "push bumper",
-  "light": false
  },
  {
   "product_id": "feniex_c_4010",
@@ -1960,16 +1570,6 @@
   "light": false
  },
  {
-  "product_id": "havis_c_mcb",
-  "model": "MIC CLIP BRACKET",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS MIC CLIP BRACKET",
-  "part_type_id": "radio_mic_clip",
-  "confidence": "medium",
-  "note": "mic clip",
-  "light": false
- },
- {
   "product_id": "havis_c_md_112",
   "model": "TILT/SWIVEL SLIDE MOTION ADAPTER",
   "manufacturer_id": "havis",
@@ -2090,16 +1690,6 @@
   "light": false
  },
  {
-  "product_id": "qb_unassigned_ccas_sb_7_800",
-  "model": "STINGER 760-896 MHZ COVERT ANTENNA",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "STINGER 760-896 MHZ COVERT ANTENNA",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_cctv8",
   "model": "COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD",
   "manufacturer_id": "qb_unassigned",
@@ -2107,16 +1697,6 @@
   "part_type_id": "thermal_imager_monitor",
   "confidence": "low",
   "note": "monitor (verify)",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_cell_antenna",
-  "model": "TOP SIGNAL ONYX 3\u200b\u215d-INCH NMO CELLULAR VEHICLE ANTENNA TS210382",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "TOP SIGNAL ONYX 3\u200b\u215d-INCH NMO CELLULAR VEHICLE ANTENNA TS210382",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
   "light": false
  },
  {
@@ -2237,16 +1817,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "generic mount/holder",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_custom_drawer",
-  "model": "MOBILE STRONG CUSTOM DRAWER",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MOBILE STRONG CUSTOM DRAWER",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
   "light": false
  },
  {
@@ -3230,16 +2800,6 @@
   "light": false
  },
  {
-  "product_id": "ace_k_9_ha_rbm_27_rd",
-  "model": "PAGER KIT WITH 27MHZ ANTENNA",
-  "manufacturer_id": "ace_k_9",
-  "desc": "ACE K9 PAGER KIT WITH 27MHZ ANTENNA",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "ace_k_9_hap_evs_k",
   "model": "ENGINE STALL SENSOR",
   "manufacturer_id": "ace_k_9",
@@ -3607,36 +3167,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "magnetic_mic_mmbp_25",
-  "model": "CLIP BULK PACK 25 SINGLE UNIT CONVERTION KITS",
-  "manufacturer_id": "magnetic_mic",
-  "desc": "MAGNETIC MIC CLIP BULK PACK 25 SINGLE UNIT CONVERTION KITS",
-  "part_type_id": "radio_mic_clip",
-  "confidence": "medium",
-  "note": "mic clip",
-  "light": false
- },
- {
-  "product_id": "magnetic_mic_mmsu_1",
-  "model": "CLIP",
-  "manufacturer_id": "magnetic_mic",
-  "desc": "MAGNETIC MIC CLIP",
-  "part_type_id": "radio_mic_clip",
-  "confidence": "medium",
-  "note": "mic clip",
-  "light": false
- },
- {
-  "product_id": "magnetic_mic_mmsu_1b",
-  "model": "W/BRACKET",
-  "manufacturer_id": "magnetic_mic",
-  "desc": "MAGNETIC MIC W/BRACKET",
-  "part_type_id": "radio_mic_clip",
-  "confidence": "medium",
-  "note": "mic clip",
   "light": false
  },
  {
@@ -4030,16 +3560,6 @@
   "light": false
  },
  {
-  "product_id": "pro_gard_p1000uint20aosb",
-  "model": "PRO-CELL SINGLE PRISONER W/ 1/2 PARTITION - OUTBOARD BELT - PARTITION, TRANSPORT SEAT, PAIR REAR DOOR PANELS, WINDOW BARS, LWR EXT PANEL & DIVIDER - FOR 2020+ FORD UTILITY",
-  "manufacturer_id": "pro_gard",
-  "desc": "PRO-GARD PRO-CELL SINGLE PRISONER W/ 1/2 PARTITION - OUTBOARD BELT - PARTITION, TRANSPORT SEAT, PAIR REAR DOOR PANELS, WINDOW BARS, LWR EXT PANEL & DIVIDER - FOR 2020+ FORD UTILITY",
-  "part_type_id": "rear_partition",
-  "confidence": "medium",
-  "note": "rear partition",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_pc_matte",
   "model": "MATTE BLACK POWDER COATING",
   "manufacturer_id": "qb_unassigned",
@@ -4310,16 +3830,6 @@
   "light": false
  },
  {
-  "product_id": "laird_qwb800",
-  "model": "800 MHZ RADIO ANTENNA WHIP (BLACK)",
-  "manufacturer_id": "laird",
-  "desc": "LAIRD 800 MHZ RADIO ANTENNA WHIP (BLACK)",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_radio_antenna",
   "model": "RADIO ANTENNA CABLE",
   "manufacturer_id": "qb_unassigned",
@@ -4440,16 +3950,6 @@
   "light": false
  },
  {
-  "product_id": "rockland_cabinets_rlssl_fpiu20_s",
-  "model": "STEEL XL DRAWER WITH ELECTRONICS TRAY ON RISERS 2020+ FORD UTILITY",
-  "manufacturer_id": "rockland_cabinets",
-  "desc": "ROCKLAND STEEL XL DRAWER WITH ELECTRONICS TRAY ON RISERS 2020+ FORD UTILITY",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
-  "light": false
- },
- {
   "product_id": "pro_gard_rp47uint20",
   "model": "RECESS PANEL FOR 2020 FORD UTILITY",
   "manufacturer_id": "pro_gard",
@@ -4547,16 +4047,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "havis_sbx_3001",
-  "model": "HINGED LID DRAWER TOPPER WITH MEDIUM-DUTY SLAM LATCH",
-  "manufacturer_id": "havis",
-  "desc": "HAVIS HINGED LID DRAWER TOPPER WITH MEDIUM-DUTY SLAM LATCH",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
   "light": false
  },
  {
@@ -5230,16 +4720,6 @@
   "light": false
  },
  {
-  "product_id": "sho_me_sho_me_14_0434",
-  "model": "MULTI-PORT ACCESSORY BOX",
-  "manufacturer_id": "sho_me",
-  "desc": "SHO-ME MULTI-PORT ACCESSORY BOX",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_shop_supplies",
   "model": "SHOP SUPPLIES",
   "manufacturer_id": "qb_unassigned",
@@ -5390,16 +4870,6 @@
   "light": false
  },
  {
-  "product_id": "watchguard_trab58003_wg1",
-  "model": "ANTENNA",
-  "manufacturer_id": "watchguard",
-  "desc": "WATCHGUARD ANTENNA",
-  "part_type_id": "radio_antenna_top",
-  "confidence": "medium",
-  "note": "antenna",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_trade_in",
   "model": "Trade In",
   "manufacturer_id": "qb_unassigned",
@@ -5510,16 +4980,6 @@
   "light": false
  },
  {
-  "product_id": "rockland_cabinets_wpdr_rkd_st1_4324_pcst_univay",
-  "model": "STEEL WEAPONS DRAWER WITH READY LOCK COMES WITH FOAM INSERT",
-  "manufacturer_id": "rockland_cabinets",
-  "desc": "ROCKLAND STEEL WEAPONS DRAWER WITH READY LOCK COMES WITH FOAM INSERT",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_x218016_0002",
   "model": "X-LED 6\" SPOTLIGHT BLACK (X335) (S14) LH",
   "manufacturer_id": "qb_unassigned",
@@ -5528,16 +4988,6 @@
   "confidence": "low",
   "note": "light, type unclear",
   "light": true
- },
- {
-  "product_id": "decked_xg6",
-  "model": "DRAWER SYSTEM WITH PREMIUM ACCESSORY PACKAGE",
-  "manufacturer_id": "decked",
-  "desc": "DECKED DRAWER SYSTEM WITH PREMIUM ACCESSORY PACKAGE",
-  "part_type_id": "rear_storage_box",
-  "confidence": "medium",
-  "note": "storage/drawer",
-  "light": false
  },
  {
   "product_id": "federal_signal_z865100372a",
