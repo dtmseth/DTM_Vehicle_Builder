@@ -31,8 +31,10 @@ Facts the plan is built on — the reviewing agent should re-verify these before
   | `gui_server.py` | `app/server.py` + `app/adapters/` |
   **Production still runs through these modules** — they are active compatibility surface, not
   dead code: `generator.py` imports `config_loader`, `input_reader`, and `planner`;
-  `template_builder.py` imports `config_store`; and `pyproject.toml` `[project.scripts]`
-  installs `dtm_buildsheet.gui_server:main` as the app entry point. Several are thin delegating
+  `template_builder.py` imports `config_store`; `app/services/generation_service.py` imports
+  `input_reader` (a *modern-side* shim consumer, found by the Step 2 lint discovery pass);
+  and `pyproject.toml` `[project.scripts]` installs `dtm_buildsheet.gui_server:main` as the
+  app entry point. Several are thin delegating
   shims, but nothing may be deleted until the §2 protocol's production-cutover step repoints
   these imports and packaging entries. *(Corrected in review round 1 — an earlier draft
   wrongly claimed only tests import them.)*
@@ -371,15 +373,28 @@ command.
 - **1c** Browser smoke suite: `tools/ui_smoke/` — the six §3.1 flows; launches the app against
   a throwaway workspace, cloud disabled, asserts zero Graph traffic; hard reload between
   flows. Not part of default pytest (needs a running app); one script to run all six.
-  *Done when*: three consecutive clean runs.
+  *Done when*: three consecutive clean runs. (This suite is also the *enforcement mechanism*
+  for §4's "UI talks only to the HTTP contract" rule — Step 2 confirmed import-linter cannot
+  express it for classic-script JS.)
+- **1d** Pytest job in CI + coverage floor. Step 2 discovered CI currently runs **no tests at
+  all** (`checks.yml` covers lint/pip-audit/bandit only) — the golden masters and contract
+  tests are worthless as a ratchet until a test job exists. Add the job first, then the
+  floor at current coverage.
 
-**Step 2 — Guardrails** *(Phase A, lands with Step 1)*
-import-linter config in `pyproject.toml`: layer contracts (§4), the absolute
-forbidden-shim-imports contract, and the grandfathered baseline (currently:
-`planning/planner.py` → `app.services.parts_db_service`; `generator.py` →
-`config_loader`/`input_reader`/`planner`; `template_builder.py` → `config_store`). CI adds
-`pip-audit`, `bandit`, and the coverage floor.
-*Done when*: CI fails on a deliberately introduced new violation and passes on the baseline.
+**Step 2 — Guardrails** ✅ *shipped 2026-07-06, commit 6d0e699*
+Three import-linter contracts live in `pyproject.toml` (layers derived from the real graph:
+app → inputs → config → storage → planning → rules → domain → naming/paths; forbidden-shim
+contract; external-I/O contract confining `requests`/`msal` to `app.adapters`), enforced in
+`checks.yml` with `pip-audit` (enforcing) and `bandit` (report-only first pass: 51 low /
+4 medium / 1 high — Phase B ledger triage material). Definition of done verified
+(deliberate violation failed the lint). The baseline is shrink-only *and self-enforcing*
+(import-linter errors on unmatched ignores). **The discovery pass found the §0 expectation
+too optimistic** — baselined violations, each tagged with its retiring step:
+`planning/planner.py` → `app.services.parts_db_service` (Step 4) and → config shims (Steps
+4/6); `inputs/project_entry.py` + `project_drafts.py` → `app.services.shared_work_service`
+for cloud mirroring (Phase E via ledger); `app/services/generation_service.py` →
+`input_reader` shim (Step 6a); `exports_upload_service.py` + `build_state_service.py` call
+`requests` directly instead of an adapter port (Phase E).
 
 **Step 3 ⭐ — Picker + placement cluster** *(feature turn, scope per ROADMAP / PARTS_DB_AND_PICKER §7 — unchanged)*
 Runs on the Step-1 pins. Boy-scout rule only: placement/category logic the cluster must touch
@@ -400,7 +415,9 @@ curation state untouched.
 Composable SKU model lands in the repository/domain layer, not in routes.
 
 **Step 6 — Legacy cutover + retirement** *(interstitial work between feature turns; §2.2 protocol per unit)*
-- **6a** `generator.py` → consume `planning/`, `config/`, `inputs/` directly.
+- **6a** `generator.py` *and* `app/services/generation_service.py` → consume `planning/`,
+  `config/`, `inputs/` directly (Step 2 found generation_service still loads workbooks
+  through the `input_reader` shim).
 - **6b** `template_builder.py` → consume `config/`.
 - **6c** Entry points: `pyproject.toml` `[project.scripts]` and
   `packaging/pyinstaller/launch_gui.py` repointed off `gui_server` to the modern app entry;
@@ -498,3 +515,4 @@ can be dispositioned in this document's next revision.
 | 1.3 | 2026-07-06 | Peer review round 3 (fresh reviewer) — five findings, all accepted after repo verification, one reframed. **#1 cloud-mutation risk (filed blocking)**: partially stale — pytest cloud paths are already hard-guarded by `PYTEST_CURRENT_TEST`/`DTM_ALLOW_CLOUD_IN_TESTS` in wiring + three services (existing code, from a real incident); the genuine gap was the browser smoke suite driving the live app on a cloud-enabled dev workspace. §3.1 now: guard is a preserve-invariant; smoke suite runs cloud-disabled in an isolated workspace and asserts zero Graph traffic; cloud behavior tested only via mocks/sandbox. **#2**: Phase C now exempts retirement-slated legacy modules (fixed-by-D disposition) unless exploitable now. **#3**: smoke flows mandated to hard-reload between boundaries (DOM-singleton state bleed). **#4**: absolute forbidden-import contract on legacy shims for new/modernized code, alongside the shrink-only baseline. **#5**: verified Windows target exists (`build_windows.ps1`, `build-windows` CI job, Inno EXE); §2.2 cutover gate generalized to all target-OS artifacts, Windows verified via CI. |
 | 1.4 | 2026-07-06 | Added §8.1 concrete execution plan: the phases converted into ordered, real steps with file targets and definitions of done (audit workspace → pins → guardrails → ⭐picker cluster → parts-DB repository extraction → ⭐kit SKUs → legacy cutover → breadth audit in the gaps). Rationale: the near-term work is dominated by knowns verified in review rounds 1–3; only islands/duplication/security findings still wait on the Phase B ledger. QB Pass-2 curation declared always-in-flight; SKU-grid save path and parts_db schema untouchable outside the pins. |
 | 1.5 | 2026-07-06 | Added §8.2 model & effort allocation: decisions on the top model, keystrokes on the workhorse; per-step design/execute table; session-hygiene rules (fresh session per slice, state written to ledger/docs not chat, plan-with-Opus → execute-with-Sonnet rhythm, escalate on judgment failures only). |
+| 1.6 | 2026-07-06 | §8.1 Step 2 SHIPPED (commit 6d0e699) — findings absorbed. §0 corrected again: `generation_service.py` is a modern-side `input_reader` shim consumer (Step 6a scope widened). Baseline reality: five violation clusters, not one (planner→config shims; inputs→app cloud mirroring; generation_service→shim; direct `requests` in two services) — all tagged with retiring steps. New Step 1d: CI runs no tests at all today; a pytest job + coverage floor must land with the pins. §4's UI rule declared unenforceable by import lint; the 1c smoke suite is its enforcement. Bandit first pass (51L/4M/1H) queued for the Phase B ledger. |
