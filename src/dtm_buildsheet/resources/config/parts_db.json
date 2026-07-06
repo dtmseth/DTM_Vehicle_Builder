@@ -14503,206 +14503,6 @@
       ],
       "reviewed": false
     },
-    "stalker_155_2211_00": {
-      "manufacturer_id": "stalker",
-      "model": "REMOTE DISPLAY CABLE 10FT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2211-00",
-          "friendly_name": "STALKER REMOTE DISPLAY CABLE 10FT",
-          "qb_item_id": "33",
-          "qb_sku": "",
-          "qb_unit_price": 79.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 79.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2211_25": {
-      "manufacturer_id": "stalker",
-      "model": "REMOTE DISPLAY CABLE 25 FT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2211-25",
-          "friendly_name": "STALKER REMOTE DISPLAY CABLE 25 FT",
-          "qb_item_id": "34",
-          "qb_sku": "",
-          "qb_unit_price": 134.4,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 134.4,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_02": {
-      "manufacturer_id": "stalker",
-      "model": "2 FT. ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-02",
-          "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
-          "qb_item_id": "35",
-          "qb_sku": "",
-          "qb_unit_price": 99.6,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 99.6,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_04": {
-      "manufacturer_id": "stalker",
-      "model": "4 FT ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-04",
-          "friendly_name": "STALKER 4 FT ANTENNA CABLE",
-          "qb_item_id": "36",
-          "qb_sku": "",
-          "qb_unit_price": 124.8,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 124.8,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_08": {
-      "manufacturer_id": "stalker",
-      "model": "8 FT ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-08",
-          "friendly_name": "STALKER 8 FT ANTENNA CABLE",
-          "qb_item_id": "37",
-          "qb_sku": "",
-          "qb_unit_price": 124.8,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 124.8,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_16": {
-      "manufacturer_id": "stalker",
-      "model": "16 FT ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-16",
-          "friendly_name": "STALKER 16 FT ANTENNA CABLE",
-          "qb_item_id": "38",
-          "qb_sku": "",
-          "qb_unit_price": 168.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 168.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_20": {
-      "manufacturer_id": "stalker",
-      "model": "20 FT ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-20",
-          "friendly_name": "STALKER 20 FT ANTENNA CABLE",
-          "qb_item_id": "39",
-          "qb_sku": "",
-          "qb_unit_price": 188.4,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 188.4,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "stalker_155_2591_25": {
-      "manufacturer_id": "stalker",
-      "model": "25 FT ANTENNA CABLE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "155-2591-25",
-          "friendly_name": "STALKER 25 FT ANTENNA CABLE",
-          "qb_item_id": "40",
-          "qb_sku": "",
-          "qb_unit_price": 188.4,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 188.4,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "gamber_johnson_16298": {
       "manufacturer_id": "gamber_johnson",
       "model": "POCKET, 4.5\" X 2\" DEEP KNOCKOUT",
@@ -23210,7 +23010,9 @@
     "soundoff_etsa461hpp_ext": {
       "manufacturer_id": "soundoff",
       "model": "NERGY\u00ae 400 SERIES HANDHELD REMOTE SIREN W/ 13 FT COIL CABLE LENGTH, 10-16V - 100 WATT SINGLE-TONE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "control_head"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27048,7 +26850,9 @@
     "motorola_pmkn4033a": {
       "manufacturer_id": "motorola",
       "model": "CABLE, MOBILE MIC EXTENSION",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radio_cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27068,7 +26872,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "motorola_all_in_one_unit",
+        "motorola_split_unit"
+      ]
     },
     "soundoff_pmp2bkdgaj": {
       "manufacturer_id": "soundoff",
@@ -27577,7 +27386,9 @@
     "qb_unassigned_radio_antenna": {
       "manufacturer_id": "qb_unassigned",
       "model": "RADIO ANTENNA CABLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radio_cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27597,12 +27408,19 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "motorola_all_in_one_unit",
+        "motorola_split_unit"
+      ]
     },
     "motorola_radio_refresh_kit": {
       "manufacturer_id": "motorola",
       "model": "INCLUDES POWER CABLE, RADIO ANTENNA CABLE AND COMMUNICATION CABLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radio_cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27622,7 +27440,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "motorola_all_in_one_unit",
+        "motorola_split_unit"
+      ]
     },
     "ram_ram_201u_d": {
       "manufacturer_id": "ram",
@@ -31360,6 +31183,162 @@
         }
       ],
       "reviewed": false
+    },
+    "stalker_antenna_cable": {
+      "manufacturer_id": "stalker",
+      "model": "Antenna Cable",
+      "fits_part_types": [
+        "radar_cable"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "155-2591-02",
+          "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
+          "qb_item_id": "35",
+          "qb_sku": "",
+          "qb_unit_price": 99.6,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 99.6,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2591-04",
+          "friendly_name": "STALKER 4 FT ANTENNA CABLE",
+          "qb_item_id": "36",
+          "qb_sku": "",
+          "qb_unit_price": 124.8,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 124.8,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2591-08",
+          "friendly_name": "STALKER 8 FT ANTENNA CABLE",
+          "qb_item_id": "37",
+          "qb_sku": "",
+          "qb_unit_price": 124.8,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 124.8,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2591-16",
+          "friendly_name": "STALKER 16 FT ANTENNA CABLE",
+          "qb_item_id": "38",
+          "qb_sku": "",
+          "qb_unit_price": 168.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 168.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2591-20",
+          "friendly_name": "STALKER 20 FT ANTENNA CABLE",
+          "qb_item_id": "39",
+          "qb_sku": "",
+          "qb_unit_price": 188.4,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 188.4,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2591-25",
+          "friendly_name": "STALKER 25 FT ANTENNA CABLE",
+          "qb_item_id": "40",
+          "qb_sku": "",
+          "qb_unit_price": 188.4,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 188.4,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": true,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "stalker_dsr",
+        "stalker_dsr_2x",
+        "stalker_806_0022_00",
+        "stalker_806_0036_00",
+        "stalker_vehicle_specific_bracket",
+        "stalker_low_a_bracket",
+        "stalker_high_a_bracket",
+        "stalker_dual_swivel_bracket"
+      ]
+    },
+    "stalker_remote_display_cable": {
+      "manufacturer_id": "stalker",
+      "model": "Remote Display Cable",
+      "fits_part_types": [
+        "radar_cable"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "155-2211-00",
+          "friendly_name": "STALKER REMOTE DISPLAY CABLE 10FT",
+          "qb_item_id": "33",
+          "qb_sku": "",
+          "qb_unit_price": 79.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 79.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "155-2211-25",
+          "friendly_name": "STALKER REMOTE DISPLAY CABLE 25 FT",
+          "qb_item_id": "34",
+          "qb_sku": "",
+          "qb_unit_price": 134.4,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 134.4,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": true,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "stalker_dsr",
+        "stalker_dsr_2x",
+        "stalker_806_0022_00",
+        "stalker_806_0036_00"
+      ]
     }
   },
   "part_types": {
@@ -31948,24 +31927,6 @@
       "location_options": [
         "DRIVER SIDE PILLAR"
       ]
-    },
-    "radar_interface_cable": {
-      "label": "Radar Interface Cable",
-      "type_id": "equipment",
-      "tree_positions": [
-        {
-          "section": "interior",
-          "zone": "forward_of_cage"
-        }
-      ],
-      "tag_ids": [
-        "radar",
-        "camera"
-      ],
-      "workbook_label_pattern": "Radar Interface Cable (To Camera)",
-      "sequence_scope": "global",
-      "location_mode": "text",
-      "location_options": []
     },
     "thermal_imager": {
       "label": "Thermal Imager",
@@ -33162,6 +33123,22 @@
       "accessory_category": "takedown",
       "location_mode": "text",
       "location_options": []
+    },
+    "radar_cable": {
+      "label": "Radar Cable",
+      "type_id": "equipment",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "cable",
+      "location_mode": "text"
+    },
+    "radio_cable": {
+      "label": "Radio Cable",
+      "type_id": "equipment",
+      "tree_positions": [],
+      "tag_ids": [],
+      "accessory_category": "cable",
+      "location_mode": "text"
     }
   },
   "placements": {
