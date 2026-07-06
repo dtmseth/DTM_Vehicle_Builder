@@ -368,6 +368,21 @@ command.
 - **1a** Golden masters: `tests/golden/` — digest helper (normalized PPTX shape-tree/text/
   positions + canonical JSON), corpus drawn from `samples/` + one real project per vehicle
   type. *Done when*: two consecutive clean runs produce identical digests.
+  **Design ✅** *(commit ef2990e)*: nondeterminism catalog is empirically short (output
+  filename timestamp + zip mtimes only; XML/media byte-identical across runs); prototype
+  normalizer in `tests/golden/digest.py` (z-ordered shape tree, EMU geometry, rotation/flips
+  from raw `a:xfrm`, text runs, tables, picture hashes; identity noise excluded); determinism
+  and sensitivity both proven. Spec: `docs/audit/GOLDEN_MASTER_SPEC.md`. Remaining for the
+  implementation session: full corpus recording (both input adapters), hermetic `AppPaths`
+  fixture, pytest wiring, CI via 1d.
+  **Corpus doctrine — workbook cases are load-bearing, not legacy**: ROADMAP.md deprecates
+  the workbook as a *data source*, not as an *input format* ("existing customers may still
+  ship us workbooks for years"), so workbook→PPTX golden cases pin a keeper feature. They are
+  also the specific safety net for Step 6a — the cutover of `generator.py` /
+  `generation_service.py` off the `input_reader` shim is provably safe only if a
+  workbook-driven digest is identical before and after. The Phase 4 consumer migration may
+  later change workbook-derived output *intentionally*; that goes through the §3.2 re-record
+  protocol, never a silent diff.
 - **1b** Contract snapshots: `tests/contract/` — one recorded request/response per route in
   `app/routes/` (start with `parts_db.py` routes; they're first under the knife).
 - **1c** Browser smoke suite: `tools/ui_smoke/` — the six §3.1 flows; launches the app against
@@ -516,3 +531,4 @@ can be dispositioned in this document's next revision.
 | 1.4 | 2026-07-06 | Added §8.1 concrete execution plan: the phases converted into ordered, real steps with file targets and definitions of done (audit workspace → pins → guardrails → ⭐picker cluster → parts-DB repository extraction → ⭐kit SKUs → legacy cutover → breadth audit in the gaps). Rationale: the near-term work is dominated by knowns verified in review rounds 1–3; only islands/duplication/security findings still wait on the Phase B ledger. QB Pass-2 curation declared always-in-flight; SKU-grid save path and parts_db schema untouchable outside the pins. |
 | 1.5 | 2026-07-06 | Added §8.2 model & effort allocation: decisions on the top model, keystrokes on the workhorse; per-step design/execute table; session-hygiene rules (fresh session per slice, state written to ledger/docs not chat, plan-with-Opus → execute-with-Sonnet rhythm, escalate on judgment failures only). |
 | 1.6 | 2026-07-06 | §8.1 Step 2 SHIPPED (commit 6d0e699) — findings absorbed. §0 corrected again: `generation_service.py` is a modern-side `input_reader` shim consumer (Step 6a scope widened). Baseline reality: five violation clusters, not one (planner→config shims; inputs→app cloud mirroring; generation_service→shim; direct `requests` in two services) — all tagged with retiring steps. New Step 1d: CI runs no tests at all today; a pytest job + coverage floor must land with the pins. §4's UI rule declared unenforceable by import lint; the 1c smoke suite is its enforcement. Bandit first pass (51L/4M/1H) queued for the Phase B ledger. |
+| 1.7 | 2026-07-06 | §8.1 Step 1a design SHIPPED (commit ef2990e) — digest spec + validated prototype absorbed; nondeterminism catalog far smaller than feared. Corpus doctrine added: workbook-input golden cases are load-bearing (workbook is deprecated as data source, kept as input format per ROADMAP principles) and are the safety net for the Step 6a shim cutover; modern project-path cases sit alongside them (only PIU has real projects today). |
