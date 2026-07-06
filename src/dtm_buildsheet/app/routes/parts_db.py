@@ -124,56 +124,67 @@ def _primary_part_type(candidates: list, zone_id: str):
     return candidates[0]
 
 
+# Warning lights have ONE home (warning_light); the zone is chosen at placement
+# and only supplies the friendly base name. front→Forward Warning, side→Side
+# Warning, rear→Rear Warning (fine-grained legacy zones collapse to these three).
+_WARNING_ZONE_NAME = {"front": "Forward Warning", "side": "Side Warning", "rear": "Rear Warning"}
+
+
+def _warning_home(candidates: list):
+    """The single warning-light part_type home (id `warning_light`)."""
+    return (next((pt for pt in candidates if pt.part_type_id == "warning_light"), None)
+            or next((pt for pt in candidates if (pt.label or "").strip().lower() == "warning light"), None))
+
+
 def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
     """Locations for the category's location-last step.
 
-    Each location resolves to a canonical part_type based solely on its
-    tree zone: front→Forward Warning, side→Side Warning, rear→Rear Warning.
-    Legacy fine-grained part_types (Front Side Warning, Pit Bar Warning,
-    Lower Lift Gate Warning, etc.) are intentionally collapsed per owner
-    direction — all warning-category locations use the same 3 names.
+    Warning: all placements resolve to the single `warning_light` home; the name
+    comes from the placement's tree zone (Forward/Side/Rear Warning) — zones are
+    friendly-naming only, not part_types. Other categories map each placement to
+    a candidate part_type by tree zone.
     """
     candidates = [pt for pt in svc.list_part_types()
                   if pt.type_id == type_id and _pt_in_category(pt, category)]
     if not candidates:
         return []
 
-    # Build fast lookup: tree_zone → canonical part_type for naming.
-    # Prefer an exact label match (case-insensitive) to the zone's keyword.
-    _zone_keyword = {"front": "forward warning", "side": "side warning", "rear": "rear warning"}
-    zone_pt: dict[str, object] = {}
-    for tree, kw in _zone_keyword.items():
-        for pt in candidates:
-            if (pt.label or "").strip().lower() == kw:
-                if any(p.zone == tree for p in pt.tree_positions):
-                    zone_pt[tree] = pt
-                    break
-        # Fallback: any candidate in the tree zone whose label contains the keyword
-        if tree not in zone_pt and kw:
-            for pt in candidates:
-                if kw in (pt.label or "").lower():
-                    if any(p.zone == tree for p in pt.tree_positions):
-                        zone_pt[tree] = pt
-                        break
-
     doc = svc.raw_doc()
     placements_doc = doc.get("placements") or {}
     pzones = set(_CATEGORY_PLACEMENT_ZONES.get(category, []))
+
+    # tree_zone → part_type used only for NON-warning categories' naming.
+    zone_pt: dict[str, object] = {}
+    if category != "warning":
+        _zone_keyword = {"front": "forward", "side": "side", "rear": "rear"}
+        for tree, kw in _zone_keyword.items():
+            for pt in candidates:
+                if kw in (pt.label or "").lower() and any(p.zone == tree for p in pt.tree_positions):
+                    zone_pt[tree] = pt
+                    break
+
+    warn_home = _warning_home(candidates) if category == "warning" else None
     out: list[dict] = []
     for loc, spec in placements_doc.items():
         pz = spec.get("placement_zone", "")
         tree_zone = _PLACEMENT_ZONE_TO_TREE.get(pz, "")
         if tree_zone not in pzones:
             continue
-        pt = zone_pt.get(tree_zone)
-        if pt is None:
-            continue
+        if category == "warning":
+            base = _WARNING_ZONE_NAME.get(tree_zone, "Warning")
+            pt_id = warn_home.part_type_id if warn_home else "warning_light"
+        else:
+            pt = zone_pt.get(tree_zone)
+            if pt is None:
+                continue
+            base = pt.label
+            pt_id = pt.part_type_id
         out.append({
             "location": loc,
             "placement_zone": pz,
-            "part_type_id": pt.part_type_id,
-            "name_pattern": (pt.workbook_label_pattern or pt.label),
-            "base_label": pt.label,
+            "part_type_id": pt_id,
+            "name_pattern": f"{base} {{n}}",
+            "base_label": base,
             "has_coords": True,
         })
     out.sort(key=lambda x: x["location"])

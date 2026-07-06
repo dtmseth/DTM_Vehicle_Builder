@@ -55,6 +55,12 @@ _BAR_ASSET_KEY: dict[str, str] = {
 }
 
 
+_WARNING_BASE_NAMES = {
+    "forward warning", "side warning", "rear warning", "front side warning",
+    "mirror warning", "pit bar warning", "lower lift gate warning", "warning",
+}
+
+
 def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
     """Match a part name like 'Forward Warning 3' to its part_type.
 
@@ -74,6 +80,13 @@ def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
         label_base = _re.sub(r"\s+\{n\}$", "", label).strip()
         if label_base.lower() == base.lower():
             return pt, base
+    # Warning lights collapsed to one home: every zone/legacy warning name
+    # (Forward/Side/Rear/Front Side/Mirror/Pit Bar/Lower Lift Gate Warning)
+    # resolves to `warning_light`; the name itself carries the friendly zone.
+    if base.lower() in _WARNING_BASE_NAMES:
+        for pt in svc.list_part_types():
+            if pt.part_type_id == "warning_light":
+                return pt, base
     return None, name
 
 
