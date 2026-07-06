@@ -97,6 +97,18 @@ any location in its category by default; restrictions (Under Mirror = specific m
 spotlight / thermal-camera placements) are **exception rules** added as needed. The picker stopped
 deriving placement from the legacy `part_catalog.json` `default_views` / fixed numbered slots.
 
+### Warning-light home model (locked w/ Seth 2026-07-01)
+**A warning light is NOT assigned a zone by its part_type.** Zone/location is decided by *where the
+part is placed during the build*, not baked into the part. So there is **one warning-light home**
+(the `warning_light` part_type, `category: warning`); zones exist within the warning category but are
+not tied to any specific part_type. All colored warning lights fit that single home; the picker's
+category-level placement step chooses the actual location. The legacy zone-named warning part_types
+(Forward Warning, Front/Side/Rear Warning, Mirror Warning, Pit Bar Warning, Lower Lift Gate Warning…)
+are **superseded** by the single home — collapsing existing products onto it is a follow-up migration.
+**Classification rule:** a light with **color options (not just white) is a warning light**; a
+white-only light is scene/utility, not warning. **Granularity:** one product per model; mount-type
+and color are **SKU variants** under that product, not separate products.
+
 ### Translation layer
 `planning/sku_resolver.py` turns one user selection into the right `PartInput`/`DraftPart` shape.
 The picker adds **one parent line**; concrete SKUs become `components[]` on the `DraftPart` (shown as
