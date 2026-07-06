@@ -85,7 +85,7 @@ These are constraints on **how** we move toward the vision. Override them only w
 - **Schemas evolve with explicit migrations.** Every schema change carries a version bump and a migration step that runs on read. We do not silently mutate data when a user opens a file.
 - **Refactor in small, testable passes.** Each change makes two-similar-things-that-aren't-quite-the-same become one shared concept, and only when the conceptual identity is real. "Similar but different" stays separate.
 - **Behavior changes are flagged, never sneaked.** If a UI changes what a user sees or how a build is named, call it out in the commit and the release notes.
-- **The workbook input path keeps working through every phase.** We are deprecating the workbook as a *data source*, not as an *input format*. Existing customers may still ship us workbooks for years.
+- **The workbook is an edge adapter, not the spine** *(revised 2026-07-06, superseding "the workbook input path keeps working through every phase")*. Canonical data is domain/parts_db-shaped end to end; no core consumer (planner, preview, build sheet) may assume workbook-era data shape — the owner has hit real bugs where better parts_db data broke consumers still expecting workbook shape, and each such assumption is a defect, not a compatibility feature. The workbook *import* path is demoted to a best-effort backup adapter confined to `inputs/`: it converts to domain shape at the boundary, is expected to see near-zero use, is kept only while it costs little, and full retirement is on the table. Workbook *export* (workbook-as-renderer) is unaffected. Domain logic authored in the workbook era — rules, naming, placement handling — is ported into domain/planning code via parity proofs: the logic survives, the format dependency doesn't.
 
 ---
 
@@ -1036,6 +1036,7 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-05-20 | Light naming is two-tier: part name (model + colors) and role name (zone + color pattern) | Different UI surfaces need different names. Part name for picker/inventory; role name for build sheet. Both derived by default. |
 | 2026-05-20 | Three orthogonal axes for parts: category / location zone / build section | First schema draft conflated category and location-zone, which created confusion. They answer different questions and must stay separate. |
 | 2026-05-20 | Brackets are parts in the `brackets` category, not a separate top-level collection | Brackets get tracked, priced, inventoried like any other part. Relationships are expressed via `compatible_part_ids`. |
+| 2026-07-06 | Workbook import demoted from guaranteed input format to optional backup adapter; retirement on the table | Spreadsheets will see near-zero real use, and workbook-shape assumptions in core consumers are causing live bugs when parts_db supplies better data. Canonical pipeline is domain/parts_db-shaped; the workbook converts at the `inputs/` boundary or not at all. Workbook-era domain logic is ported into domain/planning via parity proofs, not lost. Workbook-as-renderer (export) unaffected. |
 
 ---
 

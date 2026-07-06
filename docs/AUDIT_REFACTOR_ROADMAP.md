@@ -91,8 +91,13 @@ pass being in context.
   audit's job in that slice is to find where code diverges from doc, duplicates itself, or
   hides an island.
 - **Findings ledger, not memory.** Every session appends structured findings
-  (`FINDING-nnn: location, category [duplication|legacy|fragile|security|island|doc-drift],
-  severity, proposed disposition`) to a single ledger file. Sessions are stateless and
+  (`FINDING-nnn: location, category
+  [duplication|legacy|fragile|security|island|doc-drift|workbook-shape],
+  severity, proposed disposition`) to a single ledger file. The `workbook-shape` category is
+  first-class: any consumer that assumes workbook-era data shape (and would break on
+  domain/parts_db-shaped data) gets flagged — the owner has already hit several such live
+  bugs in the build preview and build sheet, so these default to high severity and feed the
+  picker-cluster turn and Phase 4 scoping directly. Sessions are stateless and
   resumable; the ledger is the only cross-session state, and it doubles as the peer-review
   artifact.
 - **Two-pass discipline**: Pass 1 (breadth) touches every module once, only classifying and
@@ -133,10 +138,15 @@ pass being in context.
    dead), one release/validation cycle passes with real usage.
 5. **Delete**, update docs (`FEATURE_INVENTORY.md`, `ARCHITECTURE.md`, `GOTCHAS.md` entries
    that referenced it), record in `ROADMAP.md` decision log.
-- **Workbook phase-out is the special case**: it is a documented strategic direction, not a
-  cleanup. Retire *input/source-of-truth* roles only; the workbook-as-renderer output path is
-  a keeper and a future feature. The Excel *reading* path stays until parts_db/projects fully
-  replace it (ROADMAP Phase 4 consumer migration).
+- **Workbook phase-out is the special case** *(direction sharpened by owner decision
+  2026-07-06 — see ROADMAP.md decision log)*: the workbook *import* path is demoted to an
+  optional backup adapter confined to `inputs/`, expected to see near-zero use, retirable
+  outright when the owner chooses; workbook *export* (workbook-as-renderer) is unaffected.
+  The load-bearing work is the **pipeline inversion**: canonical data is domain/parts_db-shaped
+  end to end, and any core consumer (planner, preview, build sheet) that assumes workbook-era
+  shape is a defect. Workbook-era domain logic (rules, naming, placement handling) is ported
+  into domain/planning code via the §2.2 parity-proof protocol — the logic survives
+  translation into the new structure; the format dependency does not.
 
 ---
 
@@ -317,6 +327,7 @@ rather than inventing new policy.
   | QB Pass-2 / kit SKUs | parts_db access behind one repository module; SKU model composable (a SKU can reference SKUs); **preserve the shipped three-axis model** (`part_type.category` = what it is · zone = where on the vehicle · build section = how it groups) — never conflate the axes |
   | Parts-DB conventions (SHIPPED, load-bearing) | **preserve**: `location_mode` + `location_options` on every part_type; accessory roles/categories; pending-QB parts flow; light/unbilled tags; warning-light single-home semantics; the "no part-type home" curation queue (~673 of 932 products still unhomed — refactors must not strand or reset curation state) |
   | Picker/placement cluster (NEXT on critical path) | placement data lives in domain models, not workbook remnants or JS state; route-layer placement logic in `app/routes/parts_db.py` extracted to services so the cluster lands on clean ground |
+  | Pipeline inversion (Phase 4 / owner decision 2026-07-06) | canonical plan input is domain/parts_db-shaped end to end; the workbook import adapter converts to domain shape at the `inputs/` boundary and nothing downstream knows it existed; workbook-era rules/naming/placement logic ported into domain/planning with parity proofs; `workbook-shape` assumptions in consumers are ledgered as defects, not compatibility |
   | Extensible views | no "exactly four" constants; views iterated from data |
   | Inventory/serial tracking, parts-manager app | parts_db read/write importable without the GUI app (library-first packaging) |
   | Customer/external-sale variants | capability flags via `app/adapters/` wiring, not scattered conditionals |
@@ -375,14 +386,17 @@ command.
   and sensitivity both proven. Spec: `docs/audit/GOLDEN_MASTER_SPEC.md`. Remaining for the
   implementation session: full corpus recording (both input adapters), hermetic `AppPaths`
   fixture, pytest wiring, CI via 1d.
-  **Corpus doctrine — workbook cases are load-bearing, not legacy**: ROADMAP.md deprecates
-  the workbook as a *data source*, not as an *input format* ("existing customers may still
-  ship us workbooks for years"), so workbook→PPTX golden cases pin a keeper feature. They are
-  also the specific safety net for Step 6a — the cutover of `generator.py` /
-  `generation_service.py` off the `input_reader` shim is provably safe only if a
-  workbook-driven digest is identical before and after. The Phase 4 consumer migration may
-  later change workbook-derived output *intentionally*; that goes through the §3.2 re-record
-  protocol, never a silent diff.
+  **Corpus doctrine — workbook cases are load-bearing *for the transition*** *(re-scoped by
+  the 2026-07-06 owner decision demoting workbook import to an optional backup adapter)*:
+  workbook→PPTX golden cases are the specific safety net for Step 6a — the cutover of
+  `generator.py` / `generation_service.py` off the `input_reader` shim is provably safe only
+  if a workbook-driven digest is identical before and after — and they pin the workbook-era
+  domain logic (rules, naming, placement) so it can be *ported* into domain/planning with
+  parity proofs rather than lost. They are transition pins, not forever-keepers: once the
+  pipeline inversion lands and the logic lives in domain code (pinned by project-path golden
+  cases), the workbook cases shrink to whatever the backup adapter still supports, or retire
+  with it via the §2 protocol and a §3.2 re-record. The modern project-path cases are the
+  corpus's long-term backbone.
 - **1b** Contract snapshots: `tests/contract/` — one recorded request/response per route in
   `app/routes/` (start with `parts_db.py` routes; they're first under the knife).
 - **1c** Browser smoke suite: `tools/ui_smoke/` — the six §3.1 flows; launches the app against
@@ -532,3 +546,4 @@ can be dispositioned in this document's next revision.
 | 1.5 | 2026-07-06 | Added §8.2 model & effort allocation: decisions on the top model, keystrokes on the workhorse; per-step design/execute table; session-hygiene rules (fresh session per slice, state written to ledger/docs not chat, plan-with-Opus → execute-with-Sonnet rhythm, escalate on judgment failures only). |
 | 1.6 | 2026-07-06 | §8.1 Step 2 SHIPPED (commit 6d0e699) — findings absorbed. §0 corrected again: `generation_service.py` is a modern-side `input_reader` shim consumer (Step 6a scope widened). Baseline reality: five violation clusters, not one (planner→config shims; inputs→app cloud mirroring; generation_service→shim; direct `requests` in two services) — all tagged with retiring steps. New Step 1d: CI runs no tests at all today; a pytest job + coverage floor must land with the pins. §4's UI rule declared unenforceable by import lint; the 1c smoke suite is its enforcement. Bandit first pass (51L/4M/1H) queued for the Phase B ledger. |
 | 1.7 | 2026-07-06 | §8.1 Step 1a design SHIPPED (commit ef2990e) — digest spec + validated prototype absorbed; nondeterminism catalog far smaller than feared. Corpus doctrine added: workbook-input golden cases are load-bearing (workbook is deprecated as data source, kept as input format per ROADMAP principles) and are the safety net for the Step 6a shim cutover; modern project-path cases sit alongside them (only PIU has real projects today). |
+| 1.8 | 2026-07-06 | Owner decision absorbed (recorded in ROADMAP.md guiding principles + decision log first, per its change-it-then-act rule): workbook *import* demoted from guaranteed input format to optional backup adapter, retirement on the table; workbook *export* unaffected. The real target named: **pipeline inversion** — canonical data is domain/parts_db-shaped end to end; consumer assumptions of workbook shape are defects (owner has live examples in preview/build sheet). New `workbook-shape` ledger category (defaults high-severity); §2.2 special case rewritten; Step 1a corpus doctrine re-scoped (workbook golden cases are transition pins, project-path cases the long-term backbone); seam register gains a pipeline-inversion row. |
