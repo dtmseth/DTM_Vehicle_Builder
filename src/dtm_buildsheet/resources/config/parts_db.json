@@ -14083,56 +14083,6 @@
       ],
       "reviewed": true
     },
-    "whelen_01_0244499_23": {
-      "manufacturer_id": "whelen",
-      "model": "SUB ASSY, ALLEY WARNING B/W",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "01-0244499-23",
-          "friendly_name": "WHELEN SUB ASSY, ALLEY WARNING B/W",
-          "qb_item_id": "19",
-          "qb_sku": "",
-          "qb_unit_price": 169.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 169.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "whelen_01_0244499_53": {
-      "manufacturer_id": "whelen",
-      "model": "SUB ASSY, ALLEY WARNING R/W",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "01-0244499-53",
-          "friendly_name": "WHELEN SUB ASSY, ALLEY WARNING R/W",
-          "qb_item_id": "20",
-          "qb_sku": "",
-          "qb_unit_price": 169.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 169.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_01_086a664_00": {
       "manufacturer_id": "whelen",
       "model": "ASSY, FINAL HOWLER SIREN",
@@ -19312,8 +19262,12 @@
     "whelen_bwd": {
       "manufacturer_id": "whelen",
       "model": "EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, DRIVER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -19329,7 +19283,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "white"
         }
       ],
       "reviewed": false
@@ -19337,8 +19293,12 @@
     "whelen_bwp": {
       "manufacturer_id": "whelen",
       "model": "EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, PASSENGER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -19354,7 +19314,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "white"
         }
       ],
       "reviewed": false
@@ -21973,8 +21935,12 @@
     "soundoff_enftc001bw": {
       "manufacturer_id": "soundoff",
       "model": "NFORCE 8 HEAD INTERIOR TRAFFIC CONTROLLER - 35.5\" LONG - 12VDC - 12 LED DUAL COLOR - (DS) RA/RA/RA/RA/BA/BA/BA/BA (PS) - INCLUDES MEDIUM 2 HOLE BRACKETS",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22023,8 +21989,12 @@
     "soundoff_enfwb0005k": {
       "manufacturer_id": "soundoff",
       "model": "NFORCE INTERIOR UNDERCOVER LIGHTBAR - SPLIT FRONT FULL SIZE - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W (PS) - INCLUDES BREAKOUT BOX",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22040,7 +22010,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "amber"
         }
       ],
       "reviewed": false
@@ -22048,8 +22020,12 @@
     "soundoff_enfwb003mp": {
       "manufacturer_id": "soundoff",
       "model": "NFORCE INTERIOR UNDERCOVER LIGHTBAR - REAR FULL ONE PIECE BAR - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/A, B/A, B/A, B/A, B/A, B/A, B/A, B/A (PS) - INCLUDES BREAKOUT BOX",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22073,8 +22049,12 @@
     "soundoff_enfwbfs": {
       "manufacturer_id": "soundoff",
       "model": "NFORCE INTERIOR UNDERCOVER LIGHT BAR -FRONT/WINDSHIELD BAR - 12 LED DUAL",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22123,8 +22103,12 @@
     "qb_unassigned_enfwbrf": {
       "manufacturer_id": "qb_unassigned",
       "model": "SOUND OFF NFORCE INTERIOR REAR LIGHT BAR - DUAL COLOR",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22175,8 +22159,12 @@
     "soundoff_enrmb": {
       "manufacturer_id": "soundoff",
       "model": "NROADS EXTERIOR MID/MINI LIGHTBAR - PER CONFIGURATOR. QE050879. 24\" DUO RED/WHITE.",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22192,7 +22180,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "white"
         }
       ],
       "reviewed": false
@@ -22325,7 +22315,9 @@
     "whelen_es2me": {
       "manufacturer_id": "whelen",
       "model": "54\" LEGACY MIDNIGHT EDITION",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22350,7 +22342,9 @@
     "whelen_es8me": {
       "manufacturer_id": "whelen",
       "model": "48\" LEGACY MIDNIGHT EDITION",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22881,8 +22875,12 @@
     "qb_unassigned_fn_1409": {
       "manufacturer_id": "qb_unassigned",
       "model": "FEINEX FUSION INTERIOR LIGHT BAR FULL RED/AMBER 2017-2019 FORD EXPLORER",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22898,7 +22896,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "amber"
         }
       ],
       "reviewed": false
@@ -23031,7 +23031,9 @@
     "whelen_fsbbb": {
       "manufacturer_id": "whelen",
       "model": "ON PAIR BAIL BRACKET KIT, ONE KIT REQUIRED PER LIGHT ARRAY, BLACK, REQUIRES FSBCBB FOR 7-13 LAMP ARRAYS, NO CHARGE WHEN PURCHASED WITH FSB ARRAY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23206,7 +23208,9 @@
     "whelen_gb2x": {
       "manufacturer_id": "whelen",
       "model": "LEGACY 54\" SMOKED LENSE KIT -GBEENDX (2) -GBCNTX (1) -GBDIVDX (2) [WHEN BUYINGFULL LIGHT BAR]",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23231,7 +23235,9 @@
     "whelen_gb8x": {
       "manufacturer_id": "whelen",
       "model": "LEGACY 48\" SMOKED LENSE KIT -GB2ENDX (2) -GBDIVIDX (1) [PRICE WHEN BUYING FULL LIGHTBAR]",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23870,7 +23876,9 @@
     "federal_signal_hkb_tah15_44": {
       "manufacturer_id": "federal_signal",
       "model": "HOOK-KIT FOR 2015 TAHOE, 44\" TO 46\" LIGHTBAR.",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -25017,8 +25025,12 @@
     "soundoff_mpower_per_config": {
       "manufacturer_id": "soundoff",
       "model": "MPOWER LIGHTBAR PER CONFIG - QE061345. 55\" RED/WHITE BLUE/WHITE FRONT AND CORNERS, RED/AMBER BLUE/AMBER REAR, W/ALLEY'S",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -25034,7 +25046,9 @@
           "vehicle_tags": [
             "any"
           ],
-          "options": {}
+          "options": {},
+          "color": "red",
+          "secondary_color": "white"
         }
       ],
       "reviewed": false
@@ -27051,56 +27065,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 36.21,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_rdb100_k15_on_t100": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS POLE MOUNT AC POWER, WHITE WITH ADAPTER, ON/OFF SWITCH BOX",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RDB100-K15-ON-T100",
-          "friendly_name": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS POLE MOUNT AC POWER, WHITE WITH ADAPTER, ON/OFF SWITCH BOX",
-          "qb_item_id": "941",
-          "qb_sku": "",
-          "qb_unit_price": 1599.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 1599.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_rdb100_q15_on_t100_bob": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS 12 VOLT, BLACK, ON OFF SWITCH (LIST PRICE IS $1197)",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RDB100-Q15-ON-T100-BOB",
-          "friendly_name": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS 12 VOLT, BLACK, ON OFF SWITCH (LIST PRICE IS $1197)",
-          "qb_item_id": "942",
-          "qb_sku": "",
-          "qb_unit_price": 0.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 0.0,
           "vehicle_tags": [
             "any"
           ],
@@ -29448,7 +29412,9 @@
     "santa_cruz_sc_arpin": {
       "manufacturer_id": "santa_cruz",
       "model": "TAMPER RESISTANT TAKE DOWN PIN FOR AR WITH TOOL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -29933,8 +29899,12 @@
     "whelen_tcrwxp": {
       "manufacturer_id": "whelen",
       "model": "DUO PRIMARY LIGHTHEAD FOR TRACER WCX (REPLACE # WITH COLOR)",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -29958,8 +29928,12 @@
     "whelen_tcrwxs": {
       "manufacturer_id": "whelen",
       "model": "DUO SECONDARY LIGHTHEAD FOR TRACER WCX (REPLACE #WITH COLOR)",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [

@@ -119,6 +119,12 @@ def apply_plan(pdb: dict, plan: dict) -> list[str]:
         products[pid]["accessory_of_products"] = list(a.get("accessory_of_products") or [])
         acts.append(f"~ {pid} accessory of {len(products[pid]['accessory_of_products'])} products")
 
+    # 4b. Delete products (e.g. non-upfit items that shouldn't be in the catalog).
+    for pid in plan.get("delete_products", []):
+        if pid in products:
+            del products[pid]
+            acts.append(f"- deleted product {pid}")
+
     # 5. Delete part_types (only if unused).
     for ptid in plan.get("delete_part_types", []):
         users = [pid for pid, p in products.items() if ptid in (p.get("fits_part_types") or [])]

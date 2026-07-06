@@ -1,0 +1,32 @@
+{
+  "delete_products": [
+    "qb_unassigned_rdb100_k15_on_t100",
+    "qb_unassigned_rdb100_q15_on_t100_bob",
+    "whelen_01_0244499_23",
+    "whelen_01_0244499_53"
+  ],
+  "set_home": [
+    {"product_id": "whelen_fsbbb", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_bwd", "fits_part_types": ["lighthead"], "add_tags": ["light"]},
+    {"product_id": "whelen_bwp", "fits_part_types": ["lighthead"], "add_tags": ["light"]},
+    {"product_id": "whelen_tcrwxp", "fits_part_types": ["lighthead"], "add_tags": ["light"]},
+    {"product_id": "whelen_tcrwxs", "fits_part_types": ["lighthead"], "add_tags": ["light"]},
+
+    {"product_id": "soundoff_enrmb", "fits_part_types": ["roof_light_bar"], "add_tags": ["light"]},
+    {"product_id": "soundoff_mpower_per_config", "fits_part_types": ["roof_light_bar"], "add_tags": ["light"]},
+    {"product_id": "whelen_es2me", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_es8me", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_gb2x", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_gb8x", "fits_part_types": ["bracket"]},
+    {"product_id": "federal_signal_hkb_tah15_44", "fits_part_types": ["bracket"]},
+
+    {"product_id": "soundoff_enftc001bw", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+    {"product_id": "soundoff_enfwb0005k", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+    {"product_id": "soundoff_enfwb003mp", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+    {"product_id": "soundoff_enfwbfs", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+    {"product_id": "qb_unassigned_enfwbrf", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+    {"product_id": "qb_unassigned_fn_1409", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"]},
+
+    {"product_id": "santa_cruz_sc_arpin", "fits_part_types": ["gun_lock_bracket"]}
+  ]
+}
