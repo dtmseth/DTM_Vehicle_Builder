@@ -405,6 +405,18 @@ command.
   *Done when*: three consecutive clean runs. (This suite is also the *enforcement mechanism*
   for §4's "UI talks only to the HTTP contract" rule — Step 2 confirmed import-linter cannot
   express it for classic-script JS.)
+  **Design ✅** *(this commit)*: spec in `docs/audit/UI_SMOKE_SPEC.md`; prototype in
+  `tools/ui_smoke/` (hermetic in-process boot of `Handler`+`_ReuseHTTPServer` on an
+  ephemeral port — verified the UI needs no webview; Playwright chosen; flow 1 built and
+  three consecutive clean runs recorded). Key empirical findings baked into the design:
+  `cloud/config.py` reads the module-level `WORKSPACE_DIR`, so a hermetic `AppPaths`
+  alone does NOT disable cloud (`DTM_CLOUD=0` env is load-bearing); `ensure_workspace()`
+  seeds `cloud_config.json` by design so the harness never calls it; Graph traffic
+  originates in the *server* process, so the zero-Graph assertion is a process-wide
+  socket netguard (deny-all non-loopback, record + raise) plus browser-side capture as
+  the second layer. One subprocess per flow resets DOM, browser, server-module, and
+  filesystem state at once. Remaining for the implementation session: flows 2–6,
+  project/draft fixtures, playwright dev-extra, CI wiring via 1d (spec §8).
 - **1d** Pytest job in CI + coverage floor. Step 2 discovered CI currently runs **no tests at
   all** (`checks.yml` covers lint/pip-audit/bandit only) — the golden masters and contract
   tests are worthless as a ratchet until a test job exists. Add the job first, then the
@@ -546,4 +558,5 @@ can be dispositioned in this document's next revision.
 | 1.5 | 2026-07-06 | Added §8.2 model & effort allocation: decisions on the top model, keystrokes on the workhorse; per-step design/execute table; session-hygiene rules (fresh session per slice, state written to ledger/docs not chat, plan-with-Opus → execute-with-Sonnet rhythm, escalate on judgment failures only). |
 | 1.6 | 2026-07-06 | §8.1 Step 2 SHIPPED (commit 6d0e699) — findings absorbed. §0 corrected again: `generation_service.py` is a modern-side `input_reader` shim consumer (Step 6a scope widened). Baseline reality: five violation clusters, not one (planner→config shims; inputs→app cloud mirroring; generation_service→shim; direct `requests` in two services) — all tagged with retiring steps. New Step 1d: CI runs no tests at all today; a pytest job + coverage floor must land with the pins. §4's UI rule declared unenforceable by import lint; the 1c smoke suite is its enforcement. Bandit first pass (51L/4M/1H) queued for the Phase B ledger. |
 | 1.7 | 2026-07-06 | §8.1 Step 1a design SHIPPED (commit ef2990e) — digest spec + validated prototype absorbed; nondeterminism catalog far smaller than feared. Corpus doctrine added: workbook-input golden cases are load-bearing (workbook is deprecated as data source, kept as input format per ROADMAP principles) and are the safety net for the Step 6a shim cutover; modern project-path cases sit alongside them (only PIU has real projects today). |
+| 1.9 | 2026-07-07 | §8.1 Step 1c design SHIPPED — smoke-harness spec (`docs/audit/UI_SMOKE_SPEC.md`) + feasibility prototype (`tools/ui_smoke/`, flow 1, three consecutive clean runs). Empirically verified the app's HTTP surface serves a plain browser without pywebview. Two isolation facts discovered and designed around: the cloud gate reads module-level `WORKSPACE_DIR` (hermetic AppPaths alone insufficient → `DTM_CLOUD=0` mandatory) and `ensure_workspace()` seeds `cloud_config.json` into fresh workspaces (harness must never call it). Zero-Graph assertion is two-layer: app-side socket netguard (primary — Graph calls originate server-side where driver capture is blind) + Playwright request interception (secondary). Zero production-code changes. |
 | 1.8 | 2026-07-06 | Owner decision absorbed (recorded in ROADMAP.md guiding principles + decision log first, per its change-it-then-act rule): workbook *import* demoted from guaranteed input format to optional backup adapter, retirement on the table; workbook *export* unaffected. The real target named: **pipeline inversion** — canonical data is domain/parts_db-shaped end to end; consumer assumptions of workbook shape are defects (owner has live examples in preview/build sheet). New `workbook-shape` ledger category (defaults high-severity); §2.2 special case rewritten; Step 1a corpus doctrine re-scoped (workbook golden cases are transition pins, project-path cases the long-term backbone); seam register gains a pipeline-inversion row. |
