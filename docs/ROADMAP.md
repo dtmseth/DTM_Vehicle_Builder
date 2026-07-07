@@ -50,13 +50,16 @@ accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER
 ### Near-term critical path (in order, updated 2026-06-30)
 1. ✅ **Parts Manager SKU Review grid** — *shipped* ("Phase 8 editing-UI brought forward"). Owner curates
    SKUs/tags/accessories/readiness without prompting Claude per item.
-2. ⭐ **Picker + placement cluster** *(NEXT — blocks testing)* — interrelated, do as one focused turn:
-   **(#4)** migrate the per-part placement data lost from the old workbook (root cause — do first);
-   **(#7)** stop the picker prompting for a location when there's none + add a dropdown location selector
-   for interior parts; **(#5)** scene lights must not default-filter by red; **(#8b)** picker shows
-   "SKU — description". Full spec: [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §7 "NEXT FOCUSED TURN".
-3. **Kit SKUs** *(after the picker cluster)* — mark a SKU as a kit that includes other SKUs (data + UI +
-   estimate behavior). Scope before building.
+2. ✅ **Picker + placement cluster** — *shipped 2026-07-01* (this list lagged; reconciled 2026-07-07).
+   Location model rebuilt at the part_type level (`location_mode` placement/text + `location_options`),
+   scene no-color filter fixed server-side, SKU descriptions rendering. Detail:
+   [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §"Picker + placement cluster — SHIPPED".
+   Only #7(a) (auto-skip empty location step) remains, low priority.
+3. ⭐ **Kit SKUs** *(NEXT — scope before building)* — mark a SKU as a kit that includes other SKUs (data + UI +
+   estimate behavior). Gated on the parts-DB repository extraction (Stage A of
+   [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 Step 4) so composability lands on the
+   repository seam, not on route-layer logic; owner decisions logged in
+   `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` §5.
 4. **QB Pass-2 import** *(parallel/feeding)* — reviewed through the Parts Manager grid. Fills the shelves.
 5. **Finish the Part Picker** *(then)* — Chunks 8–9 + non-light coverage, against final SKU data.
 6. **Phase 4 consumer migration** *(then)* — strip domain fields from `workbook_rules.json`.
