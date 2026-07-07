@@ -34,6 +34,10 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 
 ## → `bracket`  (17 proposals, 1 questions)
 
+- 🟢 **qb_unassigned_rtm_101_lp_ford_r** · home · _12_qb_unassigned_residual.json_
+  - QB: ACARI 22″ LOW PROFILE MOUNTING PLATFORM 2019 FORD RANGER
+  - why: ACARI RTM-101-LP series = drill-free 22" low-profile roof mounting platform (clamps through the third-brake-light opening, ~1.15" profile, 210 sq-in surface, 30-lb capacity) for warning lights, antennas AND work lights — generic-fit, carries no single bar family, so home-only bracket with no accessory parent (acariproducts.com/products/; magnumelectronics RTM-101-LP-FORD listings; -R = Ranger fitment per Acari's 2019-Ranger install guide) (EVIDENCE.md F27)
+  - **❓ Acari manufacturer missing — create in grid, then re-brand → OPEN_QUESTIONS B3**
 - 🟢 **soundoff_pmp2wdg15b** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: SOUNDOFF 15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4" QUICK MOUNT LIGHT
   - why: 15° wedge for 4" quick-mount light — same family as the pmp2 brackets in warning_fascia.json
@@ -60,10 +64,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **motorola_hln6861d** · home · _26_small_manufacturers.json_
   - QB: MOTOROLA RADIO BRICK MOUNT
   - why: radio brick mount
-- 🟡 **qb_unassigned_rtm_101_lp_ford_r** · home · _12_qb_unassigned_residual.json_
-  - QB: ACARI 22″ LOW PROFILE MOUNTING PLATFORM 2019 FORD RANGER
-  - why: Acari 22" low-profile roof mounting platform (2019 Ranger) — a lightbar mounting platform, so bracket home
-  - **❓ Acari manufacturer missing — create + re-brand; wire as bracket_mount accessory of whichever bar family it carries**
 - 🟡 **ram_ram_201u_d** · home · _26_small_manufacturers.json_
   - QB: RAM MOUNTS DOUBLE SOCKET LONG ARM SIZE C
   - why: RAM double-socket arm — generic mounting hardware; used across docks/monitors, so generic-fit bracket home (no single parent)
@@ -108,12 +108,10 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: Momento M-6 dash camera w/ front+rear cams and GPS
   - **❓ Momento manufacturer doesn't exist — create + re-brand**
 
-## → `cloud_antenna`  (1 proposals, 1 questions)
+## → `cloud_antenna`  (1 proposals)
 
-- 🔴 **qb_unassigned_bu_353n** · home · _12_qb_unassigned_residual.json_
-  - QB: GLOBALSAT BU-353N USB GPS RECEIVER, BLACK
-  - why: GlobalSat USB GPS receiver — antenna-ish, feeds the laptop
-  - **❓ Is this AVL/mapping gear for the Cradlepoint/laptop stack (→ cloud_antenna) or radar speed-source (→ radar accessory)? Globesat manufacturer exists — re-brand to it?**
+- 🟢 **globesat_bu_353n** → *BU-353N USB GPS Receiver* · merge 1→1 · _12_qb_unassigned_residual.json_
+  - why: GlobalSat BU-353N = USB GNSS receiver (75-channel GPS/GLONASS/Galileo/BeiDou, built-in patch antenna, 5' USB cable) that presents a virtual COM port for NMEA mapping software on a LAPTOP/PC — laptop AVL/mapping gear, not a radar speed source (Stalker radars use their own Speed Modules). → cloud_antenna home + re-brand to the existing globesat manufacturer (EVIDENCE.md F32). Sources: globalsat.com.tw BU-353N pages, gpscity.com
 
 ## → `computer`  (2 proposals, 2 questions)
 
@@ -152,12 +150,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **lind_dell_power_adapter_2542** → *Dell Isolated Power Adapter* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: DE2045 is Lind numbering (lind_de2045_1342 already in catalog, homed docking_station — dock power supplies live there by convention)
 
-## → `equipment_tray`  (1 proposals, 1 questions)
+## → `equipment_tray`  (1 proposals)
 
-- 🟡 **gamber_johnson_7160_1048** · home · _23_gamber_johnson.json_
+- 🟢 **gamber_johnson_7160_1048** · home · _23_gamber_johnson.json_
   - QB: GAMBER JOHNSON UNIVERSAL STORAGE BOX FOR ELECTRICAL EQUIPMENT
-  - why: universal storage box for electrical equipment — rear equipment mounting
-  - **❓ equipment_tray or rear_storage_box? Is this the trunk electronics tray or general cargo storage?**
+  - why: gamberjohnson.com/product/7160-1048/: 'Equipment Storage Box for Electronics' — 18"H × 38"W lockable vented steel enclosure that mounts to the CARGO PARTITION and houses routers, mobile DVRs and radio controllers, with removable equipment mounting tray + cable knockouts. It's the trunk electronics enclosure, not general cargo storage → equipment_tray (EVIDENCE.md F18)
 
 ## → `flashlight`  (3 proposals, 2 questions)
 
@@ -208,15 +205,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: PRO-GARD LOWER EXTENSION PANELS (PAIR) FOR 2020 FORD UTILITY
   - why: lower extension panels — transfer-kit component
 
-## → `front_radar_antenna_mount`  (1 proposals, 1 questions)
+## → `front_radar_antenna_mount, rear_radar_antenna_mount`  (2 proposals)
 
-- 🔴 **stalker_200_0243_00** · home · _25_westin_soundoff_nightride_stalker.json_
+- 🟢 **stalker_200_0243_00** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: STALKER COUNTING UNIT MOUNT - TALL
-  - why: counting-unit mount, tall — radar hardware mount
-  - **❓ does the counting-unit mount go with the antenna mounts, or is it a display/counting-unit bracket (→ multi-home front+rear like stalker_vehicle_specific_bracket)?**
-
-## → `front_radar_antenna_mount, rear_radar_antenna_mount`  (1 proposals)
-
+  - why: stalkerradar.com/product/counting-unit-mount-tall/: mounts the counting (display) unit to the DASHBOARD, velcro + 2 thumbscrews, compatible DSR/DSR 2X/DUAL/PATROL — a generic counting-unit/display bracket, so the multi-home front+rear treatment (stalker_vehicle_specific_bracket precedent), not antenna hardware (EVIDENCE.md F15)
 - 🟡 **stalker_200_1089_00** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: STALKER TAHOE DISPLAY MOUNT
   - why: Tahoe display mount — following the stalker bracket multi-home precedent
@@ -228,6 +221,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: merges the original and the re-branded qb_unassigned twin (identical $39 AM900). White-only work light → scene, not warning (color rule)
 - 🟡 **feniex_am900_work_light** → *AM900 Work Light* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: identical to feniex_am900 (same $39 AM900) — re-branded here; 24_feniex.json merges the pair into one product. White work light → scene, not warning
+
+## → `front_scene, rear_scene, side_scene`  (1 proposals)
+
+- 🟡 **whelen_pel2** → *Perimeter Enhancement Light* · merge 1→1 · _12_qb_unassigned_residual.json_
+  - why: PEL2B is Whelen's Perimeter Enhancement Light, black flange: WHITE steady LED projected downward at 40° for ground illumination around the vehicle, NFPA 1901 rear-ground-lighting certified, 10-30 VDC (whelen.com/scene-lighting/perimeter-enhancement-light; sirennet/zips listings). White-only ground lighting → SCENE per the color rule, not warning_light (former guess corrected); multi-homed to all three scene types like whelen_ez_scene since it mounts any side (zone from placement; scene-collapse ruling B1.1 pending — hence medium) (EVIDENCE.md F14)
 
 ## → `fw_bracket`  (1 proposals, 1 questions)
 
@@ -359,8 +357,8 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: billed installation-supplies line explicitly described as custom wiring harness + breakers/relays
 - 🔴 **qb_unassigned_rbe13421** · home · _12_qb_unassigned_residual.json_
   - QB: AIR PRESURE SWITCH
-  - why: 'AIR PRESSURE SWITCH' $36 — electrical component, no context
-  - **❓ What system is this for (plow? air horn? K9 door popper)? Home accordingly or delete**
+  - why: 'AIR PRESURE SWITCH' $36 — research lead (not proof): WABCO sells air-brake low-pressure switch RBE13241 (fleetpride.com) — RBE13421 may be a digit transposition of it; no exact RBE13421 part found anywhere (EVIDENCE.md F28)
+  - **❓ What system/install used it (air brake? air horn? plow)? Home accordingly or delete → OPEN_QUESTIONS B7.3**
 
 ## → `headlight_flasher`  (5 proposals)
 
@@ -379,17 +377,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WHELEN 700 LIN.SUPER-LED FLASHER, R/C
   - why: 700-series linear Super-LED flasher module R/C — flasher electronics, not a light
 
-## → `k9_add_ons`  (6 proposals, 1 questions)
+## → `k9_add_ons`  (5 proposals)
 
-- 🟢 **american_aluminum_aaadish** · home · _26_small_manufacturers.json_
-  - QB: AMERICAN ALUMINUM 1 GALLON SPILL RESISTANT WATER DISH (UNIVERSAL, HINGED, OR PERMANENT MOUNT)
-  - why: 1-gal spill-resistant water dish
-- 🟢 **american_aluminum_ameralu_water** · home · _26_small_manufacturers.json_
-  - QB: AMERICAN ALUMINUM ACCESSORIES UNIVERSAL 1 GALLON NON SPILL WATER DISH
-  - why: universal 1-gal non-spill water dish
-  - **❓ merge with aaadish as SKUs of one 'Water Dish' product?**
 - 🟢 **american_aluminum_hinged_water_dish** → *Hinged Universal Water Dish* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: matches american_aluminum_aaadish (1-gal hinged water dish) — likely the same family
+- 🟢 **american_aluminum_water_dish** → *E/Z Spill-Proof Water Dish* · merge 3→1 · _26_small_manufacturers.json_
+  - why: American Aluminum sells ONE 1-gallon spill-proof water dish line — the E/Z Spill-Proof Water Dish (ezrideronline.com/products/k9/ez-spill-proof-water-dish/), with mount variants; the AAADISH QB description itself says '(UNIVERSAL, HINGED, OR PERMANENT MOUNT)'. All three QB items (AAADISH, AMERALU WATER, hinged twin re-branded in plan 11) are mount-variant SKUs of it → merge per rule 5, replacing the separate set_home entries (EVIDENCE.md F29). NOTE: requires plan 11 applied first (creates american_aluminum_hinged_water_dish) — filename order already guarantees this
 - 🟡 **ace_k_9_ha_fkt10_p** · home · _26_small_manufacturers.json_
   - QB: ACE K9 OPTIONAL 10" FAN, ACTIVATION MODULE, MANUAL SWITCH & MATERIALS
   - why: optional 10" fan + activation module — heat-alarm add-on
@@ -614,12 +607,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: STALKER VSS INSTALLATION KIT
   - why: VSS installation kit — speed-signal wiring (radar_cable per your cables.json)
 
-## → `radio_mic_clip`  (1 proposals, 1 questions)
+## → `radio_mic_clip`  (1 proposals)
 
-- 🔴 **gamber_johnson_7160_0826** · home · _23_gamber_johnson.json_
+- 🟢 **gamber_johnson_7160_0826** · home · _23_gamber_johnson.json_
   - QB: GAMBER JOHNSON ADJUSTABLE MAG CLIP
-  - why: 'adjustable mag clip' — magnetic clip, probably mic/phone retention on console
-  - **❓ is the GJ mag clip a mic clip (→ radio_mic_clip) or a general console accessory (→ special_face_plate)?**
+  - why: gamberjohnson.com/products/adjustable-mic-clip: 7160-0826 is GJ's 'Adjustable Mic Clip' — mounts a handheld radio microphone at adjustable heights over/away from console radios ($55). QB's 'MAG CLIP' is a typo for MIC CLIP → radio_mic_clip confirmed (EVIDENCE.md F17)
 
 ## → `rear_interior_light_bar`  (2 proposals)
 
@@ -645,15 +637,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **american_aluminum_ameralu_vault** · home · _26_small_manufacturers.json_
   - QB: AMERICAN ALUMINUM ACCESSORIES SINGLE DRAWER VAULT MATTE BLACK POWDER COAT
   - why: single-drawer vault
+- 🟢 **qb_unassigned_36_010_key** · home · _12_qb_unassigned_residual.json_
+  - QB: SUV TUFBOX W/ KEY LOCK, DRAWER. (12 IN H, 38 IN W, 32 IN D) 5.0 CU FT STORAGE
+  - why: brand identified: **Tufloc** TufBox 36-010 welded-steel SUV security cargo drawer — 12"H × 38"W × 32"D (exact QB dimension match), key/combination or T-handle lock, 12-ga steel, 200-lb slides (tufloc.com/product/security-drawers-for-suvs/; Dana Safety listings). rear_storage_box home confirmed. Tufloc manufacturer doesn't exist in the grid yet → stays qb_unassigned until created (EVIDENCE.md F26)
+  - **❓ create Tufloc manufacturer in the grid, then re-brand → OPEN_QUESTIONS B3**
 - 🟡 **american_aluminum_ez_vault** → *E/Z Vault* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: E/Z line is American Aluminum (E/Z-Rider, E/Z-Cool Guard); storage vault → rear_storage_box like ameralu_vault
 - 🟡 **havis_sbx_5001** · home · _20_havis.json_
   - QB: HAVIS 2020-2024 FORD INTERCEPTOR UTILITY STORAGE DRAWER MOUNT WITH HAVIS K9
   - why: FPIU storage drawer mount (w/ Havis K9)
-- 🟡 **qb_unassigned_36_010_key** · home · _12_qb_unassigned_residual.json_
-  - QB: SUV TUFBOX W/ KEY LOCK, DRAWER. (12 IN H, 38 IN W, 32 IN D) 5.0 CU FT STORAGE
-  - why: SUV TufBox locking drawer — cargo storage
-  - **❓ brand? (TufBox — American Aluminum or TruckVault line?) — re-brand once known**
 
 ## → `rear_warning_bracket`  (2 proposals)
 
@@ -674,8 +666,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: Ford OEM front-seat bolts, $5 — install hardware
   - **❓ Keep as a catalog part at all, or delete as install-hardware noise?**
 
-## → `roof_light_bar`  (3 proposals, 2 questions)
+## → `roof_light_bar`  (3 proposals, 1 questions)
 
+- 🟢 **feniex_fml** · home · _24_feniex.json_
+  - QB: FENIEX FUSION MINI LIGHT BAR (RED/WHITE WITH 40° OPTICS)
+  - why: feniex.com sells the Fusion Mini under its 'Mini Lightbars' category (12"/14", magnet mount standard, permanent bracket optional) — a roof mini bar; Feniex's dash/deck products are the separate Fusion Interior Lightbar line. Mini bars skip the config panel per the lightbar model (EVIDENCE.md F19)
 - 🟢 **feniex_gpl_49** · home · _24_feniex.json_
   - QB: FENIEX FUSION GPL 49 INCH LIGHT BAR DUAL COLOR INCLUDES FOOT MOUNT KIT WITH VEHICLE SPECIFIC STRAPS
   - why: GPL 49" dual-color bar w/ vehicle-specific foot mount — full-size roof bar (config-tag flow applies; special-UI)
@@ -683,10 +678,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: FEDERAL SIGNAL VALOR/SSP3000/ES100/ESB PACKAGE - INCLUDES 51" VALOR RED/BLUE WITH SCENE AND SIGNALMASTER, SSP3
   - why: Valor 51" R/B bar + SSP3000 siren + ES100 speaker sold as ONE QB item → one catalog product, bills as one line (kit ruling: mirror QB — no expansion)
   - **❓ name it 'Valor SSP Package'? It's the only bundle-shaped QB item in the queue**
-- 🔴 **feniex_fml** · home · _24_feniex.json_
-  - QB: FENIEX FUSION MINI LIGHT BAR (RED/WHITE WITH 40° OPTICS)
-  - why: Fusion mini light bar R/W — mini bars skip the config panel per the lightbar model
-  - **❓ is the FML sold as a roof mini bar or a dash/deck bar (→ front_interior_light_bar)?**
 
 ## → `seat_covers`  (1 proposals)
 
@@ -837,7 +828,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: HAVIS ANGLED WEDGE KIT FOR HAVIS CUP HOLDERS & 1-PIECE 4" EQUIPMENT BRACKETS
   - why: angled wedge kit for cup holders / 4" brackets — console furniture
 
-## → `spotlight`  (6 proposals, 2 questions)
+## → `spotlight`  (6 proposals, 1 questions)
 
 - 🟢 **unity_218000_0002** · home · _26_small_manufacturers.json_
   - QB: UNITY 6" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED
@@ -845,15 +836,14 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **unity_221000_0002** · home · _26_small_manufacturers.json_
   - QB: UNITY 325 SERIES 6" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX
   - why: 325 series 6" spotlight (F-150/Expedition)
+- 🟢 **unity_spotlight_2016_fpiu** → *6" Halogen Spotlight (2016 FPIU)* · merge 1→1 · _11_qb_unassigned_rebrand.json_
+  - why: brand CONFIRMED Unity — unityusa.com lists 211020-0002 as 'Halogen 6" Spotlight Black (325)(S04) LH': 325-series 6" halogen post-mount spotlight, S04 shell, left-hand/driver side, 3000 lumens 12V (unityusa.com/211020-0002-Halogen-6-Spotlight-Black-325-S04-LH_p_1702.html) (EVIDENCE.md F25)
 - 🟡 **(part_type)** → *Spotlight (pillar/post)* · new part_type · _01_new_part_types.json_
   - why: Unity 6" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules.
   - **❓ OK to give spotlights their own home (category scene, white)? Alternative is folding them into front_scene like the PAR-46 call.**
 - 🟡 **unity_330pl_0002** · home · _26_small_manufacturers.json_
   - QB: UNITY SPOTLIGHT 330PL-0002
   - why: 330PL spotlight
-- 🟡 **unity_spotlight_2016_fpiu** → *6" Halogen Spotlight (2016 FPIU)* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: 21x000-0002 numbering matches Unity (218000-0002/221000-0002); pillar spotlight
-  - **❓ confirm brand is Unity**
 - 🟡 **unity_xled_spotlight** → *X-LED 6" Spotlight* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: (X335)(S14) = Unity shell/series codes; LED pillar spotlight
 
@@ -874,17 +864,16 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: SOUNDOFF FLASHBACK PLUG-IN ALTERNATING TAILLIGHT FLASHER, SOLID STATE - 2.4 F.P.S. FOR FORD PI UTILITY 2016-20
   - why: FlashBack plug-in taillight flasher (Ford PI)
 
-## → `thermal_imager`  (5 proposals, 1 questions)
+## → `thermal_imager`  (5 proposals)
 
+- 🟢 **night_ride_nrp_sl** · merge 3→1 · _25_westin_soundoff_nightride_stalker.json_
+  - why: PRO-SL S04 ring w/ ethernet variants → SKUs of existing PRO-SL. NightRide's full camera catalog (getnightride.com/collections/nightride-cameras) lists every Trailblazer/Pro-SL SKU and has NO SI model — NRP-SL-E ('Pro-SL S04 (Ring) 384 w/ Ethernet') is the real part; NRP-SI-E (same $2,394, near-identical description) is a QB typo twin. Merge upheld (EVIDENCE.md F23)
 - 🟢 **night_ride_nrr0010** · merge 3→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Trailblazer 384 ethernet / grille-mount variants → SKUs of the existing product (thermal_imager)
 - 🟢 **night_ride_nrr2ndck** · merge 2→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Trailblazer 2nd-car kit ethernet variant
 - 🟢 **night_ride_nrr640_13e** · merge 2→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Trailblazer 640 grille-mount ethernet variant
-- 🟡 **night_ride_nrp_sl** · merge 3→1 · _25_westin_soundoff_nightride_stalker.json_
-  - why: PRO-SL S04 ring w/ ethernet variants → SKUs of existing PRO-SL
-  - **❓ NRP-SI-E vs NRP-SL-E: same $2394 and near-identical descriptions — is SI a typo for SL, or a different (SI) model?**
 - 🟡 **night_ride_nrp_slc** · merge 2→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: PRO-SL cableless 384 ethernet variant
 
@@ -909,7 +898,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: BAK G2 hard folding tonneau (1 queue product).
   - **❓ Single product — worth a slot, or fold into step_bars as a generic 'truck exterior accessory' home? Also: BAK Industries manufacturer doesn't exist yet (create via grid before re-branding).**
 
-## → `tool_mount`  (12 proposals)
+## → `tool_mount`  (13 proposals)
 
 - 🟢 **(part_type)** → *Tool Mount* · new part_type · _01_new_part_types.json_
   - why: PAC Tool fire-tool mounting family (HookLok/HandleLok/axe & Halligan hangers, extinguisher/SCBA mounts) — 10+ products in the queue, no existing home fits (gun_lock is weapons-specific).
@@ -933,6 +922,8 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: 10# fire extinguisher / SCBA mount
 - 🟢 **pac_tool_tool_hanger_kit** → *Tool Hanger Kit* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: PAC Tool K-series (matches pac_tool_k5003_b / k5046 already in catalog)
+- 🟢 **pac_tool_universal_hanger** → *Universal Hanger* · merge 1→1 · _11_qb_unassigned_rebrand.json_
+  - why: 1019-B = PAC Tool Universal Hanger model 1019, black variant (-B is PAC's color suffix, cf. 1004-B HandleLok) — weather/UV-resistant non-conductive hanger for cords/ropes/chains/tools, mounts flat or on PAC TRAC (pactoolmounts.com/products/universal-hanger-1019/; firepenny PAC-1019). Was wrongly queued for delete as an import artifact in plan 10 — moved here (EVIDENCE.md F30)
 - 🟡 **pac_tool_flex_mount_short** → *Flex Mount Short HD* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: PAC Tool flex-mount bracket (same numbering family)
 - 🟡 **qb_unassigned_fire_extinguisher_brackets** · home · _12_qb_unassigned_residual.json_
@@ -947,7 +938,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: JB Lund aluminum utility trailers + rack/ramp/tie-down add-ons (13 queue products, real revenue incl. $6–7k units).
   - **❓ Do trailers belong in the vehicle-builder catalog at all, or should they stay QB-only (delete from parts_db)? They never appear on a build sheet.**
 
-## → `warning_light`  (20 proposals, 4 questions)
+## → `warning_light`  (19 proposals, 3 questions)
 
 - 🟢 **feniex_cannon_hideaway** → *Cannon Hide-A-Way* · merge 8→1 · _24_feniex.json_
   - why: Cannon 12-LED hideaway — one product, color-variant SKUs (R/W, B/W, R/A, B/A, A, W). Hideaways are colored warning → warning_light
@@ -995,10 +986,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **whelen_sys109** · home · _21_whelen.json_
   - QB: WHELEN SYSTEM 109
   - why: PL26: Super-LED System #109 — two stainless-steel Micro 400 hideaway lightheads with 60' TPR cable, LED flasher/junction box and install kit, $3,460 exact match. A hideaway warning system sold as one QB item → one product, warning_light home (hideaway convention); color lives per-SKU (EVIDENCE.md)
-- 🔴 **qb_unassigned_pel2b** · home · _12_qb_unassigned_residual.json_
-  - QB: PERIMETER LIGHT BLACK
-  - why: 'PERIMETER LIGHT BLACK' $265 — perimeter lighting is usually under-body warning
-  - **❓ PEL2B brand/series? (SoundOff perimeter enforcer? Whelen PELCC?) Color words absent — what colors does it come in?**
 
 ## → `warning_light, roof_light_bar`  (1 proposals)
 
@@ -1049,16 +1036,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: FEDERAL SIGNAL RECESS MOUNTING BRACKET
   - why: Q-Siren recess mounting bracket
 
-## → `(accessory of federal_signal_valor_ssp_package_4)`  (2 proposals, 2 questions)
+## → `(accessory of federal_signal_valor_ssp_package_4)`  (2 proposals, 1 questions)
 
+- 🟢 **federal_signal_hkb_fpiu20** · accessory:bracket_mount · _26_small_manufacturers.json_
+  - QB: FEDERAL SIGNAL HOOK KIT 2020 FORD UTILITY
+  - why: Federal Signal's hook-mount reference guide (fedsig.com/hook-mount-reference-guide) lists HKB-FPIU20 as the roof hook kit for 44/45/46/51/53" FULL-SIZE LIGHT BARS (incl. Valor) on the 2020-2021 Ford Police Interceptor Utility — lightbar mounting, not a pushbumper part. Valor parent confirmed (EVIDENCE.md F21)
 - 🟡 **federal_signal_z865100372a** · accessory:other · _26_small_manufacturers.json_
   - QB: FEDERAL SIGNAL VALOR 44" DOME SERVICE KIT
-  - why: Valor 44" dome service kit
-  - **❓ 44" dome vs the 51" package — is there another Valor bar product this should parent to?**
-- 🔴 **federal_signal_hkb_fpiu20** · accessory:bracket_mount · _26_small_manufacturers.json_
-  - QB: FEDERAL SIGNAL HOOK KIT 2020 FORD UTILITY
-  - why: hook kit 2020 Ford Utility — bar mounting hardware
-  - **❓ confirm it's Valor mounting (vs pushbumper hook kit)**
+  - why: Z8651003-72A = 'KIT, VALR44 DOME SERVICE' — replacement dome service kit for the Valor 44" bar (wfgear.com; Federal Signal's dome-service-kit manual 25500083 covers the Valor/Integrity kit family). Catalog fact: the 51" SSP package is the ONLY Valor product in the DB, so it's the only possible parent; whether the 44" kit fits the 51" bar is unconfirmed (EVIDENCE.md F22)
+  - **❓ keep the 44" dome kit parented to the 51" package, or leave it unparented? → OPEN_QUESTIONS B5.3**
 
 ## → `(accessory of feniex_cannon_hideaway)`  (1 proposals)
 
@@ -1155,33 +1141,31 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: SOUNDOFF 15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4" QUICK MOUNT LIGHT
   - why: wedge for the mpower quick-mount fascia lights
 
-## → `(accessory of stalker_dsr, stalker_dsr_2x)`  (3 proposals, 2 questions)
+## → `(accessory of stalker_dsr, stalker_dsr_2x)`  (3 proposals)
 
+- 🟢 **stalker_200_1503_00** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
+  - QB: STALKER SPEED MODULE WITH INTERNAL GPS-KA-BAND
+  - why: stalkerradar.com/product/speed-module-with-internal-gps-ka-band/: GPS+inertial patrol-speed source for Stalker DSR/DSR 2X moving radar — replaces the VSS/OBD-II speed feed on vehicles without accessible ports. A per-radar system component (Stalker sells it under radar accessories), not a display → accessory role is right, no standalone home (EVIDENCE.md F16)
+- 🟢 **stalker_200_1503_11** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
+  - QB: STALKER SPEED MODULE WITH EXTERNAL GPS – KA-BAND
+  - why: external-GPS variant of the same speed module — see stalker_200_1503_00 (EVIDENCE.md F16)
 - 🟡 **stalker_200_0648_00** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
   - QB: STALKER DISPLAY SUN SHEILD
   - why: display sun shield — accessory-only
-- 🟡 **stalker_200_1503_00** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
-  - QB: STALKER SPEED MODULE WITH INTERNAL GPS-KA-BAND
-  - why: speed module (internal GPS, Ka-band) — radar-system component; accessory-only, no standalone slot
-  - **❓ are the speed modules optioned per-radar (accessory) or sold standalone (then they need a home — radar_display_unit?)**
-- 🟡 **stalker_200_1503_11** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
-  - QB: STALKER SPEED MODULE WITH EXTERNAL GPS – KA-BAND
-  - **❓ see stalker_200_1503_00**
 
 ## → `(accessory of tiger_tough_standard)`  (1 proposals)
 
 - 🟡 **tiger_tough_embroidery** · accessory:other · _11_qb_unassigned_rebrand.json_
   - why: embroidery option on the seat-cover line
 
-## → `(accessory of unity_218000_0002, unity_221000_0002)`  (2 proposals, 1 questions)
+## → `(accessory of unity_218000_0002, unity_221000_0002)`  (2 proposals)
 
+- 🟢 **unity_189** · accessory:bracket_mount · _26_small_manufacturers.json_
+  - QB: BRACKET UNITY # 189
+  - why: Unity 189 = post-mount spotlight INSTALLATION KIT (mounting bracket, gasket, fasteners, trim, drill bushing, template) — vehicle-specific install hardware for Unity post-mount spotlights generally, ordered per year/make/model (unityusa.com/189-Installation-Kit_p_786.html; retail listings show e.g. 2009-14 Dodge RAM driver side). Parents = the Unity spotlight products; fits any of them (EVIDENCE.md F24)
 - 🟡 **unity_7662_0002** · accessory:other · _26_small_manufacturers.json_
   - QB: UNITY 6" SPOTLIGHT SHELL & RING KIT BLACK (S04)
   - why: 6" spotlight shell & ring kit — accessory-only, no home
-- 🔴 **unity_189** · accessory:bracket_mount · _26_small_manufacturers.json_
-  - QB: BRACKET UNITY # 189
-  - why: 'BRACKET UNITY #189' — spotlight bracket
-  - **❓ which spotlight does #189 fit?**
 
 ## → `(accessory of unity_221000_0002)`  (1 proposals)
 
@@ -1246,7 +1230,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
   - why: Ram, black steel housing variant (magnet-OK) — see whelen_qfford1
 
-## → `(delete)`  (42 proposals)
+## → `(delete)`  (41 proposals)
 
 - 🟢 **qb_unassigned_ace_k9_part** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
@@ -1352,14 +1336,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **qb_unassigned_remote_start_install** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: LABOR TO INSTALL REMOTE START KIT
   - why: MEDIUM — labor line for remote-start installs; same services question
-- 🔴 **qb_unassigned_1019_b** · DELETE · _10_qb_unassigned_noncatalog.json_
-  - why: LOW — description is just its own part number '1019-B', $0. Looks like an import artifact; if it's a real PAC Tool item tell me what it is
 - 🔴 **qb_unassigned_rpbkr700_k15_on_bobx8_p1** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: RADIANT ECO LED LAMPHEAD
   - why: LOW — 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0. Same pattern as the rdb100 items you deleted in rest_of_lights.json. Confirm junk
 
-## → `(keep)`  (8 proposals)
+## → `(keep)`  (9 proposals, 1 questions)
 
+- 🟢 **fireninja_ultrabright_red_vest** → *UltraBright Red FIRE Safety Vest* · merge 3→1 · _12_qb_unassigned_residual.json_
+  - why: the RV- items are Fire Ninja 'UltraBright Red' Fire/Public Safety VESTS — Fire Ninja sells them with exactly this SKU pattern (ipp-ips.com listing URL ends /RV-SMALL; firesafetyusa.com 'UltraBright Red Fire Public Safety Vest'), and Fire Ninja is already a DTM QB vendor (the FIRE NINJA PART placeholder in plan 10) with manufacturer fireninja_safety_equipment in the catalog. RV-REGULAR/RV-OVERSIZE ($49.99) + RV-3XL RED FIRE ($52.99) = size SKUs of one vest product. NOT Ray Allen (former guess corrected) (EVIDENCE.md F31)
+  - **❓ apparel in the vehicle catalog — keep (homeless, QB-linked) or delete from parts_db? → OPEN_QUESTIONS B4**
 - 🟢 **unity_shaft_headpost** → *Shaft & Headpost Assembly LH* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: description says UNITY; spotlight replacement assembly — accessory of the spotlights (role below)
 - 🟡 **american_aluminum_vault_basket** → *SUV Vault Basket* · merge 1→1 · _11_qb_unassigned_rebrand.json_
@@ -1377,7 +1362,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **tiger_tough_embroidery** → *Stock Embroidery* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: Tiger Tough embroidery add-on for seat covers — accessory of the seat-cover products (role below), no home needed
 
-## → `(none — question)`  (16 proposals, 16 questions)
+## → `(none — question)`  (13 proposals, 13 questions)
 
 - 🔴 **5_0_fab_dtm_tube_chase** · home · _26_small_manufacturers.json_
   - QB: DTM TUBE CHASE
@@ -1385,22 +1370,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - **❓ what is a tube chase? (wire chase through the partition tube?) Home once known**
 - 🔴 **feniex_fenflas** · home · _24_feniex.json_
   - QB: FENIEX
-  - why: QB description is literally just 'FENIEX', $47.90 — unidentifiable
-  - **❓ what is FENFLAS? (name suggests a Feniex flasher → headlight_flasher?) If unknowable, delete**
+  - why: QB description is literally just 'FENIEX', $47.90. Research lead (not proof): Feniex sells exactly ONE flasher product — the 4X Flasher H-2220 (4-output, $59.99 MSRP, so $47.90 is plausible dealer cost), and 'FENFLAS' reads as FENiex FLASher. No product named FENFLAS exists on feniex.com (EVIDENCE.md F20)
+  - **❓ confirm: is FENFLAS the Feniex 4X Flasher (H-2220)? If yes → headlight_flasher home; if unknowable, delete → OPEN_QUESTIONS B7.2**
 - 🔴 **qb_unassigned_2190_3340_0** · home · _12_qb_unassigned_residual.json_
   - QB: Air One NATIONAL FOAM: NATIONAL FOAM UNIVERSAL GREEN 3% X 3% FOAM CONCENTRATE, 5 GALLON PAIL
   - why: Air One / National Foam 5-gal foam concentrate — consumable, not an upfit part
   - **❓ Delete from parts_db (stays in QB), or do fire-apparatus consumables belong in the catalog? If keeping: re-brand to air_one_equipment (exists) — no home fits**
-- 🔴 **qb_unassigned_rv_3xl_red_fire** · home · _12_qb_unassigned_residual.json_
-  - QB: RV-3XL RED FIRE
-  - why: 'RV-3XL RED FIRE' $52.99 — RV- prefix + apparel sizing (3XL/OVERSIZE/REGULAR) suggests Ray Allen K9 vests or similar
-  - **❓ What are the RV- items? (Ray Allen manufacturer exists with 0 products — dog vests/collars?) Home + brand once identified, or delete if not catalog-worthy**
-- 🔴 **qb_unassigned_rv_oversize** · home · _12_qb_unassigned_residual.json_
-  - QB: RV-OVERSIZE
-  - **❓ see qb_unassigned_rv_3xl_red_fire**
-- 🔴 **qb_unassigned_rv_regular** · home · _12_qb_unassigned_residual.json_
-  - QB: RV-REGULAR
-  - **❓ see qb_unassigned_rv_3xl_red_fire**
 - 🔴 **whelen_22leca** · home · _21_whelen.json_
   - QB: WHELEN OPT ADD 1 LEFT ANGLED ENDCAP
   - why: PL26: 'One Angled Left End Cap for use with One Aerial Recognition Light, for Bars 30" to 50"' — an option for the WeCanX 2250 Series Build-A-Bar surface-mount bars, $144 exact match. NOT a Legacy option (former accessory link removed). No 2250-series bar product exists in the catalog to parent to (EVIDENCE.md)

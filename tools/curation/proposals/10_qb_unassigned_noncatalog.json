@@ -46,13 +46,12 @@
     "qb_unassigned_setina_part",
     "qb_unassigned_soundoff_misc",
     "qb_unassigned_whelen_part",
-    "qb_unassigned_1019_b",
     "qb_unassigned_rpbkr700_k15_on_bobx8_p1"
   ],
   "_per_item_notes": {
     "qb_unassigned_pc_matte": "MEDIUM — powder-coating is a real service charge; delete assumes services don't live in products",
     "qb_unassigned_remote_start_install": "MEDIUM — labor line for remote-start installs; same services question",
-    "qb_unassigned_1019_b": "LOW — description is just its own part number '1019-B', $0. Looks like an import artifact; if it's a real PAC Tool item tell me what it is",
-    "qb_unassigned_rpbkr700_k15_on_bobx8_p1": "LOW — 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0. Same pattern as the rdb100 items you deleted in rest_of_lights.json. Confirm junk"
+    "qb_unassigned_rpbkr700_k15_on_bobx8_p1": "LOW — 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0. Same pattern as the rdb100 items you deleted in rest_of_lights.json. Confirm junk",
+    "_note_1019_b": "qb_unassigned_1019_b REMOVED from this delete list (2026-07-07 evidence session): 1019-B is a real PAC Tool part — Universal Hanger model 1019, -B = black (PAC's variant suffix, cf. 1004-B HandleLok). Re-branded + homed in 11_qb_unassigned_rebrand.json instead (EVIDENCE.md F30)"
   }
 }

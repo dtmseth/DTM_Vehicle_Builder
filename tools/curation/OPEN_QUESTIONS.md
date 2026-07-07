@@ -31,25 +31,25 @@ preference call — cross-referenced in §B) · ❌ inconclusive (stays flagged;
 | F11 | whelen_bw54ufx | configured-order BOM artifact? | ✅ NO — real PL26 line item: Inner Edge **XLP** upper-front two-piece unit, twelve 6-LED DUO, Tahoe PPV/SSV 2021-26 ($2,254 exact match). Delete reversed → merge as SKU of whelen_xlp |
 | F12 | whelen_68_1183491a16 | which product is "Freedom Micro Edge"? | ◑ 68-1183491A·· is the **9M/Edge-9000-series lens** family (zips.com lists 68-1183491A02B "9M Series Lens – Amber") — points at a legacy *Micro Edge* bar, which is NOT whelen_freedom (that's the Micro Freedom). No Micro Edge product in catalog; stays flagged → §B5 |
 | F13 | qb_unassigned_eluc3h010e | whose part is ELUC3H010E? | ✅ **SoundOff Signal** Universal UnderCover LED Insert — standalone screw-in hideaway kit (insert + extreme-angle lens + inline flasher, dual blue/white, 10' 5-wire). Not a bar child → re-brand soundoff + home warning_light (hideaway convention) |
-| F14 | qb_unassigned_pel2b | PEL2B brand/series? | ❌ see EVIDENCE.md — research inconclusive, stays flagged |
-| F15 | stalker_200_0243_00 | counting-unit mount: antenna-mount family or display bracket? | see EVIDENCE.md |
-| F16 | stalker_200_1503_00/_11 | speed modules optioned per-radar or sold standalone? | see EVIDENCE.md |
-| F17 | gamber_johnson_7160_0826 | mag clip: mic clip or console accessory? | see EVIDENCE.md |
-| F18 | gamber_johnson_7160_1048 | what is the "universal storage box for electrical equipment"? | see EVIDENCE.md |
-| F19 | feniex_fml | Fusion mini bar: roof or dash/deck? | see EVIDENCE.md |
-| F20 | feniex_fenflas | what is FENFLAS ($47.90)? | see EVIDENCE.md |
-| F21 | federal_signal_hkb_fpiu20 | hook kit = Valor bar mounting or pushbumper part? | see EVIDENCE.md |
+| F14 | qb_unassigned_pel2b | PEL2B brand/series? | ✅ **Whelen** Perimeter Enhancement Light — WHITE steady LED, 40° downward ground illumination, NFPA 1901 rear-ground cert. White-only → SCENE not warning; re-branded whelen + multi-homed front/rear/side_scene (ez_scene precedent) |
+| F15 | stalker_200_0243_00 | counting-unit mount: antenna-mount family or display bracket? | ✅ dash mount for the counting/display unit, generic DSR/DSR 2X/DUAL/PATROL → multi-home front+rear (display-bracket precedent) |
+| F16 | stalker_200_1503_00/_11 | speed modules optioned per-radar or sold standalone? | ✅ GPS+inertial patrol-speed source for DSR/DSR 2X, replaces VSS/OBD-II — sold as a radar accessory → accessory role confirmed, no standalone home |
+| F17 | gamber_johnson_7160_0826 | mag clip: mic clip or console accessory? | ✅ GJ's own product name is "Adjustable Mic Clip" — QB's "MAG" is a typo → radio_mic_clip |
+| F18 | gamber_johnson_7160_1048 | what is the "universal storage box for electrical equipment"? | ✅ "Equipment Storage Box for Electronics" — partition-mounted lockable vented enclosure for routers/DVRs/radio controllers → trunk electronics enclosure, equipment_tray (B1.8 answered) |
+| F19 | feniex_fml | Fusion mini bar: roof or dash/deck? | ✅ sold under Feniex's "Mini Lightbars" category, magnet mount — a roof mini bar (interior bars are a separate Fusion line) → roof_light_bar |
+| F20 | feniex_fenflas | what is FENFLAS ($47.90)? | ◑ lead: Feniex sells exactly one flasher, the 4X Flasher H-2220 ($59.99 MSRP vs $47.90 QB ≈ dealer cost); no FENFLAS product exists. Owner confirm → §B7.2 |
+| F21 | federal_signal_hkb_fpiu20 | hook kit = Valor bar mounting or pushbumper part? | ✅ FedSig hook-mount guide: roof hook kit for 44-53" full-size bars (incl. Valor) on FPIU 2020-21 → Valor parent confirmed |
 | F22 | federal_signal_z865100372a | is there another Valor bar the 44" dome kit should parent to? | ✅ catalog fact: no — federal_signal_valor_ssp_package_4 is the only Valor product. ◑ 44"-kit-under-51"-package parenting → §B5 |
-| F23 | night_ride NRP-SI-E vs NRP-SL-E | typo or distinct model? | see EVIDENCE.md |
-| F24 | unity_189 | which spotlight does bracket #189 fit? | see EVIDENCE.md |
-| F25 | unity_spotlight_2016_fpiu | confirm brand is Unity | see EVIDENCE.md |
-| F26 | qb_unassigned_36_010_key | TufBox brand? | see EVIDENCE.md |
-| F27 | qb_unassigned_rtm_101_lp_ford_r | Acari platform — which bar family does it carry? | see EVIDENCE.md |
-| F28 | qb_unassigned_rbe13421 | air pressure switch — what system? | see EVIDENCE.md |
-| F29 | american_aluminum_aaadish vs _ameralu_water | same product (mergeable) or distinct dishes? | see EVIDENCE.md |
-| F30 | qb_unassigned_1019_b | real PAC Tool item or import artifact? | see EVIDENCE.md |
-| F31 | qb_unassigned_rv_3xl/oversize/regular | what are the RV- items (Ray Allen?) | see EVIDENCE.md |
-| F32 | qb_unassigned_bu_353n | GlobalSat BU-353N — laptop/AVL GPS or radar speed source? | see EVIDENCE.md |
+| F23 | night_ride NRP-SI-E vs NRP-SL-E | typo or distinct model? | ✅ NightRide's full catalog has NO SI model — NRP-SI-E is a QB typo twin of NRP-SL-E (same $2,394) → merge upheld |
+| F24 | unity_189 | which spotlight does bracket #189 fit? | ✅ Unity 189 = vehicle-specific post-mount spotlight INSTALLATION KIT (bracket/gasket/template), generic to Unity post spotlights → parents = both Unity spotlights |
+| F25 | unity_spotlight_2016_fpiu | confirm brand is Unity | ✅ unityusa.com lists 211020-0002: "Halogen 6\" Spotlight Black (325)(S04) LH" — brand confirmed |
+| F26 | qb_unassigned_36_010_key | TufBox brand? | ✅ **Tufloc** TufBox 36-010 SUV security drawer (12×38×32 exact dimension match). Tufloc mfr must be grid-created → §B3 |
+| F27 | qb_unassigned_rtm_101_lp_ford_r | Acari platform — which bar family does it carry? | ✅ generic: drill-free platform for warning lights, antennas AND work lights — no single bar family → home-only bracket, no accessory parent. Acari mfr → §B3 |
+| F28 | qb_unassigned_rbe13421 | air pressure switch — what system? | ❌ inconclusive. Lead: WABCO air-brake low-pressure switch RBE13241 (digit transposition?). Owner knowledge → §B7.3 |
+| F29 | american_aluminum_aaadish vs _ameralu_water | same product (mergeable) or distinct dishes? | ✅ one product line — E/Z Spill-Proof Water Dish, 1-gal, mount variants (AAADISH description itself lists universal/hinged/permanent) → merged incl. the plan-11 hinged twin |
+| F30 | qb_unassigned_1019_b | real PAC Tool item or import artifact? | ✅ REAL part: PAC Tool Universal Hanger 1019, -B = black — delete reversed, re-branded pac_tool + tool_mount |
+| F31 | qb_unassigned_rv_3xl/oversize/regular | what are the RV- items (Ray Allen?) | ✅ NOT Ray Allen — **Fire Ninja "UltraBright Red" FIRE safety vests** (Fire Ninja's SKU pattern is RV-<SIZE>; mfr fireninja_safety_equipment exists) → merged as size SKUs. Apparel-scope call → §B4.9 |
+| F32 | qb_unassigned_bu_353n | GlobalSat BU-353N — laptop/AVL GPS or radar speed source? | ✅ USB GNSS receiver presenting a virtual COM port for laptop NMEA mapping software — laptop AVL gear → cloud_antenna + re-brand to existing `globesat` |
 | F33 | ace_k_9_ha_fkt10_p / ha_fwg_10 | which product is the heat-alarm base unit? | ✅ catalog fact: ace_k_9_hp_5020 (Hot-N-Pop Pro) + ace_k_9_ha_2520 (Heat Alarm Pro) — parents re-pointed (HA- prefix = Heat Alarm series) |
 | F34 | qb_unassigned_light_kit_led | what is "LIGHT KIT-LED (RED & WHITE)" $0? | ❌ no brand, no part number, $0 — unresearchable; delete-with-question stands → §B6 |
 
@@ -71,7 +71,8 @@ Grouped so one pass answers everything. Items marked ◑ carry facts already gat
    `warning_light`? (soundoff_enftcdxs1208, whelen_traffic_advisor precedent)
 7. **Transfer-kit components**: home RP47/SP47 panels under `front_partition_transfer_kit`
    alongside the TK, or accessory-only children of it?
-8. **GJ 7160-1048 storage box**: `equipment_tray` or `rear_storage_box`? (◑ see F18 evidence)
+8. ~~GJ 7160-1048 storage box~~ — ANSWERED by F18: it's the partition-mounted trunk
+   electronics enclosure → `equipment_tray` (plan upgraded to high).
 9. **ChargeGuard-Select**: `battery_tender` or `vehicle_interface`? (power-management timer)
 10. **setina_pb10 workbook conflict**: pit_bar vs wing_wraps (from WORKBOOK_GRAPH, 2 true conflicts).
 
@@ -87,8 +88,9 @@ Grouped so one pass answers everything. Items marked ◑ carry facts already gat
 
 ### B3. Missing manufacturers — create in the SKU grid, then the re-brands apply
 Streamlight (SL-20) · Pelican (8060) · Momento (M-6 dash cam) · Getac (S410) ·
-BAK Industries (tonneau) · Acari (roof platform). Also confirm: **dtm ↔ 5-0 Fab identity**
-(7 dtm_* products; audit §2.1) and the `specify` placeholder brand (2 antenna styles).
+BAK Industries (tonneau) · Acari (roof platform) · **Tufloc** (TufBox 36-010 — brand
+identified this session, F26). Also confirm: **dtm ↔ 5-0 Fab identity** (7 dtm_* products;
+audit §2.1) and the `specify` placeholder brand (2 antenna styles).
 
 ### B4. Consumables / service-stock keep-vs-delete (◑ facts in §A)
 1. Ford front-seat bolts W709980-S439 ($5) — keep or delete as install-hardware noise?
@@ -100,7 +102,10 @@ BAK Industries (tonneau) · Acari (roof platform). Also confirm: **dtm ↔ 5-0 F
    or delete?
 6. RPBKR700-K15-ON-BOBX8-P1 "Radiant ECO LED lamphead" $0 — confirm configurator-artifact delete.
 7. qb_unassigned_light_kit_led (◑ F34: unidentifiable, $0) — confirm delete.
-8. qb_unassigned_1019_b — pending F30 evidence; if real PAC Tool part, keep + re-brand.
+8. ~~qb_unassigned_1019_b~~ — ANSWERED by F30: real PAC Tool Universal Hanger; delete
+   reversed, re-branded + homed tool_mount in plan 11.
+9. Fire Ninja UltraBright Red FIRE safety vests (◑ F31: identity resolved, 3 size SKUs merged
+   into one product) — apparel: keep in the catalog (homeless, QB-linked) or delete?
 
 ### B5. Parent/product-shape calls left after evidence (◑ facts in §A)
 1. 2250-series endcaps (◑ F7): create a WeCanX 2250 bar product for them to parent to, or leave
@@ -111,16 +116,19 @@ BAK Industries (tonneau) · Acari (roof platform). Also confirm: **dtm ↔ 5-0 F
    accessory unset?
 4. Havis PT-A-409 HVAC option: home under prisoner_transport_insert or accessory-only of PT-C02?
 5. qb_unassigned_cctv8 monitor: parents = the two Trailblazer thermal units — right?
-6. Stalker speed modules (pending F16): accessory of DSR/DSR-2X or standalone radar_display_unit?
+6. ~~Stalker speed modules~~ — ANSWERED by F16: per-radar speed-source accessory (Stalker
+   sells them as DSR/DSR 2X accessories); accessory role upgraded to high.
 
 ### B6. Merge-preference calls (no facts missing — pure convention choice)
-1. Water dishes: merge aaadish + ameralu_water (+ hinged twin) into one product? (◑ F29)
+1. ~~Water dishes~~ — ANSWERED by F29: one E/Z Spill-Proof Water Dish line, mount variants →
+   merge implemented in plan 26 (veto at review if you disagree).
 2. Brother PocketJet power cable: merge the plan-11 twin with brother_printer_power?
 3. Ethernet 10ft/25ft: merge as SKUs of one Ethernet Cable product?
 4. Feniex Fusion sticks: all sizes (200/400/600/800/Rocker) one product, or per size class?
 5. feniex_fsma: merge into feniex_fusion_surface_mount as the amber SKU?
 6. Valor bundle: name it "Valor SSP Package"?
-7. NRP-SI-E vs NRP-SL-E merge — pending F23 evidence.
+7. ~~NRP-SI-E vs NRP-SL-E merge~~ — ANSWERED by F23: SI is a QB typo (no such NightRide
+   model); merge upheld at high confidence.
 
 ### B7. Owner-knowledge facts (only DTM knows — not researchable)
 1. 5_0_fab_dtm_tube_chase — what is a "tube chase" ($75)?

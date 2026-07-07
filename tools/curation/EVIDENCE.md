@@ -108,3 +108,130 @@ research is marked as such and the plan entry stays flagged.
 - **federal_signal_z865100372a** (F22) — catalog fact: federal_signal_valor_ssp_package_4 is
   the only Valor product in the DB; there is no separate 44" Valor bar. Parenting the 44" dome
   service kit under the 51" package → OPEN_QUESTIONS B5.3.
+
+## Non-Whelen batch (web research, 2026-07-07)
+
+- **stalker_200_0243_00** (F15) — "Counting Unit Mount – Tall": mounts the counting (display)
+  unit to the dashboard, velcro + 2 thumbscrews, compatible DSR / DSR 2X / DUAL / PATROL.
+  Generic display-side bracket → multi-homed front+rear radar antenna mount (bracket precedent),
+  confidence ↑ high. Source: https://stalkerradar.com/product/counting-unit-mount-tall/
+
+- **stalker_200_1503_00 / _11** (F16) — Stalker Speed Module (internal / external GPS,
+  Ka-band): GPS + inertial patrol-speed source for DSR/DSR 2X moving radar, replacing
+  VSS/OBD-II speed feeds. Sold as a radar accessory (own product pages under Speed Module
+  category) — per-radar component, accessory role confirmed, confidence ↑ high.
+  Sources: https://stalkerradar.com/product/speed-module-with-internal-gps-ka-band/ ;
+  https://stalkerradar.com/product/speed-module-with-external-gps-ka-band/
+
+- **gamber_johnson_7160_0826** (F17) — GJ's own catalog name is "Adjustable Mic Clip" ($55):
+  mounts a handheld mic at adjustable heights, over/away from radios. QB's "ADJUSTABLE MAG
+  CLIP" is a MIC typo. → radio_mic_clip, confidence ↑ high.
+  Sources: https://www.gamberjohnson.com/products/adjustable-mic-clip ;
+  https://www.barcodegiant.com/gamber-johnson/part-7160-0826.htm
+
+- **gamber_johnson_7160_1048** (F18) — "Equipment Storage Box for Electronics": 18"H × 38"W
+  lockable, vented steel enclosure that mounts to the cargo partition; houses routers, mobile
+  DVRs, radio controllers; removable equipment tray + cable knockouts. The trunk electronics
+  enclosure, not cargo storage → equipment_tray, confidence ↑ high.
+  Sources: https://www.gamberjohnson.com/product/7160-1048/ ;
+  https://danasafetysupply.com/gamber-johnson-7160-1048-storage-box-for-electronic-equipment-in-suvs-18h-x-38w-x-6d/
+
+- **feniex_fml** (F19) — Fusion Mini is sold under Feniex's "Mini Lightbars" category (12"/14",
+  magnet mount standard, permanent bracket optional); dash/deck products are the separate
+  Fusion Interior line. → roof mini bar, roof_light_bar confirmed, confidence ↑ high.
+  Sources: https://www.feniex.com/minilightbars-police/p-Fusion-Mini ;
+  https://feniex.com/brackets/Fusion_Mini_Lightbar_Mounts
+
+- **feniex_fenflas** (F20, LEAD ONLY — stays flagged) — no product named FENFLAS exists on
+  feniex.com. Feniex sells exactly one flasher: the 4X Flasher H-2220 (4-output, $59.99 MSRP —
+  QB's $47.90 is plausible dealer cost), and "FENFLAS" reads as FENiex FLASher. Owner
+  confirmation required before homing. Sources: https://www.feniex.com/flasher ;
+  https://ultrabrightlightz.com/products/feniex-4-output-flasher
+
+- **federal_signal_hkb_fpiu20** (F21) — Federal Signal hook-mount guide lists HKB-FPIU20 as
+  the roof hook kit for 44/45/46/51/53" full-size light bars (incl. Valor) on the 2020-2021
+  Ford Police Interceptor Utility. Lightbar mounting confirmed (not pushbumper), Valor parent
+  upheld, confidence ↑ high. Sources: https://www.fedsig.com/hook-mount-reference-guide/ ;
+  https://www.magnumelectronics.com/shop/hkb-fpiu20-hp-federal-signal-hkb-fpiu20-hp-hook-mount-kit-2020-ford-interceptor-utility-131717
+
+- **federal_signal_z865100372a** (F22, PARTIAL) — Z8651003-72A = "KIT, VALR44 DOME SERVICE",
+  a Valor 44"-bar replacement-dome kit (Federal Signal dome-service-kit manual 25500083 covers
+  the Valor/Integrity kit family). Catalog has only the 51" SSP package; whether the 44" kit
+  fits the 51" bar is unconfirmed → parenting stays an owner call (B5.3).
+  Sources: https://wfgear.com/p-20272-federal-signal-z865100372a-kitvalr44-dome-service.aspx ;
+  https://www.fedsig.com/sites/default/files/resource_library_document/Valor%20and%20Integrity%20Light%20Bar%20Dome%20Service%20Kit%20Manual%20%2025500083.pdf
+
+- **night_ride_nrp_si_e** (F23) — NightRide's complete camera catalog lists every
+  Trailblazer/Pro-SL SKU; there is NO SI model. NRP-SL-E ("Pro-SL S04 (Ring) 384 w/ Ethernet")
+  is the real part; NRP-SI-E (same $2,394, near-identical description) is a QB typo twin.
+  Merge upheld, confidence ↑ high. Source: https://getnightride.com/collections/nightride-cameras
+
+- **unity_189** (F24) — Unity 189 = post-mount spotlight installation kit (bracket, gasket,
+  fasteners, trim, drill bushing, template), ordered per vehicle year/make/model (e.g. 189 =
+  2009-14 Dodge RAM driver side; 189RH = passenger). Generic to Unity post-mount spotlights →
+  parents = the Unity spotlight products, confidence ↑ high.
+  Sources: https://www.unityusa.com/189-Installation-Kit_p_786.html ;
+  https://www.amazon.com/Unity-189-Post-Mount-Spotlight-Installation/dp/B002HVETZW
+
+- **qb_unassigned_211020_0002 → unity_spotlight_2016_fpiu** (F25) — brand CONFIRMED Unity:
+  unityusa.com lists 211020-0002 as "Halogen 6\" Spotlight Black (325)(S04) LH" — 325-series 6"
+  halogen post-mount spotlight, S04 shell, driver side, 3000 lm, 12V. Confidence ↑ high.
+  Source: https://www.unityusa.com/211020-0002-Halogen-6-Spotlight-Black-325-S04-LH_p_1702.html
+
+- **qb_unassigned_36_010_key** (F26) — brand = **Tufloc**: TufBox 36-010 welded-steel SUV
+  security cargo drawer, 12"H × 38"W × 32"D (exact QB dimension match), key/combination or
+  T-handle lock, 12-ga steel. rear_storage_box confirmed; Tufloc manufacturer must be created
+  before re-brand (B3). Sources: https://tufloc.com/product/security-drawers-for-suvs/ ;
+  https://danasafetysupply.com/Tufloc/Tufloc+TufBox+WeldedSteel+Cargo+Drawer+36010+for+SUVs+38x32x12+CombinationKey+Lock+or+THandle+Lock+Optional+Riser+Base
+
+- **qb_unassigned_rtm_101_lp_ford_r** (F27) — ACARI RTM-101-LP: drill-free 22" low-profile
+  roof mounting platform (clamps through third-brake-light opening, ~1.15" profile, 210 sq-in,
+  30-lb capacity) for warning lights, antennas and work lights — generic-fit, no single bar
+  family → home-only bracket, no accessory parent. -R = Ranger fitment (Acari 2019-Ranger
+  install guide). Acari manufacturer must be created before re-brand (B3).
+  Sources: https://acariproducts.com/products/ ;
+  https://www.magnumelectronics.com/shop/product/rtm-101-lp-ford-acari-drill-free-low-profile-roof-mount-ford-aluminum-123897
+
+- **qb_unassigned_rbe13421** (F28, INCONCLUSIVE — stays flagged) — no exact RBE13421 part
+  found. Lead: WABCO air-brake low-pressure switch RBE13241 (fleetpride.com) — possible digit
+  transposition. Which DTM install used it remains owner knowledge (B7.3).
+  Source: https://www.fleetpride.com/parts/wabco-air-system-pressure-switch-rbe13241
+
+- **american_aluminum_aaadish / ameralu_water / hinged_water_dish** (F29) — American Aluminum
+  sells ONE 1-gallon spill-proof dish line: the E/Z Spill-Proof Water Dish (bracket-mounted,
+  compatible with all their K-9 transport systems); the AAADISH QB description itself
+  enumerates "(UNIVERSAL, HINGED, OR PERMANENT MOUNT)" — mount variants of one product →
+  merged into american_aluminum_water_dish. Sources:
+  https://ezrideronline.com/products/k9/ez-spill-proof-water-dish/ ;
+  https://www.rayallen.com/american-aluminum-e-z-spill-proof-water-dish/
+
+- **qb_unassigned_1019_b** (F30) — 1019-B is a REAL PAC Tool part: Universal Hanger model
+  1019, -B = black variant (PAC's suffix convention, cf. 1004-B HandleLok). Weather/UV-proof
+  non-conductive hanger for cords/ropes/chains/tools, flat-surface or PAC TRAC mounting.
+  Removed from plan-10 delete list → re-branded pac_tool + tool_mount home in plan 11.
+  Sources: https://pactoolmounts.com/products/universal-hanger-1019/ ;
+  https://firepenny.com/PAC_Tool_Universal_Hanger_p/PAC-1019.htm
+
+- **qb_unassigned_rv_regular / rv_oversize / rv_3xl_red_fire** (F31) — the RV- items are
+  **Fire Ninja "UltraBright Red" Fire/Public Safety vests** — Fire Ninja's SKU pattern is
+  exactly RV-<SIZE> (vendor listing URL ends /RV-SMALL), and Fire Ninja is already a DTM QB
+  vendor with catalog manufacturer fireninja_safety_equipment. RV-REGULAR/OVERSIZE ($49.99) +
+  RV-3XL RED FIRE ($52.99) = size SKUs of one vest → merged into
+  fireninja_ultrabright_red_vest (homeless; apparel-scope question B4). NOT Ray Allen.
+  Sources: https://ipp-ips.com/FIRENINJA-UltraBright-Red-Fire-Public-Safety-Vest/RV-SMALL ;
+  https://firesafetyusa.com/products/ultrabright-red-fire-safety-vest
+
+- **qb_unassigned_bu_353n** (F32) — GlobalSat BU-353N: USB GNSS receiver (75-channel
+  GPS/GLONASS/Galileo/BeiDou, patch antenna, 5' USB cable), presents a virtual COM port for
+  NMEA mapping software on a laptop/PC. Laptop AVL/mapping gear, not a radar speed source →
+  cloud_antenna + re-brand to existing `globesat` manufacturer, confidence ↑ high.
+  Sources: https://www.globalsat.com.tw/en/a4-11222/BU-353N.html ;
+  https://www.gpscity.com/us-globalsat-bu-353n-usb-high-sensitivity-gps-receiver
+
+- **qb_unassigned_pel2b** (F14 — resolved after all) — PEL2B = **Whelen Perimeter Enhancement
+  Light**, black flange: WHITE steady LED, projected downward 40° for ground illumination,
+  NFPA 1901 rear-ground-lighting certified, 10-30 VDC. White-only ground lighting → SCENE per
+  the color rule (former warning_light guess corrected); re-branded whelen + multi-homed
+  front/rear/side_scene like whelen_ez_scene. Sources:
+  https://www.whelen.com/scene-lighting/perimeter-enhancement-light ;
+  https://sirennet.com/whelen-perimeter-enhancement-light-pel-steady-black-flange-white-led.html

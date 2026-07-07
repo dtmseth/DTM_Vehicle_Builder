@@ -17,7 +17,7 @@
     {"target_id": "night_ride_nrr2ndck", "sources": ["night_ride_nrr2ndck", "night_ride_nrr2ndck_e"],
      "_confidence": "high", "_why": "Trailblazer 2nd-car kit ethernet variant"},
     {"target_id": "night_ride_nrp_sl", "sources": ["night_ride_nrp_sl", "night_ride_nrp_si_e", "night_ride_nrp_sl_e"],
-     "_confidence": "medium", "_why": "PRO-SL S04 ring w/ ethernet variants → SKUs of existing PRO-SL", "_question": "NRP-SI-E vs NRP-SL-E: same $2394 and near-identical descriptions — is SI a typo for SL, or a different (SI) model?"},
+     "_confidence": "high", "_why": "PRO-SL S04 ring w/ ethernet variants → SKUs of existing PRO-SL. NightRide's full camera catalog (getnightride.com/collections/nightride-cameras) lists every Trailblazer/Pro-SL SKU and has NO SI model — NRP-SL-E ('Pro-SL S04 (Ring) 384 w/ Ethernet') is the real part; NRP-SI-E (same $2,394, near-identical description) is a QB typo twin. Merge upheld (EVIDENCE.md F23)"},
     {"target_id": "night_ride_nrp_slc", "sources": ["night_ride_nrp_slc", "night_ride_nrp_slc_e"],
      "_confidence": "medium", "_why": "PRO-SL cableless 384 ethernet variant"}
   ],
@@ -32,7 +32,7 @@
     {"product_id": "soundoff_pmp2wdg15b", "fits_part_types": ["bracket"], "_confidence": "high", "_why": "15° wedge for 4\" quick-mount light — same family as the pmp2 brackets in warning_fascia.json"},
     {"product_id": "stalker_200_0622_00", "fits_part_types": ["radar_cable"], "_confidence": "medium", "_why": "VSS installation kit — speed-signal wiring (radar_cable per your cables.json)"},
     {"product_id": "stalker_200_0622_01", "fits_part_types": ["radar_cable"], "_confidence": "high", "_why": "Tahoe VSS cable kit"},
-    {"product_id": "stalker_200_0243_00", "fits_part_types": ["front_radar_antenna_mount"], "_confidence": "low", "_why": "counting-unit mount, tall — radar hardware mount", "_question": "does the counting-unit mount go with the antenna mounts, or is it a display/counting-unit bracket (→ multi-home front+rear like stalker_vehicle_specific_bracket)?"},
+    {"product_id": "stalker_200_0243_00", "fits_part_types": ["front_radar_antenna_mount", "rear_radar_antenna_mount"], "_confidence": "high", "_why": "stalkerradar.com/product/counting-unit-mount-tall/: mounts the counting (display) unit to the DASHBOARD, velcro + 2 thumbscrews, compatible DSR/DSR 2X/DUAL/PATROL — a generic counting-unit/display bracket, so the multi-home front+rear treatment (stalker_vehicle_specific_bracket precedent), not antenna hardware (EVIDENCE.md F15)"},
     {"product_id": "stalker_200_1089_00", "fits_part_types": ["front_radar_antenna_mount", "rear_radar_antenna_mount"], "_confidence": "medium", "_why": "Tahoe display mount — following the stalker bracket multi-home precedent"},
     {"product_id": "night_ride_nightride_dsp_kit", "fits_part_types": ["thermal_imager_monitor"], "_confidence": "high", "_why": "8\" monitor + RAM mount display kit — same shape as the NV3 kit"}
   ],
@@ -43,7 +43,7 @@
     {"product_id": "night_ride_nrr_auxc_640", "accessory_category": "cable", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e"], "_confidence": "high", "_why": "Trailblazer 384/640 aux battery cable"},
     {"product_id": "night_ride_nightride_dsp_kit", "accessory_category": "other", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e", "night_ride_nrp_sl"], "_confidence": "medium", "_why": "display kit pairs with the thermal units (homed thermal_imager_monitor above)"},
     {"product_id": "stalker_200_0648_00", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "medium", "_why": "display sun shield — accessory-only"},
-    {"product_id": "stalker_200_1503_00", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "medium", "_why": "speed module (internal GPS, Ka-band) — radar-system component; accessory-only, no standalone slot", "_question": "are the speed modules optioned per-radar (accessory) or sold standalone (then they need a home — radar_display_unit?)"},
-    {"product_id": "stalker_200_1503_11", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "medium", "_question": "see stalker_200_1503_00"}
+    {"product_id": "stalker_200_1503_00", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "high", "_why": "stalkerradar.com/product/speed-module-with-internal-gps-ka-band/: GPS+inertial patrol-speed source for Stalker DSR/DSR 2X moving radar — replaces the VSS/OBD-II speed feed on vehicles without accessible ports. A per-radar system component (Stalker sells it under radar accessories), not a display → accessory role is right, no standalone home (EVIDENCE.md F16)"},
+    {"product_id": "stalker_200_1503_11", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "high", "_why": "external-GPS variant of the same speed module — see stalker_200_1503_00 (EVIDENCE.md F16)"}
   ]
 }
