@@ -30,26 +30,6 @@
   "light": false
  },
  {
-  "product_id": "whelen_01_0244499_23",
-  "model": "SUB ASSY, ALLEY WARNING B/W",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN SUB ASSY, ALLEY WARNING B/W",
-  "part_type_id": "bar_takedown",
-  "confidence": "medium",
-  "note": "take-down/alley",
-  "light": true
- },
- {
-  "product_id": "whelen_01_0244499_53",
-  "model": "SUB ASSY, ALLEY WARNING R/W",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN SUB ASSY, ALLEY WARNING R/W",
-  "part_type_id": "bar_takedown",
-  "confidence": "medium",
-  "note": "take-down/alley",
-  "light": true
- },
- {
   "product_id": "qb_unassigned_1001_b",
   "model": "HOOKLOK ( SOLD IN PAIRS )",
   "manufacturer_id": "qb_unassigned",
@@ -137,86 +117,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2211_00",
-  "model": "REMOTE DISPLAY CABLE 10FT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER REMOTE DISPLAY CABLE 10FT",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2211_25",
-  "model": "REMOTE DISPLAY CABLE 25 FT",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER REMOTE DISPLAY CABLE 25 FT",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_02",
-  "model": "2 FT. ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 2 FT. ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_04",
-  "model": "4 FT ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 4 FT ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_08",
-  "model": "8 FT ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 8 FT ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_16",
-  "model": "16 FT ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 16 FT ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_20",
-  "model": "20 FT ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 20 FT ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "stalker_155_2591_25",
-  "model": "25 FT ANTENNA CABLE",
-  "manufacturer_id": "stalker",
-  "desc": "STALKER 25 FT ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
   "light": false
  },
  {
@@ -1130,16 +1030,6 @@
   "light": false
  },
  {
-  "product_id": "intermotive_a_bom621_a",
-  "model": "BLACK OUT MODULE FOR 2021+ CHEVY TAHOE PPV/SSV",
-  "manufacturer_id": "intermotive",
-  "desc": "INTERMOTIVE BLACK OUT MODULE FOR 2021+ CHEVY TAHOE PPV/SSV",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
-  "light": false
- },
- {
   "product_id": "american_aluminum_aaadish",
   "model": "1 GALLON SPILL RESISTANT WATER DISH (UNIVERSAL, HINGED, OR PERMANENT MOUNT)",
   "manufacturer_id": "american_aluminum",
@@ -1230,16 +1120,6 @@
   "light": false
  },
  {
-  "product_id": "intermotive_b_bom560_cc",
-  "model": "BLACKOUT MODULE FOR 2020+ FORD INTERCEPTOR UTILITY - MUST FILL OUT ORDER FORM",
-  "manufacturer_id": "intermotive",
-  "desc": "INTERMOTIVE BLACKOUT MODULE FOR 2020+ FORD INTERCEPTOR UTILITY - MUST FILL OUT ORDER FORM",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
-  "light": false
- },
- {
   "product_id": "pro_gard_b6705d18",
   "model": "REAR CARGO BARRIER WITH VINYL COATED MESH WINDOW AND SIDE FILLERS FOR 2018+ DODGE DURANGO",
   "manufacturer_id": "pro_gard",
@@ -1288,26 +1168,6 @@
   "confidence": "none",
   "note": "no rule matched",
   "light": false
- },
- {
-  "product_id": "whelen_bwd",
-  "model": "EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, DRIVER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, DRIVER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
- },
- {
-  "product_id": "whelen_bwp",
-  "model": "EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, PASSENGER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, PASSENGER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
  },
  {
   "product_id": "feniex_c_4010",
@@ -1387,26 +1247,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "console component/bracket",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_c_bom701_bc",
-  "model": "BLACKOUT MODULE KIT FOR 2018-2020 DODGE CHARGER PURSUIT",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "BLACKOUT MODULE KIT FOR 2018-2020 DODGE CHARGER PURSUIT",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_c_bom760_b",
-  "model": "BLACKOUT MODULE KIT FOR 2018-2023 DODGE DURANGO",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "BLACKOUT MODULE KIT FOR 2018-2023 DODGE DURANGO",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
   "light": false
  },
  {
@@ -1920,16 +1760,6 @@
   "light": false
  },
  {
-  "product_id": "soundoff_ecvcsmledf",
-  "model": "12\" LED UTILITY STRIP LIGHT, SURFACE MOUNT - WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF 12\" LED UTILITY STRIP LIGHT, SURFACE MOUNT - WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
   "product_id": "qb_unassigned_eluc3h010e",
   "model": "UNDERCOVER LED INSERT - 6 3RD GEN SUPER LED'S - 10' 5-WIRE CABLE - BLUE/WHITE - 10-30 VOLT",
   "manufacturer_id": "qb_unassigned",
@@ -1940,224 +1770,14 @@
   "light": true
  },
  {
-  "product_id": "soundoff_emps1qms3f",
-  "model": "MPOWER\u00ae 3\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, DUAL COLOR - AMBER/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 3\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, DUAL COLOR - AMBER/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps1sls3d",
-  "model": "3\" MPOWER STUD MOUNT RED/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF 3\" MPOWER STUD MOUNT RED/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps1sls3e",
-  "model": "3\" MPOWER STUD MOUNT BLUE/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF 3\" MPOWER STUD MOUNT BLUE/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps1sms3b",
-  "model": "MPOWER\u00ae 3\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - BLUE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 3\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - BLUE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps1sms3r",
-  "model": "MPOWER\u00ae 3\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - RED",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 3\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - RED",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2qms4d",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2qms4e",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ QUICK MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sms4d",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sms4e",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ SCREW MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sts3a_mpower_4_fascia_light_w_stud_mount_18_hard_wire_w_sync_option_sae_class_1_ca_tit",
-  "model": "EMPS2STS3A MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - AMBER",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF EMPS2STS3A MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - AMBER",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "qb_unassigned_emps2sts3b",
-  "model": "SOUNDOF EMPS2STS3B MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - BLUE",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "SOUNDOF EMPS2STS3B MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 8 LED, SINGLE COLOR - BLUE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sts4d",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sts4e",
-  "model": "MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT, 18\" HARD WIRE W/ SYNC OPTION, SAE CLASS 1 & CA TITLE 13, 9-32 VDC, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sts4k",
-  "model": "MPOWER STUD MOUNT LIGHTHEAD - RED/AMBER - 12 LED DUAL COLOR",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER STUD MOUNT LIGHTHEAD - RED/AMBER - 12 LED DUAL COLOR",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_emps2sts4m",
-  "model": "MPOWER STUD MOUNT LIGHTHEAD - BLUE/AMBER - 12 LED DUAL COLOR",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER STUD MOUNT LIGHTHEAD - BLUE/AMBER - 12 LED DUAL COLOR",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_enfsgs3d",
-  "model": "NFORCE\u00ae SINGLE DECK/GRILLE MOUNT LIGHT, SAE CLASS 1, 10-16V, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE\u00ae SINGLE DECK/GRILLE MOUNT LIGHT, SAE CLASS 1, 10-16V, BLACK HOUSING, 12 LED, DUAL COLOR - RED/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_enfsgs3e",
-  "model": "NFORCE\u00ae SINGLE DECK/GRILLE MOUNT LIGHT, SAE CLASS 1, 10-16V, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE\u00ae SINGLE DECK/GRILLE MOUNT LIGHT, SAE CLASS 1, 10-16V, BLACK HOUSING, 12 LED, DUAL COLOR - BLUE/WHITE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_enftc001bw",
-  "model": "NFORCE 8 HEAD INTERIOR TRAFFIC CONTROLLER - 35.5\" LONG - 12VDC - 12 LED DUAL COLOR - (DS) RA/RA/RA/RA/BA/BA/BA/BA (PS) - INCLUDES MEDIUM 2 HOLE BRACKETS",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE 8 HEAD INTERIOR TRAFFIC CONTROLLER - 35.5\" LONG - 12VDC - 12 LED DUAL COLOR - (DS) RA/RA/RA/RA/BA/BA/BA/BA (PS) - INCLUDES MEDIUM 2 HOLE BRACKETS",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": true
- },
- {
   "product_id": "soundoff_enftcdxs1208",
   "model": "NFORCE 8 HEAD EXTERIOR WEATHERPROOF TRAFFIC CONTROLLER - 12VDC - 12-LED DUAL COLOR",
   "manufacturer_id": "soundoff",
   "desc": "SOUNDOFF NFORCE 8 HEAD EXTERIOR WEATHERPROOF TRAFFIC CONTROLLER - 12VDC - 12-LED DUAL COLOR",
-  "part_type_id": "rear_warning",
-  "confidence": "low",
-  "note": "traffic advisor (verify)",
-  "light": true
- },
- {
-  "product_id": "soundoff_enfwb0005k",
-  "model": "NFORCE INTERIOR UNDERCOVER LIGHTBAR - SPLIT FRONT FULL SIZE - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W (PS) - INCLUDES BREAKOUT BOX",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE INTERIOR UNDERCOVER LIGHTBAR - SPLIT FRONT FULL SIZE - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W, B/W (PS) - INCLUDES BREAKOUT BOX",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": true
- },
- {
-  "product_id": "soundoff_enfwb003mp",
-  "model": "NFORCE INTERIOR UNDERCOVER LIGHTBAR - REAR FULL ONE PIECE BAR - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/A, B/A, B/A, B/A, B/A, B/A, B/A, B/A (PS) - INCLUDES BREAKOUT BOX",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE INTERIOR UNDERCOVER LIGHTBAR - REAR FULL ONE PIECE BAR - FOR 2018-20 DODGE DURANGO - 12 LED DUAL COLOR - (DS) B/A, B/A, B/A, B/A, B/A, B/A, B/A, B/A (PS) - INCLUDES BREAKOUT BOX",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": true
- },
- {
-  "product_id": "soundoff_enfwbfs",
-  "model": "NFORCE INTERIOR UNDERCOVER LIGHT BAR -FRONT/WINDSHIELD BAR - 12 LED DUAL",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NFORCE INTERIOR UNDERCOVER LIGHT BAR -FRONT/WINDSHIELD BAR - 12 LED DUAL",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": true
+  "part_type_id": null,
+  "confidence": "none",
+  "note": "no rule matched",
+  "light": false
  },
  {
   "product_id": "qb_unassigned_enfwbfs_dual_color",
@@ -2167,36 +1787,6 @@
   "part_type_id": "lighthead",
   "confidence": "low",
   "note": "light, type unclear",
-  "light": true
- },
- {
-  "product_id": "qb_unassigned_enfwbrf",
-  "model": "SOUND OFF NFORCE INTERIOR REAR LIGHT BAR - DUAL COLOR",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "SOUND OFF NFORCE INTERIOR REAR LIGHT BAR - DUAL COLOR",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": false
- },
- {
-  "product_id": "soundoff_englnk002",
-  "model": "BLUEPRINT BLUELINK OBD II DATA MODULE FOR FORD INTERCEPTOR UTILITY",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF BLUEPRINT BLUELINK OBD II DATA MODULE FOR FORD INTERCEPTOR UTILITY",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
-  "light": false
- },
- {
-  "product_id": "soundoff_enrmb",
-  "model": "NROADS EXTERIOR MID/MINI LIGHTBAR - PER CONFIGURATOR. QE050879. 24\" DUO RED/WHITE.",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NROADS EXTERIOR MID/MINI LIGHTBAR - PER CONFIGURATOR. QE050879. 24\" DUO RED/WHITE.",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
   "light": true
  },
  {
@@ -2250,36 +1840,6 @@
   "light": false
  },
  {
-  "product_id": "qb_unassigned_ent3b3d",
-  "model": "SOUND OFF SURFACE MOUNT DUO COLOR INTERSECTOR SUPER LED LIGHT KIT - INCLUDES 1 LIGHT WITH MOUNTING GASKET AND INLINE FLASHER RED/WHT - CLEAR LENS - BLACK HSNG",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "SOUND OFF SURFACE MOUNT DUO COLOR INTERSECTOR SUPER LED LIGHT KIT - INCLUDES 1 LIGHT WITH MOUNTING GASKET AND INLINE FLASHER RED/WHT - CLEAR LENS - BLACK HSNG",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "whelen_es2me",
-  "model": "54\" LEGACY MIDNIGHT EDITION",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN 54\" LEGACY MIDNIGHT EDITION",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": false
- },
- {
-  "product_id": "whelen_es8me",
-  "model": "48\" LEGACY MIDNIGHT EDITION",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN 48\" LEGACY MIDNIGHT EDITION",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": false
- },
- {
   "product_id": "soundoff_etfbssn_p",
   "model": "FLASHBACK ALTERNATING TAILLIGHT FLASHER, SOLID STATE - 2.4 F.P.S.",
   "manufacturer_id": "soundoff",
@@ -2318,16 +1878,6 @@
   "confidence": "low",
   "note": "flasher (headlight vs tail \u2014 verify)",
   "light": true
- },
- {
-  "product_id": "soundoff_etsa461hpp_ext",
-  "model": "NERGY\u00ae 400 SERIES HANDHELD REMOTE SIREN W/ 13 FT COIL CABLE LENGTH, 10-16V - 100 WATT SINGLE-TONE",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF NERGY\u00ae 400 SERIES HANDHELD REMOTE SIREN W/ 13 FT COIL CABLE LENGTH, 10-16V - 100 WATT SINGLE-TONE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
  },
  {
   "product_id": "soundoff_ettffut_16",
@@ -2460,16 +2010,6 @@
   "light": true
  },
  {
-  "product_id": "qb_unassigned_fn_1409",
-  "model": "FEINEX FUSION INTERIOR LIGHT BAR FULL RED/AMBER 2017-2019 FORD EXPLORER",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "FEINEX FUSION INTERIOR LIGHT BAR FULL RED/AMBER 2017-2019 FORD EXPLORER",
-  "part_type_id": "front_interior_light_bar",
-  "confidence": "medium",
-  "note": "interior light bar",
-  "light": true
- },
- {
   "product_id": "feniex_fn_4016",
   "model": "MOUNTING BRACKET",
   "manufacturer_id": "feniex",
@@ -2520,16 +2060,6 @@
   "light": false
  },
  {
-  "product_id": "whelen_fsbbb",
-  "model": "ON PAIR BAIL BRACKET KIT, ONE KIT REQUIRED PER LIGHT ARRAY, BLACK, REQUIRES FSBCBB FOR 7-13 LAMP ARRAYS, NO CHARGE WHEN PURCHASED WITH FSB ARRAY",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN ON PAIR BAIL BRACKET KIT, ONE KIT REQUIRED PER LIGHT ARRAY, BLACK, REQUIRES FSBCBB FOR 7-13 LAMP ARRAYS, NO CHARGE WHEN PURCHASED WITH FSB ARRAY",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
- },
- {
   "product_id": "whelen_fsbps",
   "model": "POWER SUPPLY FIELD SERIES BLK",
   "manufacturer_id": "whelen",
@@ -2540,16 +2070,6 @@
   "light": false
  },
  {
-  "product_id": "feniex_fsm",
-  "model": "FUSION SURFACE MOUNT (RED/WHITE 40\u00b0 OPTICS)",
-  "manufacturer_id": "feniex",
-  "desc": "FENIEX FUSION SURFACE MOUNT (RED/WHITE 40\u00b0 OPTICS)",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
   "product_id": "feniex_fsma",
   "model": "FUSION SURFACE MOUNT AMBER",
   "manufacturer_id": "feniex",
@@ -2557,26 +2077,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "generic bracket/mount",
-  "light": false
- },
- {
-  "product_id": "feniex_fsmb",
-  "model": "FUSION SURFACE MOUNT BLUE",
-  "manufacturer_id": "feniex",
-  "desc": "FENIEX FUSION SURFACE MOUNT BLUE",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": false
- },
- {
-  "product_id": "feniex_fsmr",
-  "model": "FUSION SURFACE MOUNT RED",
-  "manufacturer_id": "feniex",
-  "desc": "FENIEX FUSION SURFACE MOUNT RED",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
   "light": false
  },
  {
@@ -2618,26 +2118,6 @@
   "confidence": "none",
   "note": "no rule matched",
   "light": false
- },
- {
-  "product_id": "whelen_gb2x",
-  "model": "LEGACY 54\" SMOKED LENSE KIT -GBEENDX (2) -GBCNTX (1) -GBDIVDX (2) [WHEN BUYINGFULL LIGHT BAR]",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN LEGACY 54\" SMOKED LENSE KIT -GBEENDX (2) -GBCNTX (1) -GBDIVDX (2) [WHEN BUYINGFULL LIGHT BAR]",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": false
- },
- {
-  "product_id": "whelen_gb8x",
-  "model": "LEGACY 48\" SMOKED LENSE KIT -GB2ENDX (2) -GBDIVIDX (1) [PRICE WHEN BUYING FULL LIGHTBAR]",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN LEGACY 48\" SMOKED LENSE KIT -GB2ENDX (2) -GBDIVIDX (1) [PRICE WHEN BUYING FULL LIGHTBAR]",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": true
  },
  {
   "product_id": "whelen_gbawd",
@@ -2760,16 +2240,6 @@
   "light": true
  },
  {
-  "product_id": "intermotive_h_bom560_dc",
-  "model": "BLACKOUT MODULE FOR 2025+ FORD INTERCEPTOR UTILITY - MUST FILL OUT ORDER FORM",
-  "manufacturer_id": "intermotive",
-  "desc": "INTERMOTIVE BLACKOUT MODULE FOR 2025+ FORD INTERCEPTOR UTILITY - MUST FILL OUT ORDER FORM",
-  "part_type_id": "vehicle_interface",
-  "confidence": "medium",
-  "note": "vehicle module",
-  "light": false
- },
- {
   "product_id": "whelen_h35sn12",
   "model": "SNAP-IN HALO.BULB 35W/12V AXL.",
   "manufacturer_id": "whelen",
@@ -2818,16 +2288,6 @@
   "confidence": "medium",
   "note": "generic bracket/mount",
   "light": false
- },
- {
-  "product_id": "federal_signal_hkb_tah15_44",
-  "model": "HOOK-KIT FOR 2015 TAHOE, 44\" TO 46\" LIGHTBAR.",
-  "manufacturer_id": "federal_signal",
-  "desc": "FEDERAL SIGNAL HOOK-KIT FOR 2015 TAHOE, 44\" TO 46\" LIGHTBAR.",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": true
  },
  {
   "product_id": "motorola_hln6861d",
@@ -3114,10 +2574,10 @@
   "model": "LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC",
   "manufacturer_id": "whelen",
   "desc": "WHELEN LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC",
-  "part_type_id": "rear_warning",
-  "confidence": "low",
-  "note": "traffic advisor (verify)",
-  "light": true
+  "part_type_id": null,
+  "confidence": "none",
+  "note": "no rule matched",
+  "light": false
  },
  {
   "product_id": "qb_unassigned_maintenance_repair",
@@ -3150,16 +2610,6 @@
   "light": false
  },
  {
-  "product_id": "qb_unassigned_md_ic6",
-  "model": "MOMENTO INFRARED INTERIOR CAMERA",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "MOMENTO INFRARED INTERIOR CAMERA",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_misc_part",
   "model": "MISCELLANEOUS PART",
   "manufacturer_id": "qb_unassigned",
@@ -3178,16 +2628,6 @@
   "confidence": "none",
   "note": "no rule matched",
   "light": false
- },
- {
-  "product_id": "soundoff_mpower_per_config",
-  "model": "MPOWER LIGHTBAR PER CONFIG - QE061345. 55\" RED/WHITE BLUE/WHITE FRONT AND CORNERS, RED/AMBER BLUE/AMBER REAR, W/ALLEY'S",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF MPOWER LIGHTBAR PER CONFIG - QE061345. 55\" RED/WHITE BLUE/WHITE FRONT AND CORNERS, RED/AMBER BLUE/AMBER REAR, W/ALLEY'S",
-  "part_type_id": "roof_light_bar",
-  "confidence": "medium",
-  "note": "roof light bar / accessory",
-  "light": true
  },
  {
   "product_id": "qb_unassigned_new_hinged_universal_water_dish",
@@ -3230,26 +2670,6 @@
   "light": false
  },
  {
-  "product_id": "night_ride_nrp_sl",
-  "model": "PRO-SL S04 384 (RING)",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE PRO-SL S04 384 (RING)",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrp_sl_640",
-  "model": "PRO-SL S04 640 (RING)",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE PRO-SL S04 640 (RING)",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
   "product_id": "night_ride_nrp_sl_e",
   "model": "PRO-SL S04 (RING) W ETHERNET",
   "manufacturer_id": "night_ride",
@@ -3257,26 +2677,6 @@
   "part_type_id": "cable",
   "confidence": "low",
   "note": "cable",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrp_slc",
-  "model": "PRO-SL S04/S14 CABLELESS 384",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE PRO-SL S04/S14 CABLELESS 384",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrp_slc_640",
-  "model": "PRO-SL S04/S14 CABLELESS 640",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE PRO-SL S04/S14 CABLELESS 640",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
   "light": false
  },
  {
@@ -3310,16 +2710,6 @@
   "light": false
  },
  {
-  "product_id": "night_ride_nrr0010",
-  "model": "TRAILBLAZER 384",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE TRAILBLAZER 384",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
   "product_id": "night_ride_nrr0010_e",
   "model": "TAILBLAZER 384 W ETHERNET",
   "manufacturer_id": "night_ride",
@@ -3340,16 +2730,6 @@
   "light": false
  },
  {
-  "product_id": "night_ride_nrr2ndck",
-  "model": "TRAILBLAZER 2ND CAR KIT",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE TRAILBLAZER 2ND CAR KIT",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
   "product_id": "night_ride_nrr2ndck_e",
   "model": "TRAILBLAZER 2ND CAR KIT W ETHERNET",
   "manufacturer_id": "night_ride",
@@ -3357,16 +2737,6 @@
   "part_type_id": "cable",
   "confidence": "low",
   "note": "cable",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrr640_13e",
-  "model": "TRAILBLAZER 640",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE TRAILBLAZER 640",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
   "light": false
  },
  {
@@ -3380,156 +2750,6 @@
   "light": false
  },
  {
-  "product_id": "night_ride_nrs10010",
-  "model": "360 CLASSIC 384-13",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC 384-13",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs10010c",
-  "model": "360 CLASSIC 384 -13 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC 384 -13 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs384_19",
-  "model": "360 CLASSIC 384 -19",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC 384 -19",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs384_19c",
-  "model": "360 CLASSIC 384-19 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC 384-19 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs384_35",
-  "model": "360 CLASSIC TELEPHOTO 384-35",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC TELEPHOTO 384-35",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs384_35c",
-  "model": "360 CLASSIC TELEPHOTO 384-35 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 CLASSIC TELEPHOTO 384-35 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs640_19",
-  "model": "360 HIGHRES 640-19",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 HIGHRES 640-19",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs640_19c",
-  "model": "360 HIGHRES 640-19 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 HIGHRES 640-19 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrs640_35c",
-  "model": "360 HIGHRES TELEPHOTO 640-35 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 HIGHRES TELEPHOTO 640-35 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsc0010",
-  "model": "360 Hard Case",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 Hard Case",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsn0010",
-  "model": "SENTINEL 384",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE SENTINEL 384",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsn640_13",
-  "model": "SENTINEL 640",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE SENTINEL 640",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsx2ndck",
-  "model": "360 PLUS 2ND CAR KIT",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 PLUS 2ND CAR KIT",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsx640_19c",
-  "model": "360 PLUS 640-19 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 PLUS 640-19 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
-  "product_id": "night_ride_nrsx640_35c",
-  "model": "360 PLUS TELEPHOT 640-35 W CASE",
-  "manufacturer_id": "night_ride",
-  "desc": "NIGHTRIDE 360 PLUS TELEPHOT 640-35 W CASE",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal/night vision",
-  "light": false
- },
- {
   "product_id": "qb_unassigned_nv3_dsp_kit",
   "model": "DISPLAY KIT INCLUDES - 8\" DISPLAY MONITOR -T-BOLT RAM MOUNT (SIZE C) -ROUND RAM MOUNTING PLATE (SIZE C) -6\" LONG RAM MOUNTING ARM (SIZE C) -MINI USB TO AV CABLE",
   "manufacturer_id": "qb_unassigned",
@@ -3537,16 +2757,6 @@
   "part_type_id": "thermal_imager_monitor",
   "confidence": "low",
   "note": "monitor (verify)",
-  "light": false
- },
- {
-  "product_id": "noptic_nv3_psv_3000",
-  "model": "NV3 PSV-3000 THERMAL IMAGING CAMERA",
-  "manufacturer_id": "noptic",
-  "desc": "NOPTIC NV3 PSV-3000 THERMAL IMAGING CAMERA",
-  "part_type_id": "thermal_imager",
-  "confidence": "medium",
-  "note": "thermal imager",
   "light": false
  },
  {
@@ -3640,36 +2850,6 @@
   "light": true
  },
  {
-  "product_id": "motorola_pmkn4033a",
-  "model": "CABLE, MOBILE MIC EXTENSION",
-  "manufacturer_id": "motorola",
-  "desc": "MOTOROLA CABLE, MOBILE MIC EXTENSION",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "soundoff_pmp2bkdgaj",
-  "model": "90 DEGREE DECK/GRILLE ADJUSTABLE BRACKET KIT FOR MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT - BLACK",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF 90 DEGREE DECK/GRILLE ADJUSTABLE BRACKET KIT FOR MPOWER\u00ae 4\" FASCIA LIGHT W/ STUD MOUNT - BLACK",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
-  "product_id": "soundoff_pmp2brk2lpv",
-  "model": "LICENSE PLATE BRACKET, VERTICAL MOUNT FOR MPOWER 4\" FASCIA LIGHT W/ STUD MOUNT - MOUNTS 2 LIGHTS, ONE ON EACH SIDE OF THE LICENSE PLACE (EACH)",
-  "manufacturer_id": "soundoff",
-  "desc": "SOUNDOFF LICENSE PLATE BRACKET, VERTICAL MOUNT FOR MPOWER 4\" FASCIA LIGHT W/ STUD MOUNT - MOUNTS 2 LIGHTS, ONE ON EACH SIDE OF THE LICENSE PLACE (EACH)",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
-  "light": true
- },
- {
   "product_id": "soundoff_pmp2wdg15b",
   "model": "15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4\" QUICK MOUNT LIGHT",
   "manufacturer_id": "soundoff",
@@ -3677,16 +2857,6 @@
   "part_type_id": "bracket",
   "confidence": "medium",
   "note": "generic bracket/mount",
-  "light": false
- },
- {
-  "product_id": "qb_unassigned_pmpsabk005",
-  "model": "SOUND OFF MPOWER\u00ae THIRD BRAKE LIGHT BRACKET FOR USE WITH (2) MPOWER 4X2 STUD MOUNT LIGHTS",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "SOUND OFF MPOWER\u00ae THIRD BRAKE LIGHT BRACKET FOR USE WITH (2) MPOWER 4X2 STUD MOUNT LIGHTS",
-  "part_type_id": "front_side_warning",
-  "confidence": "medium",
-  "note": "surface/fascia warning light",
   "light": false
  },
  {
@@ -3830,26 +3000,6 @@
   "light": false
  },
  {
-  "product_id": "qb_unassigned_radio_antenna",
-  "model": "RADIO ANTENNA CABLE",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "RADIO ANTENNA CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
-  "product_id": "motorola_radio_refresh_kit",
-  "model": "INCLUDES POWER CABLE, RADIO ANTENNA CABLE AND COMMUNICATION CABLE",
-  "manufacturer_id": "motorola",
-  "desc": "MOTOROLA - INCLUDES POWER CABLE, RADIO ANTENNA CABLE AND COMMUNICATION CABLE",
-  "part_type_id": "radar_interface_cable",
-  "confidence": "medium",
-  "note": "radio/data/interface cable",
-  "light": false
- },
- {
   "product_id": "ram_ram_201u_d",
   "model": "MOUNTS DOUBLE SOCKET LONG ARM SIZE C",
   "manufacturer_id": "ram",
@@ -3918,26 +3068,6 @@
   "confidence": "none",
   "note": "no rule matched",
   "light": false
- },
- {
-  "product_id": "qb_unassigned_rdb100_k15_on_t100",
-  "model": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS POLE MOUNT AC POWER, WHITE WITH ADAPTER, ON/OFF SWITCH BOX",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS POLE MOUNT AC POWER, WHITE WITH ADAPTER, ON/OFF SWITCH BOX",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
- },
- {
-  "product_id": "qb_unassigned_rdb100_q15_on_t100_bob",
-  "model": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS 12 VOLT, BLACK, ON OFF SWITCH (LIST PRICE IS $1197)",
-  "manufacturer_id": "qb_unassigned",
-  "desc": "FRC RADIANT ECO LED TWO PACK LIGHTHEADS 12 VOLT, BLACK, ON OFF SWITCH (LIST PRICE IS $1197)",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
  },
  {
   "product_id": "qb_unassigned_remote_start_install",
@@ -4060,56 +3190,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_1201",
-  "model": "INSERT FOR SC-1 GUNLOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ INSERT FOR SC-1 GUNLOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1201_b",
-  "model": "RUBBER INSERT FOR SC-1 GUNLOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ RUBBER INSERT FOR SC-1 GUNLOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1900",
-  "model": "ADJUSTABLE STEEL BUTT PLATE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ ADJUSTABLE STEEL BUTT PLATE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1900_xl",
-  "model": "EXTRA LARGE ADUSTABLE STEEL BUTT PLATE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ EXTRA LARGE ADUSTABLE STEEL BUTT PLATE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1901",
-  "model": "SOLID ALUMINUM BUTT PLATE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ SOLID ALUMINUM BUTT PLATE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_1902",
   "model": "PUSH BUTTON SWITCH",
   "manufacturer_id": "santa_cruz",
@@ -4127,126 +3207,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1903_ca",
-  "model": "#CA - BARREL KEY",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ #CA - BARREL KEY",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_1909",
-  "model": "GUN LOCK SOLENOID",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ GUN LOCK SOLENOID",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_2",
-  "model": "SHOTGUN LOCK WITHOUT KEY OVERRIDE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ SHOTGUN LOCK WITHOUT KEY OVERRIDE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_2_ar",
-  "model": "LARGE GUN LOCK WITHOUT KEY OVERRIDE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ LARGE GUN LOCK WITHOUT KEY OVERRIDE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_401",
-  "model": "MUZZLE DOWN RACK UPRIGHT",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ MUZZLE DOWN RACK UPRIGHT",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_403",
-  "model": "L MUZZLE PLATE FOR CUP OR PLUG",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ L MUZZLE PLATE FOR CUP OR PLUG",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_404",
-  "model": "MUZZLE PLUG",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ MUZZLE PLUG",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_502",
-  "model": "18\" LONG FLAT BAR",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ 18\" LONG FLAT BAR",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_503",
-  "model": "24\" LONG FLAT BAR",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ 24\" LONG FLAT BAR",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_6",
-  "model": "UNIVERSAL GUN LOCK #2 OR # KEY OVERRIDE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ UNIVERSAL GUN LOCK #2 OR # KEY OVERRIDE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_6000",
-  "model": "EXTERNAL MAGNET RESISTANT SHEILD FOR SC-1 GUNLOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ EXTERNAL MAGNET RESISTANT SHEILD FOR SC-1 GUNLOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_6001",
-  "model": "EXTERNAL MAGNET RESISTANT SHIELD FOR SC-1-AR GUNLOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ EXTERNAL MAGNET RESISTANT SHIELD FOR SC-1-AR GUNLOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
   "light": false
  },
  {
@@ -4287,26 +3247,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_917_mr",
-  "model": "RAPID-ADJUST MUZZLE DOWN RIFLE RACK WITH SC-6 XL LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ RAPID-ADJUST MUZZLE DOWN RIFLE RACK WITH SC-6 XL LOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_917_ms_ksg",
-  "model": "RAPID-ADJUST MUZZLE DOWN SHOTGUN OR KSG RACK W/SC-6 XL LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ RAPID-ADJUST MUZZLE DOWN SHOTGUN OR KSG RACK W/SC-6 XL LOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
   "light": false
  },
  {
@@ -4407,26 +3347,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_920_mr",
-  "model": "UNIVERSAL RAIL MUZZLE DOWN RIFLE RACK WITH SC-6 XL LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ UNIVERSAL RAIL MUZZLE DOWN RIFLE RACK WITH SC-6 XL LOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_920_ms_ksg",
-  "model": "UNIVERSAL RAIL MUZZLE DOWN SHOTGUN OR KSG RACK W/SC-6 XL LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ UNIVERSAL RAIL MUZZLE DOWN SHOTGUN OR KSG RACK W/SC-6 XL LOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
   "light": false
  },
  {
@@ -4560,66 +3480,6 @@
   "light": false
  },
  {
-  "product_id": "santa_cruz_sc_9303",
-  "model": "FLAT MUZZLE PLATE",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ FLAT MUZZLE PLATE",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_931_1",
-  "model": "SHOTGUN MUZZLE DOWN SETUP WITH SC-1 GUN LOCK",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ SHOTGUN MUZZLE DOWN SETUP WITH SC-1 GUN LOCK",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_931_mr",
-  "model": "RIFLE MUZZLE DOWN SETUP WITH SC-6 XL LOCK & MUZZLE CUP",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ RIFLE MUZZLE DOWN SETUP WITH SC-6 XL LOCK & MUZZLE CUP",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_931_ms",
-  "model": "SHOTGUN MUZZLE DOWN SETUP WITH SC-6 XL LOCK & MUZZLE PLUG",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ SHOTGUN MUZZLE DOWN SETUP WITH SC-6 XL LOCK & MUZZLE PLUG",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_9311",
-  "model": "MUZZLE CUP",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ MUZZLE CUP",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_9311_xl",
-  "model": "EXTRA LARGE MUZZLE CUP",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ EXTRA LARGE MUZZLE CUP",
-  "part_type_id": "gun_lock_bracket",
-  "confidence": "medium",
-  "note": "gun-lock part/accessory",
-  "light": false
- },
- {
   "product_id": "santa_cruz_sc_932",
   "model": "ROLL BAR MOUNT",
   "manufacturer_id": "santa_cruz",
@@ -4677,16 +3537,6 @@
   "part_type_id": null,
   "confidence": "none",
   "note": "no rule matched",
-  "light": false
- },
- {
-  "product_id": "santa_cruz_sc_arpin",
-  "model": "TAMPER RESISTANT TAKE DOWN PIN FOR AR WITH TOOL",
-  "manufacturer_id": "santa_cruz",
-  "desc": "SANTA CRUZ TAMPER RESISTANT TAKE DOWN PIN FOR AR WITH TOOL",
-  "part_type_id": "bar_takedown",
-  "confidence": "medium",
-  "note": "take-down/alley",
   "light": false
  },
  {
@@ -4818,26 +3668,6 @@
   "confidence": "none",
   "note": "no rule matched",
   "light": false
- },
- {
-  "product_id": "whelen_tcrwxp",
-  "model": "DUO PRIMARY LIGHTHEAD FOR TRACER WCX (REPLACE # WITH COLOR)",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN DUO PRIMARY LIGHTHEAD FOR TRACER WCX (REPLACE # WITH COLOR)",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
- },
- {
-  "product_id": "whelen_tcrwxs",
-  "model": "DUO SECONDARY LIGHTHEAD FOR TRACER WCX (REPLACE #WITH COLOR)",
-  "manufacturer_id": "whelen",
-  "desc": "WHELEN DUO SECONDARY LIGHTHEAD FOR TRACER WCX (REPLACE #WITH COLOR)",
-  "part_type_id": "lighthead",
-  "confidence": "medium",
-  "note": "lighthead",
-  "light": true
  },
  {
   "product_id": "qb_unassigned_test",
