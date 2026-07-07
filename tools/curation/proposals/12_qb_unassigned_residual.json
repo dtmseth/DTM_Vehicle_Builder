@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "phase": "3 — qb_unassigned: homed but staying in the holding bucket (brand unknown or generic)",
+    "apply": "python tools/curate.py tools/curation/proposals/12_qb_unassigned_residual.json  (AFTER 01_new_part_types)"
+  },
+  "set_home": [
+    {"product_id": "qb_unassigned_11019", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "dual-port USB power charger — the 12v/USB power slot"},
+    {"product_id": "qb_unassigned_clpsm", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "cigarette-lighter adapter w/ switch — 12v power accessory"},
+    {"product_id": "qb_unassigned_25_ft_cat_6_cable", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic Cat6 — the generic cable home (NightRide/monitor runs use ethernet)"},
+    {"product_id": "qb_unassigned_ethernet_cable", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic ethernet 10ft"},
+    {"product_id": "qb_unassigned_ethernet_cable_2", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic ethernet 25ft (note: could merge with the 10ft as SKUs of one 'Ethernet Cable' product — kept separate because both are hand-entered QB items)"},
+    {"product_id": "qb_unassigned_usb_extention", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic USB extension"},
+    {"product_id": "qb_unassigned_36_010_key", "fits_part_types": ["rear_storage_box"], "_confidence": "medium", "_why": "SUV TufBox locking drawer — cargo storage", "_question": "brand? (TufBox — American Aluminum or TruckVault line?) — re-brand once known"},
+    {"product_id": "qb_unassigned_46096", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "J-case fuse module — wiring/power distribution goes with harness"},
+    {"product_id": "qb_unassigned_48913", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "80A circuit breaker — same"},
+    {"product_id": "qb_unassigned_install_supplies", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "billed installation-supplies line explicitly described as custom wiring harness + breakers/relays"},
+    {"product_id": "qb_unassigned_cage_light", "fits_part_types": ["rear_seat_lights"], "add_tags": ["light"], "_confidence": "medium", "_why": "LED cage light = prisoner-area dome light; white only, so not warning"},
+    {"product_id": "qb_unassigned_cctv8", "fits_part_types": ["thermal_imager_monitor"], "_confidence": "medium", "_why": "8\" VGA/AV/HDMI monitor — pairs with thermal/camera systems like the other 8\" displays"},
+    {"product_id": "qb_unassigned_md_6200", "fits_part_types": ["camera_dvr"], "_confidence": "medium", "_why": "Momento M-6 dash camera w/ front+rear cams and GPS", "_question": "Momento manufacturer doesn't exist — create + re-brand"},
+    {"product_id": "qb_unassigned_getac_s410", "fits_part_types": ["computer"], "_confidence": "medium", "_why": "the laptop itself (not the dock)", "_question": "gated on the `computer` part_type question; Getac manufacturer also missing"},
+    {"product_id": "qb_unassigned_fire_extinguisher_brackets", "fits_part_types": ["tool_mount"], "_confidence": "medium", "_why": "extinguisher mounting = tool-mount family (pac_tool_k5046 precedent)"},
+    {"product_id": "qb_unassigned_eluc3h010e", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "low", "_why": "6-LED undercover-bar LED insert, blue/white, 10ft 5-wire — a child lighthead for an undercover/interior bar", "_question": "Whose part is ELUC3H010E (Whelen ELUC undercover series?) and which parent bar should it be an accessory of?"},
+    {"product_id": "qb_unassigned_light_kit_led", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "low", "_why": "'LIGHT KIT-LED (RED & WHITE)' $0 — a red/white LED kit with no brand or context", "_question": "What is this? (Which product's light kit — a push bumper light channel? K9 area?) If unknowable, delete"},
+    {"product_id": "qb_unassigned_pel2b", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "low", "_why": "'PERIMETER LIGHT BLACK' $265 — perimeter lighting is usually under-body warning", "_question": "PEL2B brand/series? (SoundOff perimeter enforcer? Whelen PELCC?) Color words absent — what colors does it come in?"},
+    {"product_id": "qb_unassigned_bu_353n", "fits_part_types": ["cloud_antenna"], "_confidence": "low", "_why": "GlobalSat USB GPS receiver — antenna-ish, feeds the laptop", "_question": "Is this AVL/mapping gear for the Cradlepoint/laptop stack (→ cloud_antenna) or radar speed-source (→ radar accessory)? Globesat manufacturer exists — re-brand to it?"},
+    {"product_id": "qb_unassigned_w709980_s439", "fits_part_types": ["replacement_rear_seat"], "_confidence": "low", "_why": "Ford OEM front-seat bolts, $5 — install hardware", "_question": "Keep as a catalog part at all, or delete as install-hardware noise?"},
+    {"product_id": "qb_unassigned_rbe13421", "fits_part_types": ["harness"], "_confidence": "low", "_why": "'AIR PRESSURE SWITCH' $36 — electrical component, no context", "_question": "What system is this for (plow? air horn? K9 door popper)? Home accordingly or delete"},
+    {"product_id": "qb_unassigned_2190_3340_0", "fits_part_types": [], "_confidence": "low", "_why": "Air One / National Foam 5-gal foam concentrate — consumable, not an upfit part", "_question": "Delete from parts_db (stays in QB), or do fire-apparatus consumables belong in the catalog? If keeping: re-brand to air_one_equipment (exists) — no home fits"},
+    {"product_id": "qb_unassigned_rv_3xl_red_fire", "fits_part_types": [], "_confidence": "low", "_why": "'RV-3XL RED FIRE' $52.99 — RV- prefix + apparel sizing (3XL/OVERSIZE/REGULAR) suggests Ray Allen K9 vests or similar", "_question": "What are the RV- items? (Ray Allen manufacturer exists with 0 products — dog vests/collars?) Home + brand once identified, or delete if not catalog-worthy"},
+    {"product_id": "qb_unassigned_rv_oversize", "fits_part_types": [], "_confidence": "low", "_question": "see qb_unassigned_rv_3xl_red_fire"},
+    {"product_id": "qb_unassigned_rv_regular", "fits_part_types": [], "_confidence": "low", "_question": "see qb_unassigned_rv_3xl_red_fire"},
+    {"product_id": "qb_unassigned_226130", "fits_part_types": ["tonneau_cover"], "_confidence": "medium", "_why": "BAK G2 hard folding tonneau for 2022 Silverado", "_question": "BAK Industries manufacturer missing — create + re-brand; gated on the tonneau_cover part_type question"},
+    {"product_id": "qb_unassigned_rtm_101_lp_ford_r", "fits_part_types": ["bracket"], "_confidence": "medium", "_why": "Acari 22\" low-profile roof mounting platform (2019 Ranger) — a lightbar mounting platform, so bracket home", "_question": "Acari manufacturer missing — create + re-brand; wire as bracket_mount accessory of whichever bar family it carries"}
+  ],
+  "set_accessory": [
+    {"product_id": "qb_unassigned_cctv8", "accessory_category": "other", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e"], "_confidence": "low", "_why": "generic monitor usable with the Trailblazer thermal units", "_question": "right parents?"}
+  ]
+}

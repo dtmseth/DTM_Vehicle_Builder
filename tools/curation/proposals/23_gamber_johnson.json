@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "phase": "3 — Gamber-Johnson (32 unhomed)",
+    "apply": "python tools/curate.py tools/curation/proposals/23_gamber_johnson.json  (AFTER 01_new_part_types)",
+    "conventions_used": "pockets / filler panels / cup holders / wings → special_face_plate (matches gamber_johnson_7160_0321 faceplates + havis pockets); poles / base plates / leg kits / vehicle bases / pedestal kits / braces / slide arms / steps → pedestal_mount (new)"
+  },
+  "set_home": [
+    {"product_id": "gamber_johnson_15250", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "OEM filler panel (USB/12V ports)"},
+    {"product_id": "gamber_johnson_16298", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "4.5\" pocket w/ knockout"},
+    {"product_id": "gamber_johnson_19740", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "1.5\" filler panel w/ knockouts"},
+    {"product_id": "gamber_johnson_3130_0152", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "1/2\" blank filler panel"},
+    {"product_id": "gamber_johnson_3130_0154", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "2\" blank filler panel"},
+    {"product_id": "gamber_johnson_3130_0156", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "4\" blank filler panel"},
+    {"product_id": "gamber_johnson_7160_0332", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "short interior pocket"},
+    {"product_id": "gamber_johnson_7160_0597", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "6\" short interior pocket"},
+    {"product_id": "gamber_johnson_7160_0924", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "2\"×1.5\" pocket"},
+    {"product_id": "gamber_johnson_7160_0846", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "internal cup holder (havis_cup_holders precedent)"},
+    {"product_id": "gamber_johnson_7110_1201", "fits_part_types": ["special_face_plate"], "_confidence": "medium", "_why": "2015+ Tahoe console 'wings' — console side trim"},
+    {"product_id": "gamber_johnson_7160_0085", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "29\" base plate — pedestal stack"},
+    {"product_id": "gamber_johnson_7160_0178", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "7\" upper pole"},
+    {"product_id": "gamber_johnson_ds_lower_9", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "9\" lower pole"},
+    {"product_id": "gamber_johnson_7160_0220", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Mongoose 9\" locking slide arm w/ clevis"},
+    {"product_id": "gamber_johnson_7160_0230", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "adjustable support brace"},
+    {"product_id": "gamber_johnson_7160_0509", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Chevy/GMC console leg kit"},
+    {"product_id": "gamber_johnson_7160_0555", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "universal console leg kit (F-150/Superduty)"},
+    {"product_id": "gamber_johnson_7160_0985", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Ram 1500 leg kit"},
+    {"product_id": "gamber_johnson_7160_1325", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Silverado/Sierra leg kit"},
+    {"product_id": "gamber_johnson_7160_1383", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Ram 1500 leg kit (new body)"},
+    {"product_id": "gamber_johnson_7160_1634", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Tahoe leg kit"},
+    {"product_id": "gamber_johnson_7160_1336", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "FPIU/Explorer vehicle base"},
+    {"product_id": "gamber_johnson_7160_1397", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Traverse/Acadia vehicle base"},
+    {"product_id": "gamber_johnson_7170_0232", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Escape pedestal system kit"},
+    {"product_id": "gamber_johnson_7170_0814_01", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "FPIU pedestal kit w/ Mongoose arm"},
+    {"product_id": "gamber_johnson_7170_1238", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "Silverado/Sierra/Tahoe pedestal kit"},
+    {"product_id": "gamber_johnson_ds_step", "fits_part_types": ["pedestal_mount"], "_confidence": "medium", "_why": "offset universal mount step"},
+    {"product_id": "gamber_johnson_7170_0567_00", "fits_part_types": ["console"], "_confidence": "high", "_why": "wide-body universal console w/ cup holder + pocket kit — a console body (matches the 7170 console kits already homed)"},
+    {"product_id": "gamber_johnson_7300_0426", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "Kussmaul aux/USB pass-through 6' extension"},
+    {"product_id": "gamber_johnson_7160_1048", "fits_part_types": ["equipment_tray"], "_confidence": "medium", "_why": "universal storage box for electrical equipment — rear equipment mounting", "_question": "equipment_tray or rear_storage_box? Is this the trunk electronics tray or general cargo storage?"},
+    {"product_id": "gamber_johnson_7160_0826", "fits_part_types": ["radio_mic_clip"], "_confidence": "low", "_why": "'adjustable mag clip' — magnetic clip, probably mic/phone retention on console", "_question": "is the GJ mag clip a mic clip (→ radio_mic_clip) or a general console accessory (→ special_face_plate)?"}
+  ]
+}

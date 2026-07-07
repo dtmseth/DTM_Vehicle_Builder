@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "phase": "3 — classification proposals (2026-07-07)",
+    "apply": "python tools/curate.py tools/curation/proposals/01_new_part_types.json [--write]",
+    "order": "Apply FIRST — later plans home products into these part_types.",
+    "note": "Every new type carries _why. Delete any entry you reject, then also remove the set_home/merge lines that reference it in the later plans (curate.py will refuse them loudly, so nothing applies silently)."
+  },
+  "create_part_types": [
+    {
+      "part_type_id": "tool_mount",
+      "label": "Tool Mount",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["CARGO AREA", "REAR COMPARTMENT WALL", "ON EQUIPMENT TRAY"],
+      "tree_positions": [{"section": "interior", "zone": "rear_storage_area"}],
+      "_confidence": "high",
+      "_why": "PAC Tool fire-tool mounting family (HookLok/HandleLok/axe & Halligan hangers, extinguisher/SCBA mounts) — 10+ products in the queue, no existing home fits (gun_lock is weapons-specific)."
+    },
+    {
+      "part_type_id": "pedestal_mount",
+      "label": "Computer Pedestal / Mount Base",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["FLOOR PEDESTAL", "TUNNEL MOUNT", "SIDE OF CONSOLE"],
+      "tree_positions": [{"section": "interior", "zone": "forward_of_cage"}],
+      "_confidence": "high",
+      "_why": "Havis C-HDM/PKG-PSM + Gamber-Johnson pole/base/leg-kit/pedestal ecosystem (~25 queue products): the mounting stack under a docking station. docking_station = the dock itself; motion_attachment = the tilt/swivel only. The in-between structure had no home."
+    },
+    {
+      "part_type_id": "spotlight",
+      "label": "Spotlight (pillar/post)",
+      "type_id": "lights",
+      "category": "scene",
+      "location_mode": "placement",
+      "tree_positions": [{"section": "exterior", "zone": "front"}],
+      "_confidence": "medium",
+      "_why": "Unity 6\" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules.",
+      "_question": "OK to give spotlights their own home (category scene, white)? Alternative is folding them into front_scene like the PAR-46 call."
+    },
+    {
+      "part_type_id": "flashlight",
+      "label": "Flashlight & Charger",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["IN CONSOLE POCKET", "ON PARTITION", "CARGO AREA"],
+      "tree_positions": [{"section": "interior", "zone": "forward_of_cage"}],
+      "_confidence": "medium",
+      "_why": "Streamlight SL-20 + Pelican 8060 rechargeable flashlights w/ 12V chargers (3 queue products). The Havis flashlight-charger *pocket* is a faceplate; the light itself had no home."
+    },
+    {
+      "part_type_id": "computer",
+      "label": "Computer / Laptop",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["ON DOCKING STATION"],
+      "tree_positions": [{"section": "interior", "zone": "forward_of_cage"}],
+      "_confidence": "medium",
+      "_why": "Getac S410 laptop is sold as hardware (queue). Homing it under docking_station would misstate what it is.",
+      "_question": "Do you want sold computers in the catalog as their own slot, or treated as an unbilled/agency line like other agency-supplied electronics?"
+    },
+    {
+      "part_type_id": "step_bars",
+      "label": "Step / Nerf Bars",
+      "type_id": "structural",
+      "location_mode": "text",
+      "location_options": ["DRIVER AND PASSENGER SIDE"],
+      "tree_positions": [{"section": "exterior", "zone": "side"}],
+      "_confidence": "medium",
+      "_why": "Westin R5 nerf steps (queue). Exterior structural side hardware; nothing existing fits."
+    },
+    {
+      "part_type_id": "trailer",
+      "label": "Utility Trailer",
+      "type_id": "extras",
+      "location_mode": "text",
+      "tree_positions": [{"section": "exterior", "zone": "rear"}],
+      "_confidence": "low",
+      "_why": "JB Lund aluminum utility trailers + rack/ramp/tie-down add-ons (13 queue products, real revenue incl. $6–7k units).",
+      "_question": "Do trailers belong in the vehicle-builder catalog at all, or should they stay QB-only (delete from parts_db)? They never appear on a build sheet."
+    },
+    {
+      "part_type_id": "prisoner_transport_insert",
+      "label": "Prisoner Transport Insert",
+      "type_id": "structural",
+      "location_mode": "text",
+      "location_options": ["CARGO / TRANSPORT BODY"],
+      "tree_positions": [{"section": "interior", "zone": "prisoner_area"}],
+      "_confidence": "medium",
+      "_why": "Havis PT-series van transport inserts (2 queue products, $6k–$23k). Not a kennel, not a partition — a whole compartment system."
+    },
+    {
+      "part_type_id": "snow_plow",
+      "label": "Snow Plow",
+      "type_id": "structural",
+      "location_mode": "text",
+      "location_options": ["FRONT MOUNT"],
+      "tree_positions": [{"section": "exterior", "zone": "front"}],
+      "_confidence": "medium",
+      "_why": "SnowEx Power Plow complete kit + deflector (2 queue products, $9.8k unit).",
+      "_question": "Confirm plows are catalog-worthy (municipal truck builds) rather than QB-only."
+    },
+    {
+      "part_type_id": "tonneau_cover",
+      "label": "Tonneau / Bed Cover",
+      "type_id": "structural",
+      "location_mode": "text",
+      "location_options": ["TRUCK BED"],
+      "tree_positions": [{"section": "exterior", "zone": "rear"}],
+      "_confidence": "low",
+      "_why": "BAK G2 hard folding tonneau (1 queue product).",
+      "_question": "Single product — worth a slot, or fold into step_bars as a generic 'truck exterior accessory' home? Also: BAK Industries manufacturer doesn't exist yet (create via grid before re-branding)."
+    }
+  ]
+}

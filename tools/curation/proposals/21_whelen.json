@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "phase": "3 — Whelen (35 unhomed; resolves most of PARTS_DB_AND_PICKER §7 'Whelen catalog decisions still open')",
+    "apply": "python tools/curate.py tools/curation/proposals/21_whelen.json",
+    "note": "Lightheads/lens kits/endcaps are proposed as accessory-role products (child-side, no part-type home) — that IS their home per the accessory model. Motorcycle-box family intentionally has NO ops — open ruling below."
+  },
+  "merge": [
+    {"target_id": "whelen_ion", "sources": ["whelen_ion", "whelen_fork_mt_ion_v_hd_electra_glide"], "_confidence": "medium", "_why": "IONHD3FM fork-mount ION (Harley) folds into the ION product as a mount-variant SKU — phase4b already folded its sibling M08DT this way"},
+    {"target_id": "whelen_linz_v_series", "sources": ["whelen_linz_v_series", "whelen_linz6r"], "_confidence": "medium", "_why": "LINZ6 red horiz-sync head → SKU under the LINZ product", "_question": "is LINZ6 the same family as 'LINZ V-Series' or its own model?"},
+    {"target_id": "whelen_headlight_flasher_ssf", "model": "Solid State Headlight Flasher", "manufacturer_id": "whelen", "fits_part_types": ["headlight_flasher"],
+     "sources": ["whelen_ssfpos", "whelen_ssfposi6"],
+     "_confidence": "high", "_why": "SSFPOS / SSFPOSI6 are variants of the same solid-state headlight flasher (§7 named these as new-product candidates)"}
+  ],
+  "set_home": [
+    {"product_id": "whelen_ulf44", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "universal LED flasher 4-outlet (§7 flasher family)"},
+    {"product_id": "whelen_plf46", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "programmable light flasher"},
+    {"product_id": "whelen_70rc6fcr", "fits_part_types": ["headlight_flasher"], "_confidence": "medium", "_why": "700-series linear Super-LED flasher module R/C — flasher electronics, not a light"},
+    {"product_id": "whelen_hwlfe29", "fits_part_types": ["siren_speaker"], "_confidence": "high", "_why": "siren amplifier + speaker + bracket for 2020-25 FPIU (resolves the §7 HWLFE29 flagged singleton)"},
+    {"product_id": "whelen_pcc6w", "fits_part_types": ["light_controller"], "_confidence": "medium", "_why": "PCC6W switch control center — light/equipment switching"},
+    {"product_id": "whelen_outer_edge_lightheads", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "DUO lighthead for RPWD/Outer Edge — child head; R/W here means the head's fixed color pair"},
+    {"product_id": "whelen_mirror_beam_lightheads", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Mirror-Beam MT ION DUO R/W head"},
+    {"product_id": "whelen_gbawd", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Legacy warn/alley module R/W (§7 'alley modules — wire as Legacy accessories')"},
+    {"product_id": "whelen_gbawe", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Legacy warn/alley module B/W"},
+    {"product_id": "whelen_fsbps", "fits_part_types": ["bracket"], "_confidence": "high", "_why": "Field Series power supply — support electronics for the Field Series scene lights (accessory role below is the real home)"},
+    {"product_id": "whelen_cc5k2", "fits_part_types": ["bracket"], "_confidence": "medium", "_why": "CCSRN5 install kit (Chevy) — siren install hardware", "_question": "which product is the CenCom CCSRN5 in the catalog, so the accessory link can point at it?"},
+    {"product_id": "whelen_sp123bmc", "fits_part_types": ["bracket"], "_confidence": "low", "_why": "chrome bumper mount, $497 — mount for *something* front-bumper (§7 flagged singleton, parent never identified)", "_question": "what does SP123BMC mount? (speaker? spotlight?)"},
+    {"product_id": "whelen_m62t", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "low", "_why": "M6-size LED turn light, amber, arrow patterns — tow/traffic signaling", "_question": "is this a standalone amber warning/turn light (→ warning_light) or a Traffic Advisor element (→ fold into whelen_traffic_advisor)?"},
+    {"product_id": "whelen_pfp2ap1", "fits_part_types": [], "_confidence": "low", "_why": "'PFP2AC POLE/PED MT WHT W/ SW' $2568 — pole/pedestal-mounted white light with switch, likely a portable/fixed floodlight", "_question": "what is PFP2AP1 used for in your builds? (scene flood on a pole? not obviously a vehicle part)"},
+    {"product_id": "whelen_sys109", "fits_part_types": [], "_confidence": "low", "_why": "System 109, $3460 — §7 says 'identify before adding'; still unidentified", "_question": "what is System 109?"},
+    {"product_id": "whelen_h35sn12", "fits_part_types": [], "_confidence": "low", "_why": "snap-in 35W/12V halogen bulb — a replacement bulb", "_question": "replacement part for which product (spotlight? PAR-46)? If it's consumable service stock, delete instead"},
+    {"product_id": "whelen_m1batt", "fits_part_types": [], "_confidence": "low", "_why": "motorcycle no-spill battery — motorcycle box family", "_question": "§7 ruling still open: does DTM sell motorcycle builds? If yes → new motorcycle_box part_type + family; if no → leave unhomed or delete all five"},
+    {"product_id": "whelen_m1ground", "fits_part_types": [], "_confidence": "low", "_question": "see whelen_m1batt (motorcycle box family)"},
+    {"product_id": "whelen_m4b6lr", "fits_part_types": [], "_confidence": "low", "_question": "see whelen_m1batt (motorcycle box family)"},
+    {"product_id": "whelen_m4bsep", "fits_part_types": [], "_confidence": "low", "_question": "see whelen_m1batt (motorcycle box family)"},
+    {"product_id": "whelen_mbadpt14", "fits_part_types": [], "_confidence": "low", "_question": "see whelen_m1batt (motorcycle box family)"}
+  ],
+  "set_accessory": [
+    {"product_id": "whelen_outer_edge_lightheads", "accessory_category": "lighthead", "accessory_of_products": ["whelen_outer_edge"], "_confidence": "high"},
+    {"product_id": "whelen_mirror_beam_lightheads", "accessory_category": "lighthead", "accessory_of_products": ["whelen_mirror_beams"], "_confidence": "high"},
+    {"product_id": "whelen_gbawd", "accessory_category": "lighthead", "accessory_of_products": ["whelen_legacy"], "_confidence": "high"},
+    {"product_id": "whelen_gbawe", "accessory_category": "lighthead", "accessory_of_products": ["whelen_legacy"], "_confidence": "high"},
+    {"product_id": "whelen_22leca", "accessory_category": "other", "accessory_of_products": ["whelen_legacy"], "_confidence": "medium", "_why": "left angled endcap — Legacy bar option (§7). Accessory-only: no part-type home needed", "_question": "'22' prefix — Legacy, or the 2x2/Century family?"},
+    {"product_id": "whelen_22reca", "accessory_category": "other", "accessory_of_products": ["whelen_legacy"], "_confidence": "medium", "_why": "right angled endcap — same"},
+    {"product_id": "whelen_68_1183491a16", "accessory_category": "other", "accessory_of_products": ["whelen_freedom"], "_confidence": "low", "_why": "amber 4\" lens 'for Freedom Micro Edge'", "_question": "which product is 'Freedom Micro Edge' — whelen_freedom, or a Micro Edge product I'm not finding?"},
+    {"product_id": "whelen_lcphoto", "accessory_category": "other", "accessory_of_products": ["whelen_legacy"], "_confidence": "medium", "_why": "photocell option (auto-dim) — bar option", "_question": "Legacy-only or also Liberty/Freedom?"},
+    {"product_id": "whelen_fsbps", "accessory_category": "flasher_power", "accessory_of_products": ["whelen_field_series"], "_confidence": "high", "_why": "Field Series power supply"},
+    {"product_id": "whelen_qfford1", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_legacy", "whelen_liberty", "whelen_freedom"], "_confidence": "low", "_why": "QuickFit roof platform (Ford) — §7: 'could be bracket_mount accessories of the full-size bars; resolve S/W finish suffixes first'", "_question": "what do the S / W suffixes mean (silver/white? finish?) and which bars are QuickFit-compatible?"},
+    {"product_id": "whelen_qfford1s", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_legacy", "whelen_liberty", "whelen_freedom"], "_confidence": "low", "_question": "see whelen_qfford1"},
+    {"product_id": "whelen_qfford1w", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_legacy", "whelen_liberty", "whelen_freedom"], "_confidence": "low", "_question": "see whelen_qfford1"},
+    {"product_id": "whelen_qfram2", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_legacy", "whelen_liberty", "whelen_freedom"], "_confidence": "low", "_question": "see whelen_qfford1"},
+    {"product_id": "whelen_qfram2s", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_legacy", "whelen_liberty", "whelen_freedom"], "_confidence": "low", "_question": "see whelen_qfford1"}
+  ],
+  "delete_products": ["whelen_bw54ufx"],
+  "_delete_notes": {
+    "whelen_bw54ufx": "LOW — 'WCX DUO IE 12-LT 2021 TAHOE' $2254: a fully-configured 12-lamp assembly. §7 already suspected 'probably not a part' (BOM artifact of a configured order). Confirm before applying"
+  },
+  "_open_questions": [
+    "Motorcycle box family (M1BATT, M1GROUND, M4B6LR, M4BSEP, MBADPT14 — 5 products, no ops here): §7 ruling still open — does DTM sell motorcycle builds? If yes I'll draft a motorcycle_box part_type + family; if no, leave unhomed or delete."
+  ]
+}

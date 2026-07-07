@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "phase": "3 — mechanical integrity fixes from the Phase 1 audit (PARTS_CURATION_AUDIT.md §2)",
+    "apply": "python tools/curate.py tools/curation/proposals/00_integrity.json [--write]",
+    "not_expressible_here": [
+      "service/service_2 duplicate tag merge (audit §2.2) — needs a grid edit or a tiny one-off; curate.py has no tag ops",
+      "specify_whip_style / specify_cylinder_style manufacturer 'specify' doesn't exist (audit §2.1) — both products are already homed; create a real manufacturer or fold them as SKU variants via the grid",
+      "'Preimer K-9' typo rename — pending your confirmation, rename in the grid (0 products, zero cost)"
+    ]
+  },
+  "merge": [
+    {
+      "target_id": "soundoff_nforce",
+      "model": "NFORCE",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "sources": ["soundoff_nforce", "soundoff_n_force"],
+      "_confidence": "high",
+      "_why": "Spelling twins (NFORCE / N-FORCE), 1 SKU each, both warning_light — one product, two SKUs."
+    },
+    {
+      "target_id": "soundoff_mpower",
+      "model": "MPOWER",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light", "roof_light_bar"],
+      "tag_ids": ["light"],
+      "sources": ["soundoff_mpower", "soundoff_m_power"],
+      "_confidence": "high",
+      "_why": "Spelling twins (MPOWER / M-POWER); union of homes kept (m_power also fit roof_light_bar)."
+    },
+    {
+      "target_id": "dtm_universal_grill_bracket",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": ["dtm_universal_grill_bracket"],
+      "_confidence": "medium",
+      "_why": "Manufacturer 'dtm' doesn't exist in the catalog (audit §2.1). 5-0 Fab (Dtm) does.",
+      "_question": "Confirm all 7 dtm_* products are 5-0 Fab; if 'dtm' should be its own manufacturer instead, create it in the grid and delete these 7 merges."
+    },
+    {"target_id": "dtm_l_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_l_bracket"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"},
+    {"target_id": "dtm_angle_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_angle_bracket"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"},
+    {"target_id": "dtm_dtm_extended_cargo_window_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_dtm_extended_cargo_window_bracket"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"},
+    {"target_id": "dtm_license_plate_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_license_plate_bracket"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"},
+    {"target_id": "dtm_grommet_mount", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_grommet_mount"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"},
+    {"target_id": "dtm_twist_lock_adaptor", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_twist_lock_adaptor"], "_confidence": "medium", "_why": "same dtm→5-0 Fab re-brand"}
+  ],
+  "set_home": [
+    {"product_id": "whelen_2_lamp_tracer", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "real light missing the light tag (audit §2.4); color lives in child heads so needs-color exemption still applies"},
+    {"product_id": "whelen_tracer_3_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_tracer_5_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_tracer_6_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_mirror_beams", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_ion_rear_pillar", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_fst", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_rst", "fits_part_types": ["rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_xlp", "fits_part_types": ["front_interior_light_bar", "rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
+    {"product_id": "whelen_outer_edge", "fits_part_types": ["rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"}
+  ],
+  "_open_questions": [
+    "whelen_cenator is homed (roof_light_bar) but was retired as discontinued — delete the product, or keep for historical builds?",
+    "setina_pb10: workbook says Pit Bar model, parts_db has it on wing_wraps (WORKBOOK_GRAPH.md conflict #1). Which is right?",
+    "Zone-named bracket part_types (fw_bracket, side/rear/mirror/liftgate/front_side brackets — audit §3.1): collapse into `bracket` + child-side accessory roles? Not proposed here pending your ruling.",
+    "Scene split (front/side/rear_scene vs a single scene_light home — audit §3.3): rule before or after bulk-apply; proposals below use today's three types."
+  ]
+}
