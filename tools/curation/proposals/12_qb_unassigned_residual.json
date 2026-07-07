@@ -3,6 +3,12 @@
     "phase": "3 — qb_unassigned: homed but staying in the holding bucket (brand unknown or generic)",
     "apply": "python tools/curate.py tools/curation/proposals/12_qb_unassigned_residual.json  (AFTER 01_new_part_types)"
   },
+  "merge": [
+    {"target_id": "soundoff_eluc_undercover_insert", "model": "Universal UnderCover LED Insert", "manufacturer_id": "soundoff", "fits_part_types": ["warning_light"], "tag_ids": ["light"],
+     "sources": ["qb_unassigned_eluc3h010e"],
+     "_confidence": "high",
+     "_why": "ELUC3H010E is SoundOff Signal's Universal UnderCover LED Insert (soundoffsignal.com product page; vendor listings label it 'SOI UNIV UNDERCOVER LED INSERT, 5 WIRE BLUE/WHITE') — a standalone screw-in hideaway kit (insert + extreme-angle lens + inline flasher, dual blue/white, 10' 5-wire) that retrofits 1\" strobe-tube cutouts in headlight/taillight housings. Not a Whelen part and not a bar child → re-brand soundoff + warning_light home (hideaway convention). Replaces the former low-confidence lighthead guess (EVIDENCE.md F13)"}
+  ],
   "set_home": [
     {"product_id": "qb_unassigned_11019", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "dual-port USB power charger — the 12v/USB power slot"},
     {"product_id": "qb_unassigned_clpsm", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "cigarette-lighter adapter w/ switch — 12v power accessory"},
@@ -19,7 +25,6 @@
     {"product_id": "qb_unassigned_md_6200", "fits_part_types": ["camera_dvr"], "_confidence": "medium", "_why": "Momento M-6 dash camera w/ front+rear cams and GPS", "_question": "Momento manufacturer doesn't exist — create + re-brand"},
     {"product_id": "qb_unassigned_getac_s410", "fits_part_types": ["computer"], "_confidence": "medium", "_why": "the laptop itself (not the dock)", "_question": "gated on the `computer` part_type question; Getac manufacturer also missing"},
     {"product_id": "qb_unassigned_fire_extinguisher_brackets", "fits_part_types": ["tool_mount"], "_confidence": "medium", "_why": "extinguisher mounting = tool-mount family (pac_tool_k5046 precedent)"},
-    {"product_id": "qb_unassigned_eluc3h010e", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "low", "_why": "6-LED undercover-bar LED insert, blue/white, 10ft 5-wire — a child lighthead for an undercover/interior bar", "_question": "Whose part is ELUC3H010E (Whelen ELUC undercover series?) and which parent bar should it be an accessory of?"},
     {"product_id": "qb_unassigned_light_kit_led", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "low", "_why": "'LIGHT KIT-LED (RED & WHITE)' $0 — a red/white LED kit with no brand or context", "_question": "What is this? (Which product's light kit — a push bumper light channel? K9 area?) If unknowable, delete"},
     {"product_id": "qb_unassigned_pel2b", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "low", "_why": "'PERIMETER LIGHT BLACK' $265 — perimeter lighting is usually under-body warning", "_question": "PEL2B brand/series? (SoundOff perimeter enforcer? Whelen PELCC?) Color words absent — what colors does it come in?"},
     {"product_id": "qb_unassigned_bu_353n", "fits_part_types": ["cloud_antenna"], "_confidence": "low", "_why": "GlobalSat USB GPS receiver — antenna-ish, feeds the laptop", "_question": "Is this AVL/mapping gear for the Cradlepoint/laptop stack (→ cloud_antenna) or radar speed-source (→ radar accessory)? Globesat manufacturer exists — re-brand to it?"},

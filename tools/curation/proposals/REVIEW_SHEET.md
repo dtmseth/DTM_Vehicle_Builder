@@ -32,11 +32,14 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: ChargeGuard-Select ignition-off timer — battery protection
   - **❓ battery_tender or vehicle_interface? It's a power-management timer, not a charger**
 
-## → `bracket`  (18 proposals, 3 questions)
+## → `bracket`  (17 proposals, 1 questions)
 
 - 🟢 **soundoff_pmp2wdg15b** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: SOUNDOFF 15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4" QUICK MOUNT LIGHT
   - why: 15° wedge for 4" quick-mount light — same family as the pmp2 brackets in warning_fascia.json
+- 🟢 **whelen_cc5k2** · home · _21_whelen.json_
+  - QB: WHELEN INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERA
+  - why: install kit for the CCSRN-5 = CenCom Carbide siren & light controller (whelen.com/product/cencom-carbide; Dana Safety listings). The Carbide amp itself is not in the catalog (only CenCom Core), so the kit stays home-only — creating a Carbide product for it to parent to is OPEN_QUESTIONS B5.2 (EVIDENCE.md)
 - 🟢 **whelen_fsbps** · home · _21_whelen.json_
   - QB: WHELEN POWER SUPPLY FIELD SERIES BLK
   - why: Field Series power supply — support electronics for the Field Series scene lights (accessory role below is the real home)
@@ -82,14 +85,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **ram_rap_b_354u_tra1** · home · _26_small_manufacturers.json_
   - QB: RAM 1 INCH BALL WITH T-BOLT
   - why: RAM 1" ball w/ T-bolt
-- 🟡 **whelen_cc5k2** · home · _21_whelen.json_
-  - QB: WHELEN INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERA
-  - why: CCSRN5 install kit (Chevy) — siren install hardware
-  - **❓ which product is the CenCom CCSRN5 in the catalog, so the accessory link can point at it?**
-- 🔴 **whelen_sp123bmc** · home · _21_whelen.json_
-  - QB: WHELEN BUMPER MOUNT, CHROME
-  - why: chrome bumper mount, $497 — mount for *something* front-bumper (§7 flagged singleton, parent never identified)
-  - **❓ what does SP123BMC mount? (speaker? spotlight?)**
 
 ## → `cable`  (4 proposals)
 
@@ -193,10 +188,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_fst** · home · _00_integrity.json_
   - why: light tag (audit §2.4)
 
-## → `front_interior_light_bar, rear_interior_light_bar`  (1 proposals)
+## → `front_interior_light_bar, rear_interior_light_bar`  (2 proposals)
 
 - 🟢 **whelen_xlp** · home · _00_integrity.json_
   - why: light tag (audit §2.4)
+- 🟢 **whelen_xlp** · merge 2→1 · _21_whelen.json_
+  - why: BW54UFX is a real PL26 line item, not a BOM artifact: Inner Edge XLP DUO+ Extra Low-Profile Upper Front two-piece unit, twelve 6-LED DUO lamps, Chevy Tahoe PPV/SSV 2021-2026 / Suburban 2024-2026, $2,254 (exact QB price match) — a vehicle-fitment SKU of the existing Inner Edge XLP product. Former delete proposal reversed (EVIDENCE.md)
 
 ## → `front_partition_transfer_kit`  (3 proposals, 1 questions)
 
@@ -437,7 +434,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WHELEN PCC6W SWITCH CONTROL CENTER
   - why: PCC6W switch control center — light/equipment switching
 
-## → `lighthead`  (6 proposals, 2 questions)
+## → `lighthead`  (5 proposals, 1 questions)
 
 - 🟢 **whelen_gbawd** · home · _21_whelen.json_
   - QB: WHELEN LEGACY OPT ADD 1 WARN/ALY R/W
@@ -451,10 +448,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_outer_edge_lightheads** · home · _21_whelen.json_
   - QB: WHELEN DUO LIGHTHEAD FOR RPWD SERIES RED/WHITE, NO CHARGE WHEN ORDERED WITH OUTER EDGE®
   - why: DUO lighthead for RPWD/Outer Edge — child head; R/W here means the head's fixed color pair
-- 🔴 **qb_unassigned_eluc3h010e** · home · _12_qb_unassigned_residual.json_
-  - QB: UNDERCOVER LED INSERT - 6 3RD GEN SUPER LED'S - 10' 5-WIRE CABLE - BLUE/WHITE - 10-30 VOLT
-  - why: 6-LED undercover-bar LED insert, blue/white, 10ft 5-wire — a child lighthead for an undercover/interior bar
-  - **❓ Whose part is ELUC3H010E (Whelen ELUC undercover series?) and which parent bar should it be an accessory of?**
 - 🔴 **qb_unassigned_light_kit_led** · home · _12_qb_unassigned_residual.json_
   - QB: LIGHT KIT-LED (RED & WHITE)
   - why: 'LIGHT KIT-LED (RED & WHITE)' $0 — a red/white LED kit with no brand or context
@@ -713,7 +706,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **dtm_l_bracket** · merge 1→1 · _00_integrity.json_
   - why: same dtm→5-0 Fab re-brand
 
-## → `siren_speaker`  (7 proposals)
+## → `siren_speaker`  (8 proposals)
 
 - 🟢 **federal_signal_q2b_012nnsd** · home · _26_small_manufacturers.json_
   - QB: FEDERAL SIGNAL MECHANICAL Q-SIREN, CHROME, RECESS MOUNT - FOOTSWITCH AND BRACKET SOLD
@@ -729,6 +722,9 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_hwlfe29** · home · _21_whelen.json_
   - QB: WHELEN SIREN AMPLIFIER WITH ONE SPEAKER, INCLUDES MOUNTING BRACKET FOR 2020-2025 FORD POLICE INTERCEPTOR UTILI
   - why: siren amplifier + speaker + bracket for 2020-25 FPIU (resolves the §7 HWLFE29 flagged singleton)
+- 🟢 **whelen_sp123bmc** · home · _21_whelen.json_
+  - QB: WHELEN BUMPER MOUNT, CHROME
+  - why: PL26: SP123BM Series = 100W bumper-mount siren SPEAKER (SA314/SA315 Projector section), chrome, $497 exact match — it doesn't mount something else, it IS the speaker. Re-homed bracket → siren_speaker (EVIDENCE.md)
 - 🟡 **feniex_c_4014** · home · _24_feniex.json_
   - QB: FENIEX STORM PRO 100W SIREN
   - why: Storm Pro 100W siren (amp)
@@ -951,7 +947,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: JB Lund aluminum utility trailers + rack/ramp/tie-down add-ons (13 queue products, real revenue incl. $6–7k units).
   - **❓ Do trailers belong in the vehicle-builder catalog at all, or should they stay QB-only (delete from parts_db)? They never appear on a build sheet.**
 
-## → `warning_light`  (18 proposals, 6 questions)
+## → `warning_light`  (20 proposals, 4 questions)
 
 - 🟢 **feniex_cannon_hideaway** → *Cannon Hide-A-Way* · merge 8→1 · _24_feniex.json_
   - why: Cannon 12-LED hideaway — one product, color-variant SKUs (R/W, B/W, R/A, B/A, A, W). Hideaways are colored warning → warning_light
@@ -959,6 +955,8 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: FENIEX FUSION SURFACE MOUNT AMBER
   - why: Fusion surface mount amber — belongs with feniex_fusion_surface_mount
   - **❓ prefer a merge into feniex_fusion_surface_mount as the amber SKU? (kept set_home to avoid clobbering your reviewed merge from warning_fascia.json)**
+- 🟢 **soundoff_eluc_undercover_insert** → *Universal UnderCover LED Insert* · merge 1→1 · _12_qb_unassigned_residual.json_
+  - why: ELUC3H010E is SoundOff Signal's Universal UnderCover LED Insert (soundoffsignal.com product page; vendor listings label it 'SOI UNIV UNDERCOVER LED INSERT, 5 WIRE BLUE/WHITE') — a standalone screw-in hideaway kit (insert + extreme-angle lens + inline flasher, dual blue/white, 10' 5-wire) that retrofits 1" strobe-tube cutouts in headlight/taillight housings. Not a Whelen part and not a bar child → re-brand soundoff + warning_light home (hideaway convention). Replaces the former low-confidence lighthead guess (EVIDENCE.md F13)
 - 🟢 **soundoff_intersector** · merge 6→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Intersector under-mirror SKUs (color letters B=B/W? D/E/F/R = color codes) join the existing Intersector product — mount style + color are SKU variants, one product per model
 - 🟢 **soundoff_nforce** → *NFORCE* · merge 2→1 · _00_integrity.json_
@@ -967,6 +965,10 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: real light missing the light tag (audit §2.4); color lives in child heads so needs-color exemption still applies
 - 🟢 **whelen_ion_rear_pillar** · home · _00_integrity.json_
   - why: light tag (audit §2.4)
+- 🟢 **whelen_linz_v_series** · merge 2→1 · _21_whelen.json_
+  - why: PL26 section 'LINZ6 & LINV2 V-Series Linear Super-LED Lightheads' — LINZ6 IS the V-Series linear lighthead family, so the red horiz-sync head is a SKU under the LINZ product (EVIDENCE.md)
+- 🟢 **whelen_m6** · merge 2→1 · _21_whelen.json_
+  - why: PL26: M62T sits in the M6-series surface-mount family (siblings M62BTT brake/tail/turn, M62BU back-up) — a standalone M6-size amber turn light with arrow patterns, NOT a Traffic Advisor element. One product per model line → SKU of whelen_m6 (EVIDENCE.md)
 - 🟢 **whelen_mirror_beams** · home · _00_integrity.json_
   - why: light tag (audit §2.4)
 - 🟢 **whelen_tracer_3_lamp** · home · _00_integrity.json_
@@ -990,17 +992,13 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - **❓ should traffic advisors eventually get their own part_type + arrow-pattern UI? Flagged special-UI in the audit**
 - 🟡 **whelen_ion** · merge 2→1 · _21_whelen.json_
   - why: IONHD3FM fork-mount ION (Harley) folds into the ION product as a mount-variant SKU — phase4b already folded its sibling M08DT this way
-- 🟡 **whelen_linz_v_series** · merge 2→1 · _21_whelen.json_
-  - why: LINZ6 red horiz-sync head → SKU under the LINZ product
-  - **❓ is LINZ6 the same family as 'LINZ V-Series' or its own model?**
+- 🟡 **whelen_sys109** · home · _21_whelen.json_
+  - QB: WHELEN SYSTEM 109
+  - why: PL26: Super-LED System #109 — two stainless-steel Micro 400 hideaway lightheads with 60' TPR cable, LED flasher/junction box and install kit, $3,460 exact match. A hideaway warning system sold as one QB item → one product, warning_light home (hideaway convention); color lives per-SKU (EVIDENCE.md)
 - 🔴 **qb_unassigned_pel2b** · home · _12_qb_unassigned_residual.json_
   - QB: PERIMETER LIGHT BLACK
   - why: 'PERIMETER LIGHT BLACK' $265 — perimeter lighting is usually under-body warning
   - **❓ PEL2B brand/series? (SoundOff perimeter enforcer? Whelen PELCC?) Color words absent — what colors does it come in?**
-- 🔴 **whelen_m62t** · home · _21_whelen.json_
-  - QB: WHELEN LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC
-  - why: M6-size LED turn light, amber, arrow patterns — tow/traffic signaling
-  - **❓ is this a standalone amber warning/turn light (→ warning_light) or a Traffic Advisor element (→ fold into whelen_traffic_advisor)?**
 
 ## → `warning_light, roof_light_bar`  (1 proposals)
 
@@ -1021,15 +1019,14 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WESTIN ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY
   - why: Elite upright wire cover — the exact wire_covers slot (accessory_of push_bumper already on the part_type)
 
-## → `(accessory of ace_k_9_ace_k_9)`  (2 proposals, 2 questions)
+## → `(accessory of ace_k_9_hp_5020, ace_k_9_ha_2520)`  (2 proposals)
 
-- 🔴 **ace_k_9_ha_fkt10_p** · accessory:other · _26_small_manufacturers.json_
+- 🟢 **ace_k_9_ha_fkt10_p** · accessory:other · _26_small_manufacturers.json_
   - QB: ACE K9 OPTIONAL 10" FAN, ACTIVATION MODULE, MANUAL SWITCH & MATERIALS
-  - why: fan kit parents to the Ace K9 system
-  - **❓ right parent? (which product is the Hot-N-Pop base unit in the catalog)**
-- 🔴 **ace_k_9_ha_fwg_10** · accessory:other · _26_small_manufacturers.json_
+  - why: catalog fact: the base units are ace_k_9_hp_5020 (Hot-N-Pop Pro alarm & door popper) and ace_k_9_ha_2520 (Heat Alarm Pro), both homed k9_heat_alarm_popper — the HA- prefix on this fan kit matches the Heat Alarm series. Former parent ace_k_9_ace_k_9 is actually a Gamber-Johnson console faceplate (wrong). (EVIDENCE.md F33)
+- 🟢 **ace_k_9_ha_fwg_10** · accessory:other · _26_small_manufacturers.json_
   - QB: ACE K9 HEAVY-DUTY FAN GUARD *DOES NOT FIT VEHICLES WITH SMALL REAR WINDOWS
-  - **❓ see ha_fkt10_p**
+  - why: fan guard for the same Heat Alarm/Hot-N-Pop fan systems — see ha_fkt10_p (EVIDENCE.md F33)
 
 ## → `(accessory of american_aluminum_ameralu_vault, american_aluminum_ez_vault)`  (1 proposals)
 
@@ -1196,18 +1193,17 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 
 - 🟡 **unity_shaft_headpost** · accessory:other · _11_qb_unassigned_rebrand.json_
 
+## → `(accessory of whelen_core)`  (1 proposals)
+
+- 🟢 **whelen_lcphoto** · accessory:other · _21_whelen.json_
+  - QB: WHELEN LOGIC LEVEL PHOTOCELL OPTION
+  - why: PL26: 'Logic Level Photocell for use with SLFLASH, CenCom Core, CenCom Sapphire, CenCom Carbide and CanTrol' — a control-system photocell, not a lightbar option. Re-parented whelen_legacy → whelen_core (CenCom Core, the only compatible product in the catalog) (EVIDENCE.md)
+
 ## → `(accessory of whelen_field_series)`  (1 proposals)
 
 - 🟢 **whelen_fsbps** · accessory:flasher_power · _21_whelen.json_
   - QB: WHELEN POWER SUPPLY FIELD SERIES BLK
   - why: Field Series power supply
-
-## → `(accessory of whelen_freedom)`  (1 proposals, 1 questions)
-
-- 🔴 **whelen_68_1183491a16** · accessory:other · _21_whelen.json_
-  - QB: WHELEN AMBER 4IN LENS FOR FREEDOM MICRO EDGE
-  - why: amber 4" lens 'for Freedom Micro Edge'
-  - **❓ which product is 'Freedom Micro Edge' — whelen_freedom, or a Micro Edge product I'm not finding?**
 
 ## → `(accessory of whelen_ion)`  (1 proposals)
 
@@ -1215,42 +1211,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: DTM BRACKET TO MOUNT UP TO 6 WHELEN IONS IN GRILL 2020+ FORD PIU
   - why: ION grill bracket → accessory of the ION
 
-## → `(accessory of whelen_legacy)`  (5 proposals, 2 questions)
+## → `(accessory of whelen_legacy)`  (2 proposals)
 
 - 🟢 **whelen_gbawd** · accessory:lighthead · _21_whelen.json_
   - QB: WHELEN LEGACY OPT ADD 1 WARN/ALY R/W
 - 🟢 **whelen_gbawe** · accessory:lighthead · _21_whelen.json_
   - QB: WHELEN LEGACY OPT ADD 1 WARN/ALY B/W
-- 🟡 **whelen_22leca** · accessory:other · _21_whelen.json_
-  - QB: WHELEN OPT ADD 1 LEFT ANGLED ENDCAP
-  - why: left angled endcap — Legacy bar option (§7). Accessory-only: no part-type home needed
-  - **❓ '22' prefix — Legacy, or the 2x2/Century family?**
-- 🟡 **whelen_22reca** · accessory:other · _21_whelen.json_
-  - QB: WHELEN OPT ADD 1 RIGHT ANGLED ENDCAP
-  - why: right angled endcap — same
-- 🟡 **whelen_lcphoto** · accessory:other · _21_whelen.json_
-  - QB: WHELEN LOGIC LEVEL PHOTOCELL OPTION
-  - why: photocell option (auto-dim) — bar option
-  - **❓ Legacy-only or also Liberty/Freedom?**
-
-## → `(accessory of whelen_legacy, whelen_liberty, whelen_freedom)`  (5 proposals, 5 questions)
-
-- 🔴 **whelen_qfford1** · accessory:bracket_mount · _21_whelen.json_
-  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
-  - why: QuickFit roof platform (Ford) — §7: 'could be bracket_mount accessories of the full-size bars; resolve S/W finish suffixes first'
-  - **❓ what do the S / W suffixes mean (silver/white? finish?) and which bars are QuickFit-compatible?**
-- 🔴 **whelen_qfford1s** · accessory:bracket_mount · _21_whelen.json_
-  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
-  - **❓ see whelen_qfford1**
-- 🔴 **whelen_qfford1w** · accessory:bracket_mount · _21_whelen.json_
-  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
-  - **❓ see whelen_qfford1**
-- 🔴 **whelen_qfram2** · accessory:bracket_mount · _21_whelen.json_
-  - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
-  - **❓ see whelen_qfford1**
-- 🔴 **whelen_qfram2s** · accessory:bracket_mount · _21_whelen.json_
-  - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
-  - **❓ see whelen_qfford1**
 
 ## → `(accessory of whelen_mirror_beams)`  (1 proposals)
 
@@ -1262,7 +1228,25 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_outer_edge_lightheads** · accessory:lighthead · _21_whelen.json_
   - QB: WHELEN DUO LIGHTHEAD FOR RPWD SERIES RED/WHITE, NO CHARGE WHEN ORDERED WITH OUTER EDGE®
 
-## → `(delete)`  (43 proposals)
+## → `(accessory of whelen_r416_beacon, whelen_responder_lp, whelen_century, whelen_mini_legacy)`  (5 proposals)
+
+- 🟢 **whelen_qfford1** · accessory:bracket_mount · _21_whelen.json_
+  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
+  - why: PL26 QuickFit Bolt-On Mounting Platform Series: 'For use with Whelen Beacons, Responder LP/HD's, Mini Century, Mini Liberty II and Mini Legacy (Mini Liberty II and Mini Legacy require MK9S mounting)' — mini bars/beacons, NOT the full-size Legacy/Liberty/Freedom (former parents replaced). Suffix decode: blank = black powder-coated ALUMINUM housing (not for magnetic-mount lights), S = black STEEL (works with magnetic-mount lights), W = white aluminum, SW = white steel. QFFORD1* fits Ford F-150 PPV/Lightning/F-250–F-600 2015-2025; all $488 (EVIDENCE.md)
+- 🟢 **whelen_qfford1s** · accessory:bracket_mount · _21_whelen.json_
+  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
+  - why: black steel housing variant (magnet-OK) — see whelen_qfford1
+- 🟢 **whelen_qfford1w** · accessory:bracket_mount · _21_whelen.json_
+  - QB: WHELEN QUICKFIT ROOF MT PLATFORM FORD
+  - why: white aluminum housing variant — see whelen_qfford1
+- 🟢 **whelen_qfram2** · accessory:bracket_mount · _21_whelen.json_
+  - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
+  - why: Ram 1500 Classic 2019-2025 / RAM 2500-3500 2022-2025, black aluminum — see whelen_qfford1
+- 🟢 **whelen_qfram2s** · accessory:bracket_mount · _21_whelen.json_
+  - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
+  - why: Ram, black steel housing variant (magnet-OK) — see whelen_qfford1
+
+## → `(delete)`  (42 proposals)
 
 - 🟢 **qb_unassigned_ace_k9_part** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
@@ -1373,9 +1357,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🔴 **qb_unassigned_rpbkr700_k15_on_bobx8_p1** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: RADIANT ECO LED LAMPHEAD
   - why: LOW — 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0. Same pattern as the rdb100 items you deleted in rest_of_lights.json. Confirm junk
-- 🔴 **whelen_bw54ufx** · DELETE · _21_whelen.json_
-  - QB: WHELEN WCX DUO IE 12-LT 2021 TAHOE
-  - why: LOW — 'WCX DUO IE 12-LT 2021 TAHOE' $2254: a fully-configured 12-lamp assembly. §7 already suspected 'probably not a part' (BOM artifact of a configured order). Confirm before applying
 
 ## → `(keep)`  (8 proposals)
 
@@ -1396,7 +1377,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **tiger_tough_embroidery** → *Stock Embroidery* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: Tiger Tough embroidery add-on for seat covers — accessory of the seat-cover products (role below), no home needed
 
-## → `(none — question)`  (14 proposals, 14 questions)
+## → `(none — question)`  (16 proposals, 16 questions)
 
 - 🔴 **5_0_fab_dtm_tube_chase** · home · _26_small_manufacturers.json_
   - QB: DTM TUBE CHASE
@@ -1420,10 +1401,22 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🔴 **qb_unassigned_rv_regular** · home · _12_qb_unassigned_residual.json_
   - QB: RV-REGULAR
   - **❓ see qb_unassigned_rv_3xl_red_fire**
+- 🔴 **whelen_22leca** · home · _21_whelen.json_
+  - QB: WHELEN OPT ADD 1 LEFT ANGLED ENDCAP
+  - why: PL26: 'One Angled Left End Cap for use with One Aerial Recognition Light, for Bars 30" to 50"' — an option for the WeCanX 2250 Series Build-A-Bar surface-mount bars, $144 exact match. NOT a Legacy option (former accessory link removed). No 2250-series bar product exists in the catalog to parent to (EVIDENCE.md)
+  - **❓ create a WeCanX 2250 bar product for the endcaps to parent to, or leave home-only? → OPEN_QUESTIONS B5.1**
+- 🔴 **whelen_22reca** · home · _21_whelen.json_
+  - QB: WHELEN OPT ADD 1 RIGHT ANGLED ENDCAP
+  - why: right-side twin of whelen_22leca — same 2250 Series option (EVIDENCE.md)
+  - **❓ see whelen_22leca → OPEN_QUESTIONS B5.1**
+- 🔴 **whelen_68_1183491a16** · home · _21_whelen.json_
+  - QB: WHELEN AMBER 4IN LENS FOR FREEDOM MICRO EDGE
+  - why: 68-1183491A·· is the 9M/Edge-9000-series replacement-lens family (zips.com lists 68-1183491A02B as '9M Series Lens – Amber') — consistent with a legacy Micro Edge bar, NOT the Micro Freedom (whelen_freedom). Former accessory-of-whelen_freedom link removed as contradicted by evidence (EVIDENCE.md)
+  - **❓ legacy Micro Edge service lens — keep (homeless) or delete? → OPEN_QUESTIONS B4.5**
 - 🔴 **whelen_h35sn12** · home · _21_whelen.json_
   - QB: WHELEN SNAP-IN HALO.BULB 35W/12V AXL.
-  - why: snap-in 35W/12V halogen bulb — a replacement bulb
-  - **❓ replacement part for which product (spotlight? PAR-46)? If it's consumable service stock, delete instead**
+  - why: PL26: 35W snap-in halogen bulb (White Dot) for 4000 motor/reflector assembly, 52 Series beacons, DOT3 systems, Edge California steady-burn, RDX — replacement service stock for legacy halogen products, none of which are catalog products (EVIDENCE.md)
+  - **❓ consumable service stock for legacy halogen gear — keep in catalog or delete? → OPEN_QUESTIONS B4.2**
 - 🔴 **whelen_m1batt** · home · _21_whelen.json_
   - QB: WHELEN MOTORCYCLE NO-SPILL BATTERY
   - why: motorcycle no-spill battery — motorcycle box family
@@ -1442,9 +1435,5 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - **❓ see whelen_m1batt (motorcycle box family)**
 - 🔴 **whelen_pfp2ap1** · home · _21_whelen.json_
   - QB: WHELEN PFP2AC POLE/PED MT WHT W/ SW
-  - why: 'PFP2AC POLE/PED MT WHT W/ SW' $2568 — pole/pedestal-mounted white light with switch, likely a portable/fixed floodlight
-  - **❓ what is PFP2AP1 used for in your builds? (scene flood on a pole? not obviously a vehicle part)**
-- 🔴 **whelen_sys109** · home · _21_whelen.json_
-  - QB: WHELEN SYSTEM 109
-  - why: System 109, $3460 — §7 says 'identify before adding'; still unidentified
-  - **❓ what is System 109?**
+  - why: PL26 identified: Dual Panel Pioneer Plus floodlight, 115 VAC, with Pole/Pedestal Mount Adapter and On/Off Switch, $2,568 exact match — a mains-powered pole/pedestal scene flood, not obviously a vehicle-build part (EVIDENCE.md)
+  - **❓ 115 VAC pole/pedestal flood — does it belong in the vehicle-builder catalog, or is it a shop/command-post sale? → OPEN_QUESTIONS B4.4**

@@ -63,7 +63,7 @@
     {"product_id": "5_0_fab_dtm_bm6wfpiu", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_ion"], "_confidence": "medium", "_why": "ION grill bracket → accessory of the ION"},
     {"product_id": "motorola_hln6861d", "accessory_category": "bracket_mount", "accessory_of_products": ["motorola_all_in_one_unit", "motorola_split_unit"], "_confidence": "medium", "_why": "brick mount for the Motorola radio units"},
     {"product_id": "lind_cblop_f90610", "accessory_category": "cable", "accessory_of_products": ["gamber_johnson_7110_1213"], "_confidence": "medium", "_why": "Dell dock power cable"},
-    {"product_id": "ace_k_9_ha_fkt10_p", "accessory_category": "other", "accessory_of_products": ["ace_k_9_ace_k_9"], "_confidence": "low", "_why": "fan kit parents to the Ace K9 system", "_question": "right parent? (which product is the Hot-N-Pop base unit in the catalog)"},
-    {"product_id": "ace_k_9_ha_fwg_10", "accessory_category": "other", "accessory_of_products": ["ace_k_9_ace_k_9"], "_confidence": "low", "_question": "see ha_fkt10_p"}
+    {"product_id": "ace_k_9_ha_fkt10_p", "accessory_category": "other", "accessory_of_products": ["ace_k_9_hp_5020", "ace_k_9_ha_2520"], "_confidence": "high", "_why": "catalog fact: the base units are ace_k_9_hp_5020 (Hot-N-Pop Pro alarm & door popper) and ace_k_9_ha_2520 (Heat Alarm Pro), both homed k9_heat_alarm_popper — the HA- prefix on this fan kit matches the Heat Alarm series. Former parent ace_k_9_ace_k_9 is actually a Gamber-Johnson console faceplate (wrong). (EVIDENCE.md F33)"},
+    {"product_id": "ace_k_9_ha_fwg_10", "accessory_category": "other", "accessory_of_products": ["ace_k_9_hp_5020", "ace_k_9_ha_2520"], "_confidence": "high", "_why": "fan guard for the same Heat Alarm/Hot-N-Pop fan systems — see ha_fkt10_p (EVIDENCE.md F33)"}
   ]
 }
