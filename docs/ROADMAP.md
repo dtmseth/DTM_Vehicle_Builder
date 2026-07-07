@@ -1040,6 +1040,9 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-05-20 | Three orthogonal axes for parts: category / location zone / build section | First schema draft conflated category and location-zone, which created confusion. They answer different questions and must stay separate. |
 | 2026-05-20 | Brackets are parts in the `brackets` category, not a separate top-level collection | Brackets get tracked, priced, inventoried like any other part. Relationships are expressed via `compatible_part_ids`. |
 | 2026-07-06 | Workbook import demoted from guaranteed input format to optional backup adapter; retirement on the table | Spreadsheets will see near-zero real use, and workbook-shape assumptions in core consumers are causing live bugs when parts_db supplies better data. Canonical pipeline is domain/parts_db-shaped; the workbook converts at the `inputs/` boundary or not at all. Workbook-era domain logic is ported into domain/planning via parity proofs, not lost. Workbook-as-renderer (export) unaffected. |
+| 2026-07-07 | Kit estimate behavior mirrors QuickBooks | One QB item → one line; QB bundle/group → component lines. Kit support exists only to represent kits present in QB inventory — no app-invented kit semantics. Right-sizes the kit-SKU phase. |
+| 2026-07-07 | Sibling parts-manager app deferred; starts read-only if/when built | The parts_db repository seam (importable without the GUI) is the only prerequisite and lands anyway, so deferral costs nothing. No speculative Graph-capable writer adapter for a second app. |
+| 2026-07-07 | SKU-grid save path frozen until curation queue (~673 unhomed products) is complete | Owner declares curation done before Stage C2 touches the save path; full backup checkpoint precedes it. Non-save-path stages proceed independently. |
 
 ---
 

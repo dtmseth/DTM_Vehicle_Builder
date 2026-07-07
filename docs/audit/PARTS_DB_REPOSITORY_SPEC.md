@@ -370,6 +370,23 @@ planner-signature change, not a mechanical move) · `planning.planner -> config_
 seam register; no silent local-write default inside the app — the SP-revert footgun rules it
 out; ConfigBundle move deferred to Phase E — see §4.)*
 
+### Answers (owner, 2026-07-07 — recorded in ROADMAP.md decision log)
+
+- **Q1 — mirror QuickBooks.** A kit bills exactly as QB bills it: one QB item → one estimate
+  line; QB bundle/group of components → component lines. The app invents no kit billing
+  semantics of its own. This also right-sizes Step 5's scope: kit support exists *only to
+  represent kits that exist in QB inventory* — model QB's structure, don't design a general
+  kit system. `expand_kit()` stays; its estimate behavior is driven by the QB item type.
+- **Q2 — deferred; the app is not being built now.** The Step 4 repository (importable
+  without the GUI) is the only seam the sibling app needs, and it lands regardless — so
+  deferring the app costs nothing later. When it happens, it starts **read-only**. The Stage
+  C writer port therefore does not need a Graph-capable adapter for a second app; don't
+  build one speculatively.
+- **Q3 — wait for curation to complete.** C2 does not touch the SKU-grid save path until all
+  ~673 unhomed products are dispositioned and the owner declares the curation queue done (a
+  full backup checkpoint precedes C2 regardless). Stages C3/C4 items that don't touch the
+  save path may proceed independently of this gate.
+
 ---
 
 ## 6. Handoff list for the extraction session
