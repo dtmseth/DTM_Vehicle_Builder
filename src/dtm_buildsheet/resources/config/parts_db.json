@@ -25575,7 +25575,9 @@
     "santa_cruz_sc_1902": {
       "manufacturer_id": "santa_cruz",
       "model": "PUSH BUTTON SWITCH",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -25600,7 +25602,9 @@
     "santa_cruz_sc_1903_2": {
       "manufacturer_id": "santa_cruz",
       "model": "#2 KEY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26084,7 +26088,9 @@
     "santa_cruz_sc_7100": {
       "manufacturer_id": "santa_cruz",
       "model": "RAPID ACCESS RFID SYSTEM FOR ANY GUN RACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26136,7 +26142,9 @@
     "santa_cruz_sc_917_d_1_5": {
       "manufacturer_id": "santa_cruz",
       "model": "FIXED PUMP SHOTGUN & ADJUSTABLE RIFLE RACK SC-1 & SC-6 XL LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26161,7 +26169,9 @@
     "santa_cruz_sc_917_d_5_5_a": {
       "manufacturer_id": "santa_cruz",
       "model": "RAPID-ADJUST UNIVERSAL DUAL GUN RACK WITH TWO SC-6 XL LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26186,7 +26196,9 @@
     "santa_cruz_sc_917_d_b_5_a": {
       "manufacturer_id": "santa_cruz",
       "model": "FIXED BARREL & SC-6 RAPID ADJUST GUN RACK WITH SC-1B AND SC-6",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26265,7 +26277,9 @@
     "santa_cruz_sc_920_1": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL PUMP SHOTGUN RACK WITH SC-1 LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26290,7 +26304,9 @@
     "santa_cruz_sc_920_5": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL GUN RACK WITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26315,7 +26331,9 @@
     "santa_cruz_sc_920_ar": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL LARGE LOCK GUN RACK WITH SC-1-AR LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26340,7 +26358,9 @@
     "santa_cruz_sc_920_b": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL BARREL GUN RACK WITH SC-1-B LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26365,7 +26385,9 @@
     "santa_cruz_sc_920_d_1_5": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL PUMP SHOTGUN & RIFLE RACK WITH SC-1 & SC-6 XL LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26390,7 +26412,9 @@
     "santa_cruz_sc_920_d_1_ar": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL SG & RIFLE RACK WITH BOTH SC-1 & SC-1-AR LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26415,7 +26439,9 @@
     "santa_cruz_sc_920_d_1_b": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL SG & BARREL RACK WITH BOTH SC-1 & SC-1-B LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26440,7 +26466,9 @@
     "santa_cruz_sc_920_d_5_5": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL DUAL GUN RACK WITH TWO SC-6 XL LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26492,7 +26520,9 @@
     "santa_cruz_sc_920_d_ar_b": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL DUAL RACK WITH BOTH SC-1-AR & SC-1-B LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26517,7 +26547,9 @@
     "santa_cruz_sc_920_d_b_5": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL DUAL GUN RACK WITH SC-1B BARREL & SC-6 XL LOCKS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26596,7 +26628,9 @@
     "santa_cruz_sc_922_1": {
       "manufacturer_id": "santa_cruz",
       "model": "FREE STANDING PUMP SHOTGUN RACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26648,7 +26682,9 @@
     "santa_cruz_sc_922_ar": {
       "manufacturer_id": "santa_cruz",
       "model": "FREE STANDING LARGE LOCK GUN RACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26673,7 +26709,9 @@
     "santa_cruz_sc_922_b": {
       "manufacturer_id": "santa_cruz",
       "model": "FREE STANDING BARREL GUN RACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26698,7 +26736,9 @@
     "santa_cruz_sc_922_d_1_5": {
       "manufacturer_id": "santa_cruz",
       "model": "FREE STANDING SHOTGUN & SC-6 GUN RACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26750,7 +26790,9 @@
     "santa_cruz_sc_9222lr": {
       "manufacturer_id": "santa_cruz",
       "model": "FREE STANDING GUN RACK BASE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26775,7 +26817,9 @@
     "santa_cruz_sc_9230": {
       "manufacturer_id": "santa_cruz",
       "model": "30\" UNIVERSAL RAIL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26800,7 +26844,9 @@
     "santa_cruz_sc_9236": {
       "manufacturer_id": "santa_cruz",
       "model": "36\" UNIVERSAL RAIL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26879,7 +26925,9 @@
     "santa_cruz_sc_929_1": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL OVREHEAD PUMP SHOTGUN RACK WITH SC-1 LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26904,7 +26952,9 @@
     "santa_cruz_sc_929_5": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL OVERHEAD GUN RACK WITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26929,7 +26979,9 @@
     "santa_cruz_sc_929_5_k9": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL OVERHEAD K-9 GUN RACK WITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26954,7 +27006,9 @@
     "santa_cruz_sc_929_ar": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL OVERHEAD LARGE LOCK GUN RACK WITH SC-1-AR LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26979,7 +27033,9 @@
     "santa_cruz_sc_929_b": {
       "manufacturer_id": "santa_cruz",
       "model": "UNIVERSAL RAIL OVERHEAD BARREL GUN RACK WITH SC-1-B LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27004,7 +27060,9 @@
     "santa_cruz_sc_9302": {
       "manufacturer_id": "santa_cruz",
       "model": "MOUNTING HINGE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27191,7 +27249,9 @@
     "santa_cruz_sc_932": {
       "manufacturer_id": "santa_cruz",
       "model": "ROLL BAR MOUNT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27216,7 +27276,9 @@
     "santa_cruz_sc_934_5_a": {
       "manufacturer_id": "santa_cruz",
       "model": "RAPID-ADJUST UNIVERSAL OVERHEAD GUN RACKWITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27241,7 +27303,9 @@
     "santa_cruz_sc_934_5_a_k9": {
       "manufacturer_id": "santa_cruz",
       "model": "RAPID-ADJUST UNIVERSAL K-9 GUN RACKWITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27266,7 +27330,9 @@
     "santa_cruz_sc_934_5_a_mtl": {
       "manufacturer_id": "santa_cruz",
       "model": "RAPID-ADJUST UNIVERSAL TRUNK LID GUN RACK WITH SC-6 XL LOCK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27291,7 +27357,9 @@
     "santa_cruz_sc_9903": {
       "manufacturer_id": "santa_cruz",
       "model": "L-BRACKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27316,7 +27384,9 @@
     "santa_cruz_sc_9906": {
       "manufacturer_id": "santa_cruz",
       "model": "U-BOLT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
