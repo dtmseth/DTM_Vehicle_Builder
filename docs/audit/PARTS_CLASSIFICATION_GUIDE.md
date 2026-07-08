@@ -125,7 +125,10 @@ covers → `wire_covers` · window model #6/#8/#10VS = features of `front_partit
 · transfer kits + their recess/extension panels → `front_partition_transfer_kit` · vaults,
 TufBoxes, drawers → `rear_storage_box` · prisoner-area ABS pans → `floor_pan` · consumer floor
 liners (WeatherTech) → `floor_mats` · seat covers (incl. "bucket seat" covers) → `seat_covers` ·
-TPO replacement seats → `replacement_rear_seat`.
+TPO replacement seats → `replacement_rear_seat` · tube chase (5-0 Fab) — the wiring
+tunnel in PIUs between the rear seats and the center console; factory-stock exists but
+DTM fabricates its own — generic-fit, no single parent product → `bracket` (owner ruling
+C7.1, 2026-07-07).
 
 **Audio/electrical:** siren amps, speakers, mechanical Q-sirens, handheld sirens →
 `siren_speaker`; speaker brackets → `siren_speaker_bracket`; officer-facing combined controllers
