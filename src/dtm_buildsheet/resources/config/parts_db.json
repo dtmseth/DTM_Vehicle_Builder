@@ -714,8 +714,79 @@
       "part_numbers": [
         {
           "part_number": "PIT BARS"
+        },
+        {
+          "part_number": "36-2125PB",
+          "friendly_name": "WESTIN PIT BAR ELITE 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+          "qb_item_id": "110",
+          "qb_sku": "",
+          "qb_unit_price": 545.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 545.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-4045PB",
+          "friendly_name": "WESTIN PIT BAR ELITE 2021-2025 CHEVROLET TAHOE PPV",
+          "qb_item_id": "114",
+          "qb_sku": "",
+          "qb_unit_price": 545.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 545.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-4075PB",
+          "friendly_name": "WESTIN PIT BAR ELITE 2021-2026 DODGE DURANOG",
+          "qb_item_id": "117",
+          "qb_sku": "",
+          "qb_unit_price": 545.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 545.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-52135PB",
+          "friendly_name": "WESTIN PIT BAR ElLITEXD - 2023-2026 CHEVROLET SILVERADO 1500 PPV",
+          "qb_item_id": "123",
+          "qb_sku": "",
+          "qb_unit_price": 545.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 545.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-54085PB",
+          "friendly_name": "WESTIN PIT BAR ELITEXD 2015-2026 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
+          "qb_item_id": "127",
+          "qb_sku": "",
+          "qb_unit_price": 545.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 545.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
-      ]
+      ],
+      "reviewed": false
     },
     "setina_pb5": {
       "manufacturer_id": "setina",
@@ -975,8 +1046,65 @@
       "part_numbers": [
         {
           "part_number": "WING WRAPS"
+        },
+        {
+          "part_number": "36-2125W",
+          "friendly_name": "WESTIN WING WRAP ELITE PUSH BUMPER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+          "qb_item_id": "111",
+          "qb_sku": "",
+          "qb_unit_price": 380.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 380.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-4075W",
+          "friendly_name": "WESTIN WING WRAP ELITE 2021-2026 DODGE DURANGO",
+          "qb_item_id": "118",
+          "qb_sku": "",
+          "qb_unit_price": 380.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 380.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-52065W",
+          "friendly_name": "WESTIN WING WRAP ELITEXD 2015-2026 FORD F-150",
+          "qb_item_id": "120",
+          "qb_sku": "",
+          "qb_unit_price": 380.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 380.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "36-52135W",
+          "friendly_name": "WESTIN WING WRAP ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV/2025-2026 CHEVROLET TAHOE PPV",
+          "qb_item_id": "124",
+          "qb_sku": "",
+          "qb_unit_price": 380.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 380.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
-      ]
+      ],
+      "reviewed": false
     },
     "setina_pb6": {
       "manufacturer_id": "setina",
@@ -14422,7 +14550,10 @@
     "stalker_200_0243_00": {
       "manufacturer_id": "stalker",
       "model": "COUNTING UNIT MOUNT - TALL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "front_radar_antenna_mount",
+        "rear_radar_antenna_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14501,7 +14632,9 @@
     "stalker_200_0622_00": {
       "manufacturer_id": "stalker",
       "model": "VSS INSTALLATION KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radar_cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14526,7 +14659,9 @@
     "stalker_200_0622_01": {
       "manufacturer_id": "stalker",
       "model": "2015-PRESENT TAHOE VSS CABLE KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radar_cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14571,7 +14706,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "stalker_dsr",
+        "stalker_dsr_2x"
+      ]
     },
     "stalker_200_0986_00": {
       "manufacturer_id": "stalker",
@@ -14684,7 +14824,10 @@
     "stalker_200_1089_00": {
       "manufacturer_id": "stalker",
       "model": "TAHOE DISPLAY MOUNT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "front_radar_antenna_mount",
+        "rear_radar_antenna_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14837,7 +14980,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "stalker_dsr",
+        "stalker_dsr_2x"
+      ]
     },
     "stalker_200_1503_11": {
       "manufacturer_id": "stalker",
@@ -14862,7 +15010,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "stalker_dsr",
+        "stalker_dsr_2x"
+      ]
     },
     "unity_218000_0002": {
       "manufacturer_id": "unity",
@@ -15029,7 +15182,9 @@
     "westin_28_51270": {
       "manufacturer_id": "westin",
       "model": "R5 NERF STEP BARS - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-2025",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "running_boards_nerf_bars"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15238,60 +15393,12 @@
       ],
       "reviewed": false
     },
-    "westin_36_2125pb": {
-      "manufacturer_id": "westin",
-      "model": "PIT BAR ELITE 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-2125PB",
-          "friendly_name": "WESTIN PIT BAR ELITE 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-          "qb_item_id": "110",
-          "qb_sku": "",
-          "qb_unit_price": 545.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 545.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_2125w": {
-      "manufacturer_id": "westin",
-      "model": "WING WRAP ELITE PUSH BUMPER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-2125W",
-          "friendly_name": "WESTIN WING WRAP ELITE PUSH BUMPER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-          "qb_item_id": "111",
-          "qb_sku": "",
-          "qb_unit_price": 380.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 380.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "westin_36_2125wc": {
       "manufacturer_id": "westin",
       "model": "ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "wire_covers"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15332,31 +15439,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 834.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_4045pb": {
-      "manufacturer_id": "westin",
-      "model": "PIT BAR ELITE 2021-2025 CHEVROLET TAHOE PPV",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-4045PB",
-          "friendly_name": "WESTIN PIT BAR ELITE 2021-2025 CHEVROLET TAHOE PPV",
-          "qb_item_id": "114",
-          "qb_sku": "",
-          "qb_unit_price": 545.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 545.0,
           "vehicle_tags": [
             "any"
           ],
@@ -15419,56 +15501,6 @@
       ],
       "reviewed": false
     },
-    "westin_36_4075pb": {
-      "manufacturer_id": "westin",
-      "model": "PIT BAR ELITE 2021-2026 DODGE DURANOG",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-4075PB",
-          "friendly_name": "WESTIN PIT BAR ELITE 2021-2026 DODGE DURANOG",
-          "qb_item_id": "117",
-          "qb_sku": "",
-          "qb_unit_price": 545.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 545.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_4075w": {
-      "manufacturer_id": "westin",
-      "model": "WING WRAP ELITE 2021-2026 DODGE DURANGO",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-4075W",
-          "friendly_name": "WESTIN WING WRAP ELITE 2021-2026 DODGE DURANGO",
-          "qb_item_id": "118",
-          "qb_sku": "",
-          "qb_unit_price": 380.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 380.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "westin_36_4075wc": {
       "manufacturer_id": "westin",
       "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
@@ -15488,31 +15520,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 56.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_52065w": {
-      "manufacturer_id": "westin",
-      "model": "WING WRAP ELITEXD 2015-2026 FORD F-150",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-52065W",
-          "friendly_name": "WESTIN WING WRAP ELITEXD 2015-2026 FORD F-150",
-          "qb_item_id": "120",
-          "qb_sku": "",
-          "qb_unit_price": 380.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 380.0,
           "vehicle_tags": [
             "any"
           ],
@@ -15575,56 +15582,6 @@
       ],
       "reviewed": false
     },
-    "westin_36_52135pb": {
-      "manufacturer_id": "westin",
-      "model": "PIT BAR ElLITEXD - 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-52135PB",
-          "friendly_name": "WESTIN PIT BAR ElLITEXD - 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-          "qb_item_id": "123",
-          "qb_sku": "",
-          "qb_unit_price": 545.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 545.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_52135w": {
-      "manufacturer_id": "westin",
-      "model": "WING WRAP ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV/2025-2026 CHEVROLET TAHOE PPV",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-52135W",
-          "friendly_name": "WESTIN WING WRAP ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV/2025-2026 CHEVROLET TAHOE PPV",
-          "qb_item_id": "124",
-          "qb_sku": "",
-          "qb_unit_price": 380.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 380.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "westin_36_52135wc": {
       "manufacturer_id": "westin",
       "model": "PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
@@ -15671,31 +15628,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 834.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "westin_36_54085pb": {
-      "manufacturer_id": "westin",
-      "model": "PIT BAR ELITEXD 2015-2026 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "36-54085PB",
-          "friendly_name": "WESTIN PIT BAR ELITEXD 2015-2026 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-          "qb_item_id": "127",
-          "qb_sku": "",
-          "qb_unit_price": 545.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 545.0,
           "vehicle_tags": [
             "any"
           ],
@@ -16154,7 +16086,9 @@
     "westin_500_0238": {
       "manufacturer_id": "westin",
       "model": "UNDER LAPTOP PRINTER TRAY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "printer_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20942,8 +20876,12 @@
     "soundoff_enftcdxs1208": {
       "manufacturer_id": "soundoff",
       "model": "NFORCE 8 HEAD EXTERIOR WEATHERPROOF TRAFFIC CONTROLLER - 12VDC - 12-LED DUAL COLOR",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -21154,131 +21092,6 @@
       ],
       "reviewed": false
     },
-    "soundoff_ent2b3b": {
-      "manufacturer_id": "soundoff",
-      "model": "INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - BLUE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ENT2B3B",
-          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - BLUE",
-          "qb_item_id": "501",
-          "qb_sku": "",
-          "qb_unit_price": 185.02,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 185.02,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "soundoff_ent2b3d": {
-      "manufacturer_id": "soundoff",
-      "model": "INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - RED/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ENT2B3D",
-          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - RED/WHITE",
-          "qb_item_id": "502",
-          "qb_sku": "",
-          "qb_unit_price": 215.76,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 215.76,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "soundoff_ent2b3e": {
-      "manufacturer_id": "soundoff",
-      "model": "INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - BLUE/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ENT2B3E",
-          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - BLUE/WHITE",
-          "qb_item_id": "503",
-          "qb_sku": "",
-          "qb_unit_price": 215.76,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 215.76,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "soundoff_ent2b3f": {
-      "manufacturer_id": "soundoff",
-      "model": "INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - AMBER/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ENT2B3F",
-          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - AMBER/WHITE",
-          "qb_item_id": "504",
-          "qb_sku": "",
-          "qb_unit_price": 215.76,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 215.76,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "soundoff_ent2b3r": {
-      "manufacturer_id": "soundoff",
-      "model": "INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - RED",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ENT2B3R",
-          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - RED",
-          "qb_item_id": "505",
-          "qb_sku": "",
-          "qb_unit_price": 185.02,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 185.02,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_es2me": {
       "manufacturer_id": "whelen",
       "model": "54\" LEGACY MIDNIGHT EDITION",
@@ -21336,7 +21149,9 @@
     "soundoff_etfbssn_p": {
       "manufacturer_id": "soundoff",
       "model": "FLASHBACK ALTERNATING TAILLIGHT FLASHER, SOLID STATE - 2.4 F.P.S.",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "tail_light_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21402,7 +21217,9 @@
     "soundoff_ethfss_sp_iso": {
       "manufacturer_id": "soundoff",
       "model": "SELECT-A-PATTERN HEADLIGHT FLASHER, SOLID STATE, 12V ISOLATION MODEL (FOR SYSTEMS REQUIRING ELECTRICAL ISOLATION)",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21481,7 +21298,9 @@
     "soundoff_ettffut_16": {
       "manufacturer_id": "soundoff",
       "model": "FLASHBACK PLUG-IN ALTERNATING TAILLIGHT FLASHER, SOLID STATE - 2.4 F.P.S. FOR FORD PI UTILITY 2016-2020",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "tail_light_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23100,7 +22919,9 @@
     "night_ride_nightride_dsp_kit": {
       "manufacturer_id": "night_ride",
       "model": "DISPLAY KIT - 8 IN MONITOR - RAM MOUNTING BASE - RAM 6 IN ARM - RAM T-BOLT MOUNT - HDMI CABLE - USB C CABLE - USB POWER PORT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "thermal_imager_monitor"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23120,7 +22941,13 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "night_ride_nrr0010",
+        "night_ride_nrr640_13e",
+        "night_ride_nrp_sl"
+      ]
     },
     "night_ride_nr_hdmi": {
       "manufacturer_id": "night_ride",
@@ -23145,32 +22972,13 @@
           "options": {}
         }
       ],
-      "reviewed": false
-    },
-    "night_ride_nrp_si_e": {
-      "manufacturer_id": "night_ride",
-      "model": "PRO-SL S04 (RING) W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "NRP-SI-E",
-          "friendly_name": "NIGHTRIDE PRO-SL S04 (RING) W ETHERNET",
-          "qb_item_id": "785",
-          "qb_sku": "",
-          "qb_unit_price": 2394.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 2394.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "night_ride_nrr0010",
+        "night_ride_nrr640_13e",
+        "night_ride_nrp_sl"
+      ]
     },
     "night_ride_nrp_sl": {
       "manufacturer_id": "night_ride",
@@ -23191,6 +22999,34 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 2274.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "NRP-SI-E",
+          "friendly_name": "NIGHTRIDE PRO-SL S04 (RING) W ETHERNET",
+          "qb_item_id": "785",
+          "qb_sku": "",
+          "qb_unit_price": 2394.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 2394.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "NRP-SL-E",
+          "friendly_name": "NIGHTRIDE PRO-SL S04 (RING) W ETHERNET",
+          "qb_item_id": "788",
+          "qb_sku": "",
+          "qb_unit_price": 2394.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 2394.0,
           "vehicle_tags": [
             "any"
           ],
@@ -23226,31 +23062,6 @@
       ],
       "reviewed": false
     },
-    "night_ride_nrp_sl_e": {
-      "manufacturer_id": "night_ride",
-      "model": "PRO-SL S04 (RING) W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "NRP-SL-E",
-          "friendly_name": "NIGHTRIDE PRO-SL S04 (RING) W ETHERNET",
-          "qb_item_id": "788",
-          "qb_sku": "",
-          "qb_unit_price": 2394.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 2394.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "night_ride_nrp_slc": {
       "manufacturer_id": "night_ride",
       "model": "PRO-SL S04/S14 CABLELESS 384",
@@ -23270,6 +23081,20 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 2754.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "NRP-SLC-E",
+          "friendly_name": "NIGHTRIDE PRO-SL S04/S14 CABLELESS 384 W ETHERNET",
+          "qb_item_id": "791",
+          "qb_sku": "",
+          "qb_unit_price": 2874.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 2874.0,
           "vehicle_tags": [
             "any"
           ],
@@ -23305,31 +23130,6 @@
       ],
       "reviewed": false
     },
-    "night_ride_nrp_slc_e": {
-      "manufacturer_id": "night_ride",
-      "model": "PRO-SL S04/S14 CABLELESS 384 W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "NRP-SLC-E",
-          "friendly_name": "NIGHTRIDE PRO-SL S04/S14 CABLELESS 384 W ETHERNET",
-          "qb_item_id": "791",
-          "qb_sku": "",
-          "qb_unit_price": 2874.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 2874.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "night_ride_nrr_auxc": {
       "manufacturer_id": "night_ride",
       "model": "TRAILBLAZER AUX BATTERY CABLE - 384",
@@ -23353,7 +23153,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "night_ride_nrr0010"
+      ]
     },
     "night_ride_nrr_auxc_640": {
       "manufacturer_id": "night_ride",
@@ -23378,7 +23182,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "night_ride_nrr0010",
+        "night_ride_nrr640_13e"
+      ]
     },
     "night_ride_nrr0010": {
       "manufacturer_id": "night_ride",
@@ -23403,18 +23212,7 @@
             "any"
           ],
           "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "night_ride_nrr0010_e": {
-      "manufacturer_id": "night_ride",
-      "model": "TAILBLAZER 384 W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+        },
         {
           "part_number": "NRR0010-E",
           "friendly_name": "NIGHTRIDE TAILBLAZER 384 W ETHERNET",
@@ -23428,18 +23226,7 @@
             "any"
           ],
           "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "night_ride_nrr0010_ge": {
-      "manufacturer_id": "night_ride",
-      "model": "TRAILBLAZER 384 - GRILLE MOUNT W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+        },
         {
           "part_number": "NRR0010-GE",
           "friendly_name": "NIGHTRIDE TRAILBLAZER 384 - GRILLE MOUNT W ETHERNET",
@@ -23480,18 +23267,7 @@
             "any"
           ],
           "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "night_ride_nrr2ndck_e": {
-      "manufacturer_id": "night_ride",
-      "model": "TRAILBLAZER 2ND CAR KIT W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+        },
         {
           "part_number": "NRR2NDCK-E",
           "friendly_name": "NIGHTRIDE TRAILBLAZER 2ND CAR KIT W ETHERNET",
@@ -23532,18 +23308,7 @@
             "any"
           ],
           "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "night_ride_nrr640_13ge": {
-      "manufacturer_id": "night_ride",
-      "model": "TRAILBLAZER 640 - GRILLE MOUNT W ETHERNET",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+        },
         {
           "part_number": "NRR640-13GE",
           "friendly_name": "NIGHTRIDE TRAILBLAZER 640 - GRILLE MOUNT W ETHERNET",
@@ -24281,7 +24046,9 @@
     "soundoff_pmp2wdg15b": {
       "manufacturer_id": "soundoff",
       "model": "15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4\" QUICK MOUNT LIGHT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24301,7 +24068,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "soundoff_mpower_4_fascia",
+        "soundoff_mpower_3_fascia"
+      ]
     },
     "qb_unassigned_pmpsabk005": {
       "manufacturer_id": "qb_unassigned",
@@ -28409,6 +28181,76 @@
           "options": {},
           "color": "red",
           "secondary_color": ""
+        },
+        {
+          "part_number": "ENT2B3B",
+          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - BLUE",
+          "qb_item_id": "501",
+          "qb_sku": "",
+          "qb_unit_price": 185.02,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 185.02,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "ENT2B3D",
+          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - RED/WHITE",
+          "qb_item_id": "502",
+          "qb_sku": "",
+          "qb_unit_price": 215.76,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 215.76,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "ENT2B3E",
+          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - BLUE/WHITE",
+          "qb_item_id": "503",
+          "qb_sku": "",
+          "qb_unit_price": 215.76,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 215.76,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "ENT2B3F",
+          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 16 LEDS, DUAL COLOR - AMBER/WHITE",
+          "qb_item_id": "504",
+          "qb_sku": "",
+          "qb_unit_price": 215.76,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 215.76,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "ENT2B3R",
+          "friendly_name": "SOUNDOFF INTERSECTOR UNDER MIRROR MOUNT LIGHT, 9-32 VDC, W/ 4-WEDGES, MOUNTING GASKET & HARDWARE, 8 LEDS, SINGLE COLOR - RED",
+          "qb_item_id": "505",
+          "qb_sku": "",
+          "qb_unit_price": 185.02,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 185.02,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
       ],
       "reviewed": true
