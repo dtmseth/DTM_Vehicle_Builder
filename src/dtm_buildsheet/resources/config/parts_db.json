@@ -14168,7 +14168,9 @@
     "qb_unassigned_11019": {
       "manufacturer_id": "qb_unassigned",
       "model": "DUAL USB POWER CHARGER, 2 PORT 2.4A/2.4A, 5VOLT BLACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "aux_12v_ports"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14868,31 +14870,6 @@
       ],
       "reviewed": false
     },
-    "qb_unassigned_2190_3340_0": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "Air One NATIONAL FOAM: NATIONAL FOAM UNIVERSAL GREEN 3% X 3% FOAM CONCENTRATE, 5 GALLON PAIL",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "2190-3340-0",
-          "friendly_name": "Air One NATIONAL FOAM: NATIONAL FOAM UNIVERSAL GREEN 3% X 3% FOAM CONCENTRATE, 5 GALLON PAIL",
-          "qb_item_id": "87",
-          "qb_sku": "",
-          "qb_unit_price": 0.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 0.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "unity_221000_0002": {
       "manufacturer_id": "unity",
       "model": "325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
@@ -14921,7 +14898,9 @@
     "qb_unassigned_226130": {
       "manufacturer_id": "qb_unassigned",
       "model": "BAK INDUSTRIES G2 HARD FOLDING TONNEAU COVER 2022 CHEVY SILVERADO",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "tonneau_cover"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14996,7 +14975,9 @@
     "qb_unassigned_25_ft_cat_6_cable": {
       "manufacturer_id": "qb_unassigned",
       "model": "25 FT CAT 6 ETHERNET CABLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15173,7 +15154,9 @@
     "qb_unassigned_36_010_key": {
       "manufacturer_id": "qb_unassigned",
       "model": "SUV TUFBOX W/ KEY LOCK, DRAWER. (12 IN H, 38 IN W, 32 IN D) 5.0 CU FT STORAGE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "rear_storage_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16032,7 +16015,9 @@
     "qb_unassigned_46096": {
       "manufacturer_id": "qb_unassigned",
       "model": "J CASE FUSE MODULE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "harness"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16057,7 +16042,9 @@
     "qb_unassigned_48913": {
       "manufacturer_id": "qb_unassigned",
       "model": "80AMP CIRCUIT BREAKER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "harness"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18510,31 +18497,6 @@
         "whelen_ion"
       ]
     },
-    "qb_unassigned_bu_353n": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "GLOBALSAT BU-353N USB GPS RECEIVER, BLACK",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "BU-353N",
-          "friendly_name": "GLOBALSAT BU-353N USB GPS RECEIVER, BLACK",
-          "qb_item_id": "335",
-          "qb_sku": "",
-          "qb_unit_price": 53.98,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 53.98,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_bw54ufx": {
       "manufacturer_id": "whelen",
       "model": "WCX DUO IE 12-LT 2021 TAHOE",
@@ -20260,8 +20222,12 @@
     "qb_unassigned_cage_light": {
       "manufacturer_id": "qb_unassigned",
       "model": "LED CAGE LIGHT",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "rear_seat_lights"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -20351,31 +20317,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 163.57,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_cctv8": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "CCTV8",
-          "friendly_name": "COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD",
-          "qb_item_id": "423",
-          "qb_sku": "",
-          "qb_unit_price": 91.78,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 91.78,
           "vehicle_tags": [
             "any"
           ],
@@ -20491,7 +20432,9 @@
     "qb_unassigned_clpsm": {
       "manufacturer_id": "qb_unassigned",
       "model": "10FT. CIGARETTE LIGHTER ADAPTER WITH ON/OFF AND MOMENTARY SWITCH",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "aux_12v_ports"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20879,31 +20822,6 @@
           "options": {},
           "color": "white",
           "secondary_color": ""
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_eluc3h010e": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "UNDERCOVER LED INSERT - 6 3RD GEN SUPER LED'S - 10' 5-WIRE CABLE - BLUE/WHITE - 10-30 VOLT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "ELUC3H010E",
-          "friendly_name": "UNDERCOVER LED INSERT - 6 3RD GEN SUPER LED'S - 10' 5-WIRE CABLE - BLUE/WHITE - 10-30 VOLT",
-          "qb_item_id": "474",
-          "qb_sku": "",
-          "qb_unit_price": 71.22,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 71.22,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
         }
       ],
       "reviewed": false
@@ -21358,8 +21276,10 @@
     },
     "qb_unassigned_ethernet_cable": {
       "manufacturer_id": "qb_unassigned",
-      "model": "ETHERNET CABLE 10FT",
-      "fits_part_types": [],
+      "model": "Ethernet Cable",
+      "fits_part_types": [
+        "cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21377,18 +21297,7 @@
             "any"
           ],
           "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_ethernet_cable_2": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "ETHENET CABLE 25 FT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
+        },
         {
           "part_number": "ETHERNET CABLE 2",
           "friendly_name": "ETHENET CABLE 25 FT",
@@ -21565,7 +21474,9 @@
     "qb_unassigned_fire_extinguisher_brackets": {
       "manufacturer_id": "qb_unassigned",
       "model": "FIRE EXTINGUISHER BRACKETS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "tool_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22102,7 +22013,9 @@
     "qb_unassigned_getac_s410": {
       "manufacturer_id": "qb_unassigned",
       "model": "SP2NTCDASDXX GETAC S410G4 BASIC i5-1135G7 FDH WEBCAM WIN10 PRO X64 W/ 16GB RAM, 512 GB PCIe SSD, SUNLIGHT READABLE, US KBD, MEMBRANE BACKLIT KBD, WIFI +BT, THUNDERBOLT 4, HDMI, RJ45,3YR LIMITED WARRANTY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "computer"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22795,7 +22708,9 @@
     "qb_unassigned_install_supplies": {
       "manufacturer_id": "qb_unassigned",
       "model": "INSTALLATION SUPPLIES TO INCLUDE CUSTOM MADE WIRING HARNESS, 100 AMP BREAKER, FUSE BLOCKS, RELAYS, AND OTHER MISC SHOP ITEMS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "harness"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22992,31 +22907,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 128.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_light_kit_led": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "LIGHT KIT-LED (RED & WHITE)",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "LIGHT KIT LED",
-          "friendly_name": "LIGHT KIT-LED (RED & WHITE)",
-          "qb_item_id": "674",
-          "qb_sku": "",
-          "qb_unit_price": 0.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 0.0,
           "vehicle_tags": [
             "any"
           ],
@@ -23284,7 +23174,9 @@
     "qb_unassigned_md_6200": {
       "manufacturer_id": "qb_unassigned",
       "model": "MOMENTO M-6 WIFI DASH CAMERA (FRONT CAM, REAR CAM, GPS, 32GB MEMORY CARD)",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "camera_dvr"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24445,31 +24337,6 @@
       ],
       "reviewed": false
     },
-    "qb_unassigned_pel2b": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "PERIMETER LIGHT BLACK",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "PEL2B",
-          "friendly_name": "PERIMETER LIGHT BLACK",
-          "qb_item_id": "832",
-          "qb_sku": "",
-          "qb_unit_price": 265.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 265.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_pfp2ap1": {
       "manufacturer_id": "whelen",
       "model": "PFP2AC POLE/PED MT WHT W/ SW",
@@ -25342,31 +25209,6 @@
       ],
       "reviewed": false
     },
-    "qb_unassigned_rbe13421": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "AIR PRESURE SWITCH",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RBE13421",
-          "friendly_name": "AIR PRESURE SWITCH",
-          "qb_item_id": "940",
-          "qb_sku": "",
-          "qb_unit_price": 36.21,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 36.21,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "rockland_cabinets_rlssl_fpiu20_s": {
       "manufacturer_id": "rockland_cabinets",
       "model": "STEEL XL DRAWER WITH ELECTRONICS TRAY ON RISERS 2020+ FORD UTILITY",
@@ -25422,7 +25264,9 @@
     "qb_unassigned_rtm_101_lp_ford_r": {
       "manufacturer_id": "qb_unassigned",
       "model": "ACARI 22\u2033 LOW PROFILE MOUNTING PLATFORM 2019 FORD RANGER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -25436,81 +25280,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 309.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_rv_3xl_red_fire": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "RV-3XL RED FIRE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RV-3XL Red FIRE",
-          "friendly_name": "RV-3XL RED FIRE",
-          "qb_item_id": "953",
-          "qb_sku": "",
-          "qb_unit_price": 52.99,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 52.99,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_rv_oversize": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "RV-OVERSIZE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RV-OVERSIZE",
-          "friendly_name": "RV-OVERSIZE",
-          "qb_item_id": "954",
-          "qb_sku": "",
-          "qb_unit_price": 49.99,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 49.99,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_rv_regular": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "RV-REGULAR",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "RV-REGULAR",
-          "friendly_name": "RV-REGULAR",
-          "qb_item_id": "955",
-          "qb_sku": "",
-          "qb_unit_price": 49.99,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 49.99,
           "vehicle_tags": [
             "any"
           ],
@@ -28080,7 +27849,9 @@
     "qb_unassigned_usb_extention": {
       "manufacturer_id": "qb_unassigned",
       "model": "USB EXTENTION 10FT CABLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "cable"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -28277,31 +28048,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 278.6,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "qb_unassigned_w709980_s439": {
-      "manufacturer_id": "qb_unassigned",
-      "model": "FORD REPLACEMENT FRONT SEAT BOLTS",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "W709980-S439",
-          "friendly_name": "FORD REPLACEMENT FRONT SEAT BOLTS",
-          "qb_item_id": "1257",
-          "qb_sku": "",
-          "qb_unit_price": 5.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 5.0,
           "vehicle_tags": [
             "any"
           ],
@@ -29862,6 +29608,93 @@
       "accessory_of_products": [
         "feniex_fusion_surface_mount"
       ]
+    },
+    "soundoff_eluc_undercover_insert": {
+      "manufacturer_id": "soundoff",
+      "model": "Universal UnderCover LED Insert",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "ELUC3H010E",
+          "friendly_name": "UNDERCOVER LED INSERT - 6 3RD GEN SUPER LED'S - 10' 5-WIRE CABLE - BLUE/WHITE - 10-30 VOLT",
+          "qb_item_id": "474",
+          "qb_sku": "",
+          "qb_unit_price": 71.22,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 71.22,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "globesat_bu_353n": {
+      "manufacturer_id": "globesat",
+      "model": "BU-353N USB GPS Receiver",
+      "fits_part_types": [
+        "cloud_antenna"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "BU-353N",
+          "friendly_name": "GLOBALSAT BU-353N USB GPS RECEIVER, BLACK",
+          "qb_item_id": "335",
+          "qb_sku": "",
+          "qb_unit_price": 53.98,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 53.98,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "whelen_pel2": {
+      "manufacturer_id": "whelen",
+      "model": "Perimeter Enhancement Light",
+      "fits_part_types": [
+        "front_scene",
+        "rear_scene",
+        "side_scene"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "PEL2B",
+          "friendly_name": "PERIMETER LIGHT BLACK",
+          "qb_item_id": "832",
+          "qb_sku": "",
+          "qb_unit_price": 265.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 265.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
     }
   },
   "part_types": {
