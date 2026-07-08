@@ -32861,6 +32861,161 @@
       "tag_ids": [],
       "category": "warning",
       "location_mode": "placement"
+    },
+    "tool_mount": {
+      "label": "Tool Mount",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "rear_storage_area"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "CARGO AREA",
+        "REAR COMPARTMENT WALL",
+        "ON EQUIPMENT TRAY"
+      ]
+    },
+    "pedestal_mount": {
+      "label": "Computer Pedestal / Mount Base",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "forward_of_cage"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "FLOOR PEDESTAL",
+        "TUNNEL MOUNT",
+        "SIDE OF CONSOLE"
+      ]
+    },
+    "spotlight": {
+      "label": "Spotlight (pillar/post)",
+      "type_id": "lights",
+      "tree_positions": [
+        {
+          "section": "exterior",
+          "zone": "front"
+        }
+      ],
+      "tag_ids": [],
+      "category": "scene",
+      "location_mode": "placement"
+    },
+    "flashlight": {
+      "label": "Flashlight & Charger",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "forward_of_cage"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "IN CONSOLE POCKET",
+        "ON PARTITION",
+        "CARGO AREA"
+      ]
+    },
+    "computer": {
+      "label": "Computer / Laptop",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "forward_of_cage"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "ON DOCKING STATION"
+      ]
+    },
+    "running_boards_nerf_bars": {
+      "label": "Running Boards / Nerf Bars",
+      "type_id": "structural",
+      "tree_positions": [
+        {
+          "section": "exterior",
+          "zone": "side"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "DRIVER AND PASSENGER SIDE"
+      ]
+    },
+    "prisoner_transport_insert": {
+      "label": "Prisoner Transport Insert",
+      "type_id": "structural",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "prisoner_area"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "CARGO / TRANSPORT BODY"
+      ]
+    },
+    "tonneau_cover": {
+      "label": "Tonneau / Bed Cover",
+      "type_id": "structural",
+      "tree_positions": [
+        {
+          "section": "exterior",
+          "zone": "rear"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "TRUCK BED"
+      ]
+    },
+    "motorcycle_box": {
+      "label": "Motorcycle Box / Mount",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "exterior",
+          "zone": "rear"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "MOTORCYCLE MOUNT"
+      ]
+    },
+    "power_timer": {
+      "label": "Power Timer / ChargeGuard",
+      "type_id": "equipment",
+      "tree_positions": [
+        {
+          "section": "interior",
+          "zone": "forward_of_cage"
+        }
+      ],
+      "tag_ids": [],
+      "location_mode": "text",
+      "location_options": [
+        "UNDER DASH",
+        "CARGO AREA ELECTRONICS"
+      ]
     }
   },
   "placements": {
