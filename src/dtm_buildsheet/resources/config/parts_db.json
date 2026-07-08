@@ -18795,7 +18795,9 @@
     "havis_c_ap_0325_1": {
       "manufacturer_id": "havis",
       "model": "3\" ACCESSORY POCKET, 2.5\" DEEP",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18820,7 +18822,9 @@
     "havis_c_ap_0625_1": {
       "manufacturer_id": "havis",
       "model": "6\" ACCESSORY POCKET, 2.5\" DEEP",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18845,7 +18849,9 @@
     "havis_c_ap_0945": {
       "manufacturer_id": "havis",
       "model": "9\" ACCESSORY POCKET, 4.5\" HIGH",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18870,7 +18876,9 @@
     "havis_c_apw_0744_1": {
       "manufacturer_id": "havis",
       "model": "7\u2033 ACCESSORY POCKET, 4.4\u2033 DEEP FOR 3.3\u2033W SECTION OF WIDE CONSOLES",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19138,7 +19146,9 @@
     "havis_c_eb25_xtl_1p": {
       "manufacturer_id": "havis",
       "model": "1-PIECE EQUIPMENT MOUNTING BRACKET, 2.5\" MOUNTING SPACE, FITS MOTOROLA XTL2500, XTL5000-05, APX-7500",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19163,7 +19173,9 @@
     "havis_c_eb30_xtl_1p_a": {
       "manufacturer_id": "havis",
       "model": "1-PIECE ANGLED EQUIPMENT MOUNTING BRACKET, 3\" MOUNTING SPACE, FITS MOTOROLA REMOTE RADIO HEADS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19188,7 +19200,9 @@
     "havis_c_eb40_ccs_1p": {
       "manufacturer_id": "havis",
       "model": "1-PIECE EQUIPMENT MOUNTING BRACKET, 4\" MOUNTING SPACE, FITS WHELEN CENCOM CCSRN, CCSRNTA, MPC03",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19213,7 +19227,9 @@
     "havis_c_flw_4055_str": {
       "manufacturer_id": "havis",
       "model": "FLASHLIGHT CHARGER POCKET FOR WIDE CONSOLE 3.3\" MOUNTING SPACE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19238,7 +19254,9 @@
     "havis_c_fp_05": {
       "manufacturer_id": "havis",
       "model": "1/2\" FILLER PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19263,7 +19281,9 @@
     "havis_c_fp_1": {
       "manufacturer_id": "havis",
       "model": "1\" FILLER PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19288,7 +19308,9 @@
     "havis_c_fp_2": {
       "manufacturer_id": "havis",
       "model": "2\" FILLER PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19313,7 +19335,9 @@
     "havis_c_fp_3": {
       "manufacturer_id": "havis",
       "model": "3\" FILLER PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19338,7 +19362,9 @@
     "havis_c_fp_4": {
       "manufacturer_id": "havis",
       "model": "4\" FILLER PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19363,7 +19389,9 @@
     "havis_c_fpw_1": {
       "manufacturer_id": "havis",
       "model": "1\u2033 FILLER PLATE FOR WIDE VSW CONSOLES",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19388,7 +19416,9 @@
     "havis_c_hdm_1003": {
       "manufacturer_id": "havis",
       "model": "HEAVY-DUTY PEDESTAL MOUNT FOR 2021-2025 CHEVROLET TAHOE, 2019-2025 SIERRA 1500 & SILVERADO 1500",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19413,7 +19443,9 @@
     "havis_c_hdm_1006": {
       "manufacturer_id": "havis",
       "model": "HEAVY-DUTY MOUNT FOR 2020-2024 FORD INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19438,7 +19470,9 @@
     "havis_c_hdm_1026": {
       "manufacturer_id": "havis",
       "model": "HEAVY-DUTY MOUNT FOR 2024 CHEVROLET BLAZER EV",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19463,7 +19497,9 @@
     "havis_c_hdm_204": {
       "manufacturer_id": "havis",
       "model": "8.5\" HEAVY-DUTY TELESCOPING POLE, SIDE MOUNT, SHORT HANDLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19488,7 +19524,9 @@
     "havis_c_hdm_214": {
       "manufacturer_id": "havis",
       "model": "8.5\" HEAVY-DUTY TELESCOPING POLE, SIDE MOUNT, SHORT HANDLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19513,7 +19551,9 @@
     "havis_c_hdm_303": {
       "manufacturer_id": "havis",
       "model": "HEAVY-DUTY TOP OFFSET PLATFORM 6-INCHES",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19565,7 +19605,9 @@
     "havis_c_md_112": {
       "manufacturer_id": "havis",
       "model": "TILT/SWIVEL SLIDE MOTION ADAPTER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motion_attachment"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19590,7 +19632,9 @@
     "havis_c_md_119": {
       "manufacturer_id": "havis",
       "model": "SWING ARM WITH MOTION ADAPTER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motion_attachment"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19615,7 +19659,9 @@
     "havis_c_md_204": {
       "manufacturer_id": "havis",
       "model": "LOW PROFILE TILT SWIVEL MOTION DEVICE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motion_attachment"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19667,7 +19713,9 @@
     "havis_c_pm_1001": {
       "manufacturer_id": "havis",
       "model": "BROTHER PRINTER HOLDER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "printer_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19692,7 +19740,9 @@
     "havis_c_tmw_f150_03": {
       "manufacturer_id": "havis",
       "model": "TUNNEL MOUNT ASSEMBLY FOR 2017-2024 FORD F-250, 350, 450 PICKUP & F-450 & 550 CAB CHASSIS, 2021-2024 FORD EXPEDITION & 2015-2024 FORD F-150",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19717,7 +19767,9 @@
     "havis_c_tmw_gmc_04": {
       "manufacturer_id": "havis",
       "model": "TUNNEL MOUNT ASSEMBLY FOR 2021-2024 CHEVROLET TAHOE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19742,7 +19794,9 @@
     "havis_c_tmw_inut_02": {
       "manufacturer_id": "havis",
       "model": "TUNNEL MOUNT ASSEMBLY FOR 2020-2024 FORD INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -19767,7 +19821,9 @@
     "havis_c_usb_3": {
       "manufacturer_id": "havis",
       "model": "USB-C & USB TYPE A DUAL PORT CHARGER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "aux_12v_ports"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20197,7 +20253,9 @@
     "havis_c_w_lp1_usb_1": {
       "manufacturer_id": "havis",
       "model": "ACCESSORY BRACKET WITH 1 LIGHTER PLUG OUTLET AND 1 USB-C & USB TYPE A DUAL PORT CHARGER FOR 3.3\u2033 SECTION OF VSW CONSOLES",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "aux_12v_ports"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20355,7 +20413,9 @@
     "havis_cg_x": {
       "manufacturer_id": "havis",
       "model": "CHARGEGUARD-SELECT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "power_timer"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20459,7 +20519,9 @@
     "havis_cup2_1001": {
       "manufacturer_id": "havis",
       "model": "INTERNAL CUP HOLDERS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20484,7 +20546,9 @@
     "havis_cup2_1004": {
       "manufacturer_id": "havis",
       "model": "SELF-ADJUSTING DOUBLE CUP HOLDER (FIXED MOUNT)",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20509,7 +20573,9 @@
     "havis_cup2_1005": {
       "manufacturer_id": "havis",
       "model": "ANGLED WEDGE KIT FOR HAVIS CUP HOLDERS & 1-PIECE 4\" EQUIPMENT BRACKETS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20529,7 +20595,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "havis_cup2_1001",
+        "havis_cup2_1004"
+      ]
     },
     "qb_unassigned_custom_drawer": {
       "manufacturer_id": "qb_unassigned",
@@ -22683,7 +22754,9 @@
     "havis_icm_adh_ax3_1": {
       "manufacturer_id": "havis",
       "model": "OVERHEAD AXON FLEET 3 CAMERA MOUNTING BRACKET FOR 2025-2026 FORD INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22703,7 +22776,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "axon_fleet_3"
+      ]
     },
     "qb_unassigned_install_supplies": {
       "manufacturer_id": "qb_unassigned",
@@ -22789,7 +22866,9 @@
     "havis_k9_c26_pt_b": {
       "manufacturer_id": "havis",
       "model": "K9 PRISONER TRANSPORT SYSTEM FOR 2021-2026 CHEVROLET TAHOE - BLACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_kennel"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22814,7 +22893,9 @@
     "havis_k9_f28_pt_b": {
       "manufacturer_id": "havis",
       "model": "K9 PRISONER TRANSPORT SYSTEM FOR 2020-2026 FORD INTERCEPTOR UTILITY \u2013 BLACK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_kennel"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24365,7 +24446,9 @@
     "havis_pkg_psm_3003": {
       "manufacturer_id": "havis",
       "model": "PREMIUM PEDESTAL MOUNT PACKAGE FOR 2019-2024 CHEVROLET SILVERADO",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24390,7 +24473,9 @@
     "havis_pkg_psm_345": {
       "manufacturer_id": "havis",
       "model": "PREMIUM PEDESTAL MOUNT PACKAGE FOR 2011-2024 DODGE DURANGO & 2011-2022 JEEP GRAND CHEROKEE MODEL CODE WK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24415,7 +24500,9 @@
     "havis_pkg_psm_385": {
       "manufacturer_id": "havis",
       "model": "PREMIUM PEDESTAL MOUNT PACKAGE FOR 2017-2026 FORD F-SERIES, 2021-2026 FORD EXPEDITION & 2015-2026 FORD F-150 Lightning",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24693,35 +24780,12 @@
       ],
       "reviewed": false
     },
-    "havis_pt_a_409": {
-      "manufacturer_id": "havis",
-      "model": "2007-2026 CHEVROLET G-SERIES PRISONER TRANSPORT HVAC OPTION",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "PT-A-409",
-          "friendly_name": "HAVIS 2007-2026 CHEVROLET G-SERIES PRISONER TRANSPORT HVAC OPTION",
-          "qb_item_id": "891",
-          "qb_sku": "",
-          "qb_unit_price": 6128.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 6128.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "havis_pt_c02_120_2": {
       "manufacturer_id": "havis",
       "model": "120\" 2 COMPARTMENT(S) PRISONER TRANSPORT INSERT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "prisoner_transport_insert"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -25343,7 +25407,9 @@
     "havis_sbx_5001": {
       "manufacturer_id": "havis",
       "model": "2020-2024 FORD INTERCEPTOR UTILITY STORAGE DRAWER MOUNT WITH HAVIS K9",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "rear_storage_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27876,7 +27942,9 @@
     "havis_ut_1001": {
       "manufacturer_id": "havis",
       "model": "UNIVERSAL RUGGED CRADLE FOR APPROXIMATELY 11\"-14\" COMPUTING DEVICES",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "docking_station"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27901,7 +27969,9 @@
     "havis_ut_301": {
       "manufacturer_id": "havis",
       "model": "UNIVERSAL TABLET MOUNT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "docking_station"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
