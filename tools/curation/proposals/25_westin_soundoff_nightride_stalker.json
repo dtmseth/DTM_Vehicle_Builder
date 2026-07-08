@@ -22,10 +22,10 @@
      "_confidence": "medium", "_why": "PRO-SL cableless 384 ethernet variant"}
   ],
   "set_home": [
-    {"product_id": "westin_28_51270", "fits_part_types": ["step_bars"], "_confidence": "medium", "_why": "R5 nerf step bars (Silverado/Sierra) — new step_bars home"},
+    {"product_id": "westin_28_51270", "fits_part_types": ["running_boards_nerf_bars"], "_confidence": "high", "_why": "owner ruling C2.6: type renamed `running_boards_nerf_bars` (not step_bars). R5 nerf step bars (Silverado/Sierra)"},
     {"product_id": "westin_36_2125wc", "fits_part_types": ["wire_covers"], "_confidence": "high", "_why": "Elite upright wire cover — the exact wire_covers slot (accessory_of push_bumper already on the part_type)"},
     {"product_id": "westin_500_0238", "fits_part_types": ["printer_mount"], "_confidence": "medium", "_why": "under-laptop printer tray"},
-    {"product_id": "soundoff_enftcdxs1208", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "medium", "_why": "8-head exterior weatherproof traffic controller, dual color — traffic-advisor family; whelen_traffic_advisor precedent is warning_light", "_question": "should traffic advisors eventually get their own part_type + arrow-pattern UI? Flagged special-UI in the audit"},
+    {"product_id": "soundoff_enftcdxs1208", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "owner ruling C1.6: traffic advisors stay `warning_light`. 8-head exterior weatherproof traffic controller, dual color — traffic-advisor family; whelen_traffic_advisor precedent is warning_light. FUTURE FEATURE (recorded, not in scope here): TA configurator — DTM custom-builds them per lighthead; needs real setup work when the time comes"},
     {"product_id": "soundoff_etfbssn_p", "fits_part_types": ["tail_light_flasher"], "_confidence": "high", "_why": "FlashBack alternating taillight flasher — the exact tail_light_flasher slot"},
     {"product_id": "soundoff_ettffut_16", "fits_part_types": ["tail_light_flasher"], "_confidence": "high", "_why": "FlashBack plug-in taillight flasher (Ford PI)"},
     {"product_id": "soundoff_ethfss_sp_iso", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "Select-A-Pattern headlight flasher"},
