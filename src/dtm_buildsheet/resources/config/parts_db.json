@@ -14208,7 +14208,9 @@
     "gamber_johnson_15250": {
       "manufacturer_id": "gamber_johnson",
       "model": "OEM FILLER PANEL (USD/MP3/SD CARD JACK AND 12VDC POWER PORT)",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14233,7 +14235,9 @@
     "gamber_johnson_16298": {
       "manufacturer_id": "gamber_johnson",
       "model": "POCKET, 4.5\" X 2\" DEEP KNOCKOUT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -14310,7 +14314,9 @@
     "gamber_johnson_19740": {
       "manufacturer_id": "gamber_johnson",
       "model": "1-1/2\" FILLER PANEL W/ (2) 12V KNOCKOUTS + 2 ROCKER SWITCH KNOCKOUTS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15075,7 +15081,9 @@
     "gamber_johnson_3130_0152": {
       "manufacturer_id": "gamber_johnson",
       "model": "1/2\" BLANK FILLER PANEL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15100,7 +15108,9 @@
     "gamber_johnson_3130_0154": {
       "manufacturer_id": "gamber_johnson",
       "model": "2\" BLANK FILLER PANEL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -15125,7 +15135,9 @@
     "gamber_johnson_3130_0156": {
       "manufacturer_id": "gamber_johnson",
       "model": "4\" BLANK FILLER PANEL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16350,7 +16362,9 @@
     "gamber_johnson_7110_1201": {
       "manufacturer_id": "gamber_johnson",
       "model": "2015+ TAHOE WINGS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16456,7 +16470,9 @@
     "gamber_johnson_7160_0085": {
       "manufacturer_id": "gamber_johnson",
       "model": "29\" LONG BASE PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16508,7 +16524,9 @@
     "gamber_johnson_7160_0178": {
       "manufacturer_id": "gamber_johnson",
       "model": "7\" UPPER POLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16533,7 +16551,9 @@
     "gamber_johnson_7160_0220": {
       "manufacturer_id": "gamber_johnson",
       "model": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16558,7 +16578,9 @@
     "gamber_johnson_7160_0230": {
       "manufacturer_id": "gamber_johnson",
       "model": "ADJUSTABLE SUPPORT BRACE SHORT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16637,7 +16659,9 @@
     "gamber_johnson_7160_0332": {
       "manufacturer_id": "gamber_johnson",
       "model": "SHORT INTERIOR POCKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16797,7 +16821,9 @@
     "gamber_johnson_7160_0509": {
       "manufacturer_id": "gamber_johnson",
       "model": "2015-2019 CHEVROLET/GMC TRUCK ADN FULL-SIZE SUV CONSOLE LEG KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16822,7 +16848,9 @@
     "gamber_johnson_7160_0555": {
       "manufacturer_id": "gamber_johnson",
       "model": "UNIVERSAL CONSOLE LEG KIT FOR 2015+ FORD F-150 ALUMINUM BODY 2017+ SUPERDUTY 2018+ EXPEDITION SSV",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16847,7 +16875,9 @@
     "gamber_johnson_7160_0597": {
       "manufacturer_id": "gamber_johnson",
       "model": "6 INCH SHORT INTERIOR POCKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16872,7 +16902,9 @@
     "gamber_johnson_7160_0826": {
       "manufacturer_id": "gamber_johnson",
       "model": "ADJUSTABLE MAG CLIP",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "radio_mic_clip"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16897,7 +16929,9 @@
     "gamber_johnson_7160_0846": {
       "manufacturer_id": "gamber_johnson",
       "model": "INTERNAL CUP HOLDER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16922,7 +16956,9 @@
     "gamber_johnson_7160_0924": {
       "manufacturer_id": "gamber_johnson",
       "model": "2\" WIDE X 1.5\" DEEP POCKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "special_face_plate"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16947,7 +16983,9 @@
     "gamber_johnson_7160_0985": {
       "manufacturer_id": "gamber_johnson",
       "model": "LEG KIT RAM 1500 WITH CENTER SEAT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -16972,7 +17010,9 @@
     "gamber_johnson_7160_1048": {
       "manufacturer_id": "gamber_johnson",
       "model": "UNIVERSAL STORAGE BOX FOR ELECTRICAL EQUIPMENT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "equipment_tray"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17051,7 +17091,9 @@
     "gamber_johnson_7160_1325": {
       "manufacturer_id": "gamber_johnson",
       "model": "2019+ CHEVROLET SILVERADO/GMC SIERRA LEG KIT (NEW BODY STYLE)",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17076,7 +17118,9 @@
     "gamber_johnson_7160_1336": {
       "manufacturer_id": "gamber_johnson",
       "model": "2020+ FORD POLICE INTERCEPTOR UTILITY AND 2020+ FORD EXPLORER VEHICLE BASE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17101,7 +17145,9 @@
     "gamber_johnson_7160_1383": {
       "manufacturer_id": "gamber_johnson",
       "model": "2019-CURRENT (NEW BODY STYLE) RAM 1500 LEG KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17126,7 +17172,9 @@
     "gamber_johnson_7160_1397": {
       "manufacturer_id": "gamber_johnson",
       "model": "2018-2026 CHEVY TRAVERSE/ 2014-2024 GMC ACADIA VEHICLE BASE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17232,7 +17280,9 @@
     "gamber_johnson_7160_1634": {
       "manufacturer_id": "gamber_johnson",
       "model": "2021+ CHEVROLET TAHOE LEG KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17311,7 +17361,9 @@
     "gamber_johnson_7170_0232": {
       "manufacturer_id": "gamber_johnson",
       "model": "2000-2012 FORD ESCAPE PEDESTAL SYSTEM KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17417,7 +17469,9 @@
     "gamber_johnson_7170_0567_00": {
       "manufacturer_id": "gamber_johnson",
       "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "console"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17577,7 +17631,9 @@
     "gamber_johnson_7170_0814_01": {
       "manufacturer_id": "gamber_johnson",
       "model": "2020-2025 FORD POLICE INTERCEPTOR UTILITY PEDESTAL KIT WITH MONGOOSE SLIDE ARM",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17845,7 +17901,9 @@
     "gamber_johnson_7170_1238": {
       "manufacturer_id": "gamber_johnson",
       "model": "2025+ CHEVROLET SILVERADO/GMC SIERRA AND CHEVROLET TAHOE PEDESTAL KIT WITH MONGOOSE\u00ae XLE 9",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17870,7 +17928,9 @@
     "gamber_johnson_7300_0426": {
       "manufacturer_id": "gamber_johnson",
       "model": "KUSSMAUL AUX / USB PASS-THROUGH 6' EXTENSION MODULE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "aux_12v_ports"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20661,7 +20721,9 @@
     "gamber_johnson_ds_lower_9": {
       "manufacturer_id": "gamber_johnson",
       "model": "9\" LOWER POLE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20740,7 +20802,9 @@
     "gamber_johnson_ds_step": {
       "manufacturer_id": "gamber_johnson",
       "model": "OFFSET UNIVERSAL MOUNT STEP",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "pedestal_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
