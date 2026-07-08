@@ -1,12 +1,26 @@
-# Golden-Master Digest Specification (§8.1 Step 1a — design)
+# Golden-Master Digest Specification (§8.1 Step 1a)
 
-> **Status**: design + validated prototype (this session). Implementation (full corpus
-> recording, pytest wiring, CI) is the follow-up Sonnet session — see §7.
+> **Status**: SHIPPED — design + validated prototype (`tests/golden/digest.py`), then
+> implementation (this session): hermetic harness (`tests/golden/harness.py`), full
+> corpus recording (`tests/golden/expected/`, 6 cases — 4 workbook + 2 draft), pytest
+> wiring (`tests/golden/test_golden_master.py`), CI via the Step 1d pytest job. Two
+> consecutive clean runs recorded. §7's implementation checklist is complete except
+> item 6 (markdown-summary snapshot) — deferred, not pinned in v1 (plan JSON + pptx
+> already cover the terminal outputs that matter for planner/renderer refactors; the
+> markdown summary is derived from the same plan and lower-value to pin twice).
 >
 > **What this pins**: the terminal outputs of the generation pipeline — the rendered
 > `.pptx` build sheet and the `BuildPlan_*.json` plan file — so that any refactor of
 > planner/renderer code (roadmap Phases D/E) can be proven behavior-preserving.
-> The normalizer prototype lives at `tests/golden/digest.py`.
+> The normalizer lives at `tests/golden/digest.py`.
+>
+> **Corpus note**: the two draft/GUI-adapter cases are real PIU builds exported from
+> the live workspace with the agency name and sales rep aliased (`Sample Agency 1/2`,
+> `Sample Rep`) before committing — real equipment mix and placements, no real
+> customer names in git history (owner-approved approach). TRAVERSE/TAHOE/DURANGO/
+> F-150 real-project draft cases are a corpus TODO (no real records of those vehicle
+> types existed in the workspace at recording time); tracked in
+> `tests/golden/test_golden_master.py`'s module docstring, not blocking.
 
 ---
 

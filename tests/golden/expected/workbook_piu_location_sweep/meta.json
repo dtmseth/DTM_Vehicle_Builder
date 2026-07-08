@@ -1,0 +1,5 @@
+{
+  "adapter": "workbook",
+  "case_name": "workbook_piu_location_sweep",
+  "input_path": "samples/generated/piu_location_sweep.xlsx"
+}
