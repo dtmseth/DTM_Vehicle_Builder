@@ -1313,20 +1313,24 @@
           "lens_type": "smoked",
           "tertiary_color": "white",
           "friendly_name": "WHELEN TRIO ION R/B WHT OVERRIDE SMK"
-        }
-      ],
-      "accessories": [
-        {
-          "category": "bracket_mount",
-          "product_id": "whelen_ion_grille_mount",
-          "required": false
         },
         {
-          "category": "bracket_mount",
-          "product_id": "whelen_ion_lp_bracket",
-          "required": false
+          "part_number": "IONHD3FM",
+          "qb_item_id": "630",
+          "qb_sku": "",
+          "qb_unit_price": 33.0,
+          "qb_inactive": false,
+          "vehicle_tags": [
+            "any"
+          ],
+          "color": "",
+          "secondary_color": "",
+          "tertiary_color": "",
+          "lens_type": "",
+          "friendly_name": "WHELEN FORK MT ION-V HD ELECTRA GLIDE"
         }
-      ]
+      ],
+      "reviewed": false
     },
     "whelen_2_lamp_tracer": {
       "manufacturer_id": "whelen",
@@ -2843,8 +2847,23 @@
           "lens_type": "",
           "tertiary_color": "",
           "friendly_name": "WHELEN WCX DUO IE XLP 12LT 20 UTILITY"
+        },
+        {
+          "part_number": "BW54UFX",
+          "friendly_name": "WHELEN WCX DUO IE 12-LT 2021 TAHOE",
+          "qb_item_id": "338",
+          "qb_sku": "",
+          "qb_unit_price": 2254.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 2254.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
-      ]
+      ],
+      "reviewed": false
     },
     "whelen_t_series": {
       "manufacturer_id": "whelen",
@@ -9613,15 +9632,23 @@
           "lens_type": "clear",
           "tertiary_color": "",
           "friendly_name": "WHELEN M6 V-SERIES LIGHT WHITE"
+        },
+        {
+          "part_number": "M62T",
+          "friendly_name": "WHELEN LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC",
+          "qb_item_id": "710",
+          "qb_sku": "",
+          "qb_unit_price": 183.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 183.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
       ],
-      "accessories": [
-        {
-          "category": "flange",
-          "product_id": "whelen_m6_flange",
-          "required": false
-        }
-      ]
+      "reviewed": false
     },
     "whelen_m7": {
       "manufacturer_id": "whelen",
@@ -10981,15 +11008,23 @@
           "tertiary_color": "",
           "lens_type": "clear",
           "friendly_name": "WHELEN LINZ V-SERIES LIGHT AMBER"
+        },
+        {
+          "part_number": "LINZ6R",
+          "friendly_name": "WHELEN LINZ6 LED HORIZ SYNC RED",
+          "qb_item_id": "682",
+          "qb_sku": "",
+          "qb_unit_price": 214.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 214.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
       ],
-      "accessories": [
-        {
-          "category": "bracket_mount",
-          "product_id": "whelen_linz_mirror_mount",
-          "required": false
-        }
-      ]
+      "reviewed": false
     },
     "whelen_strip_lite_plus": {
       "manufacturer_id": "whelen",
@@ -13800,8 +13835,12 @@
       "manufacturer_id": "whelen",
       "model": "Outer Edge Lightheads",
       "description": "",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "part_numbers": [
         {
           "part_number": "OEI2D",
@@ -13881,16 +13920,19 @@
       ],
       "accessory_category": "lighthead",
       "accessory_of_products": [
-        "whelen_outer_edge",
-        "whelen_ion_rear_pillar"
+        "whelen_outer_edge"
       ]
     },
     "whelen_mirror_beam_lightheads": {
       "manufacturer_id": "whelen",
       "model": "Mirror Beam Lightheads",
       "description": "",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "part_numbers": [
         {
           "part_number": "MBI2D",
@@ -14032,35 +14074,6 @@
       "accessory_of_products": [
         "whelen_mirror_beams"
       ]
-    },
-    "whelen_fork_mt_ion_v_hd_electra_glide": {
-      "manufacturer_id": "whelen",
-      "model": "FORK MT ION-V HD ELECTRA GLIDE",
-      "description": "",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "part_numbers": [
-        {
-          "part_number": "IONHD3FM",
-          "qb_item_id": "630",
-          "qb_sku": "",
-          "qb_unit_price": 33.0,
-          "qb_inactive": false,
-          "vehicle_tags": [
-            "any"
-          ],
-          "color": "",
-          "secondary_color": "",
-          "tertiary_color": "",
-          "lens_type": "",
-          "friendly_name": "WHELEN FORK MT ION-V HD ELECTRA GLIDE"
-        }
-      ],
-      "accessory_category": "bracket_mount",
-      "accessory_of_products": [
-        "whelen_surface_mount_ion"
-      ],
-      "accessory_required": false
     },
     "soundoff_soundoff_dome_light_2": {
       "manufacturer_id": "soundoff",
@@ -14945,7 +14958,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "whelen_2250_buildabar"
+      ]
     },
     "whelen_22reca": {
       "manufacturer_id": "whelen",
@@ -14970,7 +14987,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "whelen_2250_buildabar"
+      ]
     },
     "qb_unassigned_25_ft_cat_6_cable": {
       "manufacturer_id": "qb_unassigned",
@@ -16272,35 +16293,12 @@
       ],
       "reviewed": false
     },
-    "whelen_68_1183491a16": {
-      "manufacturer_id": "whelen",
-      "model": "AMBER 4IN LENS FOR FREEDOM MICRO EDGE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "68-1183491A16",
-          "friendly_name": "WHELEN AMBER 4IN LENS FOR FREEDOM MICRO EDGE",
-          "qb_item_id": "162",
-          "qb_sku": "",
-          "qb_unit_price": 26.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 26.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_70rc6fcr": {
       "manufacturer_id": "whelen",
       "model": "700 LIN.SUPER-LED FLASHER, R/C",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18497,31 +18495,6 @@
         "whelen_ion"
       ]
     },
-    "whelen_bw54ufx": {
-      "manufacturer_id": "whelen",
-      "model": "WCX DUO IE 12-LT 2021 TAHOE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "BW54UFX",
-          "friendly_name": "WHELEN WCX DUO IE 12-LT 2021 TAHOE",
-          "qb_item_id": "338",
-          "qb_sku": "",
-          "qb_unit_price": 2254.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 2254.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_bwd": {
       "manufacturer_id": "whelen",
       "model": "EXTRA LOW PROFILE 6-LED DUO\u2122 LAMPS, RED/WHITE, BLUE/WHITE AND AMBER/WHITE, DRIVER SIDE, NO CHARGE WHEN ORDERED WITH EXTRA LOW PROFILE DUO\u2122 INNER EDGE",
@@ -20331,31 +20304,6 @@
       ],
       "reviewed": false
     },
-    "whelen_cc5k2": {
-      "manufacturer_id": "whelen",
-      "model": "INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERADO 1500 SSV (BODY STYLE), 2019-2021 COLORADO 1500, 2018 SUBURBAN, NO CHARGE WHEN PURCHASED WITH AMPLIFIER CONTROL MODULE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "CC5K2",
-          "friendly_name": "WHELEN INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERADO 1500 SSV (BODY STYLE), 2019-2021 COLORADO 1500, 2018 SUBURBAN, NO CHARGE WHEN PURCHASED WITH AMPLIFIER CONTROL MODULE",
-          "qb_item_id": "414",
-          "qb_sku": "",
-          "qb_unit_price": 0.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 0.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "qb_unassigned_ccas_sb_7_800": {
       "manufacturer_id": "qb_unassigned",
       "model": "STINGER 760-896 MHZ COVERT ANTENNA",
@@ -21880,7 +21828,9 @@
     "whelen_fsbps": {
       "manufacturer_id": "whelen",
       "model": "POWER SUPPLY FIELD SERIES BLK",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21900,7 +21850,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "flasher_power",
+      "accessory_of_products": [
+        "whelen_field_series"
+      ]
     },
     "feniex_fsma": {
       "manufacturer_id": "feniex",
@@ -22034,8 +21988,12 @@
     "whelen_gbawd": {
       "manufacturer_id": "whelen",
       "model": "LEGACY OPT ADD 1 WARN/ALY R/W",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22054,13 +22012,21 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "lighthead",
+      "accessory_of_products": [
+        "whelen_legacy"
+      ]
     },
     "whelen_gbawe": {
       "manufacturer_id": "whelen",
       "model": "LEGACY OPT ADD 1 WARN/ALY B/W",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "lighthead"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22079,7 +22045,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "lighthead",
+      "accessory_of_products": [
+        "whelen_legacy"
+      ]
     },
     "qb_unassigned_getac_s410": {
       "manufacturer_id": "qb_unassigned",
@@ -22441,31 +22411,6 @@
       ],
       "reviewed": false
     },
-    "whelen_h35sn12": {
-      "manufacturer_id": "whelen",
-      "model": "SNAP-IN HALO.BULB 35W/12V AXL.",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H35SN12",
-          "friendly_name": "WHELEN SNAP-IN HALO.BULB 35W/12V AXL.",
-          "qb_item_id": "584",
-          "qb_sku": "",
-          "qb_unit_price": 65.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 65.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "ace_k_9_ha_2520": {
       "manufacturer_id": "ace_k_9",
       "model": "HEAT ALARM PRO TEMPERATURE ALARM SYSTEM, INCLUDES HORN, LIGHT, AND SIREN ACTIVATION, DUAL WINDOW DROP",
@@ -22729,7 +22674,9 @@
     "whelen_hwlfe29": {
       "manufacturer_id": "whelen",
       "model": "SIREN AMPLIFIER WITH ONE SPEAKER, INCLUDES MOUNTING BRACKET FOR 2020-2025 FORD POLICE INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22994,32 +22941,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
-    },
-    "whelen_linz6r": {
-      "manufacturer_id": "whelen",
-      "model": "LINZ6 LED HORIZ SYNC RED",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "LINZ6R",
-          "friendly_name": "WHELEN LINZ6 LED HORIZ SYNC RED",
-          "qb_item_id": "682",
-          "qb_sku": "",
-          "qb_unit_price": 214.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 214.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "whelen_core"
+      ]
     },
     "havis_lps_211": {
       "manufacturer_id": "havis",
@@ -23051,7 +22977,9 @@
     "whelen_m1batt": {
       "manufacturer_id": "whelen",
       "model": "MOTORCYCLE NO-SPILL BATTERY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motorcycle_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23076,7 +23004,9 @@
     "whelen_m1ground": {
       "manufacturer_id": "whelen",
       "model": "MOTORCYCLE BOX GROUND PLANE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motorcycle_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23128,7 +23058,9 @@
     "whelen_m4b6lr": {
       "manufacturer_id": "whelen",
       "model": "M/C BOX RIGHT-OPEN LESS FLASH",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motorcycle_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23153,7 +23085,9 @@
     "whelen_m4bsep": {
       "manufacturer_id": "whelen",
       "model": "M4B OPTIONAL SEPARATION PLATE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motorcycle_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23175,35 +23109,12 @@
       ],
       "reviewed": false
     },
-    "whelen_m62t": {
-      "manufacturer_id": "whelen",
-      "model": "LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "M62T",
-          "friendly_name": "WHELEN LED, TURN LIGHT AMBER, WITH MULTIPLE FLASH PATTERNS, INCLUDING ARROW PATTERN, 10-30 VDC",
-          "qb_item_id": "710",
-          "qb_sku": "",
-          "qb_unit_price": 183.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 183.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_mbadpt14": {
       "manufacturer_id": "whelen",
       "model": "MB4/6 ADAPTER PLATE 14 HARLEY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "motorcycle_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24396,7 +24307,9 @@
     "whelen_pcc6w": {
       "manufacturer_id": "whelen",
       "model": "PCC6W SWITCH CONTROL CENTER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "light_controller"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24410,31 +24323,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 220.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "whelen_pfp2ap1": {
-      "manufacturer_id": "whelen",
-      "model": "PFP2AC POLE/PED MT WHT W/ SW",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "PFP2AP1",
-          "friendly_name": "WHELEN PFP2AC POLE/PED MT WHT W/ SW",
-          "qb_item_id": "834",
-          "qb_sku": "",
-          "qb_unit_price": 2568.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 2568.0,
           "vehicle_tags": [
             "any"
           ],
@@ -24554,7 +24442,9 @@
     "whelen_plf46": {
       "manufacturer_id": "whelen",
       "model": "PROGRAMMABLE LIGHT FLASHER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24905,7 +24795,14 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "whelen_r416_beacon",
+        "whelen_responder_lp",
+        "whelen_century",
+        "whelen_mini_legacy"
+      ]
     },
     "whelen_qfford1s": {
       "manufacturer_id": "whelen",
@@ -24930,7 +24827,14 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "whelen_r416_beacon",
+        "whelen_responder_lp",
+        "whelen_century",
+        "whelen_mini_legacy"
+      ]
     },
     "whelen_qfford1w": {
       "manufacturer_id": "whelen",
@@ -24955,7 +24859,14 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "whelen_r416_beacon",
+        "whelen_responder_lp",
+        "whelen_century",
+        "whelen_mini_legacy"
+      ]
     },
     "whelen_qfram2": {
       "manufacturer_id": "whelen",
@@ -24980,7 +24891,14 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "whelen_r416_beacon",
+        "whelen_responder_lp",
+        "whelen_century",
+        "whelen_mini_legacy"
+      ]
     },
     "whelen_qfram2s": {
       "manufacturer_id": "whelen",
@@ -25005,7 +24923,14 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "whelen_r416_beacon",
+        "whelen_responder_lp",
+        "whelen_century",
+        "whelen_mini_legacy"
+      ]
     },
     "feniex_qt_0820_sd": {
       "manufacturer_id": "feniex",
@@ -27470,7 +27395,9 @@
     "whelen_sp123bmc": {
       "manufacturer_id": "whelen",
       "model": "BUMPER MOUNT, CHROME",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27517,61 +27444,15 @@
       ],
       "reviewed": false
     },
-    "whelen_ssfpos": {
-      "manufacturer_id": "whelen",
-      "model": "SOLID STATE HEADLIGHT FLASHER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SSFPOS",
-          "friendly_name": "WHELEN SOLID STATE HEADLIGHT FLASHER",
-          "qb_item_id": "1072",
-          "qb_sku": "",
-          "qb_unit_price": 101.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 101.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "whelen_ssfposi6": {
-      "manufacturer_id": "whelen",
-      "model": "SOLID STATE HEADLIGHT FLASHER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "SSFPOSI6",
-          "friendly_name": "WHELEN SOLID STATE HEADLIGHT FLASHER",
-          "qb_item_id": "1073",
-          "qb_sku": "",
-          "qb_unit_price": 136.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 136.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_sys109": {
       "manufacturer_id": "whelen",
       "model": "SYSTEM 109",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -27890,7 +27771,9 @@
     "whelen_ulf44": {
       "manufacturer_id": "whelen",
       "model": "UNIVERSAL LED FLASHER 4 OUTLET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -29764,6 +29647,61 @@
           "options": {}
         }
       ],
+      "reviewed": false
+    },
+    "whelen_headlight_flasher_ssf": {
+      "manufacturer_id": "whelen",
+      "model": "Solid State Headlight Flasher",
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "SSFPOS",
+          "friendly_name": "WHELEN SOLID STATE HEADLIGHT FLASHER",
+          "qb_item_id": "1072",
+          "qb_sku": "",
+          "qb_unit_price": 101.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 101.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "SSFPOSI6",
+          "friendly_name": "WHELEN SOLID STATE HEADLIGHT FLASHER",
+          "qb_item_id": "1073",
+          "qb_sku": "",
+          "qb_unit_price": 136.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 136.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "whelen_2250_buildabar": {
+      "manufacturer_id": "whelen",
+      "model": "WeCanX 2250 Series Build-A-Bar",
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "description": "",
+      "images": {},
+      "part_numbers": [],
       "reviewed": false
     }
   },
