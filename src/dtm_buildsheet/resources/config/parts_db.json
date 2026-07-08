@@ -18214,9 +18214,13 @@
     },
     "feniex_am900": {
       "manufacturer_id": "feniex",
-      "model": "AM900 WORK LIGHT",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "model": "AM900 Work Light",
+      "fits_part_types": [
+        "front_scene"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -18224,6 +18228,20 @@
           "part_number": "AM900",
           "friendly_name": "FENIEX AM900 WORK LIGHT",
           "qb_item_id": "243",
+          "qb_sku": "",
+          "qb_unit_price": 39.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 39.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "WL-0118",
+          "friendly_name": "AM900 WORK LIGHT",
+          "qb_item_id": "1278",
           "qb_sku": "",
           "qb_unit_price": 39.0,
           "qb_inactive": false,
@@ -18728,7 +18746,9 @@
     "feniex_c_4010": {
       "manufacturer_id": "feniex",
       "model": "4200 MINI CONTROLLER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "light_controller"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18753,7 +18773,9 @@
     "feniex_c_4014": {
       "manufacturer_id": "feniex",
       "model": "STORM PRO 100W SIREN",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18778,7 +18800,9 @@
     "feniex_c_4017": {
       "manufacturer_id": "feniex",
       "model": "TYPHOON FULL FUNCTION LIGHT AND SIREN CONTROLLER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "control_head"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18803,7 +18827,9 @@
     "feniex_c_5017": {
       "manufacturer_id": "feniex",
       "model": "TYPHOON HANDHELD 100W SIREN",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20445,31 +20471,6 @@
       ],
       "reviewed": false
     },
-    "feniex_chw": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON HIDE-A-WAY (RED/WHITE)",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "CHW",
-          "friendly_name": "FENIEX CANNON HIDE-A-WAY (RED/WHITE)",
-          "qb_item_id": "431",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "whelen_clbv2v": {
       "manufacturer_id": "whelen",
       "model": "LIGHTBAR-MOUNTED V2V SYNC MODULE",
@@ -21532,7 +21533,9 @@
     "feniex_fenflas": {
       "manufacturer_id": "feniex",
       "model": "FENFLAS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "headlight_flasher"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21584,8 +21587,12 @@
     "feniex_fml": {
       "manufacturer_id": "feniex",
       "model": "FUSION MINI LIGHT BAR (RED/WHITE WITH 40\u00b0 OPTICS)",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -21598,131 +21605,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 379.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fn_0216": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION 200 SINGLE COLOR RED/BLUE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-0216",
-          "friendly_name": "FENIEX FUSION 200 SINGLE COLOR RED/BLUE",
-          "qb_item_id": "532",
-          "qb_sku": "",
-          "qb_unit_price": 109.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 109.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fn_0416d": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION 400 DUAL COLOR",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-0416D",
-          "friendly_name": "FENIEX FUSION 400 DUAL COLOR",
-          "qb_item_id": "533",
-          "qb_sku": "",
-          "qb_unit_price": 279.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 279.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fn_0616": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION 600 SINGLE COLOR - HALF RED HALF AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-0616",
-          "friendly_name": "FENIEX FUSION 600 SINGLE COLOR - HALF RED HALF AMBER",
-          "qb_item_id": "534",
-          "qb_sku": "",
-          "qb_unit_price": 289.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 289.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fn_0616d": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION 600 DUAL COLOR - RED/WHITE - BLUE/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-0616D",
-          "friendly_name": "FENIEX FUSION 600 DUAL COLOR - RED/WHITE - BLUE/WHITE",
-          "qb_item_id": "535",
-          "qb_sku": "",
-          "qb_unit_price": 399.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 399.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fn_0816": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION 800 DUAL COLOR - RED/WHITE - BLUE/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-0816",
-          "friendly_name": "FENIEX FUSION 800 DUAL COLOR - RED/WHITE - BLUE/WHITE",
-          "qb_item_id": "536",
-          "qb_sku": "",
-          "qb_unit_price": 489.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 489.0,
           "vehicle_tags": [
             "any"
           ],
@@ -21765,7 +21647,9 @@
     "feniex_fn_4016": {
       "manufacturer_id": "feniex",
       "model": "MOUNTING BRACKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21785,32 +21669,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
-    },
-    "feniex_fn_8816ex": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION ROCKER 15 HEAD DUAL COLOR - RED/WHITE - BLUE/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FN-8816EX",
-          "friendly_name": "FENIEX FUSION ROCKER 15 HEAD DUAL COLOR - RED/WHITE - BLUE/WHITE",
-          "qb_item_id": "540",
-          "qb_sku": "",
-          "qb_unit_price": 627.99,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 627.99,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "feniex_fusion_surface_mount",
+        "feniex_fusion_stick"
+      ]
     },
     "pro_gard_fp47uint20": {
       "manufacturer_id": "pro_gard",
@@ -21920,56 +21784,6 @@
         "whelen_field_series"
       ]
     },
-    "feniex_fsma": {
-      "manufacturer_id": "feniex",
-      "model": "FUSION SURFACE MOUNT AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FSMA",
-          "friendly_name": "FENIEX FUSION SURFACE MOUNT AMBER",
-          "qb_item_id": "547",
-          "qb_sku": "",
-          "qb_unit_price": 49.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 49.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_fusion_a_800": {
-      "manufacturer_id": "feniex",
-      "model": "8 HEAD AMBER LIGHT STICK",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "FUSION A-800",
-          "friendly_name": "FENIEX 8 HEAD AMBER LIGHT STICK",
-          "qb_item_id": "550",
-          "qb_sku": "",
-          "qb_unit_price": 357.98,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 357.98,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "feniex_fusion_license_plate_bracket": {
       "manufacturer_id": "feniex",
       "model": "FUSION SURFACE MOUNT LICENSE PLATE BRACKET",
@@ -21993,7 +21807,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "feniex_fusion_surface_mount",
+        "feniex_fusion_stick"
+      ]
     },
     "whelen_gb2x": {
       "manufacturer_id": "whelen",
@@ -22199,8 +22018,12 @@
     "feniex_gpl_49": {
       "manufacturer_id": "feniex",
       "model": "FUSION GPL 49 INCH LIGHT BAR DUAL COLOR INCLUDES FOOT MOUNT KIT WITH VEHICLE SPECIFIC STRAPS",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -22213,31 +22036,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1834.55,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON (AMBER/WHITE)",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219",
-          "friendly_name": "FENIEX CANNON (AMBER/WHITE)",
-          "qb_item_id": "574",
-          "qb_sku": "",
-          "qb_unit_price": 69.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 69.0,
           "vehicle_tags": [
             "any"
           ],
@@ -22269,157 +22067,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
-    },
-    "feniex_h_2219_a": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY SINGLE COLOR AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 A",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY SINGLE COLOR AMBER",
-          "qb_item_id": "576",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219_ba": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT BLUE/AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 BA",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT BLUE/AMBER",
-          "qb_item_id": "577",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219_bw": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY DUAL COLOR BLUE/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 BW",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY DUAL COLOR BLUE/WHITE",
-          "qb_item_id": "578",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219_ra": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT RED/AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 RA",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT RED/AMBER",
-          "qb_item_id": "579",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219_rw": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY DUAL COLOR RED/WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 RW",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY DUAL COLOR RED/WHITE",
-          "qb_item_id": "580",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "feniex_h_2219_w": {
-      "manufacturer_id": "feniex",
-      "model": "CANNON 12-LED HIDEAWAY SINGLE COLOR WHITE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "H-2219 W",
-          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY SINGLE COLOR WHITE",
-          "qb_item_id": "581",
-          "qb_sku": "",
-          "qb_unit_price": 72.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 72.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "feniex_cannon_hideaway"
+      ]
     },
     "intermotive_h_bom560_dc": {
       "manufacturer_id": "intermotive",
@@ -24764,8 +24416,12 @@
     "feniex_q_0620": {
       "manufacturer_id": "feniex",
       "model": "QUAD 600 LIGHTSTICK RED,BLUE,WHITE, AMBER",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -24999,8 +24655,12 @@
     "feniex_qt_0820_sd": {
       "manufacturer_id": "feniex",
       "model": "QUANTUM 800 LIGHT STICK DUAL COLOR",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -25344,7 +25004,9 @@
     "feniex_s_2009": {
       "manufacturer_id": "feniex",
       "model": "TRITON 100W SPEAKER",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -28810,6 +28472,20 @@
           "options": {},
           "color": "red",
           "secondary_color": ""
+        },
+        {
+          "part_number": "FSMA",
+          "friendly_name": "FENIEX FUSION SURFACE MOUNT AMBER",
+          "qb_item_id": "547",
+          "qb_sku": "",
+          "qb_unit_price": 49.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 49.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
       ],
       "reviewed": true
@@ -29607,35 +29283,6 @@
       ],
       "reviewed": false
     },
-    "feniex_am900_work_light": {
-      "manufacturer_id": "feniex",
-      "model": "AM900 Work Light",
-      "fits_part_types": [
-        "front_scene"
-      ],
-      "tag_ids": [
-        "light"
-      ],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "WL-0118",
-          "friendly_name": "AM900 WORK LIGHT",
-          "qb_item_id": "1278",
-          "qb_sku": "",
-          "qb_unit_price": 39.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 39.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "tiger_tough_embroidery": {
       "manufacturer_id": "tiger_tough",
       "model": "Stock Embroidery",
@@ -29836,6 +29483,246 @@
       "description": "",
       "images": {},
       "part_numbers": [],
+      "reviewed": false
+    },
+    "feniex_fusion_stick": {
+      "manufacturer_id": "feniex",
+      "model": "Fusion Light Stick",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "FN-0216",
+          "friendly_name": "FENIEX FUSION 200 SINGLE COLOR RED/BLUE",
+          "qb_item_id": "532",
+          "qb_sku": "",
+          "qb_unit_price": 109.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 109.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FN-0416D",
+          "friendly_name": "FENIEX FUSION 400 DUAL COLOR",
+          "qb_item_id": "533",
+          "qb_sku": "",
+          "qb_unit_price": 279.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 279.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FN-0616",
+          "friendly_name": "FENIEX FUSION 600 SINGLE COLOR - HALF RED HALF AMBER",
+          "qb_item_id": "534",
+          "qb_sku": "",
+          "qb_unit_price": 289.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 289.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FN-0616D",
+          "friendly_name": "FENIEX FUSION 600 DUAL COLOR - RED/WHITE - BLUE/WHITE",
+          "qb_item_id": "535",
+          "qb_sku": "",
+          "qb_unit_price": 399.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 399.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FN-0816",
+          "friendly_name": "FENIEX FUSION 800 DUAL COLOR - RED/WHITE - BLUE/WHITE",
+          "qb_item_id": "536",
+          "qb_sku": "",
+          "qb_unit_price": 489.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 489.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FN-8816EX",
+          "friendly_name": "FENIEX FUSION ROCKER 15 HEAD DUAL COLOR - RED/WHITE - BLUE/WHITE",
+          "qb_item_id": "540",
+          "qb_sku": "",
+          "qb_unit_price": 627.99,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 627.99,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "FUSION A-800",
+          "friendly_name": "FENIEX 8 HEAD AMBER LIGHT STICK",
+          "qb_item_id": "550",
+          "qb_sku": "",
+          "qb_unit_price": 357.98,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 357.98,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "feniex_cannon_hideaway": {
+      "manufacturer_id": "feniex",
+      "model": "Cannon Hide-A-Way",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "CHW",
+          "friendly_name": "FENIEX CANNON HIDE-A-WAY (RED/WHITE)",
+          "qb_item_id": "431",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219",
+          "friendly_name": "FENIEX CANNON (AMBER/WHITE)",
+          "qb_item_id": "574",
+          "qb_sku": "",
+          "qb_unit_price": 69.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 69.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 A",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY SINGLE COLOR AMBER",
+          "qb_item_id": "576",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 BA",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT BLUE/AMBER",
+          "qb_item_id": "577",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 BW",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY DUAL COLOR BLUE/WHITE",
+          "qb_item_id": "578",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 RA",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY - 3 MODE FUNCTIONALITY - SELF-CONTAINED - SYNCHRONIZABLE - SPLIT RED/AMBER",
+          "qb_item_id": "579",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 RW",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY DUAL COLOR RED/WHITE",
+          "qb_item_id": "580",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "H-2219 W",
+          "friendly_name": "FENIEX CANNON 12-LED HIDEAWAY SINGLE COLOR WHITE",
+          "qb_item_id": "581",
+          "qb_sku": "",
+          "qb_unit_price": 72.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
       "reviewed": false
     }
   },
