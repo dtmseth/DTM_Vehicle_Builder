@@ -1,0 +1,40 @@
+{
+  "body": {
+    "tags": [
+      {
+        "label": "Camera",
+        "tag_id": "camera"
+      },
+      {
+        "label": "Radar",
+        "tag_id": "radar"
+      },
+      {
+        "label": "Siren",
+        "tag_id": "siren"
+      },
+      {
+        "label": "Communications",
+        "tag_id": "comms"
+      },
+      {
+        "label": "Service",
+        "tag_id": "service"
+      },
+      {
+        "label": "Service",
+        "tag_id": "service_2"
+      },
+      {
+        "label": "Unbilled",
+        "tag_id": "unbilled"
+      },
+      {
+        "label": "Light",
+        "tag_id": "light"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

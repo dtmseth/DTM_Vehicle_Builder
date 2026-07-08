@@ -1,0 +1,711 @@
+{
+  "body": {
+    "part_type_count": 16,
+    "products": [
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB400",
+        "price_min": 579.0,
+        "product_id": "setina_pb400",
+        "qb_count": 10,
+        "sku_count": 10
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB450L",
+        "price_min": 949.0,
+        "product_id": "setina_pb450l",
+        "qb_count": 12,
+        "sku_count": 12
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "HDX",
+        "price_min": null,
+        "product_id": "pro_gard_hdx",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 2020-2026 FORD POLCE INTERCEPTOR UTILITY",
+        "price_min": 598.0,
+        "product_id": "westin_36_2125",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 2021-2026 CHEVROLET TAHOE PPV",
+        "price_min": 834.0,
+        "product_id": "westin_36_4045",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 CHEVROLET TAHOE PPV",
+        "price_min": 56.0,
+        "product_id": "westin_36_4045wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 2021-2026 DODGE DURANGO",
+        "price_min": 598.0,
+        "product_id": "westin_36_4075",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_4075wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITEXD WIRE COVER 2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
+        "price_min": 56.0,
+        "product_id": "westin_36_52065wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV",
+        "price_min": 834.0,
+        "product_id": "westin_36_52135",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
+        "price_min": 56.0,
+        "product_id": "westin_36_52135wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITEXD 2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
+        "price_min": 834.0,
+        "product_id": "westin_36_54085",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_6005",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_6005s4",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_6005smp2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_6005w2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
+        "price_min": 56.0,
+        "product_id": "westin_36_6005w4",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL 2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
+        "price_min": 56.0,
+        "product_id": "westin_36_6015",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
+        "price_min": 56.0,
+        "product_id": "westin_36_6015w2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
+        "price_min": 56.0,
+        "product_id": "westin_36_6015w4",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "go_rhino",
+        "manufacturer_label": "Go Rhino",
+        "model": "STEEL WRAPS FOR 2021+ CHEVY TAHOE PUSH BUMPER BLACK",
+        "price_min": 340.22,
+        "product_id": "go_rhino_5168whdt",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB450L4 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 4 TOTAL LIGHTS: 2 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
+        "price_min": 1179.0,
+        "product_id": "setina_c",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "go_rhino",
+        "manufacturer_label": "Go Rhino",
+        "model": "Go Rhino Push Bumper",
+        "price_min": 330.75,
+        "product_id": "go_rhino_pushbumper",
+        "qb_count": 3,
+        "sku_count": 3
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "PIT BARS",
+        "price_min": 545.0,
+        "product_id": "westin_pit_bars",
+        "qb_count": 5,
+        "sku_count": 6
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB5",
+        "price_min": 679.0,
+        "product_id": "setina_pb5",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB9",
+        "price_min": 699.0,
+        "product_id": "setina_pb9",
+        "qb_count": 5,
+        "sku_count": 5
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB10",
+        "price_min": 929.0,
+        "product_id": "setina_pb10",
+        "qb_count": 8,
+        "sku_count": 8
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "WING WRAPS",
+        "price_min": 380.0,
+        "product_id": "westin_wing_wraps",
+        "qb_count": 4,
+        "sku_count": 5
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB6",
+        "price_min": 739.0,
+        "product_id": "setina_pb6",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PB8",
+        "price_min": 459.0,
+        "product_id": "setina_pb8",
+        "qb_count": 3,
+        "sku_count": 3
+      },
+      {
+        "manufacturer_id": "go_rhino",
+        "manufacturer_label": "Go Rhino",
+        "model": "HEAVY-DUTY STEEL TEXTURED WRAPS FOR 2020+ FORD POLICE INTERCEPTOR UTILITY",
+        "price_min": 375.47,
+        "product_id": "go_rhino_5344whdt",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+        "price_min": 56.0,
+        "product_id": "westin_36_2125wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "FULL PARTITION",
+        "price_min": 999.0,
+        "product_id": "setina_full_partition",
+        "qb_count": 16,
+        "sku_count": 16
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "SINGLE PRISIONER",
+        "price_min": 1279.0,
+        "product_id": "setina_single_prisioner",
+        "qb_count": 10,
+        "sku_count": 10
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "FULL XL PARTITION",
+        "price_min": 1139.0,
+        "product_id": "setina_full_xl_partition",
+        "qb_count": 3,
+        "sku_count": 3
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PASSENGER SIDE XL PARTITION",
+        "price_min": null,
+        "product_id": "setina_passenger_side_xl_partition",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "DUAL PRISONER PARTITION",
+        "price_min": 599.0,
+        "product_id": "setina_dual_prisoner",
+        "qb_count": 4,
+        "sku_count": 4
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "STEEL",
+        "price_min": null,
+        "product_id": "setina_steel",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "POLY",
+        "price_min": 299.0,
+        "product_id": "setina_poly",
+        "qb_count": 5,
+        "sku_count": 5
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "PARTITION TRANSFER KIT",
+        "price_min": 399.0,
+        "product_id": "setina_partition_transfer_kit",
+        "qb_count": 4,
+        "sku_count": 4
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "MODULE RELOCATION PLATE",
+        "price_min": 19.99,
+        "product_id": "setina_module_relocation_plate",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "LOWER EXTENSION PANEL",
+        "price_min": 109.0,
+        "product_id": "setina_lower_extension_panel",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "UPPER BRACKET NUT PLATE",
+        "price_min": 29.99,
+        "product_id": "setina_upper_bracket_nut_plate",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "RECESS PANEL FOR 2020 FORD UTILITY",
+        "price_min": 77.87,
+        "product_id": "pro_gard_rp47uint20",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "LOWER EXTENSION PANELS (PAIR) FOR 2020 FORD UTILITY",
+        "price_min": 61.29,
+        "product_id": "pro_gard_sp47bs20",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "TRANSFER KIT FOR 2020 FORD UTILITY. NEEDS RP47UINT20 AND SP47BS20 WHICH ARE SOLD SEPARATELY",
+        "price_min": 189.62,
+        "product_id": "pro_gard_tk47uint20a",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "POLY DIVIDER",
+        "price_min": null,
+        "product_id": "setina_poly_divider",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "CARGO MAXX",
+        "price_min": null,
+        "product_id": "setina_cargo_maxx",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "STEEL VERTICAL",
+        "price_min": 279.0,
+        "product_id": "setina_steel_vertical",
+        "qb_count": 6,
+        "sku_count": 6
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "STEEL HORIZONTAL",
+        "price_min": 329.0,
+        "product_id": "setina_steel_horizontal",
+        "qb_count": 3,
+        "sku_count": 3
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "POLY TINTED",
+        "price_min": 409.0,
+        "product_id": "setina_poly_tinted",
+        "qb_count": 4,
+        "sku_count": 4
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS",
+        "price_min": null,
+        "product_id": "pro_gard_full_replacment_seat_w_center_pull_seat_belts",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "POLY SEAT COVER",
+        "price_min": null,
+        "product_id": "pro_gard_poly_seat_cover",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "FULL REPLACEMENT SEAT",
+        "price_min": 1099.0,
+        "product_id": "setina_full_replacement_seat",
+        "qb_count": 13,
+        "sku_count": 13
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "FULL COVER SEAT",
+        "price_min": 1759.0,
+        "product_id": "setina_full_cover_seat",
+        "qb_count": 3,
+        "sku_count": 3
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "SINGLE REPLACEMENT SEAT",
+        "price_min": 899.0,
+        "product_id": "setina_single_replacement_seat",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "CENTER PULL SEAT BELT RETRACTOR",
+        "price_min": 199.99,
+        "product_id": "setina_seat_belt_retractor",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "STEEL WINDOW",
+        "price_min": 659.0,
+        "product_id": "setina_steel_window",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "POLY WINDOW",
+        "price_min": 689.0,
+        "product_id": "setina_poly_window",
+        "qb_count": 4,
+        "sku_count": 4
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "REAR CARGO BARRIER WITH VINYL COATED MESH WINDOW AND SIDE FILLERS FOR 2018+ DODGE DURANGO",
+        "price_min": 374.25,
+        "product_id": "pro_gard_b6705d18",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "PRO-CELL SINGLE PRISONER W/ 1/2 PARTITION - OUTBOARD BELT - PARTITION, TRANSPORT SEAT, PAIR REAR DOOR PANELS, WINDOW BARS, LWR EXT PANEL & DIVIDER - FOR 2020+ FORD UTILITY",
+        "price_min": 2146.5,
+        "product_id": "pro_gard_p1000uint20aosb",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "POLY FLOOR PAN",
+        "price_min": null,
+        "product_id": "pro_gard_poly_floor_pan",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "POLY FLOOR PAN W/ DRAINS",
+        "price_min": null,
+        "product_id": "pro_gard_poly_floor_pan_w_drains",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "pro_gard",
+        "manufacturer_label": "Pro-Gard",
+        "model": "CHARCOAL GREY ABS, FLOOR PAN",
+        "price_min": 209.25,
+        "product_id": "pro_gard_fp47uint20",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "qb_unassigned",
+        "manufacturer_label": "Unassigned (QB Import)",
+        "model": "SUV TUFBOX W/ KEY LOCK, DRAWER. (12 IN H, 38 IN W, 32 IN D) 5.0 CU FT STORAGE",
+        "price_min": 999.96,
+        "product_id": "qb_unassigned_36_010_key",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "american_aluminum",
+        "manufacturer_label": "American Aluminum",
+        "model": "ACCESSORIES SINGLE DRAWER VAULT MATTE BLACK POWDER COAT",
+        "price_min": 1309.0,
+        "product_id": "american_aluminum_ameralu_vault",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "qb_unassigned",
+        "manufacturer_label": "Unassigned (QB Import)",
+        "model": "MOBILE STRONG CUSTOM DRAWER",
+        "price_min": 843.4,
+        "product_id": "qb_unassigned_custom_drawer",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "5_0_fab_dtm",
+        "manufacturer_label": "5-0 Fab (Dtm)",
+        "model": "EQUIPMENT BOX 4IN DEEP 36IN WIDE",
+        "price_min": 350.0,
+        "product_id": "5_0_fab_dtm_eb1u",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "rockland_cabinets",
+        "manufacturer_label": "Rockland Cabinets",
+        "model": "STEEL XL DRAWER WITH ELECTRONICS TRAY ON RISERS 2020+ FORD UTILITY",
+        "price_min": 1453.1,
+        "product_id": "rockland_cabinets_rlssl_fpiu20_s",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "HINGED LID DRAWER TOPPER WITH MEDIUM-DUTY SLAM LATCH",
+        "price_min": 829.0,
+        "product_id": "havis_sbx_3001",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "2020-2024 FORD INTERCEPTOR UTILITY STORAGE DRAWER MOUNT WITH HAVIS K9",
+        "price_min": 662.0,
+        "product_id": "havis_sbx_5001",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "sho_me",
+        "manufacturer_label": "Sho-Me",
+        "model": "MULTI-PORT ACCESSORY BOX",
+        "price_min": 46.96,
+        "product_id": "sho_me_sho_me_14_0434",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "rockland_cabinets",
+        "manufacturer_label": "Rockland Cabinets",
+        "model": "STEEL WEAPONS DRAWER WITH READY LOCK COMES WITH FOAM INSERT",
+        "price_min": 1016.0,
+        "product_id": "rockland_cabinets_wpdr_rkd_st1_4324_pcst_univay",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "decked",
+        "manufacturer_label": "Decked",
+        "model": "DRAWER SYSTEM WITH PREMIUM ACCESSORY PACKAGE",
+        "price_min": 1599.99,
+        "product_id": "decked_xg6",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "american_aluminum",
+        "manufacturer_label": "American Aluminum",
+        "model": "E/Z Vault",
+        "price_min": 1223.0,
+        "product_id": "american_aluminum_ez_vault",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "westin",
+        "manufacturer_label": "Westin",
+        "model": "R5 NERF STEP BARS - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-2025",
+        "price_min": 704.0,
+        "product_id": "westin_28_51270",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "120\" 2 COMPARTMENT(S) PRISONER TRANSPORT INSERT",
+        "price_min": 23413.0,
+        "product_id": "havis_pt_c02_120_2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "qb_unassigned",
+        "manufacturer_label": "Unassigned (QB Import)",
+        "model": "BAK INDUSTRIES G2 HARD FOLDING TONNEAU COVER 2022 CHEVY SILVERADO",
+        "price_min": 817.48,
+        "product_id": "qb_unassigned_226130",
+        "qb_count": 1,
+        "sku_count": 1
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

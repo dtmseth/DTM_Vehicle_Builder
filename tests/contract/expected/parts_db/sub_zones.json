@@ -1,0 +1,20 @@
+{
+  "body": {
+    "sub_zones": [
+      {
+        "label": "Console",
+        "requires_attribute": "has_console",
+        "sub_zone_id": "console",
+        "zone": "forward_of_cage"
+      },
+      {
+        "label": "Equipment Tray",
+        "requires_attribute": "has_equipment_tray",
+        "sub_zone_id": "equipment_tray",
+        "zone": "rear_storage_area"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

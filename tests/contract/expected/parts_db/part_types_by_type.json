@@ -1,0 +1,584 @@
+{
+  "body": {
+    "part_types": [
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "FW Bracket",
+        "max_count": null,
+        "part_type_id": "fw_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "FW {n} Bracket"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Side Bracket",
+        "max_count": null,
+        "part_type_id": "front_side_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Side Brackets"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Headlight Flasher",
+        "max_count": null,
+        "part_type_id": "headlight_flasher",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Headlight Flasher"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Front Scene",
+        "max_count": null,
+        "part_type_id": "front_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [
+          "IN_LIGHT_BAR",
+          "UPPER_WINDSHIELD",
+          "CENTER_OF_DASH"
+        ],
+        "allowed_products": [],
+        "category": "",
+        "label": "Preemption",
+        "max_count": 1,
+        "part_type_id": "preemption",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "roof"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Opticom"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Dome Light",
+        "max_count": null,
+        "part_type_id": "front_dome_light",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Dome Light"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Mirror Warning Bracket",
+        "max_count": null,
+        "part_type_id": "mirror_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Mirror Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior_bar",
+        "label": "Interior Light Bar",
+        "max_count": null,
+        "part_type_id": "front_interior_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Interior Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Side Warning Bracket",
+        "max_count": null,
+        "part_type_id": "side_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Side Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Side Scene",
+        "max_count": null,
+        "part_type_id": "side_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Side Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "roof_bar",
+        "label": "Light Bar",
+        "max_count": null,
+        "part_type_id": "roof_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "roof"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Roof Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior_bar",
+        "label": "Interior Light Bar",
+        "max_count": null,
+        "part_type_id": "rear_interior_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Interior Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Warning Bracket",
+        "max_count": null,
+        "part_type_id": "rear_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Rear Scene",
+        "max_count": null,
+        "part_type_id": "rear_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Lower Lift Gate Warning Bracket",
+        "max_count": null,
+        "part_type_id": "lower_liftgate_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Lower Lift Gate Warning Bracket"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Tail Light Flasher",
+        "max_count": null,
+        "part_type_id": "tail_light_flasher",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Tail Light Flasher"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Rear Seat Lights",
+        "max_count": null,
+        "part_type_id": "rear_seat_lights",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Seat Lights {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Rear Seat Cargo Lights",
+        "max_count": null,
+        "part_type_id": "rear_seat_cargo_lights",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Seat Cargo Lights"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Cargo Lighting",
+        "max_count": null,
+        "part_type_id": "cargo_lighting",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Cargo Lighting"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "2-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_2_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "2-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "5-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_5_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "5-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "6-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_6_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "6-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Lighthead",
+        "max_count": null,
+        "part_type_id": "lighthead",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Cable",
+        "max_count": null,
+        "part_type_id": "cable",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Flange",
+        "max_count": null,
+        "part_type_id": "flange",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Shroud",
+        "max_count": null,
+        "part_type_id": "shroud",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Flasher / Power",
+        "max_count": null,
+        "part_type_id": "flasher_power",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Bracket / Mount",
+        "max_count": null,
+        "part_type_id": "bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Take-Down / Alley",
+        "max_count": null,
+        "part_type_id": "bar_takedown",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Warning Light",
+        "max_count": null,
+        "part_type_id": "warning_light",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Spotlight (pillar/post)",
+        "max_count": null,
+        "part_type_id": "spotlight",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

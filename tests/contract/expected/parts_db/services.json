@@ -1,0 +1,28 @@
+{
+  "body": {
+    "services": [
+      {
+        "label": "Graphics / Decals",
+        "service_id": "graphics"
+      },
+      {
+        "label": "Pickup / Delivery",
+        "service_id": "pickup_delivery"
+      },
+      {
+        "label": "Shipping Services",
+        "service_id": "shipping"
+      },
+      {
+        "label": "Vehicle Acquisition",
+        "service_id": "vehicle_acquisition"
+      },
+      {
+        "label": "Vehicle Trade-In",
+        "service_id": "vehicle_trade_in"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

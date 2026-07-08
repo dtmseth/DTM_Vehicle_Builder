@@ -1,0 +1,198 @@
+{
+  "body": {
+    "part_numbers": [
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2024-2026 CHEVROLET BLAZER EV",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534BLE24",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "283",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "BLAZER"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2019-2024 DODGE RAM 1500",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534DRT191500CL",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "284",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "RAM-1500"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2021-2026 DODGE DURANGO",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534DUR21",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "285",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "DURANGO"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2018-2024 FORD EXPEDITION",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534EPD18",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "286",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "EXPEDITION"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2021-2026 FORD TRUCK F150",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534FDT21F150",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "287",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "F-150"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534ITU20",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "288",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "PIU"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM 2025-2026 CHEVROLET TAHOE",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0534TAH25",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "289",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "TAHOE"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER STEEL FULL BUMPER 2021-2026 DODGE DURANGO",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0535DUR21",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "290",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "DURANGO"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER STEEL 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0535ITU20",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "291",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 579.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "PIU"
+        ]
+      },
+      {
+        "color": "",
+        "friendly_name": "SETINA PB400 VS BUMPER FULL BUMPER ALUMINUM WITH CROSSBAR PAD 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+        "lens_type": "",
+        "options": {},
+        "part_number": "BK0608ITU20",
+        "price_usd": null,
+        "qb_inactive": false,
+        "qb_item_id": "292",
+        "qb_pending": false,
+        "qb_sku": "",
+        "qb_unit_price": 639.0,
+        "qty_on_hand": null,
+        "secondary_color": "",
+        "tertiary_color": "",
+        "vehicle_tags": [
+          "PIU"
+        ]
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

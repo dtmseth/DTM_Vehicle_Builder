@@ -1,0 +1,121 @@
+{
+  "body": {
+    "mode": "part_type",
+    "placements": [
+      {
+        "base_label": "Chicago Barrier",
+        "label": "Chicago Barrier",
+        "name_pattern": "Chicago Barrier",
+        "part_type_id": "chicago_barrier",
+        "product_count": 2
+      },
+      {
+        "base_label": "Floor Pan",
+        "label": "Floor Pan",
+        "name_pattern": "Floor Pan",
+        "part_type_id": "floor_pan",
+        "product_count": 3
+      },
+      {
+        "base_label": "Front Partition",
+        "label": "Front Partition",
+        "name_pattern": "Front Partition",
+        "part_type_id": "front_partition",
+        "product_count": 5
+      },
+      {
+        "base_label": "Front Partition Transfer Kit",
+        "label": "Front Partition Transfer Kit",
+        "name_pattern": "Front Partition Transfer Kit",
+        "part_type_id": "front_partition_transfer_kit",
+        "product_count": 7
+      },
+      {
+        "base_label": "Pit Bar",
+        "label": "Pit Bar",
+        "name_pattern": "Pit Bar",
+        "part_type_id": "pit_bar",
+        "product_count": 4
+      },
+      {
+        "base_label": "Prisoner Transport Insert",
+        "label": "Prisoner Transport Insert",
+        "name_pattern": "{label}",
+        "part_type_id": "prisoner_transport_insert",
+        "product_count": 1
+      },
+      {
+        "base_label": "Push Bumper",
+        "label": "Push Bumper",
+        "name_pattern": "Push Bumper",
+        "part_type_id": "push_bumper",
+        "product_count": 23
+      },
+      {
+        "base_label": "Rear Partition",
+        "label": "Rear Partition",
+        "name_pattern": "Rear Partition",
+        "part_type_id": "rear_partition",
+        "product_count": 4
+      },
+      {
+        "base_label": "Rear Seat Divider",
+        "label": "Rear Seat Divider",
+        "name_pattern": "Rear Seat Divider",
+        "part_type_id": "rear_seat_divider",
+        "product_count": 2
+      },
+      {
+        "base_label": "Rear Window Bars",
+        "label": "Rear Window Bars",
+        "name_pattern": "Rear Window Bars",
+        "part_type_id": "rear_window_bars",
+        "product_count": 4
+      },
+      {
+        "base_label": "Replacement Seat",
+        "label": "Replacement Seat",
+        "name_pattern": "Replacement Rear Seat",
+        "part_type_id": "replacement_rear_seat",
+        "product_count": 6
+      },
+      {
+        "base_label": "Running Boards / Nerf Bars",
+        "label": "Running Boards / Nerf Bars",
+        "name_pattern": "{label}",
+        "part_type_id": "running_boards_nerf_bars",
+        "product_count": 1
+      },
+      {
+        "base_label": "Storage Box",
+        "label": "Storage Box",
+        "name_pattern": "Storage Compartment",
+        "part_type_id": "rear_storage_box",
+        "product_count": 11
+      },
+      {
+        "base_label": "Tonneau / Bed Cover",
+        "label": "Tonneau / Bed Cover",
+        "name_pattern": "{label}",
+        "part_type_id": "tonneau_cover",
+        "product_count": 1
+      },
+      {
+        "base_label": "Wing Wraps",
+        "label": "Wing Wraps",
+        "name_pattern": "Wing Wraps",
+        "part_type_id": "wing_wraps",
+        "product_count": 4
+      },
+      {
+        "base_label": "Wire Covers",
+        "label": "Wire Covers",
+        "name_pattern": "Wire Covers",
+        "part_type_id": "wire_covers",
+        "product_count": 1
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

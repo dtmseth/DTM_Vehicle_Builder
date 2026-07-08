@@ -1,0 +1,35 @@
+{
+  "body": {
+    "accessories": [
+      {
+        "category": "other",
+        "label": "Other",
+        "options": [
+          {
+            "manufacturer_label": "Westin",
+            "model": "ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+            "product_id": "westin_36_2125wc",
+            "skus": [
+              {
+                "color": "",
+                "friendly_name": "WESTIN ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+                "lens_type": "",
+                "part_number": "36-2125WC",
+                "price": 56.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "any"
+                ]
+              }
+            ]
+          }
+        ],
+        "required": false
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

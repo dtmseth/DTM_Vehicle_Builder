@@ -1,0 +1,43 @@
+{
+  "body": {
+    "groups": [
+      {
+        "label": "Forward of Cage",
+        "product_count": 16,
+        "zone_id": "forward_of_cage"
+      },
+      {
+        "label": "Front",
+        "product_count": 26,
+        "zone_id": "front"
+      },
+      {
+        "label": "Prisoner Area",
+        "product_count": 2,
+        "zone_id": "prisoner_area"
+      },
+      {
+        "label": "Rear",
+        "product_count": 13,
+        "zone_id": "rear"
+      },
+      {
+        "label": "Rear Storage Area",
+        "product_count": 10,
+        "zone_id": "rear_storage_area"
+      },
+      {
+        "label": "Roof",
+        "product_count": 21,
+        "zone_id": "roof"
+      },
+      {
+        "label": "Side",
+        "product_count": 4,
+        "zone_id": "side"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

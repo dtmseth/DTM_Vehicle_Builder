@@ -1,0 +1,56 @@
+{
+  "body": {
+    "zones": [
+      {
+        "label": "Front",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "front"
+      },
+      {
+        "label": "Rear",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "rear"
+      },
+      {
+        "label": "Side",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "side"
+      },
+      {
+        "label": "Roof",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "roof"
+      },
+      {
+        "label": "Forward of Cage",
+        "requires_attribute": "",
+        "section": "interior",
+        "zone_id": "forward_of_cage"
+      },
+      {
+        "label": "Prisoner Area",
+        "requires_attribute": "has_prisoner_compartment",
+        "section": "interior",
+        "zone_id": "prisoner_area"
+      },
+      {
+        "label": "Side Storage",
+        "requires_attribute": "has_side_storage",
+        "section": "interior",
+        "zone_id": "side_storage"
+      },
+      {
+        "label": "Rear Storage Area",
+        "requires_attribute": "",
+        "section": "interior",
+        "zone_id": "rear_storage_area"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

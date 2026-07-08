@@ -1,0 +1,128 @@
+{
+  "body": {
+    "locations": [
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "ABOVE LICENSE PLATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "LICENSE PLATE BRACKET",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "LOWER CARGO WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "LOWER LIFTGATE LIP",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "ON RUNNING BOARD",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "side"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "ON TAILGATE/LIFTGATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "REAR BUMPER",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "REAR DOOR WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_side"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "REAR INTERIOR LIGHT BAR",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "REAR LEFT ROOF",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "ROCKER PANEL",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "side"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "TAIL LIGHTS",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "UNDER TAILGATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "UPPER CARGO WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "UPPER REAR WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

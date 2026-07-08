@@ -1,0 +1,19 @@
+{
+  "body": {
+    "accessories": [],
+    "accessory_of": "",
+    "allowed_placements": [],
+    "allowed_products": [],
+    "category": "warning",
+    "label": "Warning Light",
+    "max_count": null,
+    "part_type_id": "warning_light",
+    "sequence_scope": "global",
+    "tag_ids": [],
+    "tree_positions": [],
+    "type_id": "lights",
+    "workbook_label_pattern": "{label}"
+  },
+  "handled": true,
+  "status": 200
+}

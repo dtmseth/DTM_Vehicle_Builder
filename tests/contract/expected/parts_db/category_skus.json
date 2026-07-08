@@ -1,0 +1,732 @@
+{
+  "body": {
+    "products": [
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "spotlight"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "unity",
+        "manufacturer_label": "Unity",
+        "model": "325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
+        "product_id": "unity_221000_0002",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "UNITY 325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
+            "lens_type": "",
+            "part_number": "221000-0002",
+            "price": 283.64,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "spotlight"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "unity",
+        "manufacturer_label": "Unity",
+        "model": "6\" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED",
+        "product_id": "unity_218000_0002",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "UNITY 6\" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED",
+            "lens_type": "",
+            "part_number": "218000-0002",
+            "price": 293.33,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "spotlight"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "unity",
+        "manufacturer_label": "Unity",
+        "model": "6\" Halogen Spotlight (2016 FPIU)",
+        "product_id": "unity_spotlight_2016_fpiu",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "SPOTLIGHT, DRIVER SIDE HALOGEN FOR 2016 FORD INTERCEPTOR UTILITY 6\"BLACK",
+            "lens_type": "",
+            "part_number": "211020-0002",
+            "price": 202.17,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "side_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "700 Series",
+        "product_id": "whelen_700_series",
+        "skus": [
+          {
+            "color": "red",
+            "friendly_name": "WHELEN 700 LED BRAKE/TAIL/TURN RED",
+            "lens_type": "clear",
+            "part_number": "704BTT",
+            "price": 211.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 700 LED BACK-UP LIGHT",
+            "lens_type": "",
+            "part_number": "704BU",
+            "price": 245.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "blue",
+            "friendly_name": "WHELEN 700 LIN.SUPER-LED FLASH BLU/CL",
+            "lens_type": "clear",
+            "part_number": "70B02FCR",
+            "price": 244.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "red",
+            "friendly_name": "WHELEN 700 LIN.SUPER-LED FLASH RED/CL",
+            "lens_type": "clear",
+            "part_number": "70R02FCR",
+            "price": 244.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "side_scene",
+          "rear_scene",
+          "warning_light"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "900 Series",
+        "product_id": "whelen_900_series",
+        "skus": [
+          {
+            "color": "red",
+            "friendly_name": "WHELEN 900 LIN.SUPER-LED FLASH, R/W/C",
+            "lens_type": "clear",
+            "part_number": "90RC5FCR",
+            "price": 240.56,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "white",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "feniex",
+        "manufacturer_label": "Feniex",
+        "model": "AM900 Work Light",
+        "product_id": "feniex_am900",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "FENIEX AM900 WORK LIGHT",
+            "lens_type": "",
+            "part_number": "AM900",
+            "price": 39.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "AM900 WORK LIGHT",
+            "lens_type": "",
+            "part_number": "WL-0118",
+            "price": 39.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene",
+          "side_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "EZ Scene Light",
+        "product_id": "whelen_ez_scene",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 600 EZ SCENE LT 10-30V BLACK",
+            "lens_type": "",
+            "part_number": "604SLB",
+            "price": 376.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 900 EZ SCENELIGHT 12V CHROME",
+            "lens_type": "",
+            "part_number": "904SLC",
+            "price": 651.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Field Series",
+        "product_id": "whelen_field_series",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 20\" FIELD SERIES BROW 3-LT BLK",
+            "lens_type": "",
+            "part_number": "FSB03B",
+            "price": 830.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "M9 Scene",
+        "product_id": "whelen_m9_scene",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN M9 SURFACE MT LED SCENE LT",
+            "lens_type": "clear",
+            "part_number": "M9LZC",
+            "price": 727.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "red",
+            "friendly_name": "WHELEN M9 COMBINATION RED WARN/SCENE",
+            "lens_type": "clear",
+            "part_number": "M9RCZ",
+            "price": 431.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "white",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "PAR-32",
+        "product_id": "whelen_par32",
+        "skus": [
+          {
+            "color": "red",
+            "friendly_name": "WHELEN PAR32 DRIVE/WARN FAIRING LT RB",
+            "lens_type": "clear",
+            "part_number": "P32F2RB",
+            "price": 750.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "blue",
+            "tertiary_color": "white",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "PAR-46",
+        "product_id": "whelen_par46",
+        "skus": [
+          {
+            "color": "purple",
+            "friendly_name": "WHELEN PAR-46 8 DEG LED SPOT LT 12V",
+            "lens_type": "clear",
+            "part_number": "P46FLC",
+            "price": 314.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "amber",
+            "tertiary_color": "red",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "purple",
+            "friendly_name": "WHELEN PAR-46 SUPER-LED SPOT LT 12V",
+            "lens_type": "clear",
+            "part_number": "P46SC",
+            "price": 314.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "amber",
+            "tertiary_color": "red",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene",
+          "side_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Perimeter Enhancement Light",
+        "product_id": "whelen_pel2",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "PERIMETER LIGHT BLACK",
+            "lens_type": "",
+            "part_number": "PEL2B",
+            "price": 265.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Pioneer Micro",
+        "product_id": "whelen_pioneer_micro",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN MICRO PIONEER BAIL MT 12V BLK",
+            "lens_type": "",
+            "part_number": "MPBB",
+            "price": 528.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN MICRO PIONEER LP PED MT 12V BK",
+            "lens_type": "",
+            "part_number": "MPPBBS",
+            "price": 750.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Pioneer Nano",
+        "product_id": "whelen_pioneer_nano",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN NANO-6 PIONEER BAIL MT 12V BLK",
+            "lens_type": "",
+            "part_number": "NP6BB",
+            "price": 336.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Pioneer Plus",
+        "product_id": "whelen_pioneer_plus",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN PIONEER+ DUAL RECESS MT WHT",
+            "lens_type": "clear",
+            "part_number": "PBH203",
+            "price": 435.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN PIONEER+ DUAL FLOOD 12V WHT",
+            "lens_type": "clear",
+            "part_number": "PFH2",
+            "price": 1871.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Pioneer SlimLine",
+        "product_id": "whelen_pioneer_slimline",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN SINGLE SL PIONEER BAIL MT 12V",
+            "lens_type": "",
+            "part_number": "PSL1BB",
+            "price": 528.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN DUAL SL PIONEER BAIL MT 12V BK",
+            "lens_type": "",
+            "part_number": "PSL2BB",
+            "price": 1074.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "spotlight"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "unity",
+        "manufacturer_label": "Unity",
+        "model": "SPOTLIGHT 330PL-0002",
+        "product_id": "unity_330pl_0002",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "UNITY SPOTLIGHT 330PL-0002",
+            "lens_type": "",
+            "part_number": "330PL-0002",
+            "price": 145.2,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene",
+          "rear_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Summit Flood",
+        "product_id": "whelen_summit_flood",
+        "skus": [
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 9\" SUMMIT WIDE FLOOD W/MKR BLK",
+            "lens_type": "clear",
+            "part_number": "S091MB",
+            "price": 539.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 16\" SUMMIT WIDE FLOOD W/MKR BLK",
+            "lens_type": "clear",
+            "part_number": "S161MB",
+            "price": 1032.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "white",
+            "friendly_name": "WHELEN 30\" SUMMIT W/ MARKER BLK",
+            "lens_type": "clear",
+            "part_number": "S30MB",
+            "price": 1681.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "amber",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "front_scene"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "whelen",
+        "manufacturer_label": "Whelen",
+        "model": "Wing Plow Light",
+        "product_id": "whelen_wing_plow_light",
+        "skus": [
+          {
+            "color": "amber",
+            "friendly_name": "WHELEN WING PLOW OPERATING LT. AMBER",
+            "lens_type": "clear",
+            "part_number": "WPLOW1A",
+            "price": 274.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "fits_part_types": [
+          "spotlight"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "unity",
+        "manufacturer_label": "Unity",
+        "model": "X-LED 6\" Spotlight",
+        "product_id": "unity_xled_spotlight",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "X-LED 6\" SPOTLIGHT BLACK (X335) (S14) LH",
+            "lens_type": "",
+            "part_number": "X218016-0002",
+            "price": 375.61,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

@@ -1,0 +1,21 @@
+{
+  "body": {
+    "part_type_count": 3,
+    "zones": [
+      {
+        "label": "Front",
+        "zone_id": "front"
+      },
+      {
+        "label": "Side",
+        "zone_id": "side"
+      },
+      {
+        "label": "Rear",
+        "zone_id": "rear"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}
