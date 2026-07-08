@@ -1043,6 +1043,7 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-07-07 | Kit estimate behavior mirrors QuickBooks | One QB item → one line; QB bundle/group → component lines. Kit support exists only to represent kits present in QB inventory — no app-invented kit semantics. Right-sizes the kit-SKU phase. |
 | 2026-07-07 | Sibling parts-manager app deferred; starts read-only if/when built | The parts_db repository seam (importable without the GUI) is the only prerequisite and lands anyway, so deferral costs nothing. No speculative Graph-capable writer adapter for a second app. |
 | 2026-07-07 | SKU-grid save path frozen until curation queue (~673 unhomed products) is complete | Owner declares curation done before Stage C2 touches the save path; full backup checkpoint precedes it. Non-save-path stages proceed independently. |
+| 2026-07-07 | Curation §B owner rulings recorded — `tools/curation/OPEN_QUESTIONS.md` §C | Majors: scene collapse YES (gated on picker location-pool fix per LEDGER); zone-brackets fold into `bracket` with per-product compatibility; ChargeGuard gets own `power_timer` type; dtm ≡ 5-0 Fab; motorcycle builds in scope, trailers/plows out; consumables all deleted. Future-feature flags logged there: build-level "computer used" field, per-build power-timeout record, app-level services (decals/strip), traffic-advisor configurator. |
 
 ---
 

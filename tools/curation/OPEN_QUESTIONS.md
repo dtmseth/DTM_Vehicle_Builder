@@ -134,3 +134,96 @@ audit §2.1) and the `specify` placeholder brand (2 antenna styles).
 1. 5_0_fab_dtm_tube_chase — what is a "tube chase" ($75)?
 2. feniex_fenflas — pending F20; if research failed, what did DTM sell as "FENIEX" $47.90?
 3. qb_unassigned_rbe13421 air pressure switch — pending F28; which install used it?
+
+---
+
+## C. Owner rulings (2026-07-07, recorded by Fable session with owner in-chat)
+
+Transcribe these into the plan files; regenerate REVIEW_SHEET.md afterward.
+
+### C1. Taxonomy (B1)
+1. **Scene collapse: YES** → single `scene_light`, placement decides zone. **SEQUENCING GATE
+   (from LEDGER.md capability notes): the picker's location pool must get warning_light-style
+   special-casing for the collapsed home BEFORE (or with) the data migration** — collapsing
+   data first would zero-out scene placements exactly like interior today. Plans stay on the
+   three current types; collapse is a separate post-fix migration.
+2. **Zone-named brackets: YES, fold into `bracket`** — with a hard constraint: bracket
+   compatibility is **per-product** (not every bracket fits every bracket-capable product).
+   Preserve/populate per-product links (`compatible_part_ids` / accessory gating); the picker
+   must filter brackets by the parent product. Westin light tubes = push-bumper accessories.
+3. **control_head vs light_controller split: CONFIRMED** (different things). Un-gates
+   feniex_c_4017.
+4. **Havis C-EB → `special_face_plate`**: confirmed.
+5. **`spotlight` part_type: CONFIRMED.**
+6. **Traffic advisors: stay `warning_light`.** FUTURE FEATURE (recorded): TA configurator —
+   DTM custom-builds them per lighthead; needs real setup work when the time comes.
+7. **Transfer kits: own home CONFIRMED** (`front_partition_transfer_kit`). Owner pushback on
+   RP47/SP47 ("don't look like TK parts"): evidence says TK47's own description requires
+   RP47 (recess panel) + SP47 (lower extension panels) sold separately — i.e. vehicle-specific
+   filler panels used during a partition transfer. KEEP at medium confidence, present the
+   full descriptions to the owner at review time for final veto. Owner's domain note: a
+   transfer kit is a bracket set that mounts old/outdated partition panels in a new vehicle.
+8. **ChargeGuard: NEW part_type** — it's an electronics power timer, not a battery tender or
+   vehicle interface (suggest `power_timer`, label "Power Timer / ChargeGuard"). FUTURE
+   FEATURE (recorded): per-build power-shutdown record — capture the timeout setting whether
+   it comes from a CenCom Core or a ChargeGuard; rule of thumb: a build without a Core
+   probably needs a ChargeGuard.
+9. **setina_pb10 = `pit_bar` (workbook was right).** Owner definition for the guide: the pit
+   bar is the lower bars; the wing wrap is the headlight bar that mounts TO the pit bar.
+
+### C2. Catalog scope (B2)
+1. Trailers: **OUT** (13 JB Lund products — QB-only; remove from builder catalog).
+2. Snow plows: **OUT.**
+3. Tonneau cover: **KEEP** (BAK manufacturer needed).
+4. Computers: **KEEP the capability** (Getac stays; billed-or-unbilled decided per job — may
+   supply more computers in future). FUTURE FEATURE (recorded): build-level "which computer
+   does this build use?" field even when not purchased — it determines the dock; outside the
+   Part Picker's scope (project/build-info level).
+5. Motorcycle builds: **YES DTM does them** — keep Whelen M4B6-family products + home.
+6. Step bars: **CREATE type, named `running_boards_nerf_bars`** (label "Running Boards /
+   Nerf Bars"), not "step_bars".
+7. Services: **powder coating + remote-start labor OUT of parts_db.** FUTURE (recorded):
+   app-level services (decals, vehicle strip, …) wanted in the app but not necessarily in
+   parts_db — design later, not a parts question.
+
+### C3. Manufacturers (B3)
+- **dtm ≡ 5-0 Fab — one and the same**: merge; 5-0 Fab is the real brand, dtm_* products
+  re-branded to it.
+- CREATE: Streamlight, Pelican, Momento, Getac, BAK Industries, Acari, Tufloc.
+- `specify` placeholder: products are `specify_whip_style` / `specify_cylinder_style` —
+  antenna STYLE placeholders (smell like workbook-dropdown artifacts, not real products).
+  Present both product records to the owner at review; likely outcome is delete-or-restyle,
+  not a new manufacturer.
+
+### C4. Consumables (B4)
+**DELETE ALL from catalog**: seat bolts, H35SN12 bulb, foam pail, PFP2AP1 pole flood, 9M
+legacy lens, both $0 artifacts, AND the Fire Ninja vests.
+
+### C5. Parent-shape (B5)
+1. 2250 endcaps: **CREATE the WeCanX 2250 Build-A-Bar parent product** and parent them
+   (owner: endcaps belong to their determinable parent bar; F7 determined it's the 2250).
+   Owner-directed exception to the no-speculative-products rule.
+2. CenCom Carbide: **DELETE Carbide parts** (CC5K2 install kit) — not used on new builds.
+3. Valor 44" dome service kit: **DELETE** — not used in new builds.
+4. Havis PT-A-409: **DELETE** — not used on regular builds.
+5. CCTV8 monitor: **DELETE** — not needed (Trailblazer thermal parents stay, untouched).
+
+### C6. Merges (B6): **APPROVE ALL** — Brother power-cable twin, Ethernet lengths as SKUs of
+one product, Feniex Fusion sticks as one product with size SKUs, FSMA as amber SKU of
+fusion_surface_mount, bundle named "Valor SSP Package".
+
+### C7. Owner knowledge (B7)
+1. **Tube chase (5-0 Fab, $75)**: the wiring tunnel in PIUs between the rear seats and the
+   center console; factory-stock exists but DTM fabricates its own. Home per the
+   classification guide (console-adjacent); record the definition in the guide.
+2. **FENFLAS = Feniex 4-output flasher** (confirms F20's H-2220 lead) → flasher accessory.
+3. **RBE13421: DELETE** — not used to build cars.
+
+### C8. Cross-cutting sequencing (with LEDGER.md, commit 989550c)
+- **F-004** (text-mode + zero options names parts "Part") is the first code fix — it blocks
+  most curated destinations. Sonnet-fixable, after the Step 1 pins land.
+- **F-005 WARNING: picker Edit mode is a data-loss button** (rewrites name/SKU/qty/colors).
+  Nobody uses ≡ Edit on picker parts until it's fixed.
+- Scene collapse migration is **gated on the scene/interior location-pool fix** (C1.1).
+- Plan applies (post-transcription) are NOT gated on any code fix — plans use today's
+  taxonomy; collapse/migrations come after.
