@@ -7,9 +7,11 @@
   "merge": [
     {"target_id": "feniex_fusion_stick", "model": "Fusion Light Stick", "manufacturer_id": "feniex", "fits_part_types": ["warning_light"], "tag_ids": ["light"],
      "sources": ["feniex_fn_0216", "feniex_fn_0416d", "feniex_fn_0616", "feniex_fn_0616d", "feniex_fn_0816", "feniex_fn_8816ex", "feniex_fusion_a_800"],
-     "_confidence": "medium",
-     "_why": "Fusion 200/400/600/800/Rocker sticks = size/color variants of one Fusion stick line (one-product-per-model convention). Colored warning sticks → the single warning_light home; placement decides front/rear",
-     "_question": "OK folding all Fusion stick sizes into one product? Alternative: one product per size class"},
+     "_confidence": "high",
+     "_why": "owner ruling C6: APPROVED — Fusion 200/400/600/800/Rocker sticks fold into one product as size SKUs (one-product-per-model convention). Colored warning sticks → the single warning_light home; placement decides front/rear"},
+    {"target_id": "feniex_fusion_surface_mount", "sources": ["feniex_fusion_surface_mount", "feniex_fsma"], "_confidence": "high",
+     "_why": "owner ruling C6: APPROVED — FSMA folds into feniex_fusion_surface_mount as the amber SKU. fits_part_types/tag_ids restated below since merge drops accessory fields unless restated (curate.py quirk) — home/tags themselves fall back to the existing base product either way, restated here for clarity.",
+     "fits_part_types": ["warning_light"], "tag_ids": ["light"]},
     {"target_id": "feniex_cannon_hideaway", "model": "Cannon Hide-A-Way", "manufacturer_id": "feniex", "fits_part_types": ["warning_light"], "tag_ids": ["light"],
      "sources": ["feniex_chw", "feniex_h_2219", "feniex_h_2219_a", "feniex_h_2219_ba", "feniex_h_2219_bw", "feniex_h_2219_ra", "feniex_h_2219_rw", "feniex_h_2219_w"],
      "_confidence": "high",
@@ -21,7 +23,7 @@
   ],
   "set_home": [
     {"product_id": "feniex_c_4010", "fits_part_types": ["light_controller"], "_confidence": "high", "_why": "4200 mini controller — lighting controller"},
-    {"product_id": "feniex_c_4017", "fits_part_types": ["control_head"], "_confidence": "medium", "_why": "Typhoon full-function light+siren controller — the operator control head (soundoff_etsa461hpp_ext precedent)", "_question": "control_head vs light_controller split: controller the officer touches → control_head, module in the trunk → light_controller. Agree?"},
+    {"product_id": "feniex_c_4017", "fits_part_types": ["control_head"], "_confidence": "high", "_why": "owner ruling C1.3: control_head vs light_controller split CONFIRMED (officer-touched controller → control_head, trunk module → light_controller) — un-gates this entry. Typhoon full-function light+siren controller is the operator control head (soundoff_etsa461hpp_ext precedent)"},
     {"product_id": "feniex_c_4014", "fits_part_types": ["siren_speaker"], "_confidence": "medium", "_why": "Storm Pro 100W siren (amp)"},
     {"product_id": "feniex_c_5017", "fits_part_types": ["siren_speaker"], "_confidence": "medium", "_why": "Typhoon handheld 100W siren"},
     {"product_id": "feniex_s_2009", "fits_part_types": ["siren_speaker"], "_confidence": "high", "_why": "Triton 100W speaker"},
@@ -29,9 +31,8 @@
     {"product_id": "feniex_fml", "fits_part_types": ["roof_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "feniex.com sells the Fusion Mini under its 'Mini Lightbars' category (12\"/14\", magnet mount standard, permanent bracket optional) — a roof mini bar; Feniex's dash/deck products are the separate Fusion Interior Lightbar line. Mini bars skip the config panel per the lightbar model (EVIDENCE.md F19)"},
     {"product_id": "feniex_q_0620", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "medium", "_why": "Quad 600 lightstick R/B/W/A — colored stick, own model line"},
     {"product_id": "feniex_qt_0820_sd", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "medium", "_why": "Quantum 800 dual-color stick — own model line"},
-    {"product_id": "feniex_fsma", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "Fusion surface mount amber — belongs with feniex_fusion_surface_mount", "_question": "prefer a merge into feniex_fusion_surface_mount as the amber SKU? (kept set_home to avoid clobbering your reviewed merge from warning_fascia.json)"},
     {"product_id": "feniex_fn_4016", "fits_part_types": ["bracket"], "_confidence": "medium", "_why": "Feniex mounting bracket, $5 — generic Fusion mounting hardware (distinct from FN-4316 rotating bracket)"},
-    {"product_id": "feniex_fenflas", "fits_part_types": [], "_confidence": "low", "_why": "QB description is literally just 'FENIEX', $47.90. Research lead (not proof): Feniex sells exactly ONE flasher product — the 4X Flasher H-2220 (4-output, $59.99 MSRP, so $47.90 is plausible dealer cost), and 'FENFLAS' reads as FENiex FLASher. No product named FENFLAS exists on feniex.com (EVIDENCE.md F20)", "_question": "confirm: is FENFLAS the Feniex 4X Flasher (H-2220)? If yes → headlight_flasher home; if unknowable, delete → OPEN_QUESTIONS B7.2"}
+    {"product_id": "feniex_fenflas", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "owner ruling C7.2: FENFLAS = Feniex 4-output flasher (confirms F20's H-2220 lead) — headlight_flasher home, same shape as the other flasher modules (whelen_ulf44, whelen_plf46)"}
   ],
   "set_accessory": [
     {"product_id": "feniex_fn_4016", "accessory_category": "bracket_mount", "accessory_of_products": ["feniex_fusion_surface_mount", "feniex_fusion_stick"], "_confidence": "medium"},
