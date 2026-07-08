@@ -33,9 +33,8 @@
       "category": "scene",
       "location_mode": "placement",
       "tree_positions": [{"section": "exterior", "zone": "front"}],
-      "_confidence": "medium",
-      "_why": "Unity 6\" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules.",
-      "_question": "OK to give spotlights their own home (category scene, white)? Alternative is folding them into front_scene like the PAR-46 call."
+      "_confidence": "high",
+      "_why": "owner ruling C1.5: `spotlight` part_type CONFIRMED. Unity 6\" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules."
     },
     {
       "part_type_id": "flashlight",
@@ -54,29 +53,18 @@
       "location_mode": "text",
       "location_options": ["ON DOCKING STATION"],
       "tree_positions": [{"section": "interior", "zone": "forward_of_cage"}],
-      "_confidence": "medium",
-      "_why": "Getac S410 laptop is sold as hardware (queue). Homing it under docking_station would misstate what it is.",
-      "_question": "Do you want sold computers in the catalog as their own slot, or treated as an unbilled/agency line like other agency-supplied electronics?"
+      "_confidence": "high",
+      "_why": "owner ruling C2.4: KEEP the capability — Getac stays; billed-or-unbilled is decided per job. Getac S410 laptop is sold as hardware (queue); homing it under docking_station would misstate what it is. FUTURE FEATURE (recorded, out of Part Picker scope): build-level 'which computer does this build use?' field even when not purchased, since it determines the dock."
     },
     {
-      "part_type_id": "step_bars",
-      "label": "Step / Nerf Bars",
+      "part_type_id": "running_boards_nerf_bars",
+      "label": "Running Boards / Nerf Bars",
       "type_id": "structural",
       "location_mode": "text",
       "location_options": ["DRIVER AND PASSENGER SIDE"],
       "tree_positions": [{"section": "exterior", "zone": "side"}],
-      "_confidence": "medium",
-      "_why": "Westin R5 nerf steps (queue). Exterior structural side hardware; nothing existing fits."
-    },
-    {
-      "part_type_id": "trailer",
-      "label": "Utility Trailer",
-      "type_id": "extras",
-      "location_mode": "text",
-      "tree_positions": [{"section": "exterior", "zone": "rear"}],
-      "_confidence": "low",
-      "_why": "JB Lund aluminum utility trailers + rack/ramp/tie-down add-ons (13 queue products, real revenue incl. $6–7k units).",
-      "_question": "Do trailers belong in the vehicle-builder catalog at all, or should they stay QB-only (delete from parts_db)? They never appear on a build sheet."
+      "_confidence": "high",
+      "_why": "owner ruling C2.6: CREATE this type, named `running_boards_nerf_bars` (label 'Running Boards / Nerf Bars'), not 'step_bars'. Westin R5 nerf steps (queue). Exterior structural side hardware; nothing existing fits."
     },
     {
       "part_type_id": "prisoner_transport_insert",
@@ -89,26 +77,35 @@
       "_why": "Havis PT-series van transport inserts (2 queue products, $6k–$23k). Not a kennel, not a partition — a whole compartment system."
     },
     {
-      "part_type_id": "snow_plow",
-      "label": "Snow Plow",
-      "type_id": "structural",
-      "location_mode": "text",
-      "location_options": ["FRONT MOUNT"],
-      "tree_positions": [{"section": "exterior", "zone": "front"}],
-      "_confidence": "medium",
-      "_why": "SnowEx Power Plow complete kit + deflector (2 queue products, $9.8k unit).",
-      "_question": "Confirm plows are catalog-worthy (municipal truck builds) rather than QB-only."
-    },
-    {
       "part_type_id": "tonneau_cover",
       "label": "Tonneau / Bed Cover",
       "type_id": "structural",
       "location_mode": "text",
       "location_options": ["TRUCK BED"],
       "tree_positions": [{"section": "exterior", "zone": "rear"}],
-      "_confidence": "low",
-      "_why": "BAK G2 hard folding tonneau (1 queue product).",
-      "_question": "Single product — worth a slot, or fold into step_bars as a generic 'truck exterior accessory' home? Also: BAK Industries manufacturer doesn't exist yet (create via grid before re-branding)."
+      "_confidence": "high",
+      "_why": "owner ruling C2.3: KEEP (BAK manufacturer needed). BAK G2 hard folding tonneau (1 queue product). Still gated on BAK Industries being created in the manufacturers grid before the re-brand in plan 12 applies.",
+      "_question": "BAK Industries manufacturer doesn't exist yet — create via grid before re-branding qb_unassigned_226130."
+    },
+    {
+      "part_type_id": "motorcycle_box",
+      "label": "Motorcycle Box / Mount",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["MOTORCYCLE MOUNT"],
+      "tree_positions": [{"section": "exterior", "zone": "rear"}],
+      "_confidence": "medium",
+      "_why": "owner ruling C2.5: DTM does motorcycle builds — keep the Whelen M4B6-family products (no-spill battery, ground kit, box, separator, adapter) and give them a home. No existing part_type fits a motorcycle-mount accessory family; homes the 5 products set_home'd in 21_whelen.json."
+    },
+    {
+      "part_type_id": "power_timer",
+      "label": "Power Timer / ChargeGuard",
+      "type_id": "equipment",
+      "location_mode": "text",
+      "location_options": ["UNDER DASH", "CARGO AREA ELECTRONICS"],
+      "tree_positions": [{"section": "interior", "zone": "forward_of_cage"}],
+      "_confidence": "high",
+      "_why": "owner ruling C1.8: NEW part_type — ChargeGuard is an electronics power timer, not a battery tender or vehicle interface. Homes havis_cg_x (ChargeGuard-Select) in 20_havis.json. FUTURE FEATURE (recorded, not implemented here): per-build power-shutdown record capturing the timeout setting whether it comes from a CenCom Core or a ChargeGuard; rule of thumb — a build without a Core probably needs a ChargeGuard."
     }
   ]
 }
