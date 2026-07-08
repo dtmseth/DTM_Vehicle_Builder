@@ -404,4 +404,150 @@ working once options exist.
    hardening (bulk expect-guards, grid refresh).
 8. **FINDING-008** (NEEDS-DESIGN) — standalone-accessory UX (decide before
    closing the leak).
+
+---
+
+## Session 2026-07-08 — §8.1 Step 0 (audit workspace instrumentation)
+
+**Scope:** Phase A tooling only — `tools/audit_scan.py` (new, generates
+`MANIFEST.md`), plus folding in findings already surfaced by prior design
+sessions but never formally ledgered: the two named findings from
+`PARTS_DB_REPOSITORY_SPEC.md` §1.4 (F-1, F-4), the bandit first-pass triage,
+the `DTM_CLOUD`/packaged-app path-injection gap from `UI_SMOKE_SPEC.md` §2.1,
+and the Step 2 import-linter baseline (`pyproject.toml`). **Method:**
+docs-first (spec + GOTCHAS.md), then direct tool runs (`bandit`,
+`audit_scan.py`) against the repo as it stands post-curation (13 curation
+plans applied this session, see git log — parts_db.json product count 906→779).
+Zero production-code changes.
+
+### FINDING-018: 60s cloud sync never invalidates the `PartsDbService` read cache (spec F-1)
+- **Location:** `app/server.py::_run_sync_cycle` -> `sync_shared_settings_at_startup`
+  (writes `/Settings/parts_db.json` into the workspace config dir and bumps
+  `data_version`); `app/services/parts_db_service.py` (singleton cache, no
+  subscriber to the sync event)
+- **Category:** fragile · **Severity:** MEDIUM — multi-device correctness, not
+  data loss (cache heals on next local mutation or process restart)
+- **Status:** SUSPECTED (design-session finding, not re-reproduced live this
+  session — reproduction would require two cloud-connected devices)
+- **Mechanism:** a teammate's parts_db edit lands on this device's disk via the
+  60s sync loop, but the in-memory `PartsDbService` cache (picker, SKU grid,
+  estimates all read through it) is never told to `invalidate()`. Stale reads
+  persist until something else happens to call it.
+- **Disposition:** SONNET-FIXABLE, scheduled as Stage C4 of the Step 4
+  parts-DB repository extraction (`PARTS_DB_REPOSITORY_SPEC.md` §4 C4) — the
+  repository owns invalidation as a first-class concern; fix is a flagged
+  behavior improvement (§3.2 opt-in diff, own commit + ROADMAP decision-log
+  entry), not bundled into the extraction's mechanical move.
+
+### FINDING-019: GOTCHAS.md #21 claims parts_db isn't wired into production reads — false, doc-drift (spec F-4)
+- **Location:** `docs/GOTCHAS.md` #21 ("`parts_db.json` is populated but not
+  wired into production reads (Phase 3)... generator, planner, manifest
+  editor, rule engine, and excel reader still drive off `workbook_rules.json`
+  / `parts_library.json` / `vehicle_layouts.json` / `part_catalog.json`")
+- **Category:** doc-drift · **Severity:** LOW (misleads future editors, no
+  runtime effect) · **Status:** CONFIRMED — `planning/planner.py:152` lazy-
+  imports `app.services.parts_db_service` as a live catalog fallback (the
+  baselined upward import in the layer-lint contract below), and the picker,
+  SKU grid, and QB estimate flows all read parts_db in production today
+  (PARTS_DB_AND_PICKER.md "SHIPPED" sections; Step 3 picker cluster shipped
+  2026-07-01).
+- **Disposition:** doc fix, not code — correct GOTCHAS #21 when the Step 4
+  parts-DB repository extraction lands (three-way reconciliation rule, roadmap
+  §7); until then the entry stays as a known-stale marker rather than being
+  silently deleted, since dispositioning docs outside a landing change risks
+  losing the "why" context the extraction session needs.
+
+### FINDING-020: bandit first-pass triage — 51 low / 4 medium / 1 high (report-only, `checks.yml` doesn't fail the build on findings)
+- **Location:** `.github/workflows/checks.yml` `bandit` job (`bandit -r
+  src/dtm_buildsheet -f txt`, no `-ll`/exit-code gate — Phase A wired it
+  report-only per roadmap §6 "standing tooling, not one-off effort")
+- **Category:** security · **Severity:** see breakdown below · **Status:**
+  CONFIRMED (`.venv/bin/bandit -r src/ -q` run this session, matches the
+  roadmap's recorded 51L/4M/1H exactly)
+- **High (1):** `B324:hashlib` — `paths.py:109` `_md5()` uses MD5
+  (`hashlib.md5`) for a **file-change-detection checksum** in
+  `_copy_missing_tree` (bundled-asset seeding), not for anything
+  security-sensitive (no secrets, no integrity-critical verification). Fix is
+  trivial (`usedforsecurity=False` kwarg, Python 3.9+) but not urgent —
+  ledgered as SONNET-FIXABLE, not a hotfix per §6 triage (no exploitable
+  boundary).
+- **Medium (4):** `B608:hardcoded_sql_expressions` — `app/adapters/quickbooks/
+  api_client.py:115,138,169,201`, all string-built QB query filters (e.g.
+  `WHERE Id = '{id}'`-shaped QBO query-language strings, not SQL against a
+  local DB — QuickBooks Online's query API has no separate parameterized-query
+  mechanism in the REST surface this client uses). Confidence is Low per
+  bandit's own scoring (pattern-matched, not data-flow-verified). Needs a
+  boundary-specific answer (do the interpolated values come only from
+  internal IDs, or can user input reach them?) — **NEEDS-DESIGN**, scoped to
+  the §6 QuickBooks OAuth/API boundary session, not fixed here.
+- **Low (51):** not itemized per-line in this pass (Phase B ledger material
+  per roadmap §8 Phase C exit gate: "no open high-severity... retirement-slated
+  ones dispositioned"); dominated by `try/except/pass` (`B110`) and subprocess/
+  shell patterns typical of a desktop packaging codebase. One sampled:
+  `ppt_helpers.py:217` swallows an exception around optional logo placement
+  (cosmetic-failure-tolerant by design, not a hidden bug — still worth a
+  narrower `except` when that function is next touched).
+- **Disposition:** ledgered for Phase B/C triage per roadmap §8 (Phase C
+  handles boundary/crash findings; legacy-slated locations are fixed-by-D, not
+  patched twice — none of these four boundary/high findings sit in a
+  retirement-slated module, so none qualify for that exemption).
+
+### FINDING-021: `cloud_config_path()` reads a module-level constant, not the injected `AppPaths` — hermetic-workspace isolation gap outside test/smoke code
+- **Location:** `app/adapters/cloud/config.py::cloud_config_path()` (reads
+  `WORKSPACE_DIR` from `paths.py` module scope); `paths.py`
+  `ensure_workspace()` (seeds `cloud_config.json` from
+  `resources/default_data/` into any fresh workspace — a deliberate
+  teammate-first-launch convenience, confirmed present at
+  `src/dtm_buildsheet/resources/default_data/cloud_config.json`)
+- **Category:** doc-drift / fragile (architecture-rule violation: `AppPaths`
+  is the documented dependency-injection seam for all path-scoped state,
+  `ARCHITECTURE.md`'s ports-and-adapters framing implies cloud config should
+  flow through it too) · **Severity:** MEDIUM — no production bug (the live
+  app always wants the module-level workspace), but it is a real trap for any
+  future code assuming `AppPaths` injection is sufficient for isolation
+- **Status:** CONFIRMED — this exact gap is what forced `UI_SMOKE_SPEC.md`
+  §2.1 to add `DTM_CLOUD=0` as a *mandatory* isolation layer on top of the
+  hermetic `AppPaths` workspace (a hermetic `AppPaths` alone does **not**
+  disable cloud); documented in the smoke-harness design but never entered as
+  a ledger finding in its own right.
+- **Disposition:** NEEDS-DESIGN if ever "fixed" (making `cloud_config_path()`
+  take an `AppPaths` would touch every call site and the seeding behavior is
+  intentional product behavior, not a bug) — for now this is a **documented
+  constraint**, not a defect: any future harness/test code touching cloud
+  config must use the three-layer isolation pattern (`UI_SMOKE_SPEC.md`
+  §2.2: env + throwaway workspace + netguard), never `AppPaths` substitution
+  alone. No fix scheduled; ledgered so the constraint survives past this
+  session instead of living only in one design doc.
+
+### FINDING-022: Step 2 import-linter baseline — five grandfathered violation clusters (inventory, no new action)
+- **Location:** `pyproject.toml` `[tool.importlinter]` (shipped commit
+  `6d0e699`, verified still current this session)
+- **Category:** legacy / fragile · **Severity:** tracked per-entry, none newly
+  discovered · **Status:** CONFIRMED (read directly from the live contracts)
+- **Layers contract** (`ignore_imports`, layered-core): `planning.planner ->
+  app.services.parts_db_service` (upward; retires at Step 4 repository
+  extraction), `planning.planner -> config.loader` (retires at Step 4/6),
+  `planning.planner -> config_loader` shim (retires at Step 6, also listed
+  below), `inputs.project_drafts -> app.services.shared_work_service` and
+  `inputs.project_entry -> app.services.shared_work_service` (both: inputs→app
+  cloud-mirroring upward dependency, retirement scheduled as a Phase E finding
+  via the Step 7 breadth-audit ledger — no extraction step currently owns it).
+- **Forbidden-shim contract**: `__main__ -> gui_server` (retires Step 6c);
+  `generator -> config_loader/input_reader/planner` (retires Step 6a);
+  `template_builder -> config_store` (retires Step 6b); `app.services.
+  generation_service -> input_reader` (retires Step 6a); `planning.planner ->
+  config_loader` (retires Step 6, duplicate entry with the layers contract
+  above — same underlying import, two contracts flag it).
+- **External-I/O contract**: `app.services.exports_upload_service -> requests`
+  and `app.services.build_state_service -> requests` (both call Graph/HTTP
+  directly instead of going through an `app.adapters` port; Phase E findings
+  via Step 7 ledger, no extraction step currently owns either).
+- **Disposition:** no action this session — this entry exists so the
+  baseline's current membership is captured in the findings ledger (not only
+  in `pyproject.toml` comments), satisfying the roadmap's request to fold
+  "Phase E lint-baseline entries" into `LEDGER.md`. The baseline is
+  shrink-only and self-enforcing (import-linter errors on unmatched ignores);
+  each entry's retiring step is unchanged from Step 2's landing commit.
+
+---
 9. **FINDING-009, 011, 013, 015, 016, 017** — Pass-2 / doc hygiene batch.
