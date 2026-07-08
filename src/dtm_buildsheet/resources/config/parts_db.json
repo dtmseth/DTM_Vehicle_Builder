@@ -14437,7 +14437,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "unity_218000_0002",
+        "unity_221000_0002"
+      ]
     },
     "gamber_johnson_19740": {
       "manufacturer_id": "gamber_johnson",
@@ -15020,8 +15025,12 @@
     "unity_218000_0002": {
       "manufacturer_id": "unity",
       "model": "6\" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "spotlight"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -15045,8 +15054,12 @@
     "unity_221000_0002": {
       "manufacturer_id": "unity",
       "model": "325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "spotlight"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -15317,8 +15330,12 @@
     "unity_330pl_0002": {
       "manufacturer_id": "unity",
       "model": "SPOTLIGHT 330PL-0002",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "fits_part_types": [
+        "spotlight"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -15852,131 +15869,6 @@
       ],
       "reviewed": false
     },
-    "weather_tech_4412281im": {
-      "manufacturer_id": "weather_tech",
-      "model": "HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2022 CHEVY TRAVERSE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "4412281IM",
-          "friendly_name": "WEATHERTECH HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2022 CHEVY TRAVERSE",
-          "qb_item_id": "140",
-          "qb_sku": "",
-          "qb_unit_price": 138.95,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 138.95,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "weather_tech_4416321im": {
-      "manufacturer_id": "weather_tech",
-      "model": "HP DRIVER AND PASSNEGER FRONT FLOOR LINERS FOR 2021+ CHEVY TAHOE",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "4416321IM",
-          "friendly_name": "WEATHERTECH HP DRIVER AND PASSNEGER FRONT FLOOR LINERS FOR 2021+ CHEVY TAHOE",
-          "qb_item_id": "141",
-          "qb_sku": "",
-          "qb_unit_price": 138.95,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 138.95,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "weather_tech_4417161im": {
-      "manufacturer_id": "weather_tech",
-      "model": "HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2020+ FORD EXPLORER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "4417161IM",
-          "friendly_name": "WEATHERTECH HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2020+ FORD EXPLORER",
-          "qb_item_id": "142",
-          "qb_sku": "",
-          "qb_unit_price": 138.95,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 138.95,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "weather_tech_44697_1_4im": {
-      "manufacturer_id": "weather_tech",
-      "model": "FIRST AND SECOND ROW FOR F150 -CREW CAB -BENCH SEATING",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "44697-1-4IM",
-          "friendly_name": "WEATHERTECH FIRST AND SECOND ROW FOR F150 -CREW CAB -BENCH SEATING",
-          "qb_item_id": "143",
-          "qb_sku": "",
-          "qb_unit_price": 248.9,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 248.9,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "weather_tech_449301im": {
-      "manufacturer_id": "weather_tech",
-      "model": "DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2026 DODGE DURANGO",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "449301IM",
-          "friendly_name": "WEATHERTECH DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2026 DODGE DURANGO",
-          "qb_item_id": "144",
-          "qb_sku": "",
-          "qb_unit_price": 131.95,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 131.95,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "qb_unassigned_46096": {
       "manufacturer_id": "qb_unassigned",
       "model": "J CASE FUSE MODULE",
@@ -16081,7 +15973,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "go_rhino_pushbumper"
+      ]
     },
     "westin_500_0238": {
       "manufacturer_id": "westin",
@@ -16102,56 +15998,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 366.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "go_rhino_5165a_4l": {
-      "manufacturer_id": "go_rhino",
-      "model": "HEAVY-DUTY ALUMINUM TEXTURED PUSHBUMPER FOR 2015-2020 CHEVY TAHOE FOR FOUR LIGHT MASK INSERT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "5165A-4L",
-          "friendly_name": "GO RHINO HEAVY-DUTY ALUMINUM TEXTURED PUSHBUMPER FOR 2015-2020 CHEVY TAHOE FOR FOUR LIGHT MASK INSERT",
-          "qb_item_id": "154",
-          "qb_sku": "",
-          "qb_unit_price": 330.75,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 330.75,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "go_rhino_5165t_4l61": {
-      "manufacturer_id": "go_rhino",
-      "model": "PUSHBUMPER 2015+ CHEVY TAHOE PPV, CUTOUT FOR 4 WHELEN ION LIGHTS, TEXTURED BLACK",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "5165T-4L61",
-          "friendly_name": "GO RHINO PUSHBUMPER 2015+ CHEVY TAHOE PPV, CUTOUT FOR 4 WHELEN ION LIGHTS, TEXTURED BLACK",
-          "qb_item_id": "155",
-          "qb_sku": "",
-          "qb_unit_price": 373.98,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 373.98,
           "vehicle_tags": [
             "any"
           ],
@@ -16187,37 +16033,12 @@
       ],
       "reviewed": false
     },
-    "go_rhino_5344a_4l61": {
-      "manufacturer_id": "go_rhino",
-      "model": "2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
-      "fits_part_types": [
-        "push_bumper"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "5344A-4L61",
-          "friendly_name": "GO RHINO 2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
-          "qb_item_id": "157",
-          "qb_sku": "",
-          "qb_unit_price": 349.08,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 349.08,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "go_rhino_5344whdt": {
       "manufacturer_id": "go_rhino",
       "model": "HEAVY-DUTY STEEL TEXTURED WRAPS FOR 2020+ FORD POLICE INTERCEPTOR UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "wing_wraps"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17936,7 +17757,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "unity_218000_0002",
+        "unity_221000_0002"
+      ]
     },
     "stalker_806_0022_00": {
       "manufacturer_id": "stalker",
@@ -17992,56 +17818,6 @@
       ],
       "reviewed": false
     },
-    "snowex_84520": {
-      "manufacturer_id": "snowex",
-      "model": "8611 POWER PLOW RUBBER DEFLECTOR KIT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "84520",
-          "friendly_name": "SNOWEX 8611 POWER PLOW RUBBER DEFLECTOR KIT",
-          "qb_item_id": "233",
-          "qb_sku": "",
-          "qb_unit_price": 413.6,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 413.6,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "snowex_8611ppled": {
-      "manufacturer_id": "snowex",
-      "model": "8'6\" TO 11' POWER PLOW COMPLETE KIT WITH STORM SEEKER LED LIGHTS, AUTOMATIXX ATTACHMENT SYSTEM, AND SCRAPE MAXX. CHOICE OF HANDHELD OR JOYSTICK CONTROLLER",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "8611PPLED",
-          "friendly_name": "SNOWEX 8'6\" TO 11' POWER PLOW COMPLETE KIT WITH STORM SEEKER LED LIGHTS, AUTOMATIXX ATTACHMENT SYSTEM, AND SCRAPE MAXX. CHOICE OF HANDHELD OR JOYSTICK CONTROLLER",
-          "qb_item_id": "234",
-          "qb_sku": "",
-          "qb_unit_price": 9837.3,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 9837.3,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "unity_9078": {
       "manufacturer_id": "unity",
       "model": "DRIVERS SIDE INSTALL KIT FOR 2021 FORD F-150 RESPONDER",
@@ -18065,7 +17841,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "unity_221000_0002"
+      ]
     },
     "qb_unassigned_951688": {
       "manufacturer_id": "qb_unassigned",
@@ -18121,31 +17901,6 @@
       ],
       "reviewed": false
     },
-    "american_aluminum_aaadish": {
-      "manufacturer_id": "american_aluminum",
-      "model": "1 GALLON SPILL RESISTANT WATER DISH (UNIVERSAL, HINGED, OR PERMANENT MOUNT)",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "AAADISH",
-          "friendly_name": "AMERICAN ALUMINUM 1 GALLON SPILL RESISTANT WATER DISH (UNIVERSAL, HINGED, OR PERMANENT MOUNT)",
-          "qb_item_id": "240",
-          "qb_sku": "",
-          "qb_unit_price": 116.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 116.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "feniex_am900": {
       "manufacturer_id": "feniex",
       "model": "AM900 Work Light",
@@ -18192,7 +17947,9 @@
     "american_aluminum_ameralu_1_3_2_3": {
       "manufacturer_id": "american_aluminum",
       "model": "ACCESSORIES 1/3-2/3 PRISONER/K9 CONTIANMENT. KIT INCLUDES RUBBER MAT, MATTE BLACK POWDER COAT AND WHITE INTERIOR LIGHT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_kennel"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18298,7 +18055,9 @@
     "american_aluminum_ameralu_vault": {
       "manufacturer_id": "american_aluminum",
       "model": "ACCESSORIES SINGLE DRAWER VAULT MATTE BLACK POWDER COAT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "rear_storage_box"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18312,31 +18071,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1309.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "american_aluminum_ameralu_water": {
-      "manufacturer_id": "american_aluminum",
-      "model": "ACCESSORIES UNIVERSAL 1 GALLON NON SPILL WATER DISH",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "AMERALU WATER",
-          "friendly_name": "AMERICAN ALUMINUM ACCESSORIES UNIVERSAL 1 GALLON NON SPILL WATER DISH",
-          "qb_item_id": "249",
-          "qb_sku": "",
-          "qb_unit_price": 116.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 116.0,
           "vehicle_tags": [
             "any"
           ],
@@ -18456,7 +18190,9 @@
     "pro_gard_b6705d18": {
       "manufacturer_id": "pro_gard",
       "model": "REAR CARGO BARRIER WITH VINYL COATED MESH WINDOW AND SIDE FILLERS FOR 2018+ DODGE DURANGO",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "rear_partition"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -18481,7 +18217,9 @@
     "5_0_fab_dtm_bm6wfpiu": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "BRACKET TO MOUNT UP TO 6 WHELEN IONS IN GRILL 2020+ FORD PIU",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20302,7 +20040,9 @@
     "lind_cblop_f90610": {
       "manufacturer_id": "lind",
       "model": "ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "docking_station"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -20322,7 +20062,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "cable",
+      "accessory_of_products": [
+        "gamber_johnson_7110_1213"
+      ]
     },
     "qb_unassigned_ccas_sb_7_800": {
       "manufacturer_id": "qb_unassigned",
@@ -20764,7 +20508,9 @@
     "5_0_fab_dtm_dtmsak": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "MADE SPEAKER BRACKET",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker_bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21498,7 +21244,9 @@
     "pro_gard_fp47uint20": {
       "manufacturer_id": "pro_gard",
       "model": "CHARCOAL GREY ABS, FLOOR PAN",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "floor_pan"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21543,7 +21291,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "federal_signal_q2b_012nnsd"
+      ]
     },
     "whelen_fsbbb": {
       "manufacturer_id": "whelen",
@@ -21976,7 +21728,9 @@
     "ace_k_9_ha_fkt10_p": {
       "manufacturer_id": "ace_k_9",
       "model": "OPTIONAL 10\" FAN, ACTIVATION MODULE, MANUAL SWITCH & MATERIALS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_add_ons"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -21996,12 +21750,19 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "ace_k_9_hp_5020",
+        "ace_k_9_ha_2520"
+      ]
     },
     "ace_k_9_ha_fwg_10": {
       "manufacturer_id": "ace_k_9",
       "model": "HEAVY-DUTY FAN GUARD *DOES NOT FIT VEHICLES WITH SMALL REAR WINDOWS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_add_ons"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22021,7 +21782,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "other",
+      "accessory_of_products": [
+        "ace_k_9_hp_5020",
+        "ace_k_9_ha_2520"
+      ]
     },
     "ace_k_9_ha_rbm_27_rd": {
       "manufacturer_id": "ace_k_9",
@@ -22053,7 +21819,9 @@
     "ace_k_9_hap_evs_k": {
       "manufacturer_id": "ace_k_9",
       "model": "ENGINE STALL SENSOR",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "k9_heat_alarm_popper"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22125,7 +21893,11 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "federal_signal_valor_ssp_package_4"
+      ]
     },
     "federal_signal_hkb_tah15_44": {
       "manufacturer_id": "federal_signal",
@@ -22157,7 +21929,9 @@
     "motorola_hln6861d": {
       "manufacturer_id": "motorola",
       "model": "RADIO BRICK MOUNT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22177,7 +21951,12 @@
           "options": {}
         }
       ],
-      "reviewed": false
+      "reviewed": false,
+      "accessory_category": "bracket_mount",
+      "accessory_of_products": [
+        "motorola_all_in_one_unit",
+        "motorola_split_unit"
+      ]
     },
     "ace_k_9_hp_5020": {
       "manufacturer_id": "ace_k_9",
@@ -22431,7 +22210,9 @@
     "5_0_fab_dtm_lbwsl21tah": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "LIGHT BRACKET WHELEN STRIP LIGHT FOR 2021 TAHOE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -22863,7 +22644,9 @@
     "patrol_pc_mnt_prn_ur_hab_pi_20": {
       "manufacturer_id": "patrol_pc",
       "model": "URPM HORIZONTAL ATTACHMENT BAR FOR 2020+ FORD PIU OR PIS",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "printer_mount"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24133,31 +23916,6 @@
       ],
       "reviewed": false
     },
-    "brother_printer_power": {
-      "manufacturer_id": "brother",
-      "model": "POCKET JET PRINTER POWER CABLE CDW LB3692",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "PRINTER POWER",
-          "friendly_name": "BROTHER POCKET JET PRINTER POWER CABLE CDW LB3692",
-          "qb_item_id": "872",
-          "qb_sku": "",
-          "qb_unit_price": 32.05,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 32.05,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "havis_pt_c02_120_2": {
       "manufacturer_id": "havis",
       "model": "120\" 2 COMPARTMENT(S) PRISONER TRANSPORT INSERT",
@@ -24217,7 +23975,9 @@
     "federal_signal_q2b_012nnsd": {
       "manufacturer_id": "federal_signal",
       "model": "MECHANICAL Q-SIREN, CHROME, RECESS MOUNT - FOOTSWITCH AND BRACKET SOLD",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24242,7 +24002,9 @@
     "federal_signal_q2b_012psd": {
       "manufacturer_id": "federal_signal",
       "model": "MECHANICALQ-SIREN, CHROME, PEDESTAL MOUNT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "siren_speaker"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24547,7 +24309,9 @@
     "ram_ram_201u_d": {
       "manufacturer_id": "ram",
       "model": "MOUNTS DOUBLE SOCKET LONG ARM SIZE C",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24572,7 +24336,9 @@
     "ram_ram_238u": {
       "manufacturer_id": "ram",
       "model": "MOUNTS DIAMOND BALL BASE SIZE C",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24597,7 +24363,9 @@
     "ram_ram_2461u": {
       "manufacturer_id": "ram",
       "model": "MOUNTS 75X75MM VESA PLATE WITH BALL SIZE C",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24622,7 +24390,9 @@
     "ram_ram_b_201u_c": {
       "manufacturer_id": "ram",
       "model": "LONG ARM 6INCH OVERALL LENGTH WORKS WITH 1 INCH BALL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24647,7 +24417,9 @@
     "ram_ram_b_202u": {
       "manufacturer_id": "ram",
       "model": "ROUND PLATE WITH 1 INCH BALL",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24672,7 +24444,9 @@
     "ram_rap_354u_tra1": {
       "manufacturer_id": "ram",
       "model": "MOUNTS TRACK BALL WITH T-BOLT SIZE C",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -24724,7 +24498,9 @@
     "pro_gard_rp47uint20": {
       "manufacturer_id": "pro_gard",
       "model": "RECESS PANEL FOR 2020 FORD UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -26990,7 +26766,9 @@
     "pro_gard_sp47bs20": {
       "manufacturer_id": "pro_gard",
       "model": "LOWER EXTENSION PANELS (PAIR) FOR 2020 FORD UTILITY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27044,7 +26822,9 @@
     "tiger_tough_t0511045_iw_blk": {
       "manufacturer_id": "tiger_tough",
       "model": "2024 FORD F150 POLICE RESPONDER BUCKET SEAT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "seat_covers"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27262,7 +27042,9 @@
     "pro_gard_tk47uint20a": {
       "manufacturer_id": "pro_gard",
       "model": "TRANSFER KIT FOR 2020 FORD UTILITY. NEEDS RP47UINT20 AND SP47BS20 WHICH ARE SOLD SEPARATELY",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27314,7 +27096,9 @@
     "5_0_fab_dtm_tube_chase": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "TUBE CHASE",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -27446,9 +27230,13 @@
     },
     "federal_signal_valor_ssp_package_4": {
       "manufacturer_id": "federal_signal",
-      "model": "VALOR/SSP3000/ES100/ESB PACKAGE - INCLUDES 51\" VALOR RED/BLUE WITH SCENE AND SIGNALMASTER, SSP3000, ES100 SIREN SPEAKER, AND CHOICE OF BRACKET",
-      "fits_part_types": [],
-      "tag_ids": [],
+      "model": "Valor SSP Package",
+      "fits_part_types": [
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
       "description": "",
       "images": {},
       "part_numbers": [
@@ -27631,35 +27419,12 @@
       ],
       "reviewed": false
     },
-    "federal_signal_z865100372a": {
-      "manufacturer_id": "federal_signal",
-      "model": "VALOR 44\" DOME SERVICE KIT",
-      "fits_part_types": [],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "Z865100372A",
-          "friendly_name": "FEDERAL SIGNAL VALOR 44\" DOME SERVICE KIT",
-          "qb_item_id": "1298",
-          "qb_sku": "",
-          "qb_unit_price": 169.4,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 169.4,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
     "ram_rap_b_354u_tra1": {
       "manufacturer_id": "ram",
       "model": "1 INCH BALL WITH T-BOLT",
-      "fits_part_types": [],
+      "fits_part_types": [
+        "bracket"
+      ],
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -28639,6 +28404,20 @@
             "any"
           ],
           "options": {}
+        },
+        {
+          "part_number": "PRINTER POWER",
+          "friendly_name": "BROTHER POCKET JET PRINTER POWER CABLE CDW LB3692",
+          "qb_item_id": "872",
+          "qb_sku": "",
+          "qb_unit_price": 32.05,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 32.05,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
         }
       ],
       "reviewed": false,
@@ -28823,33 +28602,6 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 2519.0,
-          "vehicle_tags": [
-            "any"
-          ],
-          "options": {}
-        }
-      ],
-      "reviewed": false
-    },
-    "american_aluminum_hinged_water_dish": {
-      "manufacturer_id": "american_aluminum",
-      "model": "Hinged Universal Water Dish",
-      "fits_part_types": [
-        "k9_add_ons"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "NEW HINGED UNIVERSAL WATER DISH",
-          "friendly_name": "NEW HINGED UNIVERSAL WATER DISH",
-          "qb_item_id": "781",
-          "qb_sku": "",
-          "qb_unit_price": 100.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
-          "price_usd": 100.0,
           "vehicle_tags": [
             "any"
           ],
@@ -29559,6 +29311,199 @@
           "qb_inactive": false,
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 72.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "weather_tech_floor_liners": {
+      "manufacturer_id": "weather_tech",
+      "model": "HP Floor Liners",
+      "fits_part_types": [
+        "floor_mats"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "4412281IM",
+          "friendly_name": "WEATHERTECH HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2022 CHEVY TRAVERSE",
+          "qb_item_id": "140",
+          "qb_sku": "",
+          "qb_unit_price": 138.95,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 138.95,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "4416321IM",
+          "friendly_name": "WEATHERTECH HP DRIVER AND PASSNEGER FRONT FLOOR LINERS FOR 2021+ CHEVY TAHOE",
+          "qb_item_id": "141",
+          "qb_sku": "",
+          "qb_unit_price": 138.95,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 138.95,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "4417161IM",
+          "friendly_name": "WEATHERTECH HP DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2020+ FORD EXPLORER",
+          "qb_item_id": "142",
+          "qb_sku": "",
+          "qb_unit_price": 138.95,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 138.95,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "44697-1-4IM",
+          "friendly_name": "WEATHERTECH FIRST AND SECOND ROW FOR F150 -CREW CAB -BENCH SEATING",
+          "qb_item_id": "143",
+          "qb_sku": "",
+          "qb_unit_price": 248.9,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 248.9,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "449301IM",
+          "friendly_name": "WEATHERTECH DRIVER AND PASSENGER FRONT FLOOR LINERS FOR 2026 DODGE DURANGO",
+          "qb_item_id": "144",
+          "qb_sku": "",
+          "qb_unit_price": 131.95,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 131.95,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "go_rhino_pushbumper": {
+      "manufacturer_id": "go_rhino",
+      "model": "Go Rhino Push Bumper",
+      "fits_part_types": [
+        "push_bumper"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "5344A-4L61",
+          "friendly_name": "GO RHINO 2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
+          "qb_item_id": "157",
+          "qb_sku": "",
+          "qb_unit_price": 349.08,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 349.08,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "5165A-4L",
+          "friendly_name": "GO RHINO HEAVY-DUTY ALUMINUM TEXTURED PUSHBUMPER FOR 2015-2020 CHEVY TAHOE FOR FOUR LIGHT MASK INSERT",
+          "qb_item_id": "154",
+          "qb_sku": "",
+          "qb_unit_price": 330.75,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 330.75,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "5165T-4L61",
+          "friendly_name": "GO RHINO PUSHBUMPER 2015+ CHEVY TAHOE PPV, CUTOUT FOR 4 WHELEN ION LIGHTS, TEXTURED BLACK",
+          "qb_item_id": "155",
+          "qb_sku": "",
+          "qb_unit_price": 373.98,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 373.98,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        }
+      ],
+      "reviewed": false
+    },
+    "american_aluminum_water_dish": {
+      "manufacturer_id": "american_aluminum",
+      "model": "E/Z Spill-Proof Water Dish",
+      "fits_part_types": [
+        "k9_add_ons"
+      ],
+      "tag_ids": [],
+      "description": "",
+      "images": {},
+      "part_numbers": [
+        {
+          "part_number": "AAADISH",
+          "friendly_name": "AMERICAN ALUMINUM 1 GALLON SPILL RESISTANT WATER DISH (UNIVERSAL, HINGED, OR PERMANENT MOUNT)",
+          "qb_item_id": "240",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 116.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "AMERALU WATER",
+          "friendly_name": "AMERICAN ALUMINUM ACCESSORIES UNIVERSAL 1 GALLON NON SPILL WATER DISH",
+          "qb_item_id": "249",
+          "qb_sku": "",
+          "qb_unit_price": 116.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 116.0,
+          "vehicle_tags": [
+            "any"
+          ],
+          "options": {}
+        },
+        {
+          "part_number": "NEW HINGED UNIVERSAL WATER DISH",
+          "friendly_name": "NEW HINGED UNIVERSAL WATER DISH",
+          "qb_item_id": "781",
+          "qb_sku": "",
+          "qb_unit_price": 100.0,
+          "qb_inactive": false,
+          "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
+          "price_usd": 100.0,
           "vehicle_tags": [
             "any"
           ],
