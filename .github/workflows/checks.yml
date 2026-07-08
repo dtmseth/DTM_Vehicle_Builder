@@ -1,6 +1,7 @@
-# Guardrail checks (AUDIT_REFACTOR_ROADMAP.md §8.1 Step 2).
-# Import-boundary lint + dependency audit + static security scan.
-# Runs on every PR and on pushes to main, alongside build.yml.
+# Guardrail checks (AUDIT_REFACTOR_ROADMAP.md §8.1 Step 2 / Step 1d).
+# Test suite + coverage floor + import-boundary lint + dependency audit +
+# static security scan. Runs on every PR and on pushes to main, alongside
+# build.yml.
 name: Checks
 
 on:
@@ -9,6 +10,27 @@ on:
   pull_request:
 
 jobs:
+  pytest:
+    name: Test suite + coverage floor (AUDIT_REFACTOR_ROADMAP.md §8.1 Step 1d)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install package + dev tools
+        run: pip install -e ".[dev]"
+
+      # Coverage floor is defined once in pyproject.toml
+      # ([tool.coverage.report] fail_under) so CI and local runs agree;
+      # --cov-fail-under is not repeated here. Golden masters (Step 1a) and
+      # contract snapshots (Step 1b) run as part of this same suite once
+      # they land — no separate job.
+      - name: Run test suite with coverage
+        run: pytest --cov=dtm_buildsheet --cov-report=term-missing
+
   import-linter:
     name: Import boundaries (import-linter)
     runs-on: ubuntu-latest

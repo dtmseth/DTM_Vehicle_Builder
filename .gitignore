@@ -22,6 +22,8 @@ src/dtm_buildsheet/resources/presets/*.json
 dist/
 build/
 *.egg-info/
+.coverage
+htmlcov/
 
 existing_code.xml
 
