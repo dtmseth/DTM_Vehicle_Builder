@@ -15,17 +15,6 @@
     {"target_id": "pac_tool_halligan_kit", "model": "Halligan Tool Mounting Kit", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_k5032"], "_confidence": "high", "_why": "PAC Tool K-series"},
     {"target_id": "pac_tool_universal_hanger", "model": "Universal Hanger", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1019_b"], "_confidence": "high", "_why": "1019-B = PAC Tool Universal Hanger model 1019, black variant (-B is PAC's color suffix, cf. 1004-B HandleLok) — weather/UV-resistant non-conductive hanger for cords/ropes/chains/tools, mounts flat or on PAC TRAC (pactoolmounts.com/products/universal-hanger-1019/; firepenny PAC-1019). Was wrongly queued for delete as an import artifact in plan 10 — moved here (EVIDENCE.md F30)"},
 
-    {"target_id": "jb_lund_utility_trailer", "model": "Aluminum Utility Trailer", "manufacturer_id": "jb_lund_dock", "fits_part_types": ["trailer"],
-     "sources": ["qb_unassigned_1u78120a_1i", "qb_unassigned_1u78144a_1i", "qb_unassigned_1u78168a_1e1i", "qb_unassigned_1u78168a_1i", "qb_unassigned_1u78168a_2e", "qb_unassigned_1u78192a_2e"],
-     "_confidence": "medium", "_why": "One trailer product, size/axle variants as SKUs (10'–16', single/tandem, brake options) — the merge-variants convention. Gated on the `trailer` part_type question in 01_new_part_types"},
-    {"target_id": "jb_lund_trailer_rail", "model": "Trailer Rail Add-On", "manufacturer_id": "jb_lund_dock", "fits_part_types": [],
-     "sources": ["qb_unassigned_1u78120rack_1", "qb_unassigned_1u78144rack_1", "qb_unassigned_1u78168rack_1"],
-     "_confidence": "medium", "_why": "Rail add-ons per trailer length as SKUs; accessory of the trailer (role set below), so no part-type home needed"},
-    {"target_id": "jb_lund_tie_down", "model": "Trailer Tie Down", "manufacturer_id": "jb_lund_dock", "fits_part_types": [], "sources": ["qb_unassigned_1utiedown"], "_confidence": "medium", "_why": "trailer accessory"},
-    {"target_id": "jb_lund_bifold_ramp", "model": "Bi-Fold Ramp Add-On", "manufacturer_id": "jb_lund_dock", "fits_part_types": [], "sources": ["qb_unassigned_2ut7866ramp"], "_confidence": "medium", "_why": "trailer accessory"},
-    {"target_id": "jb_lund_spare_tire_carrier", "model": "Spare Tire Carrier", "manufacturer_id": "jb_lund_dock", "fits_part_types": [], "sources": ["qb_unassigned_cstc1000101"], "_confidence": "medium", "_why": "trailer accessory"},
-    {"target_id": "jb_lund_spare_wheel", "model": "Spare Wheel ST205/75R14", "manufacturer_id": "jb_lund_dock", "fits_part_types": [], "sources": ["qb_unassigned_ctr1420575da"], "_confidence": "medium", "_why": "trailer accessory"},
-
     {"target_id": "whelen_295_siren", "model": "295 Series Siren Amp", "manufacturer_id": "whelen", "fits_part_types": ["siren_speaker"],
      "sources": ["qb_unassigned_295sl100", "qb_unassigned_295slsa6"],
      "_confidence": "high", "_why": "Whelen 295SL100 / 295SLSA6 are the classic Whelen 295-series siren amplifier/control — one product, two SKUs"},
@@ -53,8 +42,8 @@
 
     {"target_id": "streamlight_sl20", "model": "SL-20 Flashlight", "manufacturer_id": "qb_unassigned", "fits_part_types": ["flashlight"],
      "sources": ["qb_unassigned_sl_20l", "qb_unassigned_sl25302"],
-     "_confidence": "medium", "_why": "Streamlight SL-20 full-size rechargeable + 12V smart charger, two SKUs", "_question": "Streamlight manufacturer doesn't exist — create it in the grid, then re-brand this product (kept qb_unassigned to avoid writing a dangling manufacturer_id)"},
-    {"target_id": "pelican_8060_flashlight", "model": "Pelican 8060 LED Flashlight", "manufacturer_id": "qb_unassigned", "fits_part_types": ["flashlight"], "sources": ["qb_unassigned_8060_led"], "_confidence": "medium", "_why": "rechargeable duty flashlight", "_question": "Pelican manufacturer doesn't exist — create + re-brand"},
+     "_confidence": "medium", "_why": "Streamlight SL-20 full-size rechargeable + 12V smart charger, two SKUs. Owner ruling C3 approved creating Streamlight in the manufacturers grid", "_question": "Streamlight manufacturer still doesn't exist in the grid — create it, then re-brand this product (kept qb_unassigned per the guide's Q2 rule: never write a manufacturer_id that isn't in the catalog)"},
+    {"target_id": "pelican_8060_flashlight", "model": "Pelican 8060 LED Flashlight", "manufacturer_id": "qb_unassigned", "fits_part_types": ["flashlight"], "sources": ["qb_unassigned_8060_led"], "_confidence": "medium", "_why": "rechargeable duty flashlight. Owner ruling C3 approved creating Pelican in the manufacturers grid", "_question": "Pelican manufacturer still doesn't exist in the grid — create + re-brand"},
 
     {"target_id": "feniex_am900_work_light", "model": "AM900 Work Light", "manufacturer_id": "feniex", "fits_part_types": ["front_scene"], "tag_ids": ["light"],
      "sources": ["qb_unassigned_wl_0118"],
@@ -73,11 +62,6 @@
     {"product_id": "pac_tool_k5046", "fits_part_types": ["tool_mount"], "_confidence": "high", "_why": "10# fire extinguisher / SCBA mount"}
   ],
   "set_accessory": [
-    {"product_id": "jb_lund_trailer_rail", "accessory_category": "other", "accessory_of_products": ["jb_lund_utility_trailer"], "_confidence": "medium"},
-    {"product_id": "jb_lund_tie_down", "accessory_category": "other", "accessory_of_products": ["jb_lund_utility_trailer"], "_confidence": "medium"},
-    {"product_id": "jb_lund_bifold_ramp", "accessory_category": "other", "accessory_of_products": ["jb_lund_utility_trailer"], "_confidence": "medium"},
-    {"product_id": "jb_lund_spare_tire_carrier", "accessory_category": "other", "accessory_of_products": ["jb_lund_utility_trailer"], "_confidence": "medium"},
-    {"product_id": "jb_lund_spare_wheel", "accessory_category": "other", "accessory_of_products": ["jb_lund_utility_trailer"], "_confidence": "medium"},
     {"product_id": "american_aluminum_vault_basket", "accessory_category": "other", "accessory_of_products": ["american_aluminum_ameralu_vault", "american_aluminum_ez_vault"], "_confidence": "medium"},
     {"product_id": "unity_shaft_headpost", "accessory_category": "other", "accessory_of_products": ["unity_spotlight_2016_fpiu", "unity_xled_spotlight"], "_confidence": "medium"},
     {"product_id": "brother_pocketjet_power_cable", "accessory_category": "cable", "accessory_of_products": ["brother_pj_822"], "_confidence": "high"},
@@ -85,5 +69,27 @@
     {"product_id": "lind_dell_power_adapter_2542", "accessory_category": "cable", "accessory_of_products": ["gamber_johnson_7110_1213"], "_confidence": "medium", "_why": "power adapter for the Dell dock family"},
     {"product_id": "tiger_tough_embroidery", "accessory_category": "other", "accessory_of_products": ["tiger_tough_standard"], "_confidence": "medium", "_why": "embroidery option on the seat-cover line"},
     {"product_id": "feniex_fusion_rotating_bracket", "accessory_category": "bracket_mount", "accessory_of_products": ["feniex_fusion_surface_mount"], "_confidence": "medium"}
-  ]
+  ],
+  "delete_products": [
+    "qb_unassigned_1u78120a_1i", "qb_unassigned_1u78144a_1i", "qb_unassigned_1u78168a_1e1i",
+    "qb_unassigned_1u78168a_1i", "qb_unassigned_1u78168a_2e", "qb_unassigned_1u78192a_2e",
+    "qb_unassigned_1u78120rack_1", "qb_unassigned_1u78144rack_1", "qb_unassigned_1u78168rack_1",
+    "qb_unassigned_1utiedown", "qb_unassigned_2ut7866ramp", "qb_unassigned_cstc1000101",
+    "qb_unassigned_ctr1420575da"
+  ],
+  "_delete_notes": {
+    "qb_unassigned_1u78120a_1i": "HIGH — owner ruling C2.1: trailers OUT, QB-only, removed from the builder catalog. JB Lund utility trailer + rack/tie-down/ramp/spare-tire/spare-wheel family (13 QB items) never appears on a build sheet",
+    "qb_unassigned_1u78144a_1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_1e1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_2e": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78192a_2e": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78120rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1u78144rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1u78168rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1utiedown": "HIGH — owner ruling C2.1: trailer tie-down accessory, same removal",
+    "qb_unassigned_2ut7866ramp": "HIGH — owner ruling C2.1: trailer bi-fold ramp accessory, same removal",
+    "qb_unassigned_cstc1000101": "HIGH — owner ruling C2.1: trailer spare-tire carrier, same removal",
+    "qb_unassigned_ctr1420575da": "HIGH — owner ruling C2.1: trailer spare wheel, same removal"
+  }
 }
