@@ -5184,26 +5184,9 @@
         }
       ]
     },
-    "specify_whip_style": {
-      "manufacturer_id": "specify",
-      "model": "WHIP STYLE",
-      "fits_part_types": [
-        "radio_antenna_top"
-      ],
-      "tag_ids": [
-        "comms"
-      ],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "WHIP STYLE"
-        }
-      ]
-    },
     "specify_cylinder_style": {
       "manufacturer_id": "specify",
-      "model": "CYLINDER STYLE",
+      "model": "CYLINDER STYLE ANTENNA (SHOP)",
       "fits_part_types": [
         "radio_antenna_top"
       ],
@@ -5216,7 +5199,8 @@
         {
           "part_number": "CYLINDER STYLE"
         }
-      ]
+      ],
+      "reviewed": false
     },
     "havis_vehicle_specific": {
       "manufacturer_id": "havis",
