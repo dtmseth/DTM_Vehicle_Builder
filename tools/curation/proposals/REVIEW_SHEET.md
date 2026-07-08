@@ -25,25 +25,18 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: 10FT. CIGARETTE LIGHTER ADAPTER WITH ON/OFF AND MOMENTARY SWITCH
   - why: cigarette-lighter adapter w/ switch — 12v power accessory
 
-## → `battery_tender`  (1 proposals, 1 questions)
-
-- 🟡 **havis_cg_x** · home · _20_havis.json_
-  - QB: HAVIS CHARGEGUARD-SELECT
-  - why: ChargeGuard-Select ignition-off timer — battery protection
-  - **❓ battery_tender or vehicle_interface? It's a power-management timer, not a charger**
-
 ## → `bracket`  (17 proposals, 1 questions)
 
+- 🟢 **5_0_fab_dtm_tube_chase** · home · _26_small_manufacturers.json_
+  - QB: DTM TUBE CHASE
+  - why: owner ruling C7.1: the tube chase is the wiring tunnel in PIUs between the rear seats and the center console; factory-stock exists but DTM fabricates its own. Homed per the classification guide's console-adjacent convention — generic-fit fabricated bracket/tunnel hardware, no single parent product → `bracket` (matches the guide's 'generic RAM ball/arm hardware → bracket, home-only' pattern). Definition recorded in docs/audit/PARTS_CLASSIFICATION_GUIDE.md
 - 🟢 **qb_unassigned_rtm_101_lp_ford_r** · home · _12_qb_unassigned_residual.json_
   - QB: ACARI 22″ LOW PROFILE MOUNTING PLATFORM 2019 FORD RANGER
-  - why: ACARI RTM-101-LP series = drill-free 22" low-profile roof mounting platform (clamps through the third-brake-light opening, ~1.15" profile, 210 sq-in surface, 30-lb capacity) for warning lights, antennas AND work lights — generic-fit, carries no single bar family, so home-only bracket with no accessory parent (acariproducts.com/products/; magnumelectronics RTM-101-LP-FORD listings; -R = Ranger fitment per Acari's 2019-Ranger install guide) (EVIDENCE.md F27)
-  - **❓ Acari manufacturer missing — create in grid, then re-brand → OPEN_QUESTIONS B3**
+  - why: ACARI RTM-101-LP series = drill-free 22" low-profile roof mounting platform (clamps through the third-brake-light opening, ~1.15" profile, 210 sq-in surface, 30-lb capacity) for warning lights, antennas AND work lights — generic-fit, carries no single bar family, so home-only bracket with no accessory parent (acariproducts.com/products/; magnumelectronics RTM-101-LP-FORD listings; -R = Ranger fitment per Acari's 2019-Ranger install guide) (EVIDENCE.md F27). Owner ruling C3 approved creating Acari in the manufacturers grid
+  - **❓ Acari manufacturer still doesn't exist — create in grid, then re-brand**
 - 🟢 **soundoff_pmp2wdg15b** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: SOUNDOFF 15 DEGREE WEDGE ASSEMBLY, BLACK, FOR USE WITH 4" QUICK MOUNT LIGHT
   - why: 15° wedge for 4" quick-mount light — same family as the pmp2 brackets in warning_fascia.json
-- 🟢 **whelen_cc5k2** · home · _21_whelen.json_
-  - QB: WHELEN INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERA
-  - why: install kit for the CCSRN-5 = CenCom Carbide siren & light controller (whelen.com/product/cencom-carbide; Dana Safety listings). The Carbide amp itself is not in the catalog (only CenCom Core), so the kit stays home-only — creating a Carbide product for it to parent to is OPEN_QUESTIONS B5.2 (EVIDENCE.md)
 - 🟢 **whelen_fsbps** · home · _21_whelen.json_
   - QB: WHELEN POWER SUPPLY FIELD SERIES BLK
   - why: Field Series power supply — support electronics for the Field Series scene lights (accessory role below is the real home)
@@ -86,17 +79,14 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: RAM 1 INCH BALL WITH T-BOLT
   - why: RAM 1" ball w/ T-bolt
 
-## → `cable`  (4 proposals)
+## → `cable`  (3 proposals)
 
+- 🟢 **qb_unassigned_ethernet_cable** → *Ethernet Cable* · merge 2→1 · _12_qb_unassigned_residual.json_
+  - QB: ETHERNET CABLE 10FT
+  - why: owner ruling C6: APPROVED — merge the 10ft/25ft ethernet cables as SKUs of one 'Ethernet Cable' product, per the merge-variants convention (length is a SKU attribute, not a separate product)
 - 🟡 **qb_unassigned_25_ft_cat_6_cable** · home · _12_qb_unassigned_residual.json_
   - QB: 25 FT CAT 6 ETHERNET CABLE
   - why: generic Cat6 — the generic cable home (NightRide/monitor runs use ethernet)
-- 🟡 **qb_unassigned_ethernet_cable** · home · _12_qb_unassigned_residual.json_
-  - QB: ETHERNET CABLE 10FT
-  - why: generic ethernet 10ft
-- 🟡 **qb_unassigned_ethernet_cable_2** · home · _12_qb_unassigned_residual.json_
-  - QB: ETHENET CABLE 25 FT
-  - why: generic ethernet 25ft (note: could merge with the 10ft as SKUs of one 'Ethernet Cable' product — kept separate because both are hand-entered QB items)
 - 🟡 **qb_unassigned_usb_extention** · home · _12_qb_unassigned_residual.json_
   - QB: USB EXTENTION 10FT CABLE
   - why: generic USB extension
@@ -105,23 +95,22 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 
 - 🟡 **qb_unassigned_md_6200** · home · _12_qb_unassigned_residual.json_
   - QB: MOMENTO M-6 WIFI DASH CAMERA (FRONT CAM, REAR CAM, GPS, 32GB MEMORY CARD)
-  - why: Momento M-6 dash camera w/ front+rear cams and GPS
-  - **❓ Momento manufacturer doesn't exist — create + re-brand**
+  - why: Momento M-6 dash camera w/ front+rear cams and GPS. Owner ruling C3 approved creating Momento in the manufacturers grid
+  - **❓ Momento manufacturer still doesn't exist — create + re-brand**
 
 ## → `cloud_antenna`  (1 proposals)
 
 - 🟢 **globesat_bu_353n** → *BU-353N USB GPS Receiver* · merge 1→1 · _12_qb_unassigned_residual.json_
   - why: GlobalSat BU-353N = USB GNSS receiver (75-channel GPS/GLONASS/Galileo/BeiDou, built-in patch antenna, 5' USB cable) that presents a virtual COM port for NMEA mapping software on a LAPTOP/PC — laptop AVL/mapping gear, not a radar speed source (Stalker radars use their own Speed Modules). → cloud_antenna home + re-brand to the existing globesat manufacturer (EVIDENCE.md F32). Sources: globalsat.com.tw BU-353N pages, gpscity.com
 
-## → `computer`  (2 proposals, 2 questions)
+## → `computer`  (2 proposals, 1 questions)
 
-- 🟡 **(part_type)** → *Computer / Laptop* · new part_type · _01_new_part_types.json_
-  - why: Getac S410 laptop is sold as hardware (queue). Homing it under docking_station would misstate what it is.
-  - **❓ Do you want sold computers in the catalog as their own slot, or treated as an unbilled/agency line like other agency-supplied electronics?**
-- 🟡 **qb_unassigned_getac_s410** · home · _12_qb_unassigned_residual.json_
+- 🟢 **(part_type)** → *Computer / Laptop* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C2.4: KEEP the capability — Getac stays; billed-or-unbilled is decided per job. Getac S410 laptop is sold as hardware (queue); homing it under docking_station would misstate what it is. FUTURE FEATURE (recorded, out of Part Picker scope): build-level 'which computer does this build use?' field even when not purchased, since it determines the dock.
+- 🟢 **qb_unassigned_getac_s410** · home · _12_qb_unassigned_residual.json_
   - QB: SP2NTCDASDXX GETAC S410G4 BASIC i5-1135G7 FDH WEBCAM WIN10 PRO X64 W/ 16GB RAM, 512 GB PCIe SSD, SUNLIGHT READ
-  - why: the laptop itself (not the dock)
-  - **❓ gated on the `computer` part_type question; Getac manufacturer also missing**
+  - why: owner ruling C2.4: KEEP the capability — the laptop itself (not the dock). Getac manufacturer creation approved by owner ruling C3
+  - **❓ Getac manufacturer still doesn't exist in the grid — create + re-brand**
 
 ## → `console`  (1 proposals)
 
@@ -129,12 +118,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: GAMBER JOHNSON WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT
   - why: wide-body universal console w/ cup holder + pocket kit — a console body (matches the 7170 console kits already homed)
 
-## → `control_head`  (1 proposals, 1 questions)
+## → `control_head`  (1 proposals)
 
-- 🟡 **feniex_c_4017** · home · _24_feniex.json_
+- 🟢 **feniex_c_4017** · home · _24_feniex.json_
   - QB: FENIEX TYPHOON FULL FUNCTION LIGHT AND SIREN CONTROLLER
-  - why: Typhoon full-function light+siren controller — the operator control head (soundoff_etsa461hpp_ext precedent)
-  - **❓ control_head vs light_controller split: controller the officer touches → control_head, module in the trunk → light_controller. Agree?**
+  - why: owner ruling C1.3: control_head vs light_controller split CONFIRMED (officer-touched controller → control_head, trunk module → light_controller) — un-gates this entry. Typhoon full-function light+siren controller is the operator control head (soundoff_etsa461hpp_ext precedent)
 
 ## → `docking_station`  (4 proposals)
 
@@ -161,11 +149,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **(part_type)** → *Flashlight & Charger* · new part_type · _01_new_part_types.json_
   - why: Streamlight SL-20 + Pelican 8060 rechargeable flashlights w/ 12V chargers (3 queue products). The Havis flashlight-charger *pocket* is a faceplate; the light itself had no home.
 - 🟡 **pelican_8060_flashlight** → *Pelican 8060 LED Flashlight* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: rechargeable duty flashlight
-  - **❓ Pelican manufacturer doesn't exist — create + re-brand**
+  - why: rechargeable duty flashlight. Owner ruling C3 approved creating Pelican in the manufacturers grid
+  - **❓ Pelican manufacturer still doesn't exist in the grid — create + re-brand**
 - 🟡 **streamlight_sl20** → *SL-20 Flashlight* · merge 2→1 · _11_qb_unassigned_rebrand.json_
-  - why: Streamlight SL-20 full-size rechargeable + 12V smart charger, two SKUs
-  - **❓ Streamlight manufacturer doesn't exist — create it in the grid, then re-brand this product (kept qb_unassigned to avoid writing a dangling manufacturer_id)**
+  - why: Streamlight SL-20 full-size rechargeable + 12V smart charger, two SKUs. Owner ruling C3 approved creating Streamlight in the manufacturers grid
+  - **❓ Streamlight manufacturer still doesn't exist in the grid — create it, then re-brand this product (kept qb_unassigned per the guide's Q2 rule: never write a manufacturer_id that isn't in the catalog)**
 
 ## → `floor_mats`  (1 proposals)
 
@@ -192,18 +180,19 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_xlp** · merge 2→1 · _21_whelen.json_
   - why: BW54UFX is a real PL26 line item, not a BOM artifact: Inner Edge XLP DUO+ Extra Low-Profile Upper Front two-piece unit, twelve 6-LED DUO lamps, Chevy Tahoe PPV/SSV 2021-2026 / Suburban 2024-2026, $2,254 (exact QB price match) — a vehicle-fitment SKU of the existing Inner Edge XLP product. Former delete proposal reversed (EVIDENCE.md)
 
-## → `front_partition_transfer_kit`  (3 proposals, 1 questions)
+## → `front_partition_transfer_kit`  (3 proposals, 2 questions)
 
 - 🟢 **pro_gard_tk47uint20a** · home · _26_small_manufacturers.json_
   - QB: PRO-GARD TRANSFER KIT FOR 2020 FORD UTILITY. NEEDS RP47UINT20 AND SP47BS20 WHICH ARE SOLD SEPARATELY
   - why: transfer kit for 2020 Ford Utility (needs RP47 + SP47, sold separately — wired as accessories below)
 - 🟡 **pro_gard_rp47uint20** · home · _26_small_manufacturers.json_
   - QB: PRO-GARD RECESS PANEL FOR 2020 FORD UTILITY
-  - why: recess panel — transfer-kit component
-  - **❓ home them all under front_partition_transfer_kit, or make RP/SP accessory-only children of the TK?**
+  - why: owner ruling C1.7: transfer kits own home CONFIRMED (`front_partition_transfer_kit`); owner pushback on RP47/SP47 ('don't look like TK parts') weighed against the evidence — TK47's own description requires RP47 (recess panel) + SP47 (lower extension panels) sold separately, i.e. vehicle-specific filler panels used during a partition transfer. KEPT at medium confidence per the ruling — full QB description surfaced here for the owner's final veto at review: "PRO-GARD RECESS PANEL FOR 2020 FORD UTILITY". Owner domain note: a transfer kit is a bracket set that mounts old/outdated partition panels in a new vehicle
+  - **❓ final veto: does RP47 belong under front_partition_transfer_kit alongside the TK, per C1.7?**
 - 🟡 **pro_gard_sp47bs20** · home · _26_small_manufacturers.json_
   - QB: PRO-GARD LOWER EXTENSION PANELS (PAIR) FOR 2020 FORD UTILITY
-  - why: lower extension panels — transfer-kit component
+  - why: owner ruling C1.7: same transfer-kit-home ruling as pro_gard_rp47uint20 — full QB description surfaced for veto: "PRO-GARD LOWER EXTENSION PANELS (PAIR) FOR 2020 FORD UTILITY"
+  - **❓ final veto: does SP47 belong under front_partition_transfer_kit alongside the TK, per C1.7?**
 
 ## → `front_radar_antenna_mount, rear_radar_antenna_mount`  (2 proposals)
 
@@ -227,11 +216,10 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **whelen_pel2** → *Perimeter Enhancement Light* · merge 1→1 · _12_qb_unassigned_residual.json_
   - why: PEL2B is Whelen's Perimeter Enhancement Light, black flange: WHITE steady LED projected downward at 40° for ground illumination around the vehicle, NFPA 1901 rear-ground-lighting certified, 10-30 VDC (whelen.com/scene-lighting/perimeter-enhancement-light; sirennet/zips listings). White-only ground lighting → SCENE per the color rule, not warning_light (former guess corrected); multi-homed to all three scene types like whelen_ez_scene since it mounts any side (zone from placement; scene-collapse ruling B1.1 pending — hence medium) (EVIDENCE.md F14)
 
-## → `fw_bracket`  (1 proposals, 1 questions)
+## → `fw_bracket`  (1 proposals)
 
-- 🟡 **dtm_universal_grill_bracket** · merge 1→1 · _00_integrity.json_
-  - why: Manufacturer 'dtm' doesn't exist in the catalog (audit §2.1). 5-0 Fab (Dtm) does.
-  - **❓ Confirm all 7 dtm_* products are 5-0 Fab; if 'dtm' should be its own manufacturer instead, create it in the grid and delete these 7 merges.**
+- 🟢 **dtm_universal_grill_bracket** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm ≡ 5-0 Fab, one and the same — 5-0 Fab is the real brand, dtm_* products re-branded to it. Manufacturer 'dtm' never existed in the catalog (audit §2.1); 5_0_fab_dtm does.
 
 ## → `gun_lock`  (25 proposals)
 
@@ -344,7 +332,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: SANTA CRUZ RAPID ACCESS RFID SYSTEM FOR ANY GUN RACK
   - why: rapid-access RFID system 'for any gun rack' — rack accessory electronics
 
-## → `harness`  (4 proposals, 1 questions)
+## → `harness`  (3 proposals)
 
 - 🟡 **qb_unassigned_46096** · home · _12_qb_unassigned_residual.json_
   - QB: J CASE FUSE MODULE
@@ -355,13 +343,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **qb_unassigned_install_supplies** · home · _12_qb_unassigned_residual.json_
   - QB: INSTALLATION SUPPLIES TO INCLUDE CUSTOM MADE WIRING HARNESS, 100 AMP BREAKER, FUSE BLOCKS, RELAYS, AND OTHER M
   - why: billed installation-supplies line explicitly described as custom wiring harness + breakers/relays
-- 🔴 **qb_unassigned_rbe13421** · home · _12_qb_unassigned_residual.json_
-  - QB: AIR PRESURE SWITCH
-  - why: 'AIR PRESURE SWITCH' $36 — research lead (not proof): WABCO sells air-brake low-pressure switch RBE13241 (fleetpride.com) — RBE13421 may be a digit transposition of it; no exact RBE13421 part found anywhere (EVIDENCE.md F28)
-  - **❓ What system/install used it (air brake? air horn? plow)? Home accordingly or delete → OPEN_QUESTIONS B7.3**
 
-## → `headlight_flasher`  (5 proposals)
+## → `headlight_flasher`  (6 proposals)
 
+- 🟢 **feniex_fenflas** · home · _24_feniex.json_
+  - QB: FENIEX
+  - why: owner ruling C7.2: FENFLAS = Feniex 4-output flasher (confirms F20's H-2220 lead) — headlight_flasher home, same shape as the other flasher modules (whelen_ulf44, whelen_plf46)
 - 🟢 **soundoff_ethfss_sp_iso** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: SOUNDOFF SELECT-A-PATTERN HEADLIGHT FLASHER, SOLID STATE, 12V ISOLATION MODEL (FOR SYSTEMS REQUIRING ELECTRICA
   - why: Select-A-Pattern headlight flasher
@@ -427,7 +414,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WHELEN PCC6W SWITCH CONTROL CENTER
   - why: PCC6W switch control center — light/equipment switching
 
-## → `lighthead`  (5 proposals, 1 questions)
+## → `lighthead`  (4 proposals)
 
 - 🟢 **whelen_gbawd** · home · _21_whelen.json_
   - QB: WHELEN LEGACY OPT ADD 1 WARN/ALY R/W
@@ -441,10 +428,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **whelen_outer_edge_lightheads** · home · _21_whelen.json_
   - QB: WHELEN DUO LIGHTHEAD FOR RPWD SERIES RED/WHITE, NO CHARGE WHEN ORDERED WITH OUTER EDGE®
   - why: DUO lighthead for RPWD/Outer Edge — child head; R/W here means the head's fixed color pair
-- 🔴 **qb_unassigned_light_kit_led** · home · _12_qb_unassigned_residual.json_
-  - QB: LIGHT KIT-LED (RED & WHITE)
-  - why: 'LIGHT KIT-LED (RED & WHITE)' $0 — a red/white LED kit with no brand or context
-  - **❓ What is this? (Which product's light kit — a push bumper light channel? K9 area?) If unknowable, delete**
 
 ## → `motion_attachment`  (3 proposals)
 
@@ -457,6 +440,26 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **havis_c_md_204** · home · _20_havis.json_
   - QB: HAVIS LOW PROFILE TILT SWIVEL MOTION DEVICE
   - why: low-profile tilt-swivel motion device
+
+## → `motorcycle_box`  (6 proposals)
+
+- 🟡 **(part_type)** → *Motorcycle Box / Mount* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C2.5: DTM does motorcycle builds — keep the Whelen M4B6-family products (no-spill battery, ground kit, box, separator, adapter) and give them a home. No existing part_type fits a motorcycle-mount accessory family; homes the 5 products set_home'd in 21_whelen.json.
+- 🟡 **whelen_m1batt** · home · _21_whelen.json_
+  - QB: WHELEN MOTORCYCLE NO-SPILL BATTERY
+  - why: owner ruling C2.5: DTM does motorcycle builds — motorcycle no-spill battery kept and homed under the new `motorcycle_box` part_type
+- 🟡 **whelen_m1ground** · home · _21_whelen.json_
+  - QB: WHELEN MOTORCYCLE BOX GROUND PLANE
+  - why: owner ruling C2.5: motorcycle ground kit — see whelen_m1batt
+- 🟡 **whelen_m4b6lr** · home · _21_whelen.json_
+  - QB: WHELEN M/C BOX RIGHT-OPEN LESS FLASH
+  - why: owner ruling C2.5: motorcycle box (long/right variant) — see whelen_m1batt
+- 🟡 **whelen_m4bsep** · home · _21_whelen.json_
+  - QB: WHELEN M4B OPTIONAL SEPARATION PLATE
+  - why: owner ruling C2.5: motorcycle box separator — see whelen_m1batt
+- 🟡 **whelen_mbadpt14** · home · _21_whelen.json_
+  - QB: WHELEN MB4/6 ADAPTER PLATE 14 HARLEY
+  - why: owner ruling C2.5: motorcycle box mount adapter — see whelen_m1batt
 
 ## → `pedestal_mount`  (30 proposals)
 
@@ -550,10 +553,20 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: GAMBER JOHNSON OFFSET UNIVERSAL MOUNT STEP
   - why: offset universal mount step
 
-## → `pit_bar`  (1 proposals)
+## → `pit_bar`  (2 proposals)
 
+- 🟢 **setina_pb10** · home · _00_integrity.json_
+  - why: owner ruling C1.9: setina_pb10 = pit_bar (the workbook was right; parts_db had it wrong on wing_wraps — WORKBOOK_GRAPH.md conflict #1). Owner definition: the pit bar is the lower bars, the wing wrap is the headlight bar that mounts TO the pit bar; `pit_bar` type is shared with Westin — never relabel
 - 🟢 **westin_pit_bars** · merge 6→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Pit Bar Elite/EliteXD per-vehicle SKUs fold into the existing westin_pit_bars product (pit_bar home; `pit_bar` type is SHARED with Setina — don't relabel, per memory)
+
+## → `power_timer`  (2 proposals)
+
+- 🟢 **(part_type)** → *Power Timer / ChargeGuard* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C1.8: NEW part_type — ChargeGuard is an electronics power timer, not a battery tender or vehicle interface. Homes havis_cg_x (ChargeGuard-Select) in 20_havis.json. FUTURE FEATURE (recorded, not implemented here): per-build power-shutdown record capturing the timeout setting whether it comes from a CenCom Core or a ChargeGuard; rule of thumb — a build without a Core probably needs a ChargeGuard.
+- 🟢 **havis_cg_x** · home · _20_havis.json_
+  - QB: HAVIS CHARGEGUARD-SELECT
+  - why: owner ruling C1.8: ChargeGuard is a NEW part_type `power_timer` (label 'Power Timer / ChargeGuard'), not battery_tender or vehicle_interface — ChargeGuard-Select ignition-off timer
 
 ## → `printer_mount`  (3 proposals)
 
@@ -567,28 +580,22 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WESTIN UNDER LAPTOP PRINTER TRAY
   - why: under-laptop printer tray
 
-## → `printer_power`  (2 proposals, 1 questions)
+## → `printer_power`  (2 proposals)
 
 - 🟢 **brother_pocketjet_power_cable** → *PocketJet Power Cable* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: Brother PocketJet 7 power cable; printer_power is the workbook slot for exactly this
-- 🟢 **brother_printer_power** · home · _26_small_manufacturers.json_
-  - QB: BROTHER POCKET JET PRINTER POWER CABLE CDW LB3692
-  - why: PocketJet power cable (CDW LB3692)
-  - **❓ merge with brother_pocketjet_power_cable (created in plan 11 from the qb_unassigned twin)? Same part in QB twice**
+- 🟢 **brother_pocketjet_power_cable** · merge 2→1 · _26_small_manufacturers.json_
+  - why: owner ruling C6: APPROVED — merge the Brother power-cable twin. brother_printer_power (CDW LB3692) and the plan-11 brother_pocketjet_power_cable (from qb_unassigned_14331) are the same PocketJet 7 power cable entered twice in QB. accessory_category/accessory_of_products restated since merge drops them unless restated (curate.py quirk)
 
 ## → `printer_usb`  (1 proposals)
 
 - 🟢 **brother_pocketjet_usb_cable** → *PocketJet USB Cable* · merge 2→1 · _11_qb_unassigned_rebrand.json_
   - why: PocketJet USB cables (6ft + 10ft) as SKUs of one product; printer_usb slot
 
-## → `prisoner_transport_insert`  (3 proposals, 1 questions)
+## → `prisoner_transport_insert`  (2 proposals)
 
 - 🟡 **(part_type)** → *Prisoner Transport Insert* · new part_type · _01_new_part_types.json_
   - why: Havis PT-series van transport inserts (2 queue products, $6k–$23k). Not a kennel, not a partition — a whole compartment system.
-- 🟡 **havis_pt_a_409** · home · _20_havis.json_
-  - QB: HAVIS 2007-2026 CHEVROLET G-SERIES PRISONER TRANSPORT HVAC OPTION
-  - why: G-series prisoner-transport HVAC option — transport-insert family
-  - **❓ it's an option, not the insert itself — accessory of PT-C02 instead?**
 - 🟡 **havis_pt_c02_120_2** · home · _20_havis.json_
   - QB: HAVIS 120" 2 COMPARTMENT(S) PRISONER TRANSPORT INSERT
   - why: 120" 2-compartment prisoner transport insert ($23k van body)
@@ -606,6 +613,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **stalker_200_0622_00** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: STALKER VSS INSTALLATION KIT
   - why: VSS installation kit — speed-signal wiring (radar_cable per your cables.json)
+
+## → `radio_antenna_top`  (2 proposals, 2 questions)
+
+- 🔴 **specify_cylinder_style** · home · _00_integrity.json_
+  - why: owner ruling C3: same 'specify' placeholder as specify_whip_style — CYLINDER STYLE antenna-style artifact. Reaffirming current home, surfaced for owner veto
+  - **❓ delete, restyle as a SKU/option on a real antenna product, or keep as-is? → OPEN_QUESTIONS §C3**
+- 🔴 **specify_whip_style** · home · _00_integrity.json_
+  - why: owner ruling C3: 'specify' manufacturer placeholder — WHIP STYLE reads as an antenna-style workbook-dropdown artifact, not a real product. Reaffirming current home (unchanged) so this is surfaced in REVIEW_SHEET.md for owner veto; likely outcome is delete-or-restyle, not treatment as a real manufacturer
+  - **❓ delete, restyle as a SKU/option on a real antenna product, or keep as-is? → OPEN_QUESTIONS §C3**
 
 ## → `radio_mic_clip`  (1 proposals)
 
@@ -639,8 +655,8 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: single-drawer vault
 - 🟢 **qb_unassigned_36_010_key** · home · _12_qb_unassigned_residual.json_
   - QB: SUV TUFBOX W/ KEY LOCK, DRAWER. (12 IN H, 38 IN W, 32 IN D) 5.0 CU FT STORAGE
-  - why: brand identified: **Tufloc** TufBox 36-010 welded-steel SUV security cargo drawer — 12"H × 38"W × 32"D (exact QB dimension match), key/combination or T-handle lock, 12-ga steel, 200-lb slides (tufloc.com/product/security-drawers-for-suvs/; Dana Safety listings). rear_storage_box home confirmed. Tufloc manufacturer doesn't exist in the grid yet → stays qb_unassigned until created (EVIDENCE.md F26)
-  - **❓ create Tufloc manufacturer in the grid, then re-brand → OPEN_QUESTIONS B3**
+  - why: brand identified: **Tufloc** TufBox 36-010 welded-steel SUV security cargo drawer — 12"H × 38"W × 32"D (exact QB dimension match), key/combination or T-handle lock, 12-ga steel, 200-lb slides (tufloc.com/product/security-drawers-for-suvs/; Dana Safety listings). rear_storage_box home confirmed. Owner ruling C3 approved creating Tufloc in the manufacturers grid; still stays qb_unassigned until created (EVIDENCE.md F26)
+  - **❓ Tufloc manufacturer still doesn't exist — create in the grid, then re-brand**
 - 🟡 **american_aluminum_ez_vault** → *E/Z Vault* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: E/Z line is American Aluminum (E/Z-Rider, E/Z-Cool Guard); storage vault → rear_storage_box like ameralu_vault
 - 🟡 **havis_sbx_5001** · home · _20_havis.json_
@@ -649,35 +665,37 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 
 ## → `rear_warning_bracket`  (2 proposals)
 
-- 🟡 **dtm_license_plate_bracket** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
-- 🟡 **dtm_twist_lock_adaptor** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
+- 🟢 **dtm_license_plate_bracket** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
+- 🟢 **dtm_twist_lock_adaptor** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
 
 ## → `rear_warning_bracket, lower_liftgate_warning_bracket`  (1 proposals)
 
-- 🟡 **dtm_grommet_mount** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
+- 🟢 **dtm_grommet_mount** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
 
-## → `replacement_rear_seat`  (1 proposals, 1 questions)
+## → `roof_light_bar`  (4 proposals)
 
-- 🔴 **qb_unassigned_w709980_s439** · home · _12_qb_unassigned_residual.json_
-  - QB: FORD REPLACEMENT FRONT SEAT BOLTS
-  - why: Ford OEM front-seat bolts, $5 — install hardware
-  - **❓ Keep as a catalog part at all, or delete as install-hardware noise?**
-
-## → `roof_light_bar`  (3 proposals, 1 questions)
-
+- 🟢 **federal_signal_valor_ssp_package_4** → *Valor SSP Package* · merge 1→1 · _26_small_manufacturers.json_
+  - QB: FEDERAL SIGNAL VALOR/SSP3000/ES100/ESB PACKAGE - INCLUDES 51" VALOR RED/BLUE WITH SCENE AND SIGNALMASTER, SSP3
+  - why: owner ruling C6: APPROVED — name the bundle 'Valor SSP Package'. Valor 51" R/B bar + SSP3000 siren + ES100 speaker sold as ONE QB item → one catalog product, bills as one line (kit ruling: mirror QB — no expansion). fits_part_types/tag_ids restated since merge drops unstated fields (curate.py quirk)
 - 🟢 **feniex_fml** · home · _24_feniex.json_
   - QB: FENIEX FUSION MINI LIGHT BAR (RED/WHITE WITH 40° OPTICS)
   - why: feniex.com sells the Fusion Mini under its 'Mini Lightbars' category (12"/14", magnet mount standard, permanent bracket optional) — a roof mini bar; Feniex's dash/deck products are the separate Fusion Interior Lightbar line. Mini bars skip the config panel per the lightbar model (EVIDENCE.md F19)
 - 🟢 **feniex_gpl_49** · home · _24_feniex.json_
   - QB: FENIEX FUSION GPL 49 INCH LIGHT BAR DUAL COLOR INCLUDES FOOT MOUNT KIT WITH VEHICLE SPECIFIC STRAPS
   - why: GPL 49" dual-color bar w/ vehicle-specific foot mount — full-size roof bar (config-tag flow applies; special-UI)
-- 🟡 **federal_signal_valor_ssp_package_4** · home · _26_small_manufacturers.json_
-  - QB: FEDERAL SIGNAL VALOR/SSP3000/ES100/ESB PACKAGE - INCLUDES 51" VALOR RED/BLUE WITH SCENE AND SIGNALMASTER, SSP3
-  - why: Valor 51" R/B bar + SSP3000 siren + ES100 speaker sold as ONE QB item → one catalog product, bills as one line (kit ruling: mirror QB — no expansion)
-  - **❓ name it 'Valor SSP Package'? It's the only bundle-shaped QB item in the queue**
+- 🟡 **whelen_2250_buildabar** → *WeCanX 2250 Series Build-A-Bar* · merge 0→1 · _21_whelen.json_
+  - why: owner ruling C5.1: owner-directed exception to the no-speculative-products rule — CREATE the WeCanX 2250 Build-A-Bar parent product so the 22LECA/22RECA endcaps have a determinable parent (owner: endcaps belong to their determinable parent bar; F7 determined it's the 2250). PL26: WeCanX 2250 Series is a surface-mount Build-A-Bar, 30"-50", angled endcaps for aerial-recognition light. No QB line item backs this product yet — it carries no SKUs/part_numbers until DTM actually stocks/bills one; revisit at that point
+
+## → `running_boards_nerf_bars`  (2 proposals)
+
+- 🟢 **(part_type)** → *Running Boards / Nerf Bars* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C2.6: CREATE this type, named `running_boards_nerf_bars` (label 'Running Boards / Nerf Bars'), not 'step_bars'. Westin R5 nerf steps (queue). Exterior structural side hardware; nothing existing fits.
+- 🟢 **westin_28_51270** · home · _25_westin_soundoff_nightride_stalker.json_
+  - QB: WESTIN R5 NERF STEP BARS - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-
+  - why: owner ruling C2.6: type renamed `running_boards_nerf_bars` (not step_bars). R5 nerf step bars (Silverado/Sierra)
 
 ## → `seat_covers`  (1 proposals)
 
@@ -687,15 +705,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 
 ## → `side_warning_bracket`  (2 proposals)
 
-- 🟡 **dtm_angle_bracket** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
-- 🟡 **dtm_dtm_extended_cargo_window_bracket** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
+- 🟢 **dtm_angle_bracket** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
+- 🟢 **dtm_dtm_extended_cargo_window_bracket** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
 
 ## → `side_warning_bracket, rear_warning_bracket, lower_liftgate_warning_bracket`  (1 proposals)
 
-- 🟡 **dtm_l_bracket** · merge 1→1 · _00_integrity.json_
-  - why: same dtm→5-0 Fab re-brand
+- 🟢 **dtm_l_bracket** · merge 1→1 · _00_integrity.json_
+  - why: owner ruling C3: dtm→5-0 Fab re-brand
 
 ## → `siren_speaker`  (8 proposals)
 
@@ -729,16 +747,7 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: DTM MADE SPEAKER BRACKET
   - why: DTM-made speaker bracket — the exact siren_speaker_bracket slot
 
-## → `snow_plow`  (2 proposals, 1 questions)
-
-- 🟡 **(part_type)** → *Snow Plow* · new part_type · _01_new_part_types.json_
-  - why: SnowEx Power Plow complete kit + deflector (2 queue products, $9.8k unit).
-  - **❓ Confirm plows are catalog-worthy (municipal truck builds) rather than QB-only.**
-- 🟡 **snowex_8611ppled** · home · _26_small_manufacturers.json_
-  - QB: SNOWEX 8'6" TO 11' POWER PLOW COMPLETE KIT WITH STORM SEEKER LED LIGHTS, AUTOMATIXX ATTACHMENT SYSTEM, AND SCR
-  - why: 8'6"–11' Power Plow complete kit w/ LED lights — one QB item, one line (gated on snow_plow question)
-
-## → `special_face_plate`  (28 proposals, 3 questions)
+## → `special_face_plate`  (28 proposals)
 
 - 🟢 **gamber_johnson_15250** · home · _23_gamber_johnson.json_
   - QB: GAMBER JOHNSON OEM FILLER PANEL (USD/MP3/SD CARD JACK AND 12VDC POWER PORT)
@@ -782,6 +791,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **havis_c_apw_0744_1** · home · _20_havis.json_
   - QB: HAVIS 7″ ACCESSORY POCKET, 4.4″ DEEP FOR 3.3″W SECTION OF WIDE CONSOLES
   - why: 7" wide-console pocket
+- 🟢 **havis_c_eb25_xtl_1p** · home · _20_havis.json_
+  - QB: HAVIS 1-PIECE EQUIPMENT MOUNTING BRACKET, 2.5" MOUNTING SPACE, FITS MOTOROLA XTL2500, XTL5000-05, APX-7500
+  - why: owner ruling C1.4: Havis C-EB equipment brackets → `special_face_plate` CONFIRMED (console-furniture convention). 1-piece equipment mounting bracket (Motorola XTL)
+- 🟢 **havis_c_eb30_xtl_1p_a** · home · _20_havis.json_
+  - QB: HAVIS 1-PIECE ANGLED EQUIPMENT MOUNTING BRACKET, 3" MOUNTING SPACE, FITS MOTOROLA REMOTE RADIO HEADS
+  - why: owner ruling C1.4: angled equipment bracket (Motorola remote radio)
+- 🟢 **havis_c_eb40_ccs_1p** · home · _20_havis.json_
+  - QB: HAVIS 1-PIECE EQUIPMENT MOUNTING BRACKET, 4" MOUNTING SPACE, FITS WHELEN CENCOM CCSRN, CCSRNTA, MPC03
+  - why: owner ruling C1.4: equipment bracket (Whelen CenCom)
 - 🟢 **havis_c_flw_4055_str** · home · _20_havis.json_
   - QB: HAVIS FLASHLIGHT CHARGER POCKET FOR WIDE CONSOLE 3.3" MOUNTING SPACE
   - why: flashlight-charger pocket for wide console — a console pocket (the flashlight itself is the new flashlight type)
@@ -812,24 +830,14 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **gamber_johnson_7110_1201** · home · _23_gamber_johnson.json_
   - QB: GAMBER JOHNSON 2015+ TAHOE WINGS
   - why: 2015+ Tahoe console 'wings' — console side trim
-- 🟡 **havis_c_eb25_xtl_1p** · home · _20_havis.json_
-  - QB: HAVIS 1-PIECE EQUIPMENT MOUNTING BRACKET, 2.5" MOUNTING SPACE, FITS MOTOROLA XTL2500, XTL5000-05, APX-7500
-  - why: 1-piece equipment mounting bracket (Motorola XTL) — lives in the console equipment space like faceplates
-  - **❓ OK treating C-EB equipment brackets as faceplate-family? Alternative: `bracket` + accessory of the radio products**
-- 🟡 **havis_c_eb30_xtl_1p_a** · home · _20_havis.json_
-  - QB: HAVIS 1-PIECE ANGLED EQUIPMENT MOUNTING BRACKET, 3" MOUNTING SPACE, FITS MOTOROLA REMOTE RADIO HEADS
-  - why: angled equipment bracket (Motorola remote radio)
-  - **❓ see C-EB question**
-- 🟡 **havis_c_eb40_ccs_1p** · home · _20_havis.json_
-  - QB: HAVIS 1-PIECE EQUIPMENT MOUNTING BRACKET, 4" MOUNTING SPACE, FITS WHELEN CENCOM CCSRN, CCSRNTA, MPC03
-  - why: equipment bracket (Whelen CenCom)
-  - **❓ see C-EB question**
 - 🟡 **havis_cup2_1005** · home · _20_havis.json_
   - QB: HAVIS ANGLED WEDGE KIT FOR HAVIS CUP HOLDERS & 1-PIECE 4" EQUIPMENT BRACKETS
   - why: angled wedge kit for cup holders / 4" brackets — console furniture
 
-## → `spotlight`  (6 proposals, 1 questions)
+## → `spotlight`  (6 proposals)
 
+- 🟢 **(part_type)** → *Spotlight (pillar/post)* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C1.5: `spotlight` part_type CONFIRMED. Unity 6" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules.
 - 🟢 **unity_218000_0002** · home · _26_small_manufacturers.json_
   - QB: UNITY 6" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED
   - why: 6" halogen pillar spotlight, driver side, 2020+ FPIU (new spotlight home; white → not warning)
@@ -838,22 +846,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: 325 series 6" spotlight (F-150/Expedition)
 - 🟢 **unity_spotlight_2016_fpiu** → *6" Halogen Spotlight (2016 FPIU)* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: brand CONFIRMED Unity — unityusa.com lists 211020-0002 as 'Halogen 6" Spotlight Black (325)(S04) LH': 325-series 6" halogen post-mount spotlight, S04 shell, left-hand/driver side, 3000 lumens 12V (unityusa.com/211020-0002-Halogen-6-Spotlight-Black-325-S04-LH_p_1702.html) (EVIDENCE.md F25)
-- 🟡 **(part_type)** → *Spotlight (pillar/post)* · new part_type · _01_new_part_types.json_
-  - why: Unity 6" pillar spotlights + install kits (~8 queue products incl. two mis-bucketed under qb_unassigned). Distinct slot: aimed post-mounted white light, not a fixed scene light. PARTS_DB_AND_PICKER already anticipates 'spotlight placements' as exception rules.
-  - **❓ OK to give spotlights their own home (category scene, white)? Alternative is folding them into front_scene like the PAR-46 call.**
 - 🟡 **unity_330pl_0002** · home · _26_small_manufacturers.json_
   - QB: UNITY SPOTLIGHT 330PL-0002
   - why: 330PL spotlight
 - 🟡 **unity_xled_spotlight** → *X-LED 6" Spotlight* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: (X335)(S14) = Unity shell/series codes; LED pillar spotlight
-
-## → `step_bars`  (2 proposals)
-
-- 🟡 **(part_type)** → *Step / Nerf Bars* · new part_type · _01_new_part_types.json_
-  - why: Westin R5 nerf steps (queue). Exterior structural side hardware; nothing existing fits.
-- 🟡 **westin_28_51270** · home · _25_westin_soundoff_nightride_stalker.json_
-  - QB: WESTIN R5 NERF STEP BARS - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-
-  - why: R5 nerf step bars (Silverado/Sierra) — new step_bars home
 
 ## → `tail_light_flasher`  (2 proposals)
 
@@ -877,26 +874,23 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **night_ride_nrp_slc** · merge 2→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: PRO-SL cableless 384 ethernet variant
 
-## → `thermal_imager_monitor`  (3 proposals)
+## → `thermal_imager_monitor`  (2 proposals)
 
 - 🟢 **night_ride_nightride_dsp_kit** · home · _25_westin_soundoff_nightride_stalker.json_
   - QB: NIGHTRIDE DISPLAY KIT - 8 IN MONITOR - RAM MOUNTING BASE - RAM 6 IN ARM - RAM T-BOLT MOUNT - HDMI CABLE - USB 
   - why: 8" monitor + RAM mount display kit — same shape as the NV3 kit
 - 🟢 **night_ride_nv3_display_kit** → *NV3 Display Kit* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: 8" display + RAM mount kit for NightRide thermal — same shape as nightride_dsp_kit
-- 🟡 **qb_unassigned_cctv8** · home · _12_qb_unassigned_residual.json_
-  - QB: COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD
-  - why: 8" VGA/AV/HDMI monitor — pairs with thermal/camera systems like the other 8" displays
 
 ## → `tonneau_cover`  (2 proposals, 2 questions)
 
-- 🟡 **qb_unassigned_226130** · home · _12_qb_unassigned_residual.json_
+- 🟢 **(part_type)** → *Tonneau / Bed Cover* · new part_type · _01_new_part_types.json_
+  - why: owner ruling C2.3: KEEP (BAK manufacturer needed). BAK G2 hard folding tonneau (1 queue product). Still gated on BAK Industries being created in the manufacturers grid before the re-brand in plan 12 applies.
+  - **❓ BAK Industries manufacturer doesn't exist yet — create via grid before re-branding qb_unassigned_226130.**
+- 🟢 **qb_unassigned_226130** · home · _12_qb_unassigned_residual.json_
   - QB: BAK INDUSTRIES G2 HARD FOLDING TONNEAU COVER 2022 CHEVY SILVERADO
-  - why: BAK G2 hard folding tonneau for 2022 Silverado
-  - **❓ BAK Industries manufacturer missing — create + re-brand; gated on the tonneau_cover part_type question**
-- 🔴 **(part_type)** → *Tonneau / Bed Cover* · new part_type · _01_new_part_types.json_
-  - why: BAK G2 hard folding tonneau (1 queue product).
-  - **❓ Single product — worth a slot, or fold into step_bars as a generic 'truck exterior accessory' home? Also: BAK Industries manufacturer doesn't exist yet (create via grid before re-branding).**
+  - why: owner ruling C2.3: tonneau covers KEEP. BAK G2 hard folding tonneau for 2022 Silverado. BAK Industries manufacturer creation approved by owner ruling C3
+  - **❓ BAK Industries manufacturer still doesn't exist — create + re-brand**
 
 ## → `tool_mount`  (13 proposals)
 
@@ -930,24 +924,19 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: FIRE EXTINGUISHER BRACKETS
   - why: extinguisher mounting = tool-mount family (pac_tool_k5046 precedent)
 
-## → `trailer`  (2 proposals, 1 questions)
-
-- 🟡 **jb_lund_utility_trailer** → *Aluminum Utility Trailer* · merge 6→1 · _11_qb_unassigned_rebrand.json_
-  - why: One trailer product, size/axle variants as SKUs (10'–16', single/tandem, brake options) — the merge-variants convention. Gated on the `trailer` part_type question in 01_new_part_types
-- 🔴 **(part_type)** → *Utility Trailer* · new part_type · _01_new_part_types.json_
-  - why: JB Lund aluminum utility trailers + rack/ramp/tie-down add-ons (13 queue products, real revenue incl. $6–7k units).
-  - **❓ Do trailers belong in the vehicle-builder catalog at all, or should they stay QB-only (delete from parts_db)? They never appear on a build sheet.**
-
-## → `warning_light`  (19 proposals, 3 questions)
+## → `warning_light`  (19 proposals)
 
 - 🟢 **feniex_cannon_hideaway** → *Cannon Hide-A-Way* · merge 8→1 · _24_feniex.json_
   - why: Cannon 12-LED hideaway — one product, color-variant SKUs (R/W, B/W, R/A, B/A, A, W). Hideaways are colored warning → warning_light
-- 🟢 **feniex_fsma** · home · _24_feniex.json_
-  - QB: FENIEX FUSION SURFACE MOUNT AMBER
-  - why: Fusion surface mount amber — belongs with feniex_fusion_surface_mount
-  - **❓ prefer a merge into feniex_fusion_surface_mount as the amber SKU? (kept set_home to avoid clobbering your reviewed merge from warning_fascia.json)**
+- 🟢 **feniex_fusion_stick** → *Fusion Light Stick* · merge 7→1 · _24_feniex.json_
+  - why: owner ruling C6: APPROVED — Fusion 200/400/600/800/Rocker sticks fold into one product as size SKUs (one-product-per-model convention). Colored warning sticks → the single warning_light home; placement decides front/rear
+- 🟢 **feniex_fusion_surface_mount** · merge 2→1 · _24_feniex.json_
+  - why: owner ruling C6: APPROVED — FSMA folds into feniex_fusion_surface_mount as the amber SKU. fits_part_types/tag_ids restated below since merge drops accessory fields unless restated (curate.py quirk) — home/tags themselves fall back to the existing base product either way, restated here for clarity.
 - 🟢 **soundoff_eluc_undercover_insert** → *Universal UnderCover LED Insert* · merge 1→1 · _12_qb_unassigned_residual.json_
   - why: ELUC3H010E is SoundOff Signal's Universal UnderCover LED Insert (soundoffsignal.com product page; vendor listings label it 'SOI UNIV UNDERCOVER LED INSERT, 5 WIRE BLUE/WHITE') — a standalone screw-in hideaway kit (insert + extreme-angle lens + inline flasher, dual blue/white, 10' 5-wire) that retrofits 1" strobe-tube cutouts in headlight/taillight housings. Not a Whelen part and not a bar child → re-brand soundoff + warning_light home (hideaway convention). Replaces the former low-confidence lighthead guess (EVIDENCE.md F13)
+- 🟢 **soundoff_enftcdxs1208** · home · _25_westin_soundoff_nightride_stalker.json_
+  - QB: SOUNDOFF NFORCE 8 HEAD EXTERIOR WEATHERPROOF TRAFFIC CONTROLLER - 12VDC - 12-LED DUAL COLOR
+  - why: owner ruling C1.6: traffic advisors stay `warning_light`. 8-head exterior weatherproof traffic controller, dual color — traffic-advisor family; whelen_traffic_advisor precedent is warning_light. FUTURE FEATURE (recorded, not in scope here): TA configurator — DTM custom-builds them per lighthead; needs real setup work when the time comes
 - 🟢 **soundoff_intersector** · merge 6→1 · _25_westin_soundoff_nightride_stalker.json_
   - why: Intersector under-mirror SKUs (color letters B=B/W? D/E/F/R = color codes) join the existing Intersector product — mount style + color are SKU variants, one product per model
 - 🟢 **soundoff_nforce** → *NFORCE* · merge 2→1 · _00_integrity.json_
@@ -968,19 +957,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: light tag (audit §2.4)
 - 🟢 **whelen_tracer_6_lamp** · home · _00_integrity.json_
   - why: light tag (audit §2.4)
-- 🟡 **feniex_fusion_stick** → *Fusion Light Stick* · merge 7→1 · _24_feniex.json_
-  - why: Fusion 200/400/600/800/Rocker sticks = size/color variants of one Fusion stick line (one-product-per-model convention). Colored warning sticks → the single warning_light home; placement decides front/rear
-  - **❓ OK folding all Fusion stick sizes into one product? Alternative: one product per size class**
 - 🟡 **feniex_q_0620** · home · _24_feniex.json_
   - QB: FENIEX QUAD 600 LIGHTSTICK RED,BLUE,WHITE, AMBER
   - why: Quad 600 lightstick R/B/W/A — colored stick, own model line
 - 🟡 **feniex_qt_0820_sd** · home · _24_feniex.json_
   - QB: FENIEX QUANTUM 800 LIGHT STICK DUAL COLOR
   - why: Quantum 800 dual-color stick — own model line
-- 🟡 **soundoff_enftcdxs1208** · home · _25_westin_soundoff_nightride_stalker.json_
-  - QB: SOUNDOFF NFORCE 8 HEAD EXTERIOR WEATHERPROOF TRAFFIC CONTROLLER - 12VDC - 12-LED DUAL COLOR
-  - why: 8-head exterior weatherproof traffic controller, dual color — traffic-advisor family; whelen_traffic_advisor precedent is warning_light
-  - **❓ should traffic advisors eventually get their own part_type + arrow-pattern UI? Flagged special-UI in the audit**
 - 🟡 **whelen_ion** · merge 2→1 · _21_whelen.json_
   - why: IONHD3FM fork-mount ION (Harley) folds into the ION product as a mount-variant SKU — phase4b already folded its sibling M08DT this way
 - 🟡 **whelen_sys109** · home · _21_whelen.json_
@@ -1036,15 +1018,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: FEDERAL SIGNAL RECESS MOUNTING BRACKET
   - why: Q-Siren recess mounting bracket
 
-## → `(accessory of federal_signal_valor_ssp_package_4)`  (2 proposals, 1 questions)
+## → `(accessory of federal_signal_valor_ssp_package_4)`  (1 proposals)
 
 - 🟢 **federal_signal_hkb_fpiu20** · accessory:bracket_mount · _26_small_manufacturers.json_
   - QB: FEDERAL SIGNAL HOOK KIT 2020 FORD UTILITY
   - why: Federal Signal's hook-mount reference guide (fedsig.com/hook-mount-reference-guide) lists HKB-FPIU20 as the roof hook kit for 44/45/46/51/53" FULL-SIZE LIGHT BARS (incl. Valor) on the 2020-2021 Ford Police Interceptor Utility — lightbar mounting, not a pushbumper part. Valor parent confirmed (EVIDENCE.md F21)
-- 🟡 **federal_signal_z865100372a** · accessory:other · _26_small_manufacturers.json_
-  - QB: FEDERAL SIGNAL VALOR 44" DOME SERVICE KIT
-  - why: Z8651003-72A = 'KIT, VALR44 DOME SERVICE' — replacement dome service kit for the Valor 44" bar (wfgear.com; Federal Signal's dome-service-kit manual 25500083 covers the Valor/Integrity kit family). Catalog fact: the 51" SSP package is the ONLY Valor product in the DB, so it's the only possible parent; whether the 44" kit fits the 51" bar is unconfirmed (EVIDENCE.md F22)
-  - **❓ keep the 44" dome kit parented to the 51" package, or leave it unparented? → OPEN_QUESTIONS B5.3**
 
 ## → `(accessory of feniex_cannon_hideaway)`  (1 proposals)
 
@@ -1084,20 +1062,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: HAVIS ANGLED WEDGE KIT FOR HAVIS CUP HOLDERS & 1-PIECE 4" EQUIPMENT BRACKETS
   - why: wedge kit for the cup holders
 
-## → `(accessory of havis_pt_c02_120_2)`  (1 proposals)
-
-- 🟡 **havis_pt_a_409** · accessory:other · _20_havis.json_
-  - QB: HAVIS 2007-2026 CHEVROLET G-SERIES PRISONER TRANSPORT HVAC OPTION
-  - why: HVAC option on the transport insert
-
-## → `(accessory of jb_lund_utility_trailer)`  (5 proposals)
-
-- 🟡 **jb_lund_bifold_ramp** · accessory:other · _11_qb_unassigned_rebrand.json_
-- 🟡 **jb_lund_spare_tire_carrier** · accessory:other · _11_qb_unassigned_rebrand.json_
-- 🟡 **jb_lund_spare_wheel** · accessory:other · _11_qb_unassigned_rebrand.json_
-- 🟡 **jb_lund_tie_down** · accessory:other · _11_qb_unassigned_rebrand.json_
-- 🟡 **jb_lund_trailer_rail** · accessory:other · _11_qb_unassigned_rebrand.json_
-
 ## → `(accessory of motorola_all_in_one_unit, motorola_split_unit)`  (1 proposals)
 
 - 🟡 **motorola_hln6861d** · accessory:bracket_mount · _26_small_manufacturers.json_
@@ -1110,15 +1074,11 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: NIGHTRIDE TRAILBLAZER AUX BATTERY CABLE - 384
   - why: Trailblazer 384 aux battery cable
 
-## → `(accessory of night_ride_nrr0010, night_ride_nrr640_13e)`  (2 proposals, 1 questions)
+## → `(accessory of night_ride_nrr0010, night_ride_nrr640_13e)`  (1 proposals)
 
 - 🟢 **night_ride_nrr_auxc_640** · accessory:cable · _25_westin_soundoff_nightride_stalker.json_
   - QB: NIGHTRIDE TRAILBLAZER AUX BATTERY CABLE - 384/640 W ETHERNET
   - why: Trailblazer 384/640 aux battery cable
-- 🔴 **qb_unassigned_cctv8** · accessory:other · _12_qb_unassigned_residual.json_
-  - QB: COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD
-  - why: generic monitor usable with the Trailblazer thermal units
-  - **❓ right parents?**
 
 ## → `(accessory of night_ride_nrr0010, night_ride_nrr640_13e, night_ride_nrp_sl)`  (2 proposals)
 
@@ -1128,12 +1088,6 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟡 **night_ride_nightride_dsp_kit** · accessory:other · _25_westin_soundoff_nightride_stalker.json_
   - QB: NIGHTRIDE DISPLAY KIT - 8 IN MONITOR - RAM MOUNTING BASE - RAM 6 IN ARM - RAM T-BOLT MOUNT - HDMI CABLE - USB 
   - why: display kit pairs with the thermal units (homed thermal_imager_monitor above)
-
-## → `(accessory of snowex_8611ppled)`  (1 proposals)
-
-- 🟢 **snowex_84520** · accessory:other · _26_small_manufacturers.json_
-  - QB: SNOWEX 8611 POWER PLOW RUBBER DEFLECTOR KIT
-  - why: 8611 plow rubber deflector kit
 
 ## → `(accessory of soundoff_mpower_4_fascia, soundoff_mpower_3_fascia)`  (1 proposals)
 
@@ -1176,6 +1130,15 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 ## → `(accessory of unity_spotlight_2016_fpiu, unity_xled_spotlight)`  (1 proposals)
 
 - 🟡 **unity_shaft_headpost** · accessory:other · _11_qb_unassigned_rebrand.json_
+
+## → `(accessory of whelen_2250_buildabar)`  (2 proposals)
+
+- 🟢 **whelen_22leca** · accessory:other · _21_whelen.json_
+  - QB: WHELEN OPT ADD 1 LEFT ANGLED ENDCAP
+  - why: owner ruling C5.1: PL26 'One Angled Left End Cap for use with One Aerial Recognition Light, for Bars 30" to 50"' — an option for the WeCanX 2250 Series Build-A-Bar, $144 exact match. Parented to the newly created whelen_2250_buildabar (EVIDENCE.md F7)
+- 🟢 **whelen_22reca** · accessory:other · _21_whelen.json_
+  - QB: WHELEN OPT ADD 1 RIGHT ANGLED ENDCAP
+  - why: owner ruling C5.1: right-side twin of whelen_22leca — same 2250 Series option, same parent (EVIDENCE.md F7)
 
 ## → `(accessory of whelen_core)`  (1 proposals)
 
@@ -1230,14 +1193,59 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - QB: WHELEN QUICKFIT ROOF MT CLASSIC RAM
   - why: Ram, black steel housing variant (magnet-OK) — see whelen_qfford1
 
-## → `(delete)`  (41 proposals)
+## → `(delete)`  (70 proposals)
 
+- 🟢 **federal_signal_z865100372a** · DELETE · _26_small_manufacturers.json_
+  - QB: FEDERAL SIGNAL VALOR 44" DOME SERVICE KIT
+  - why: HIGH — owner ruling C5.3: delete. Valor 44" dome service kit — not used in new builds
+- 🟢 **havis_pt_a_409** · DELETE · _20_havis.json_
+  - QB: HAVIS 2007-2026 CHEVROLET G-SERIES PRISONER TRANSPORT HVAC OPTION
+  - why: HIGH — owner ruling C5.4: delete. G-series prisoner-transport HVAC option — not used on regular builds
+- 🟢 **qb_unassigned_1u78120a_1i** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6' 6" X 10' ALUMINUM UTILITY TRAILER -SINGLE AXLE W/O BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT, QB-only, removed from the builder catalog. JB Lund utility trailer + rack/tie-down/ramp/spare-tire/spare-wheel family (13 QB items) never appears on a build sheet
+- 🟢 **qb_unassigned_1u78120rack_1** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 10' TRAILER SINGLE RAIL ADD-ON
+  - why: HIGH — owner ruling C2.1: trailer rail add-on, same removal
+- 🟢 **qb_unassigned_1u78144a_1i** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6' 6" X 12' ALUMINUM UTILITY TRAILER -SINGLE AXLE W/O BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)
+- 🟢 **qb_unassigned_1u78144rack_1** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 12' TRAILER SINGLE RAIL ADD-ON
+  - why: HIGH — owner ruling C2.1: trailer rail add-on, same removal
+- 🟢 **qb_unassigned_1u78168a_1e1i** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6'6"X 14' ALUMINUM UTILITY TRAILER -TANDEM AXLE ONE W/ BRAKES ONE W/O BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)
+- 🟢 **qb_unassigned_1u78168a_1i** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6'6"X 14' ALUMINUM UTILITY TRAILER -SINGLE AXLE W/O BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)
+- 🟢 **qb_unassigned_1u78168a_2e** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6'6"X 14' ALUMINUM UTILITY TRAILER -TANDEM AXLE BOTH W/ BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)
+- 🟢 **qb_unassigned_1u78168rack_1** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 14' TRAILER SINGLE RAIL ADD-ON
+  - why: HIGH — owner ruling C2.1: trailer rail add-on, same removal
+- 🟢 **qb_unassigned_1u78192a_2e** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 6'6"X 16' ALUMINUM UTILITY TRAILER -TANDEM AXLE BOTH W/ BRAKES -STD RAMP VIN #
+  - why: HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)
+- 🟢 **qb_unassigned_1utiedown** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND TIE DOWN FOR UTILITY AND SNOWMOBILE TRAILERS
+  - why: HIGH — owner ruling C2.1: trailer tie-down accessory, same removal
+- 🟢 **qb_unassigned_2190_3340_0** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: Air One NATIONAL FOAM: NATIONAL FOAM UNIVERSAL GREEN 3% X 3% FOAM CONCENTRATE, 5 GALLON PAIL
+  - why: HIGH — owner ruling C4: delete. Air One / National Foam 5-gal foam concentrate — consumable, not an upfit part
+- 🟢 **qb_unassigned_2ut7866ramp** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND 78" WIDE X 66" LONG BI-FOLD RAMP ADD ON
+  - why: HIGH — owner ruling C2.1: trailer bi-fold ramp accessory, same removal
 - 🟢 **qb_unassigned_ace_k9_part** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
 - 🟢 **qb_unassigned_advertising_discount** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
 - 🟢 **qb_unassigned_american_aluminum_part** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_cctv8** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: COCAR 8 INCH MONITOR WITH VGA, AV, HDMI VIDEO INPUTS, INCLUDES REMOTE AND POWER CORD
+  - why: HIGH — owner ruling C5.5: delete. Generic 8" CCTV monitor not needed (Trailblazer thermal parents stay, untouched)
 - 🟢 **qb_unassigned_co_shipping** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
 - 🟢 **qb_unassigned_concrete** · DELETE · _10_qb_unassigned_noncatalog.json_
@@ -1248,6 +1256,12 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
 - 🟢 **qb_unassigned_credit_to_clear_account** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_cstc1000101** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND SPARE TIRE CARRIER
+  - why: HIGH — owner ruling C2.1: trailer spare-tire carrier, same removal
+- 🟢 **qb_unassigned_ctr1420575da** · DELETE · _11_qb_unassigned_rebrand.json_
+  - QB: JB LUND ST205/75R14 LRC - 1760# - ALUM WHEEL RADIAL
+  - why: HIGH — owner ruling C2.1: trailer spare wheel, same removal
 - 🟢 **qb_unassigned_design** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: Custom Design
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
@@ -1285,6 +1299,9 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **qb_unassigned_labor_repair** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: LABOR REPAIR
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_light_kit_led** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: LIGHT KIT-LED (RED & WHITE)
+  - why: HIGH — owner ruling C4: delete all consumables/artifacts. 'LIGHT KIT-LED (RED & WHITE)' $0, no brand or context — one of the two $0 configurator artifacts (F34: unresearchable)
 - 🟢 **qb_unassigned_lighting** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: Garden Lighting
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
@@ -1300,9 +1317,30 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **qb_unassigned_obsolete_equipment_credit** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: OBSOLETE SQUAD EQUIPMENT CREDIT
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_pc_matte** · DELETE · _10_qb_unassigned_noncatalog.json_
+  - QB: MATTE BLACK POWDER COATING
+  - why: HIGH — owner ruling C2.7: powder coating is OUT of parts_db (services stay QB-only)
 - 🟢 **qb_unassigned_quoted_shipping** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: SHIPPING QUOTE #
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_rbe13421** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: AIR PRESURE SWITCH
+  - why: HIGH — owner ruling C7.3: delete. 'AIR PRESURE SWITCH' $36 — not used to build cars (owner knowledge; F28 research lead was inconclusive)
+- 🟢 **qb_unassigned_remote_start_install** · DELETE · _10_qb_unassigned_noncatalog.json_
+  - QB: LABOR TO INSTALL REMOTE START KIT
+  - why: HIGH — owner ruling C2.7: remote-start install labor is OUT of parts_db (services stay QB-only)
+- 🟢 **qb_unassigned_rpbkr700_k15_on_bobx8_p1** · DELETE · _10_qb_unassigned_noncatalog.json_
+  - QB: RADIANT ECO LED LAMPHEAD
+  - why: HIGH — owner ruling C4: delete both $0 artifacts. 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0 — same pattern as the rdb100 items deleted in rest_of_lights.json
+- 🟢 **qb_unassigned_rv_3xl_red_fire** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: RV-3XL RED FIRE
+  - why: HIGH — owner ruling C4: delete (see qb_unassigned_rv_regular)
+- 🟢 **qb_unassigned_rv_oversize** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: RV-OVERSIZE
+  - why: HIGH — owner ruling C4: delete (see qb_unassigned_rv_regular)
+- 🟢 **qb_unassigned_rv_regular** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: RV-REGULAR
+  - why: HIGH — owner ruling C4: delete Fire Ninja UltraBright Red FIRE safety vests (apparel, all 3 size SKUs) — F31 identity resolved, but owner ruled OUT of the catalog
 - 🟢 **qb_unassigned_sales** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
 - 🟢 **qb_unassigned_sales_tax** · DELETE · _10_qb_unassigned_noncatalog.json_
@@ -1328,87 +1366,35 @@ Confidence: 🟢 high — apply unless it looks wrong · 🟡 medium — worth a
 - 🟢 **qb_unassigned_travel** · DELETE · _10_qb_unassigned_noncatalog.json_
   - QB: TRAVEL CHARGE
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
+- 🟢 **qb_unassigned_w709980_s439** · DELETE · _12_qb_unassigned_residual.json_
+  - QB: FORD REPLACEMENT FRONT SEAT BOLTS
+  - why: HIGH — owner ruling C4: delete. Ford OEM front-seat bolts, $5 — install-hardware noise, not a catalog part
 - 🟢 **qb_unassigned_whelen_part** · DELETE · _10_qb_unassigned_noncatalog.json_
   - why: Three families, one treatment (delete from parts_db — they all stay in QuickBooks untouched): (a) bookkeeping lines (dis
-- 🟡 **qb_unassigned_pc_matte** · DELETE · _10_qb_unassigned_noncatalog.json_
-  - QB: MATTE BLACK POWDER COATING
-  - why: MEDIUM — powder-coating is a real service charge; delete assumes services don't live in products
-- 🟡 **qb_unassigned_remote_start_install** · DELETE · _10_qb_unassigned_noncatalog.json_
-  - QB: LABOR TO INSTALL REMOTE START KIT
-  - why: MEDIUM — labor line for remote-start installs; same services question
-- 🔴 **qb_unassigned_rpbkr700_k15_on_bobx8_p1** · DELETE · _10_qb_unassigned_noncatalog.json_
-  - QB: RADIANT ECO LED LAMPHEAD
-  - why: LOW — 'RADIANT ECO LED LAMPHEAD' with configurator-suffix SKU (-K15-ON-BOBX8-P1), $0. Same pattern as the rdb100 items you deleted in rest_of_lights.json. Confirm junk
+- 🟢 **snowex_84520** · DELETE · _26_small_manufacturers.json_
+  - QB: SNOWEX 8611 POWER PLOW RUBBER DEFLECTOR KIT
+  - why: HIGH — owner ruling C2.2: snow plows OUT. Plow rubber deflector kit accessory, same removal
+- 🟢 **snowex_8611ppled** · DELETE · _26_small_manufacturers.json_
+  - QB: SNOWEX 8'6" TO 11' POWER PLOW COMPLETE KIT WITH STORM SEEKER LED LIGHTS, AUTOMATIXX ATTACHMENT SYSTEM, AND SCR
+  - why: HIGH — owner ruling C2.2: snow plows OUT. 8'6"-11' Power Plow complete kit — not catalog-worthy
+- 🟢 **whelen_68_1183491a16** · DELETE · _21_whelen.json_
+  - QB: WHELEN AMBER 4IN LENS FOR FREEDOM MICRO EDGE
+  - why: HIGH — owner ruling C4: delete. 9M/Edge-9000-series legacy replacement lens — legacy Micro Edge service part
+- 🟢 **whelen_cc5k2** · DELETE · _21_whelen.json_
+  - QB: WHELEN INSTALLATION KIT FOR CCSRN5 CHEVY, 2017-2020 TAHOE PPV/SSV, 2017-2018 SILVERADO 1500, 2019-2021 SILVERA
+  - why: HIGH — owner ruling C5.2: delete CenCom Carbide parts. Install kit for the CCSRN-5 (CenCom Carbide siren & light controller) — not used on new builds
+- 🟢 **whelen_h35sn12** · DELETE · _21_whelen.json_
+  - QB: WHELEN SNAP-IN HALO.BULB 35W/12V AXL.
+  - why: HIGH — owner ruling C4: delete. 35W snap-in halogen bulb — legacy-halogen service stock, none of the parent products are catalog products
+- 🟢 **whelen_pfp2ap1** · DELETE · _21_whelen.json_
+  - QB: WHELEN PFP2AC POLE/PED MT WHT W/ SW
+  - why: HIGH — owner ruling C4: delete. Dual Panel Pioneer Plus floodlight, 115 VAC pole/pedestal flood — not a vehicle-build part
 
-## → `(keep)`  (9 proposals, 1 questions)
+## → `(keep)`  (3 proposals)
 
-- 🟢 **fireninja_ultrabright_red_vest** → *UltraBright Red FIRE Safety Vest* · merge 3→1 · _12_qb_unassigned_residual.json_
-  - why: the RV- items are Fire Ninja 'UltraBright Red' Fire/Public Safety VESTS — Fire Ninja sells them with exactly this SKU pattern (ipp-ips.com listing URL ends /RV-SMALL; firesafetyusa.com 'UltraBright Red Fire Public Safety Vest'), and Fire Ninja is already a DTM QB vendor (the FIRE NINJA PART placeholder in plan 10) with manufacturer fireninja_safety_equipment in the catalog. RV-REGULAR/RV-OVERSIZE ($49.99) + RV-3XL RED FIRE ($52.99) = size SKUs of one vest product. NOT Ray Allen (former guess corrected) (EVIDENCE.md F31)
-  - **❓ apparel in the vehicle catalog — keep (homeless, QB-linked) or delete from parts_db? → OPEN_QUESTIONS B4**
 - 🟢 **unity_shaft_headpost** → *Shaft & Headpost Assembly LH* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: description says UNITY; spotlight replacement assembly — accessory of the spotlights (role below)
 - 🟡 **american_aluminum_vault_basket** → *SUV Vault Basket* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: 4" basket add-on for the SUV vault — accessory of the vault (role below), no home needed
-- 🟡 **jb_lund_bifold_ramp** → *Bi-Fold Ramp Add-On* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: trailer accessory
-- 🟡 **jb_lund_spare_tire_carrier** → *Spare Tire Carrier* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: trailer accessory
-- 🟡 **jb_lund_spare_wheel** → *Spare Wheel ST205/75R14* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: trailer accessory
-- 🟡 **jb_lund_tie_down** → *Trailer Tie Down* · merge 1→1 · _11_qb_unassigned_rebrand.json_
-  - why: trailer accessory
-- 🟡 **jb_lund_trailer_rail** → *Trailer Rail Add-On* · merge 3→1 · _11_qb_unassigned_rebrand.json_
-  - why: Rail add-ons per trailer length as SKUs; accessory of the trailer (role set below), so no part-type home needed
 - 🟡 **tiger_tough_embroidery** → *Stock Embroidery* · merge 1→1 · _11_qb_unassigned_rebrand.json_
   - why: Tiger Tough embroidery add-on for seat covers — accessory of the seat-cover products (role below), no home needed
-
-## → `(none — question)`  (13 proposals, 13 questions)
-
-- 🔴 **5_0_fab_dtm_tube_chase** · home · _26_small_manufacturers.json_
-  - QB: DTM TUBE CHASE
-  - why: 'DTM TUBE CHASE' $75 — no description beyond the name
-  - **❓ what is a tube chase? (wire chase through the partition tube?) Home once known**
-- 🔴 **feniex_fenflas** · home · _24_feniex.json_
-  - QB: FENIEX
-  - why: QB description is literally just 'FENIEX', $47.90. Research lead (not proof): Feniex sells exactly ONE flasher product — the 4X Flasher H-2220 (4-output, $59.99 MSRP, so $47.90 is plausible dealer cost), and 'FENFLAS' reads as FENiex FLASher. No product named FENFLAS exists on feniex.com (EVIDENCE.md F20)
-  - **❓ confirm: is FENFLAS the Feniex 4X Flasher (H-2220)? If yes → headlight_flasher home; if unknowable, delete → OPEN_QUESTIONS B7.2**
-- 🔴 **qb_unassigned_2190_3340_0** · home · _12_qb_unassigned_residual.json_
-  - QB: Air One NATIONAL FOAM: NATIONAL FOAM UNIVERSAL GREEN 3% X 3% FOAM CONCENTRATE, 5 GALLON PAIL
-  - why: Air One / National Foam 5-gal foam concentrate — consumable, not an upfit part
-  - **❓ Delete from parts_db (stays in QB), or do fire-apparatus consumables belong in the catalog? If keeping: re-brand to air_one_equipment (exists) — no home fits**
-- 🔴 **whelen_22leca** · home · _21_whelen.json_
-  - QB: WHELEN OPT ADD 1 LEFT ANGLED ENDCAP
-  - why: PL26: 'One Angled Left End Cap for use with One Aerial Recognition Light, for Bars 30" to 50"' — an option for the WeCanX 2250 Series Build-A-Bar surface-mount bars, $144 exact match. NOT a Legacy option (former accessory link removed). No 2250-series bar product exists in the catalog to parent to (EVIDENCE.md)
-  - **❓ create a WeCanX 2250 bar product for the endcaps to parent to, or leave home-only? → OPEN_QUESTIONS B5.1**
-- 🔴 **whelen_22reca** · home · _21_whelen.json_
-  - QB: WHELEN OPT ADD 1 RIGHT ANGLED ENDCAP
-  - why: right-side twin of whelen_22leca — same 2250 Series option (EVIDENCE.md)
-  - **❓ see whelen_22leca → OPEN_QUESTIONS B5.1**
-- 🔴 **whelen_68_1183491a16** · home · _21_whelen.json_
-  - QB: WHELEN AMBER 4IN LENS FOR FREEDOM MICRO EDGE
-  - why: 68-1183491A·· is the 9M/Edge-9000-series replacement-lens family (zips.com lists 68-1183491A02B as '9M Series Lens – Amber') — consistent with a legacy Micro Edge bar, NOT the Micro Freedom (whelen_freedom). Former accessory-of-whelen_freedom link removed as contradicted by evidence (EVIDENCE.md)
-  - **❓ legacy Micro Edge service lens — keep (homeless) or delete? → OPEN_QUESTIONS B4.5**
-- 🔴 **whelen_h35sn12** · home · _21_whelen.json_
-  - QB: WHELEN SNAP-IN HALO.BULB 35W/12V AXL.
-  - why: PL26: 35W snap-in halogen bulb (White Dot) for 4000 motor/reflector assembly, 52 Series beacons, DOT3 systems, Edge California steady-burn, RDX — replacement service stock for legacy halogen products, none of which are catalog products (EVIDENCE.md)
-  - **❓ consumable service stock for legacy halogen gear — keep in catalog or delete? → OPEN_QUESTIONS B4.2**
-- 🔴 **whelen_m1batt** · home · _21_whelen.json_
-  - QB: WHELEN MOTORCYCLE NO-SPILL BATTERY
-  - why: motorcycle no-spill battery — motorcycle box family
-  - **❓ §7 ruling still open: does DTM sell motorcycle builds? If yes → new motorcycle_box part_type + family; if no → leave unhomed or delete all five**
-- 🔴 **whelen_m1ground** · home · _21_whelen.json_
-  - QB: WHELEN MOTORCYCLE BOX GROUND PLANE
-  - **❓ see whelen_m1batt (motorcycle box family)**
-- 🔴 **whelen_m4b6lr** · home · _21_whelen.json_
-  - QB: WHELEN M/C BOX RIGHT-OPEN LESS FLASH
-  - **❓ see whelen_m1batt (motorcycle box family)**
-- 🔴 **whelen_m4bsep** · home · _21_whelen.json_
-  - QB: WHELEN M4B OPTIONAL SEPARATION PLATE
-  - **❓ see whelen_m1batt (motorcycle box family)**
-- 🔴 **whelen_mbadpt14** · home · _21_whelen.json_
-  - QB: WHELEN MB4/6 ADAPTER PLATE 14 HARLEY
-  - **❓ see whelen_m1batt (motorcycle box family)**
-- 🔴 **whelen_pfp2ap1** · home · _21_whelen.json_
-  - QB: WHELEN PFP2AC POLE/PED MT WHT W/ SW
-  - why: PL26 identified: Dual Panel Pioneer Plus floodlight, 115 VAC, with Pole/Pedestal Mount Adapter and On/Off Switch, $2,568 exact match — a mains-powered pole/pedestal scene flood, not obviously a vehicle-build part (EVIDENCE.md)
-  - **❓ 115 VAC pole/pedestal flood — does it belong in the vehicle-builder catalog, or is it a shop/command-post sale? → OPEN_QUESTIONS B4.4**
