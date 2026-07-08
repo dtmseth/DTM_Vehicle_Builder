@@ -6,16 +6,24 @@
       "service/service_2 duplicate tag merge (audit §2.2) — needs a grid edit or a tiny one-off; curate.py has no tag ops",
       "specify_whip_style / specify_cylinder_style manufacturer 'specify' doesn't exist (audit §2.1) — owner ruling C3: these read as workbook-dropdown antenna-STYLE placeholders, not real products; likely outcome is delete-or-restyle, not a new manufacturer. Flagged below for owner veto (full descriptions surfaced in REVIEW_SHEET.md) rather than resolved here — no delete/restyle action taken without that veto",
       "'Preimer K-9' typo rename — pending your confirmation, rename in the grid (0 products, zero cost)"
-    ]
+    ],
+    "specify_resolution": "specify_* entries moved to 27_specify_antennas.json per owner ruling 2026-07-07 (whip=delete, covered by laird_qwb800; cylinder=shop-side keep, no QB link)"
   },
   "merge": [
     {
       "target_id": "soundoff_nforce",
       "model": "NFORCE",
       "manufacturer_id": "soundoff",
-      "fits_part_types": ["warning_light"],
-      "tag_ids": ["light"],
-      "sources": ["soundoff_nforce", "soundoff_n_force"],
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "sources": [
+        "soundoff_nforce",
+        "soundoff_n_force"
+      ],
       "_confidence": "high",
       "_why": "Spelling twins (NFORCE / N-FORCE), 1 SKU each, both warning_light — one product, two SKUs."
     },
@@ -23,40 +31,204 @@
       "target_id": "soundoff_mpower",
       "model": "MPOWER",
       "manufacturer_id": "soundoff",
-      "fits_part_types": ["warning_light", "roof_light_bar"],
-      "tag_ids": ["light"],
-      "sources": ["soundoff_mpower", "soundoff_m_power"],
+      "fits_part_types": [
+        "warning_light",
+        "roof_light_bar"
+      ],
+      "tag_ids": [
+        "light"
+      ],
+      "sources": [
+        "soundoff_mpower",
+        "soundoff_m_power"
+      ],
       "_confidence": "high",
       "_why": "Spelling twins (MPOWER / M-POWER); union of homes kept (m_power also fit roof_light_bar)."
     },
     {
       "target_id": "dtm_universal_grill_bracket",
       "manufacturer_id": "5_0_fab_dtm",
-      "sources": ["dtm_universal_grill_bracket"],
+      "sources": [
+        "dtm_universal_grill_bracket"
+      ],
       "_confidence": "high",
       "_why": "owner ruling C3: dtm ≡ 5-0 Fab, one and the same — 5-0 Fab is the real brand, dtm_* products re-branded to it. Manufacturer 'dtm' never existed in the catalog (audit §2.1); 5_0_fab_dtm does."
     },
-    {"target_id": "dtm_l_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_l_bracket"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"},
-    {"target_id": "dtm_angle_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_angle_bracket"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"},
-    {"target_id": "dtm_dtm_extended_cargo_window_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_dtm_extended_cargo_window_bracket"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"},
-    {"target_id": "dtm_license_plate_bracket", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_license_plate_bracket"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"},
-    {"target_id": "dtm_grommet_mount", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_grommet_mount"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"},
-    {"target_id": "dtm_twist_lock_adaptor", "manufacturer_id": "5_0_fab_dtm", "sources": ["dtm_twist_lock_adaptor"], "_confidence": "high", "_why": "owner ruling C3: dtm→5-0 Fab re-brand"}
+    {
+      "target_id": "dtm_l_bracket",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_l_bracket"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    },
+    {
+      "target_id": "dtm_angle_bracket",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_angle_bracket"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    },
+    {
+      "target_id": "dtm_dtm_extended_cargo_window_bracket",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_dtm_extended_cargo_window_bracket"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    },
+    {
+      "target_id": "dtm_license_plate_bracket",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_license_plate_bracket"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    },
+    {
+      "target_id": "dtm_grommet_mount",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_grommet_mount"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    },
+    {
+      "target_id": "dtm_twist_lock_adaptor",
+      "manufacturer_id": "5_0_fab_dtm",
+      "sources": [
+        "dtm_twist_lock_adaptor"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C3: dtm→5-0 Fab re-brand"
+    }
   ],
   "set_home": [
-    {"product_id": "setina_pb10", "fits_part_types": ["pit_bar"], "_confidence": "high", "_why": "owner ruling C1.9: setina_pb10 = pit_bar (the workbook was right; parts_db had it wrong on wing_wraps — WORKBOOK_GRAPH.md conflict #1). Owner definition: the pit bar is the lower bars, the wing wrap is the headlight bar that mounts TO the pit bar; `pit_bar` type is shared with Westin — never relabel"},
-    {"product_id": "specify_whip_style", "fits_part_types": ["radio_antenna_top"], "_confidence": "low", "_why": "owner ruling C3: 'specify' manufacturer placeholder — WHIP STYLE reads as an antenna-style workbook-dropdown artifact, not a real product. Reaffirming current home (unchanged) so this is surfaced in REVIEW_SHEET.md for owner veto; likely outcome is delete-or-restyle, not treatment as a real manufacturer", "_question": "delete, restyle as a SKU/option on a real antenna product, or keep as-is? → OPEN_QUESTIONS §C3"},
-    {"product_id": "specify_cylinder_style", "fits_part_types": ["radio_antenna_top"], "_confidence": "low", "_why": "owner ruling C3: same 'specify' placeholder as specify_whip_style — CYLINDER STYLE antenna-style artifact. Reaffirming current home, surfaced for owner veto", "_question": "delete, restyle as a SKU/option on a real antenna product, or keep as-is? → OPEN_QUESTIONS §C3"},
-    {"product_id": "whelen_2_lamp_tracer", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "real light missing the light tag (audit §2.4); color lives in child heads so needs-color exemption still applies"},
-    {"product_id": "whelen_tracer_3_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_tracer_5_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_tracer_6_lamp", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_mirror_beams", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_ion_rear_pillar", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_fst", "fits_part_types": ["front_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_rst", "fits_part_types": ["rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_xlp", "fits_part_types": ["front_interior_light_bar", "rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"},
-    {"product_id": "whelen_outer_edge", "fits_part_types": ["rear_interior_light_bar"], "add_tags": ["light"], "_confidence": "high", "_why": "light tag (audit §2.4)"}
+    {
+      "product_id": "setina_pb10",
+      "fits_part_types": [
+        "pit_bar"
+      ],
+      "_confidence": "high",
+      "_why": "owner ruling C1.9: setina_pb10 = pit_bar (the workbook was right; parts_db had it wrong on wing_wraps — WORKBOOK_GRAPH.md conflict #1). Owner definition: the pit bar is the lower bars, the wing wrap is the headlight bar that mounts TO the pit bar; `pit_bar` type is shared with Westin — never relabel"
+    },
+    {
+      "product_id": "whelen_2_lamp_tracer",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "real light missing the light tag (audit §2.4); color lives in child heads so needs-color exemption still applies"
+    },
+    {
+      "product_id": "whelen_tracer_3_lamp",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_tracer_5_lamp",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_tracer_6_lamp",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_mirror_beams",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_ion_rear_pillar",
+      "fits_part_types": [
+        "warning_light"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_fst",
+      "fits_part_types": [
+        "front_interior_light_bar"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_rst",
+      "fits_part_types": [
+        "rear_interior_light_bar"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_xlp",
+      "fits_part_types": [
+        "front_interior_light_bar",
+        "rear_interior_light_bar"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    },
+    {
+      "product_id": "whelen_outer_edge",
+      "fits_part_types": [
+        "rear_interior_light_bar"
+      ],
+      "add_tags": [
+        "light"
+      ],
+      "_confidence": "high",
+      "_why": "light tag (audit §2.4)"
+    }
   ],
   "_open_questions": [
     "whelen_cenator is homed (roof_light_bar) but was retired as discontinued — delete the product, or keep for historical builds?",
