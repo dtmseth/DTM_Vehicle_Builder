@@ -19,9 +19,9 @@
     {"product_id": "havis_cup2_1001", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "internal cup holders — havis_cup_holders precedent"},
     {"product_id": "havis_cup2_1004", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "self-adjusting cup holder"},
     {"product_id": "havis_cup2_1005", "fits_part_types": ["special_face_plate"], "_confidence": "medium", "_why": "angled wedge kit for cup holders / 4\" brackets — console furniture"},
-    {"product_id": "havis_c_eb25_xtl_1p", "fits_part_types": ["special_face_plate"], "_confidence": "medium", "_why": "1-piece equipment mounting bracket (Motorola XTL) — lives in the console equipment space like faceplates", "_question": "OK treating C-EB equipment brackets as faceplate-family? Alternative: `bracket` + accessory of the radio products"},
-    {"product_id": "havis_c_eb30_xtl_1p_a", "fits_part_types": ["special_face_plate"], "_confidence": "medium", "_why": "angled equipment bracket (Motorola remote radio)", "_question": "see C-EB question"},
-    {"product_id": "havis_c_eb40_ccs_1p", "fits_part_types": ["special_face_plate"], "_confidence": "medium", "_why": "equipment bracket (Whelen CenCom)", "_question": "see C-EB question"},
+    {"product_id": "havis_c_eb25_xtl_1p", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "owner ruling C1.4: Havis C-EB equipment brackets → `special_face_plate` CONFIRMED (console-furniture convention). 1-piece equipment mounting bracket (Motorola XTL)"},
+    {"product_id": "havis_c_eb30_xtl_1p_a", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "owner ruling C1.4: angled equipment bracket (Motorola remote radio)"},
+    {"product_id": "havis_c_eb40_ccs_1p", "fits_part_types": ["special_face_plate"], "_confidence": "high", "_why": "owner ruling C1.4: equipment bracket (Whelen CenCom)"},
     {"product_id": "havis_c_hdm_1003", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "heavy-duty pedestal mount (Tahoe/Sierra/Silverado)"},
     {"product_id": "havis_c_hdm_1006", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "heavy-duty mount (FPIU)"},
     {"product_id": "havis_c_hdm_1026", "fits_part_types": ["pedestal_mount"], "_confidence": "high", "_why": "heavy-duty mount (Blazer EV)"},
@@ -42,17 +42,19 @@
     {"product_id": "havis_ut_301", "fits_part_types": ["docking_station"], "_confidence": "high", "_why": "universal tablet mount"},
     {"product_id": "havis_c_usb_3", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "USB-C/A dual port charger — 12v/USB power slot"},
     {"product_id": "havis_c_w_lp1_usb_1", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "accessory bracket w/ lighter plug + USB charger"},
-    {"product_id": "havis_cg_x", "fits_part_types": ["battery_tender"], "_confidence": "medium", "_why": "ChargeGuard-Select ignition-off timer — battery protection", "_question": "battery_tender or vehicle_interface? It's a power-management timer, not a charger"},
+    {"product_id": "havis_cg_x", "fits_part_types": ["power_timer"], "_confidence": "high", "_why": "owner ruling C1.8: ChargeGuard is a NEW part_type `power_timer` (label 'Power Timer / ChargeGuard'), not battery_tender or vehicle_interface — ChargeGuard-Select ignition-off timer"},
     {"product_id": "havis_k9_c26_pt_b", "fits_part_types": ["k9_kennel"], "_confidence": "high", "_why": "K9 prisoner transport system (Tahoe)"},
     {"product_id": "havis_k9_f28_pt_b", "fits_part_types": ["k9_kennel"], "_confidence": "high", "_why": "K9 prisoner transport system (FPIU)"},
-    {"product_id": "havis_pt_a_409", "fits_part_types": ["prisoner_transport_insert"], "_confidence": "medium", "_why": "G-series prisoner-transport HVAC option — transport-insert family", "_question": "it's an option, not the insert itself — accessory of PT-C02 instead?"},
     {"product_id": "havis_pt_c02_120_2", "fits_part_types": ["prisoner_transport_insert"], "_confidence": "medium", "_why": "120\" 2-compartment prisoner transport insert ($23k van body)"},
     {"product_id": "havis_sbx_5001", "fits_part_types": ["rear_storage_box"], "_confidence": "medium", "_why": "FPIU storage drawer mount (w/ Havis K9)"},
     {"product_id": "havis_icm_adh_ax3_1", "fits_part_types": ["bracket"], "_confidence": "medium", "_why": "overhead Axon Fleet 3 camera bracket"}
   ],
   "set_accessory": [
     {"product_id": "havis_icm_adh_ax3_1", "accessory_category": "bracket_mount", "accessory_of_products": ["axon_fleet_3"], "_confidence": "medium", "_why": "camera mount for the Axon Fleet 3 (unbilled camera, billed bracket)"},
-    {"product_id": "havis_pt_a_409", "accessory_category": "other", "accessory_of_products": ["havis_pt_c02_120_2"], "_confidence": "medium", "_why": "HVAC option on the transport insert"},
     {"product_id": "havis_cup2_1005", "accessory_category": "other", "accessory_of_products": ["havis_cup2_1001", "havis_cup2_1004"], "_confidence": "medium", "_why": "wedge kit for the cup holders"}
-  ]
+  ],
+  "delete_products": ["havis_pt_a_409"],
+  "_delete_notes": {
+    "havis_pt_a_409": "HIGH — owner ruling C5.4: delete. G-series prisoner-transport HVAC option — not used on regular builds"
+  }
 }
