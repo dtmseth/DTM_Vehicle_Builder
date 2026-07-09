@@ -86,7 +86,7 @@ the real build editor with headless Chromium.
 - **Category:** workbook-shape (naming/rendering contract assumes workbook-era
   catalog names)
 - **Severity:** HIGH — **the** blocker for the curated equipment queue
-- **Status:** CONFIRMED
+- **Status:** RESOLVED
 - **Repro (live UI):** Add Part → Equipment → Havis 18" console → SKU Select →
   location step is free-text (console part_type: `location_mode: text`,
   **0 location_options**) → type anything → Add. Draft part lands as
@@ -104,6 +104,19 @@ the real build editor with headless Chromium.
   carry the part_type label as `base_label`/`name_pattern` instead of clearing
   them. (Seeding `location_options` for high-traffic types is the data-side
   complement, already on the curation roadmap.)
+- **Fix:** `_pickerDrawLocation`'s free-text branch now resolves a real
+  part_type label via a new `_pickerFreeTextPartTypeLabel()` helper — it reads
+  the selected product's `fits_part_types` (already in the `category-skus`
+  payload) intersected with the current `type_id`, backed by a lazily-fetched
+  `/api/parts-db/part-types` label cache (`_pickerPartTypeMeta`) — and sets
+  `loc.name_pattern = "{label} {n}"` / `loc.base_label = label` instead of
+  clearing them, falling back to the product model if no part_type label is
+  found. Client-side only; no server/contract changes. Verified live with the
+  exact repro (Gamber Johnson PIU low-profile console, part_number
+  `7170-0734-00`, `console` part_type with 0 `location_options`): two adds
+  land as `"Console 1"` / `"Console 2"` with zero `plan.warnings`. Golden
+  master + contract snapshots unchanged (client-only fix). Permanent
+  regression guard: `tools/ui_smoke/flows.py:flow_add_text_mode_equipment_part`.
 
 ### FINDING-005: picker Edit mode destroys the edited part (name→"Part", SKU/model clobber, quantity→1, colors wiped)
 - **Location:** `ui/js/part_picker.js:99-119` (`_pickerOpenEdit` hard-codes

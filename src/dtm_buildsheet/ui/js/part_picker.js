@@ -655,6 +655,19 @@ function _pickerWireBrand(el) {
 // normal dots — classifying them as interior hid them entirely.
 const _INTERIOR_PZ = new Set(["interior"]);
 
+// part_type_id → PartType (label, type_id, ...), loaded once and reused across
+// picker opens — static reference data, doesn't need per-open reset. Backs the
+// free-text location branch's name fallback (FINDING-004).
+let _pickerPartTypeMeta = null;
+async function _pickerEnsurePartTypeMeta() {
+  if (_pickerPartTypeMeta) return _pickerPartTypeMeta;
+  try {
+    const res = await api("/api/parts-db/part-types");
+    _pickerPartTypeMeta = new Map((res?.part_types || []).map(pt => [pt.part_type_id, pt]));
+  } catch (e) { console.error("Picker: part-types failed:", e); _pickerPartTypeMeta = new Map(); }
+  return _pickerPartTypeMeta;
+}
+
 async function _pickerRenderLocation() {
   const f = _pickerState.filters;
   const loc = _pickerState.loc;
@@ -662,6 +675,7 @@ async function _pickerRenderLocation() {
   if (!loc.layouts) {
     try { loc.layouts = await api("/api/layouts"); } catch (e) { console.error("Picker: layouts failed:", e); loc.layouts = {}; }
   }
+  await _pickerEnsurePartTypeMeta();
   try {
     // Product- AND vehicle-scoped: only placements this product can take that
     // also render in the planner's views for this vehicle (so they all load).
@@ -674,6 +688,7 @@ async function _pickerRenderLocation() {
 }
 
 function _pickerDrawLocation() {
+  const f = _pickerState.filters;
   const loc = _pickerState.loc;
   const layoutViews = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
   // A location shows as a diagram dot only if it has coordinates (has_coords from
@@ -730,13 +745,22 @@ function _pickerDrawLocation() {
         });
       } else {
         // No preset locations for this part_type → free-text (workbook behavior).
+        // The part still needs a real, sequenceable name (FINDING-004) so the
+        // planner can match it to a part_type and render it — carry the
+        // part_type's label as base_label/name_pattern instead of clearing them.
+        const ptLabel = _pickerFreeTextPartTypeLabel(f);
         btns.innerHTML = `<div class="pf-group"><span class="pf-label">Location</span>` +
           `<input id="picker-loc-text" class="pf-select" placeholder="Type the mount location…" value="${esc(loc.selected || "")}">` +
           `<span class="pf-hint">No preset locations for this part — type where it mounts.</span></div>`;
+        loc.name_pattern = ptLabel ? `${ptLabel} {n}` : "";
+        loc.base_label = ptLabel;
+        loc.catalog_names = [];
         const txt = $("picker-loc-text");
         if (txt) txt.addEventListener("input", () => {
           loc.selected = txt.value.trim();
-          loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
+          loc.name_pattern = ptLabel ? `${ptLabel} {n}` : "";
+          loc.base_label = ptLabel;
+          loc.catalog_names = [];
           _pickerUpdateFooter();
         });
       }
@@ -865,6 +889,19 @@ function _pickerPlaceDots() {
       _pickerUpdateFooter();
     });
   });
+}
+
+// Resolve a real part_type label for the free-text location branch (FINDING-004),
+// from the selected product's `fits_part_types` (already in the category-skus
+// payload) intersected with the currently-browsed type_id. Falls back to the
+// product's model name, never the literal "Part".
+function _pickerFreeTextPartTypeLabel(f) {
+  const sel = _pickerState.sel;
+  const product = sel && _pickerState.products.find(p => p.product_id === sel.product_id);
+  const fits = (product && product.fits_part_types) || [];
+  const meta = _pickerPartTypeMeta || new Map();
+  const pt = fits.map(id => meta.get(id)).find(p => p && p.type_id === f.type_id) || meta.get(fits[0]);
+  return (pt && pt.label) || (product && product.model) || "";
 }
 
 function _pickerTitleCase(s) {
