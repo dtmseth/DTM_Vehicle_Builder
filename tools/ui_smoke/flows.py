@@ -518,6 +518,140 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     assert "head_1" not in choices, f"head_1 must not be in skuChoices (it was not changed), got {choices}"
 
 
+def flow_scene_light_qty_only(page, base_url: str) -> None:
+    """PICKER_REDESIGN.md Step 5 regression guard.
+
+    Scene lights (category == "scene", covering the entire scene_lights family:
+    front_scene / rear_scene / side_scene / spotlight) must show ONLY the
+    quantity control and per-head SKU dropdowns — no mode pills, no lens pills,
+    no color swatches, and no "Remove options" toggle.
+
+    Also asserts the non-scene (warning) path is unchanged: it must still
+    render mode/lens/color controls and the "Remove options" toggle.
+    """
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    # ── Part A: scene light ──────────────────────────────────────────────────
+    page.click(".pbt-cat-head[data-cat='lights']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
+    page.wait_for_timeout(200)
+
+    page.click(".pbt-fam-head[data-fam='scene_lights']")
+    page.wait_for_selector(".pbt-fam-head[data-fam='scene_lights'].open")
+    page.wait_for_timeout(200)
+
+    # Pick the first scene leaf (e.g., front_scene).
+    page.wait_for_selector(".pbt-fam-head[data-fam='scene_lights'] + .pbt-fam-body .pbt-leaf")
+    page.click(".pbt-fam-head[data-fam='scene_lights'] + .pbt-fam-body .pbt-leaf >> nth=0")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # Product grid must render.
+    assert page.locator(".pp-head").count() > 0, \
+        "expected products in grid after picking a scene light type"
+
+    # Click the first product to open its box.
+    page.click(".pp-head >> nth=0")
+    page.wait_for_timeout(200)
+
+    # The product box must show options (pp-prod-options) — qty control is there.
+    page.wait_for_selector(".pp-prod-options")
+
+    # Qty +/- must be present (scene still configures quantity).
+    qty_ctrl = page.locator(".pp-prod-options .pf-pill[data-k='count']").count()
+    assert qty_ctrl > 0, "scene: qty +/- control must be visible"
+
+    # Per-head SKU dropdowns must appear.
+    page.wait_for_selector(".pp-skus .pp-override[data-head]")
+
+    # ── The forbidden controls must NOT appear for scene ─────────────────────
+
+    # No mode pills (Identical / Split / Custom).
+    mode_pills = page.locator(".pp-prod-options .pf-pill[data-k='mode']").count()
+    assert mode_pills == 0, \
+        f"scene: mode pills must be hidden, found {mode_pills}"
+
+    # No lens pills (All / Clear / Smoked).
+    lens_pills = page.locator(".pp-prod-options .pf-pill[data-k='lens']").count()
+    assert lens_pills == 0, \
+        f"scene: lens pills must be hidden, found {lens_pills}"
+
+    # No color swatches (Red / Blue / Amber / …).
+    color_swatches = page.locator(".pp-prod-options .picker-swatch").count()
+    assert color_swatches == 0, \
+        f"scene: color swatches must be hidden, found {color_swatches}"
+
+    # No colors-per-head pills (Solo / Duo / Trio).
+    cph_pills = page.locator(".pp-prod-options .pf-pill[data-k='cph']").count()
+    assert cph_pills == 0, \
+        f"scene: colors-per-head pills must be hidden, found {cph_pills}"
+
+    # No "Remove options" toggle (there are no options to remove for scene).
+    remove_btn = page.locator(".pp-prod-options [data-opts-remove]").count()
+    assert remove_btn == 0, \
+        f"scene: 'Remove options' toggle must be hidden, found {remove_btn}"
+
+    # Light viz must be present (plain uncolored heads reflecting quantity).
+    viz_in_box = page.locator(".pp-row.sel .pp-viz").count()
+    assert viz_in_box > 0, "scene: .pp-viz must appear in the selected scene product box"
+
+    viz_heads = page.locator(".pp-row.sel .pp-viz .picker-foot-head").count()
+    assert viz_heads > 0, "scene: .pp-viz must contain at least one .picker-foot-head"
+
+    # ── Part B: warning light still shows the full option set ────────────────
+    # The picker is still open; lights category is still expanded (session state
+    # persists). Navigate to a warning leaf directly without reopening.
+    if not page.is_visible(".pbt-cat-head[data-cat='lights'].open"):
+        page.click(".pbt-cat-head[data-cat='lights']")
+        page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
+        page.wait_for_timeout(200)
+
+    # Expand warning_lights family.
+    if not page.is_visible(".pbt-fam-head[data-fam='warning_lights'].open"):
+        page.click(".pbt-fam-head[data-fam='warning_lights']")
+        page.wait_for_selector(".pbt-fam-head[data-fam='warning_lights'].open")
+        page.wait_for_timeout(200)
+
+    # Pick the first leaf with data-flow="warning".
+    warning_leaves = page.locator(".pbt-leaf[data-flow='warning']")
+    if warning_leaves.count() == 0:
+        # No warning leaf in tree — skip Part B (products not present in this parts_db).
+        return
+    warning_leaves.first.click()
+    page.wait_for_timeout(_SETTLE_MS)
+
+    assert page.locator(".pp-head").count() > 0, "expected warning products in grid"
+
+    # Find a colour product by clicking heads until option controls appear.
+    found_warning_opts = False
+    for i in range(min(4, page.locator(".pp-head").count())):
+        page.click(f".pp-head >> nth={i}")
+        page.wait_for_timeout(200)
+        if page.locator(".pp-prod-options").count() > 0:
+            found_warning_opts = True
+            break
+
+    if not found_warning_opts:
+        return   # no colour-configured warning product in test DB — skip
+
+    # Warning light must show mode, lens, and remove-options (the full option set).
+    mode_pills_w = page.locator(".pp-prod-options .pf-pill[data-k='mode']").count()
+    assert mode_pills_w > 0, \
+        f"warning: mode pills must be visible, found {mode_pills_w}"
+
+    lens_pills_w = page.locator(".pp-prod-options .pf-pill[data-k='lens']").count()
+    assert lens_pills_w > 0, \
+        f"warning: lens pills must be visible, found {lens_pills_w}"
+
+    remove_w = page.locator(".pp-prod-options [data-opts-remove]").count()
+    assert remove_w > 0, \
+        f"warning: 'Remove options' toggle must be visible, found {remove_w}"
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -525,6 +659,7 @@ FLOWS = {
     "picker_browse_tree": flow_picker_browse_tree,
     "light_options_in_product_box": flow_light_options_in_product_box,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
+    "scene_light_qty_only": flow_scene_light_qty_only,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,

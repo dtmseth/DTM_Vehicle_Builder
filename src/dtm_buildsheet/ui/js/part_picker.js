@@ -390,6 +390,11 @@ function _pickerColorConfigHtml() {
       ${seg("lens", "clear", "Clear", (f.lens || "") === "clear")}
       ${seg("lens", "smoked", "Smoked", (f.lens || "") === "smoked")}</div></div>`;
 
+  // Step 5: scene lights (category == "scene", which covers all scene_lights family
+  // members including spotlight) show quantity only — no mode/lens/color/cph/
+  // remove-options toggle. No filter options exist to remove for scene.
+  if (cat === "scene") return countHtml;
+
   if (isBar) {
     return _pickerOptionsHtml(countHtml, `<div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
         ${seg("cph", "duo", "Duo", c.colorsPerHead !== "trio")}
@@ -645,49 +650,74 @@ function _pickerRenderProducts() {
     const pColor = usesColor && _pickerProductHasColor(p);
 
     // Body: color products show options + per-combo SKU dropdown; else → SKU pick list.
+    // Step 5: scene products (even no-color ones) also select on head-click and render
+    // the qty+SKU box, so they share the selectsOnClick gate with color products.
+    const selectsOnClick = pColor || (usesColor && f.category_id === "scene");
     let bodyHtml = "";
     if (open) {
-      if (pColor && selected) {
-        // Step 2: option controls (mode/lens/color/cph/qty) in the product box,
-        // above the SKU dropdown.  _pickerWireProductOptions wires them after render.
-        bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml()}</div>`;
-        // Step 3: one dropdown per head (qty=N → N dropdowns), filtered to
-        // option-matching SKUs unless "Remove options" is engaged.
-        const optRemoved = _pickerState.optionsRemoved || false;
-        const allHeads = _pickerResolveHeads();
-        bodyHtml += `<div class="pp-skus">` + allHeads.map((headColors, h) => {
-          const headSet = _headSet(headColors);
-          const headKey = "head_" + h;
-          // Sort by lens-match first, then ion rank, then price.
-          const sorted = [...skus].sort((a, b) => {
-            const aL = _lensScore(a), bL = _lensScore(b);
-            if (aL !== bL) return aL - bL;
-            const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
-            if (ar !== br) return ar - br;
-            return (a.price ?? 9e9) - (b.price ?? 9e9);
-          });
-          // When optionsRemoved: show every SKU; otherwise filter to color+lens match.
-          let displaySkus, hasMatch;
-          if (optRemoved) {
-            displaySkus = sorted; hasMatch = false;
-          } else {
-            const matching = sorted.filter(s => _skuMatchesAny(s, [headSet]));
-            hasMatch = matching.length > 0;
-            displaySkus = hasMatch ? matching : sorted;  // fall back to all when no match
-          }
-          const chosen = _pickerState.skuChoices[headKey] || (displaySkus[0] && displaySkus[0].part_number) || "";
-          // Live title: each head's label reflects ITS chosen SKU + lens (Step 3).
-          const chosenObj = displaySkus.find(s => s.part_number === chosen) || displaySkus[0];
-          const lensLabel = chosenObj?.lens_type || (f.lens || "");
-          const headTitle = `Head ${h + 1}: ${chosen || "—"}${lensLabel ? " · " + lensLabel : ""}`;
-          const opts = displaySkus.map(s => {
-            const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
-            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}</option>`;
-          }).join("");
-          return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select>${(!hasMatch && !optRemoved) ? `<span class="pp-match no">no exact</span>` : ""}</div>`;
-        }).join("") + `</div>`;
-        // Step 4: light visualization below SKU dropdowns in the selected product box.
-        bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span>${_pickerHeadsPreviewHtml()}</div>`;
+      if (selectsOnClick && selected) {
+        // Step 5: branch on scene (category == "scene" covers all scene_lights family
+        // members — front_scene/rear_scene/side_scene/spotlight share picker_flow "scene").
+        if (f.category_id === "scene") {
+          // Scene box: qty control only (no mode/lens/color/cph/remove-options) +
+          // per-head SKU dropdowns (all SKUs, unfiltered) + plain uncolored viz.
+          bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml()}</div>`;
+          const sceneCount = _pickerState.config.count;
+          const sceneSorted = [...skus].sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9));
+          bodyHtml += `<div class="pp-skus">` + Array.from({ length: sceneCount }, (_, h) => {
+            const headKey = "head_" + h;
+            const chosen = _pickerState.skuChoices[headKey] || (sceneSorted[0] && sceneSorted[0].part_number) || "";
+            const headTitle = `Head ${h + 1}: ${chosen || "—"}`;
+            const opts = sceneSorted.map(s => `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${s.price != null ? " · $" + s.price : ""}</option>`).join("");
+            return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select></div>`;
+          }).join("") + `</div>`;
+          // Plain uncolored heads — scene heads carry no color, just quantity.
+          const plainHead = `<span class="picker-foot-head" title="Scene head"><span style="background:#888;border:1px solid rgba(0,0,0,.18)"></span></span>`;
+          bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span><span class="picker-foot-heads">${Array(sceneCount).fill(plainHead).join("")}</span></div>`;
+        } else {
+          // Non-scene: full option set (Steps 2/3/4 — mode/lens/color/cph + filtered
+          // per-head dropdowns + colored viz, unchanged).
+          // Step 2: option controls (mode/lens/color/cph/qty) in the product box,
+          // above the SKU dropdown.  _pickerWireProductOptions wires them after render.
+          bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml()}</div>`;
+          // Step 3: one dropdown per head (qty=N → N dropdowns), filtered to
+          // option-matching SKUs unless "Remove options" is engaged.
+          const optRemoved = _pickerState.optionsRemoved || false;
+          const allHeads = _pickerResolveHeads();
+          bodyHtml += `<div class="pp-skus">` + allHeads.map((headColors, h) => {
+            const headSet = _headSet(headColors);
+            const headKey = "head_" + h;
+            // Sort by lens-match first, then ion rank, then price.
+            const sorted = [...skus].sort((a, b) => {
+              const aL = _lensScore(a), bL = _lensScore(b);
+              if (aL !== bL) return aL - bL;
+              const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
+              if (ar !== br) return ar - br;
+              return (a.price ?? 9e9) - (b.price ?? 9e9);
+            });
+            // When optionsRemoved: show every SKU; otherwise filter to color+lens match.
+            let displaySkus, hasMatch;
+            if (optRemoved) {
+              displaySkus = sorted; hasMatch = false;
+            } else {
+              const matching = sorted.filter(s => _skuMatchesAny(s, [headSet]));
+              hasMatch = matching.length > 0;
+              displaySkus = hasMatch ? matching : sorted;  // fall back to all when no match
+            }
+            const chosen = _pickerState.skuChoices[headKey] || (displaySkus[0] && displaySkus[0].part_number) || "";
+            // Live title: each head's label reflects ITS chosen SKU + lens (Step 3).
+            const chosenObj = displaySkus.find(s => s.part_number === chosen) || displaySkus[0];
+            const lensLabel = chosenObj?.lens_type || (f.lens || "");
+            const headTitle = `Head ${h + 1}: ${chosen || "—"}${lensLabel ? " · " + lensLabel : ""}`;
+            const opts = displaySkus.map(s => {
+              const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
+              return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}</option>`;
+            }).join("");
+            return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select>${(!hasMatch && !optRemoved) ? `<span class="pp-match no">no exact</span>` : ""}</div>`;
+          }).join("") + `</div>`;
+          // Step 4: light visualization below SKU dropdowns in the selected product box.
+          bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span>${_pickerHeadsPreviewHtml()}</div>`;
+        }
       } else {
         bodyHtml = `<div class="pp-skus">` + skus.map(s => {
           const matched = pColor ? _skuMatchesAny(s, headSets) : true;
@@ -734,14 +764,17 @@ function _pickerRenderProducts() {
     else _pickerState.expanded = new Set([pid]);
     // Color products select on head-click; no-color (programmable) products
     // select via the per-SKU "Select" pill instead.
+    // Step 5: scene products select on head-click even when SKUs carry no color
+    // (e.g. Unity spotlights) — they use the qty+SKU-dropdown path, not a pill.
     const pColor = usesColor && _pickerProductHasColor(p);
-    if (pColor && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
-    if (pColor) {
+    const selectsOnClick = pColor || (usesColor && f.category_id === "scene");
+    if (selectsOnClick && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
+    if (selectsOnClick) {
       if (_pickerState.editLineId && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerState._editTouched.product = true;
       _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; _pickerState.optionsRemoved = false;
     }
     _pickerRenderProducts(); _pickerUpdateFooter();
-    if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
+    if (selectsOnClick) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
   }));
   el.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
