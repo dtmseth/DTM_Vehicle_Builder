@@ -150,7 +150,8 @@ function _pickerResetState() {
   _pickerState.products = [];
   _pickerState.expanded = new Set();
   _pickerState.sel = null;
-  _pickerState.skuChoices = {};   // color-combo label → chosen part_number (override)
+  _pickerState.skuChoices = {};   // "head_N" → chosen part_number (per-head override, Step 3)
+  _pickerState.optionsRemoved = false;
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, name_pattern: "", base_label: "" };
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
@@ -642,28 +643,40 @@ function _pickerRenderProducts() {
         // Step 2: option controls (mode/lens/color/cph/qty) in the product box,
         // above the SKU dropdown.  _pickerWireProductOptions wires them after render.
         bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml()}</div>`;
-        bodyHtml += `<div class="pp-skus">` + headSets.map(hs => {
-          const label = _pickerComboLabel(hs);
-          const ordered = [...skus].sort((a, b) => {
-            const am = _skuMatchesAny(a, [hs]), bm = _skuMatchesAny(b, [hs]);
-            if (am !== bm) return am ? -1 : 1;
-            // Within colour-match group, prefer the lens the user chose so the
-            // default "chosen" SKU reflects the current lens selection (Step 2).
+        // Step 3: one dropdown per head (qty=N → N dropdowns), filtered to
+        // option-matching SKUs unless "Remove options" is engaged.
+        const optRemoved = _pickerState.optionsRemoved || false;
+        const allHeads = _pickerResolveHeads();
+        bodyHtml += `<div class="pp-skus">` + allHeads.map((headColors, h) => {
+          const headSet = _headSet(headColors);
+          const headKey = "head_" + h;
+          // Sort by lens-match first, then ion rank, then price.
+          const sorted = [...skus].sort((a, b) => {
             const aL = _lensScore(a), bL = _lensScore(b);
             if (aL !== bL) return aL - bL;
             const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
             if (ar !== br) return ar - br;
             return (a.price ?? 9e9) - (b.price ?? 9e9);
           });
-          const hasMatch = ordered.some(s => _skuMatchesAny(s, [hs]));
-          const key = hs.join(",");
-          const chosen = _pickerState.skuChoices[key] || (ordered[0] && ordered[0].part_number) || "";
-          const opts = ordered.map(s => {
+          // When optionsRemoved: show every SKU; otherwise filter to color+lens match.
+          let displaySkus, hasMatch;
+          if (optRemoved) {
+            displaySkus = sorted; hasMatch = false;
+          } else {
+            const matching = sorted.filter(s => _skuMatchesAny(s, [headSet]));
+            hasMatch = matching.length > 0;
+            displaySkus = hasMatch ? matching : sorted;  // fall back to all when no match
+          }
+          const chosen = _pickerState.skuChoices[headKey] || (displaySkus[0] && displaySkus[0].part_number) || "";
+          // Live title: each head's label reflects ITS chosen SKU + lens (Step 3).
+          const chosenObj = displaySkus.find(s => s.part_number === chosen) || displaySkus[0];
+          const lensLabel = chosenObj?.lens_type || (f.lens || "");
+          const headTitle = `Head ${h + 1}: ${chosen || "—"}${lensLabel ? " · " + lensLabel : ""}`;
+          const opts = displaySkus.map(s => {
             const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
-            const m = (cs && !_skuMatchesAny(s, [hs])) ? "  (other)" : "";
-            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}${m}</option>`;
+            return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}</option>`;
           }).join("");
-          return `<div class="pp-sku"><span class="pp-sku-pn">${esc(label)}</span><select class="pp-override" data-combo="${esc(key)}">${opts}</select>${hasMatch ? "" : `<span class="pp-match no">no exact</span>`}</div>`;
+          return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select>${(!hasMatch && !optRemoved) ? `<span class="pp-match no">no exact</span>` : ""}</div>`;
         }).join("") + `</div>`;
       } else {
         bodyHtml = `<div class="pp-skus">` + skus.map(s => {
@@ -715,7 +728,7 @@ function _pickerRenderProducts() {
     if (pColor && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
     if (pColor) {
       if (_pickerState.editLineId && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerState._editTouched.product = true;
-      _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {};
+      _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; _pickerState.optionsRemoved = false;
     }
     _pickerRenderProducts(); _pickerUpdateFooter();
     if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
@@ -734,7 +747,25 @@ function _pickerRenderProducts() {
     _pickerLoadLightbar(pid);
   }));
   el.querySelectorAll(".pp-override").forEach(sel => sel.addEventListener("change", () => {
-    _pickerState.skuChoices[sel.dataset.combo] = sel.value;
+    const h = parseInt(sel.dataset.head ?? "-1", 10);
+    if (h >= 0) {
+      _pickerState.skuChoices["head_" + h] = sel.value;
+      // Promote non-custom modes to custom so each head's SKU can differ (Step 3).
+      const c = _pickerState.config;
+      if (c.mode !== "custom") {
+        c.custom = _pickerResolveHeads().map(hc => [...hc]);
+        c.mode = "custom";
+      }
+      // Sync this head's color config to match the chosen SKU so re-applying the
+      // option filter shows a list that includes the manually-picked SKU.
+      const allPSkus = _pickerState.products.find(pr => pr.product_id === (_pickerState.sel?.product_id))?.skus || [];
+      const chosenSku = allPSkus.find(s => s.part_number === sel.value);
+      if (chosenSku) {
+        const newColors = [chosenSku.color, chosenSku.secondary_color, chosenSku.tertiary_color].filter(Boolean).map(x => x.toLowerCase());
+        if (newColors.length) c.custom[h] = newColors;
+      }
+    }
+    _pickerRenderProducts();
     _pickerUpdateFooter();
   }));
 }
@@ -1604,15 +1635,28 @@ async function _pickerDoAdd() {
     catch (e) { console.error(e); toast("Match failed", "error"); return; }
     const skuById = {};
     (product?.skus || []).forEach(s => { skuById[s.part_number] = s; });
-    combos = (m.combos || []).map(cb => {
-      const key = (cb.colors || []).map(c => c.toLowerCase()).sort().join(",");
-      const override = _pickerState.skuChoices[key];
-      const pn = override || cb.default_sku;
-      if (!pn) return null;   // no match and no override for this combo
-      const price = (skuById[pn] && skuById[pn].price) ?? (cb.skus[0] && cb.skus[0].price) ?? null;
-      return { colors: cb.colors, part_number: pn, quantity: cb.count, price };
+    // Step 3: build per-head SKU assignments; skuChoices["head_N"] overrides win.
+    const comboDefault = {};
+    (m.combos || []).forEach(cb => {
+      const ck = _headSet(cb.colors || []).join(",");
+      comboDefault[ck] = cb.default_sku;
+    });
+    const headAssignments = heads.map((hColors, h) => {
+      const ov = _pickerState.skuChoices["head_" + h];
+      const ck = _headSet(hColors).join(",");
+      const pn = ov || comboDefault[ck] || null;
+      return pn ? { colors: hColors, part_number: pn } : null;
     }).filter(Boolean);
-    if (!combos.length) { toast("No SKU chosen for those colors — pick one on the right, or adjust colors/lens", "error"); return; }
+    if (!headAssignments.length) { toast("No SKU chosen for those colors — pick one or adjust colors/lens", "error"); return; }
+    // Group by (part_number, color-key) to produce combos for resolve-selection.
+    const grouped = {};
+    headAssignments.forEach(({ colors, part_number }) => {
+      const k = part_number + "|" + _headSet(colors).join(",");
+      if (!grouped[k]) grouped[k] = { colors, part_number, quantity: 0, price: skuById[part_number]?.price ?? null };
+      grouped[k].quantity++;
+    });
+    combos = Object.values(grouped);
+    if (!combos.length) { toast("No SKU chosen for those colors — pick one or adjust colors/lens", "error"); return; }
     colorFields = keepColor ? { raw_color: ep.raw_color || "" } : _pickerColorFields();
   } else {
     const sku = sel.sku || (product && product.skus[0] && product.skus[0].part_number);
