@@ -574,6 +574,15 @@ function _pickerRenderProducts() {
   const f = _pickerState.filters;
   const usesColor = _pickerUsesColor();
   const headSets = usesColor ? [...new Map(_pickerResolveHeads().map(h => [_headSet(h).join(","), _headSet(h)])).values()] : [];
+  // Lens preference score for per-combo SKU sort (Step 2 lens-fix): SKUs
+  // whose lens_type matches f.lens sort to the front so the default chosen SKU
+  // reflects the selected lens.  0 = match, 1 = unknown, 2 = mismatch.
+  const _lensScore = s => {
+    const lv = (f.lens || "").toLowerCase();
+    if (!lv) return 0;
+    if (!s.lens_type) return 1;
+    return s.lens_type.toLowerCase().includes(lv) ? 0 : 2;
+  };
   const q = _pickerState.search.trim().toLowerCase();
 
   // Brand refine bar (lets the user switch between matched alternatives by brand).
@@ -638,6 +647,10 @@ function _pickerRenderProducts() {
           const ordered = [...skus].sort((a, b) => {
             const am = _skuMatchesAny(a, [hs]), bm = _skuMatchesAny(b, [hs]);
             if (am !== bm) return am ? -1 : 1;
+            // Within colour-match group, prefer the lens the user chose so the
+            // default "chosen" SKU reflects the current lens selection (Step 2).
+            const aL = _lensScore(a), bL = _lensScore(b);
+            if (aL !== bL) return aL - bL;
             const ar = _ionRank(a.part_number), br = _ionRank(b.part_number);
             if (ar !== br) return ar - br;
             return (a.price ?? 9e9) - (b.price ?? 9e9);
@@ -745,7 +758,7 @@ function _pickerWireProductOptions(el) {
     const k = b.dataset.k, v = b.dataset.v;
     const f = _pickerState.filters, c = _pickerState.config;
     if (_pickerState.editLineId) _pickerState._editTouched.color = true;
-    if (k === "lens") { f.lens = v; _pickerRenderProducts(); return; }
+    if (k === "lens") { f.lens = v; _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "mode") { c.mode = v; _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }

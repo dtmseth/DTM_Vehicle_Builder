@@ -299,6 +299,43 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
     # SKU dropdown must appear below the options in the product box.
     page.wait_for_selector(".pp-skus")
 
+    # ── Lens-fix assertions (Step 2 completeness) ──────────────────────
+    # Lens pill must update _pickerState.filters.lens, clear skuChoices so the
+    # lens-sorted SKU becomes the resolved default, and refresh the footer.
+    page.wait_for_selector(".pp-prod-options .pf-pill[data-k='lens'][data-v='smoked']")
+    initial_lens = page.evaluate("_pickerState.filters.lens")
+
+    # Record the initially chosen SKU from the per-combo dropdown (may be absent
+    # if the product has no colour-matched combos yet — both cases are valid).
+    initial_sku = ""
+    if page.locator(".pp-override").count() > 0:
+        initial_sku = page.locator(".pp-override").first.input_value()
+
+    page.click(".pp-prod-options .pf-pill[data-k='lens'][data-v='smoked']")
+    page.wait_for_timeout(300)
+
+    # Lens state must be updated.
+    lens_after = page.evaluate("_pickerState.filters.lens")
+    assert lens_after == "smoked", f"expected lens='smoked' after click, got {lens_after!r}"
+
+    # skuChoices must be cleared so the lens sort can take effect.
+    choices_len = page.evaluate("Object.keys(_pickerState.skuChoices || {}).length")
+    assert choices_len == 0, f"skuChoices must be cleared on lens change, got {choices_len} entries"
+
+    # Footer must have been refreshed (picker-foot-label shows selected product,
+    # not empty — proves _pickerUpdateFooter was called after the lens change).
+    foot = page.locator(".picker-foot-label").first
+    foot_text = foot.text_content().strip() if foot.count() > 0 else ""
+    assert foot_text and foot_text != "Pick a product", \
+        f"footer must show selected product after lens change, got: {foot_text!r}"
+
+    # If a per-combo override dropdown exists AND the product has SKUs with
+    # different lens_type values, the chosen option must now lead with a
+    # smoked-lens SKU (or be unchanged if all SKUs share the same lens).
+    # We verify the dropdown is still rendered and functional.
+    if page.locator(".pp-override").count() > 0:
+        page.wait_for_selector(".pp-override")   # must still render without JS error
+
 
 FLOWS = {
     "tab_load": flow_tab_load,
