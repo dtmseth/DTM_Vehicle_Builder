@@ -362,12 +362,12 @@ function _pickerBrowseTreeHtml() {
   }).join("");
 }
 
-// Prepend the "Remove options" button and, when options are inactive, visually
-// dim the controls so the user can see the filter is off (Step 3).
-function _pickerOptionsHtml(inner) {
+// Prepend the "Remove options" toggle. When filter is off, hide filter controls
+// entirely (qty stays); clicking the button is the only re-engage path (Step 3).
+function _pickerOptionsHtml(countHtml, filterHtml) {
   const off = _pickerState.optionsRemoved || false;
-  const btn = `<div class="pf-group pp-opts-ctrl"><button class="pf-pill${off ? " active" : ""}" data-opts-remove="1">${off ? "⊘ Filter off" : "Remove options"}</button>${off ? `<span class="pf-hint">All SKUs shown — click any option to re-apply filter</span>` : ""}</div>`;
-  return btn + (off ? `<div class="pp-opts-inactive">${inner}</div>` : inner);
+  const btn = `<div class="pf-group pp-opts-ctrl"><button class="pp-opts-toggle-btn${off ? " active" : ""}" data-opts-remove="1">${off ? "⊘ Filter off" : "Remove options"}</button></div>`;
+  return btn + countHtml + (off ? "" : filterHtml);
 }
 
 function _pickerColorConfigHtml() {
@@ -391,7 +391,7 @@ function _pickerColorConfigHtml() {
       ${seg("lens", "smoked", "Smoked", (f.lens || "") === "smoked")}</div></div>`;
 
   if (isBar) {
-    return _pickerOptionsHtml(countHtml + `<div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
+    return _pickerOptionsHtml(countHtml, `<div class="pf-group"><span class="pf-label">Colors per head</span><div class="pf-pills">
         ${seg("cph", "duo", "Duo", c.colorsPerHead !== "trio")}
         ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>` + lensHtml);
   }
@@ -410,7 +410,7 @@ function _pickerColorConfigHtml() {
       return `<button class="picker-swatch${isSel ? " sel" : (isWhite ? "" : " dim")}" data-color="${col}" ${isWhite ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
     }).join("");
     const noneBtn = `<button class="picker-swatch${noColor ? " sel" : ""}" data-color="" title="No color (unlabeled)" style="background:#888;border-color:#666;font-size:9px;line-height:28px">—</button>`;
-    return _pickerOptionsHtml(countHtml + cphHtml +
+    return _pickerOptionsHtml(countHtml, cphHtml +
       `<div class="pf-group"><span class="pf-label">Color</span>` +
       `<div class="picker-swatches" data-kind="uniform" data-slot="0">${whiteSwatches}${noneBtn}</div></div>` + lensHtml);
   }
@@ -430,7 +430,7 @@ function _pickerColorConfigHtml() {
     sel = c.custom.map((arr, h) => `<div class="pf-group"><span class="pf-label">Head ${h + 1}</span>${_pickerSwatchMulti(h, arr, slots)}</div>`).join("");
   }
 
-  return _pickerOptionsHtml(countHtml + cphHtml + modeHtml + sel + lensHtml);
+  return _pickerOptionsHtml(countHtml, cphHtml + modeHtml + sel + lensHtml);
 }
 
 function _pickerSwatchRow(kind, slot, selected) {
@@ -802,8 +802,8 @@ function _pickerWireProductOptions(el) {
     const k = b.dataset.k, v = b.dataset.v;
     const f = _pickerState.filters, c = _pickerState.config;
     if (_pickerState.editLineId) _pickerState._editTouched.color = true;
-    // Any option engagement re-applies the filter (Step 3).
-    _pickerState.optionsRemoved = false;
+    // Qty changes leave the filter state alone; all other option changes re-apply it (Step 3).
+    if (k !== "count") _pickerState.optionsRemoved = false;
     if (k === "lens") { f.lens = v; _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }

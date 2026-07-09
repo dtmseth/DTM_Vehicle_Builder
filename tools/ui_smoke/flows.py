@@ -432,11 +432,25 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     assert unfiltered_count >= filtered_count, \
         f"'Remove options' should reveal all SKUs (filtered={filtered_count}, unfiltered={unfiltered_count})"
 
-    # Clicking any option pill re-engages the filter.
-    page.click(".pp-prod-options .pf-pill[data-k='lens'] >> nth=0")
+    # Filter controls must be HIDDEN (not dimmed) while options are removed.
+    lens_pills = page.locator(".pp-prod-options .pf-pill[data-k='lens']").count()
+    assert lens_pills == 0, \
+        f"filter controls (lens pills) must be hidden when options are removed, found {lens_pills}"
+
+    # Qty control must still be visible and usable while options are removed.
+    qty_ctrl = page.locator(".pp-prod-options .pf-pill[data-k='count']").count()
+    assert qty_ctrl > 0, "qty +/- controls must remain visible when options are removed"
+
+    # The toggle button itself is the only re-engage path (no option controls to click).
+    remove_btn.click()
     page.wait_for_timeout(200)
     opts_removed = page.evaluate("_pickerState.optionsRemoved")
-    assert not opts_removed, "engaging an option pill must re-apply the filter (optionsRemoved→false)"
+    assert not opts_removed, "clicking the toggle again must re-apply the filter (optionsRemoved→false)"
+
+    # Filter controls must be restored after toggling back on.
+    lens_pills_back = page.locator(".pp-prod-options .pf-pill[data-k='lens']").count()
+    assert lens_pills_back > 0, \
+        "lens pills must reappear after toggle re-engages the filter"
 
     # ── Assertion (d): manual per-head change promotes to custom ─────────────
     # Start fresh with the first colour product open, qty=2, uniform/identical.
