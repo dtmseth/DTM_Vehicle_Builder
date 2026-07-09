@@ -623,3 +623,25 @@ Zero production-code changes.
   `part_types` if truly orphaned (the empty tracer types are warning-collapse leftovers already
   flagged in PARTS_CURATION_AUDIT §3). Ties into OQ-8 (generic bracket/cable/flange homes,
   deferred to the accessory-browse design) — resolve together.
+
+---
+
+### NOTE-025: push-safety re-assessed for teammates on v2.2.14 (supersedes the optimistic read of NOTE-023)
+- **Teammate app version: v2.2.14** (a tag in this repo). Two push risks assessed against it:
+- **Load compatibility — SAFE.** v2.2.14's `_validate_parts_db` (schema_version 2, same as ours)
+  `setdefault`s required top-level keys and checks per-entity *required* keys only — it does NOT
+  reject unknown keys. So the additive `families` top-level collection and `family_id` on
+  part_types are tolerated; v2.2.14 ignores them. (Small confirm remaining: that every curated
+  product/part_type still carries v2.2.14's *required* keys — very likely, same schema era.)
+- **Legacy render correctness — the wrongness is PRE-EXISTING, not push-caused.** The owner
+  observed legacy projects render imperfectly in the dev preview. Diagnosis: (a) NOTE-023 —
+  curation/taxonomy *data* is byte-inert to legacy render; (b) the Step 1 picker code does NOT
+  reach the render path — `DraftPart.part_type` (new) defaults `""` and is authoring-only; the
+  planner still resolves rendering by NAME (`planner.py:197` `_find_part_type_by_name`). So
+  neither the data nor the recent code changed legacy rendering. Pushing cannot make teammates'
+  legacy rendering worse — the imperfection lives in the name-based path the push doesn't touch.
+- **Correction to earlier framing:** "curation doesn't change output" (verified) is NOT the same
+  as "legacy builds render correctly." They render imperfectly, pre-existing — the workbook-shape
+  consumer seam (Phase 4). **Fix = remake the two existing builds in the new picker/SKU system**
+  (already the owner's plan), not debug the legacy name-based path or block the push.
+- **Net:** the push is materially safe for v2.2.14 teammates on both load and render grounds.
