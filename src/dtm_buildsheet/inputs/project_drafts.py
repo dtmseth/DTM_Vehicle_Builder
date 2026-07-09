@@ -82,6 +82,10 @@ class DraftPart:
     # manifest can offer a category-scoped swap dropdown when editing one.
     accessory_category: str = ""
     accessory_parent_product: str = ""
+    # part_type_id the picker resolved this line to (picker-created parts only;
+    # empty for legacy/flat-modal parts). Drives the browse-tree manifest
+    # highlight (PICKER_REDESIGN.md Step 1b) — never consumed by the planner.
+    part_type: str = ""
 
 
 @dataclass
@@ -232,6 +236,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         parent_line_id=_s(body.get("parent_line_id", "")),
         accessory_category=_s(body.get("accessory_category", "")),
         accessory_parent_product=_s(body.get("accessory_parent_product", "")),
+        part_type=_s(body.get("part_type", "")),
     )
 
 

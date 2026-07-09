@@ -1,0 +1,618 @@
+{
+  "body": {
+    "categories": [
+      {
+        "children": [
+          {
+            "kind": "part_type",
+            "label": "Bullet Proof Door Panel",
+            "part_type_id": "bullet_proof_door_panel"
+          },
+          {
+            "kind": "part_type",
+            "label": "Bullet Proof Door Window",
+            "part_type_id": "bullet_proof_door_window"
+          },
+          {
+            "kind": "part_type",
+            "label": "Decals",
+            "part_type_id": "decals"
+          },
+          {
+            "kind": "part_type",
+            "label": "Floor Mats",
+            "part_type_id": "floor_mats"
+          },
+          {
+            "kind": "part_type",
+            "label": "Harness",
+            "part_type_id": "harness"
+          },
+          {
+            "kind": "part_type",
+            "label": "Seat Covers",
+            "part_type_id": "seat_covers"
+          },
+          {
+            "kind": "part_type",
+            "label": "Window Tint",
+            "part_type_id": "window_tint"
+          }
+        ],
+        "label": "Extras",
+        "type_id": "extras"
+      },
+      {
+        "children": [
+          {
+            "kind": "part_type",
+            "label": "Chicago Barrier",
+            "part_type_id": "chicago_barrier"
+          },
+          {
+            "family_id": "console_system",
+            "kind": "family",
+            "label": "Console System",
+            "members": [
+              {
+                "label": "Console",
+                "part_type_id": "console"
+              },
+              {
+                "label": "Motion Attachment",
+                "part_type_id": "motion_attachment"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Floor Pan",
+            "part_type_id": "floor_pan"
+          },
+          {
+            "kind": "part_type",
+            "label": "Front Partition",
+            "part_type_id": "front_partition"
+          },
+          {
+            "kind": "part_type",
+            "label": "Prisoner Transport Insert",
+            "part_type_id": "prisoner_transport_insert"
+          },
+          {
+            "family_id": "push_bumper_system",
+            "kind": "family",
+            "label": "Push Bumper System",
+            "members": [
+              {
+                "label": "Push Bumper",
+                "part_type_id": "push_bumper"
+              },
+              {
+                "label": "Pit Bar",
+                "part_type_id": "pit_bar"
+              },
+              {
+                "label": "Wing Wraps",
+                "part_type_id": "wing_wraps"
+              },
+              {
+                "label": "Wire Covers",
+                "part_type_id": "wire_covers"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Rear Partition",
+            "part_type_id": "rear_partition"
+          },
+          {
+            "kind": "part_type",
+            "label": "Rear Seat Divider",
+            "part_type_id": "rear_seat_divider"
+          },
+          {
+            "kind": "part_type",
+            "label": "Rear Window Bars",
+            "part_type_id": "rear_window_bars"
+          },
+          {
+            "kind": "part_type",
+            "label": "Replacement Seat",
+            "part_type_id": "replacement_rear_seat"
+          },
+          {
+            "kind": "part_type",
+            "label": "Running Boards / Nerf Bars",
+            "part_type_id": "running_boards_nerf_bars"
+          },
+          {
+            "kind": "part_type",
+            "label": "Storage Box",
+            "part_type_id": "rear_storage_box"
+          },
+          {
+            "kind": "part_type",
+            "label": "Tonneau / Bed Cover",
+            "part_type_id": "tonneau_cover"
+          }
+        ],
+        "label": "Structural",
+        "type_id": "structural"
+      },
+      {
+        "children": [
+          {
+            "kind": "part_type",
+            "label": "12v Aux Ports",
+            "part_type_id": "aux_12v_ports"
+          },
+          {
+            "kind": "part_type",
+            "label": "Arges",
+            "part_type_id": "arges_face"
+          },
+          {
+            "kind": "part_type",
+            "label": "Arges Controller",
+            "part_type_id": "arges_controller"
+          },
+          {
+            "kind": "part_type",
+            "label": "Armrest",
+            "part_type_id": "arm_rest"
+          },
+          {
+            "kind": "part_type",
+            "label": "Auto Eject",
+            "part_type_id": "auto_eject"
+          },
+          {
+            "kind": "part_type",
+            "label": "Battery Tender",
+            "part_type_id": "battery_tender"
+          },
+          {
+            "kind": "part_type",
+            "label": "Body Camera Dock",
+            "part_type_id": "body_camera_dock"
+          },
+          {
+            "family_id": "camera_system",
+            "kind": "family",
+            "label": "Camera System",
+            "members": [
+              {
+                "label": "Camera DVR",
+                "part_type_id": "camera_dvr"
+              },
+              {
+                "label": "Front Camera",
+                "part_type_id": "front_camera"
+              },
+              {
+                "label": "Rear Camera",
+                "part_type_id": "rear_camera"
+              },
+              {
+                "label": "Rear Seat Camera",
+                "part_type_id": "rear_seat_camera"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Cloud System",
+            "part_type_id": "cradle_point"
+          },
+          {
+            "kind": "part_type",
+            "label": "Computer Pedestal / Mount Base",
+            "part_type_id": "pedestal_mount"
+          },
+          {
+            "family_id": "computer_workstation",
+            "kind": "family",
+            "label": "Computer Workstation",
+            "members": [
+              {
+                "label": "Computer / Laptop",
+                "part_type_id": "computer"
+              },
+              {
+                "label": "Docking Station",
+                "part_type_id": "docking_station"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Door Lock Button",
+            "part_type_id": "door_lock_button"
+          },
+          {
+            "kind": "part_type",
+            "label": "Equipment Tray",
+            "part_type_id": "equipment_tray"
+          },
+          {
+            "kind": "part_type",
+            "label": "Flashlight & Charger",
+            "part_type_id": "flashlight"
+          },
+          {
+            "kind": "part_type",
+            "label": "GPS",
+            "part_type_id": "gpd"
+          },
+          {
+            "kind": "part_type",
+            "label": "Gun Lock",
+            "part_type_id": "gun_lock"
+          },
+          {
+            "kind": "part_type",
+            "label": "Howler",
+            "part_type_id": "howler"
+          },
+          {
+            "family_id": "light_control_system",
+            "kind": "family",
+            "label": "Light Control System",
+            "members": [
+              {
+                "label": "Light Control Head",
+                "part_type_id": "control_head"
+              },
+              {
+                "label": "External Amp",
+                "part_type_id": "external_amp"
+              },
+              {
+                "label": "Expansion Module",
+                "part_type_id": "expansion_module"
+              },
+              {
+                "label": "Cloud System",
+                "part_type_id": "cloud_system_tray"
+              },
+              {
+                "label": "Cloud Antenna",
+                "part_type_id": "cloud_antenna"
+              },
+              {
+                "label": "Vehicle to Vehicle Sync",
+                "part_type_id": "v2v_sync"
+              },
+              {
+                "label": "Light Controller",
+                "part_type_id": "light_controller"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Motorcycle Box / Mount",
+            "part_type_id": "motorcycle_box"
+          },
+          {
+            "kind": "part_type",
+            "label": "PA Mic",
+            "part_type_id": "pa_mic"
+          },
+          {
+            "kind": "part_type",
+            "label": "Photo Eye",
+            "part_type_id": "photo_eye"
+          },
+          {
+            "kind": "part_type",
+            "label": "Power Timer / ChargeGuard",
+            "part_type_id": "power_timer"
+          },
+          {
+            "kind": "part_type",
+            "label": "Preemption",
+            "part_type_id": "preemption"
+          },
+          {
+            "kind": "part_type",
+            "label": "Printer",
+            "part_type_id": "printer"
+          },
+          {
+            "family_id": "radar",
+            "kind": "family",
+            "label": "Radar",
+            "members": [
+              {
+                "label": "Radar Display Unit",
+                "part_type_id": "radar_display_unit"
+              },
+              {
+                "label": "Front Radar Antenna Mount",
+                "part_type_id": "front_radar_antenna_mount"
+              },
+              {
+                "label": "Rear Radar Antenna Mount",
+                "part_type_id": "rear_radar_antenna_mount"
+              },
+              {
+                "label": "Radar Cable",
+                "part_type_id": "radar_cable"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Radio Antenna Top",
+            "part_type_id": "radio_antenna_top"
+          },
+          {
+            "family_id": "radio_comms",
+            "kind": "family",
+            "label": "Radio Communications",
+            "members": [
+              {
+                "label": "Radio Head",
+                "part_type_id": "radio_head"
+              },
+              {
+                "label": "Radio Speaker",
+                "part_type_id": "radio_speaker"
+              },
+              {
+                "label": "Radio Cable",
+                "part_type_id": "radio_cable"
+              },
+              {
+                "label": "Radio Mic Clip",
+                "part_type_id": "radio_mic_clip"
+              },
+              {
+                "label": "Radio Communication Cable",
+                "part_type_id": "radio_antenna_cable"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Remote Start",
+            "part_type_id": "remote_start"
+          },
+          {
+            "kind": "part_type",
+            "label": "Siren Speaker",
+            "part_type_id": "siren_speaker"
+          },
+          {
+            "kind": "part_type",
+            "label": "Special Face Plate",
+            "part_type_id": "special_face_plate"
+          },
+          {
+            "family_id": "thermal_imaging",
+            "kind": "family",
+            "label": "Thermal Imaging",
+            "members": [
+              {
+                "label": "Thermal Imager",
+                "part_type_id": "thermal_imager"
+              },
+              {
+                "label": "Thermal Imager Monitor",
+                "part_type_id": "thermal_imager_monitor"
+              }
+            ],
+            "picker_flow": null
+          },
+          {
+            "kind": "part_type",
+            "label": "Tool Mount",
+            "part_type_id": "tool_mount"
+          },
+          {
+            "kind": "part_type",
+            "label": "Vehicle Interface",
+            "part_type_id": "vehicle_interface"
+          },
+          {
+            "kind": "part_type",
+            "label": "Wireless Mic Charger",
+            "part_type_id": "wireless_mic_charger"
+          }
+        ],
+        "label": "Equipment",
+        "type_id": "equipment"
+      },
+      {
+        "children": [
+          {
+            "kind": "part_type",
+            "label": "2-Lamp Tracer",
+            "part_type_id": "tracer_2_lamp"
+          },
+          {
+            "kind": "part_type",
+            "label": "5-Lamp Tracer",
+            "part_type_id": "tracer_5_lamp"
+          },
+          {
+            "kind": "part_type",
+            "label": "6-Lamp Tracer",
+            "part_type_id": "tracer_6_lamp"
+          },
+          {
+            "kind": "part_type",
+            "label": "Bracket / Mount",
+            "part_type_id": "bracket"
+          },
+          {
+            "kind": "part_type",
+            "label": "Cable",
+            "part_type_id": "cable"
+          },
+          {
+            "kind": "part_type",
+            "label": "Flange",
+            "part_type_id": "flange"
+          },
+          {
+            "kind": "part_type",
+            "label": "Flasher / Power",
+            "part_type_id": "flasher_power"
+          },
+          {
+            "family_id": "interior_bars",
+            "kind": "family",
+            "label": "Interior Bars",
+            "members": [
+              {
+                "label": "Interior Light Bar",
+                "part_type_id": "front_interior_light_bar"
+              },
+              {
+                "label": "Interior Light Bar",
+                "part_type_id": "rear_interior_light_bar"
+              }
+            ],
+            "picker_flow": "interior_bar"
+          },
+          {
+            "family_id": "interior_lighting",
+            "kind": "family",
+            "label": "Interior Lighting",
+            "members": [
+              {
+                "label": "Cargo Lighting",
+                "part_type_id": "cargo_lighting"
+              },
+              {
+                "label": "Dome Light",
+                "part_type_id": "front_dome_light"
+              },
+              {
+                "label": "Rear Seat Cargo Lights",
+                "part_type_id": "rear_seat_cargo_lights"
+              },
+              {
+                "label": "Rear Seat Lights",
+                "part_type_id": "rear_seat_lights"
+              }
+            ],
+            "picker_flow": "interior"
+          },
+          {
+            "kind": "part_type",
+            "label": "Lighthead",
+            "part_type_id": "lighthead"
+          },
+          {
+            "family_id": "roof_bars",
+            "kind": "family",
+            "label": "Roof Bars",
+            "members": [
+              {
+                "label": "Light Bar",
+                "part_type_id": "roof_light_bar"
+              }
+            ],
+            "picker_flow": "roof_bar"
+          },
+          {
+            "family_id": "scene_lights",
+            "kind": "family",
+            "label": "Scene",
+            "members": [
+              {
+                "label": "Front Scene",
+                "part_type_id": "front_scene"
+              },
+              {
+                "label": "Rear Scene",
+                "part_type_id": "rear_scene"
+              },
+              {
+                "label": "Side Scene",
+                "part_type_id": "side_scene"
+              },
+              {
+                "label": "Spotlight (pillar/post)",
+                "part_type_id": "spotlight"
+              }
+            ],
+            "picker_flow": "scene"
+          },
+          {
+            "kind": "part_type",
+            "label": "Shroud",
+            "part_type_id": "shroud"
+          },
+          {
+            "kind": "part_type",
+            "label": "Take-Down / Alley",
+            "part_type_id": "bar_takedown"
+          },
+          {
+            "family_id": "warning_lights",
+            "kind": "family",
+            "label": "Warning",
+            "members": [
+              {
+                "label": "Warning Light",
+                "part_type_id": "warning_light"
+              },
+              {
+                "label": "Headlight Flasher",
+                "part_type_id": "headlight_flasher"
+              },
+              {
+                "label": "Tail Light Flasher",
+                "part_type_id": "tail_light_flasher"
+              }
+            ],
+            "picker_flow": "warning"
+          }
+        ],
+        "label": "Lights",
+        "type_id": "lights"
+      },
+      {
+        "children": [
+          {
+            "kind": "part_type",
+            "label": "K-9 Add-Ons",
+            "part_type_id": "k9_add_ons"
+          },
+          {
+            "kind": "part_type",
+            "label": "K-9 Control Head",
+            "part_type_id": "k9_control_head"
+          },
+          {
+            "kind": "part_type",
+            "label": "K-9 Heat Alarm / Door Popper",
+            "part_type_id": "k9_heat_alarm_popper"
+          },
+          {
+            "kind": "part_type",
+            "label": "K-9 Kennel",
+            "part_type_id": "k9_kennel"
+          }
+        ],
+        "label": "K-9",
+        "type_id": "k9"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

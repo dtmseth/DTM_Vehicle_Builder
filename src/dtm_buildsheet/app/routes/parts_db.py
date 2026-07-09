@@ -31,6 +31,7 @@ _ZONE_PRODUCTS_PATH = f"{_PREFIX}/zone-products"
 _PLACEMENTS_PATH = f"{_PREFIX}/placements"
 _CATEGORY_LOCATIONS_PATH = f"{_PREFIX}/category-locations"
 _CATEGORY_SKUS_PATH = f"{_PREFIX}/category-skus"
+_BROWSE_TREE_PATH = f"{_PREFIX}/browse-tree"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
@@ -188,6 +189,62 @@ def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
             "has_coords": True,
         })
     out.sort(key=lambda x: x["location"])
+    return out
+
+
+def _build_browse_tree(svc) -> list[dict]:
+    """`category (type) -> family -> part_type` tree for the picker sidebar
+    accordion (PICKER_REDESIGN.md Step 1). Server-derived so the client
+    renders only — it does not reconstruct the hierarchy.
+
+    A part_type is a tree node (bare, under its own type_id, or nested inside
+    a family) unless it's an explicit accessory (`accessory_of` set) — those
+    are surfaced through the accessories panel, not the browse tree. A
+    family's members are listed under the family regardless of each member's
+    own `type_id` (families are a cross-cutting browse concept, e.g. an
+    Equipment part_type can belong to a Structural family — see
+    docs/PARTS_DB_AND_PICKER.md).
+    """
+    doc = svc.raw_doc()
+    part_types_doc: dict = doc.get("part_types") or {}
+    families_doc: dict = doc.get("families") or {}
+
+    def label_of(pt_id: str) -> str:
+        return (part_types_doc.get(pt_id) or {}).get("label", pt_id)
+
+    in_family: set[str] = set()
+    families_by_type: dict[str, list[dict]] = {}
+    for family_id, spec in families_doc.items():
+        members = [m for m in (spec.get("members") or []) if m in part_types_doc]
+        in_family.update(members)
+        type_id = spec.get("category", "")
+        families_by_type.setdefault(type_id, []).append({
+            "kind": "family",
+            "family_id": family_id,
+            "label": spec.get("label", family_id),
+            "picker_flow": spec.get("picker_flow"),
+            "members": [{"part_type_id": m, "label": label_of(m)} for m in members],
+        })
+
+    bare_by_type: dict[str, list[dict]] = {}
+    for pt_id, spec in part_types_doc.items():
+        if spec.get("accessory_of"):
+            continue
+        if pt_id in in_family:
+            continue
+        type_id = spec.get("type_id", "")
+        bare_by_type.setdefault(type_id, []).append({
+            "kind": "part_type",
+            "part_type_id": pt_id,
+            "label": spec.get("label", pt_id),
+        })
+
+    types_doc: dict = doc.get("types") or {}
+    out: list[dict] = []
+    for type_id, tspec in types_doc.items():
+        children = families_by_type.get(type_id, []) + bare_by_type.get(type_id, [])
+        children.sort(key=lambda c: c["label"])
+        out.append({"type_id": type_id, "label": tspec.get("label", type_id), "children": children})
     return out
 
 
@@ -758,6 +815,10 @@ def route_parts_db(
         send_json(handler, {"types": [asdict(t) for t in svc.list_types()]})
         return True
 
+    if method == "GET" and path == _BROWSE_TREE_PATH:
+        send_json(handler, {"categories": _build_browse_tree(svc)})
+        return True
+
     if method == "GET" and path == _SECTIONS_PATH:
         send_json(handler, {"sections": [asdict(s) for s in svc.list_sections()]})
         return True
@@ -1028,6 +1089,11 @@ def route_parts_db(
         # Products + their SKUs for one category (drives the two-pane live list).
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
+        # Optional exact part_type filter (picker sidebar accordion, Step 1):
+        # narrows the list to one specific part_type instead of the whole
+        # category/type. Additive — omitting it keeps every prior caller's
+        # behavior (whole-category or whole-type list) unchanged.
+        part_type_filter = qs.get("part_type", [""])[0]
         if not type_id:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
@@ -1041,6 +1107,8 @@ def route_parts_db(
         mfrs_doc = svc.raw_doc().get("manufacturers") or {}
         pt_ids = [pt.part_type_id for pt in svc.list_part_types()
                   if pt.type_id == type_id and _pt_in_category(pt, category)]
+        if part_type_filter:
+            pt_ids = [pid for pid in pt_ids if pid == part_type_filter]
         out: list[dict] = []
         seen: set[str] = set()
         for pid in pt_ids:
