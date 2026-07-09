@@ -121,6 +121,23 @@ Original spec (kept for reference):
   dropdown**.
 - The sidebar returns to being purely a browse/select surface; configuration happens where the
   product is.
+- **Resolved design calls (Opus, 2026-07-09):**
+  - **Options are per-product, shown on selection — this is a flow change, not just a move.**
+    Today: pick a light part type → options in the sidebar pre-filter the product grid → pick a
+    product. New: pick a light part type → the product grid shows that part type's products →
+    pick a product → **its box shows the options above the SKU dropdown**, configuring *that*
+    product. The grid is no longer pre-filtered by global options.
+  - **Scope: relocation + rewiring only.** Move the existing controls into the box and wire them
+    to the existing color/SKU resolution, scoped to the selected product. The **SKU dropdown keeps
+    its current single-dropdown behavior in Step 2** — the per-head dropdowns, option-filtering,
+    live title, and "identical" rename are all Step 3. Don't pull Step 3 forward.
+  - **Accessories unchanged.** Standard footer accessory picker stays as-is (§4). The push-bumper
+    in-box "add other bumper parts?" flow is a separate later feature, not Step 2.
+  - **Scene lights: leave as-is in Step 2.** If moving options generally sweeps scene along, a
+    temporary full option set in a scene box is acceptable interim — Step 5 strips scene to
+    qty-only. Don't special-case scene here.
+  - **Guard rails.** This is authoring-side; the name-based render path and golden masters must be
+    untouched. Re-record contract snapshots only if a route changes.
 
 ### Step 3 — SKU dropdown rework
 - **Filter by selected options**: the SKU dropdown only offers SKUs that match the currently
