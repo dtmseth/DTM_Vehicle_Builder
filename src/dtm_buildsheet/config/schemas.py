@@ -271,6 +271,7 @@ _PARTS_DB_REQUIRED_TOP_KEYS = (
 )
 _PRODUCT_REQUIRED_KEYS = ("manufacturer_id", "model")
 _PART_TYPE_REQUIRED_KEYS = ("label", "type_id")
+_FAMILY_REQUIRED_KEYS = ("label", "category", "members")
 
 
 def _validate_parts_db(normalized: dict) -> None:
@@ -317,6 +318,25 @@ def _validate_parts_db(normalized: dict) -> None:
                 f"parts_db.json product '{product_id}' 'fits_part_types' must be a list"
             )
 
+    # Optional families collection (browse-time grouping, orthogonal to type_id/
+    # zone/section — see docs/audit/PART_TYPE_TAXONOMY_PROPOSAL.md). Additive: absent
+    # entirely on older parts_db.json, so this block is skipped when the key is missing.
+    families = normalized.get("families")
+    if families is not None:
+        if not isinstance(families, dict):
+            raise ValueError("parts_db.json 'families' must be an object keyed by family_id")
+        for family_id, spec in families.items():
+            if not isinstance(spec, dict):
+                raise ValueError(f"parts_db.json family '{family_id}' must be an object")
+            for key in _FAMILY_REQUIRED_KEYS:
+                if key not in spec:
+                    raise ValueError(f"parts_db.json family '{family_id}' missing '{key}'")
+            members = spec.get("members")
+            if not isinstance(members, list) or not all(isinstance(m, str) for m in members):
+                raise ValueError(
+                    f"parts_db.json family '{family_id}' 'members' must be a list of part_type_id strings"
+                )
+
     part_types = normalized.get("part_types")
     if not isinstance(part_types, dict):
         raise ValueError("parts_db.json 'part_types' must be an object keyed by part_type_id")
@@ -358,6 +378,12 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json part_type '{pt_id}' location_options must be a list of strings"
             )
+        # Optional family membership (additive; see 'families' above). Kept alongside
+        # .category, not in place of it — the picker still reads .category until it
+        # migrates to family_id + families[...].picker_flow.
+        family_id = spec.get("family_id")
+        if family_id is not None and not isinstance(family_id, str):
+            raise ValueError(f"parts_db.json part_type '{pt_id}' family_id must be a string")
 
 
 def _validate_legacy_workbook_index(normalized: dict) -> None:
