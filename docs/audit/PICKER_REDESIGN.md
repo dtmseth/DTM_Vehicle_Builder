@@ -159,8 +159,12 @@ Original spec (kept for reference):
     veto if you pictured per-head edits behaving differently.)
   - **"Remove options" = unfilter, don't erase.** The button switches the dropdown(s) to list
     *every* SKU in the product and lets manual selection drive; it does not delete heads or the
-    product. Re-engaging any option control re-applies the filter. Show the options as
-    inactive/"filter off" while removed.
+    product. **When active, HIDE the filter controls (mode/lens/color/cph) entirely — not dimmed —
+    but keep quantity visible and usable** (qty still drives how many per-head dropdowns show).
+    Because the filter controls are hidden, the toggle button itself is the re-engage path
+    (toggle off → controls reappear and the filter re-applies); there are no option controls to
+    "touch" while removed. Button styling: a compact, clearly-a-button control (not a full-width
+    header bar) in a distinct/prominent color so it's noticeable.
   - **Title is per-dropdown.** Each head's dropdown label reflects *its* selected SKU + lens; the
     product box keeps the product name. No single combined title across differing heads.
   - **Scene stays out.** Scene lights are handled in Step 5 (qty only); do not build per-head
