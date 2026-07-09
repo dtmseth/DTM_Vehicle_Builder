@@ -427,6 +427,8 @@
     .pp-match.ok{background:var(--green);color:#fff}
     .pp-match.no{background:#e7eaf0;color:var(--muted)}
     .pp-prod-options{border-top:1px solid var(--border);padding:10px 13px 8px;background:var(--bg-subtle,#f8f9fb);display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 18px;align-items:start}
+    .pp-opts-ctrl{grid-column:1/-1}
+    .pp-opts-inactive{opacity:.45;transition:opacity .15s}
     .pp-skus{border-top:1px dashed var(--border);padding:6px 13px 10px;display:flex;flex-direction:column;gap:3px}
     .pp-sku{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 6px;border-radius:5px}
     .pp-sku.match{background:#eafaf0}
