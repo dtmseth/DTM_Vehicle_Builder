@@ -122,10 +122,23 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.click("[onclick='addPart()'] >> nth=0")
         page.wait_for_selector("#picker-panel.open")
         page.wait_for_timeout(200)
-        page.click("button.pf-pill.pf-big:has-text('Equipment')")
+        # `console` lives under Structural > Console System (PICKER_REDESIGN.md
+        # Step 1 accordion) — expand the category, then the family, then pick
+        # the Console leaf. Expansion state persists across picker opens
+        # within the session (Step 1's "persist expansion state" call), so on
+        # the second add() in this flow the tree may already be expanded —
+        # only click a header if it isn't open yet, or the click would
+        # collapse it instead.
+        if not page.is_visible(".pbt-cat-head[data-cat='structural'].open"):
+            page.click(".pbt-cat-head[data-cat='structural']")
+            page.wait_for_timeout(200)
+        if not page.is_visible(".pbt-fam-head[data-fam='console_system'].open"):
+            page.click(".pbt-fam-head[data-fam='console_system']")
+            page.wait_for_timeout(200)
+        page.click(".pbt-leaf[data-pt='console']")
         page.wait_for_timeout(_SETTLE_MS)
-        # Gamber Johnson PIU low-profile console box — `console` part_type,
-        # zero curated location_options (the exact FINDING-004 repro).
+        # Gamber Johnson PIU low-profile console box — zero curated
+        # location_options (the exact FINDING-004 repro).
         page.fill("#pf-search", "7170-0734-00")
         page.wait_for_timeout(_SETTLE_MS)
         page.click(".pp-head >> nth=0")
@@ -193,10 +206,41 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
     assert before == after, f"part changed on a no-op Save:\nbefore={before}\nafter={after}"
 
 
+def flow_picker_browse_tree(page, base_url: str) -> None:
+    """PICKER_REDESIGN.md Step 1 regression guard: every sidebar category
+    expands INLINE (no navigate-away) and renders its part types/families —
+    the core accordion behavior, independent of the lights-specific flow."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    # A non-light category (Equipment) expands in place — the panel/tabs never
+    # change, unlike the old Lights-only navigate-to-a-new-page behavior.
+    page.click(".pbt-cat-head[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    page.wait_for_timeout(_SETTLE_MS)
+    leaf_count = page.locator(".pbt-leaf").count()
+    assert leaf_count > 0, "expected Equipment category to render at least one part type/family member"
+
+    # A family expands to its member part types (finer filtering).
+    page.click(".pbt-fam-head[data-fam='radar']")
+    page.wait_for_selector(".pbt-fam-head[data-fam='radar'].open")
+    page.wait_for_timeout(200)
+    page.wait_for_selector(".pbt-leaf[data-pt='radar_display_unit']")
+
+    # Collapsing/re-expanding a different category doesn't lose state on the
+    # panel — still on the same tab, no navigation occurred.
+    assert page.is_visible("#picker-tab-btn-part.active"), "Step 1 must stay on the Part tab (navigation-only)"
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
+    "picker_browse_tree": flow_picker_browse_tree,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,

@@ -3,13 +3,19 @@
 // Tabs: Part / Location. Same UI for Add and Edit. No typing except search.
 // ═══════════════════════════════════════════════════════
 
+// Browse-tree accordion expansion state (PICKER_REDESIGN.md Step 1) — kept
+// OUTSIDE _pickerState so it survives _pickerResetState() and persists across
+// picker opens within the session (Step 7's return-to-position depends on it).
+let _pickerBrowseExpanded = { types: new Set(), families: new Set() };
+
 let _pickerState = {
   open: false,
   editLineId: null,
   editPart: null,
   tab: "part",
   types: [],
-  filters: { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" },
+  browseTree: [],
+  filters: { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", part_type_id: "", part_type_label: "", brand: "", lens: "" },
   config: { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [], _noColor: false },
   availAll: new Set(),
   search: "",
@@ -138,7 +144,7 @@ function _pickerResetState() {
   _pickerState.editPart = null;
   _pickerState.tab = "part";
   _pickerState.step = 0;          // current left-pane wizard step
-  _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", brand: "", lens: "" };
+  _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", part_type_id: "", part_type_label: "", brand: "", lens: "" };
   _pickerState.config = { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [], _noColor: false };
   _pickerState.search = "";
   _pickerState.products = [];
@@ -209,6 +215,10 @@ async function _pickerLoadTypes() {
     const res = await api("/api/parts-db/types");
     _pickerState.types = res?.types || [];
   } catch (e) { console.error("Picker: types failed:", e); _pickerState.types = []; }
+  try {
+    const res = await api("/api/parts-db/browse-tree");
+    _pickerState.browseTree = res?.categories || [];
+  } catch (e) { console.error("Picker: browse-tree failed:", e); _pickerState.browseTree = []; }
 }
 
 // ── Data ───────────────────────────────────────────────
@@ -216,7 +226,11 @@ async function _pickerLoadTypes() {
 async function _pickerFetchProducts() {
   const f = _pickerState.filters;
   try {
-    const url = `/api/parts-db/category-skus?type=${encodeURIComponent(f.type_id)}&category=${encodeURIComponent(f.category_id || "")}`;
+    // The exact part_type filter only applies outside the lights category
+    // flow (f.category_id set) — a light family's leaf still hands off to the
+    // existing whole-category flow unchanged (PICKER_REDESIGN.md Step 1).
+    const ptParam = (f.part_type_id && !f.category_id) ? `&part_type=${encodeURIComponent(f.part_type_id)}` : "";
+    const url = `/api/parts-db/category-skus?type=${encodeURIComponent(f.type_id)}&category=${encodeURIComponent(f.category_id || "")}${ptParam}`;
     const res = await api(url);
     _pickerState.products = res?.products || [];
   } catch (e) {
@@ -258,10 +272,13 @@ function _pickerUsesColor() {
   const f = _pickerState.filters;
   return f.type_id === "lights" && f.category_id !== "" && _COLOR_CATEGORIES.has(f.category_id);
 }
+// The tree replaces both the old "type" pill step AND the lights-only
+// "category" step — expanding Lights reveals its Warning/Scene/Interior/…
+// families, which ARE the category choice, so there's no separate step to
+// ask again. Only a color-configured light category still needs the
+// "Colors & options" step after a tree leaf is picked.
 function _pickerSteps() {
-  const f = _pickerState.filters;
-  const steps = [{ id: "type", label: "Part type" }];
-  if (f.type_id === "lights") steps.push({ id: "category", label: "Light type" });
+  const steps = [{ id: "browse", label: "Browse" }];
   if (_pickerUsesColor()) steps.push({ id: "colors", label: "Colors & options" });
   return steps;
 }
@@ -279,21 +296,8 @@ function _pickerRenderFilters() {
   ).join(`<span class="pf-crumb-sep">›</span>`);
 
   let content = "";
-  if (cur.id === "type") {
-    const _TYPE_ORDER = ["lights", "structural", "equipment", "k9", "extras"];
-    const _buildType = (window._PT?.viewProject?.info?.BuildType || window._PT?.viewProject?.vehicle_info?.BuildType || "").toLowerCase();
-    const _isK9Build = _buildType.includes("k-9") || _buildType.includes("k9");
-    const _sortedTypes = [..._pickerState.types]
-      .filter(t => t.type_id !== "k9" || _isK9Build)
-      .sort((a, b) => {
-        const ai = _TYPE_ORDER.indexOf(a.type_id), bi = _TYPE_ORDER.indexOf(b.type_id);
-        return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
-      });
-    content = `<div class="pf-pills pf-stack">` + _sortedTypes.map(t =>
-      `<button class="pf-pill pf-big${f.type_id === t.type_id ? " active" : ""}" data-k="type" data-v="${esc(t.type_id)}" data-l="${esc(t.label)}">${_TYPE_ICONS[t.type_id] || "📦"} ${esc(t.label)}</button>`).join("") + `</div>`;
-  } else if (cur.id === "category") {
-    content = `<div class="pf-pills pf-stack">` + _LIGHT_CATEGORIES.map(c =>
-      `<button class="pf-pill pf-big${f.category_id === c.id ? " active" : ""}" data-k="cat" data-v="${esc(c.id)}" data-l="${esc(c.label)}">${c.icon} ${esc(c.label)}</button>`).join("") + `</div>`;
+  if (cur.id === "browse") {
+    content = _pickerBrowseTreeHtml();
   } else if (cur.id === "colors") {
     content = _pickerColorConfigHtml();
   }
@@ -303,6 +307,67 @@ function _pickerRenderFilters() {
     ${_pickerState.step > 0 ? `<button class="pf-back" id="pf-back">← Back</button>` : ""}
     <div class="pf-stepbody">${content}</div>`;
   _pickerWireFilters();
+}
+
+// ── Browse-tree accordion (PICKER_REDESIGN.md Step 1) ──
+// category (type_id) → family? → part_type. Every category expands inline;
+// families expand again to their member part types. Selecting a leaf hands
+// off to the existing downstream flow (colors/SKU/location) unchanged.
+
+// Step 1b: part_type_ids with a real part already in the current draft's
+// manifest (picker-created parts carry `part_type`; legacy name-based parts
+// have none and are simply not highlighted — best-effort, per spec).
+function _pickerManifestFilledPartTypes() {
+  const parts = (typeof _meDraft !== "undefined" && _meDraft && _meDraft.parts) || [];
+  return new Set(parts.map(p => p.part_type).filter(Boolean));
+}
+
+function _pickerBrowseTreeHtml() {
+  const _TYPE_ORDER = ["lights", "structural", "equipment", "k9", "extras"];
+  const _buildType = (window._PT?.viewProject?.info?.BuildType || window._PT?.viewProject?.vehicle_info?.BuildType || "").toLowerCase();
+  const _isK9Build = _buildType.includes("k-9") || _buildType.includes("k9");
+  const filled = _pickerManifestFilledPartTypes();
+  const cats = [...(_pickerState.browseTree || [])]
+    .filter(c => c.type_id !== "k9" || _isK9Build)
+    .sort((a, b) => {
+      const ai = _TYPE_ORDER.indexOf(a.type_id), bi = _TYPE_ORDER.indexOf(b.type_id);
+      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    });
+
+  const leafHtml = (pt, cat, pickerFlow) => {
+    const isFilled = filled.has(pt.part_type_id);
+    const active = _pickerState.filters.part_type_id === pt.part_type_id && _pickerState.filters.type_id === cat.type_id;
+    return `<button class="pbt-leaf${isFilled ? " filled" : ""}${active ? " active" : ""}"
+      data-type="${esc(cat.type_id)}" data-type-label="${esc(cat.label)}"
+      data-pt="${esc(pt.part_type_id)}" data-pt-label="${esc(pt.label)}"
+      data-flow="${esc(pickerFlow || "")}">${esc(pt.label)}${isFilled ? ` <span class="pbt-dot" title="Already in this build"></span>` : ""}</button>`;
+  };
+
+  const childHtml = (child, cat) => {
+    if (child.kind === "part_type") return leafHtml(child, cat, "");
+    const open = _pickerBrowseExpanded.families.has(child.family_id);
+    const anyFilled = child.members.some(m => filled.has(m.part_type_id));
+    const members = open ? child.members.map(m => leafHtml(m, cat, child.picker_flow)).join("") : "";
+    return `<div class="pbt-fam">
+      <button class="pbt-fam-head${open ? " open" : ""}" data-fam="${esc(child.family_id)}">
+        <span class="pbt-caret">${open ? "▾" : "▸"}</span>${esc(child.label)}${anyFilled ? ` <span class="pbt-dot" title="Has parts in this build"></span>` : ""}
+      </button>
+      <div class="pbt-fam-body">${members}</div>
+    </div>`;
+  };
+
+  return cats.map(cat => {
+    const open = _pickerBrowseExpanded.types.has(cat.type_id);
+    const anyFilled = (cat.children || []).some(c =>
+      c.kind === "part_type" ? filled.has(c.part_type_id) : c.members.some(m => filled.has(m.part_type_id)));
+    const body = open ? (cat.children || []).map(c => childHtml(c, cat)).join("") : "";
+    return `<div class="pbt-cat">
+      <button class="pbt-cat-head${open ? " open" : ""}" data-cat="${esc(cat.type_id)}">
+        <span class="pbt-caret">${open ? "▾" : "▸"}</span>${_TYPE_ICONS[cat.type_id] || "📦"} ${esc(cat.label)}${anyFilled ? ` <span class="pbt-dot" title="Has parts in this build"></span>` : ""}
+      </button>
+      <div class="pbt-cat-body">${body}</div>
+    </div>`;
+  }).join("");
 }
 
 function _pickerColorConfigHtml() {
@@ -397,35 +462,44 @@ function _pickerWireFilters() {
     if (i <= _pickerState.step) { _pickerState.step = i; _pickerRenderFilters(); }
   }));
 
+  // Browse-tree accordion: category/family headers toggle expansion in place
+  // (no navigate-away, no re-fetch); a leaf part_type selects and hands off.
+  el.querySelectorAll(".pbt-cat-head").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.cat;
+    if (_pickerBrowseExpanded.types.has(id)) _pickerBrowseExpanded.types.delete(id);
+    else _pickerBrowseExpanded.types.add(id);
+    _pickerRenderFilters();
+  }));
+  el.querySelectorAll(".pbt-fam-head").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.fam;
+    if (_pickerBrowseExpanded.families.has(id)) _pickerBrowseExpanded.families.delete(id);
+    else _pickerBrowseExpanded.families.add(id);
+    _pickerRenderFilters();
+  }));
+  el.querySelectorAll(".pbt-leaf").forEach(b => b.addEventListener("click", async () => {
+    const f = _pickerState.filters, c = _pickerState.config;
+    if (_pickerState.editLineId) _pickerState._editTouched.product = true;
+    f.type_id = b.dataset.type; f.type_label = b.dataset.typeLabel;
+    f.part_type_id = b.dataset.pt; f.part_type_label = b.dataset.ptLabel;
+    const flow = b.dataset.flow || "";
+    f.category_id = flow; f.category_label = flow ? (_LIGHT_CATEGORIES.find(x => x.id === flow) || {}).label || flow : "";
+    // Scene/interior lights are white — default to NO color filter (all SKUs
+    // match); the user opts into a color only if they want one. Other light
+    // categories keep the normal per-color selection.
+    c._noColor = (flow === "scene" || flow === "interior");
+    _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
+    await _pickerFetchProducts();
+    const steps = _pickerSteps();
+    const ci = steps.findIndex(s => s.id === "colors");
+    _pickerState.step = ci >= 0 ? ci : 0;   // advance to colors if present, else stay on browse
+    _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+
   el.querySelectorAll(".pf-pill").forEach(b => b.addEventListener("click", async () => {
     if (b.disabled) return;
     const k = b.dataset.k, v = b.dataset.v;
     const f = _pickerState.filters, c = _pickerState.config;
-    if (_pickerState.editLineId) {
-      if (k === "type" || k === "cat") _pickerState._editTouched.product = true;
-      else _pickerState._editTouched.color = true;
-    }
-    if (k === "type") {
-      f.type_id = v; f.type_label = b.dataset.l; f.category_id = ""; f.category_label = "";
-      _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
-      await _pickerFetchProducts();
-      const steps = _pickerSteps();
-      _pickerState.step = Math.min(1, steps.length - 1);   // advance to next step
-      _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return;
-    }
-    if (k === "cat") {
-      f.category_id = v; f.category_label = b.dataset.l;
-      // Scene/interior lights are white — default to NO color filter (all SKUs
-      // match); the user opts into a color only if they want one. Other light
-      // categories keep the normal per-color selection.
-      c._noColor = (v === "scene" || v === "interior");
-      _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
-      await _pickerFetchProducts();
-      const steps = _pickerSteps();
-      const ci = steps.findIndex(s => s.id === "colors");
-      _pickerState.step = ci >= 0 ? ci : _pickerState.step;  // advance to colors if present
-      _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return;
-    }
+    if (_pickerState.editLineId) _pickerState._editTouched.color = true;
     if (k === "lens") { f.lens = v; _pickerRenderFilters(); _pickerRenderProducts(); return; }
     if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
@@ -932,6 +1006,20 @@ function _pickerFreeTextPartTypeLabel(f) {
   const meta = _pickerPartTypeMeta || new Map();
   const pt = fits.map(id => meta.get(id)).find(p => p && p.type_id === f.type_id) || meta.get(fits[0]);
   return (pt && pt.label) || (product && product.model) || "";
+}
+
+// The part_type_id to tag onto an added line (Step 1b manifest highlight).
+// Prefers the tree leaf the user actually picked; falls back to the selected
+// product's fits_part_types (same derivation as the free-text label above)
+// for edit mode / any path that never touched the browse tree.
+function _pickerResolvedPartTypeId(f) {
+  if (f.part_type_id) return f.part_type_id;
+  const sel = _pickerState.sel;
+  const product = sel && _pickerState.products.find(p => p.product_id === sel.product_id);
+  const fits = (product && product.fits_part_types) || [];
+  const meta = _pickerPartTypeMeta || new Map();
+  const pt = fits.map(id => meta.get(id)).find(p => p && p.type_id === f.type_id);
+  return (pt && pt.part_type_id) || "";
 }
 
 function _pickerTitleCase(s) {
@@ -1513,6 +1601,7 @@ async function _pickerDoAdd() {
 
   const rows = resolved.rows || [];
   if (!rows.length) { toast("Nothing to add", "error"); if (btn) btn.disabled = false; return; }
+  const partTypeId = _pickerResolvedPartTypeId(f);
 
   let ok = 0, parentLineId = "";
   for (const row of rows) {
@@ -1520,7 +1609,7 @@ async function _pickerDoAdd() {
       const endpoint = _pickerState.editLineId
         ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
         : `/api/draft/${draftId}/part`;
-      const r = await api(endpoint, row);
+      const r = await api(endpoint, partTypeId ? { ...row, part_type: partTypeId } : row);
       if (r?.ok) { ok++; if (!parentLineId && r.line_id) parentLineId = r.line_id; }
     } catch (e) { console.error("add row failed:", e); }
   }
@@ -1600,6 +1689,7 @@ async function _pickerAddTracer(draftId) {
       name: baseName, location: locName,
       manufacturer: sel.mfr || "", part_number: housingSku, quantity: housingQty,
       new_or_used: "New", source: "", lens, notes,
+      part_type: _pickerResolvedPartTypeId(_pickerState.filters),
       ...colorFields,
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
@@ -1663,6 +1753,7 @@ async function _pickerAddLightbar(draftId) {
     const r = await api(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName, manufacturer: sel.mfr || "",
       part_number: sel.sku, quantity: 1, new_or_used: "New", source: "", lens, notes,
+      part_type: _pickerResolvedPartTypeId(_pickerState.filters),
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }
   } catch (e) { console.error("lightbar add failed:", e); }

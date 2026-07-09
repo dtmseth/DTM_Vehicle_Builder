@@ -35,7 +35,7 @@ Everything below serves two ideas:
 | Step | Increment | Layer | Depends on |
 |---|---|---|---|
 | 0 | Taxonomy: fix `type_id`, invent families, re-base browse tree off families | DB | — (in flight) |
-| 1 | Sidebar accordion — categories expand to families/part types inline | UI | 0 |
+| 1 | Sidebar accordion — categories expand to families/part types inline | UI | 0 — ✅ shipped |
 | 2 | Relocate light options (mode/lens/color/colors-per-head/qty) into the product box | UI | 1 |
 | 3 | SKU dropdown rework — filter-by-options, per-head dropdowns, live title, "identical" | UI | 2 |
 | 4 | Light visualization: footer → bottom of the product box | UI | 2 |
@@ -60,7 +60,31 @@ per part_type (e.g. center console → structural), the new **family** concept (
 families = part types that *belong together as one installed system*, not similar use/location/
 kind), and the `category → family → part_type` browse hierarchy that Step 1 renders.
 
-### Step 1 — Sidebar accordion
+### Step 1 — Sidebar accordion (shipped 2026-07-09)
+Implemented as designed: `GET /api/parts-db/browse-tree` (server-derived
+`category → family → part_type`, `app/routes/parts_db.py`), rendered by
+`ui/js/part_picker.js`'s `_pickerBrowseTreeHtml`/`_pickerWireFilters` (the old
+"type" pill step + Lights-only "category" step are both replaced by the tree —
+picking a light family leaf sets `category_id` to the family's `picker_flow`
+and hands off to the unchanged colors/SKU/location flow). Non-light leaves
+narrow `category-skus` via a new additive `part_type` query param (omitted →
+old whole-category/whole-type behavior, unchanged). Manifest highlight (1b)
+added a `part_type` field to `DraftPart`/the add-part payload; the tree
+green-dots any part_type (and its parent family/category) with a part already
+in the draft. Expansion state persists in a module-level `_pickerBrowseExpanded`
+set for the session (Step 7 dependency). New `ui_smoke` flow:
+`picker_browse_tree`; `add_text_mode_equipment_part` updated for the new
+navigation (console moved under Structural › Console System per Step 0).
+
+**Data-quality note found during this ship:** several `lights` part_types
+(`lighthead`, `cable`, `flange`, `shroud`, `flasher_power`, `bracket`,
+`bar_takedown`, `tracer_2_lamp/5_lamp/6_lamp`) render as bare tree leaves but
+are actually accessory-category placeholders or orphaned taxonomy entries (no
+`accessory_of` set, so Step 1's exclusion rule — same one used elsewhere for
+accessories — doesn't catch them). Left as-is; a Step 0 follow-up should
+either set `accessory_of` on them or drop them from `part_types`.
+
+Original spec (kept for reference):
 - Every sidebar category (Structural, Equipment, Lights, K-9, Extras) **expands in place** to
   show its contents. Today only Lights shows part types, and it does so by navigating to a new
   sidebar page — change that to an **inline dropdown** so all categories stay visible without a

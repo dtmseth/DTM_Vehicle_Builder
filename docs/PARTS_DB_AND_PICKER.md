@@ -79,6 +79,13 @@ Chunk 9 (polish + remove flat modal) remain, plus non-light / no-color product c
 | 8 — Search path | Reverse lookup from search bar | 🔴 Not started |
 | 9 — Polish + remove flat modal | Images, vehicle diagrams, remove the old modal | 🔴 Not started |
 
+**Sidebar browse (shipped 2026-07-09, see `docs/audit/PICKER_REDESIGN.md` Step 1):** the sidebar
+is a server-derived `category → family → part_type` accordion — `GET /api/parts-db/browse-tree` —
+every category/family expands inline; every part type is browsable, not just Lights. Picking a
+light family leaf hands off to the unchanged category/color/SKU flow; a non-light leaf narrows
+`category-skus` via an additive `part_type` query param. Filled part types show a green
+manifest-highlight dot (matches on the `part_type` field now carried by picker-added `DraftPart`s).
+
 Key files: `ui/js/part_picker.js` (panel UI), `app/routes/parts_db.py` (endpoints),
 `planning/sku_resolver.py` (translation), `ui/js/manifest_editor.js` (entry + fallback modal).
 
