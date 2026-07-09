@@ -606,3 +606,20 @@ Zero production-code changes.
 - **Pipeline-inversion tie-in:** the very inertness that makes today's push safe IS the
   `workbook-shape` consumer seam Phase 4 eventually inverts. Safe now; deliberately changed
   later, through the §3.2 re-record protocol.
+
+---
+
+### FINDING-024: orphaned/accessory `lights` part_types render as selectable browse-tree leaves
+- **Found 2026-07-09** (Step 1 ship). Several part_types typed `lights` show as bare, selectable
+  leaves in the new accordion but are not real user-pickable parts: accessory-category
+  placeholders (`lighthead`, `cable`, `flange`, `shroud`, `flasher_power`, `bracket`,
+  `bar_takedown`) and orphaned warning-collapse leftovers (`tracer_2_lamp`, `tracer_5_lamp`,
+  `tracer_6_lamp`). They lack `accessory_of`, so Step 1's accessory-exclusion rule doesn't catch
+  them.
+- **Category:** doc/data-drift (browse-tree clutter) — cosmetic now, but degrades the Step 1
+  result and will confuse the accessory-browse UX later.
+- **Disposition:** Step 0 follow-up (DB, SONNET-FIXABLE). For each: either set
+  `accessory_of`/`accessory_category` so the exclusion rule hides it, or drop it from
+  `part_types` if truly orphaned (the empty tracer types are warning-collapse leftovers already
+  flagged in PARTS_CURATION_AUDIT §3). Ties into OQ-8 (generic bracket/cable/flange homes,
+  deferred to the accessory-browse design) — resolve together.
