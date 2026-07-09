@@ -31097,7 +31097,8 @@
       "workbook_label_pattern": "2-Lamp Tracer",
       "sequence_scope": "global",
       "category": "warning",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "browse_hidden": true
     },
     "tracer_5_lamp": {
       "label": "5-Lamp Tracer",
@@ -31112,7 +31113,8 @@
       "workbook_label_pattern": "5-Lamp Tracer",
       "sequence_scope": "global",
       "category": "warning",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "browse_hidden": true
     },
     "tracer_6_lamp": {
       "label": "6-Lamp Tracer",
@@ -31127,7 +31129,8 @@
       "workbook_label_pattern": "6-Lamp Tracer",
       "sequence_scope": "global",
       "category": "warning",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "browse_hidden": true
     },
     "radio_speaker": {
       "label": "Radio Speaker",
