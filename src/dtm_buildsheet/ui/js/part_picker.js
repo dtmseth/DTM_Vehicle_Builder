@@ -416,7 +416,7 @@ function _pickerColorConfigHtml() {
   }
 
   const modeHtml = `<div class="pf-group"><span class="pf-label">Mode</span><div class="pf-pills">
-      ${seg("mode", "uniform", "Uniform", c.mode === "uniform")}
+      ${seg("mode", "uniform", "Identical", c.mode === "uniform")}
       ${seg("mode", "split", "Split", c.mode === "split", !c.splitAllowed)}
       ${seg("mode", "custom", "Custom", c.mode === "custom")}</div></div>`;
 
