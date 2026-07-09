@@ -96,6 +96,13 @@ function _pickerClearSelection() {
   _pickerUpdateFooter();
 }
 
+// FINDING-005 (LEDGER.md): edit mode is hard-coded to `type_id="lights"` and
+// only prefills a product match, category/config/accessories are never
+// restored, so editing a non-light part shows the wrong product list. The
+// fix here is a data-loss STOPGAP ONLY (dirty-tracking so an untouched
+// control can't clobber name/quantity/raw_color) — the real prefill/contract
+// redesign (type/category/config prefill, non-lights product list, accessory
+// editing) is a separate NEEDS-DESIGN task; see LEDGER.md FINDING-005.
 async function _pickerOpenEdit(part) {
   if (!part) return;
   _pickerResetState();
@@ -110,7 +117,12 @@ async function _pickerOpenEdit(part) {
   const pn = (part.components && part.components[0] && part.components[0].part_number) || part.part_number;
   const prod = _pickerState.products.find(p => p.skus.some(s => s.part_number === pn));
   if (prod) {
-    _pickerState.sel = { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label };
+    // Carry the matched SKU into `sel.sku` so an untouched product falls
+    // through the existing `sel.sku || product.skus[0]...` logic in
+    // _pickerDoAdd instead of silently substituting the product's first SKU
+    // (part of FINDING-005's "SKU/model clobber" — this keeps the stored SKU
+    // whenever the user never re-picks a product).
+    _pickerState.sel = { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label, sku: pn };
     _pickerState.expanded.add(prod.product_id);
   }
   _pickerState.loc.preName = part.name;
@@ -139,6 +151,11 @@ function _pickerResetState() {
   _pickerState.accLoadedFor = null;
   _pickerState.tracer = { active: false, mode: "trio", secondary: "white", custom: {}, preview: null, loading: false };
   _pickerState.lightbar = { active: false, setup: "standard", edition: "clear", notes: "" };
+  // Edit-mode dirty tracking (FINDING-005 stopgap): which control groups the
+  // user has actually touched since ≡ Edit opened. Save stays disabled, and
+  // editPart.name/quantity/raw_color stay intact, until the corresponding
+  // group is touched — see _pickerDoAdd and _pickerUpdateFooter.
+  _pickerState._editTouched = { product: false, color: false, location: false };
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -384,6 +401,10 @@ function _pickerWireFilters() {
     if (b.disabled) return;
     const k = b.dataset.k, v = b.dataset.v;
     const f = _pickerState.filters, c = _pickerState.config;
+    if (_pickerState.editLineId) {
+      if (k === "type" || k === "cat") _pickerState._editTouched.product = true;
+      else _pickerState._editTouched.color = true;
+    }
     if (k === "type") {
       f.type_id = v; f.type_label = b.dataset.l; f.category_id = ""; f.category_label = "";
       _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
@@ -413,6 +434,7 @@ function _pickerWireFilters() {
 
   el.querySelectorAll(".picker-swatch").forEach(b => b.addEventListener("click", () => {
     if (b.disabled) return;
+    if (_pickerState.editLineId) _pickerState._editTouched.color = true;
     const wrap = b.closest(".picker-swatches"), c = _pickerState.config, color = b.dataset.color, kind = wrap.dataset.kind;
     if (color === "") {
       c._noColor = true;
@@ -619,7 +641,10 @@ function _pickerRenderProducts() {
     // select via the per-SKU "Select" pill instead.
     const pColor = usesColor && _pickerProductHasColor(p);
     if (pColor && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
-    if (pColor) { _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; }
+    if (pColor) {
+      if (_pickerState.editLineId && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerState._editTouched.product = true;
+      _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {};
+    }
     _pickerRenderProducts(); _pickerUpdateFooter();
     if (pColor) { _pickerLoadAccessories(pid); _pickerLoadTracer(pid); _pickerLoadLightbar(pid); }
   }));
@@ -627,6 +652,8 @@ function _pickerRenderProducts() {
     e.stopPropagation();
     const pid = btn.dataset.pid, p = _pickerState.products.find(x => x.product_id === pid);
     if (!_pickerState.sel || _pickerState.sel.product_id !== pid) _pickerResetLocation();
+    if (_pickerState.editLineId && (!_pickerState.sel || _pickerState.sel.product_id !== pid || _pickerState.sel.sku !== btn.dataset.pick))
+      _pickerState._editTouched.product = true;
     _pickerState.expanded = new Set([pid]);   // keep only this product expanded
     _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label, sku: btn.dataset.pick };
     _pickerRenderProducts(); _pickerUpdateFooter();
@@ -737,6 +764,7 @@ function _pickerDrawLocation() {
           `<select id="picker-loc-select" class="pf-select"><option value="">— Select location —</option>${opts}</select></div>`;
         const selEl = $("picker-loc-select");
         if (selEl) selEl.addEventListener("change", () => {
+          if (_pickerState.editLineId) _pickerState._editTouched.location = true;
           loc.selected = selEl.value;
           const e = loc.locByName[(selEl.value || "").toUpperCase()] || {};
           loc.name_pattern = e.name_pattern || ""; loc.base_label = e.base_label || "";
@@ -757,6 +785,7 @@ function _pickerDrawLocation() {
         loc.catalog_names = [];
         const txt = $("picker-loc-text");
         if (txt) txt.addEventListener("input", () => {
+          if (_pickerState.editLineId) _pickerState._editTouched.location = true;
           loc.selected = txt.value.trim();
           loc.name_pattern = ptLabel ? `${ptLabel} {n}` : "";
           loc.base_label = ptLabel;
@@ -880,6 +909,7 @@ function _pickerPlaceDots() {
       if (tip) tip.hidden = true;
     });
     d.addEventListener("click", () => {
+      if (_pickerState.editLineId) _pickerState._editTouched.location = true;
       loc.selected = d.dataset.name;
       const entry = loc.locByName[d.dataset.name.toUpperCase()] || {};
       loc.name_pattern = entry.name_pattern || "";
@@ -1333,10 +1363,14 @@ function _pickerUpdateFooter() {
     text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
     if (_pickerState.editLineId) {
       // Editing: save the part change directly (location keeps its current value
-      // unless the user visits the Location tab to change it).
+      // unless the user visits the Location tab to change it). Stopgap for
+      // FINDING-005: Save stays disabled until the user actually touches a
+      // control, so a no-op open+close (or a re-render) can't corrupt the line.
+      const touched = _pickerState._editTouched || {};
+      const dirty = touched.product || touched.color || touched.location;
       btn.textContent = "Save edits";
-      btn.disabled = !(sel && ready);
-      _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
+      btn.disabled = !(sel && ready && dirty);
+      _pickerState.footerHandler = (sel && ready && dirty) ? _pickerDoAdd : null;
     } else if (loc.selected && (_pickerState.tracer.active || _pickerSelIsRoofBar())) {
       // Tracer / fixture lightbar auto-located → add directly; the user can
       // still open the Location tab to change it.
@@ -1426,7 +1460,16 @@ async function _pickerDoAdd() {
   const usesColor = f.type_id === "lights" && _COLOR_CATEGORIES.has(f.category_id)
     && !sel.sku && _pickerProductHasColor(product || { skus: [] });
   const locName = loc.selected;   // raw layout key (planner upper-cases to match)
-  const baseName = _pickerChooseName(loc) || sel.model;
+
+  // FINDING-005 stopgap: in edit mode, a control group the user never touched
+  // must not clobber the stored part — carry its editPart value through
+  // unchanged instead of recomputing from picker defaults.
+  const editing = !!_pickerState.editLineId;
+  const ep = _pickerState.editPart;
+  const touched = _pickerState._editTouched || {};
+  const keepName = editing && ep && !touched.product && !touched.location;
+  const keepColor = editing && ep && !touched.product && !touched.color;
+  const baseName = keepName ? ep.name : (_pickerChooseName(loc) || sel.model);
 
   let combos, colorFields = {}, totalHeads = 0;
   if (usesColor) {
@@ -1447,13 +1490,15 @@ async function _pickerDoAdd() {
       return { colors: cb.colors, part_number: pn, quantity: cb.count, price };
     }).filter(Boolean);
     if (!combos.length) { toast("No SKU chosen for those colors — pick one on the right, or adjust colors/lens", "error"); return; }
-    colorFields = _pickerColorFields();
+    colorFields = keepColor ? { raw_color: ep.raw_color || "" } : _pickerColorFields();
   } else {
     const sku = sel.sku || (product && product.skus[0] && product.skus[0].part_number);
     if (!sku) { toast("Pick a SKU", "error"); return; }
     const skuObj = product.skus.find(s => s.part_number === sku) || {};
-    combos = [{ colors: [], part_number: sku, quantity: 1, price: skuObj.price || null }];
+    const qty = keepColor ? (ep.quantity || 1) : 1;
+    combos = [{ colors: [], part_number: sku, quantity: qty, price: skuObj.price || null }];
     totalHeads = 1;
+    if (keepColor && ep.raw_color) colorFields = { raw_color: ep.raw_color };
   }
 
   const btn = $("picker-add-btn"); if (btn) btn.disabled = true;

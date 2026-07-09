@@ -124,7 +124,7 @@ the real build editor with headless Chromium.
   edit path)
 - **Category:** fragile
 - **Severity:** HIGH — data-destroying on a routine action
-- **Status:** CONFIRMED
+- **Status:** PARTIAL — stopgap landed; full redesign still open
 - **Repro (live UI):** seed "Forward Warning 1" (ION, qty 2, Red) → manifest ≡
   Edit → picker opens ("Save edits" **enabled immediately**). Click Save (or
   re-pick any product) → draft line becomes
@@ -144,6 +144,26 @@ the real build editor with headless Chromium.
   deliberately changed). A minimal SONNET-FIXABLE stopgap: in edit mode carry
   `editPart.name/quantity/raw_color` through `_pickerDoAdd` unless the user
   changed the corresponding control, and disable Save until something changed.
+- **Stopgap fix (landed):** `_pickerState._editTouched = {product, color,
+  location}` now tracks which control group the user actually interacted with
+  while editing (product/SKU re-pick, color swatch/count/mode/lens pills,
+  location dropdown/dot/free-text). `_pickerUpdateFooter` disables "Save
+  edits" until at least one group is touched — a no-op open+Save can no
+  longer fire at all. `_pickerDoAdd` carries `editPart.name` through unchanged
+  unless `product` or `location` was touched, and `editPart.quantity` /
+  `editPart.raw_color` through unchanged unless `product` or `color` was
+  touched. Also fixed `_pickerOpenEdit`'s product prefill to carry the matched
+  SKU into `sel.sku` (previously only product_id/model/mfr were set, so an
+  untouched product still silently substituted `product.skus[0]` — part of
+  the "SKU/model clobber" symptom). Verified live: seeding "Forward Warning 1"
+  (ION/IONR, qty 2, Red) → ≡ Edit → Save is disabled pre-edit and a forced
+  click is a no-op (draft line byte-identical); after touching only the
+  Location field, name/quantity/color are preserved and only location
+  changes. Client-side only; golden master + contract snapshots unchanged.
+  Permanent regression guard: `tools/ui_smoke/flows.py:flow_edit_preserves_fields`.
+  **Still open (NEEDS-DESIGN):** full edit-mode redesign — correct
+  type/category/config prefill, the lights-only product list bug, and
+  accessory editing. Not attempted here; see disposition above.
 
 ### FINDING-006: plan warnings are rendered nowhere in the build editor; off-diagram parts vanish silently
 - **Location:** `app/services/preview_service.py:141-250` (only

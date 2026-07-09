@@ -5,9 +5,9 @@ end to end and raises on any step failure. Console/network/netguard
 assertions are made by the runner, not here — a flow only navigates and
 interacts.
 
-Feasibility-prototype status: ``tab_load`` and ``add_text_mode_equipment_part``
-are implemented. The remaining flows are specified at step-and-selector level
-in docs/audit/UI_SMOKE_SPEC.md §5 and land in the implementation session.
+Feasibility-prototype status: only ``tab_load`` is implemented. The other
+five flows are specified at step-and-selector level in
+docs/audit/UI_SMOKE_SPEC.md §5 and land in the implementation session.
 """
 
 from __future__ import annotations
@@ -155,9 +155,48 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     assert not plan.get("warnings"), f"expected no plan warnings, got {plan.get('warnings')}"
 
 
+def flow_edit_preserves_fields(page, base_url: str) -> None:
+    """LEDGER.md FINDING-005 regression guard (stopgap): opening ≡ Edit and
+    clicking Save with NO changes must leave the part byte-for-byte
+    unchanged, and Save must start disabled until a real edit is made."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+
+    # Seed "Forward Warning 1" (ION, qty 2, Red) — the ledger's exact repro.
+    add_resp = _api(base_url, f"/api/draft/{draft_id}/part", {
+        "name": "Forward Warning 1", "location": "FRONT WARNING 1",
+        "manufacturer": "Whelen", "part_number": "IONR", "quantity": 2,
+        "new_or_used": "New", "source": "", "raw_color": "Red",
+    })
+    line_id = add_resp["line_id"]
+
+    _open_build_editor(page, base_url)
+
+    def fetch_part():
+        draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+        return next(p for p in draft["draft"]["parts"] if p["line_id"] == line_id)
+
+    before = fetch_part()
+
+    page.click(".me-edit-btn")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    disabled = page.get_attribute("#picker-add-btn", "disabled")
+    assert disabled is not None, "Save edits must start disabled until a real edit is made"
+
+    # A disabled button swallows the click — this is asserting the no-op,
+    # not driving a real save.
+    page.click("#picker-add-btn", force=True)
+    page.wait_for_timeout(_SETTLE_MS)
+
+    after = fetch_part()
+    assert before == after, f"part changed on a no-op Save:\nbefore={before}\nafter={after}"
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
+    "edit_preserves_fields": flow_edit_preserves_fields,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
