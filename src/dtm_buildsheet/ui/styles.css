@@ -432,6 +432,10 @@
     .pp-opts-toggle-btn:hover:not(.active){opacity:.82}
     .pp-opts-toggle-btn.active{background:var(--red);color:#fff}
     .pp-skus{border-top:1px dashed var(--border);padding:6px 13px 10px;display:flex;flex-direction:column;gap:3px}
+    .pp-viz{border-top:1px dashed var(--border);padding:8px 13px 10px;display:flex;align-items:center;gap:8px}
+    .pp-viz-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+    .pp-viz .picker-foot-heads{margin-right:0}
+    .pp-viz .picker-foot-head{width:24px;height:40px}
     .pp-sku{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 6px;border-radius:5px}
     .pp-sku.match{background:#eafaf0}
     .pp-sku.nomatch{opacity:.55}

@@ -686,6 +686,8 @@ function _pickerRenderProducts() {
           }).join("");
           return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select>${(!hasMatch && !optRemoved) ? `<span class="pp-match no">no exact</span>` : ""}</div>`;
         }).join("") + `</div>`;
+        // Step 4: light visualization below SKU dropdowns in the selected product box.
+        bodyHtml += `<div class="pp-viz"><span class="pp-viz-label">Preview</span>${_pickerHeadsPreviewHtml()}</div>`;
       } else {
         bodyHtml = `<div class="pp-skus">` + skus.map(s => {
           const matched = pColor ? _skuMatchesAny(s, headSets) : true;
@@ -1524,14 +1526,13 @@ function _pickerUpdateFooter() {
   const ready = accOk && tracerOk && lightbarOk;   // all required sub-choices addressed
   const hasAcc = _pickerVisibleAccessoryGroups().length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
-  const preview = (sel && usesColor) ? _pickerHeadsPreviewHtml() : "";
   let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
   if (sel && _pickerState.tracer.active && !tracerOk)
     hint += ' <span class="picker-foot-acc">· configure lightheads</span>';
   if (sel && _pickerState.lightbar.active && !lightbarOk)
     hint += ' <span class="picker-foot-acc">· add order notes</span>';
   if (_pickerState.tab === "part") {
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
+    text.innerHTML = sel ? `<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
     if (_pickerState.editLineId) {
       // Editing: save the part change directly (location keeps its current value
       // unless the user visits the Location tab to change it). Stopgap for
@@ -1555,7 +1556,7 @@ function _pickerUpdateFooter() {
     }
   } else {
     const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
-    text.innerHTML = sel ? `${preview}<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${hint}` : `<span class="picker-foot-label">Pick a product first</span>`;
+    text.innerHTML = sel ? `<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${hint}` : `<span class="picker-foot-label">Pick a product first</span>`;
     btn.textContent = "Add Part";
     btn.disabled = !(sel && loc.selected && ready);
     _pickerState.footerHandler = (sel && loc.selected && ready) ? _pickerDoAdd : null;

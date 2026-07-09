@@ -411,6 +411,16 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     assert first_label.startswith("Head 1:"), \
         f"expected dropdown label to start with 'Head 1:', got {first_label!r}"
 
+    # ── Step 4: light viz renders in the product box, not the footer ─────────
+    viz_in_box = page.locator(".pp-row.sel .pp-viz").count()
+    assert viz_in_box > 0, "Step 4: .pp-viz must be present inside the selected product box"
+
+    viz_heads = page.locator(".pp-row.sel .pp-viz .picker-foot-head").count()
+    assert viz_heads > 0, "Step 4: .pp-viz must contain at least one .picker-foot-head swatch"
+
+    footer_viz = page.locator("#picker-footer-text .picker-foot-heads").count()
+    assert footer_viz == 0, "Step 4: light viz must NOT appear in the footer text"
+
     # ── Assertion (b): "Remove options" reveals all SKUs ─────────────────────
     page.wait_for_selector(".pp-prod-options [data-opts-remove]")
     remove_btn = page.locator(".pp-prod-options [data-opts-remove]").first
