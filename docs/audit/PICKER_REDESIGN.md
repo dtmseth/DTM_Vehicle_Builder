@@ -172,8 +172,13 @@ Original spec (kept for reference):
   - **Guard rails.** Authoring-side; name-based render path and golden masters untouched.
 
 ### Step 4 — Light visualization into the product box
-- Move the light visualization from the footer to the **bottom of the product box**, where it is
-  most relevant to the product being configured.
+- Move the light visualization ("demo light heads") from the footer to the **bottom of the
+  selected product's box, below the SKU dropdowns**, where it is most relevant to the product
+  being configured.
+- **Resolved design calls (Opus, 2026-07-09):** it renders in the *selected* product's box
+  (per-product, on selection), reflecting the current per-head configuration (colors/count from
+  Step 3); the footer visualization is removed, not duplicated. Same rendering logic, new
+  location. Authoring-side — render path and golden masters untouched.
 
 ### Step 5 — Scene lights special case
 - Scene lights do **not** use the full option set. Remove **all** options except **quantity** for
