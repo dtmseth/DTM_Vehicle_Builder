@@ -436,41 +436,6 @@
       {
         "children": [
           {
-            "kind": "part_type",
-            "label": "2-Lamp Tracer",
-            "part_type_id": "tracer_2_lamp"
-          },
-          {
-            "kind": "part_type",
-            "label": "5-Lamp Tracer",
-            "part_type_id": "tracer_5_lamp"
-          },
-          {
-            "kind": "part_type",
-            "label": "6-Lamp Tracer",
-            "part_type_id": "tracer_6_lamp"
-          },
-          {
-            "kind": "part_type",
-            "label": "Bracket / Mount",
-            "part_type_id": "bracket"
-          },
-          {
-            "kind": "part_type",
-            "label": "Cable",
-            "part_type_id": "cable"
-          },
-          {
-            "kind": "part_type",
-            "label": "Flange",
-            "part_type_id": "flange"
-          },
-          {
-            "kind": "part_type",
-            "label": "Flasher / Power",
-            "part_type_id": "flasher_power"
-          },
-          {
             "family_id": "interior_bars",
             "kind": "family",
             "label": "Interior Bars",
@@ -511,11 +476,6 @@
             "picker_flow": "interior"
           },
           {
-            "kind": "part_type",
-            "label": "Lighthead",
-            "part_type_id": "lighthead"
-          },
-          {
             "family_id": "roof_bars",
             "kind": "family",
             "label": "Roof Bars",
@@ -550,16 +510,6 @@
               }
             ],
             "picker_flow": "scene"
-          },
-          {
-            "kind": "part_type",
-            "label": "Shroud",
-            "part_type_id": "shroud"
-          },
-          {
-            "kind": "part_type",
-            "label": "Take-Down / Alley",
-            "part_type_id": "bar_takedown"
           },
           {
             "family_id": "warning_lights",

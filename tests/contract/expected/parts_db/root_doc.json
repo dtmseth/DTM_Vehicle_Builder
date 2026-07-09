@@ -2199,6 +2199,7 @@
         "type_id": "equipment"
       },
       "tracer_2_lamp": {
+        "browse_hidden": true,
         "category": "warning",
         "label": "2-Lamp Tracer",
         "location_mode": "placement",
@@ -2214,6 +2215,7 @@
         "workbook_label_pattern": "2-Lamp Tracer"
       },
       "tracer_5_lamp": {
+        "browse_hidden": true,
         "category": "warning",
         "label": "5-Lamp Tracer",
         "location_mode": "placement",
@@ -2229,6 +2231,7 @@
         "workbook_label_pattern": "5-Lamp Tracer"
       },
       "tracer_6_lamp": {
+        "browse_hidden": true,
         "category": "warning",
         "label": "6-Lamp Tracer",
         "location_mode": "placement",

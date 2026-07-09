@@ -230,6 +230,10 @@ def _build_browse_tree(svc) -> list[dict]:
     for pt_id, spec in part_types_doc.items():
         if spec.get("accessory_of"):
             continue
+        if spec.get("accessory_category"):
+            continue
+        if spec.get("browse_hidden"):
+            continue
         if pt_id in in_family:
             continue
         type_id = spec.get("type_id", "")

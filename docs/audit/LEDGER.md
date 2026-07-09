@@ -623,6 +623,11 @@ Zero production-code changes.
   `part_types` if truly orphaned (the empty tracer types are warning-collapse leftovers already
   flagged in PARTS_CURATION_AUDIT §3). Ties into OQ-8 (generic bracket/cable/flange homes,
   deferred to the accessory-browse design) — resolve together.
+- **Status:** RESOLVED (2026-07-09). `_build_browse_tree` now skips any part_type with
+  `accessory_category` set (covers the 7 accessory-home types) and any with `browse_hidden: true`
+  (covers the 3 tracer orphans — retained in data for the planner's name-based resolution but
+  invisible in the browse tree). Browse-tree contract re-recorded; 10 junk leaves removed.
+  Golden masters unchanged. Full pytest green (1709 passed).
 
 ---
 
