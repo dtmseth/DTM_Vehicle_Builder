@@ -426,6 +426,7 @@
     .pp-match{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px}
     .pp-match.ok{background:var(--green);color:#fff}
     .pp-match.no{background:#e7eaf0;color:var(--muted)}
+    .pp-prod-options{border-top:1px solid var(--border);padding:10px 13px 8px;background:var(--bg-subtle,#f8f9fb);display:flex;flex-direction:column;gap:10px}
     .pp-skus{border-top:1px dashed var(--border);padding:6px 13px 10px;display:flex;flex-direction:column;gap:3px}
     .pp-sku{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 6px;border-radius:5px}
     .pp-sku.match{background:#eafaf0}

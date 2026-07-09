@@ -272,15 +272,11 @@ function _pickerUsesColor() {
   const f = _pickerState.filters;
   return f.type_id === "lights" && f.category_id !== "" && _COLOR_CATEGORIES.has(f.category_id);
 }
-// The tree replaces both the old "type" pill step AND the lights-only
-// "category" step — expanding Lights reveals its Warning/Scene/Interior/…
-// families, which ARE the category choice, so there's no separate step to
-// ask again. Only a color-configured light category still needs the
-// "Colors & options" step after a tree leaf is picked.
+// PICKER_REDESIGN.md Step 2: steps are now always just [browse]. Options
+// (mode/lens/color/cph/qty) live in the selected product's box, not the
+// sidebar, so there is no "Colors & options" step to push to.
 function _pickerSteps() {
-  const steps = [{ id: "browse", label: "Browse" }];
-  if (_pickerUsesColor()) steps.push({ id: "colors", label: "Colors & options" });
-  return steps;
+  return [{ id: "browse", label: "Browse" }];
 }
 
 function _pickerRenderFilters() {
@@ -295,16 +291,11 @@ function _pickerRenderFilters() {
     `<button class="pf-crumb${i === _pickerState.step ? " active" : ""}${i < _pickerState.step ? " done" : ""}" data-step="${i}">${esc(s.label)}</button>`
   ).join(`<span class="pf-crumb-sep">›</span>`);
 
-  let content = "";
-  if (cur.id === "browse") {
-    content = _pickerBrowseTreeHtml();
-  } else if (cur.id === "colors") {
-    content = _pickerColorConfigHtml();
-  }
+  // Steps is always [browse] (Step 2: options live in the product box).
+  const content = _pickerBrowseTreeHtml();
 
   el.innerHTML = `<div class="pf-group pf-search"><input type="text" id="pf-search" placeholder="🔍 Search products / SKUs" value="${esc(_pickerState.search)}"></div>
     <div class="pf-crumbs">${crumbs}</div>
-    ${_pickerState.step > 0 ? `<button class="pf-back" id="pf-back">← Back</button>` : ""}
     <div class="pf-stepbody">${content}</div>`;
   _pickerWireFilters();
 }
@@ -489,9 +480,7 @@ function _pickerWireFilters() {
     c._noColor = (flow === "scene" || flow === "interior");
     _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
     await _pickerFetchProducts();
-    const steps = _pickerSteps();
-    const ci = steps.findIndex(s => s.id === "colors");
-    _pickerState.step = ci >= 0 ? ci : 0;   // advance to colors if present, else stay on browse
+    // Step 2: always stay on browse — options are now in the product box.
     _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter();
   }));
 
@@ -609,19 +598,16 @@ function _pickerRenderProducts() {
     header += `<label class="pp-vehtoggle"><input type="checkbox" id="pp-veh-only"${_pickerState.vehicleOnly ? " checked" : ""}>`
       + `<span>Only show ${esc(veh)}-compatible parts</span></label>`;
   }
-  // A product matches when every chosen color combo has a matching SKU.
-  const isMatch = p => !usesColor || (headSets.length > 0 && headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs]))));
-
   let list = _pickerState.products;
   if (f.brand) list = list.filter(p => p.manufacturer_label === f.brand);
   if (q) list = list.filter(p => p.model.toLowerCase().includes(q) || p.skus.some(s => (s.part_number || "").toLowerCase().includes(q)));
   // Vehicle-compat: drop products with no SKU that fits the selected vehicle.
   if (vehFiltering) list = list.filter(p => p.skus.some(s => _skuCompatible(s, veh)));
+  // Step 2: grid is no longer pre-sorted by color match — options live in the
+  // product box and are configured per-product after selection, not before.
   list = [...list].sort((a, b) => {
-    const am = isMatch(a), bm = isMatch(b);            // matching products first
-    if (am !== bm) return am ? -1 : 1;
     const ap = pref.has((a.manufacturer_label || "").toLowerCase()), bp = pref.has((b.manufacturer_label || "").toLowerCase());
-    if (ap !== bp) return ap ? -1 : 1;                  // then preferred brand
+    if (ap !== bp) return ap ? -1 : 1;                  // preferred brand first
     return a.model.localeCompare(b.model);
   });
 
@@ -639,17 +625,15 @@ function _pickerRenderProducts() {
     // Programmable bars (WeCanX) carry no per-SKU colors → fall back to direct
     // SKU selection even inside a color category, so they stay pickable.
     const pColor = usesColor && _pickerProductHasColor(p);
-    let matchBadge = "";
-    if (pColor && headSets.length) {
-      const allMatch = headSets.every(hs => p.skus.some(s => _skuMatchesAny(s, [hs])));
-      matchBadge = allMatch ? `<span class="pp-match ok">match</span>` : `<span class="pp-match no">no exact</span>`;
-    }
 
-    // Body: color categories → per-combo SKU dropdown (override); else → SKU pick list.
+    // Body: color products show options + per-combo SKU dropdown; else → SKU pick list.
     let bodyHtml = "";
     if (open) {
       if (pColor && selected) {
-        bodyHtml = `<div class="pp-skus">` + headSets.map(hs => {
+        // Step 2: option controls (mode/lens/color/cph/qty) in the product box,
+        // above the SKU dropdown.  _pickerWireProductOptions wires them after render.
+        bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml()}</div>`;
+        bodyHtml += `<div class="pp-skus">` + headSets.map(hs => {
           const label = _pickerComboLabel(hs);
           const ordered = [...skus].sort((a, b) => {
             const am = _skuMatchesAny(a, [hs]), bm = _skuMatchesAny(b, [hs]);
@@ -691,12 +675,13 @@ function _pickerRenderProducts() {
         <span class="pp-name">${esc(p.model)}</span>
         <span class="pp-mfr">${esc(p.manufacturer_label)}</span>
         <span class="pp-meta">${skus.length} SKU${skus.length !== 1 ? "s" : ""}${priceStr ? " · " + priceStr : ""}</span>
-        ${matchBadge}${qb}
+        ${qb}
       </div>${bodyHtml}
     </div>`;
   }).join("");
 
   _pickerWireBrand(el);
+  _pickerWireProductOptions(el);
   const vt = el.querySelector("#pp-veh-only");
   if (vt) vt.addEventListener("change", () => {
     _pickerState.vehicleOnly = vt.checked;
@@ -745,6 +730,43 @@ function _pickerWireBrand(el) {
   el.querySelectorAll("[data-brand]").forEach(b => b.addEventListener("click", () => {
     _pickerState.filters.brand = b.dataset.brand;
     _pickerRenderProducts();
+  }));
+}
+
+// Wire the per-product option controls (mode/lens/color/cph/qty) that live
+// inside .pp-prod-options in the selected product's box (Step 2 relocation).
+// Mirrors the handler logic that was previously in _pickerWireFilters for
+// the sidebar "Colors & options" step.
+function _pickerWireProductOptions(el) {
+  const opts = el.querySelector(".pp-prod-options");
+  if (!opts) return;
+  opts.querySelectorAll(".pf-pill[data-k]").forEach(b => b.addEventListener("click", async () => {
+    if (b.disabled) return;
+    const k = b.dataset.k, v = b.dataset.v;
+    const f = _pickerState.filters, c = _pickerState.config;
+    if (_pickerState.editLineId) _pickerState._editTouched.color = true;
+    if (k === "lens") { f.lens = v; _pickerRenderProducts(); return; }
+    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "mode") { c.mode = v; _pickerNormalizeConfig(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+  }));
+  opts.querySelectorAll(".picker-swatch").forEach(b => b.addEventListener("click", () => {
+    if (b.disabled) return;
+    if (_pickerState.editLineId) _pickerState._editTouched.color = true;
+    const wrap = b.closest(".picker-swatches"), c = _pickerState.config, color = b.dataset.color, kind = wrap.dataset.kind;
+    if (color === "") {
+      c._noColor = true;
+    } else {
+      c._noColor = false;
+      if (kind === "uniform") c.uniform[parseInt(wrap.dataset.slot, 10)] = color;
+      else if (kind === "split") c.splitSecondary[parseInt(wrap.dataset.slot, 10)] = color;
+      else if (kind === "custom") {
+        const arr = c.custom[parseInt(wrap.dataset.head, 10)], max = _COLORS_PER_HEAD[c.colorsPerHead], i = arr.indexOf(color);
+        if (i >= 0) { if (arr.length > 1) arr.splice(i, 1); } else if (arr.length < max) arr.push(color);
+      }
+    }
+    _pickerState.skuChoices = {};
+    _pickerRenderProducts(); _pickerUpdateFooter();
   }));
 }
 

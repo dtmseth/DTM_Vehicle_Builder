@@ -236,11 +236,76 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
     assert page.is_visible("#picker-tab-btn-part.active"), "Step 1 must stay on the Part tab (navigation-only)"
 
 
+def flow_light_options_in_product_box(page, base_url: str) -> None:
+    """PICKER_REDESIGN.md Step 2 regression guard: selecting a light part type
+    goes straight to the product grid (no sidebar 'Colors & options' step);
+    picking a product shows the option controls (mode/lens/color/cph/qty) in
+    its box above the SKU dropdown, and they drive SKU selection."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    # Expand Lights category in the browse tree.
+    page.click(".pbt-cat-head[data-cat='lights']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
+    page.wait_for_timeout(200)
+
+    # Expand the first family under Lights (Warning / Scene / etc.), if present.
+    fam_heads = page.locator(".pbt-cat-head[data-cat='lights'] + .pbt-cat-body .pbt-fam-head")
+    if fam_heads.count() > 0:
+        fam_heads.first.click()
+        page.wait_for_timeout(200)
+
+    # Pick the first leaf that has a picker_flow — i.e., a colour-configured light type.
+    page.wait_for_selector(".pbt-leaf[data-flow]")
+    page.click(".pbt-leaf[data-flow] >> nth=0")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # Step 2 assertion A: we stay on the Browse crumb (no "Colors & options" step).
+    crumbs = page.locator(".pf-crumb")
+    assert crumbs.count() == 1, f"expected 1 crumb (Browse only), got {crumbs.count()}"
+    crumb_text = crumbs.nth(0).text_content().strip()
+    assert "Browse" in crumb_text, f"expected Browse crumb, got: {crumb_text!r}"
+
+    # Product grid must have rendered without waiting for colour choices.
+    assert page.locator(".pp-head").count() > 0, \
+        "expected products in grid immediately after picking a light type"
+
+    # Click products until we find one that shows option controls (colour products
+    # show options; a programmable bar with no colours would not).
+    found_options = False
+    for i in range(min(4, page.locator(".pp-head").count())):
+        page.click(f".pp-head >> nth={i}")
+        page.wait_for_timeout(200)
+        if page.locator(".pp-prod-options").count() > 0:
+            found_options = True
+            break
+
+    assert found_options, \
+        "expected at least one colour-light product to render option controls in its box"
+
+    # Option controls must include a quantity (lighthead count) stepper.
+    page.wait_for_selector(".pp-prod-options .pf-pill[data-k='count'][data-v='1']")
+
+    # Changing qty re-renders without crashing; option box must survive.
+    page.click(".pp-prod-options .pf-pill[data-k='count'][data-v='1']")
+    page.wait_for_timeout(200)
+    assert page.is_visible(".pp-prod-options"), \
+        "option controls must persist after a config change"
+
+    # SKU dropdown must appear below the options in the product box.
+    page.wait_for_selector(".pp-skus")
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
     "picker_browse_tree": flow_picker_browse_tree,
+    "light_options_in_product_box": flow_light_options_in_product_box,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
