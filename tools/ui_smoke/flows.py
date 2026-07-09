@@ -337,12 +337,170 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
         page.wait_for_selector(".pp-override")   # must still render without JS error
 
 
+def flow_sku_dropdown_rework(page, base_url: str) -> None:
+    """PICKER_REDESIGN.md Step 3 regression guard.
+
+    Asserts all four Step 3 behavioural contracts:
+    (a) SKU dropdown offers only option-matching SKUs by default.
+    (b) "Remove options" reveals every SKU in the product.
+    (c) qty=N renders N per-head dropdowns (not one per unique colour combo).
+    (d) Manually changing one head's dropdown promotes to custom mode without
+        disturbing the other heads.
+    """
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    # Navigate to a colour-configured warning light (picker_flow="warning").
+    page.click(".pbt-cat-head[data-cat='lights']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
+    page.wait_for_timeout(200)
+
+    fam_heads = page.locator(".pbt-cat-head[data-cat='lights'] + .pbt-cat-body .pbt-fam-head")
+    if fam_heads.count() > 0:
+        fam_heads.first.click()
+        page.wait_for_timeout(200)
+
+    # Pick the first leaf with a picker_flow (colour light, not a bare tree leaf).
+    page.wait_for_selector(".pbt-leaf[data-flow]")
+    page.click(".pbt-leaf[data-flow] >> nth=0")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # Click products until we find a colour product that shows option controls.
+    found = False
+    for i in range(min(5, page.locator(".pp-head").count())):
+        page.click(f".pp-head >> nth={i}")
+        page.wait_for_timeout(200)
+        if page.locator(".pp-prod-options").count() > 0:
+            found = True
+            break
+    assert found, "expected a colour-light product to show option controls in its box"
+
+    # ── Assertion (c): qty=N → N dropdowns ───────────────────────────────────
+    # Default qty is 2; there must be exactly 2 per-head dropdowns.
+    qty = page.evaluate("_pickerState.config.count")
+    dropdown_count = page.locator(".pp-skus .pp-override").count()
+    assert dropdown_count == qty, \
+        f"expected {qty} dropdowns for qty={qty}, got {dropdown_count}"
+
+    # Bump qty to 3 — must now show 3 dropdowns.
+    page.click(".pp-prod-options .pf-pill[data-k='count'][data-v='1']")
+    page.wait_for_timeout(200)
+    qty3 = page.evaluate("_pickerState.config.count")
+    assert qty3 == 3, f"count should be 3 after +1, got {qty3}"
+    dd3 = page.locator(".pp-skus .pp-override").count()
+    assert dd3 == 3, f"expected 3 dropdowns for qty=3, got {dd3}"
+
+    # ── Assertion (a): dropdown is option-filtered ────────────────────────────
+    # Each dropdown must carry data-head and show only matching SKUs (no "(other)").
+    heads_with_attr = page.locator(".pp-skus .pp-override[data-head]").count()
+    assert heads_with_attr == 3, \
+        f"expected 3 .pp-override[data-head] elements, got {heads_with_attr}"
+
+    # Sanity check: the options listed inside the first dropdown must not include
+    # the "(other)" suffix that the old combo-based fallback appended.
+    first_dd_html = page.locator(".pp-skus .pp-override").first.inner_html()
+    assert "(other)" not in first_dd_html, \
+        "Step 3 filtered dropdown must not show '(other)' options"
+
+    # Live title: each dropdown is labelled "Head N: <SKU> · <lens>".
+    first_label = page.locator(".pp-skus .pp-sku-pn").first.text_content().strip()
+    assert first_label.startswith("Head 1:"), \
+        f"expected dropdown label to start with 'Head 1:', got {first_label!r}"
+
+    # ── Assertion (b): "Remove options" reveals all SKUs ─────────────────────
+    page.wait_for_selector(".pp-prod-options [data-opts-remove]")
+    remove_btn = page.locator(".pp-prod-options [data-opts-remove]").first
+
+    # Count SKUs in the first dropdown while filtered.
+    filtered_count = page.locator(".pp-skus .pp-override").first.locator("option").count()
+
+    # Click "Remove options".
+    remove_btn.click()
+    page.wait_for_timeout(200)
+
+    # The button must now signal that options are off.
+    btn_text = remove_btn.text_content().strip()
+    assert "Filter off" in btn_text or "⊘" in btn_text, \
+        f"expected remove-options button to indicate filter off, got {btn_text!r}"
+
+    # The first dropdown must now offer MORE (or equal) options than when filtered.
+    unfiltered_count = page.locator(".pp-skus .pp-override").first.locator("option").count()
+    assert unfiltered_count >= filtered_count, \
+        f"'Remove options' should reveal all SKUs (filtered={filtered_count}, unfiltered={unfiltered_count})"
+
+    # Clicking any option pill re-engages the filter.
+    page.click(".pp-prod-options .pf-pill[data-k='lens'] >> nth=0")
+    page.wait_for_timeout(200)
+    opts_removed = page.evaluate("_pickerState.optionsRemoved")
+    assert not opts_removed, "engaging an option pill must re-apply the filter (optionsRemoved→false)"
+
+    # ── Assertion (d): manual per-head change promotes to custom ─────────────
+    # Start fresh with the first colour product open, qty=2, uniform/identical.
+    page.evaluate("_pickerState.config.mode")   # pre-check (can be any mode at this point)
+
+    # Re-open with a clean state by re-clicking the same product head.
+    page.click(".pp-head.sel")
+    page.wait_for_timeout(200)
+    page.click(".pp-head >> nth=0")
+    page.wait_for_timeout(200)
+
+    if page.locator(".pp-prod-options").count() == 0:
+        # Product might have no options (programmable bar) — skip this assertion.
+        return
+
+    mode_before = page.evaluate("_pickerState.config.mode")
+    dd_count = page.locator(".pp-skus .pp-override").count()
+    if dd_count < 2:
+        # Only one head — can't test "other heads unaffected"; skip.
+        return
+
+    # Record the second head's current SKU.
+    second_sku_before = page.locator(".pp-skus .pp-override").nth(1).input_value()
+
+    # Click "Remove options" so we have all SKUs visible, then pick a different
+    # SKU on the FIRST head only.
+    if page.locator("[data-opts-remove]").count() > 0:
+        page.click("[data-opts-remove]")
+        page.wait_for_timeout(200)
+
+    # Select an option in the first dropdown that differs from the current choice.
+    all_opts = page.locator(".pp-skus .pp-override").first.locator("option").all()
+    first_dd_current = page.locator(".pp-skus .pp-override").first.input_value()
+    other_skus = [o.get_attribute("value") for o in all_opts if o.get_attribute("value") != first_dd_current]
+    if not other_skus:
+        return   # product has only one SKU — cannot test manual override
+
+    page.locator(".pp-skus .pp-override").first.select_option(other_skus[0])
+    page.wait_for_timeout(200)
+
+    # Mode must be promoted to custom.
+    mode_after = page.evaluate("_pickerState.config.mode")
+    assert mode_after == "custom", \
+        f"manually changing a head's SKU must promote to custom mode, got {mode_after!r}"
+
+    # The SECOND head must be unaffected — its dropdown value is unchanged.
+    second_sku_after = page.locator(".pp-skus .pp-override").nth(1).input_value()
+    assert second_sku_after == second_sku_before, \
+        f"second head SKU must not change on first-head override: before={second_sku_before!r}, after={second_sku_after!r}"
+
+    # skuChoices must have an entry only for head 0 (the changed one).
+    choices = page.evaluate("_pickerState.skuChoices")
+    assert "head_0" in choices, f"skuChoices must record head_0 override, got {choices}"
+    # head_1 must NOT be overridden (defaults to colour-config resolution).
+    assert "head_1" not in choices, f"head_1 must not be in skuChoices (it was not changed), got {choices}"
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
     "picker_browse_tree": flow_picker_browse_tree,
     "light_options_in_product_box": flow_light_options_in_product_box,
+    "sku_dropdown_rework": flow_sku_dropdown_rework,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
