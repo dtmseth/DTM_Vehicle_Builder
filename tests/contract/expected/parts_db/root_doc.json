@@ -97,6 +97,156 @@
         "naming_token": "W"
       }
     },
+    "families": {
+      "camera_system": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Camera System",
+        "members": [
+          "camera_dvr",
+          "front_camera",
+          "rear_camera",
+          "rear_seat_camera"
+        ],
+        "picker_flow": null
+      },
+      "computer_workstation": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Computer Workstation",
+        "members": [
+          "computer",
+          "docking_station"
+        ],
+        "picker_flow": null
+      },
+      "console_system": {
+        "category": "structural",
+        "kind": "system",
+        "label": "Console System",
+        "members": [
+          "console",
+          "motion_attachment"
+        ],
+        "picker_flow": null
+      },
+      "interior_bars": {
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Interior Bars",
+        "members": [
+          "front_interior_light_bar",
+          "rear_interior_light_bar"
+        ],
+        "picker_flow": "interior_bar"
+      },
+      "interior_lighting": {
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Interior Lighting",
+        "members": [
+          "cargo_lighting",
+          "front_dome_light",
+          "rear_seat_cargo_lights",
+          "rear_seat_lights"
+        ],
+        "picker_flow": "interior"
+      },
+      "light_control_system": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Light Control System",
+        "members": [
+          "control_head",
+          "external_amp",
+          "expansion_module",
+          "cloud_system_tray",
+          "cloud_antenna",
+          "v2v_sync",
+          "light_controller"
+        ],
+        "picker_flow": null
+      },
+      "push_bumper_system": {
+        "category": "structural",
+        "kind": "system",
+        "label": "Push Bumper System",
+        "members": [
+          "push_bumper",
+          "pit_bar",
+          "wing_wraps",
+          "wire_covers"
+        ],
+        "picker_flow": null
+      },
+      "radar": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Radar",
+        "members": [
+          "radar_display_unit",
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount",
+          "radar_cable"
+        ],
+        "picker_flow": null
+      },
+      "radio_comms": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Radio Communications",
+        "members": [
+          "radio_head",
+          "radio_speaker",
+          "radio_cable",
+          "radio_mic_clip",
+          "radio_antenna_cable"
+        ],
+        "picker_flow": null
+      },
+      "roof_bars": {
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Roof Bars",
+        "members": [
+          "roof_light_bar"
+        ],
+        "picker_flow": "roof_bar"
+      },
+      "scene_lights": {
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Scene",
+        "members": [
+          "front_scene",
+          "rear_scene",
+          "side_scene",
+          "spotlight"
+        ],
+        "picker_flow": "scene"
+      },
+      "thermal_imaging": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Thermal Imaging",
+        "members": [
+          "thermal_imager",
+          "thermal_imager_monitor"
+        ],
+        "picker_flow": null
+      },
+      "warning_lights": {
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Warning",
+        "members": [
+          "warning_light",
+          "headlight_flasher",
+          "tail_light_flasher"
+        ],
+        "picker_flow": "warning"
+      }
+    },
     "manufacturers": {
       "10_8": {
         "label": "10-8"
@@ -500,6 +650,7 @@
         "type_id": "lights"
       },
       "camera_dvr": {
+        "family_id": "camera_system",
         "label": "Camera DVR",
         "location_mode": "text",
         "location_options": [
@@ -527,6 +678,7 @@
       },
       "cargo_lighting": {
         "category": "interior",
+        "family_id": "interior_lighting",
         "label": "Cargo Lighting",
         "location_mode": "text",
         "location_options": [
@@ -561,6 +713,7 @@
         "workbook_label_pattern": "Chicago Barrier"
       },
       "cloud_antenna": {
+        "family_id": "light_control_system",
         "label": "Cloud Antenna",
         "location_mode": "text",
         "location_options": [],
@@ -576,6 +729,7 @@
         "workbook_label_pattern": "Cradle Point Antenna"
       },
       "cloud_system_tray": {
+        "family_id": "light_control_system",
         "label": "Cloud System",
         "location_mode": "text",
         "location_options": [
@@ -595,6 +749,7 @@
         "workbook_label_pattern": "Cloud System"
       },
       "computer": {
+        "family_id": "computer_workstation",
         "label": "Computer / Laptop",
         "location_mode": "text",
         "location_options": [
@@ -610,6 +765,7 @@
         "type_id": "equipment"
       },
       "console": {
+        "family_id": "console_system",
         "label": "Console",
         "location_mode": "text",
         "location_options": [],
@@ -622,10 +778,11 @@
             "zone": "forward_of_cage"
           }
         ],
-        "type_id": "equipment",
+        "type_id": "structural",
         "workbook_label_pattern": "Center Console"
       },
       "control_head": {
+        "family_id": "light_control_system",
         "label": "Light Control Head",
         "location_mode": "text",
         "location_options": [],
@@ -676,6 +833,7 @@
         "workbook_label_pattern": "Decals"
       },
       "docking_station": {
+        "family_id": "computer_workstation",
         "label": "Docking Station",
         "location_mode": "text",
         "location_options": [],
@@ -733,6 +891,7 @@
         "workbook_label_pattern": "Equipment Tray"
       },
       "expansion_module": {
+        "family_id": "light_control_system",
         "label": "Expansion Module",
         "location_mode": "text",
         "location_options": [
@@ -751,6 +910,7 @@
         "workbook_label_pattern": "Expansion Module"
       },
       "external_amp": {
+        "family_id": "light_control_system",
         "label": "External Amp",
         "location_mode": "text",
         "location_options": [],
@@ -839,6 +999,7 @@
         "workbook_label_pattern": "Floor Pan"
       },
       "front_camera": {
+        "family_id": "camera_system",
         "label": "Front Camera",
         "location_mode": "text",
         "location_options": [],
@@ -857,6 +1018,7 @@
       },
       "front_dome_light": {
         "category": "interior",
+        "family_id": "interior_lighting",
         "label": "Dome Light",
         "location_mode": "text",
         "location_options": [],
@@ -873,6 +1035,7 @@
       },
       "front_interior_light_bar": {
         "category": "interior_bar",
+        "family_id": "interior_bars",
         "label": "Interior Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -922,6 +1085,7 @@
       "front_radar_antenna_mount": {
         "accessory_category": "bracket_mount",
         "accessory_of": "radar_display_unit",
+        "family_id": "radar",
         "label": "Front Radar Antenna Mount",
         "location_mode": "text",
         "location_options": [
@@ -937,6 +1101,7 @@
       },
       "front_scene": {
         "category": "scene",
+        "family_id": "scene_lights",
         "label": "Front Scene",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1042,6 +1207,7 @@
       },
       "headlight_flasher": {
         "category": "warning",
+        "family_id": "warning_lights",
         "label": "Headlight Flasher",
         "location_mode": "text",
         "location_options": [],
@@ -1143,6 +1309,7 @@
         "workbook_label_pattern": "K-9 Kennel"
       },
       "light_controller": {
+        "family_id": "light_control_system",
         "label": "Light Controller",
         "location_mode": "text",
         "location_options": [
@@ -1194,6 +1361,7 @@
         "workbook_label_pattern": "Mirror Warning Bracket {n}"
       },
       "motion_attachment": {
+        "family_id": "console_system",
         "label": "Motion Attachment",
         "location_mode": "text",
         "location_options": [
@@ -1290,6 +1458,7 @@
         "workbook_label_pattern": "Photo Eye"
       },
       "pit_bar": {
+        "family_id": "push_bumper_system",
         "label": "Pit Bar",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1341,7 +1510,7 @@
             "zone": "forward_of_cage"
           }
         ],
-        "type_id": "lights",
+        "type_id": "equipment",
         "workbook_label_pattern": "Opticom"
       },
       "printer": {
@@ -1429,6 +1598,7 @@
         "accessories": [
           "wire_covers"
         ],
+        "family_id": "push_bumper_system",
         "label": "Push Bumper",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1444,6 +1614,7 @@
       },
       "radar_cable": {
         "accessory_category": "cable",
+        "family_id": "radar",
         "label": "Radar Cable",
         "location_mode": "text",
         "tag_ids": [],
@@ -1451,6 +1622,7 @@
         "type_id": "equipment"
       },
       "radar_display_unit": {
+        "family_id": "radar",
         "label": "Radar Display Unit",
         "location_mode": "text",
         "location_options": [],
@@ -1468,6 +1640,7 @@
         "workbook_label_pattern": "Radar"
       },
       "radio_antenna_cable": {
+        "family_id": "radio_comms",
         "label": "Radio Communication Cable",
         "location_mode": "text",
         "location_options": [],
@@ -1502,6 +1675,7 @@
       },
       "radio_cable": {
         "accessory_category": "cable",
+        "family_id": "radio_comms",
         "label": "Radio Cable",
         "location_mode": "text",
         "tag_ids": [],
@@ -1509,6 +1683,7 @@
         "type_id": "equipment"
       },
       "radio_head": {
+        "family_id": "radio_comms",
         "label": "Radio Head",
         "location_mode": "text",
         "location_options": [],
@@ -1527,6 +1702,7 @@
         "workbook_label_pattern": "Radio {n}"
       },
       "radio_mic_clip": {
+        "family_id": "radio_comms",
         "label": "Radio Mic Clip",
         "location_mode": "text",
         "location_options": [],
@@ -1544,6 +1720,7 @@
         "workbook_label_pattern": "Radio Mic Clip {n}"
       },
       "radio_speaker": {
+        "family_id": "radio_comms",
         "label": "Radio Speaker",
         "location_mode": "text",
         "location_options": [],
@@ -1561,6 +1738,7 @@
         "workbook_label_pattern": "Radio Speaker"
       },
       "rear_camera": {
+        "family_id": "camera_system",
         "label": "Rear Camera",
         "location_mode": "text",
         "location_options": [],
@@ -1579,6 +1757,7 @@
       },
       "rear_interior_light_bar": {
         "category": "interior_bar",
+        "family_id": "interior_bars",
         "label": "Interior Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -1611,6 +1790,7 @@
       "rear_radar_antenna_mount": {
         "accessory_category": "bracket_mount",
         "accessory_of": "radar_display_unit",
+        "family_id": "radar",
         "label": "Rear Radar Antenna Mount",
         "location_mode": "text",
         "location_options": [
@@ -1626,6 +1806,7 @@
       },
       "rear_scene": {
         "category": "scene",
+        "family_id": "scene_lights",
         "label": "Rear Scene",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1640,6 +1821,7 @@
         "workbook_label_pattern": "Rear Scene"
       },
       "rear_seat_camera": {
+        "family_id": "camera_system",
         "label": "Rear Seat Camera",
         "location_mode": "text",
         "location_options": [
@@ -1661,6 +1843,7 @@
       },
       "rear_seat_cargo_lights": {
         "category": "interior",
+        "family_id": "interior_lighting",
         "label": "Rear Seat Cargo Lights",
         "location_mode": "text",
         "location_options": [
@@ -1696,6 +1879,7 @@
       },
       "rear_seat_lights": {
         "category": "interior",
+        "family_id": "interior_lighting",
         "label": "Rear Seat Lights",
         "location_mode": "text",
         "location_options": [],
@@ -1784,6 +1968,7 @@
       },
       "roof_light_bar": {
         "category": "roof_bar",
+        "family_id": "roof_bars",
         "label": "Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -1845,6 +2030,7 @@
       },
       "side_scene": {
         "category": "scene",
+        "family_id": "scene_lights",
         "label": "Side Scene",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1918,6 +2104,7 @@
       },
       "spotlight": {
         "category": "scene",
+        "family_id": "scene_lights",
         "label": "Spotlight (pillar/post)",
         "location_mode": "placement",
         "tag_ids": [],
@@ -1931,6 +2118,7 @@
       },
       "tail_light_flasher": {
         "category": "warning",
+        "family_id": "warning_lights",
         "label": "Tail Light Flasher",
         "location_mode": "text",
         "location_options": [],
@@ -1946,6 +2134,7 @@
         "workbook_label_pattern": "Tail Light Flasher"
       },
       "thermal_imager": {
+        "family_id": "thermal_imaging",
         "label": "Thermal Imager",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -1960,6 +2149,7 @@
         "workbook_label_pattern": "Thermal Imager"
       },
       "thermal_imager_monitor": {
+        "family_id": "thermal_imaging",
         "label": "Thermal Imager Monitor",
         "location_mode": "text",
         "location_options": [
@@ -2054,6 +2244,7 @@
         "workbook_label_pattern": "6-Lamp Tracer"
       },
       "v2v_sync": {
+        "family_id": "light_control_system",
         "label": "Vehicle to Vehicle Sync",
         "location_mode": "text",
         "location_options": [
@@ -2090,6 +2281,7 @@
       },
       "warning_light": {
         "category": "warning",
+        "family_id": "warning_lights",
         "label": "Warning Light",
         "location_mode": "placement",
         "tag_ids": [],
@@ -2112,6 +2304,7 @@
         "workbook_label_pattern": "Window Tint"
       },
       "wing_wraps": {
+        "family_id": "push_bumper_system",
         "label": "Wing Wraps",
         "location_mode": "placement",
         "sequence_scope": "global",
@@ -2128,6 +2321,7 @@
       "wire_covers": {
         "accessory_category": "other",
         "accessory_of": "push_bumper",
+        "family_id": "push_bumper_system",
         "label": "Wire Covers",
         "location_mode": "text",
         "location_options": [],

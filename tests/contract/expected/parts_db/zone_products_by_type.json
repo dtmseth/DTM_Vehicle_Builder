@@ -1,6 +1,6 @@
 {
   "body": {
-    "part_type_count": 16,
+    "part_type_count": 17,
     "products": [
       {
         "manufacturer_id": "setina",
@@ -287,6 +287,285 @@
         "model": "ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
         "price_min": 56.0,
         "product_id": "westin_36_2125wc",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE SPECIFIC",
+        "price_min": null,
+        "product_id": "havis_vehicle_specific",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "UNIVERSAL",
+        "price_min": null,
+        "product_id": "havis_universal",
+        "qb_count": 0,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
+        "price_min": 786.0,
+        "product_id": "gamber_johnson_7160_1460",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
+        "price_min": 1138.0,
+        "product_id": "gamber_johnson_7160_1626",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
+        "price_min": 1010.0,
+        "product_id": "gamber_johnson_7160_2022",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
+        "price_min": 956.0,
+        "product_id": "gamber_johnson_7170_0567_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
+        "price_min": 645.0,
+        "product_id": "gamber_johnson_7170_0734_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
+        "price_min": 787.0,
+        "product_id": "gamber_johnson_7170_0784_07",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
+        "price_min": 913.0,
+        "product_id": "gamber_johnson_7170_0884_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
+        "price_min": 946.0,
+        "product_id": "gamber_johnson_7170_0884_03",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
+        "price_min": 691.0,
+        "product_id": "gamber_johnson_7170_0886_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
+        "price_min": 1134.0,
+        "product_id": "gamber_johnson_7170_1062_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
+        "price_min": 1180.0,
+        "product_id": "gamber_johnson_7170_1164_01",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
+        "price_min": 1104.0,
+        "product_id": "gamber_johnson_7170_1179_00",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "18\" ENCLOSED CONSOLE",
+        "price_min": 452.0,
+        "product_id": "havis_c_1800",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "18\" ENCLOSED 10\" HIGH CONSOLE",
+        "price_min": 500.0,
+        "product_id": "havis_c_1810",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "30\" ENCLOSED 10\" HIGH CONSOLE",
+        "price_min": 627.0,
+        "product_id": "havis_c_3010",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
+        "price_min": 160.0,
+        "product_id": "havis_c_ohc_inut_1",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 28″ ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
+        "price_min": 933.0,
+        "product_id": "havis_c_vs_0820_blzr_ev",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
+        "price_min": 697.0,
+        "product_id": "havis_c_vs_1012_inut_2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
+        "price_min": 845.0,
+        "product_id": "havis_c_vs_1012_tah_1",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 11″ UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
+        "price_min": 468.0,
+        "product_id": "havis_c_vs_1100_f150_2",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "price_min": 544.0,
+        "product_id": "havis_c_vs_1210_inut",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 13″ FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
+        "price_min": 417.0,
+        "product_id": "havis_c_vs_1300_mstg",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "price_min": 458.0,
+        "product_id": "havis_c_vs_1400_inut_1",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 20″ FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
+        "price_min": 1311.0,
+        "product_id": "havis_c_vs_2000_dur_1",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 23″ FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
+        "price_min": 640.0,
+        "product_id": "havis_c_vs_2300_dur",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 22″ WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
+        "price_min": 924.0,
+        "product_id": "havis_c_vsw_1012_tah_1",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VEHICLE-SPECIFIC 26″ WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
+        "price_min": 970.0,
+        "product_id": "havis_c_vsw_2600_silv",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "price_min": 848.0,
+        "product_id": "havis_c_vsx_1800_inut",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "tiger_tough",
+        "manufacturer_label": "Tiger Tough",
+        "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+        "price_min": 338.24,
+        "product_id": "tiger_tough_w0523028_iw_blk",
         "qb_count": 1,
         "sku_count": 1
       },

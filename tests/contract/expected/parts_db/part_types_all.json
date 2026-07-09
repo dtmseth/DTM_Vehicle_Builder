@@ -306,7 +306,7 @@
             "zone": "forward_of_cage"
           }
         ],
-        "type_id": "lights",
+        "type_id": "equipment",
         "workbook_label_pattern": "Opticom"
       },
       {
@@ -851,7 +851,7 @@
             "zone": "forward_of_cage"
           }
         ],
-        "type_id": "equipment",
+        "type_id": "structural",
         "workbook_label_pattern": "Center Console"
       },
       {

@@ -10,6 +10,13 @@
         "product_count": 2
       },
       {
+        "base_label": "Console",
+        "label": "Console",
+        "name_pattern": "Center Console",
+        "part_type_id": "console",
+        "product_count": 31
+      },
+      {
         "base_label": "Floor Pan",
         "label": "Floor Pan",
         "name_pattern": "Floor Pan",

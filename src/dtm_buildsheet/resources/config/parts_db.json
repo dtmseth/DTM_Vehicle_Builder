@@ -29513,7 +29513,8 @@
       "accessories": [
         "wire_covers"
       ],
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "push_bumper_system"
     },
     "pit_bar": {
       "label": "Pit Bar",
@@ -29527,7 +29528,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Pit Bar",
       "sequence_scope": "global",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "push_bumper_system"
     },
     "wing_wraps": {
       "label": "Wing Wraps",
@@ -29541,7 +29543,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Wing Wraps",
       "sequence_scope": "global",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "push_bumper_system"
     },
     "wire_covers": {
       "label": "Wire Covers",
@@ -29558,7 +29561,8 @@
       "accessory_of": "push_bumper",
       "accessory_category": "other",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "push_bumper_system"
     },
     "fw_bracket": {
       "label": "FW Bracket",
@@ -29598,7 +29602,8 @@
       "sequence_scope": "global",
       "category": "warning",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "warning_lights"
     },
     "front_scene": {
       "label": "Front Scene",
@@ -29613,7 +29618,8 @@
       "workbook_label_pattern": "Front Scene",
       "sequence_scope": "global",
       "category": "scene",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "scene_lights"
     },
     "siren_speaker": {
       "label": "Siren Speaker",
@@ -29661,7 +29667,8 @@
       "workbook_label_pattern": "External Amp",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "light_control_system"
     },
     "howler": {
       "label": "Howler",
@@ -29711,7 +29718,7 @@
     },
     "preemption": {
       "label": "Preemption",
-      "type_id": "lights",
+      "type_id": "equipment",
       "tree_positions": [
         {
           "section": "exterior",
@@ -29748,7 +29755,8 @@
       "sequence_scope": "global",
       "category": "interior",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "interior_lighting"
     },
     "cradle_point": {
       "label": "Cloud System",
@@ -29782,7 +29790,8 @@
       "workbook_label_pattern": "Cradle Point Antenna",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "light_control_system"
     },
     "mirror_warning_bracket": {
       "label": "Mirror Warning Bracket",
@@ -29810,7 +29819,8 @@
       "sequence_scope": "global",
       "category": "interior_bar",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "interior_bars"
     },
     "side_warning_bracket": {
       "label": "Side Warning Bracket",
@@ -29837,7 +29847,8 @@
       "workbook_label_pattern": "Side Scene",
       "sequence_scope": "global",
       "category": "scene",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "scene_lights"
     },
     "roof_light_bar": {
       "label": "Light Bar",
@@ -29853,7 +29864,8 @@
       "sequence_scope": "global",
       "category": "roof_bar",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "roof_bars"
     },
     "rear_interior_light_bar": {
       "label": "Interior Light Bar",
@@ -29869,7 +29881,8 @@
       "sequence_scope": "global",
       "category": "interior_bar",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "interior_bars"
     },
     "rear_warning_bracket": {
       "label": "Rear Warning Bracket",
@@ -29896,7 +29909,8 @@
       "workbook_label_pattern": "Rear Scene",
       "sequence_scope": "global",
       "category": "scene",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "scene_lights"
     },
     "lower_liftgate_warning_bracket": {
       "label": "Lower Lift Gate Warning Bracket",
@@ -29924,7 +29938,8 @@
       "sequence_scope": "global",
       "category": "warning",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "warning_lights"
     },
     "radar_display_unit": {
       "label": "Radar Display Unit",
@@ -29941,7 +29956,8 @@
       "workbook_label_pattern": "Radar",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "radar"
     },
     "front_radar_antenna_mount": {
       "label": "Front Radar Antenna Mount",
@@ -29957,7 +29973,8 @@
       "location_mode": "text",
       "location_options": [
         "DRIVER SIDE DASH"
-      ]
+      ],
+      "family_id": "radar"
     },
     "rear_radar_antenna_mount": {
       "label": "Rear Radar Antenna Mount",
@@ -29973,7 +29990,8 @@
       "location_mode": "text",
       "location_options": [
         "DRIVER SIDE PILLAR"
-      ]
+      ],
+      "family_id": "radar"
     },
     "thermal_imager": {
       "label": "Thermal Imager",
@@ -29987,7 +30005,8 @@
       "tag_ids": [],
       "workbook_label_pattern": "Thermal Imager",
       "sequence_scope": "global",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "thermal_imaging"
     },
     "thermal_imager_monitor": {
       "label": "Thermal Imager Monitor",
@@ -30004,7 +30023,8 @@
       "location_mode": "text",
       "location_options": [
         "ON DASH"
-      ]
+      ],
+      "family_id": "thermal_imaging"
     },
     "light_controller": {
       "label": "Light Controller",
@@ -30022,7 +30042,8 @@
       "location_mode": "text",
       "location_options": [
         "ON EQUIPMENT TRAY"
-      ]
+      ],
+      "family_id": "light_control_system"
     },
     "control_head": {
       "label": "Light Control Head",
@@ -30038,7 +30059,8 @@
       "workbook_label_pattern": "Control Head",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "light_control_system"
     },
     "vehicle_interface": {
       "label": "Vehicle Interface",
@@ -30072,7 +30094,8 @@
       "location_mode": "text",
       "location_options": [
         "ON EQUIPMENT TRAY"
-      ]
+      ],
+      "family_id": "light_control_system"
     },
     "radio_head": {
       "label": "Radio Head",
@@ -30090,7 +30113,8 @@
       "workbook_label_pattern": "Radio {n}",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "radio_comms"
     },
     "radio_mic_clip": {
       "label": "Radio Mic Clip",
@@ -30107,7 +30131,8 @@
       "workbook_label_pattern": "Radio Mic Clip {n}",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "radio_comms"
     },
     "radio_antenna_cable": {
       "label": "Radio Communication Cable",
@@ -30124,7 +30149,8 @@
       "workbook_label_pattern": "Radio Antenna Cable",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "radio_comms"
     },
     "radio_antenna_top": {
       "label": "Radio Antenna Top",
@@ -30144,7 +30170,7 @@
     },
     "console": {
       "label": "Console",
-      "type_id": "equipment",
+      "type_id": "structural",
       "tree_positions": [
         {
           "section": "interior",
@@ -30156,7 +30182,8 @@
       "sequence_scope": "global",
       "max_count": 1,
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "console_system"
     },
     "special_face_plate": {
       "label": "Special Face Plate",
@@ -30207,7 +30234,8 @@
       "location_options": [
         "MOUNTED TO CONSOLE",
         "MOUNTED TO PEDESTAL"
-      ]
+      ],
+      "family_id": "console_system"
     },
     "docking_station": {
       "label": "Docking Station",
@@ -30223,7 +30251,8 @@
       "workbook_label_pattern": "Docking Station",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "computer_workstation"
     },
     "printer": {
       "label": "Printer",
@@ -30334,7 +30363,8 @@
         "ON FRONT PARTITION",
         "ON EQUIPMENT TRAY",
         "IN CENTER CONSOILE"
-      ]
+      ],
+      "family_id": "camera_system"
     },
     "front_camera": {
       "label": "Front Camera",
@@ -30351,7 +30381,8 @@
       "workbook_label_pattern": "Front Camera",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "camera_system"
     },
     "body_camera_dock": {
       "label": "Body Camera Dock",
@@ -30392,7 +30423,8 @@
       "location_options": [
         "ON DRIVER SIDE HEADLINER",
         "CENTER OF PARTITION"
-      ]
+      ],
+      "family_id": "camera_system"
     },
     "rear_camera": {
       "label": "Rear Camera",
@@ -30409,7 +30441,8 @@
       "workbook_label_pattern": "Rear Camera",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "camera_system"
     },
     "wireless_mic_charger": {
       "label": "Wireless Mic Charger",
@@ -30491,7 +30524,8 @@
       "sequence_scope": "global",
       "category": "interior",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "interior_lighting"
     },
     "rear_seat_cargo_lights": {
       "label": "Rear Seat Cargo Lights",
@@ -30511,7 +30545,8 @@
         "HEADLINER",
         "UNDER SHELF",
         "HEADLINER AND UNDER SHELF"
-      ]
+      ],
+      "family_id": "interior_lighting"
     },
     "rear_seat_divider": {
       "label": "Rear Seat Divider",
@@ -30651,7 +30686,8 @@
         "ON LIFT GATE",
         "HEADLINER",
         "ON LIFTGATE AND HEADLINER"
-      ]
+      ],
+      "family_id": "interior_lighting"
     },
     "door_lock_button": {
       "label": "Door Lock Button",
@@ -30849,7 +30885,8 @@
       "location_options": [
         "IN LIGHT BAR",
         "ON CARGO WINDOW"
-      ]
+      ],
+      "family_id": "light_control_system"
     },
     "cloud_system_tray": {
       "label": "Cloud System",
@@ -30868,7 +30905,8 @@
       "location_options": [
         "ON EQUIPMENT TRAY",
         "FRONT OF PARTITION"
-      ]
+      ],
+      "family_id": "light_control_system"
     },
     "remote_start": {
       "label": "Remote Start",
@@ -31106,7 +31144,8 @@
       "workbook_label_pattern": "Radio Speaker",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [],
+      "family_id": "radio_comms"
     },
     "lighthead": {
       "label": "Lighthead",
@@ -31177,7 +31216,8 @@
       "tree_positions": [],
       "tag_ids": [],
       "accessory_category": "cable",
-      "location_mode": "text"
+      "location_mode": "text",
+      "family_id": "radar"
     },
     "radio_cable": {
       "label": "Radio Cable",
@@ -31185,7 +31225,8 @@
       "tree_positions": [],
       "tag_ids": [],
       "accessory_category": "cable",
-      "location_mode": "text"
+      "location_mode": "text",
+      "family_id": "radio_comms"
     },
     "warning_light": {
       "label": "Warning Light",
@@ -31193,7 +31234,8 @@
       "tree_positions": [],
       "tag_ids": [],
       "category": "warning",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "warning_lights"
     },
     "tool_mount": {
       "label": "Tool Mount",
@@ -31240,7 +31282,8 @@
       ],
       "tag_ids": [],
       "category": "scene",
-      "location_mode": "placement"
+      "location_mode": "placement",
+      "family_id": "scene_lights"
     },
     "flashlight": {
       "label": "Flashlight & Charger",
@@ -31272,7 +31315,8 @@
       "location_mode": "text",
       "location_options": [
         "ON DOCKING STATION"
-      ]
+      ],
+      "family_id": "computer_workstation"
     },
     "running_boards_nerf_bars": {
       "label": "Running Boards / Nerf Bars",
@@ -31690,6 +31734,156 @@
     },
     "other": {
       "label": "Other"
+    }
+  },
+  "families": {
+    "warning_lights": {
+      "label": "Warning",
+      "category": "lights",
+      "members": [
+        "warning_light",
+        "headlight_flasher",
+        "tail_light_flasher"
+      ],
+      "kind": "lighting_group",
+      "picker_flow": "warning"
+    },
+    "scene_lights": {
+      "label": "Scene",
+      "category": "lights",
+      "members": [
+        "front_scene",
+        "rear_scene",
+        "side_scene",
+        "spotlight"
+      ],
+      "kind": "lighting_group",
+      "picker_flow": "scene"
+    },
+    "interior_lighting": {
+      "label": "Interior Lighting",
+      "category": "lights",
+      "members": [
+        "cargo_lighting",
+        "front_dome_light",
+        "rear_seat_cargo_lights",
+        "rear_seat_lights"
+      ],
+      "kind": "lighting_group",
+      "picker_flow": "interior"
+    },
+    "interior_bars": {
+      "label": "Interior Bars",
+      "category": "lights",
+      "members": [
+        "front_interior_light_bar",
+        "rear_interior_light_bar"
+      ],
+      "kind": "lighting_group",
+      "picker_flow": "interior_bar"
+    },
+    "roof_bars": {
+      "label": "Roof Bars",
+      "category": "lights",
+      "members": [
+        "roof_light_bar"
+      ],
+      "kind": "lighting_group",
+      "picker_flow": "roof_bar"
+    },
+    "radar": {
+      "label": "Radar",
+      "category": "equipment",
+      "members": [
+        "radar_display_unit",
+        "front_radar_antenna_mount",
+        "rear_radar_antenna_mount",
+        "radar_cable"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "radio_comms": {
+      "label": "Radio Communications",
+      "category": "equipment",
+      "members": [
+        "radio_head",
+        "radio_speaker",
+        "radio_cable",
+        "radio_mic_clip",
+        "radio_antenna_cable"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "camera_system": {
+      "label": "Camera System",
+      "category": "equipment",
+      "members": [
+        "camera_dvr",
+        "front_camera",
+        "rear_camera",
+        "rear_seat_camera"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "light_control_system": {
+      "label": "Light Control System",
+      "category": "equipment",
+      "members": [
+        "control_head",
+        "external_amp",
+        "expansion_module",
+        "cloud_system_tray",
+        "cloud_antenna",
+        "v2v_sync",
+        "light_controller"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "computer_workstation": {
+      "label": "Computer Workstation",
+      "category": "equipment",
+      "members": [
+        "computer",
+        "docking_station"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "thermal_imaging": {
+      "label": "Thermal Imaging",
+      "category": "equipment",
+      "members": [
+        "thermal_imager",
+        "thermal_imager_monitor"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "push_bumper_system": {
+      "label": "Push Bumper System",
+      "category": "structural",
+      "members": [
+        "push_bumper",
+        "pit_bar",
+        "wing_wraps",
+        "wire_covers"
+      ],
+      "kind": "system",
+      "picker_flow": null
+    },
+    "console_system": {
+      "label": "Console System",
+      "category": "structural",
+      "members": [
+        "console",
+        "motion_attachment"
+      ],
+      "kind": "system",
+      "picker_flow": null
     }
   }
 }

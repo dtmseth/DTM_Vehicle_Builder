@@ -76,36 +76,6 @@
       {
         "accessories": [],
         "accessory_of": "",
-        "allowed_placements": [
-          "IN_LIGHT_BAR",
-          "UPPER_WINDSHIELD",
-          "CENTER_OF_DASH"
-        ],
-        "allowed_products": [],
-        "category": "",
-        "label": "Preemption",
-        "max_count": 1,
-        "part_type_id": "preemption",
-        "sequence_scope": "global",
-        "tag_ids": [],
-        "tree_positions": [
-          {
-            "section": "exterior",
-            "sub_zone": "",
-            "zone": "roof"
-          },
-          {
-            "section": "interior",
-            "sub_zone": "",
-            "zone": "forward_of_cage"
-          }
-        ],
-        "type_id": "lights",
-        "workbook_label_pattern": "Opticom"
-      },
-      {
-        "accessories": [],
-        "accessory_of": "",
         "allowed_placements": [],
         "allowed_products": [],
         "category": "interior",
