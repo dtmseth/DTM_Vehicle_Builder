@@ -141,7 +141,8 @@ Original spec (kept for reference):
 
 ### Step 3 — SKU dropdown rework
 - **Filter by selected options**: the SKU dropdown only offers SKUs that match the currently
-  selected options, so the user can't pick a SKU that contradicts their configuration.
+  selected options, so the user can't pick a SKU that contradicts their configuration. (Supersedes
+  the Step 2 lens sort-to-default interim with a real filter.)
 - **"Remove options" escape hatch**: a button that clears the option filter, leaving a dropdown
   of *every* SKU in the product — for when the user wants a SKU the options don't surface.
 - **One dropdown per light head, by quantity** — even when the heads are identical. If qty = 3,
@@ -150,6 +151,21 @@ Original spec (kept for reference):
 - **Live SKU title**: the dropdown title updates based on the **SKU actually selected** — whether
   chosen via options *or* changed manually (today it only tracks option changes, not manual SKU
   changes). The title includes the **lens color** when applicable.
+- **Resolved design calls (Opus, 2026-07-09):**
+  - **Per-head override promotes to custom.** Render N dropdowns for N heads. In "identical" mode
+    all N default to the same resolved SKU. If the user manually changes one head's dropdown to a
+    different SKU, that build becomes a **per-head (custom) configuration** — reuse the existing
+    `c.custom` per-head machinery; the other heads keep their SKUs. (Notable interaction call —
+    veto if you pictured per-head edits behaving differently.)
+  - **"Remove options" = unfilter, don't erase.** The button switches the dropdown(s) to list
+    *every* SKU in the product and lets manual selection drive; it does not delete heads or the
+    product. Re-engaging any option control re-applies the filter. Show the options as
+    inactive/"filter off" while removed.
+  - **Title is per-dropdown.** Each head's dropdown label reflects *its* selected SKU + lens; the
+    product box keeps the product name. No single combined title across differing heads.
+  - **Scene stays out.** Scene lights are handled in Step 5 (qty only); do not build per-head
+    SKU dropdowns for scene here.
+  - **Guard rails.** Authoring-side; name-based render path and golden masters untouched.
 
 ### Step 4 — Light visualization into the product box
 - Move the light visualization from the footer to the **bottom of the product box**, where it is
