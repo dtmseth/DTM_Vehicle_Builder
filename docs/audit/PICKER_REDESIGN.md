@@ -186,6 +186,18 @@ Original spec (kept for reference):
 - That quantity control still lives in the product box (per Step 2).
 - This is a real divergence from warning/other lights — the picker must branch on scene vs.
   non-scene.
+- **Resolved design calls (Opus, 2026-07-09):**
+  - **Detect scene by `category == "scene"`** (equivalently the `scene_lights` family). Branch the
+    product-box rendering on it.
+  - **Scene box = quantity + SKU dropdown(s) only.** Hide mode / lens / color / colors-per-head
+    AND the "remove options" toggle (there are no options to filter by). Keep per-head SKU
+    dropdowns (N for qty N) for consistency with the rest of the picker — just without the option
+    row above them.
+  - **Light viz for scene renders uncolored** (scene heads have no color) — plain heads reflecting
+    quantity, or omit if it adds nothing.
+  - **Spotlight is in the scene family — it gets the scene treatment** (qty + SKU only). Flag for
+    owner: if a spotlight should behave differently from scene floods, say so; default is
+    scene-identical.
 
 ### Step 6 — Editor: pre-fill + type-lock
 - When an existing build item is opened for edit, the picker opens with **every filter, product
