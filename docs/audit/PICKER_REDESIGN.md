@@ -76,9 +76,20 @@ kind), and the `category → family → part_type` browse hierarchy that Step 1 
   is obvious at a glance which part types are filled and which have nothing selected. A filled
   part type needs no further selection unless the user wants to change it. This is the browse-time
   progress indicator for a build.
-- **Open design point (resolve here):** when a part-type-with-accessories is selected from the
-  tree (e.g. Push Bumper), do its accessories surface in the same product box or as a filtered
-  list? See §4 accessory model — push bumpers are a deliberate exception.
+- **Resolved design calls (Opus, 2026-07-07):**
+  - **Browse-tree is server-derived.** Add `/api/parts-db/browse-tree` returning
+    `category → family → part_type` from `type_id` + `families` + `family_id`; the client renders,
+    it does not reconstruct the tree. This is the data contract later steps read.
+  - **Step 1 is navigation-only.** The accordion changes how you browse *to* a part type; the
+    existing downstream flow (options + SKU selection, still sidebar-based for lights) is untouched
+    until Step 2. Keeps the working light flow intact mid-redesign.
+  - **Highlight matches on `part_type`.** Green when the in-progress build has a part mapped to
+    that part_type (works for picker-created parts — the case that matters). Legacy name-based
+    parts are best-effort.
+  - **Expansion state persists within a session** — required by Step 7's return-to-position.
+- **Deferred to Step 2:** whether a part-type-with-accessories surfaces accessories in the product
+  box or a filtered list (push bumpers are the decided exception, §4). Not a Step 1 concern — the
+  accordion just selects the part type and hands off.
 
 ### Step 2 — Options into the product box
 - Move the light-configuration controls — **mode, lens, color, colors-per-head, quantity** — out
