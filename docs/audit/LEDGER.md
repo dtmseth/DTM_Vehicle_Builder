@@ -551,3 +551,25 @@ Zero production-code changes.
 
 ---
 9. **FINDING-009, 011, 013, 015, 016, 017** — Pass-2 / doc hygiene batch.
+
+---
+
+### NOTE-023: migration safety — curation does not change existing (name-based) build output
+- **Verified 2026-07-07** (Opus, pre/post render diff). Both real anonymized PIU draft
+  fixtures (`draft_piu_admin`, `draft_piu_patrol`) render to a **byte-identical normalized
+  PPTX digest** with the pre-curation parts_db (906 products, commit 42c9f4b) vs the
+  post-curation HEAD (779 products) — code held constant, only parts_db swapped in a
+  hermetic workspace.
+- **Why it matters:** existing builds (and other users' builds) reference parts by workbook
+  **role name + freeform part number** (e.g. "Forward Warning 1 / ION"), never by parts_db
+  `product_id`/SKU. The name-based rendering path is inert to the product merges/deletes/
+  re-homes curation performed, so pushing the curated parts_db cannot regress existing
+  name-shaped builds' output.
+- **Scope / honesty:** 2 PIU drafts are the only real fixtures available (other vehicle
+  types have none — corpus TODO). The mechanism generalizes, but this is representative,
+  not exhaustive. Separately, this does NOT verify that a teammate's *deployed app version*
+  can load `schema_version: 2` parts_db without error — that is a distinct pre-push
+  compatibility check (owner to confirm deployed version).
+- **Pipeline-inversion tie-in:** the very inertness that makes today's push safe IS the
+  `workbook-shape` consumer seam Phase 4 eventually inverts. Safe now; deliberately changed
+  later, through the §3.2 re-record protocol.
