@@ -41,6 +41,10 @@ Everything below serves two ideas:
 | 4 | Light visualization: footer → bottom of the product box | UI | 2 |
 | 5 | Scene-light special case — qty only, in the product box | UI | 2,3 |
 | 6 | Editor: pre-fill picker to the exact SKU(s) + lock the product type | UI | 1–5 |
+| 7 | Multi-add flow — "Add and Finish" / "Add another part", return to picker position | UI | 1 |
+
+Steps 1b (manifest-state highlight, folded into Step 1) and 7 are independent of the options
+work (2–5) and can be prioritized whenever — both only need the accordion (Step 1).
 
 Each increment ships and is testable on its own and sets up the next. The editor (Step 6) is
 deliberately **last** — once the picker is restructured, edit becomes "open the picker with all
@@ -67,6 +71,11 @@ kind), and the `category → family → part_type` browse hierarchy that Step 1 
   Console.
 - Center Console appears under **Structural** (it is stationary, metal furniture). Things that
   mount to it live under Equipment.
+- **Manifest-state highlight (Step 1b):** when a part type already has a product selected in the
+  manifest, show that on the part-type in the tree — a **green highlight** or equivalent — so it
+  is obvious at a glance which part types are filled and which have nothing selected. A filled
+  part type needs no further selection unless the user wants to change it. This is the browse-time
+  progress indicator for a build.
 - **Open design point (resolve here):** when a part-type-with-accessories is selected from the
   tree (e.g. Push Bumper), do its accessories surface in the same product box or as a filtered
   list? See §4 accessory model — push bumpers are a deliberate exception.
@@ -111,6 +120,20 @@ kind), and the `category → family → part_type` browse hierarchy that Step 1 
   cargo light).
 - This is the redesign of the F-005 stopgap into a real edit contract; it supersedes the interim
   dirty-tracking stopgap once landed.
+
+### Step 7 — Multi-add flow
+- After a part is added, the picker **returns to where the user was** (same category/family/
+  part-type position in the tree) instead of closing — so several parts can be added in one
+  session without reopening and restarting. Adding a bumper *and* a cage, or all the lights at
+  once, is a continuous flow.
+- The final screen for a part gets **two buttons**: **"Add and Finish"** (add this part and close
+  the picker) and **"Add another part"** (add this part and return to the tree at the prior
+  position).
+- The final screen is normally the location picker. **If a part has no location, or only one
+  possible location**, the location step is skipped and these two finish buttons appear **directly
+  on the part page**.
+- Pairs naturally with the Step 1b manifest highlight: add a part → return to the tree → the
+  filled part type shows green → pick the next empty one.
 
 ---
 
