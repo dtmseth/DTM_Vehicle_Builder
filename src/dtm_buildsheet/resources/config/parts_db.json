@@ -29826,7 +29826,7 @@
       "category": "interior_bar",
       "location_mode": "text",
       "location_options": [],
-      "family_id": "interior_bars"
+      "family_id": "light_bars"
     },
     "side_warning_bracket": {
       "label": "Side Warning Bracket",
@@ -29871,7 +29871,7 @@
       "category": "roof_bar",
       "location_mode": "text",
       "location_options": [],
-      "family_id": "roof_bars"
+      "family_id": "light_bars"
     },
     "rear_interior_light_bar": {
       "label": "Interior Light Bar",
@@ -29888,7 +29888,7 @@
       "category": "interior_bar",
       "location_mode": "text",
       "location_options": [],
-      "family_id": "interior_bars"
+      "family_id": "light_bars"
     },
     "rear_warning_bracket": {
       "label": "Rear Warning Bracket",
@@ -31244,7 +31244,8 @@
       "tag_ids": [],
       "category": "warning",
       "location_mode": "placement",
-      "family_id": "warning_lights"
+      "family_id": "warning_lights",
+      "browse_hidden": true
     },
     "tool_mount": {
       "label": "Tool Mount",
@@ -31290,9 +31291,9 @@
         }
       ],
       "tag_ids": [],
-      "category": "scene",
+      "category": "spotlight",
       "location_mode": "placement",
-      "family_id": "scene_lights"
+      "family_id": "spotlight"
     },
     "flashlight": {
       "label": "Flashlight & Charger",
@@ -31750,24 +31751,28 @@
       "label": "Warning",
       "category": "lights",
       "members": [
-        "warning_light",
         "headlight_flasher",
         "tail_light_flasher"
       ],
       "kind": "lighting_group",
-      "picker_flow": "warning"
+      "picker_flow": "warning",
+      "order": 1,
+      "selectable": true,
+      "browse_collapsed": false
     },
-    "scene_lights": {
-      "label": "Scene",
+    "light_bars": {
+      "label": "Light Bars",
       "category": "lights",
       "members": [
-        "front_scene",
-        "rear_scene",
-        "side_scene",
-        "spotlight"
+        "front_interior_light_bar",
+        "rear_interior_light_bar",
+        "roof_light_bar"
       ],
       "kind": "lighting_group",
-      "picker_flow": "scene"
+      "picker_flow": null,
+      "order": 2,
+      "selectable": false,
+      "browse_collapsed": false
     },
     "interior_lighting": {
       "label": "Interior Lighting",
@@ -31779,26 +31784,36 @@
         "rear_seat_lights"
       ],
       "kind": "lighting_group",
-      "picker_flow": "interior"
+      "picker_flow": "interior",
+      "order": 3,
+      "selectable": true,
+      "browse_collapsed": false
     },
-    "interior_bars": {
-      "label": "Interior Bars",
+    "scene_lights": {
+      "label": "Scene",
       "category": "lights",
       "members": [
-        "front_interior_light_bar",
-        "rear_interior_light_bar"
+        "front_scene",
+        "rear_scene",
+        "side_scene"
       ],
       "kind": "lighting_group",
-      "picker_flow": "interior_bar"
+      "picker_flow": "scene",
+      "order": 4,
+      "selectable": true,
+      "browse_collapsed": true
     },
-    "roof_bars": {
-      "label": "Roof Bars",
+    "spotlight": {
+      "label": "Spotlight",
       "category": "lights",
       "members": [
-        "roof_light_bar"
+        "spotlight"
       ],
       "kind": "lighting_group",
-      "picker_flow": "roof_bar"
+      "picker_flow": "spotlight",
+      "order": 5,
+      "selectable": true,
+      "browse_collapsed": true
     },
     "radar": {
       "label": "Radar",
@@ -31810,7 +31825,8 @@
         "radar_cable"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 1
     },
     "radio_comms": {
       "label": "Radio Communications",
@@ -31823,7 +31839,8 @@
         "radio_antenna_cable"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 2
     },
     "camera_system": {
       "label": "Camera System",
@@ -31835,7 +31852,19 @@
         "rear_seat_camera"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 3
+    },
+    "computer_workstation": {
+      "label": "Computer Workstation",
+      "category": "equipment",
+      "members": [
+        "computer",
+        "docking_station"
+      ],
+      "kind": "system",
+      "picker_flow": null,
+      "order": 4
     },
     "light_control_system": {
       "label": "Light Control System",
@@ -31850,17 +31879,8 @@
         "light_controller"
       ],
       "kind": "system",
-      "picker_flow": null
-    },
-    "computer_workstation": {
-      "label": "Computer Workstation",
-      "category": "equipment",
-      "members": [
-        "computer",
-        "docking_station"
-      ],
-      "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 5
     },
     "thermal_imaging": {
       "label": "Thermal Imaging",
@@ -31870,10 +31890,11 @@
         "thermal_imager_monitor"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 6
     },
     "push_bumper_system": {
-      "label": "Push Bumper System",
+      "label": "Push Bumper",
       "category": "structural",
       "members": [
         "push_bumper",
@@ -31882,17 +31903,48 @@
         "wire_covers"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 1
+    },
+    "cage_prisoner_containment": {
+      "label": "Cage / Prisoner Containment",
+      "category": "structural",
+      "members": [
+        "front_partition",
+        "rear_partition",
+        "rear_seat_divider",
+        "prisoner_transport_insert",
+        "rear_window_bars",
+        "chicago_barrier",
+        "replacement_rear_seat",
+        "floor_pan"
+      ],
+      "kind": "system",
+      "picker_flow": null,
+      "order": 2
     },
     "console_system": {
-      "label": "Console System",
+      "label": "Console",
       "category": "structural",
       "members": [
         "console",
         "motion_attachment"
       ],
       "kind": "system",
-      "picker_flow": null
+      "picker_flow": null,
+      "order": 3
+    },
+    "storage_equipment": {
+      "label": "Storage / Equipment",
+      "category": "structural",
+      "members": [
+        "rear_storage_box",
+        "equipment_tray",
+        "tonneau_cover"
+      ],
+      "kind": "system",
+      "picker_flow": null,
+      "order": 4
     }
   }
 }

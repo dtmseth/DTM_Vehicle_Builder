@@ -531,7 +531,7 @@
         "accessory_of": "",
         "allowed_placements": [],
         "allowed_products": [],
-        "category": "scene",
+        "category": "spotlight",
         "label": "Spotlight (pillar/post)",
         "max_count": null,
         "part_type_id": "spotlight",

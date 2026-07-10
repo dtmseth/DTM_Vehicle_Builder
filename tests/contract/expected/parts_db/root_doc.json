@@ -98,6 +98,23 @@
       }
     },
     "families": {
+      "cage_prisoner_containment": {
+        "category": "structural",
+        "kind": "system",
+        "label": "Cage / Prisoner Containment",
+        "members": [
+          "front_partition",
+          "rear_partition",
+          "rear_seat_divider",
+          "prisoner_transport_insert",
+          "rear_window_bars",
+          "chicago_barrier",
+          "replacement_rear_seat",
+          "floor_pan"
+        ],
+        "order": 2,
+        "picker_flow": null
+      },
       "camera_system": {
         "category": "equipment",
         "kind": "system",
@@ -108,6 +125,7 @@
           "rear_camera",
           "rear_seat_camera"
         ],
+        "order": 3,
         "picker_flow": null
       },
       "computer_workstation": {
@@ -118,29 +136,22 @@
           "computer",
           "docking_station"
         ],
+        "order": 4,
         "picker_flow": null
       },
       "console_system": {
         "category": "structural",
         "kind": "system",
-        "label": "Console System",
+        "label": "Console",
         "members": [
           "console",
           "motion_attachment"
         ],
+        "order": 3,
         "picker_flow": null
       },
-      "interior_bars": {
-        "category": "lights",
-        "kind": "lighting_group",
-        "label": "Interior Bars",
-        "members": [
-          "front_interior_light_bar",
-          "rear_interior_light_bar"
-        ],
-        "picker_flow": "interior_bar"
-      },
       "interior_lighting": {
+        "browse_collapsed": false,
         "category": "lights",
         "kind": "lighting_group",
         "label": "Interior Lighting",
@@ -150,7 +161,23 @@
           "rear_seat_cargo_lights",
           "rear_seat_lights"
         ],
-        "picker_flow": "interior"
+        "order": 3,
+        "picker_flow": "interior",
+        "selectable": true
+      },
+      "light_bars": {
+        "browse_collapsed": false,
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Light Bars",
+        "members": [
+          "front_interior_light_bar",
+          "rear_interior_light_bar",
+          "roof_light_bar"
+        ],
+        "order": 2,
+        "picker_flow": null,
+        "selectable": false
       },
       "light_control_system": {
         "category": "equipment",
@@ -165,18 +192,20 @@
           "v2v_sync",
           "light_controller"
         ],
+        "order": 5,
         "picker_flow": null
       },
       "push_bumper_system": {
         "category": "structural",
         "kind": "system",
-        "label": "Push Bumper System",
+        "label": "Push Bumper",
         "members": [
           "push_bumper",
           "pit_bar",
           "wing_wraps",
           "wire_covers"
         ],
+        "order": 1,
         "picker_flow": null
       },
       "radar": {
@@ -189,6 +218,7 @@
           "rear_radar_antenna_mount",
           "radar_cable"
         ],
+        "order": 1,
         "picker_flow": null
       },
       "radio_comms": {
@@ -202,28 +232,46 @@
           "radio_mic_clip",
           "radio_antenna_cable"
         ],
+        "order": 2,
         "picker_flow": null
       },
-      "roof_bars": {
-        "category": "lights",
-        "kind": "lighting_group",
-        "label": "Roof Bars",
-        "members": [
-          "roof_light_bar"
-        ],
-        "picker_flow": "roof_bar"
-      },
       "scene_lights": {
+        "browse_collapsed": true,
         "category": "lights",
         "kind": "lighting_group",
         "label": "Scene",
         "members": [
           "front_scene",
           "rear_scene",
-          "side_scene",
+          "side_scene"
+        ],
+        "order": 4,
+        "picker_flow": "scene",
+        "selectable": true
+      },
+      "spotlight": {
+        "browse_collapsed": true,
+        "category": "lights",
+        "kind": "lighting_group",
+        "label": "Spotlight",
+        "members": [
           "spotlight"
         ],
-        "picker_flow": "scene"
+        "order": 5,
+        "picker_flow": "spotlight",
+        "selectable": true
+      },
+      "storage_equipment": {
+        "category": "structural",
+        "kind": "system",
+        "label": "Storage / Equipment",
+        "members": [
+          "rear_storage_box",
+          "equipment_tray",
+          "tonneau_cover"
+        ],
+        "order": 4,
+        "picker_flow": null
       },
       "thermal_imaging": {
         "category": "equipment",
@@ -233,18 +281,21 @@
           "thermal_imager",
           "thermal_imager_monitor"
         ],
+        "order": 6,
         "picker_flow": null
       },
       "warning_lights": {
+        "browse_collapsed": false,
         "category": "lights",
         "kind": "lighting_group",
         "label": "Warning",
         "members": [
-          "warning_light",
           "headlight_flasher",
           "tail_light_flasher"
         ],
-        "picker_flow": "warning"
+        "order": 1,
+        "picker_flow": "warning",
+        "selectable": true
       }
     },
     "manufacturers": {
@@ -1035,7 +1086,7 @@
       },
       "front_interior_light_bar": {
         "category": "interior_bar",
-        "family_id": "interior_bars",
+        "family_id": "light_bars",
         "label": "Interior Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -1757,7 +1808,7 @@
       },
       "rear_interior_light_bar": {
         "category": "interior_bar",
-        "family_id": "interior_bars",
+        "family_id": "light_bars",
         "label": "Interior Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -1968,7 +2019,7 @@
       },
       "roof_light_bar": {
         "category": "roof_bar",
-        "family_id": "roof_bars",
+        "family_id": "light_bars",
         "label": "Light Bar",
         "location_mode": "text",
         "location_options": [],
@@ -2103,8 +2154,8 @@
         "workbook_label_pattern": "Special Face Plate {n}"
       },
       "spotlight": {
-        "category": "scene",
-        "family_id": "scene_lights",
+        "category": "spotlight",
+        "family_id": "spotlight",
         "label": "Spotlight (pillar/post)",
         "location_mode": "placement",
         "tag_ids": [],
@@ -2283,6 +2334,7 @@
         "workbook_label_pattern": "Vehicle interface"
       },
       "warning_light": {
+        "browse_hidden": true,
         "category": "warning",
         "family_id": "warning_lights",
         "label": "Warning Light",

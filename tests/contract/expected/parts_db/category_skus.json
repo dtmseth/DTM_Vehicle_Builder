@@ -4,87 +4,6 @@
       {
         "default_location": "",
         "fits_part_types": [
-          "spotlight"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "unity",
-        "manufacturer_label": "Unity",
-        "model": "325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
-        "product_id": "unity_221000_0002",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "UNITY 325 SERIES 6\" SPOTLIGHT BLACK DRIVER SIDE - FOR 2021 FORD F-150/EXPEDITION MAX",
-            "lens_type": "",
-            "part_number": "221000-0002",
-            "price": 283.64,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "fits_part_types": [
-          "spotlight"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "unity",
-        "manufacturer_label": "Unity",
-        "model": "6\" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED",
-        "product_id": "unity_218000_0002",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "UNITY 6\" HALOGEN SPOTLIGHT FOR 2020+ FORD PI UTILITY - DRIVER SIDE INSTALL - #265 INSTALL KIT REQUIRED",
-            "lens_type": "",
-            "part_number": "218000-0002",
-            "price": 293.33,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "fits_part_types": [
-          "spotlight"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "unity",
-        "manufacturer_label": "Unity",
-        "model": "6\" Halogen Spotlight (2016 FPIU)",
-        "product_id": "unity_spotlight_2016_fpiu",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "SPOTLIGHT, DRIVER SIDE HALOGEN FOR 2016 FORD INTERCEPTOR UTILITY 6\"BLACK",
-            "lens_type": "",
-            "part_number": "211020-0002",
-            "price": 202.17,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "fits_part_types": [
           "front_scene",
           "side_scene",
           "rear_scene"
@@ -591,33 +510,6 @@
       {
         "default_location": "",
         "fits_part_types": [
-          "spotlight"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "unity",
-        "manufacturer_label": "Unity",
-        "model": "SPOTLIGHT 330PL-0002",
-        "product_id": "unity_330pl_0002",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "UNITY SPOTLIGHT 330PL-0002",
-            "lens_type": "",
-            "part_number": "330PL-0002",
-            "price": 145.2,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "fits_part_types": [
           "front_scene",
           "rear_scene"
         ],
@@ -688,33 +580,6 @@
             "lens_type": "clear",
             "part_number": "WPLOW1A",
             "price": 274.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "fits_part_types": [
-          "spotlight"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "unity",
-        "manufacturer_label": "Unity",
-        "model": "X-LED 6\" Spotlight",
-        "product_id": "unity_xled_spotlight",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "X-LED 6\" SPOTLIGHT BLACK (X335) (S14) LH",
-            "lens_type": "",
-            "part_number": "X218016-0002",
-            "price": 375.61,
             "qb": true,
             "qb_pending": false,
             "secondary_color": "",

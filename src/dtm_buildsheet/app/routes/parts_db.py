@@ -204,6 +204,15 @@ def _build_browse_tree(svc) -> list[dict]:
     own `type_id` (families are a cross-cutting browse concept, e.g. an
     Equipment part_type can belong to a Structural family — see
     docs/PARTS_DB_AND_PICKER.md).
+
+    Ordering + selectability (owner rulings 2026-07-10, flaws #7+#8): within
+    each category, families sort first (by `order`, then label), standalones
+    after (by label). A family carries `selectable` (its header alone can be
+    clicked to filter by `picker_flow` — same handoff as a leaf) and
+    `browse_collapsed` (render as a single selectable row with no members,
+    e.g. Scene/Spotlight). A member's own `picker_flow` is its part_type's
+    `category` field (falling back to the family's), so a mixed-flow family
+    like Light Bars can carry members with different flows.
     """
     doc = svc.raw_doc()
     part_types_doc: dict = doc.get("part_types") or {}
@@ -218,12 +227,27 @@ def _build_browse_tree(svc) -> list[dict]:
         members = [m for m in (spec.get("members") or []) if m in part_types_doc]
         in_family.update(members)
         type_id = spec.get("category", "")
+        family_flow = spec.get("picker_flow")
         families_by_type.setdefault(type_id, []).append({
             "kind": "family",
             "family_id": family_id,
             "label": spec.get("label", family_id),
-            "picker_flow": spec.get("picker_flow"),
-            "members": [{"part_type_id": m, "label": label_of(m)} for m in members],
+            "picker_flow": family_flow,
+            "order": spec.get("order", 999),
+            "selectable": bool(spec.get("selectable", False)),
+            "browse_collapsed": bool(spec.get("browse_collapsed", False)),
+            # Each member carries its OWN flow (its part_type's `category`
+            # field) rather than always inheriting the family's — needed for
+            # mixed-flow families like Light Bars (interior_bar + roof_bar
+            # members under one family with no single picker_flow).
+            "members": [
+                {
+                    "part_type_id": m,
+                    "label": label_of(m),
+                    "picker_flow": (part_types_doc.get(m) or {}).get("category") or family_flow,
+                }
+                for m in members
+            ],
         })
 
     bare_by_type: dict[str, list[dict]] = {}
@@ -246,8 +270,12 @@ def _build_browse_tree(svc) -> list[dict]:
     types_doc: dict = doc.get("types") or {}
     out: list[dict] = []
     for type_id, tspec in types_doc.items():
-        children = families_by_type.get(type_id, []) + bare_by_type.get(type_id, [])
-        children.sort(key=lambda c: c["label"])
+        # Families first (by `order`, then label), then bare part_types (by
+        # label) — owner ruling 2026-07-10 (flaws #7+#8): every category is
+        # dropdowns/families first, standalones below.
+        families = sorted(families_by_type.get(type_id, []), key=lambda c: (c.get("order", 999), c["label"]))
+        standalones = sorted(bare_by_type.get(type_id, []), key=lambda c: c["label"])
+        children = families + standalones
         out.append({"type_id": type_id, "label": tspec.get("label", type_id), "children": children})
     return out
 
