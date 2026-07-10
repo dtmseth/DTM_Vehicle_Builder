@@ -399,6 +399,20 @@
     .pbt-leaf.filled{font-weight:600}
     .pbt-leaf.locked{opacity:.38;cursor:not-allowed}
     .pbt-leaf.locked:hover{background:none}
+    /* selectable family header (Warning/Interior Lighting/Scene/Spotlight —
+       owner ruling 2026-07-10, flaws #7+#8): clicking the label itself
+       filters by the family's picker_flow, same as a leaf. When also
+       expandable, a separate small caret button reveals members. */
+    .pbt-fam-row{display:flex;align-items:center;gap:2px}
+    .pbt-fam-select{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;padding:6px 2px;border:none;background:none;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--text);text-align:left;cursor:pointer}
+    .pbt-fam-select:hover{background:#eef1f6;color:var(--navy)}
+    .pbt-fam-select.active{background:var(--navy);color:#fff}
+    .pbt-fam-select.filled{font-weight:700}
+    .pbt-fam-select.locked{opacity:.38;cursor:not-allowed}
+    .pbt-fam-select.locked:hover{background:none;color:var(--text)}
+    .pbt-fam-caret-btn{display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:6px 6px;border:none;background:none;cursor:pointer;color:var(--muted)}
+    .pbt-fam-caret-btn:hover{color:var(--navy)}
+    .pbt-fam-collapsed{padding:0}
     /* brand refine bar (right pane) */
     .pp-brandbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
     /* preferred-brand variant (owner flaw #5): the preferred brand is a

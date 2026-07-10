@@ -290,6 +290,7 @@
         "kind": "lighting_group",
         "label": "Warning",
         "members": [
+          "warning_light",
           "headlight_flasher",
           "tail_light_flasher"
         ],

@@ -51,21 +51,25 @@
             "label": "Push Bumper",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Push Bumper",
                 "part_type_id": "push_bumper",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Pit Bar",
                 "part_type_id": "pit_bar",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Wing Wraps",
                 "part_type_id": "wing_wraps",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Wire Covers",
                 "part_type_id": "wire_covers",
                 "picker_flow": null
@@ -82,41 +86,49 @@
             "label": "Cage / Prisoner Containment",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Front Partition",
                 "part_type_id": "front_partition",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Partition",
                 "part_type_id": "rear_partition",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Seat Divider",
                 "part_type_id": "rear_seat_divider",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Prisoner Transport Insert",
                 "part_type_id": "prisoner_transport_insert",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Window Bars",
                 "part_type_id": "rear_window_bars",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Chicago Barrier",
                 "part_type_id": "chicago_barrier",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Replacement Seat",
                 "part_type_id": "replacement_rear_seat",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Floor Pan",
                 "part_type_id": "floor_pan",
                 "picker_flow": null
@@ -133,11 +145,13 @@
             "label": "Console",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Console",
                 "part_type_id": "console",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Motion Attachment",
                 "part_type_id": "motion_attachment",
                 "picker_flow": null
@@ -154,16 +168,19 @@
             "label": "Storage / Equipment",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Storage Box",
                 "part_type_id": "rear_storage_box",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Equipment Tray",
                 "part_type_id": "equipment_tray",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Tonneau / Bed Cover",
                 "part_type_id": "tonneau_cover",
                 "picker_flow": null
@@ -191,21 +208,25 @@
             "label": "Radar",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Radar Display Unit",
                 "part_type_id": "radar_display_unit",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Front Radar Antenna Mount",
                 "part_type_id": "front_radar_antenna_mount",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Radar Antenna Mount",
                 "part_type_id": "rear_radar_antenna_mount",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Radar Cable",
                 "part_type_id": "radar_cable",
                 "picker_flow": null
@@ -222,26 +243,31 @@
             "label": "Radio Communications",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Radio Head",
                 "part_type_id": "radio_head",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Radio Speaker",
                 "part_type_id": "radio_speaker",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Radio Cable",
                 "part_type_id": "radio_cable",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Radio Mic Clip",
                 "part_type_id": "radio_mic_clip",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Radio Communication Cable",
                 "part_type_id": "radio_antenna_cable",
                 "picker_flow": null
@@ -258,21 +284,25 @@
             "label": "Camera System",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Camera DVR",
                 "part_type_id": "camera_dvr",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Front Camera",
                 "part_type_id": "front_camera",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Camera",
                 "part_type_id": "rear_camera",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Seat Camera",
                 "part_type_id": "rear_seat_camera",
                 "picker_flow": null
@@ -289,11 +319,13 @@
             "label": "Computer Workstation",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Computer / Laptop",
                 "part_type_id": "computer",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Docking Station",
                 "part_type_id": "docking_station",
                 "picker_flow": null
@@ -310,36 +342,43 @@
             "label": "Light Control System",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Light Control Head",
                 "part_type_id": "control_head",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "External Amp",
                 "part_type_id": "external_amp",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Expansion Module",
                 "part_type_id": "expansion_module",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Cloud System",
                 "part_type_id": "cloud_system_tray",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Cloud Antenna",
                 "part_type_id": "cloud_antenna",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Vehicle to Vehicle Sync",
                 "part_type_id": "v2v_sync",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Light Controller",
                 "part_type_id": "light_controller",
                 "picker_flow": null
@@ -356,11 +395,13 @@
             "label": "Thermal Imaging",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Thermal Imager",
                 "part_type_id": "thermal_imager",
                 "picker_flow": null
               },
               {
+                "browse_hidden": false,
                 "label": "Thermal Imager Monitor",
                 "part_type_id": "thermal_imager_monitor",
                 "picker_flow": null
@@ -518,11 +559,19 @@
             "label": "Warning",
             "members": [
               {
+                "browse_hidden": true,
+                "label": "Warning Light",
+                "part_type_id": "warning_light",
+                "picker_flow": "warning"
+              },
+              {
+                "browse_hidden": false,
                 "label": "Headlight Flasher",
                 "part_type_id": "headlight_flasher",
                 "picker_flow": "warning"
               },
               {
+                "browse_hidden": false,
                 "label": "Tail Light Flasher",
                 "part_type_id": "tail_light_flasher",
                 "picker_flow": "warning"
@@ -539,16 +588,19 @@
             "label": "Light Bars",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Interior Light Bar",
                 "part_type_id": "front_interior_light_bar",
                 "picker_flow": "interior_bar"
               },
               {
+                "browse_hidden": false,
                 "label": "Interior Light Bar",
                 "part_type_id": "rear_interior_light_bar",
                 "picker_flow": "interior_bar"
               },
               {
+                "browse_hidden": false,
                 "label": "Light Bar",
                 "part_type_id": "roof_light_bar",
                 "picker_flow": "roof_bar"
@@ -565,21 +617,25 @@
             "label": "Interior Lighting",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Cargo Lighting",
                 "part_type_id": "cargo_lighting",
                 "picker_flow": "interior"
               },
               {
+                "browse_hidden": false,
                 "label": "Dome Light",
                 "part_type_id": "front_dome_light",
                 "picker_flow": "interior"
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Seat Cargo Lights",
                 "part_type_id": "rear_seat_cargo_lights",
                 "picker_flow": "interior"
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Seat Lights",
                 "part_type_id": "rear_seat_lights",
                 "picker_flow": "interior"
@@ -596,16 +652,19 @@
             "label": "Scene",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Front Scene",
                 "part_type_id": "front_scene",
                 "picker_flow": "scene"
               },
               {
+                "browse_hidden": false,
                 "label": "Rear Scene",
                 "part_type_id": "rear_scene",
                 "picker_flow": "scene"
               },
               {
+                "browse_hidden": false,
                 "label": "Side Scene",
                 "part_type_id": "side_scene",
                 "picker_flow": "scene"
@@ -622,6 +681,7 @@
             "label": "Spotlight",
             "members": [
               {
+                "browse_hidden": false,
                 "label": "Spotlight (pillar/post)",
                 "part_type_id": "spotlight",
                 "picker_flow": "spotlight"

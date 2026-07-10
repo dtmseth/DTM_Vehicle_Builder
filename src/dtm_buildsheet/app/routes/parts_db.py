@@ -239,12 +239,19 @@ def _build_browse_tree(svc) -> list[dict]:
             # Each member carries its OWN flow (its part_type's `category`
             # field) rather than always inheriting the family's — needed for
             # mixed-flow families like Light Bars (interior_bar + roof_bar
-            # members under one family with no single picker_flow).
+            # members under one family with no single picker_flow). A member
+            # can also be `browse_hidden` (e.g. `warning_light`, whose home is
+            # covered entirely by the Warning header's own selectable click,
+            # per owner ruling 2026-07-10 — "eliminates the redundant
+            # sub-leaf") — it STAYS in `members` (so edit-mode pre-fill/
+            # type-lock can still resolve it to this family) but the client
+            # must not render it as a clickable leaf.
             "members": [
                 {
                     "part_type_id": m,
                     "label": label_of(m),
                     "picker_flow": (part_types_doc.get(m) or {}).get("category") or family_flow,
+                    "browse_hidden": bool((part_types_doc.get(m) or {}).get("browse_hidden", False)),
                 }
                 for m in members
             ],

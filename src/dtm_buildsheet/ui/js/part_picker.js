@@ -435,23 +435,66 @@ function _pickerBrowseTreeHtml() {
       return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
     });
 
+  const editPT = _pickerState.editLineId ? _pickerState.editPart?.part_type : null;
+
   const leafHtml = (pt, cat, pickerFlow) => {
     const isFilled = filled.has(pt.part_type_id);
     const active = _pickerState.filters.part_type_id === pt.part_type_id && _pickerState.filters.type_id === cat.type_id;
     // Type-lock (Step 6): in edit mode, dim leaves that are NOT the locked part_type.
-    const locked = !!_pickerState.editLineId && !!_pickerState.editPart?.part_type
-      && pt.part_type_id !== _pickerState.editPart.part_type;
+    const locked = !!editPT && pt.part_type_id !== editPT;
     return `<button class="pbt-leaf${isFilled ? " filled" : ""}${active ? " active" : ""}${locked ? " locked" : ""}"
       data-type="${esc(cat.type_id)}" data-type-label="${esc(cat.label)}"
       data-pt="${esc(pt.part_type_id)}" data-pt-label="${esc(pt.label)}"
       data-flow="${esc(pickerFlow || "")}">${esc(pt.label)}${isFilled ? ` <span class="pbt-dot" title="Already in this build"></span>` : ""}</button>`;
   };
 
+  // A family header whose own picker_flow is set is SELECTABLE — clicking it
+  // filters by that flow directly (same handoff a leaf does), no forced
+  // sub-filter (owner ruling 2026-07-10: Warning/Interior/Scene/Spotlight
+  // are each a single selectable home). `browse_collapsed` families (Scene,
+  // Spotlight) render as ONE selectable row with no caret and no members —
+  // the collapse happens at the browse level only (front/side/rear_scene
+  // stay in the data, just hidden from the tree).
+  const famSelectHtml = (fam, cat, extraClass) => {
+    const anyFilled = fam.members.some(m => filled.has(m.part_type_id));
+    const active = _pickerState.filters.category_id === fam.picker_flow
+      && _pickerState.filters.type_id === cat.type_id && _pickerState.filters.part_type_id === "";
+    const locked = !!editPT && !fam.members.some(m => m.part_type_id === editPT);
+    return `<button class="pbt-fam-select${active ? " active" : ""}${anyFilled ? " filled" : ""}${locked ? " locked" : ""}${extraClass ? " " + extraClass : ""}"
+      data-type="${esc(cat.type_id)}" data-type-label="${esc(cat.label)}"
+      data-pt="" data-pt-label="${esc(fam.label)}"
+      data-flow="${esc(fam.picker_flow || "")}">${esc(fam.label)}${anyFilled ? ` <span class="pbt-dot" title="Already in this build"></span>` : ""}</button>`;
+  };
+
   const childHtml = (child, cat) => {
     if (child.kind === "part_type") return leafHtml(child, cat, "");
+
+    if (child.browse_collapsed) {
+      return `<div class="pbt-fam pbt-fam-collapsed">${famSelectHtml(child, cat)}</div>`;
+    }
+
     const open = _pickerBrowseExpanded.families.has(child.family_id);
+    // anyFilled/lock checks use the FULL member list (including browse_hidden
+    // ones like warning_light) — only rendering excludes them.
     const anyFilled = child.members.some(m => filled.has(m.part_type_id));
-    const members = open ? child.members.map(m => leafHtml(m, cat, child.picker_flow)).join("") : "";
+    // Each member carries its own flow (mixed-flow families like Light Bars
+    // have members with different flows — interior_bar vs roof_bar).
+    const members = open
+      ? child.members.filter(m => !m.browse_hidden).map(m => leafHtml(m, cat, m.picker_flow || child.picker_flow)).join("")
+      : "";
+
+    if (child.selectable) {
+      return `<div class="pbt-fam">
+        <div class="pbt-fam-row">
+          ${famSelectHtml(child, cat)}
+          <button class="pbt-fam-caret-btn" data-fam="${esc(child.family_id)}" title="Expand"><span class="pbt-caret">${open ? "▾" : "▸"}</span></button>
+        </div>
+        <div class="pbt-fam-body">${members}</div>
+      </div>`;
+    }
+
+    // Expand-only (no single flow to select by, e.g. Light Bars or the
+    // Equipment/Structural system families) — unchanged from before.
     return `<div class="pbt-fam">
       <button class="pbt-fam-head${open ? " open" : ""}" data-fam="${esc(child.family_id)}">
         <span class="pbt-caret">${open ? "▾" : "▸"}</span>${esc(child.label)}${anyFilled ? ` <span class="pbt-dot" title="Has parts in this build"></span>` : ""}
@@ -587,16 +630,32 @@ function _pickerWireFilters() {
     else _pickerBrowseExpanded.types.add(id);
     _pickerRenderFilters();
   }));
+  // Expand-only family headers (Light Bars, Equipment/Structural systems —
+  // no single picker_flow to select by) — toggle expansion, unchanged.
   el.querySelectorAll(".pbt-fam-head").forEach(b => b.addEventListener("click", () => {
     const id = b.dataset.fam;
     if (_pickerBrowseExpanded.families.has(id)) _pickerBrowseExpanded.families.delete(id);
     else _pickerBrowseExpanded.families.add(id);
     _pickerRenderFilters();
   }));
-  el.querySelectorAll(".pbt-leaf").forEach(b => b.addEventListener("click", async () => {
+  // The small caret button next to a SELECTABLE family's label (Warning,
+  // Interior Lighting) — toggles member expansion only; the label itself
+  // (`.pbt-fam-select`) is the separate select/filter target below.
+  el.querySelectorAll(".pbt-fam-caret-btn").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.fam;
+    if (_pickerBrowseExpanded.families.has(id)) _pickerBrowseExpanded.families.delete(id);
+    else _pickerBrowseExpanded.families.add(id);
+    _pickerRenderFilters();
+  }));
+  // Leaf part_types AND selectable family headers (`.pbt-fam-select` — the
+  // whole family header for Warning/Interior/Scene/Spotlight, or a single
+  // collapsed row for Scene/Spotlight) share one handoff: set the filters
+  // and fetch. A family header carries data-pt="" (no single part_type).
+  el.querySelectorAll(".pbt-leaf, .pbt-fam-select").forEach(b => b.addEventListener("click", async () => {
+    if (b.classList.contains("locked")) return;
     const f = _pickerState.filters, c = _pickerState.config;
     // Type-lock (Step 6): in edit mode, block navigation to a different part_type.
-    if (_pickerState.editLineId && _pickerState.editPart?.part_type && b.dataset.pt !== _pickerState.editPart.part_type) return;
+    if (_pickerState.editLineId && _pickerState.editPart?.part_type && b.dataset.pt && b.dataset.pt !== _pickerState.editPart.part_type) return;
     f.type_id = b.dataset.type; f.type_label = b.dataset.typeLabel;
     f.part_type_id = b.dataset.pt; f.part_type_label = b.dataset.ptLabel;
     const flow = b.dataset.flow || "";

@@ -31751,6 +31751,7 @@
       "label": "Warning",
       "category": "lights",
       "members": [
+        "warning_light",
         "headlight_flasher",
         "tail_light_flasher"
       ],

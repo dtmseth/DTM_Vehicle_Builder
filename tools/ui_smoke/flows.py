@@ -136,9 +136,11 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.click("[onclick='addPart()'] >> nth=0")
         page.wait_for_selector("#picker-panel.open")
         page.wait_for_timeout(200)
-        # `console` lives under Structural > Console System (PICKER_REDESIGN.md
-        # Step 1 accordion) — expand the category, then the family, then pick
-        # the Console leaf. Expansion state persists across picker opens
+        # `console` lives under Structural > Console (family_id "console_system",
+        # relabeled from "Console System" — owner ruling 2026-07-10, flaws #7+#8;
+        # the family_id and expand-only behavior are unchanged) — expand the
+        # category, then the family, then pick the Console leaf. Expansion
+        # state persists across picker opens
         # within the session (Step 1's "persist expansion state" call), so on
         # the second add() in this flow the tree may already be expanded —
         # only click a header if it isn't open yet, or the click would
@@ -233,16 +235,25 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
 
     # ── Assert (b): type-lock — locked leaves are dimmed, not clickable ─────
     # In edit mode with part_type="warning_light", any non-warning leaf must
-    # have the "locked" class and resist clicks (type-lock).
+    # have the "locked" class and resist clicks (type-lock). `warning_light`
+    # itself has no rendered leaf anymore (owner ruling 2026-07-10, flaws
+    # #7+#8: its sole home is the Warning header, browse_hidden as a member) —
+    # the pre-fill still resolves its family (warning_lights) and expands it,
+    # so its SIBLING members (headlight_flasher / tail_light_flasher) render
+    # locked here.
     locked_count = page.locator(".pbt-leaf.locked").count()
     assert locked_count > 0, \
         "expected at least one .pbt-leaf.locked in edit mode (type-lock)"
 
-    # The active/unlocked leaf must be the warning_light one (or none expanded,
-    # so just check that the warning leaf, if visible, is NOT locked).
-    warning_locked = page.locator(".pbt-leaf[data-pt='warning_light'].locked").count()
-    assert warning_locked == 0, \
-        "the part's own part_type leaf must NOT be locked in edit mode"
+    # No rendered leaf may claim to BE warning_light (it's browse_hidden) —
+    # and the Warning family SELECT header (the part's own family) must NOT
+    # be locked, since the edited part belongs to it.
+    warning_leaf = page.locator(".pbt-leaf[data-pt='warning_light']").count()
+    assert warning_leaf == 0, \
+        "warning_light must not render as a leaf (its home is the Warning header)"
+    warning_header_locked = page.locator(".pbt-fam-select[data-flow='warning'].locked").count()
+    assert warning_header_locked == 0, \
+        "the part's own family header (Warning) must NOT be locked in edit mode"
 
     # ── Assert (a): Save is enabled (correctness, not disabled) ─────────────
     disabled = page.get_attribute("#picker-add-btn", "disabled")
@@ -300,6 +311,24 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
     # panel — still on the same tab, no navigation occurred.
     assert page.is_visible("#picker-tab-btn-part.active"), "Step 1 must stay on the Part tab (navigation-only)"
 
+    # Families sort before standalones within a category (owner ruling
+    # 2026-07-10, flaws #7+#8) — verify for Structural: Push Bumper / Cage /
+    # Console / Storage families first, running_boards_nerf_bars standalone last.
+    page.click(".pbt-cat-head[data-cat='structural']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
+    page.wait_for_timeout(_SETTLE_MS)
+    child_kinds = page.evaluate("""
+        () => Array.from(document.querySelectorAll(
+            ".pbt-cat-head[data-cat='structural'] + .pbt-cat-body > *"
+        )).map(el => el.classList.contains('pbt-fam') ? 'family' : 'standalone')
+    """)
+    assert child_kinds, "expected Structural category to render children"
+    first_standalone = next((i for i, k in enumerate(child_kinds) if k == "standalone"), len(child_kinds))
+    assert all(k == "family" for k in child_kinds[:first_standalone]), \
+        f"families must sort before standalones under Structural, got {child_kinds}"
+    assert "standalone" in child_kinds, \
+        "expected at least one Structural standalone (running_boards_nerf_bars)"
+
 
 def flow_light_options_in_product_box(page, base_url: str) -> None:
     """PICKER_REDESIGN.md Step 2 regression guard: selecting a light part type
@@ -318,7 +347,10 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
 
-    # Expand the first family under Lights (Warning / Scene / etc.), if present.
+    # Expand the first EXPAND-ONLY family under Lights. Warning/Interior/Scene/
+    # Spotlight are now SELECTABLE headers (owner ruling 2026-07-10, flaws
+    # #7+#8) and no longer match `.pbt-fam-head` — only Light Bars does, so
+    # this lands there (a colour-configured category, same as before).
     fam_heads = page.locator(".pbt-cat-head[data-cat='lights'] + .pbt-cat-body .pbt-fam-head")
     if fam_heads.count() > 0:
         fam_heads.first.click()
@@ -426,17 +458,16 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(200)
 
-    # Navigate to the Warning family specifically (multi-brand in the
-    # bundled catalog) rather than "first family" (that's alphabetically
-    # Interior Bars — see docs/PARTS_DB_AND_PICKER.md family listing).
+    # Navigate to the Warning family specifically (multi-brand in the bundled
+    # catalog). Warning is now a SELECTABLE header (owner ruling 2026-07-10,
+    # flaws #7+#8) — click it directly to filter by flow=warning; there is no
+    # `warning_light` leaf to click anymore (its sole home is the header
+    # itself — see docs/PARTS_DB_AND_PICKER.md family listing).
     page.click(".pbt-cat-head[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
-    page.click(".pbt-fam-head[data-fam='warning_lights']")
-    page.wait_for_selector(".pbt-fam-head[data-fam='warning_lights'].open")
-    page.wait_for_timeout(200)
-    page.wait_for_selector(".pbt-leaf[data-pt='warning_light']")
-    page.click(".pbt-leaf[data-pt='warning_light']")
+    page.wait_for_selector(".pbt-fam-select[data-flow='warning']")
+    page.click(".pbt-fam-select[data-flow='warning']")
     page.wait_for_timeout(_SETTLE_MS)
 
     # The picker must have auto-selected the project's preferred lighting
@@ -490,7 +521,11 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(200)
 
-    # Navigate to a colour-configured warning light (picker_flow="warning").
+    # Navigate to a colour-configured light. Warning/Interior/Scene/Spotlight
+    # are now SELECTABLE headers (owner ruling 2026-07-10, flaws #7+#8) and no
+    # longer match `.pbt-fam-head` — only the expand-only Light Bars family
+    # does, so this lands on an interior_bar/roof_bar product (still a
+    # colour-configured category — the assertions below don't care which one).
     page.click(".pbt-cat-head[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
@@ -677,14 +712,17 @@ def flow_scene_light_qty_only(page, base_url: str) -> None:
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
 
-    page.click(".pbt-fam-head[data-fam='scene_lights']")
-    page.wait_for_selector(".pbt-fam-head[data-fam='scene_lights'].open")
-    page.wait_for_timeout(200)
-
-    # Pick the first scene leaf (e.g., front_scene).
-    page.wait_for_selector(".pbt-fam-head[data-fam='scene_lights'] + .pbt-fam-body .pbt-leaf")
-    page.click(".pbt-fam-head[data-fam='scene_lights'] + .pbt-fam-body .pbt-leaf >> nth=0")
+    # Owner ruling 2026-07-10 (flaws #7+#8): Scene renders COLLAPSED — a single
+    # selectable row (no caret, no front/side/rear sub-leaves). Click it
+    # directly; it hands off exactly like a leaf would (filters by flow=scene).
+    page.wait_for_selector(".pbt-fam-select[data-flow='scene']")
+    page.click(".pbt-fam-select[data-flow='scene']")
     page.wait_for_timeout(_SETTLE_MS)
+
+    # No front/side/rear member leaves may be rendered for the collapsed family.
+    scene_leaves = page.locator(".pbt-fam-collapsed .pbt-leaf").count()
+    assert scene_leaves == 0, \
+        f"Scene must render collapsed with no member leaves, found {scene_leaves}"
 
     # Product grid must render.
     assert page.locator(".pp-head").count() > 0, \
@@ -740,24 +778,19 @@ def flow_scene_light_qty_only(page, base_url: str) -> None:
 
     # ── Part B: warning light still shows the full option set ────────────────
     # The picker is still open; lights category is still expanded (session state
-    # persists). Navigate to a warning leaf directly without reopening.
+    # persists). Owner ruling 2026-07-10: Warning is a SELECTABLE family header
+    # (flaws #7+#8) — click the header directly to filter by flow=warning, no
+    # expansion needed (this is the "eliminates the redundant sub-leaf" call).
     if not page.is_visible(".pbt-cat-head[data-cat='lights'].open"):
         page.click(".pbt-cat-head[data-cat='lights']")
         page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
         page.wait_for_timeout(200)
 
-    # Expand warning_lights family.
-    if not page.is_visible(".pbt-fam-head[data-fam='warning_lights'].open"):
-        page.click(".pbt-fam-head[data-fam='warning_lights']")
-        page.wait_for_selector(".pbt-fam-head[data-fam='warning_lights'].open")
-        page.wait_for_timeout(200)
-
-    # Pick the first leaf with data-flow="warning".
-    warning_leaves = page.locator(".pbt-leaf[data-flow='warning']")
-    if warning_leaves.count() == 0:
-        # No warning leaf in tree — skip Part B (products not present in this parts_db).
+    warning_select = page.locator(".pbt-fam-select[data-flow='warning']")
+    if warning_select.count() == 0:
+        # No warning family in tree — skip Part B (products not present in this parts_db).
         return
-    warning_leaves.first.click()
+    warning_select.first.click()
     page.wait_for_timeout(_SETTLE_MS)
 
     assert page.locator(".pp-head").count() > 0, "expected warning products in grid"
