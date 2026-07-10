@@ -181,7 +181,14 @@ async function _pickerOpenEdit(part) {
   const pn = (part.components && part.components[0] && part.components[0].part_number) || part.part_number;
   const prod = _pickerState.products.find(p => p.skus.some(s => s.part_number === pn));
   if (prod) {
-    _pickerState.sel = { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label, sku: pn };
+    // For color products (warning/interior lights) sel.sku must NOT be set —
+    // `usesColor` in _pickerDoAdd is gated on `!sel.sku`, and skuChoices carries
+    // the per-head overrides. For non-color products (equipment, programmable
+    // bars) sel.sku identifies the exact chosen SKU.
+    const pColor = _pickerUsesColor() && _pickerProductHasColor(prod);
+    _pickerState.sel = pColor
+      ? { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label }
+      : { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label, sku: pn };
     _pickerState.expanded.add(prod.product_id);
   }
   _pickerSwitchTab("part");

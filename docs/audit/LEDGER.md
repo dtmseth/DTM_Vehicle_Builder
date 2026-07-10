@@ -124,7 +124,7 @@ the real build editor with headless Chromium.
   edit path)
 - **Category:** fragile
 - **Severity:** HIGH — data-destroying on a routine action
-- **Status:** PARTIAL — stopgap landed; full redesign still open
+- **Status:** RESOLVED (2026-07-10)
 - **Repro (live UI):** seed "Forward Warning 1" (ION, qty 2, Red) → manifest ≡
   Edit → picker opens ("Save edits" **enabled immediately**). Click Save (or
   re-pick any product) → draft line becomes
@@ -139,31 +139,29 @@ the real build editor with headless Chromium.
   non-light part is equally broken in the other direction: the panel lists
   **lights** products only (134 listed while editing). Accessories are
   explicitly unhandled in edit (`_pickerLoadAccessories` bails).
-- **Disposition:** NEEDS-DESIGN — the edit flow needs a real contract (prefill
-  type/category/config from the stored part; preserve name/qty/colors unless
-  deliberately changed). A minimal SONNET-FIXABLE stopgap: in edit mode carry
-  `editPart.name/quantity/raw_color` through `_pickerDoAdd` unless the user
-  changed the corresponding control, and disable Save until something changed.
-- **Stopgap fix (landed):** `_pickerState._editTouched = {product, color,
-  location}` now tracks which control group the user actually interacted with
-  while editing (product/SKU re-pick, color swatch/count/mode/lens pills,
-  location dropdown/dot/free-text). `_pickerUpdateFooter` disables "Save
-  edits" until at least one group is touched — a no-op open+Save can no
-  longer fire at all. `_pickerDoAdd` carries `editPart.name` through unchanged
-  unless `product` or `location` was touched, and `editPart.quantity` /
-  `editPart.raw_color` through unchanged unless `product` or `color` was
-  touched. Also fixed `_pickerOpenEdit`'s product prefill to carry the matched
-  SKU into `sel.sku` (previously only product_id/model/mfr were set, so an
-  untouched product still silently substituted `product.skus[0]` — part of
-  the "SKU/model clobber" symptom). Verified live: seeding "Forward Warning 1"
-  (ION/IONR, qty 2, Red) → ≡ Edit → Save is disabled pre-edit and a forced
-  click is a no-op (draft line byte-identical); after touching only the
-  Location field, name/quantity/color are preserved and only location
-  changes. Client-side only; golden master + contract snapshots unchanged.
-  Permanent regression guard: `tools/ui_smoke/flows.py:flow_edit_preserves_fields`.
-  **Still open (NEEDS-DESIGN):** full edit-mode redesign — correct
-  type/category/config prefill, the lights-only product list bug, and
-  accessory editing. Not attempted here; see disposition above.
+- **Disposition:** NEEDS-DESIGN — resolved by PICKER_REDESIGN.md Step 6 (2026-07-10).
+- **Resolution (Step 6, 2026-07-10):** Full edit contract replacing the stopgap.
+  *Persist:* `_pickerDoAdd` now writes a `picker_config` snapshot (mode,
+  colorsPerHead, per-head colors, per-head skuChoices, count, lens) to every
+  picker-created `DraftPart`. `DraftPart.picker_config` is a new additive
+  dict field (validators + v2.2.14 ignore unknown keys; old parts get `{}`).
+  *Pre-fill:* `_pickerOpenEdit` walks the browse tree to determine type_id /
+  category_id, restores config from `picker_config` (or derives from
+  raw_color / quantity for legacy parts), pre-selects the product by
+  part_number, pre-sets `loc.selected` to the stored location, and
+  re-expands the tree path so the user sees exactly where they are.
+  *Type-lock:* `.pbt-leaf` nodes for other part_types render with class
+  `locked` (dimmed, cursor:not-allowed); leaf click handler blocks navigation
+  to a different `part_type`. Cross-type clobber ("Midnight Edition" for
+  "ion") is structurally impossible.
+  *Save:* removed `_editTouched` dirty-tracking entirely from
+  `_pickerResetState`, `_pickerUpdateFooter`, `_pickerDoAdd`, and all event
+  handlers. Save is enabled whenever `sel && ready` — pre-fill makes the
+  initial state match the stored state, so a no-op save is byte-safe.
+  *Name preservation:* in edit mode `baseName = ep.name` (never re-sequenced).
+  Client-side only (JS + DraftPart field); golden masters and contract
+  snapshots unchanged. Regression guard updated:
+  `tools/ui_smoke/flows.py:flow_edit_preserves_fields`.
 
 ### FINDING-006: plan warnings are rendered nowhere in the build editor; off-diagram parts vanish silently
 - **Location:** `app/services/preview_service.py:141-250` (only
