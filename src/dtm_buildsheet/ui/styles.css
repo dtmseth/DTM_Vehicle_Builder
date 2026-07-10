@@ -308,6 +308,7 @@
     .picker-type-btn .picker-type-desc{font-size:11px;color:var(--muted)}
     .picker-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;border-top:1px solid var(--border);background:#fafbfc;border-radius:0 0 12px 12px;flex-shrink:0}
     .picker-footer-text{font-size:13px;color:var(--muted)}
+    .picker-footer-btns{display:flex;gap:8px;align-items:center}
     /* Accessories bar — deliberately attention-grabbing so it can't be missed. */
     .picker-tracer,.picker-lightbar{flex-shrink:0;border-top:2px solid #2563eb;background:#eff6ff;padding:10px 26px;max-height:30vh;overflow-y:auto}
     .lb-notes{flex:1;min-height:48px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical}

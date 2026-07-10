@@ -211,6 +211,12 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(_SETTLE_MS)
 
+    # ── Assert (Step 7): edit mode must NOT show "Add another part" button ───
+    # Multi-add is for building, not editing.
+    another_hidden = page.get_attribute("#picker-add-another-btn", "hidden")
+    assert another_hidden is not None, \
+        "Step 7: #picker-add-another-btn must be hidden (have 'hidden' attr) in edit mode"
+
     # ── Assert (b): type-lock — locked leaves are dimmed, not clickable ─────
     # In edit mode with part_type="warning_light", any non-warning leaf must
     # have the "locked" class and resist clicks (type-lock).
@@ -697,6 +703,111 @@ def flow_scene_light_qty_only(page, base_url: str) -> None:
         f"warning: 'Remove options' toggle must be visible, found {remove_w}"
 
 
+def flow_picker_multi_add(page, base_url: str) -> None:
+    """PICKER_REDESIGN.md Step 7 regression guard.
+
+    Contracts verified:
+    (a) Location tab shows BOTH "Add and Finish" and "Add another part" buttons
+        (primary label is "Add and Finish", not "Add Part").
+    (b) Clicking "Add another part" keeps the picker open (does NOT close it).
+    (c) After "Add another part" the browse tree is shown with the previously
+        expanded category still open (expansion state preserved).
+    (d) The just-added part type leaf gains the .filled class (manifest highlight
+        refreshed — green dot).
+    (e) "Add and Finish" closes the picker (today's behavior, confirmed).
+    """
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    def _navigate_to_console_leaf():
+        """Expand Structural > Console System and pick the Console leaf."""
+        if not page.is_visible(".pbt-cat-head[data-cat='structural'].open"):
+            page.click(".pbt-cat-head[data-cat='structural']")
+            page.wait_for_timeout(200)
+        if not page.is_visible(".pbt-fam-head[data-fam='console_system'].open"):
+            page.click(".pbt-fam-head[data-fam='console_system']")
+            page.wait_for_timeout(200)
+        page.click(".pbt-leaf[data-pt='console']")
+        page.wait_for_timeout(_SETTLE_MS)
+
+    def _pick_console_product_and_go_to_location():
+        """Select the first console product + SKU then open the location tab."""
+        page.fill("#pf-search", "7170-0734-00")
+        page.wait_for_timeout(_SETTLE_MS)
+        page.click(".pp-head >> nth=0")
+        page.wait_for_timeout(200)
+        page.click(".pp-sku [data-pick] >> nth=0")
+        page.wait_for_timeout(200)
+        page.click("#picker-tab-btn-location")
+        page.wait_for_timeout(_SETTLE_MS)
+        page.wait_for_selector("#picker-loc-text")
+        page.fill("#picker-loc-text", "Front console mount")
+        page.wait_for_timeout(200)
+
+    # ── Open picker for a first part ──────────────────────────────────────────
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    _navigate_to_console_leaf()
+    _pick_console_product_and_go_to_location()
+
+    # ── Assert (a): location tab shows BOTH buttons ───────────────────────────
+    # Primary button must say "Add and Finish" (not "Add Part").
+    add_btn_text = page.locator("#picker-add-btn").text_content().strip()
+    assert add_btn_text == "Add and Finish", \
+        f"Step 7: primary button on location tab must say 'Add and Finish', got {add_btn_text!r}"
+
+    # "Add another part" must be visible (not hidden).
+    another_btn = page.locator("#picker-add-another-btn")
+    assert another_btn.count() > 0, "Step 7: #picker-add-another-btn must exist in the DOM"
+    another_hidden = page.get_attribute("#picker-add-another-btn", "hidden")
+    assert another_hidden is None, \
+        "Step 7: #picker-add-another-btn must NOT be hidden on the location tab when ready"
+
+    # ── Assert (b) + (c) + (d): click "Add another part" ────────────────────
+    page.click("#picker-add-another-btn")
+    page.wait_for_timeout(_SETTLE_MS + 200)   # allow manifest reload + tree re-render
+
+    # (b) Picker must still be open.
+    assert page.is_visible("#picker-panel.open"), \
+        "Step 7: picker must remain open after 'Add another part'"
+
+    # (c) Browse tree must be shown at the preserved expansion position.
+    # Structural category was expanded — it must still be open.
+    assert page.is_visible(".pbt-cat-head[data-cat='structural'].open"), \
+        "Step 7: structural category must still be expanded (expansion state preserved)"
+
+    # The console_system family must still be open too.
+    assert page.is_visible(".pbt-fam-head[data-fam='console_system'].open"), \
+        "Step 7: console_system family must still be expanded (expansion state preserved)"
+
+    # The part pane must be active (not the location tab).
+    assert page.is_visible("#picker-tab-btn-part.active"), \
+        "Step 7: Part tab must be active after returning to browse tree"
+
+    # (d) The console leaf must now have the .filled class (green dot).
+    filled_count = page.locator(".pbt-leaf[data-pt='console'].filled").count()
+    assert filled_count > 0, \
+        "Step 7: console part type leaf must have .filled class after 'Add another part'"
+
+    # ── Assert (e): "Add and Finish" closes the picker ───────────────────────
+    # Navigate to another console (second add in the same session).
+    # The tree is already expanded; click the leaf to reload products, then
+    # pick and go to location as before.
+    _navigate_to_console_leaf()
+    _pick_console_product_and_go_to_location()
+    page.click("#picker-add-btn")   # "Add and Finish"
+    page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # Two console parts must be in the draft, sequenced correctly.
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    names = [p["name"] for p in draft["draft"]["parts"]]
+    assert len(names) >= 2 and "Console 1" in names and "Console 2" in names, \
+        f"Step 7: expected two sequenced Console parts after multi-add, got {names}"
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -705,6 +816,7 @@ FLOWS = {
     "light_options_in_product_box": flow_light_options_in_product_box,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,
+    "picker_multi_add": flow_picker_multi_add,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,

@@ -30,6 +30,7 @@ let _pickerState = {
   lightbar: { active: false, setup: "standard", edition: "clear", notes: "" },
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
   footerHandler: null,
+  footerHandlerAnother: null,  // Step 7: "Add another part" action (null in edit mode)
   _footerWired: false,
 };
 
@@ -241,6 +242,7 @@ function _pickerOpenPanel(title) {
   if (panel) panel.classList.add("open");
   if (!_pickerState._footerWired) {
     $("picker-add-btn")?.addEventListener("click", () => { if (_pickerState.footerHandler) _pickerState.footerHandler(); });
+    $("picker-add-another-btn")?.addEventListener("click", () => { if (_pickerState.footerHandlerAnother) _pickerState.footerHandlerAnother(); });
     $("picker-tab-btn-part")?.addEventListener("click", () => _pickerSwitchTab("part"));
     $("picker-tab-btn-location")?.addEventListener("click", () => _pickerSwitchTab("location"));
     _pickerState._footerWired = true;
@@ -1596,14 +1598,13 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
 }
 
 function _pickerUpdateFooter() {
-  const text = $("picker-footer-text"), btn = $("picker-add-btn");
+  const text = $("picker-footer-text"), btn = $("picker-add-btn"), btnAnother = $("picker-add-another-btn");
   if (!text || !btn) return;
   const sel = _pickerState.sel, loc = _pickerState.loc;
-  const usesColor = _pickerUsesColor();
   const accOk = _accessoriesSatisfied();
   const tracerOk = _pickerTracerSatisfied();
   const lightbarOk = _pickerLightbarSatisfied();
-  const ready = accOk && tracerOk && lightbarOk;   // all required sub-choices addressed
+  const ready = accOk && tracerOk && lightbarOk;
   const hasAcc = _pickerVisibleAccessoryGroups().length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
@@ -1611,36 +1612,72 @@ function _pickerUpdateFooter() {
     hint += ' <span class="picker-foot-acc">· configure lightheads</span>';
   if (sel && _pickerState.lightbar.active && !lightbarOk)
     hint += ' <span class="picker-foot-acc">· add order notes</span>';
+
+  // Step 7: show "Add another part" alongside "Add and Finish" when the action
+  // is "add" (not navigate-to-location, not edit-save). Multi-add is build-only
+  // — edit mode stays single-shot.
+  const _showTwoButtons = (enabled, doAddFn) => {
+    if (!btnAnother) return;
+    const show = enabled && !_pickerState.editLineId;
+    btnAnother.hidden = !show;
+    _pickerState.footerHandlerAnother = show ? () => doAddFn(true) : null;
+  };
+
   if (_pickerState.tab === "part") {
     text.innerHTML = sel ? `<span class="picker-foot-label">${esc(selName)}</span>${hint}` : `<span class="picker-foot-label">Pick a product</span>`;
     if (_pickerState.editLineId) {
-      // Editing: save the reconfigured part (Step 6). Pre-fill ensures a no-op
-      // save is safe — writes the same state back, so no stopgap needed.
-      // Save is enabled whenever a product is selected and sub-choices are satisfied.
+      // Edit mode: single "Save edits" button, no "Add another".
       btn.textContent = "Save edits";
       btn.disabled = !(sel && ready);
       _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
+      _showTwoButtons(false, null);
     } else if (loc.selected && (_pickerState.tracer.active || _pickerSelIsRoofBar())) {
-      // Tracer / fixture lightbar auto-located → add directly; the user can
-      // still open the Location tab to change it.
-      btn.textContent = "Add Part";
+      // Auto-located (tracer / fixture lightbar): part has one resolved location
+      // → show both finish buttons here on the part tab (skip-location path).
+      btn.textContent = "Add and Finish";
       btn.disabled = !(sel && ready);
-      _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
+      _pickerState.footerHandler = (sel && ready) ? () => _pickerDoAdd(false) : null;
+      _showTwoButtons(sel && ready, _pickerDoAdd);
     } else {
       btn.textContent = "Choose location →";
       btn.disabled = !(sel && ready);
       _pickerState.footerHandler = (sel && ready) ? () => _pickerSwitchTab("location") : null;
+      _showTwoButtons(false, null);
     }
   } else {
     const where = loc.selected ? _pickerTitleCase(loc.selected) : "";
     text.innerHTML = sel ? `<span class="picker-foot-label">${esc(selName)}${where ? " → " + esc(where) : ""}</span>${hint}` : `<span class="picker-foot-label">Pick a product first</span>`;
-    btn.textContent = "Add Part";
-    btn.disabled = !(sel && loc.selected && ready);
-    _pickerState.footerHandler = (sel && loc.selected && ready) ? _pickerDoAdd : null;
+    const canAdd = !!(sel && loc.selected && ready);
+    // Location tab is the normal final screen — always show two buttons here
+    // (spec §3 Step 7 "on the location step normally").
+    btn.textContent = "Add and Finish";
+    btn.disabled = !canAdd;
+    _pickerState.footerHandler = canAdd ? () => _pickerDoAdd(false) : null;
+    _showTwoButtons(canAdd, _pickerDoAdd);
   }
 }
 
 // ── Resolve + add ──────────────────────────────────────
+
+// Step 7: shared post-add finalization.
+// addAndContinue=false → close picker (today's behavior).
+// addAndContinue=true  → load manifest so green dots refresh, then reset picker
+//   state and re-render the browse tree at the preserved expansion position.
+async function _pickerFinalize(draftId, addAndContinue) {
+  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  if (addAndContinue) {
+    // Load manifest before resetting so _meDraft is updated when the browse tree
+    // re-renders (ensures the just-added part type shows green immediately).
+    if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+    _pickerResetState();
+    _pickerOpenPanel("Add Part");
+    _pickerSwitchTab("part");
+  } else {
+    pickerClose();
+    if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
+    if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+  }
+}
 
 function _pickerColorFields() {
   const c = _pickerState.config;
@@ -1687,7 +1724,7 @@ function _pickerSequencedName(pattern, base) {
   return pattern || base || "Part";
 }
 
-async function _pickerDoAdd() {
+async function _pickerDoAdd(addAndContinue) {
   const sel = _pickerState.sel, loc = _pickerState.loc, f = _pickerState.filters;
   // When editing, fall back to the part's existing location if the user didn't
   // open the Location tab to change it (so "Save edits" works from the Part tab).
@@ -1700,8 +1737,8 @@ async function _pickerDoAdd() {
 
   // Tracer path: the resolver gives housings + per-side heads; add each housing
   // as a parent line, its heads nested beneath, with a Duo/Trio tag.
-  if (_pickerState.tracer.active) { await _pickerAddTracer(draftId); return; }
-  if (_pickerState.lightbar.active) { await _pickerAddLightbar(draftId); return; }
+  if (_pickerState.tracer.active) { await _pickerAddTracer(draftId, addAndContinue); return; }
+  if (_pickerState.lightbar.active) { await _pickerAddLightbar(draftId, addAndContinue); return; }
 
   const product = _pickerState.products.find(p => p.product_id === sel.product_id);
   // Color path only for color-configured products; a direct SKU pick (sel.sku,
@@ -1806,16 +1843,13 @@ async function _pickerDoAdd() {
     }
   }
   toast(_pickerState.editLineId ? "Part updated" : "Part added", "success");
-  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
-  pickerClose();
-  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
-  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+  await _pickerFinalize(draftId, addAndContinue);
 }
 
 // Add a resolved tracer: each housing → a parent line tagged Duo/Trio, its
 // heads nested beneath as lighthead children. Re-resolves server-side so the
 // add matches the latest choice (mode/secondary/lens).
-async function _pickerAddTracer(draftId) {
+async function _pickerAddTracer(draftId, addAndContinue) {
   const sel = _pickerState.sel, loc = _pickerState.loc, t = _pickerState.tracer;
   const locName = loc.selected;
   const baseName = _pickerChooseName(loc) || sel.model;
@@ -1906,16 +1940,13 @@ async function _pickerAddTracer(draftId) {
   }
   if (!added) { toast("Add failed", "error"); if (btn) btn.disabled = false; return; }
   toast("Tracer added", "success");
-  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
-  pickerClose();
-  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
-  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+  await _pickerFinalize(draftId, addAndContinue);
 }
 
 // Add a roof lightbar: the chosen configured SKU plus the setup/edition tags.
 // The Standard/Custom + edition + order notes ride on the part's lens/notes so
 // the build sheet and estimate carry them for ordering.
-async function _pickerAddLightbar(draftId) {
+async function _pickerAddLightbar(draftId, addAndContinue) {
   const sel = _pickerState.sel, loc = _pickerState.loc, lb = _pickerState.lightbar;
   const locName = loc.selected;
   if (!sel.sku) { toast("Pick a lightbar SKU", "error"); return; }
@@ -1946,8 +1977,5 @@ async function _pickerAddLightbar(draftId) {
     catch (e) { console.error("lightbar accessory add failed:", e); }
   }
   toast("Lightbar added", "success");
-  if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
-  pickerClose();
-  if (typeof loadDraftManifest === "function") await loadDraftManifest(draftId);
-  if ($("card-preview") && !$("card-preview").hidden && typeof pvLoad === "function") pvLoad(draftId);
+  await _pickerFinalize(draftId, addAndContinue);
 }
