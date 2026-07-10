@@ -718,3 +718,21 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   `"Gun Lock 2"` after two adds. This supersedes the `"Console 1"` / `"Console 2"`
   verification detail in FINDING-004's resolution note. 8/8 ui_smoke,
   `tests/contract` + `tests/golden` unchanged (client-only change).
+
+### FINDING-028: 25 Gamber Johnson SKUs mis-tagged vehicle_tags:["any"] (owner flaw #1) — RESOLVED
+- **Location:** `src/dtm_buildsheet/resources/config/parts_db.json`, 25 Gamber Johnson
+  part_number entries (console/leg/pedestal kits).
+- **Category:** data-curation (workbook-shape leftover) · **Severity:** MEDIUM (wrong parts
+  offered per vehicle) · **Status:** RESOLVED (2026-07-10)
+- **Owner flaw #1:** vehicle-specific console/leg/pedestal kits were tagged
+  `vehicle_tags: ["any"]`, so a kit built for one vehicle (e.g. a PIU-specific box) showed up
+  for every vehicle in the picker's compat filter.
+- **Fix:** corrected each of the 25 SKUs' `vehicle_tags` to the vehicle(s) actually named in
+  its product description — verified per-SKU, no guessing. Genuinely-universal Gamber parts
+  (blank filler panels, universal cradles, docking stations) were left `["any"]` since they
+  really do fit any vehicle.
+- **Verification:** golden masters unchanged (`tests/golden -q`, 6/6 — vehicle_tags is inert
+  to the name-based render path, NOTE-023/025); contract snapshots re-recorded intentionally
+  (`root_doc`, `products_all`, `category_skus_by_part_type` embed `vehicle_tags`; diffs
+  eyeballed to be exactly the 25 SKUs' `"any"` → specific-vehicle changes, nothing else,
+  37/37 passing after re-record); 8/8 `tools/ui_smoke/run_smoke.py`.

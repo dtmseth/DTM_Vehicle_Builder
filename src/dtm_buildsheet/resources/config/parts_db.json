@@ -16118,7 +16118,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 139.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "options": {}
         }
@@ -16604,7 +16604,9 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 276.0,
           "vehicle_tags": [
-            "any"
+            "EXPEDITION",
+            "F-150",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -16739,7 +16741,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 163.0,
           "vehicle_tags": [
-            "any"
+            "RAM-1500"
           ],
           "options": {}
         }
@@ -16847,7 +16849,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 153.0,
           "vehicle_tags": [
-            "any"
+            "CHEVY-1500"
           ],
           "options": {}
         }
@@ -16874,7 +16876,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 248.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -16901,7 +16903,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 194.0,
           "vehicle_tags": [
-            "any"
+            "RAM-1500"
           ],
           "options": {}
         }
@@ -16928,7 +16930,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 205.0,
           "vehicle_tags": [
-            "any"
+            "TRAVERSE"
           ],
           "options": {}
         }
@@ -17009,7 +17011,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1138.0,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -17036,7 +17039,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 188.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "options": {}
         }
@@ -17090,7 +17093,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1010.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "options": {}
         }
@@ -17252,7 +17255,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 645.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -17279,7 +17282,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1232.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -17306,7 +17309,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1379.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -17333,7 +17336,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1690.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -17360,7 +17363,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 787.0,
           "vehicle_tags": [
-            "any"
+            "CHEVY-1500"
           ],
           "options": {}
         }
@@ -17387,7 +17390,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1049.0,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -17414,7 +17417,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1869.0,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -17441,7 +17445,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1478.0,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -17468,7 +17473,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 913.0,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "options": {}
         }
@@ -17495,7 +17500,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 946.0,
           "vehicle_tags": [
-            "any"
+            "DURANGO"
           ],
           "options": {}
         }
@@ -17522,7 +17527,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 691.0,
           "vehicle_tags": [
-            "any"
+            "CHARGER"
           ],
           "options": {}
         }
@@ -17549,7 +17554,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1134.0,
           "vehicle_tags": [
-            "any"
+            "CHEVY-1500"
           ],
           "options": {}
         }
@@ -17603,7 +17608,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1180.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "options": {}
         }
@@ -17630,7 +17635,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 1104.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE"
           ],
           "options": {}
         }
@@ -17657,7 +17662,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 735.0,
           "vehicle_tags": [
-            "any"
+            "TAHOE",
+            "CHEVY-1500"
           ],
           "options": {}
         }

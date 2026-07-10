@@ -5402,7 +5402,7 @@
             "qb_sku": "",
             "qb_unit_price": 139.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -5888,7 +5888,9 @@
             "qb_sku": "",
             "qb_unit_price": 276.0,
             "vehicle_tags": [
-              "any"
+              "EXPEDITION",
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -6023,7 +6025,7 @@
             "qb_sku": "",
             "qb_unit_price": 163.0,
             "vehicle_tags": [
-              "any"
+              "RAM-1500"
             ]
           }
         ],
@@ -6131,7 +6133,7 @@
             "qb_sku": "",
             "qb_unit_price": 153.0,
             "vehicle_tags": [
-              "any"
+              "CHEVY-1500"
             ]
           }
         ],
@@ -6158,7 +6160,7 @@
             "qb_sku": "",
             "qb_unit_price": 248.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6185,7 +6187,7 @@
             "qb_sku": "",
             "qb_unit_price": 194.0,
             "vehicle_tags": [
-              "any"
+              "RAM-1500"
             ]
           }
         ],
@@ -6212,7 +6214,7 @@
             "qb_sku": "",
             "qb_unit_price": 205.0,
             "vehicle_tags": [
-              "any"
+              "TRAVERSE"
             ]
           }
         ],
@@ -6293,7 +6295,8 @@
             "qb_sku": "",
             "qb_unit_price": 1138.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -6320,7 +6323,7 @@
             "qb_sku": "",
             "qb_unit_price": 188.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -6374,7 +6377,7 @@
             "qb_sku": "",
             "qb_unit_price": 1010.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -6536,7 +6539,7 @@
             "qb_sku": "",
             "qb_unit_price": 645.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6563,7 +6566,7 @@
             "qb_sku": "",
             "qb_unit_price": 1232.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6590,7 +6593,7 @@
             "qb_sku": "",
             "qb_unit_price": 1379.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6617,7 +6620,7 @@
             "qb_sku": "",
             "qb_unit_price": 1690.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6644,7 +6647,7 @@
             "qb_sku": "",
             "qb_unit_price": 787.0,
             "vehicle_tags": [
-              "any"
+              "CHEVY-1500"
             ]
           }
         ],
@@ -6671,7 +6674,7 @@
             "qb_sku": "",
             "qb_unit_price": 1049.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -6698,7 +6701,8 @@
             "qb_sku": "",
             "qb_unit_price": 1869.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -6725,7 +6729,8 @@
             "qb_sku": "",
             "qb_unit_price": 1478.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -6752,7 +6757,7 @@
             "qb_sku": "",
             "qb_unit_price": 913.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -6779,7 +6784,7 @@
             "qb_sku": "",
             "qb_unit_price": 946.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -6806,7 +6811,7 @@
             "qb_sku": "",
             "qb_unit_price": 691.0,
             "vehicle_tags": [
-              "any"
+              "CHARGER"
             ]
           }
         ],
@@ -6833,7 +6838,7 @@
             "qb_sku": "",
             "qb_unit_price": 1134.0,
             "vehicle_tags": [
-              "any"
+              "CHEVY-1500"
             ]
           }
         ],
@@ -6887,7 +6892,7 @@
             "qb_sku": "",
             "qb_unit_price": 1180.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -6914,7 +6919,7 @@
             "qb_sku": "",
             "qb_unit_price": 1104.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -6941,7 +6946,8 @@
             "qb_sku": "",
             "qb_unit_price": 735.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "CHEVY-1500"
             ]
           }
         ],
