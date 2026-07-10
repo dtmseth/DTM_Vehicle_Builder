@@ -209,6 +209,31 @@ Original spec (kept for reference):
   cargo light).
 - This is the redesign of the F-005 stopgap into a real edit contract; it supersedes the interim
   dirty-tracking stopgap once landed.
+- **Resolved design calls (Opus, 2026-07-09):**
+  - **Persist the picker config on the draft part (additive), so edit pre-fills exactly.** Add an
+    optional config to `DraftPart` (mode, colorsPerHead, per-head colors, per-head SKUs, count,
+    lens) that `_pickerDoAdd` writes for picker-created parts. Edit reads it directly. Parts saved
+    *before* this change (and legacy name-based parts) lack it → the editor falls back to deriving
+    what it can from `components`/colors. Additive and safe (draft-local field; validators/2.2.14
+    ignore unknown keys).
+  - **Pre-fill = full reconstruction.** On edit: set the browse tree to the item's part_type,
+    select the product (existing `components[0].part_number` match), restore options/colors/qty/
+    per-head SKUs from the persisted config (or derive), restore location. Scene parts restore
+    qty-only (Step 5).
+  - **Type-lock at the part_type level.** The browse tree is locked to the item's part_type. Within
+    it the user may change product / brand / model / color / mode / qty / lens / SKU / location
+    freely; they may NOT navigate to a different part_type (no bumper→cargo-light). *(Interpretation
+    to confirm: "changing what light type" = changing the product/model within the part_type, not
+    switching part_type. Location IS editable.)*
+  - **Save writes the full reconfigured state and removes the stopgap.** Delete the F-005
+    dirty-tracking (`_editTouched`); with correct pre-fill a no-op save is harmless (writes the
+    same state). Save is enabled whenever the configuration is valid.
+  - **Regression bar:** the F-005 repros must be safe by *correctness*, not by disabling save —
+    edit→save-unchanged preserves the item byte-for-byte; the type-lock makes the "search matched
+    'Midnight Edition' for 'ion'" cross-part_type clobber structurally impossible.
+  - **Accessories:** keep the existing manifest accessory-swap path
+    (`accessory_category`/`accessory_parent_product`); full accessory re-config inside the editor
+    is a follow-up if it proves complex — don't block Step 6 on it.
 
 ### Step 7 — Multi-add flow
 - After a part is added, the picker **returns to where the user was** (same category/family/
