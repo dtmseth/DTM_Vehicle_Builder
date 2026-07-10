@@ -5,7 +5,6 @@
 let _meDraftId    = null;
 let _meDraft      = null;
 let _meEditLineId = null;   // null = add mode
-let _meSections   = [];     // [{id, label, parts: Set<lowerName>}]
 
 // ── public API ───────────────────────────────────────────
 
@@ -15,6 +14,7 @@ async function loadDraftManifest(draftId) {
   const res = await api("/api/draft/" + encodeURIComponent(draftId));
   if (!res.ok) return;
   _meDraft = res.draft;
+  await _meBuildGroupMap();
   _meRender();
   show("card-manifest");
 }
@@ -27,18 +27,103 @@ function meHide() {
 
 // ── rendering ────────────────────────────────────────────
 
-function _meRebuildSections() {
-  _meSections = (_workbookRules?.template_sections || []).map(s => ({
-    id:    s.label,
-    label: s.label,
-    parts: new Set((s.parts || []).map(p => (p.name || "").toLowerCase())),
-  }));
+// ── parts_db-shaped grouping (FINDING-007 / FINDING-030) ──────────────────
+//
+// Sections are derived from GET /api/parts-db/browse-tree — the same
+// category → family → part_type taxonomy that drives the picker's sidebar
+// (part_picker.js's .pbt-* accordion) — instead of the workbook's
+// `template_sections`. A part groups into its family (if its part_type is a
+// family member) or into its own bare part_type otherwise, mirroring the
+// sidebar exactly. `order` walks the tree in the order the server returns it
+// so the manifest auto-follows any future sidebar/category restructure with
+// no code changes here.
+//
+// Built once and cached on the module (loadDraftManifest awaits it before
+// the first render) rather than lazily on first legacy-modal open, which was
+// the init-order half of FINDING-007 (a fresh manifest used to dump every
+// part into "Other" until the fallback modal had been opened once).
+
+let _meGroupMap        = null;  // part_type_id -> {type_id, type_label, section_key, section_label, order}
+let _meSectionMeta     = null;  // section_key  -> {label, type_id, type_label, order, kind, ref_id}
+let _meLegacyLabelIndex = null; // lowercased family/part_type label -> section_key (null = ambiguous)
+
+async function _meBuildGroupMap() {
+  if (_meGroupMap) return;   // cache once per module lifetime
+  _meGroupMap = new Map();
+  _meSectionMeta = new Map();
+  _meLegacyLabelIndex = new Map();
+
+  let categories = [];
+  try {
+    const res = await api("/api/parts-db/browse-tree");
+    categories = res?.categories || [];
+  } catch (e) {
+    console.error("Manifest: browse-tree failed, all parts will group under Other:", e);
+  }
+
+  const indexLabel = (label, key) => {
+    const lower = (label || "").trim().toLowerCase();
+    if (!lower) return;
+    if (_meLegacyLabelIndex.has(lower) && _meLegacyLabelIndex.get(lower) !== key) {
+      _meLegacyLabelIndex.set(lower, null);       // ambiguous — more than one section shares this label
+    } else if (!_meLegacyLabelIndex.has(lower)) {
+      _meLegacyLabelIndex.set(lower, key);
+    }
+  };
+
+  let order = 0;
+  for (const cat of categories) {
+    const typeLabel = cat.label || cat.type_id || "";
+    for (const child of (cat.children || [])) {
+      if (child.kind === "family") {
+        const key = "fam:" + child.family_id;
+        _meSectionMeta.set(key, {
+          label: child.label, type_id: cat.type_id, type_label: typeLabel,
+          order: order++, kind: "family", ref_id: child.family_id,
+        });
+        indexLabel(child.label, key);
+        for (const m of (child.members || [])) {
+          _meGroupMap.set(m.part_type_id, {
+            type_id: cat.type_id, type_label: typeLabel,
+            section_key: key, section_label: child.label,
+            order: _meSectionMeta.get(key).order,
+          });
+        }
+      } else if (child.kind === "part_type") {
+        const key = "pt:" + child.part_type_id;
+        _meSectionMeta.set(key, {
+          label: child.label, type_id: cat.type_id, type_label: typeLabel,
+          order: order++, kind: "part_type", ref_id: child.part_type_id,
+        });
+        indexLabel(child.label, key);
+        _meGroupMap.set(child.part_type_id, {
+          type_id: cat.type_id, type_label: typeLabel,
+          section_key: key, section_label: child.label,
+          order: _meSectionMeta.get(key).order,
+        });
+      }
+    }
+  }
 }
 
-function _meSectionFor(partName) {
-  const lower = (partName || "").toLowerCase();
-  const sec = _meSections.find(s => s.parts.has(lower));
-  return sec?.id || "_other";
+// Best-effort name → section match for legacy name-based parts (no
+// `part_type`, per FINDING-007 these are explicitly best-effort — a unique
+// label match wins, anything else (no match, or a label shared by more than
+// one section) falls to "Other").
+function _meSectionKeyForName(name) {
+  const stripped = (name || "").replace(/\s+\d+$/, "").trim().toLowerCase();
+  const key = _meLegacyLabelIndex?.get(stripped);
+  return key || "_other";
+}
+
+// Section a manifest part belongs to: picker-added parts carry `part_type`
+// and resolve exactly via the reverse map; legacy parts fall back to the
+// best-effort name match.
+function _meSectionForPart(part) {
+  if (part?.part_type && _meGroupMap?.has(part.part_type)) {
+    return _meGroupMap.get(part.part_type).section_key;
+  }
+  return _meSectionKeyForName(part?.name);
 }
 
 function _meStatusRowStyle(status) {
@@ -131,24 +216,37 @@ function _meRender() {
   const container = $("me-tbody-container");
   if (!container) return;
 
-  // Group parts by section
+  // Group parts by parts_db category + family/part-type section
   const grouped = new Map();
   for (const p of parts) {
-    const sid = _meSectionFor(p.name);
+    const sid = _meSectionForPart(p);
     if (!grouped.has(sid)) grouped.set(sid, []);
     grouped.get(sid).push(p);
   }
 
-  // Build HTML: one block per section that has parts, "Other" last
+  // Build HTML: one block per section that has parts, ordered to match the
+  // browse-tree (category order, then family/part-type within), "Other" last.
+  // Sections sharing a main category render under one muted category-group
+  // header, so "sort by main category + part-type family" is visible.
+  const orderedKeys = [...(_meSectionMeta?.keys() || [])]
+    .filter(k => grouped.has(k))
+    .sort((a, b) => _meSectionMeta.get(a).order - _meSectionMeta.get(b).order);
+
   let html = "";
-  for (const sec of _meSections) {
-    const secParts = grouped.get(sec.id);
+  let lastTypeId = null;
+  for (const key of orderedKeys) {
+    const secParts = grouped.get(key);
     if (!secParts?.length) continue;
+    const meta = _meSectionMeta.get(key);
+    if (meta.type_id !== lastTypeId) {
+      html += `<div class="me-cat-group-head">${esc(meta.type_label)}</div>`;
+      lastTypeId = meta.type_id;
+    }
     html += `<div class="me-cat-section">
       <div class="me-cat-header">
-        <span class="me-cat-label">${esc(sec.label)}</span>
+        <span class="me-cat-label">${esc(meta.label)}</span>
         <span class="me-cat-count">(${secParts.length})</span>
-        <button class="btn btn-secondary btn-sm me-cat-add-btn" data-section="${esc(sec.id)}">+ Add</button>
+        <button class="btn btn-secondary btn-sm me-cat-add-btn" data-section="${esc(key)}">+ Add</button>
       </div>
       <table class="parts-tbl">${_meThead}<tbody>${_meMakeRows(secParts)}</tbody></table>
     </div>`;
@@ -451,7 +549,7 @@ async function _meFetchManifestData(partName) {
 }
 
 async function _mePopulateDataLists() {
-  // Still load catalog for render_kind lookup and section grouping
+  // Still load catalog for render_kind lookup (name-based fallback modal)
   if (!_catalog?.parts) {
     const res = await api("/api/catalog");
     if (res?.parts) _catalog = res;
@@ -460,7 +558,7 @@ async function _mePopulateDataLists() {
     const res = await api("/api/workbook-rules");
     if (res?.part_rules) _workbookRules = res;
   }
-  _meRebuildSections();
+  await _meBuildGroupMap();
 
   // Populate part type dropdown from catalog (planner requires catalog names)
   const nameList = $("me-name-list");
@@ -584,21 +682,26 @@ function _meModalSetColorVisibility(partName) {
   if (colorRow) colorRow.style.display = show ? "" : "none";
 }
 
+// The intelligent picker (part_picker.js) has no "open scoped to a
+// family/part_type" entry point today, so this — same as before the
+// parts_db-shaped regrouping — just opens the picker normally (addPart) and,
+// for the flat-modal fallback, reorders its part-name datalist so this
+// section's catalog entries sort first. Never leaves the button non-functional.
 async function addPartInSection(sectionId) {
   await addPart();
-  const sec = _meSections.find(s => s.id === sectionId);
-  if (!sec) return;
+  const meta = _meSectionMeta?.get(sectionId);
+  if (!meta) return;
   const all = _catalog?.parts || [];
-  const inSec  = all.filter(p => sec.parts.has((p.display_name || "").toLowerCase()));
-  const outSec = all.filter(p => !sec.parts.has((p.display_name || "").toLowerCase()));
+  const inSec  = all.filter(p => _meSectionKeyForName(p.display_name || "") === sectionId);
+  const outSec = all.filter(p => _meSectionKeyForName(p.display_name || "") !== sectionId);
   const nameList = $("me-name-list");
   if (!nameList) return;
   nameList.innerHTML = [
     ...inSec.map(p => `<option value="${esc(p.display_name || p.part_id)}">`),
     ...outSec.map(p => {
-      const sid = _meSectionFor(p.display_name || "");
-      const meta = _meSections.find(x => x.id === sid);
-      const suffix = meta ? ` [${meta.label}]` : "";
+      const sid = _meSectionKeyForName(p.display_name || "");
+      const sMeta = _meSectionMeta.get(sid);
+      const suffix = sMeta ? ` [${sMeta.label}]` : "";
       return `<option value="${esc((p.display_name || p.part_id) + suffix)}">`;
     }),
   ].join("");

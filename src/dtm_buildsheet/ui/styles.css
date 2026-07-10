@@ -636,7 +636,9 @@
     .proj-ind-panel{padding:4px 0 4px 8px;background:#f9faff;border-radius:4px;margin-top:4px}
     .proj-ind-row{margin-bottom:4px}
 
-    /* ── Manifest category grouping ── */
+    /* ── Manifest category grouping (parts_db category + family/part-type) ── */
+    .me-cat-group-head{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px;padding:0 2px}
+    .me-cat-group-head:first-child{margin-top:0}
     .me-cat-section{margin-bottom:12px}
     .me-cat-header{display:flex;align-items:center;gap:7px;padding:6px 2px;border-bottom:2px solid var(--navy);margin-bottom:4px}
     .me-cat-label{font-size:11px;font-weight:700;color:var(--navy);flex:1}
