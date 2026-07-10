@@ -1109,10 +1109,17 @@ def route_parts_db(
             for p in catalog_parts if p.get("default_location_key")
         }
         mfrs_doc = svc.raw_doc().get("manufacturers") or {}
-        pt_ids = [pt.part_type_id for pt in svc.list_part_types()
-                  if pt.type_id == type_id and _pt_in_category(pt, category)]
         if part_type_filter:
-            pt_ids = [pid for pid in pt_ids if pid == part_type_filter]
+            # Exact part_type filter (picker sidebar leaf): trust it directly.
+            # A family can surface a part_type under a different top-level type
+            # than the part_type's own `type_id` (e.g. the Structural "Console
+            # System" family lists the equipment-typed `motion_attachment`), so
+            # the leaf's display type must NOT gate the lookup — otherwise the
+            # product grid comes back empty for cross-type family members.
+            pt_ids = [part_type_filter] if svc.get_part_type(part_type_filter) else []
+        else:
+            pt_ids = [pt.part_type_id for pt in svc.list_part_types()
+                      if pt.type_id == type_id and _pt_in_category(pt, category)]
         out: list[dict] = []
         seen: set[str] = set()
         for pid in pt_ids:
