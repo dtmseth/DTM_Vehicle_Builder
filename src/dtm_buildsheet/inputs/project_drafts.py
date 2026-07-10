@@ -86,6 +86,14 @@ class DraftPart:
     # empty for legacy/flat-modal parts). Drives the browse-tree manifest
     # highlight (PICKER_REDESIGN.md Step 1b) — never consumed by the planner.
     part_type: str = ""
+    # Full picker configuration snapshot written by _pickerDoAdd for every
+    # picker-created part (PICKER_REDESIGN.md Step 6). Allows _pickerOpenEdit
+    # to reconstruct the exact UI state the user left — mode, colors-per-head,
+    # per-head colors, per-head SKU choices, count, lens. Parts saved before
+    # this field existed (and legacy flat-modal parts) have an empty dict →
+    # the editor derives what it can from components/colors as a fallback.
+    # Draft-local only; never consumed by the planner/renderer.
+    picker_config: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -237,6 +245,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         accessory_category=_s(body.get("accessory_category", "")),
         accessory_parent_product=_s(body.get("accessory_parent_product", "")),
         part_type=_s(body.get("part_type", "")),
+        picker_config=body.get("picker_config") if isinstance(body.get("picker_config"), dict) else {},
     )
 
 
