@@ -736,3 +736,58 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   (`root_doc`, `products_all`, `category_skus_by_part_type` embed `vehicle_tags`; diffs
   eyeballed to be exactly the 25 SKUs' `"any"` → specific-vehicle changes, nothing else,
   37/37 passing after re-record); 8/8 `tools/ui_smoke/run_smoke.py`.
+
+### FINDING-029: brand preference auto-select unified + extended to all prefs (owner flaw #5) — RESOLVED
+- **Location:** `ui/js/part_picker.js` — new `_pickerPreferredBrand(f)` helper +
+  `_PREF_BUMPER_PART_TYPES` / `_PREF_CAGE_PART_TYPES` / `_PREF_CAMERA_PART_TYPES` scope
+  consts, `_pickerFetchProducts`, `_pickerRenderProducts`, `_pickerWireBrand`,
+  `_pickerResetState`, `_pickerOpenEdit`, browse-tree leaf-click handler; `ui/styles.css`
+  new `.pp-brandbar-pref` / `.pp-pref-chip` / `.pp-pref-badge` / `.pp-brand-more` rules.
+- **Category:** picker UX (auto-select scope + information architecture) · **Severity:**
+  MEDIUM (wrong/missing brand pre-selection, cluttered brand row) · **Status:** RESOLVED (2026-07-10)
+- **Also closes FINDING-011** (duplicate lighting-only auto-select: it ran once in
+  `_pickerFetchProducts` and again in `_pickerRenderProducts`, both lighting-only, and the
+  `_brandAutoSet` latch was never reset in `_pickerResetState` so it could leak across picker
+  opens). Both call sites are now one `_pickerPreferredBrand(f)` call, and the latch resets
+  on every `_pickerResetState()`.
+- **Owner flaw #5:** "Right now light brands are auto selected based on agency preference,
+  but no other preferences seem to auto select a brand. And also the brand that is the
+  preference should be the first in the line of brands always. In fact, the other brands
+  should be collapsed into a dropdown to select only if they want to. And the preferential
+  brand should be notated as so, so its clear why its pre selected."
+- **Fix:**
+  1. `_pickerPreferredBrand(f)` resolves a preferred brand for lighting (`type_id==="lights"`
+     → `preferences.lighting_brands[0]`), bumper (`push_bumper`/`pit_bar`/`wing_wraps` →
+     `preferences.push_bumper_brand`), cage (`cage`/`front_partition`/`rear_partition`/
+     `rear_seat_divider`/`floor_pan`/`replacement_rear_seat`/`k9_kennel` →
+     `preferences.cage_brand`), and camera (`camera_dvr`/`front_camera`/`body_camera_dock`/
+     `rear_seat_camera`/`rear_camera` → `preferences.camera_brand`) — the part_type_id scopes
+     mirror parts_db.json's (currently otherwise-unused) `preference_filters` block. Only
+     returns a brand that actually appears among the loaded products.
+  2. Product list "preferred brand first" sort (previously lighting-only) now uses the same
+     helper, so it applies to all four scopes.
+  3. Brand bar: when a preferred brand exists, it renders as its own chip with a
+     `"preferred"` badge (`.pp-pref-badge`), selected by default; every other brand + "All
+     brands" collapse into a closed-by-default `<select class="pp-brand-more">`. No
+     preference (or preferred brand absent from the loaded products) falls back to the
+     original plain pill row; a single brand still renders nothing.
+  4. Edit mode: `_pickerFetchProducts`'s auto-select is skipped while `editLineId` is set;
+     `_pickerOpenEdit` instead sets `filters.brand` directly from the part's own product once
+     it's resolved, so an explicit prior brand is never overridden by a preference.
+  5. Browse-tree leaf clicks reset `filters.brand`/`_brandAutoSet` (outside edit mode) so
+     navigating between scopes (e.g. lighting → cage) re-resolves the preference for the new
+     context instead of carrying a stale brand filter forward.
+- **Verification:** `tests/golden` + `tests/contract` unchanged (43/43, client-only change).
+  `tools/ui_smoke/run_smoke.py` 9/9 (added `brand_preference_collapse`, which seeds
+  `lighting_brands:["Whelen"]` explicitly — `_seed_project_with_draft`'s default fixture has
+  no preferences set at all, so a new optional `preferences` kwarg was added to it,
+  backward-compatible with every existing caller). The new flow asserts
+  `_pickerState.filters.brand` auto-selects `"Whelen"` for a Warning-light part type, that
+  `.pp-brand-more`'s options do not include the preferred brand, and that the preferred chip
+  reads "preferred". Manually verified live (`DTM_CLOUD=0`) against a real project with
+  `lighting=Whelen`/`push_bumper=Setina`/`cage=Setina`: Whelen auto-selects and shows
+  "Whelen · PREFERRED" with a collapsed dropdown for Warning Light; Setina independently
+  auto-selects for Push Bumper and for Front Partition (cage scope, single-brand catalog
+  there so the bar itself doesn't render, but the filter still auto-applies); selecting
+  another brand from the dropdown deselects the preferred chip and re-filters the grid;
+  re-clicking the preferred chip restores it. No console errors observed.
