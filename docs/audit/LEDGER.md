@@ -860,3 +860,96 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   Siren Speaker, `LIGHTS` → Warning (Forward Warning 1/2, Side Warning 1), and
   one orphaned accessory line (Forward Warning 2 · Universal Grill Bracket, no
   `part_type`) correctly falls to `Other`. No console errors observed.
+
+### FINDING-031: picker sidebar restructured — families-first ordering, selectable light categories, Scene/Spotlight standalone, Light Bars unified (owner flaws #7+#8) — RESOLVED
+- **Location:** `resources/config/parts_db.json` (`families` collection + `spotlight`/
+  `warning_light`/light-bar part_types), `app/routes/parts_db.py` `_build_browse_tree`,
+  `ui/js/part_picker.js` (`_pickerBrowseTreeHtml`/`_pickerWireFilters`), `ui/styles.css`.
+- **Category:** design-follows-owner-ruling (new UI affordance, not a bug) · **Severity:**
+  N/A (feature) · **Status:** RESOLVED (2026-07-10)
+- **Owner flaws #7+#8:** restructure the Lights and Structural sidebars — families/dropdowns
+  first (owner-specified order), standalones below; light categories (Warning/Scene/Interior/
+  Spotlight) selectable by clicking the header, no forced sub-leaf; Scene collapses to one
+  selectable row (no front/side/rear); Spotlight pulled out of Scene as its own standalone;
+  Interior + Roof light bars merge into one "Light Bars" family. Implements the owner's
+  2026-07-10 rulings captured in memory `project_sidebar_restructure_ruling` — **kept the 5
+  category headers** (did not flatten).
+- **Data (commit 1, `80a5dfd`):**
+  - New family fields (additive, tolerated by `config/schemas.py` `_validate_parts_db`
+    unchanged — it only checks required keys): `order` (int, families-first sort),
+    `selectable` (bool — header alone filters by `picker_flow`), `browse_collapsed` (bool —
+    render as one row, no members, e.g. Scene/Spotlight).
+  - Renamed `push_bumper_system` → label "Push Bumper", `console_system` → label "Console".
+  - New families: `light_bars` (lights, merges the old `interior_bars`+`roof_bars`, no single
+    flow — members carry their own via `category`), `cage_prisoner_containment` (structural,
+    8 members), `storage_equipment` (structural: `rear_storage_box`/`equipment_tray`/
+    `tonneau_cover` — `equipment_tray` is a cross-type member, `type_id: equipment` surfaced
+    under a Structural family, same mechanism FINDING-025 fixed).
+  - `spotlight` part_type: `category` "scene" → "spotlight" — its 5 products (all Unity)
+    re-resolve from `category=scene` to `category=spotlight` cleanly (verified via
+    `category-skus` contract diff: 5 removed from scene, same 5 present under spotlight, none
+    orphaned). `_CATEGORY_KEYWORDS`/`_LIGHT_CATEGORIES`(JS)/`_COLOR_CATEGORIES`(JS)/
+    `_CATEGORY_PLACEMENT_ZONES` already carried a `spotlight` entry from an earlier session —
+    no further wiring needed.
+  - **Scene-collapse implemented at the BROWSE level only** (owner's long-pending ruling,
+    LEDGER FINDING-001/002): `front_scene`/`rear_scene`/`side_scene` stay in
+    `scene_lights.members` and in `part_types` untouched — only hidden from the *rendered*
+    tree. This does **not** trigger the FINDING-001/002 placement-migration risk (no part_type
+    merge, no data migration).
+- **Route (`_build_browse_tree`):** sorts a type's children families-first (`order` then
+  label), standalones after (label); emits `order`/`selectable`/`browse_collapsed` per family
+  and a per-**member** `picker_flow` (the member's own part_type `category`, falling back to
+  the family's) — needed because `light_bars` has no single flow (members split
+  `interior_bar`/`roof_bar`).
+- **Bug found + fixed by ui_smoke (commit 2, `1e7a8af`):** the initial commit-1 approach
+  *removed* `warning_light` from `warning_lights.members` outright (spec said "drop from
+  VISIBLE members"). That broke `_pickerOpenEdit`'s browse-tree lookup — with `warning_light`
+  absent from both the bare-part-type list (`browse_hidden`) *and* the family's member list,
+  editing a warning-light part could no longer resolve its family/flow, so the Step 6
+  type-lock silently stopped locking (`edit_preserves_fields` smoke flow caught this). Fix:
+  `warning_light` **stays** in `members` (so edit-mode pre-fill/type-lock still resolves it)
+  but each member now carries a `browse_hidden` bool (from the part_type's own flag) that only
+  the **render** path (`_pickerBrowseTreeHtml`) filters on — `anyFilled`/lock computations use
+  the full member list. This is the general mechanism for "member exists in data, invisible in
+  the tree" and is reusable for any future browse_hidden family member.
+- **JS (`_pickerBrowseTreeHtml`/`_pickerWireFilters`):** a `selectable` family renders a new
+  `.pbt-fam-select` button (same data-attributes/handoff as a `.pbt-leaf` — merged into one
+  click handler with `.pbt-leaf`) plus, if also expandable, a separate small
+  `.pbt-fam-caret-btn` that only toggles member visibility — clicking the label filters,
+  clicking the caret expands, independently. `browse_collapsed` families render `.pbt-fam-select`
+  alone with no caret and no member body at all. Non-selectable expand-only families (Light
+  Bars, all Equipment/Structural system families) keep the original `.pbt-fam-head`
+  toggle-only behavior verbatim — zero behavior change there. Server child order is never
+  re-sorted client-side.
+- **Verification:** `tests/golden` 6/6 unchanged both commits (authoring-side only — name-based
+  render path untouched). `tests/contract` — `browse_tree` re-recorded (eyeballed: exactly the
+  intended structure/order/labels, see route diff below); `root_doc` re-recorded (mirrors the
+  same parts_db.json edits, no unexpected fields); `part_types_all`/`part_types_by_type`
+  re-recorded (single-field `spotlight.category` diff only); `category_skus` (type=lights,
+  category=scene) re-recorded (5 spotlight products removed, confirmed present under
+  category=spotlight, none lost) — all other cases unchanged. Full `pytest` suite: 1709
+  passed/1 skipped after each commit. `tools/ui_smoke/run_smoke.py`: 9/9 after commit 2 (2
+  genuine failures surfaced along the way and were fixed, not silenced — the type-lock bug
+  above in `edit_preserves_fields`, and `brand_preference_collapse`, which targeted the
+  now-removed `.pbt-fam-head[data-fam='warning_lights']`/`warning_light` leaf and was repointed
+  to the new `.pbt-fam-select[data-flow='warning']` header). Flows touched: `add_text_mode_
+  equipment_part` (comment only — `console_system`'s `family_id`/selector are unchanged, only
+  its label text changed), `scene_light_qty_only` (Part A repointed to the collapsed
+  `.pbt-fam-select[data-flow='scene']` row + asserts zero member leaves; Part B repointed to
+  the selectable `.pbt-fam-select[data-flow='warning']` header), `brand_preference_collapse`
+  (repointed as above), `edit_preserves_fields` (strengthened the type-lock assertions:
+  `warning_light` must render as zero leaves; the part's own family header must not be
+  locked), `picker_browse_tree` (added a families-sort-before-standalones assertion under
+  Structural). `light_options_in_product_box`/`sku_dropdown_rework` needed no functional
+  change (their "first family" `.pbt-fam-head` target already resolved to the same
+  color-configured category before and after — comments updated for accuracy only).
+  `picker_multi_add`/`picker_browse_tree`'s core assertions (Equipment/Radar/gun_lock) are
+  structurally untouched by this session. Visual verification (`DTM_CLOUD=0`, live app):
+  screenshotted the Lights sidebar (Warning/Light Bars/Interior Lighting dropdowns with
+  carets, Scene/Spotlight as plain standalone rows) and Structural sidebar (Push Bumper/Cage
+  /Console/Storage families, Running Boards/Nerf Bars standalone last); clicked Warning →
+  header goes active, 61 products load filtered to `category=warning`, no navigation; clicked
+  Scene → active, 15 products filtered to `category=scene`, zero member leaves rendered
+  anywhere in the DOM; clicked the Warning caret independently → expands to show only
+  Headlight Flasher/Tail Light Flasher (confirms `warning_light` is invisible as intended,
+  with the header itself its only home).
