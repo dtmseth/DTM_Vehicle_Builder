@@ -248,6 +248,18 @@ Original spec (kept for reference):
   on the part page**.
 - Pairs naturally with the Step 1b manifest highlight: add a part → return to the tree → the
   filled part type shows green → pick the next empty one.
+- **Resolved design calls (Opus, 2026-07-10):**
+  - **"Add another part" lands on the browse tree at the preserved position** (expansion state
+    from Step 1's `_pickerBrowseExpanded`), with the manifest highlight refreshed so the
+    just-added part type now shows green. The user navigates to the next thing — it does not
+    auto-return to the same part type's grid.
+  - **"Add and Finish" adds and closes** the picker (today's behavior).
+  - **Button placement:** on the location step (the normal final screen). When the part has no
+    location or exactly one possible location, the location step is skipped and both buttons
+    render on the part page itself (per the existing skip-location logic).
+  - **Edit mode is single-shot:** when editing an existing item, save closes (no "add another") —
+    multi-add is for building, not editing.
+  - Authoring-side; render path and golden masters untouched.
 
 ---
 
