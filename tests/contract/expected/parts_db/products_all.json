@@ -2561,7 +2561,6 @@
       {
         "description": "",
         "fits_part_types": [
-          "siren_speaker_bracket",
           "front_radar_antenna_mount",
           "rear_radar_antenna_mount"
         ],

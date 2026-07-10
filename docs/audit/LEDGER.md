@@ -953,3 +953,29 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   anywhere in the DOM; clicked the Warning caret independently → expands to show only
   Headlight Flasher/Tail Light Flasher (confirms `warning_light` is invisible as intended,
   with the header itself its only home).
+
+### FINDING-032: wrong bracket offered for siren speakers (owner flaw #6, brackets) — RESOLVED
+- **Location:** `resources/config/parts_db.json` — `stalker_vehicle_specific_bracket.fits_part_types`.
+- **Category:** data mis-homing (product homed to an accessory part_type it doesn't belong to) ·
+  **Severity:** MEDIUM · **Status:** RESOLVED (2026-07-10)
+- **Owner flaw #6 (brackets part):** the siren-speaker accessory dropdown offered a Stalker
+  RADAR-antenna bracket (`stalker_vehicle_specific_bracket`, model "VEHICLE SPECIFIC BRACKET")
+  that has nothing to do with siren speakers.
+- **Root cause:** the product's `fits_part_types` listed `siren_speaker_bracket` alongside its
+  two legitimate radar-mount homes (`front_radar_antenna_mount`, `rear_radar_antenna_mount`).
+  `siren_speaker_bracket` is an accessory part_type of `siren_speaker`, so the accessories
+  endpoint surfaced this radar bracket in the siren speaker's bracket dropdown.
+- **Fix:** removed only `siren_speaker_bracket` from `stalker_vehicle_specific_bracket.
+  fits_part_types`; its two radar-antenna-mount homes are untouched. The correct Whelen siren
+  brackets (SAK1, SAK9, SA-315 mount kit, SA-350M mount kit) were already offered and remain so
+  — confirmed via a direct `fits_part_types` check on `whelen_sak1`/`whelen_sak9`/
+  `whelen_sa315_mount_kit`/`whelen_sa350m_mount_kit`/`5_0_fab_dtm_dtmsak`.
+- **Verification:** `tests/golden` 6/6 unchanged (name-based render path is inert to
+  accessory-homing changes). `tests/contract` — `root_doc` and `products_all` re-recorded;
+  diffed against the prior snapshots and confirmed the *only* change in each is the removal of
+  the `"siren_speaker_bracket"` line from this one product's embedded `fits_part_types` array —
+  re-run green after recording. `tools/ui_smoke/run_smoke.py`: 9/9, no flow touched.
+- **Not in scope (separately flagged, other flaw-6 parts):** siren speaker render size uses a
+  loose-substring match in `asset_resolver.size_class_for_part` (separate bug); the
+  qty-driven PB-center-plate placement/dots feature for siren speakers (separate feature work).
+  Neither is addressed by this change.
