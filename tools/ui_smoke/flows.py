@@ -111,10 +111,13 @@ def flow_tab_load(page, base_url: str) -> None:
 
 
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
-    """LEDGER.md FINDING-004 regression guard: a part_type with zero curated
-    location options (e.g. `console`) must get a real, sequenceable name from
+    """LEDGER.md FINDING-004 + FINDING-027 regression guard: a part_type with
+    zero curated location options (e.g. `console`) must get a real name from
     the picker's free-text location branch — never the literal "Part" (which
-    the planner can't match to any part_type and reports as "Unmapped")."""
+    the planner can't match to any part_type and reports as "Unmapped").
+    `console` is also single-instance (max_count == 1), so both adds must
+    resolve to the bare label "Console" with no sequence number (owner
+    flaw #2 — there is only ever one console per vehicle)."""
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
 
@@ -154,11 +157,11 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.wait_for_timeout(_SETTLE_MS)
 
     add_console_part()
-    add_console_part()   # second add must sequence ("Console 2"), not duplicate
+    add_console_part()   # second add must NOT sequence — console is single-instance
 
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     names = [p["name"] for p in draft["draft"]["parts"]]
-    assert names == ["Console 1", "Console 2"], f"expected sequenced Console names, got {names}"
+    assert names == ["Console", "Console"], f"expected bare 'Console' names (no sequence), got {names}"
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -715,33 +718,42 @@ def flow_picker_multi_add(page, base_url: str) -> None:
     (d) The just-added part type leaf gains the .filled class (manifest highlight
         refreshed — green dot).
     (e) "Add and Finish" closes the picker (today's behavior, confirmed).
+
+    Uses `gun_lock` (Equipment > Gun Lock, a bare leaf with no family) rather
+    than `console` — console became single-instance under FINDING-027 (owner
+    flaw #2: only one console per vehicle) and no longer sequences, so it
+    can't guard multi-instance numbering. gun_lock is text-mode with zero
+    location_options, same free-text branch console used to exercise, but it
+    keeps sequencing ("Gun Lock 1" / "Gun Lock 2").
     """
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
 
-    def _navigate_to_console_leaf():
-        """Expand Structural > Console System and pick the Console leaf."""
-        if not page.is_visible(".pbt-cat-head[data-cat='structural'].open"):
-            page.click(".pbt-cat-head[data-cat='structural']")
+    def _navigate_to_gun_lock_leaf():
+        """Expand Equipment and pick the bare Gun Lock leaf (no family)."""
+        if not page.is_visible(".pbt-cat-head[data-cat='equipment'].open"):
+            page.click(".pbt-cat-head[data-cat='equipment']")
             page.wait_for_timeout(200)
-        if not page.is_visible(".pbt-fam-head[data-fam='console_system'].open"):
-            page.click(".pbt-fam-head[data-fam='console_system']")
-            page.wait_for_timeout(200)
-        page.click(".pbt-leaf[data-pt='console']")
+        page.click(".pbt-leaf[data-pt='gun_lock']")
         page.wait_for_timeout(_SETTLE_MS)
 
-    def _pick_console_product_and_go_to_location():
-        """Select the first console product + SKU then open the location tab."""
-        page.fill("#pf-search", "7170-0734-00")
+    def _pick_gun_lock_product_and_go_to_location():
+        """Select the first gun lock product + SKU, dismiss its optional
+        bracket_mount accessory prompt (none needed for this smoke check),
+        then open the location tab."""
+        page.fill("#pf-search", "SINGLE HANDCUFF")
         page.wait_for_timeout(_SETTLE_MS)
         page.click(".pp-head >> nth=0")
         page.wait_for_timeout(200)
         page.click(".pp-sku [data-pick] >> nth=0")
         page.wait_for_timeout(200)
+        if page.locator("select[data-cat='bracket_mount']").count() > 0:
+            page.select_option("select[data-cat='bracket_mount']", "none")
+            page.wait_for_timeout(200)
         page.click("#picker-tab-btn-location")
         page.wait_for_timeout(_SETTLE_MS)
         page.wait_for_selector("#picker-loc-text")
-        page.fill("#picker-loc-text", "Front console mount")
+        page.fill("#picker-loc-text", "Front seat gun lock mount")
         page.wait_for_timeout(200)
 
     # ── Open picker for a first part ──────────────────────────────────────────
@@ -749,8 +761,8 @@ def flow_picker_multi_add(page, base_url: str) -> None:
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(200)
 
-    _navigate_to_console_leaf()
-    _pick_console_product_and_go_to_location()
+    _navigate_to_gun_lock_leaf()
+    _pick_gun_lock_product_and_go_to_location()
 
     # ── Assert (a): location tab shows BOTH buttons ───────────────────────────
     # Primary button must say "Add and Finish" (not "Add Part").
@@ -774,38 +786,34 @@ def flow_picker_multi_add(page, base_url: str) -> None:
         "Step 7: picker must remain open after 'Add another part'"
 
     # (c) Browse tree must be shown at the preserved expansion position.
-    # Structural category was expanded — it must still be open.
-    assert page.is_visible(".pbt-cat-head[data-cat='structural'].open"), \
-        "Step 7: structural category must still be expanded (expansion state preserved)"
-
-    # The console_system family must still be open too.
-    assert page.is_visible(".pbt-fam-head[data-fam='console_system'].open"), \
-        "Step 7: console_system family must still be expanded (expansion state preserved)"
+    # Equipment category was expanded — it must still be open.
+    assert page.is_visible(".pbt-cat-head[data-cat='equipment'].open"), \
+        "Step 7: equipment category must still be expanded (expansion state preserved)"
 
     # The part pane must be active (not the location tab).
     assert page.is_visible("#picker-tab-btn-part.active"), \
         "Step 7: Part tab must be active after returning to browse tree"
 
-    # (d) The console leaf must now have the .filled class (green dot).
-    filled_count = page.locator(".pbt-leaf[data-pt='console'].filled").count()
+    # (d) The gun_lock leaf must now have the .filled class (green dot).
+    filled_count = page.locator(".pbt-leaf[data-pt='gun_lock'].filled").count()
     assert filled_count > 0, \
-        "Step 7: console part type leaf must have .filled class after 'Add another part'"
+        "Step 7: gun_lock part type leaf must have .filled class after 'Add another part'"
 
     # ── Assert (e): "Add and Finish" closes the picker ───────────────────────
-    # Navigate to another console (second add in the same session).
+    # Navigate to another gun lock (second add in the same session).
     # The tree is already expanded; click the leaf to reload products, then
     # pick and go to location as before.
-    _navigate_to_console_leaf()
-    _pick_console_product_and_go_to_location()
+    _navigate_to_gun_lock_leaf()
+    _pick_gun_lock_product_and_go_to_location()
     page.click("#picker-add-btn")   # "Add and Finish"
     page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
     page.wait_for_timeout(_SETTLE_MS)
 
-    # Two console parts must be in the draft, sequenced correctly.
+    # Two gun lock parts must be in the draft, sequenced correctly.
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     names = [p["name"] for p in draft["draft"]["parts"]]
-    assert len(names) >= 2 and "Console 1" in names and "Console 2" in names, \
-        f"Step 7: expected two sequenced Console parts after multi-add, got {names}"
+    assert len(names) >= 2 and "Gun Lock 1" in names and "Gun Lock 2" in names, \
+        f"Step 7: expected two sequenced Gun Lock parts after multi-add, got {names}"
 
 
 FLOWS = {

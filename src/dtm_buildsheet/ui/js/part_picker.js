@@ -1020,16 +1020,22 @@ function _pickerDrawLocation() {
         // planner can match it to a part_type and render it — carry the
         // part_type's label as base_label/name_pattern instead of clearing them.
         const ptLabel = _pickerFreeTextPartTypeLabel(f);
+        // Single-instance part_types (max_count === 1: console, equipment tray,
+        // preemption) are never sequenced — "Console", not "Console 1" (flaw #2:
+        // there is only ever one console per vehicle). Everything else keeps the
+        // "{label} {n}" auto-sequence (FINDING-004).
+        const single = _pickerFreeTextPartTypeMax(f) === 1;
+        const pat = ptLabel ? (single ? ptLabel : `${ptLabel} {n}`) : "";
         btns.innerHTML = `<div class="pf-group"><span class="pf-label">Location</span>` +
           `<input id="picker-loc-text" class="pf-select" placeholder="Type the mount location…" value="${esc(loc.selected || "")}">` +
           `<span class="pf-hint">No preset locations for this part — type where it mounts.</span></div>`;
-        loc.name_pattern = ptLabel ? `${ptLabel} {n}` : "";
+        loc.name_pattern = pat;
         loc.base_label = ptLabel;
         loc.catalog_names = [];
         const txt = $("picker-loc-text");
         if (txt) txt.addEventListener("input", () => {
           loc.selected = txt.value.trim();
-          loc.name_pattern = ptLabel ? `${ptLabel} {n}` : "";
+          loc.name_pattern = pat;
           loc.base_label = ptLabel;
           loc.catalog_names = [];
           _pickerUpdateFooter();
@@ -1173,6 +1179,17 @@ function _pickerFreeTextPartTypeLabel(f) {
   const meta = _pickerPartTypeMeta || new Map();
   const pt = fits.map(id => meta.get(id)).find(p => p && p.type_id === f.type_id) || meta.get(fits[0]);
   return (pt && pt.label) || (product && product.model) || "";
+}
+
+// max_count of the resolved free-text part_type (1 → single-instance: name is
+// the bare label with no sequence number). Mirrors the label resolution above.
+function _pickerFreeTextPartTypeMax(f) {
+  const sel = _pickerState.sel;
+  const product = sel && _pickerState.products.find(p => p.product_id === sel.product_id);
+  const fits = (product && product.fits_part_types) || [];
+  const meta = _pickerPartTypeMeta || new Map();
+  const pt = fits.map(id => meta.get(id)).find(p => p && p.type_id === f.type_id) || meta.get(fits[0]);
+  return pt && pt.max_count;
 }
 
 // The part_type_id to tag onto an added line (Step 1b manifest highlight).

@@ -117,6 +117,11 @@ the real build editor with headless Chromium.
   land as `"Console 1"` / `"Console 2"` with zero `plan.warnings`. Golden
   master + contract snapshots unchanged (client-only fix). Permanent
   regression guard: `tools/ui_smoke/flows.py:flow_add_text_mode_equipment_part`.
+  **Superseded (2026-07-10):** the `"Console 1"` / `"Console 2"` verification
+  detail above no longer holds — see FINDING-027. `console` is single-instance
+  and now names to the bare `"Console"` label with no sequence number; the
+  sequencing behavior this finding verified is still correct and still
+  guarded, just on a different part_type (`gun_lock`).
 
 ### FINDING-005: picker Edit mode destroys the edited part (name→"Part", SKU/model clobber, quantity→1, colors wiped)
 - **Location:** `ui/js/part_picker.js:99-119` (`_pickerOpenEdit` hard-codes
@@ -690,3 +695,26 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   agency-supplied placeholder (perhaps show a "supplied by agency" note instead of an empty
   grid), or (c) remove the slot. Ties into the `unbilled` tag convention (cameras/radios are
   the canonical unbilled items). No guessing — flagged for the owner.
+
+### FINDING-027: "Console 1" sequencing removed for single-instance part_types (owner flaw #2) — RESOLVED
+- **Location:** `ui/js/part_picker.js` `_pickerDrawLocation` free-text location
+  branch + new `_pickerFreeTextPartTypeMax(f)` helper.
+- **Category:** workbook-shape (naming contract assumed every part_type
+  auto-sequences) · **Severity:** LOW (cosmetic, but user-facing) · **Status:** RESOLVED (2026-07-10)
+- **Owner flaw #2:** "The 'Console 1' concept is unnecessary. There will only
+  ever be one console in a vehicle."
+- **Fix:** part_types with `max_count == 1` (exactly `console`,
+  `equipment_tray`, `preemption`) now resolve `loc.name_pattern` to the bare
+  part_type label with no `{n}` suffix — `"Console"`, not `"Console 1"`.
+  Every other text-mode part_type keeps the `"{label} {n}"` auto-sequence from
+  FINDING-004. Client-side JS only; no server/contract changes.
+- **ui_smoke:** both console-touching flows updated. `flow_add_text_mode_equipment_part`
+  (FINDING-004's regression guard) is repurposed as the single-instance guard —
+  two adds now assert `names == ["Console", "Console"]` instead of the old
+  `["Console 1", "Console 2"]`. `flow_picker_multi_add` (Step 7 multi-add) moved
+  off `console` (no longer sequences, so it can't guard numbering) onto
+  `gun_lock` (Equipment > Gun Lock, a bare text-mode leaf with no family) to
+  preserve multi-instance sequencing coverage — asserts `"Gun Lock 1"` /
+  `"Gun Lock 2"` after two adds. This supersedes the `"Console 1"` / `"Console 2"`
+  verification detail in FINDING-004's resolution note. 8/8 ui_smoke,
+  `tests/contract` + `tests/golden` unchanged (client-only change).
