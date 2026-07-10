@@ -58,6 +58,54 @@ const _TYPE_ICONS = { lights: "💡", equipment: "🔧", structural: "🏗️", 
 // NOT a color-config category — no head-color preview/matrix, just pick the SKU.
 const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "spotlight"]);
 
+// ── Brand-preference scopes (owner flaw #5) ────────────────────────────
+// Mirror the `preference_filters` block in parts_db.json (~line 31630),
+// which authors which part_type_ids each agency brand preference applies
+// to. That block's `filter_scope_kind`/`filter_scope_values` are currently
+// unread by any code path — these consts are the concrete, client-side
+// instantiation of the same scopes so _pickerPreferredBrand() can resolve a
+// preferred brand for any part_type, not just lighting.
+//   bumper_brand scope (parts_db.json preference_filters.bumper_brand):
+const _PREF_BUMPER_PART_TYPES = new Set(["push_bumper", "pit_bar", "wing_wraps"]);
+//   cage_brand scope (parts_db.json preference_filters.cage_brand):
+const _PREF_CAGE_PART_TYPES = new Set([
+  "cage", "front_partition", "rear_partition", "rear_seat_divider",
+  "floor_pan", "replacement_rear_seat", "k9_kennel",
+]);
+//   camera_brand scope (parts_db.json preference_filters.camera_brand uses
+//   filter_scope_kind:"tag_ids" → ["camera"]; these are the part_type_ids
+//   that currently carry that tag_id, listed directly since the picker's
+//   filter context only has part_type_id, not tag membership, at this point):
+const _PREF_CAMERA_PART_TYPES = new Set([
+  "camera_dvr", "front_camera", "body_camera_dock", "rear_seat_camera", "rear_camera",
+]);
+
+// Returns the preferred brand STRING for the current picker filter context
+// (f = _pickerState.filters), or "" when no preference applies OR the
+// preferred brand doesn't actually appear among the currently loaded
+// products (_pickerState.products must already be fetched). Case-insensitive
+// match against each product's manufacturer_label, returning the label's
+// real casing so it can be used directly as a filter/display value.
+function _pickerPreferredBrand(f) {
+  const prefs = (window._PT && window._PT.viewProject && window._PT.viewProject.preferences) || {};
+  let want = "";
+  if (f.type_id === "lights") {
+    want = (prefs.lighting_brands && prefs.lighting_brands[0]) || prefs.lighting || "";
+  } else if (_PREF_BUMPER_PART_TYPES.has(f.part_type_id)) {
+    want = prefs.push_bumper_brand || "";
+  } else if (_PREF_CAGE_PART_TYPES.has(f.part_type_id)) {
+    want = prefs.cage_brand || "";
+  } else if (_PREF_CAMERA_PART_TYPES.has(f.part_type_id)) {
+    want = prefs.camera_brand || "";
+  }
+  if (!want) return "";
+  const wantLower = String(want).toLowerCase();
+  const match = _pickerState.products.find(
+    p => p.manufacturer_label && String(p.manufacturer_label).toLowerCase() === wantLower
+  );
+  return match ? match.manufacturer_label : "";
+}
+
 function _ionRank(pn) {
   if (!pn) return 1;
   if (pn.startsWith("I2")) return 0;
@@ -191,6 +239,12 @@ async function _pickerOpenEdit(part) {
       ? { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label }
       : { product_id: prod.product_id, model: prod.model, mfr: prod.manufacturer_label, sku: pn };
     _pickerState.expanded.add(prod.product_id);
+    // Owner flaw #5 / requirement D: the part's own already-chosen brand
+    // must win over any brand preference — _pickerFetchProducts already
+    // skipped auto-select above (editLineId was set before that call), so
+    // this is the only place f.brand gets set in edit mode.
+    _pickerState.filters.brand = prod.manufacturer_label || "";
+    _pickerState._brandAutoSet = true;
   }
   _pickerSwitchTab("part");
 }
@@ -204,6 +258,10 @@ function _pickerResetState() {
   _pickerState.tab = "part";
   _pickerState.step = 0;          // current left-pane wizard step
   _pickerState.filters = { type_id: "lights", type_label: "Lights", category_id: "", category_label: "", part_type_id: "", part_type_label: "", brand: "", lens: "" };
+  // FINDING-011: this was never reset between picker opens, so the auto-set
+  // latch from a prior open (or a stale re-open of the same session) could
+  // silently suppress preferred-brand auto-select on the next open.
+  _pickerState._brandAutoSet = false;
   _pickerState.config = { count: 2, colorsPerHead: "single", mode: "uniform", uniform: ["red"], splitSecondary: [], custom: [], _noColor: false };
   _pickerState.search = "";
   _pickerState.products = [];
@@ -303,18 +361,14 @@ async function _pickerFetchProducts() {
     }
   _pickerState.availAll = avail;
   _pickerNormalizeConfig();
-  // Auto-select preferred brand if not already chosen.
-  if (!f.brand) {
-    const allBrands = [...new Set(_pickerState.products.map(p => p.manufacturer_label).filter(Boolean))];
-    if (allBrands.length > 1) {
-      const prefLighting = window._PT?.viewProject?.preferences?.lighting;
-      const prefBrands = (window._PT?.viewProject?.preferences?.lighting_brands || []).map(b => String(b).toLowerCase());
-      const match = allBrands.find(b => {
-        const bl = b.toLowerCase();
-        return (prefLighting && bl === String(prefLighting).toLowerCase()) || prefBrands.includes(bl);
-      });
-      if (match) f.brand = match;
-    }
+  // Auto-select the preferred brand for this context (lighting/bumper/cage/
+  // camera — FINDING-011: this used to run twice, lighting-only, here AND in
+  // _pickerRenderProducts). Skipped in edit mode — _pickerOpenEdit sets
+  // f.brand explicitly from the part being edited so an explicit prior
+  // selection is never silently overridden by a preference.
+  if (!f.brand && !_pickerState.editLineId) {
+    const preferred = _pickerPreferredBrand(f);
+    if (preferred) { f.brand = preferred; _pickerState._brandAutoSet = true; }
   }
   // Auto-expand when only one product remains.
   if (_pickerState.products.length === 1) _pickerState.expanded.add(_pickerState.products[0].product_id);
@@ -547,6 +601,13 @@ function _pickerWireFilters() {
     f.part_type_id = b.dataset.pt; f.part_type_label = b.dataset.ptLabel;
     const flow = b.dataset.flow || "";
     f.category_id = flow; f.category_label = flow ? (_LIGHT_CATEGORIES.find(x => x.id === flow) || {}).label || flow : "";
+    // Navigating to a different part_type moves into a different brand-
+    // preference scope (e.g. lighting → cage) — drop the old brand filter so
+    // _pickerFetchProducts re-resolves the preferred brand for the new
+    // context instead of carrying a stale one forward. Not in edit mode:
+    // type-lock already confines leaf clicks there to the locked part_type,
+    // and the pre-filled edit brand must survive a re-click of that leaf.
+    if (!_pickerState.editLineId) { f.brand = ""; _pickerState._brandAutoSet = false; }
     // Scene/interior lights are white — default to NO color filter (all SKUs
     // match); the user opts into a color only if they want one. Other light
     // categories keep the normal per-color selection.
@@ -657,22 +718,39 @@ function _pickerRenderProducts() {
   const q = _pickerState.search.trim().toLowerCase();
 
   // Brand refine bar (lets the user switch between matched alternatives by brand).
+  // Recomputed every render (not cached on _pickerState) so it always reflects
+  // the current context and, in edit mode, the part's own already-chosen
+  // brand rather than silently re-asserting the preference (owner flaw #5 /
+  // FINDING-011: auto-select used to run twice here AND in
+  // _pickerFetchProducts, lighting-only both times — see there for the
+  // single source of truth this reads).
   const brands = [...new Set(_pickerState.products.map(p => p.manufacturer_label).filter(Boolean))].sort();
-  const pref = new Set((window._PT?.viewProject?.preferences?.lighting_brands || []).map(b => String(b).toLowerCase()));
-  // Auto-select preferred brand on first render only
-  if (!_pickerState._brandAutoSet && !f.brand && brands.length > 0) {
-    const prefBrand = brands.find(b => pref.has(b.toLowerCase()));
-    if (prefBrand) { f.brand = prefBrand; _pickerState._brandAutoSet = true; }
-  }
-  // When user explicitly picks "All", clear the auto-set flag so it sticks
-  if (f.brand && !_pickerState._brandAutoSet) _pickerState._brandAutoSet = true;
+  const preferredBrand = _pickerPreferredBrand(f);
   const veh = _pickerVehicle();
   const vehFiltering = _pickerState.vehicleOnly && !!veh;
   let header = "";
   if (brands.length > 1) {
-    header = `<div class="pp-brandbar"><span class="pf-label">Brand</span>` +
-      `<button class="pf-pill${!f.brand ? " active" : ""}" data-brand="">All</button>` +
-      brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${pref.has(b.toLowerCase()) ? "★ " : ""}${esc(b)}</button>`).join("") + `</div>`;
+    if (preferredBrand) {
+      // Preferred brand renders first as its own selected-by-default chip,
+      // clearly notated so it's obvious why it's pre-selected; every other
+      // brand (+ "All brands") collapses into a compact dropdown that's
+      // closed by default.
+      const otherBrands = brands.filter(b => b !== preferredBrand);
+      const prefActive = f.brand === preferredBrand;
+      const selectValue = prefActive ? "__PREF__" : (f.brand || "");
+      header = `<div class="pp-brandbar pp-brandbar-pref"><span class="pf-label">Brand</span>` +
+        `<button class="pf-pill pp-pref-chip${prefActive ? " active" : ""}" data-brand="${esc(preferredBrand)}">` +
+        `${esc(preferredBrand)} <span class="pp-pref-badge">preferred</span></button>` +
+        `<select class="pp-brand-more" aria-label="Other brands">` +
+        `<option value="__PREF__"${selectValue === "__PREF__" ? " selected" : ""}>Other brands…</option>` +
+        `<option value=""${selectValue === "" ? " selected" : ""}>All brands</option>` +
+        otherBrands.map(b => `<option value="${esc(b)}"${selectValue === b ? " selected" : ""}>${esc(b)}</option>`).join("") +
+        `</select></div>`;
+    } else {
+      header = `<div class="pp-brandbar"><span class="pf-label">Brand</span>` +
+        `<button class="pf-pill${!f.brand ? " active" : ""}" data-brand="">All</button>` +
+        brands.map(b => `<button class="pf-pill${f.brand === b ? " active" : ""}" data-brand="${esc(b)}">${esc(b)}</button>`).join("") + `</div>`;
+    }
   }
   if (veh) {
     header += `<label class="pp-vehtoggle"><input type="checkbox" id="pp-veh-only"${_pickerState.vehicleOnly ? " checked" : ""}>`
@@ -686,7 +764,8 @@ function _pickerRenderProducts() {
   // Step 2: grid is no longer pre-sorted by color match — options live in the
   // product box and are configured per-product after selection, not before.
   list = [...list].sort((a, b) => {
-    const ap = pref.has((a.manufacturer_label || "").toLowerCase()), bp = pref.has((b.manufacturer_label || "").toLowerCase());
+    const ap = preferredBrand && a.manufacturer_label === preferredBrand;
+    const bp = preferredBrand && b.manufacturer_label === preferredBrand;
     if (ap !== bp) return ap ? -1 : 1;                  // preferred brand first
     return a.model.localeCompare(b.model);
   });
@@ -872,6 +951,16 @@ function _pickerWireBrand(el) {
     _pickerState.filters.brand = b.dataset.brand;
     _pickerRenderProducts();
   }));
+  // Collapsed "other brands" dropdown (rendered instead of a full pill row
+  // when a preferred brand exists — see _pickerRenderProducts). "__PREF__"
+  // is the closed/placeholder state: it means "back to the preferred chip",
+  // not a real brand value.
+  const moreSel = el.querySelector(".pp-brand-more");
+  if (moreSel) moreSel.addEventListener("change", () => {
+    const v = moreSel.value;
+    _pickerState.filters.brand = v === "__PREF__" ? _pickerPreferredBrand(_pickerState.filters) : v;
+    _pickerRenderProducts();
+  });
 }
 
 // Wire the per-product option controls (mode/lens/color/cph/qty) that live

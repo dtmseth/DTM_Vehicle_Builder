@@ -401,6 +401,16 @@
     .pbt-leaf.locked:hover{background:none}
     /* brand refine bar (right pane) */
     .pp-brandbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    /* preferred-brand variant (owner flaw #5): the preferred brand is a
+       distinct, selected-by-default chip labeled "preferred"; every other
+       brand collapses into a compact, closed-by-default dropdown. */
+    .pp-brandbar-pref{gap:8px}
+    .pp-pref-chip{display:inline-flex;align-items:center;gap:6px}
+    .pp-pref-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:8px;background:var(--gold);color:var(--navy);line-height:1.5}
+    .pp-pref-chip.active .pp-pref-badge{background:rgba(255,255,255,.92)}
+    .pp-brand-more{max-width:170px;padding:5px 10px;border:1.5px solid var(--border);border-radius:14px;font-size:12px;font-weight:500;color:var(--muted);background:#fff;cursor:pointer;transition:all .12s}
+    .pp-brand-more:hover{border-color:var(--navy);color:var(--text)}
+    .pp-brand-more:focus{outline:none;border-color:var(--navy);color:var(--text)}
     .pp-vehtoggle{display:flex;align-items:center;gap:7px;margin-bottom:12px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
     .pp-vehtoggle input{width:14px;height:14px;cursor:pointer;accent-color:var(--accent,#1e88e5)}
     .pp-pending{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:#9a6700;background:#fff7e0;border:1px solid #e8c969;border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}

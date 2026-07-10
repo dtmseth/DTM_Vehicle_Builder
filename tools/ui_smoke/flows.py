@@ -38,13 +38,24 @@ def _api(base_url: str, path: str, body: dict | None = None, method: str | None 
         return json.loads(r.read())
 
 
-def _seed_project_with_draft(base_url: str) -> tuple[str, str, str]:
+def _seed_project_with_draft(base_url: str, preferences: dict | None = None) -> tuple[str, str, str]:
     """Create a throwaway project + one PIU build unit + its draft. Returns
-    (project_id, unit_id, draft_id)."""
-    proj = _api(base_url, "/api/project/save", {
+    (project_id, unit_id, draft_id).
+
+    ``preferences`` is optional and, when omitted, the project ends up with a
+    fully empty EquipmentPreferences (no brand preferences set at all) — the
+    /api/project/save route only touches preferences when the POST body
+    includes a "preferences" key. Pass it explicitly (e.g.
+    {"lighting_brands": ["Whelen"]}) for flows that need a brand preference
+    seeded; existing callers that don't pass it keep today's behavior
+    unchanged."""
+    body = {
         "customer": {"name": "UI Smoke PD", "agency": "UI Smoke PD", "build_year": "2026"},
         "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
-    })
+    }
+    if preferences is not None:
+        body["preferences"] = preferences
+    proj = _api(base_url, "/api/project/save", body)
     project_id = proj["project_id"]
     detail = _api(base_url, f"/api/project/{project_id}")
     unit_id = detail["project"]["build_units"][0]["unit_id"]
@@ -389,6 +400,77 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
     # We verify the dropdown is still rendered and functional.
     if page.locator(".pp-override").count() > 0:
         page.wait_for_selector(".pp-override")   # must still render without JS error
+
+
+def flow_brand_preference_collapse(page, base_url: str) -> None:
+    """Owner flaw #5 regression guard: a project's brand preference (here,
+    lighting) must auto-select for the matching part type, render first as a
+    distinct chip notated "preferred", and collapse every other brand into a
+    closed-by-default dropdown rather than a full pill row.
+
+    The default smoke fixture (_seed_project_with_draft with no
+    ``preferences`` arg) ends up with a fully empty EquipmentPreferences —
+    /api/project/save only touches preferences when the POST body includes
+    that key — so this flow seeds lighting_brands=["Whelen"] explicitly.
+    The bundled parts_db.json's "warning" light category carries 3
+    manufacturers (Whelen, Feniex, Soundoff), so the collapsed-dropdown path
+    is the one exercised here; the single-brand fallback (chip + badge only)
+    is asserted too, in case that ever changes.
+    """
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(
+        base_url, preferences={"lighting_brands": ["Whelen"]}
+    )
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    # Navigate to the Warning family specifically (multi-brand in the
+    # bundled catalog) rather than "first family" (that's alphabetically
+    # Interior Bars — see docs/PARTS_DB_AND_PICKER.md family listing).
+    page.click(".pbt-cat-head[data-cat='lights']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
+    page.wait_for_timeout(200)
+    page.click(".pbt-fam-head[data-fam='warning_lights']")
+    page.wait_for_selector(".pbt-fam-head[data-fam='warning_lights'].open")
+    page.wait_for_timeout(200)
+    page.wait_for_selector(".pbt-leaf[data-pt='warning_light']")
+    page.click(".pbt-leaf[data-pt='warning_light']")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # The picker must have auto-selected the project's preferred lighting
+    # brand for this context (requirement 1: not lighting-only anymore, but
+    # this flow only seeds a lighting preference).
+    auto_brand = page.evaluate("_pickerState.filters.brand")
+    assert auto_brand == "Whelen", (
+        "expected _pickerState.filters.brand to auto-select the project's "
+        f"preferred lighting brand 'Whelen', got {auto_brand!r}"
+    )
+
+    if page.locator(".pp-brand-more").count() > 0:
+        # Multi-brand context (requirement 3): the collapsed dropdown must
+        # exist and must NOT offer the preferred brand as one of its
+        # options — it lives on the chip, not in "other brands".
+        more_options = page.eval_on_selector_all(
+            ".pp-brand-more option", "els => els.map(e => e.textContent.trim())"
+        )
+        assert not any("Whelen" in opt for opt in more_options), (
+            "preferred brand 'Whelen' must not appear in the collapsed "
+            f".pp-brand-more dropdown options, got {more_options!r}"
+        )
+        # Requirement 4: the preferred brand must be visibly notated as such.
+        chip_text = page.locator(".pp-pref-chip").first.text_content() or ""
+        assert "preferred" in chip_text.lower(), (
+            f"expected preferred-brand chip to read 'preferred', got {chip_text!r}"
+        )
+    else:
+        # Fixture had only one brand for this part type — fall back to
+        # asserting the preferred-brand chip + badge render on their own.
+        assert page.locator(".pp-pref-chip .pp-pref-badge").count() > 0, (
+            "expected a .pp-pref-chip with .pp-pref-badge when no multi-brand "
+            "dropdown is present"
+        )
 
 
 def flow_sku_dropdown_rework(page, base_url: str) -> None:
@@ -822,6 +904,7 @@ FLOWS = {
     "edit_preserves_fields": flow_edit_preserves_fields,
     "picker_browse_tree": flow_picker_browse_tree,
     "light_options_in_product_box": flow_light_options_in_product_box,
+    "brand_preference_collapse": flow_brand_preference_collapse,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,
     "picker_multi_add": flow_picker_multi_add,
