@@ -4,8 +4,13 @@
 > every design decision so the increment sessions (steps 1–6 below) build against one source
 > instead of re-deriving intent. Owner-authored requirements; transcribed and organized here.
 >
-> **Status**: design locked, implementation not started. Step 0 (the DB taxonomy that unblocks
-> the accordion) is in flight — see `PART_TYPE_TAXONOMY_PROPOSAL.md`.
+> **Status**: ✅ **COMPLETE (2026-07-10)** — all of Step 0 (taxonomy) and Steps 1–7 shipped, each
+> visible and pin-protected (8 ui_smoke flows, golden masters unchanged throughout). The picker is
+> now: category→family→part_type accordion with manifest highlight (1) · options in the product
+> box (2) · per-head filtered SKU dropdowns + "identical"/remove-options (3) · in-box light viz (4)
+> · scene qty-only special case (5) · real editor with pre-fill + part_type-lock, F-005 RESOLVED
+> (6) · multi-add "Add and Finish"/"Add another part" (7). Built on the fully curated + taxonomized
+> parts DB.
 >
 > **How to use**: ship one increment at a time, in order — each is independently visible in the
 > app and independently pin-protected. Do NOT batch. After each increment: golden masters must
