@@ -467,7 +467,7 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     page.evaluate("_pickerState.config.mode")   # pre-check (can be any mode at this point)
 
     # Re-open with a clean state by re-clicking the same product head.
-    page.click(".pp-head.sel")
+    page.click(".pp-row.sel .pp-head")
     page.wait_for_timeout(200)
     page.click(".pp-head >> nth=0")
     page.wait_for_timeout(200)
