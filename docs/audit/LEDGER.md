@@ -791,3 +791,72 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   there so the bar itself doesn't render, but the filter still auto-applies); selecting
   another brand from the dropdown deselects the preferred chip and re-filters the grid;
   re-clicking the preferred chip restores it. No console errors observed.
+
+### FINDING-030: manifest grouping moved to parts_db category+family (owner flaw #4) — RESOLVED
+- **Location:** `ui/js/manifest_editor.js` — new `_meBuildGroupMap` /
+  `_meSectionKeyForName` / `_meSectionForPart` replace `_meRebuildSections` /
+  `_meSectionFor`; `loadDraftManifest`, `_mePopulateDataLists`, `_meRender`,
+  `addPartInSection` updated to use the new grouping; `ui/styles.css` new
+  `.me-cat-group-head` rule.
+- **Category:** workbook-shape default + state bleed (DOM-singleton/lazy-global
+  pattern) · **Severity:** HIGH (was) · **Status:** RESOLVED (2026-07-10)
+- **Owner flaw #4:** "The parts manifest should use new categories to sort
+  everything by main category and part type family."
+- **Resolves FINDING-007 in full** — both the NEEDS-DESIGN grouping-source
+  question (answered: parts_db taxonomy, not workbook `template_sections`) and
+  the SONNET-FIXABLE init-order half (a fresh manifest no longer needs the
+  legacy modal opened once before sections populate).
+- **Fix:**
+  1. `_meBuildGroupMap()` fetches `GET /api/parts-db/browse-tree` once
+     (cached module-level) and builds a `part_type_id → {section_key,
+     section_label, type_id, type_label, order}` reverse map: a part_type
+     groups into its family if it's a family member, else into itself,
+     mirroring the picker sidebar exactly. `order` is a counter that walks
+     categories/children in the exact order the server returns them, so the
+     manifest's section order — and its grouping — auto-follows any future
+     sidebar/category restructure (e.g. owner flaws #7/#8) with zero code
+     changes here.
+  2. `loadDraftManifest` now awaits `_meBuildGroupMap()` before the first
+     `_meRender()`, so a freshly opened build editor groups correctly
+     immediately — the old code only populated `_meSections` as a side effect
+     of `_mePopulateDataLists`, reachable only by opening the legacy flat-modal
+     fallback at least once.
+  3. Picker-added parts (carry `part_type`) resolve exactly via the reverse
+     map. Legacy name-based parts (no `part_type`) get a best-effort match:
+     strip a trailing sequence number, lowercase, look up against an index of
+     family/part_type labels; a unique match wins, anything unmatched or
+     ambiguous (label shared by more than one section) falls to a single
+     "Other" section rendered last — deliberately best-effort per FINDING-007,
+     not over-engineered.
+  4. `_meRender` orders sections by the `order` field (Other always last) and
+     renders a muted uppercase `.me-cat-group-head` bar whenever the main
+     category changes between consecutive sections, so "sort by main category
+     + part-type family" is visible at a glance (e.g. `LIGHTS`, `STRUCTURAL`,
+     `EQUIPMENT`, `EXTRAS`) without collapsing/hiding anything.
+  5. `addPartInSection` keeps working: the intelligent picker has no
+     scoped-open entry point (`part_picker.js` intentionally untouched — out
+     of scope), so it still opens the picker unscoped via `addPart()`; for the
+     flat-modal fallback it reorders the part-name datalist so the target
+     section's catalog entries sort first, using the same best-effort label
+     match as legacy grouping. Never leaves the button non-functional.
+  6. `_meRebuildSections` and `_meSectionFor` (and the workbook
+     `template_sections` grouping dependency) are deleted; `_workbookRules`
+     itself is still loaded in `_mePopulateDataLists` since other code
+     (manufacturer/part-number/location fallbacks) still reads
+     `part_rules` from it.
+- **Verification:** `tests/golden` + `tests/contract` unchanged (43/43,
+  client-only change, no route/DB touched). `tools/ui_smoke/run_smoke.py` 9/9,
+  no flow modified — a repo-wide check confirmed no smoke flow asserts on
+  `.me-cat-section`/section labels/"Other" grouping. Manually verified live
+  (`DTM_CLOUD=0`): "Granite Falls Police Department" (55 legacy name-based
+  parts) — build editor opens straight to grouped sections (`EXTRAS` → Floor
+  Mats/Harness/Seat Covers, `STRUCTURAL` → Chicago Barrier/Front
+  Partition/Rear Partition/Rear Window Bars, `EQUIPMENT` → Equipment
+  Tray/Radio/Siren Speaker/Special Face Plates/Vehicle Data Tags, `Other` →
+  legacy light parts like Forward Warning/Mirror Warning/Side Warning/Rear
+  Light Bar) with **no** prior legacy-modal open — confirming the init-order
+  fix. "Test" project (6 picker-added parts, `part_type` set) — grouped
+  exactly right: `STRUCTURAL` → Console System (Console 1), `EQUIPMENT` →
+  Siren Speaker, `LIGHTS` → Warning (Forward Warning 1/2, Side Warning 1), and
+  one orphaned accessory line (Forward Warning 2 · Universal Grill Bracket, no
+  `part_type`) correctly falls to `Other`. No console errors observed.
