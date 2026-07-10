@@ -648,3 +648,45 @@ Zero production-code changes.
   consumer seam (Phase 4). **Fix = remake the two existing builds in the new picker/SKU system**
   (already the owner's plan), not debug the legacy name-based path or block the push.
 - **Net:** the push is materially safe for v2.2.14 teammates on both load and render grounds.
+
+---
+
+## Session 2026-07-10 — Legacy-project rebuild in the new picker (owner flaw list)
+
+**Scope:** drive the real app (cloud-off) to rebuild the 3 legacy name-based drafts
+(`workspace/projects/*` → `workspace/drafts/*`: Test/PIU-Patrol 6 parts, Granite Falls 55,
+Toppenish 50) through the redesigned Part Picker, fixing picker/placement flaws as they
+surface. Owner supplied an 8-item starting flaw list. Curation queue is now fully drained
+(0 unhomed non-accessory products; docs still say 673 — stale).
+
+### FINDING-025: cross-type family member returns an empty product grid (owner flaw #3, part 1)
+- **Location:** `app/routes/parts_db.py` `category-skus` handler (the `pt.type_id == type_id`
+  gate) — client passes the family's *display* `type_id`, not the member's own.
+- **Category:** fragile · **Severity:** MEDIUM (a populated part_type looks empty) · **Status:** RESOLVED (2026-07-10)
+- **Repro:** picker → Structural → Console System → Motion Attachment → empty grid, though
+  `motion_attachment` has 5 homed products. It is the *only* cross-type family member
+  (`type_id: equipment`, surfaced under the Structural `console_system` family). The leaf
+  sets `data-type="structural"`; `category-skus?type=structural&part_type=motion_attachment`
+  then filtered on `pt.type_id == "structural"` and dropped it.
+- **Fix:** when an exact `part_type` filter is supplied (every non-light sidebar leaf), look
+  it up directly (`svc.get_part_type`) instead of gating on the display-derived type/category.
+  Server-only; contract snapshots + golden masters unchanged (recorded queries never hit the
+  cross-type case), 8/8 ui_smoke. Commit `0f2d352`.
+
+### FINDING-026: 10 browse-tree leaves are genuinely unhomed slots (owner flaw #3, part 2) — NEEDS-OWNER
+- **Status:** OPEN · needs an owner curation ruling, not a code fix.
+- After FINDING-025, a full live sweep of all 94 browse leaves leaves **10 empty**, all
+  because no product is homed to them (queue is drained, so no unhomed product to assign):
+  - **Cameras** — `front_camera`, `rear_camera`, `rear_seat_camera`, `body_camera_dock`:
+    camera products exist but are all homed to `camera_dvr` (the DVR unit). The individual
+    position slots have nothing.
+  - **`cradle_point` (Cloud System)**, **`door_lock_button`**, **`wireless_mic_charger`**:
+    no matching product exists anywhere in the DB (agency-supplied / not catalogued).
+  - **`radio_speaker`**, **`radio_antenna_cable`**: radio products are homed to sibling
+    slots (`radio_head`/`radio_cable`/`radio_antenna_top`/`radio_mic_clip`), none to these.
+  - **`k9_control_head`**: K9 products homed to `k9_kennel`/`k9_heat_alarm_popper`/`k9_add_ons`,
+    none to control-head.
+- **Owner decision per slot:** (a) create/home a product, (b) keep as an intentional
+  agency-supplied placeholder (perhaps show a "supplied by agency" note instead of an empty
+  grid), or (c) remove the slot. Ties into the `unbilled` tag convention (cameras/radios are
+  the canonical unbilled items). No guessing — flagged for the owner.
