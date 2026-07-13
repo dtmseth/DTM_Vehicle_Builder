@@ -1014,3 +1014,60 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   `SP123BMC`/`295SLSA6` and any siren SKU rendered at a view without a `size_per_view` override
   are not exercised by the current golden corpus, but the resolver-level check above confirms
   the fix applies uniformly to all 5 SKUs.
+
+### FINDING-034: siren→lighting brand pref + console_brand preference added (owner follow-up) — RESOLVED
+- **Location:** `ui/js/part_picker.js::_pickerPreferredBrand`, `domain/project_models.py`
+  `EquipmentPreferences`, `domain/project_codec.py::preferences_from_dict`,
+  `ui/js/projects/{detail_edit,detail_overview,wizard}.js`, `ui/index.html` (wizard preferences
+  step), `app/services/project_service.py` (`pref_notes` builders, both draft-creation paths).
+- **Category:** brand-preference scope extension (mirrors flaw #5's machinery, commit
+  `7ace723`) · **Severity:** LOW (usability — extra manual brand picks) · **Status:** RESOLVED
+  (2026-07-13)
+- **Owner follow-up (two requests):**
+  (A) "the siren speakers should still be filtered by agency preference, so if whelen is
+  selected [lighting brand], they get whelen speaker options" — siren speakers were not wired
+  into any brand-preference scope at all, so the picker never auto-selected/collapsed by brand
+  for `siren_speaker`, even though sirens are functionally a Whelen-family lighting accessory.
+  (B) "we need to add center console manufacturer as an agency preference to be selected along
+  with the other agency preferences" — no `console_brand` preference existed; console SKUs had
+  no preferred-brand collapse in the picker at all.
+- **Fix (A):** added `_PREF_LIGHTING_EXTRA_PART_TYPES = new Set(["siren_speaker"])` in
+  `part_picker.js`; `_pickerPreferredBrand(f)` now resolves `siren_speaker` through the same
+  `preferences.lighting_brands?.[0]` branch as `type_id === "lights"`. No new preference field
+  needed — sirens ride the existing lighting-brand preference.
+- **Fix (B):** added `console_brand: str = ""` to `EquipmentPreferences` (after `cage_brand`,
+  mirroring its text+datalist shape); wired through `preferences_from_dict` (serialization is
+  generic `dataclasses.asdict`, so no `_to_dict` change was needed — there is no such function,
+  contrary to the initial ask's assumption). Added the field to: the Edit tab's read-only
+  summary and edit-mode form (`detail_edit.js`, new `#et-console-brand` input + `#et-console-list`
+  datalist), the Overview tab summary (`detail_overview.js`), the new-project wizard's
+  Preferences step (new `#proj-console-brand` field in `ui/index.html` + load/save wiring in
+  `wizard.js` — the wizard *does* render brand fields, so it was included, not skipped), the
+  `pref_notes` builders in `project_service.py` (both `handle_create_group_draft` and
+  `handle_create_individual_draft`), and a new `_PREF_CONSOLE_PART_TYPES = new Set(["console"])`
+  scope in `part_picker.js` (`motion_attachment` deliberately excluded per instruction).
+- **Datalist source:** `project_options.json` (the config-driven source for
+  `bumper_brands`/`cage_brands`) has no `console_brands` key, and its schema validator in
+  `config/schemas.py` enumerates a fixed field list — extending it would touch config-schema
+  code and a second contract-adjacent surface outside this change's scope. Used a static
+  fallback list (`Gamber Johnson`, `Havis`, `Tiger Tough`, the DB's known console
+  manufacturers) in both `detail_edit.js` and `wizard.js`, structured so it still prefers
+  `_PT.projectOptions.console_brands` if that key is ever added later.
+- **Skipped (documented, not silently dropped):** `parts_db.json`'s `preference_filters` block
+  already has `lighting_brand`/`bumper_brand`/`cage_brand`/`camera_brand` entries that are an
+  unread documentation-only island (the picker hardcodes its own scopes client-side — see the
+  comment at `part_picker.js` line ~62). Adding a `console_brand` entry there was explicitly
+  optional per the task and would have moved `tests/contract/expected/parts_db/root_doc.json`
+  (confirmed by grep — that file snapshots `preference_filters` verbatim), so it was left alone
+  to keep this commit contract-clean.
+- **Verification:** `pytest tests/golden tests/contract` — 43/43 unchanged. Full suite — 1709
+  passed, 1 skipped (unchanged from before this change). `tests/test_project_codec.py` extended
+  (`TestPreferencesFromDict.test_all_fields`) to assert `cage_brand`/`console_brand` round-trip.
+  `tools/ui_smoke/run_smoke.py` — 9/9. Visual, local mode (`DTM_CLOUD=0`): set Console Brand to
+  "Gamber Johnson" on a test project's Edit tab, saved, confirmed it appears on both Edit
+  (read-only) and Overview tabs. Opened the picker on a Console part type — brand pill showed
+  "Gamber Johnson PREFERRED", product list restricted to Gamber Johnson SKUs. Opened the picker
+  on Siren Speaker with lighting pref = Whelen — brand pill showed "Whelen PREFERRED", product
+  list showed Whelen siren SKUs including `SA315P Speaker` and `SA315U Speaker` with other
+  brands collapsed into the "Other brands…" dropdown, matching the existing lights/bumper/cage/
+  camera UX exactly.
