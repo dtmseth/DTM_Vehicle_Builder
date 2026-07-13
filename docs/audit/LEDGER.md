@@ -979,3 +979,38 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   loose-substring match in `asset_resolver.size_class_for_part` (separate bug); the
   qty-driven PB-center-plate placement/dots feature for siren speakers (separate feature work).
   Neither is addressed by this change.
+
+### FINDING-033: siren speakers rendered oversized — "3"→rd substring rule caught SA315P etc. (owner flaw #6, size) — RESOLVED
+- **Location:** `planning/asset_resolver.py::size_class_for_part` +
+  `resources/config/asset_manifest.json` `part_number_size_rules`.
+- **Category:** substring-match collision (loose fallback rule caught digits inside an
+  unrelated SKU) · **Severity:** MEDIUM (visibly oversized/distorted render, no data loss) ·
+  **Status:** RESOLVED (2026-07-13)
+- **Owner flaw #6 (size part):** siren speakers rendered "extra large" and distorted.
+- **Root cause:** `size_class_for_part` first checks for an exact SKU match, then falls back to
+  a substring loop over `part_number_size_rules`. That table has `"3": "rd"` (meant to size
+  3-inch round lights), and Python dict iteration hits it before any siren-specific key would.
+  None of the 5 Whelen SA-series siren SKUs (`SA315P`, `SA315U`, `SA350MH`, `SP123BMC`,
+  `295SLSA6`) had an exact-match entry, so each one's embedded digit(s) matched the `"3"` rule
+  and got sized as a 0.2×0.2 `rd` square instead of the correct wide-short siren box. The other
+  siren brands (Feniex/Federal) have no digit collision and already defaulted correctly to `sm`.
+- **Fix:** added 5 explicit exact-match `"sm"` entries to `part_number_size_rules` for the
+  affected SKUs, so the exact-match check (which runs before the substring loop) wins. Restores
+  the pre-regression/legacy siren size and matches what every other siren brand already gets.
+  Substring-matching logic itself untouched (too broad a fix, would move unrelated goldens).
+- **Verification:** resolver-level check — all 5 SKUs now return `"sm"`; unrelated part numbers
+  (`ION`, a literal `"3"`, and a synthetic 3-inch-round SKU containing `"3"`) unchanged. Full
+  `pytest` suite: 1709 passed, 1 skipped. `tests/contract`: 37/37 unchanged (asset_manifest is
+  not part of the parts_db contract). `tools/ui_smoke/run_smoke.py`: 9/9.
+- **Golden masters — intentionally re-recorded (§3.2 opt-in behavior-change path, not silent
+  drift):** `tests/golden` failed on the 6 fixtures containing siren speakers, all with the
+  identical, expected diff — `size_class: "rd"` → `"sm"` on `siren_speaker` placements, nothing
+  else. Every golden SKU exercised is `SA315P` at the `front` view, which already carries a
+  pre-existing per-model `size_per_view` override in `parts_library.json`
+  (`w:0.53, h:0.65`) that takes precedence over `size_class` at render time — so the rendered
+  `.pptx` digest is byte-identical in all 6 cases; only the plan JSON's `size_class` metadata
+  field moved. Confirmed no other shapes, text, or positions changed before re-recording with
+  `pytest tests/golden --golden-record`; re-run green (6/6). This means `SA315U`/`SA350MH`/
+  `SP123BMC`/`295SLSA6` and any siren SKU rendered at a view without a `size_per_view` override
+  are not exercised by the current golden corpus, but the resolver-level check above confirms
+  the fix applies uniformly to all 5 SKUs.
