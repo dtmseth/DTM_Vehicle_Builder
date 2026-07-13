@@ -980,7 +980,7 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   qty-driven PB-center-plate placement/dots feature for siren speakers (separate feature work).
   Neither is addressed by this change.
 
-### FINDING-033: siren speakers rendered oversized — "3"→rd substring rule caught SA315P etc. (owner flaw #6, size) — RESOLVED
+### FINDING-033: siren speakers rendered oversized — "3"→rd substring rule caught SA315P etc. (owner flaw #6, size) — SUPERSEDED (cosmetic)
 - **Location:** `planning/asset_resolver.py::size_class_for_part` +
   `resources/config/asset_manifest.json` `part_number_size_rules`.
 - **Category:** substring-match collision (loose fallback rule caught digits inside an
@@ -1014,6 +1014,13 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   `SP123BMC`/`295SLSA6` and any siren SKU rendered at a view without a `size_per_view` override
   are not exercised by the current golden corpus, but the resolver-level check above confirms
   the fix applies uniformly to all 5 SKUs.
+- **SUPERSEDED / corrected (2026-07-13):** this fix is **cosmetic** — it changes only the plan
+  JSON's `size_class` metadata, which is **dead code for `render_kind == "equipment"`**.
+  `ppt_helpers.get_icon_size()`'s equipment branch never consults `size_class`; siren size comes
+  from `EQUIP_SIZES[name]` (no siren entry) → `size_per_view` override → raw-PNG aspect. So the
+  visible "extra large" was NOT the `rd` rule — it is the `size_per_view`/fallback path. The real
+  fix is FINDING-035. The `asset_manifest.json` `sm` rules added here are harmless but misplaced
+  legacy-file data (owner directive: size belongs in parts_db); candidate to unwind when F-035 lands.
 
 ### FINDING-034: siren→lighting brand pref + console_brand preference added (owner follow-up) — RESOLVED
 - **Location:** `ui/js/part_picker.js::_pickerPreferredBrand`, `domain/project_models.py`
@@ -1071,3 +1078,36 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   list showed Whelen siren SKUs including `SA315P Speaker` and `SA315U Speaker` with other
   brands collapsed into the "Other brands…" dropdown, matching the existing lights/bumper/cage/
   camera UX exactly.
+
+### FINDING-035: siren render size must move into parts_db at the part-type level (owner flaw #6, size — the real fix) — NEEDS-DESIGN
+- **Supersedes the cosmetic FINDING-033.** Owner directive (2026-07-13): size + image data
+  belongs in the **parts_db, at the part-type level** (with per-part override), NOT in the legacy
+  `parts_library.json` / `part_catalog.json` / `asset_manifest.json`, and NOT sprayed per-SKU.
+- **Mechanism (confirmed):** siren speakers are `render_kind == "equipment"`.
+  `ppt_helpers.get_icon_size()`'s equipment branch = `EQUIP_SIZES[part.name]` (hardcoded; no siren
+  entry) → `size_per_view` override → else raw-PNG aspect scaled to a 1.0" box. The siren asset
+  (`siren_speaker_wo_bracket_front.png`) is portrait 1920×2194, so the fallback balloons it. The
+  **assigned** dimension (legacy Part-Type manager "Render size (inches)" = `size_per_view` =
+  front **0.59×0.65**) is honored only when the part matches an exact legacy NAME
+  ("Siren Speaker 1/2", from `part_catalog.json`) or the one library MODEL `SA315P`
+  (`parts_library.json`). Every other siren SKU / non-"1/2" name (all picker-built sirens once
+  qty-naming lands, any 3rd+ siren) matches neither → balloons. This is precisely the owner's
+  "the size rules should have been transferred over" gap.
+- **Category:** workbook-shape (render size lives in legacy name/SKU-keyed stores, not parts_db) ·
+  **Severity:** MEDIUM (visible on every new siren build) · **Status:** NEEDS-DESIGN
+- **Rejected approach (do NOT repeat):** writing `size_per_view` onto every siren SKU in the
+  legacy `parts_library.json`/`part_catalog.json`. An interrupted subagent partially applied it;
+  reverted to `stash@{0}` ("REJECTED siren-size SKU-level hack"). It is SKU-level, in the wrong
+  data store, and duplicative.
+- **Design to do:** (1) a `size_per_view` (+ image) field on parts_db `part_types` (and an
+  optional per-`product`/per-`part_number` override); (2) the render pipeline (`planner` →
+  `get_icon_size`/`resolve_asset_path`) reads size/images from parts_db for picker-shaped parts,
+  keeping the legacy name/model path only for legacy name-based drafts; (3) an editing surface —
+  either revive the legacy size/image UI (`ui/js/settings/{part_types,parts_library,size_rules}.js`)
+  pointed at parts_db, or build it into the new Part Manager. Ties into the Phase-4 pipeline
+  inversion and `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` (size/images are more parts_db data the
+  repository should own). Scope with the owner before building.
+- **Related still-open siren work (this session, not started):** qty(1/2) selector + Top/Under
+  Push-Bumper mirrored-slot render (qty=1 CENTERED, qty=2 both) + dot count; bracket-nesting fix
+  (accessory child lands in "Other" — group children into the parent's section in
+  `manifest_editor.js`); qty=2 → two brackets. See `docs/audit/SESSION_HANDOFF_2026-07-13.md` §B/§C.

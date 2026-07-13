@@ -34,6 +34,23 @@ bash packaging/build_macos.sh                  # package Mac app
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, critical path, QB-as-foundation framing |
 | [docs/PARTS_DB_AND_PICKER.md](docs/PARTS_DB_AND_PICKER.md) | parts_db schema, Part Picker, accessories, tracers/bars, pending-QB, data backlog |
 | [docs/EXTERNAL_CONNECTION_SECURITY.md](docs/EXTERNAL_CONNECTION_SECURITY.md) | Security standards for API integrations |
+| [docs/AUDIT_REFACTOR_ROADMAP.md](docs/AUDIT_REFACTOR_ROADMAP.md) | Audit/refactor meta-plan, working method, model allocation |
+| [docs/audit/LEDGER.md](docs/audit/LEDGER.md) | Findings ledger (FINDING-nnn) — check before treating a flaw as new |
+| [docs/audit/PICKER_REDESIGN.md](docs/audit/PICKER_REDESIGN.md) | Part Picker redesign spec (browse tree, options-in-box, editor) |
+| [docs/audit/SESSION_HANDOFF_2026-07-13.md](docs/audit/SESSION_HANDOFF_2026-07-13.md) | **Current work** — what's shipped, what's open, where we're headed |
+
+## Current work (2026-07)
+
+Rebuilding the legacy name-based draft projects in the new Part Picker and fixing
+picker/placement flaws (owner flaw list). Status + next steps live in the session handoff
+above; findings in the ledger. **Working norms:** run cloud-off
+(`DTM_CLOUD=0 python -m dtm_buildsheet` or preview config "DTM App") — cloud-on triggers the 60s
+SharePoint sync that clobbers `parts_db.json`. Pins must stay green: `pytest tests/golden
+tests/contract` + `tools/ui_smoke/run_smoke.py` (9 flows). Golden masters must NOT move from
+authoring/DB changes; re-record contract snapshots only on intended DB/route changes, diff
+eyeballed. **Open design call:** render **size + image** data must move into `parts_db` at the
+**part-type level** (owner directive) — not the legacy `parts_library.json`/`part_catalog.json`/
+`asset_manifest.json`, and not per-SKU (see LEDGER FINDING-035).
 
 ## QuickBooks (conditionally relevant)
 
