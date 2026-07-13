@@ -50,6 +50,7 @@ def preferences_from_dict(d: Any) -> EquipmentPreferences:
         camera_brand=str(d.get("camera_brand", "")),
         push_bumper_brand=str(d.get("push_bumper_brand", "")),
         cage_brand=str(d.get("cage_brand", "")),
+        console_brand=str(d.get("console_brand", "")),
         slick_top=bool(d.get("slick_top", False)),
         mixed_brands=bool(d.get("mixed_brands", False)),
         notes=str(d.get("notes", "")),

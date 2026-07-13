@@ -31,10 +31,20 @@ function _ptLoadForm(project) {
     const cageBrands = _PT.projectOptions?.cage_brands || [];
     cageList.innerHTML = cageBrands.map(m => `<option value="${esc(m)}">`).join("");
   }
+  // No console_brands key in project_options.json — static fallback of the
+  // DB's known console manufacturers, same pattern as detail_edit.js.
+  const consoleList = $("proj-console-list");
+  if (consoleList) {
+    const consoleBrands = _PT.projectOptions?.console_brands?.length
+      ? _PT.projectOptions.console_brands
+      : ["Gamber Johnson", "Havis", "Tiger Tough"];
+    consoleList.innerHTML = consoleBrands.map(m => `<option value="${esc(m)}">`).join("");
+  }
 
-  $("proj-bumper-brand").value = pr.push_bumper_brand || "";
-  $("proj-cage-brand").value   = pr.cage_brand        || "";
-  $("proj-pref-notes").value   = pr.notes             || "";
+  $("proj-bumper-brand").value  = pr.push_bumper_brand || "";
+  $("proj-cage-brand").value    = pr.cage_brand        || "";
+  $("proj-console-brand").value = pr.console_brand     || "";
+  $("proj-pref-notes").value    = pr.notes             || "";
 
   const lightingContainer = $("proj-lighting-checkboxes");
   if (lightingContainer) {
@@ -361,6 +371,7 @@ function _ptBuildPayload() {
       camera_brand:      $("proj-camera")?.value            || "",
       push_bumper_brand: $("proj-bumper-brand")?.value.trim() || "",
       cage_brand:        $("proj-cage-brand")?.value.trim()   || "",
+      console_brand:     $("proj-console-brand")?.value.trim() || "",
       lighting_brands:   lightingBrands,
       notes:             $("proj-pref-notes")?.value.trim()   || "",
     },

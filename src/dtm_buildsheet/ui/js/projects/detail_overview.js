@@ -16,6 +16,7 @@ function _ptRenderOverview(project) {
     ["Lighting",    (pr.lighting_brands || []).join(", ")],
     ["Push Bumper", pr.push_bumper_brand],
     ["Cage",        pr.cage_brand],
+    ["Console",     pr.console_brand],
     ["Slick Top",   pr.slick_top ? "Yes" : null],
     ["Notes",       pr.notes],
   ].filter(([, v]) => v);

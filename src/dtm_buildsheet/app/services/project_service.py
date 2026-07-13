@@ -186,6 +186,8 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         pref_notes.append(f"Push bumper brand: {prefs.push_bumper_brand}")
     if prefs.cage_brand:
         pref_notes.append(f"Cage brand: {prefs.cage_brand}")
+    if prefs.console_brand:
+        pref_notes.append(f"Console brand: {prefs.console_brand}")
     if prefs.slick_top:
         pref_notes.append("Slick top: Yes")
     if prefs.mixed_brands:
@@ -306,6 +308,8 @@ def handle_create_individual_draft(
         pref_notes.append(f"Push bumper brand: {prefs.push_bumper_brand}")
     if prefs.cage_brand:
         pref_notes.append(f"Cage brand: {prefs.cage_brand}")
+    if prefs.console_brand:
+        pref_notes.append(f"Console brand: {prefs.console_brand}")
     if prefs.slick_top:
         pref_notes.append("Slick top: Yes")
     if prefs.mixed_brands:

@@ -54,6 +54,7 @@ class TestPreferencesFromDict:
             "camera_brand": "Axon",
             "push_bumper_brand": "Setina",
             "cage_brand": "Jotto Desk",
+            "console_brand": "Gamber Johnson",
             "slick_top": True,
             "mixed_brands": True,
             "notes": "custom note",
@@ -62,6 +63,8 @@ class TestPreferencesFromDict:
         assert isinstance(p, EquipmentPreferences)
         assert p.lighting_brands == ["Whelen", "Code 3"]
         assert p.camera_brand == "Axon"
+        assert p.cage_brand == "Jotto Desk"
+        assert p.console_brand == "Gamber Johnson"
         assert p.slick_top is True
         assert p.mixed_brands is True
         assert p.notes == "custom note"

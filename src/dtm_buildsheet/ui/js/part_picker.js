@@ -79,6 +79,13 @@ const _PREF_CAGE_PART_TYPES = new Set([
 const _PREF_CAMERA_PART_TYPES = new Set([
   "camera_dvr", "front_camera", "body_camera_dock", "rear_seat_camera", "rear_camera",
 ]);
+//   lighting_brands scope extension (owner follow-up): siren speakers are a
+//   lighting/Whelen-brand item, not their own agency preference — they should
+//   follow the same lighting_brands pref as `lights` type_id parts.
+const _PREF_LIGHTING_EXTRA_PART_TYPES = new Set(["siren_speaker"]);
+//   console_brand scope (owner follow-up): center console manufacturer,
+//   mirrors cage_brand/push_bumper_brand's text+datalist shape.
+const _PREF_CONSOLE_PART_TYPES = new Set(["console"]);
 
 // Returns the preferred brand STRING for the current picker filter context
 // (f = _pickerState.filters), or "" when no preference applies OR the
@@ -89,7 +96,7 @@ const _PREF_CAMERA_PART_TYPES = new Set([
 function _pickerPreferredBrand(f) {
   const prefs = (window._PT && window._PT.viewProject && window._PT.viewProject.preferences) || {};
   let want = "";
-  if (f.type_id === "lights") {
+  if (f.type_id === "lights" || _PREF_LIGHTING_EXTRA_PART_TYPES.has(f.part_type_id)) {
     want = (prefs.lighting_brands && prefs.lighting_brands[0]) || prefs.lighting || "";
   } else if (_PREF_BUMPER_PART_TYPES.has(f.part_type_id)) {
     want = prefs.push_bumper_brand || "";
@@ -97,6 +104,8 @@ function _pickerPreferredBrand(f) {
     want = prefs.cage_brand || "";
   } else if (_PREF_CAMERA_PART_TYPES.has(f.part_type_id)) {
     want = prefs.camera_brand || "";
+  } else if (_PREF_CONSOLE_PART_TYPES.has(f.part_type_id)) {
+    want = prefs.console_brand || "";
   }
   if (!want) return "";
   const wantLower = String(want).toLowerCase();

@@ -24,6 +24,7 @@ class EquipmentPreferences:
     camera_brand: str = ""
     push_bumper_brand: str = ""
     cage_brand: str = ""
+    console_brand: str = ""
     slick_top: bool = False
     mixed_brands: bool = False
     notes: str = ""

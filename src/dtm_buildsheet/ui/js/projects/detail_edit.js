@@ -22,6 +22,7 @@ function _ptRenderEditTab(project, editable) {
       ["Lighting",    (pr.lighting_brands || []).join(", ")],
       ["Push Bumper", pr.push_bumper_brand],
       ["Cage",        pr.cage_brand],
+      ["Console",     pr.console_brand],
       ["Slick Top",   pr.slick_top ? "Yes" : null],
       ["Notes",       pr.notes],
     ].filter(([, v]) => v);
@@ -74,6 +75,12 @@ function _ptRenderEditTab(project, editable) {
     const cageMfgs = _PT.projectOptions?.cage_brands?.length
       ? _PT.projectOptions.cage_brands
       : ["SETINA", "PRO-GARD"];
+    // No console_brands key in project_options.json (config-driven list wasn't
+    // extended for this preference) — static fallback of the DB's known
+    // console manufacturers, same pattern as the bumper/cage static fallbacks.
+    const consoleMfgs = _PT.projectOptions?.console_brands?.length
+      ? _PT.projectOptions.console_brands
+      : ["Gamber Johnson", "Havis", "Tiger Tough"];
 
     panel.innerHTML = `
       <div class="proj-edit-toolbar">
@@ -123,6 +130,11 @@ function _ptRenderEditTab(project, editable) {
           <label>Cage / Partition Brand</label>
           <input type="text" id="et-cage-brand" value="${esc(pr.cage_brand || "")}" placeholder="e.g. Pro-Gard" list="et-cage-list" autocomplete="off">
           <datalist id="et-cage-list">${cageMfgs.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+        </div>
+        <div class="form-group">
+          <label>Console Brand</label>
+          <input type="text" id="et-console-brand" value="${esc(pr.console_brand || "")}" placeholder="e.g. Gamber Johnson" list="et-console-list" autocomplete="off">
+          <datalist id="et-console-list">${consoleMfgs.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
         </div>
       </div>
       <div class="form-group">
@@ -337,6 +349,7 @@ function _ptCollectEditForm() {
       camera_brand:      $("et-camera")?.value           || "",
       push_bumper_brand: ($("et-bumper-brand")?.value    || "").trim(),
       cage_brand:        ($("et-cage-brand")?.value      || "").trim(),
+      console_brand:     ($("et-console-brand")?.value   || "").trim(),
       lighting_brands:   lightingBrands,
       notes:             ($("et-pref-notes")?.value      || "").trim(),
     },
