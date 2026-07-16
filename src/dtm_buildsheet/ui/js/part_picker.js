@@ -1422,14 +1422,14 @@ async function _pickerRenderLocation() {
 }
 
 function _pickerPartDetailsSatisfied() {
-  if (_pickerState.filters.part_type_id !== "control_head") return true;
+  if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return true;
   const details = _pickerState.partDetails || {};
   return details.paMicLocation === "drivers_door"
     || (details.paMicLocation === "__custom__" && Boolean(String(details.paMicLocationCustom || "").trim()));
 }
 
 function _pickerPartDetailsNote() {
-  if (_pickerState.filters.part_type_id !== "control_head") return "";
+  if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return "";
   const details = _pickerState.partDetails || {};
   if (details.paMicLocation === "drivers_door") return "PA mic: Driver's door";
   if (details.paMicLocation === "__custom__") {
@@ -1442,7 +1442,10 @@ function _pickerPartDetailsNote() {
 function _pickerRenderPartDetails() {
   const panel = $("picker-part-details");
   if (!panel) return;
-  if (_pickerState.filters.part_type_id !== "control_head") {
+  // A manifest subgroup opens the whole Light Control System family. In that
+  // path the filter has no leaf yet, so derive the concrete type from the
+  // selected product just as resolve/add does. Edit mode already has a leaf.
+  if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") {
     panel.hidden = true; panel.innerHTML = "";
     return;
   }
@@ -2103,7 +2106,7 @@ function _pickerFixtureAutoLocation(product) {
 }
 
 function _pickerHasFixedPartLocation() {
-  return _pickerState.filters.part_type_id === "console";
+  return _pickerResolvedPartTypeId(_pickerState.filters) === "console";
 }
 
 function _pickerApplyFixedPartLocation() {

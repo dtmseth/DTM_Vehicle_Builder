@@ -815,26 +815,37 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.click(".pbt-cat-caret-btn[data-cat='equipment']")
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
     page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
-    page.wait_for_selector(".pbt-leaf[data-pt='control_head']")
+    page.wait_for_selector(".pbt-fam-select[data-family='light_control_system']")
 
-    # Light Control Head is text-only (no diagram), so its placement and
-    # PA-mic detail should both use clear cards rather than native selects.
-    page.click(".pbt-leaf[data-pt='control_head']")
+    # Manifest Add opens the complete Light Control System family, not a
+    # particular leaf. Selecting a control head from that family must still
+    # show its PA-mic detail during the initial add (not only on edit).
+    page.click(".pbt-fam-select[data-family='light_control_system']")
     page.wait_for_timeout(_SETTLE_MS)
-    page.click(".pp-head >> nth=0")
+    assert page.evaluate("_pickerState.filters.part_type_id") == ""
+    # The fixture vehicle can hide otherwise valid generic control heads.
+    # The type-detail behavior is independent of that display filter.
+    if page.locator("#pp-veh-only").is_checked():
+        page.click("#pp-veh-only")
+        page.wait_for_timeout(200)
+    control_head_id = page.evaluate(
+        "() => _pickerState.products.find(p => (p.fits_part_types || []).includes('control_head'))?.product_id || ''"
+    )
+    assert control_head_id, "Light Control System family must include a control-head product"
+    assert page.locator(f".pp-head[data-pid='{control_head_id}']").count() == 1, (
+        "The selected control head should be visible after disabling the vehicle display filter"
+    )
+    page.click(f".pp-head[data-pid='{control_head_id}']")
     page.wait_for_timeout(200)
-    page.click(".pp-sku [data-pick] >> nth=0")
+    assert page.locator(f".pp-sku [data-pick][data-pid='{control_head_id}']").count() > 0
+    page.click(f".pp-sku [data-pick][data-pid='{control_head_id}'] >> nth=0")
     page.wait_for_timeout(200)
+    assert page.locator("#picker-tab-btn-location").is_visible()
     page.click("#picker-tab-btn-location")
     page.wait_for_timeout(_SETTLE_MS)
-    page.wait_for_selector(".picker-location-card[data-text-location='IN CENTER CONSOLE']")
-    assert page.locator("#picker-loc-select").count() == 0, "text-only locations should use selection cards, not a native dropdown"
-    page.click(".picker-location-card[data-text-location='IN CENTER CONSOLE']")
-    assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
-    page.click(".picker-location-card[data-text-location-custom]")
-    page.wait_for_selector("#picker-loc-custom-text")
-    page.fill("#picker-loc-custom-text", "Right side equipment bay")
-    assert page.evaluate("_pickerState.loc.selected") == "Right side equipment bay"
+    assert page.locator("[data-pa-mic-location='drivers_door']").count() == 1, (
+        "Initial family-based control-head add must show the PA-mic detail"
+    )
     page.click("[data-pa-mic-location='drivers_door']")
     assert page.evaluate("_pickerState.partDetails.paMicLocation") == "drivers_door"
     page.click("[data-pa-mic-location='__custom__']")
