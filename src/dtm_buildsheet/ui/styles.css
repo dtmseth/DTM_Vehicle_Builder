@@ -428,6 +428,11 @@
     .picker-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
     .picker-tab:disabled{color:var(--border);cursor:default}
     .picker-tabpane{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    /* Details can combine mounting choices and install questions. Keep the
+       footer fixed while this pane scrolls instead of clipping lower cards. */
+    #picker-pane-location{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+    #picker-location-content{display:flex;flex-direction:column;min-height:100%}
+    #picker-system-details{padding:16px 26px 22px}
     .picker-twopane{flex:1;min-height:0;display:grid;grid-template-columns:300px 1fr;gap:0}
     .picker-filters{border-right:1px solid var(--border);overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px;background:#fafbfc}
     .picker-products{overflow-y:auto;padding:14px 18px}
@@ -521,6 +526,9 @@
     .picker-location-custom-field>span{font-size:12px;font-weight:750;color:var(--text)}
     .picker-location-custom-input{width:100%;padding:12px 13px;border:2px solid #cfdbe4;border-radius:9px;background:#fff;color:var(--text);font:13px/1.4 inherit;outline:none}
     .picker-location-custom-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,64,175,.13)}
+    #picker-part-details{margin:8px 26px 22px}
+    #picker-part-details .picker-location-chooser{width:100%;padding:18px}
+    #picker-part-details .picker-location-chooser h3{font-size:18px}
     @media(max-width:560px){.picker-location-grid{grid-template-columns:1fr}.picker-location-chooser{padding:17px}}
     /* footer lighthead preview */
     .picker-foot-heads{display:inline-flex;gap:5px;vertical-align:middle;margin-right:10px}
@@ -558,7 +566,11 @@
     .pp-sku-c{color:var(--muted);flex:1}
     /* location dot picker */
     .picker-loc-views{display:flex;gap:6px;padding:12px 26px 0;flex-shrink:0}
-    .picker-loc-stage{flex:1;min-height:0;position:relative;margin:12px 26px 16px;background:#f5f6fa;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .picker-loc-stage{flex:1 0 300px;min-height:260px;position:relative;margin:12px 26px 16px;background:#f5f6fa;border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    /* Text-only choices already use their own cards, so don't reserve an
+       empty vehicle-stage frame above the additional installation detail. */
+    .picker-loc-stage.picker-loc-stage--text{flex:0 0 auto;min-height:0;margin:12px 26px 8px;background:transparent;border:0;border-radius:0;overflow:visible}
+    .picker-loc-stage--text .picker-loc-btns{padding:0;overflow:visible}
     #picker-loc-img{max-width:100%;max-height:100%;object-fit:contain;display:block}
     .picker-loc-dots{position:absolute;inset:0;pointer-events:none}
     .picker-dot{position:absolute;width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:var(--navy);transform:translate(-50%,-50%);cursor:pointer;pointer-events:auto;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:transform .1s}

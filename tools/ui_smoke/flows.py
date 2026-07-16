@@ -841,8 +841,13 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.click(f".pp-sku [data-pick][data-pid='{control_head_id}'] >> nth=0")
     page.wait_for_timeout(200)
     assert page.locator("#picker-tab-btn-location").is_visible()
-    page.click("#picker-tab-btn-location")
+    assert not page.locator("#picker-add-btn").is_disabled(), (
+        "Required PA-mic details must not disable the button that opens Details"
+    )
+    page.click("#picker-add-btn")
     page.wait_for_timeout(_SETTLE_MS)
+    assert page.locator("#picker-pane-location").is_visible()
+    assert page.evaluate("getComputedStyle(document.getElementById('picker-pane-location')).overflowY") == "auto"
     assert page.locator("[data-pa-mic-location='drivers_door']").count() == 1, (
         "Initial family-based control-head add must show the PA-mic detail"
     )
@@ -853,11 +858,34 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.fill("#picker-pa-mic-custom", "Passenger kick panel")
     assert page.evaluate("_pickerState.partDetails.paMicLocationCustom") == "Passenger kick panel"
 
+    # The PA-mic selection is a display-only manifest child on the Control
+    # Head, not a second purchased/rendered part. Set the ordinary mounting
+    # location here so this flow can verify the saved parent payload directly.
+    page.evaluate("""() => {
+      Object.assign(_pickerState.loc, {
+        selected: 'IN CENTER CONSOLE', name_pattern: 'Control Head',
+        base_label: 'Control Head', catalog_names: [], textCustom: false,
+      });
+      _pickerUpdateFooter();
+    }""")
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel", state="hidden")
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", _draft_id)
+    control_head = next(p for p in draft["draft"]["parts"] if p.get("part_type") == "control_head")
+    pa_mic = next((c for c in control_head.get("components", []) if c.get("label") == "PA Mic"), None)
+    assert pa_mic == {
+        "label": "PA Mic", "location": "Passenger kick panel", "detail": "Shop installation detail",
+    }, f"expected PA-mic manifest component, got {control_head.get('components')!r}"
+    page.wait_for_selector(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
+    page.click(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
+    manifest_pa_mic = page.locator(f"tr.me-comp-row[data-parent='{control_head['line_id']}']").filter(has_text="PA Mic")
+    assert manifest_pa_mic.is_visible()
+    assert "PA Mic" in manifest_pa_mic.text_content() and "Passenger kick panel" in manifest_pa_mic.text_content()
+
     # A Center Console has one physical location, so it should add directly
     # from the SKU tab with its fixed placement already populated. It must
     # not expose the generic Details/placement tab.
-    page.evaluate("pickerClose()")
-    page.wait_for_selector("#picker-panel", state="hidden")
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
     page.click(".pbt-cat-caret-btn[data-cat='structural']")

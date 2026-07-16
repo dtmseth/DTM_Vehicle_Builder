@@ -1428,15 +1428,26 @@ function _pickerPartDetailsSatisfied() {
     || (details.paMicLocation === "__custom__" && Boolean(String(details.paMicLocationCustom || "").trim()));
 }
 
+function _pickerPaMicLocation() {
+  const details = _pickerState.partDetails || {};
+  if (details.paMicLocation === "drivers_door") return "Driver's door";
+  if (details.paMicLocation === "__custom__") return String(details.paMicLocationCustom || "").trim();
+  return "";
+}
+
 function _pickerPartDetailsNote() {
   if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return "";
-  const details = _pickerState.partDetails || {};
-  if (details.paMicLocation === "drivers_door") return "PA mic: Driver's door";
-  if (details.paMicLocation === "__custom__") {
-    const custom = String(details.paMicLocationCustom || "").trim();
-    return custom ? `PA mic: ${custom}` : "";
-  }
-  return "";
+  const location = _pickerPaMicLocation();
+  return location ? `PA mic: ${location}` : "";
+}
+
+// Components are display-only manifest rows carried by the parent line. This
+// makes the PA-mic placement visible to the shop without creating a second
+// billable or renderable part in the build plan.
+function _pickerPartDetailsComponent() {
+  if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return null;
+  const location = _pickerPaMicLocation();
+  return location ? { label: "PA Mic", location, detail: "Shop installation detail" } : null;
 }
 
 function _pickerRenderPartDetails() {
@@ -1505,10 +1516,12 @@ function _pickerDrawLocation() {
   }
 
   const img = $("picker-loc-img"), dots = $("picker-loc-dots"), btns = $("picker-loc-btns");
+  const stage = $("picker-loc-stage");
   if (loc.view === "location") {
     // No-diagram locations (equipment mounts, interior lights, console/partition)
     // are shop-reference choices. Render their options as clear selection cards,
     // never a stranded native dropdown.
+    if (stage) stage.classList.add("picker-loc-stage--text");
     if (img) img.style.display = "none";
     if (dots) dots.hidden = true;
     if (btns) {
@@ -1581,6 +1594,7 @@ function _pickerDrawLocation() {
     return;
   }
   // Exterior: image + dots
+  if (stage) stage.classList.remove("picker-loc-stage--text");
   if (btns) btns.hidden = true;
   if (dots) dots.hidden = false;
   if (img) {
@@ -2856,6 +2870,9 @@ function _pickerUpdateFooter() {
   const radioOk = _pickerRadioSatisfied();
   const detailsOk = _pickerPartDetailsSatisfied();
   const ready = accOk && tracerOk && lightbarOk && radioOk && detailsOk;
+  // A required detail belongs on the next screen. It must not prevent the
+  // user from reaching that screen after selecting the part.
+  const detailsEntryReady = accOk && tracerOk && lightbarOk;
   const hasAcc = _pickerVisibleAccessoryGroups().length > 0;
   const selName = sel ? (sel.model + (sel.sku ? " · " + sel.sku : "")) : "";
   let hint = (sel && hasAcc && !accOk) ? ' <span class="picker-foot-acc">· choose accessories</span>' : "";
@@ -2921,8 +2938,8 @@ function _pickerUpdateFooter() {
       _showTwoButtons(sel && ready, _pickerDoAdd);
     } else {
       btn.textContent = "Add details →";
-      btn.disabled = !(sel && ready);
-      _pickerState.footerHandler = (sel && ready) ? () => _pickerSwitchTab("location") : null;
+      btn.disabled = !(sel && detailsEntryReady);
+      _pickerState.footerHandler = (sel && detailsEntryReady) ? () => _pickerSwitchTab("location") : null;
       _showTwoButtons(false, null);
     }
   } else {
@@ -3117,9 +3134,11 @@ async function _pickerDoAdd(addAndContinue) {
         : `/api/draft/${draftId}/part`;
       // Include picker_config so Edit can pre-fill exactly (Step 6).
       const detailNote = _pickerPartDetailsNote();
+      const detailComponent = _pickerPartDetailsComponent();
       const payload = {
         ...row,
         ...(detailNote ? { notes: detailNote } : {}),
+        ...(detailComponent ? { components: [...(row.components || []), detailComponent] } : {}),
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };
