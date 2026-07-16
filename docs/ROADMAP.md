@@ -37,10 +37,10 @@ consumer depend on real QB data being in the DB, so the QB Item import sits *und
 the canonical DB), not beside it. Finalizing the picker against pre-QB data means building against
 data that's being deprecated. *Food on the shelves before the doors open.*
 
-**The Part Picker is ~80% built, not blocked.** Chunks 1–7 are done and working for Whelen lights.
-Remaining: Chunk 8 (search), Chunk 9 (polish + remove the flat modal), and non-light/no-color
-coverage. The old "Chunk 5 JS bug / blocked" notes are stale — that was a server-side `AttributeError`,
-fixed.
+**The Part Picker is actively usable and under owner rebuild testing.** The original Chunks 1-8 are
+built, including global search. Current work is Chunk 9 polish, guided-system coverage
+(push-bumper/radio), data quality, and retiring fallback surfaces once the real project rebuilds
+prove the picker path.
 
 **The real bottleneck was data-review throughput** — now addressed: the **Parts Manager SKU Review grid
 is shipped** (brand-sorted, every-field-inline-editable, QB-source read-only view, light/unbilled tags,
@@ -61,7 +61,8 @@ accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER
    repository seam, not on route-layer logic; owner decisions logged in
    `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` §5.
 4. **QB Pass-2 import** *(parallel/feeding)* — reviewed through the Parts Manager grid. Fills the shelves.
-5. **Finish the Part Picker** *(then)* — Chunks 8–9 + non-light coverage, against final SKU data.
+5. **Finish the Part Picker** *(then)* — Chunk 9 polish, guided-system hardening, and continued
+   non-light data-quality coverage against final SKU data.
 6. **Phase 4 consumer migration** *(then)* — strip domain fields from `workbook_rules.json`.
 
 **QB go-live** (deploy relay + submit the Intuit questionnaire — see [QUICKBOOKS.md](QUICKBOOKS.md))
@@ -120,10 +121,10 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
-- 🟡 **Phase 3** — schema + service + migration landed; **Intelligent Part Picker ~80% built** (Chunks 1–7 done, working for Whelen lights; Chunks 8–9 + non-light coverage remain). The QB Item import is the *foundation* feeding this (see Current Direction above). Full status: `docs/PARTS_DB_AND_PICKER.md`.
+- 🟡 **Phase 3** — schema + service + migration landed; **Intelligent Part Picker actively usable** (original Chunks 1-8 built; Chunk 9 polish, guided systems, and data-quality hardening remain). The QB Item import is the *foundation* feeding this (see Current Direction above). Full status: `docs/PARTS_DB_AND_PICKER.md`.
   - PR-1/2a/2b (service + schema + migration + Part Manager seed): commits `cbc18d4`, `5f4189b`, `befb52d`, `368c040`, `6b68847`, `7157c13`, `01ada6d`.
   - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements; 417+ QB-linked SKUs (Setina, Whelen, Arctic Start; Gamber pilot pending).
-  - **Next** (critical path): **Parts Manager revamp** for self-service data review → continue QB Pass-2 import → finish picker Chunks 8–9 + non-light coverage → Phase 4 consumer migration.
+  - **Next** (critical path): **Parts Manager revamp** for self-service data review → continue QB Pass-2 import → finish picker polish/guided-system hardening → Phase 4 consumer migration.
 - 🟢 **Phase 8 MVP brought forward** (out of order): the read-only tree + edit-modal Part Manager (Settings → Advanced → Part Manager → Database v2). **Being revamped now** into a two-view editor (SKU grid + hierarchy) — see §Phase 8. Inventory/pricing/separate-app questions still deferred to the full Phase 8.
 
 ### Phase 0 — Foundation Refactor
@@ -426,7 +427,7 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 - ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
 - ✅ `parts_db.json` seeded (5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements). 417 QB-linked SKUs.
 - ✅ Part Manager UI (`ui/js/settings/part_manager.js`) — admin read-only tree browser.
-- 🟢 **Intelligent Part Picker — ~80% built.** Chunks 1–7 done and working for Whelen lights (data foundation, rewired modal, picker shell, smart nav, products grid, color configurator, SKU resolver/translation). Remaining: Chunk 8 (search), Chunk 9 (polish + remove the flat modal), and non-light/no-color coverage. Full design + chunk status: `docs/PARTS_DB_AND_PICKER.md`. (The old "Chunk 5 JS bug" was a server-side `AttributeError`, fixed.)
+- 🟢 **Intelligent Part Picker — actively usable.** Original Chunks 1-8 are built, including global search; Chunk 9 polish, guided-system hardening, and non-light data-quality work remain. Full design + current status: `docs/PARTS_DB_AND_PICKER.md`. (The old "Chunk 5 JS bug" was a server-side `AttributeError`, fixed.)
 
 **Goal**: `parts_db.json` is the authoritative data source for the build flow. The QB-linked part catalog is visible and usable when adding parts to builds.
 

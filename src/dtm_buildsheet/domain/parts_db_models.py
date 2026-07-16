@@ -177,6 +177,7 @@ class PartType:
     allowed_placements: list[str] = field(default_factory=list)
     workbook_label_pattern: str = "{label}"                 # legacy workbook export label
     sequence_scope: str = "global"                          # per_part_type counter scope
+    render: dict[str, Any] = field(default_factory=dict)     # parts_db-owned render metadata
 
 
 # ── Color palette ────────────────────────────────────────────────────────────

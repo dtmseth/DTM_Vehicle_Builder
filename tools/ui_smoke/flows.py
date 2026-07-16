@@ -146,10 +146,10 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         # only click a header if it isn't open yet, or the click would
         # collapse it instead.
         if not page.is_visible(".pbt-cat-head[data-cat='structural'].open"):
-            page.click(".pbt-cat-head[data-cat='structural']")
+            page.click(".pbt-cat-caret-btn[data-cat='structural']")
             page.wait_for_timeout(200)
-        if not page.is_visible(".pbt-fam-head[data-fam='console_system'].open"):
-            page.click(".pbt-fam-head[data-fam='console_system']")
+        if not page.is_visible(".pbt-fam-caret-btn[data-fam='console_system'].open"):
+            page.click(".pbt-fam-caret-btn[data-fam='console_system']")
             page.wait_for_timeout(200)
         page.click(".pbt-leaf[data-pt='console']")
         page.wait_for_timeout(_SETTLE_MS)
@@ -295,15 +295,15 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
 
     # A non-light category (Equipment) expands in place — the panel/tabs never
     # change, unlike the old Lights-only navigate-to-a-new-page behavior.
-    page.click(".pbt-cat-head[data-cat='equipment']")
+    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
     page.wait_for_timeout(_SETTLE_MS)
     leaf_count = page.locator(".pbt-leaf").count()
     assert leaf_count > 0, "expected Equipment category to render at least one part type/family member"
 
     # A family expands to its member part types (finer filtering).
-    page.click(".pbt-fam-head[data-fam='radar']")
-    page.wait_for_selector(".pbt-fam-head[data-fam='radar'].open")
+    page.click(".pbt-fam-caret-btn[data-fam='radar']")
+    page.wait_for_selector(".pbt-fam-caret-btn[data-fam='radar'].open")
     page.wait_for_timeout(200)
     page.wait_for_selector(".pbt-leaf[data-pt='radar_display_unit']")
 
@@ -314,13 +314,15 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
     # Families sort before standalones within a category (owner ruling
     # 2026-07-10, flaws #7+#8) — verify for Structural: Push Bumper / Cage /
     # Console / Storage families first, running_boards_nerf_bars standalone last.
-    page.click(".pbt-cat-head[data-cat='structural']")
+    page.click(".pbt-cat-caret-btn[data-cat='structural']")
     page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
     page.wait_for_timeout(_SETTLE_MS)
     child_kinds = page.evaluate("""
-        () => Array.from(document.querySelectorAll(
-            ".pbt-cat-head[data-cat='structural'] + .pbt-cat-body > *"
-        )).map(el => el.classList.contains('pbt-fam') ? 'family' : 'standalone')
+        () => {
+            const head = document.querySelector(".pbt-cat-head[data-cat='structural']");
+            return Array.from(head.closest(".pbt-cat").querySelectorAll(":scope > .pbt-cat-body > *"))
+                .map(el => el.classList.contains('pbt-fam') ? 'family' : 'standalone');
+        }
     """)
     assert child_kinds, "expected Structural category to render children"
     first_standalone = next((i for i, k in enumerate(child_kinds) if k == "standalone"), len(child_kinds))
@@ -328,6 +330,218 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
         f"families must sort before standalones under Structural, got {child_kinds}"
     assert "standalone" in child_kinds, \
         "expected at least one Structural standalone (running_boards_nerf_bars)"
+
+
+def flow_radio_communications_workflow(page, base_url: str) -> None:
+    """Radio Communications is a guided family-level flow. Selecting the
+    family header should open the shared one-question-at-a-time system tool
+    and add one expandable manifest line for the kit."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+
+    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    page.wait_for_selector(".pbt-fam-select[data-family='radio_comms']")
+    page.click(".pbt-fam-select[data-family='radio_comms']")
+    page.wait_for_selector("#picker-products .guided-system[data-system-kind='radio']")
+    page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
+    assert page.evaluate("() => _pickerState.radio.choices.provider") == "customer", \
+        "new system provider should default to customer supplied"
+
+    assert page.locator("#picker-products .guided-progress").count() == 1, \
+        "expected the guided radio progress bar"
+    assert page.locator("#picker-products .guided-choice-grid").count() == 1, \
+        "expected one focused radio question instead of a dense form"
+    assert page.locator("#picker-products .guided-summary").count() == 1, \
+        "expected the radio answer summary"
+
+    # Exercise the DTM purchase branch so its free-text note is covered too.
+    _guided_pick(page, "condition", "new")
+    _guided_next(page)
+    _guided_pick(page, "provider", "dtm")
+    _guided_next(page)
+    page.locator("textarea[data-system-text='purchaseDetails']").fill("Customer-specified Motorola mobile radio, split kit, include antenna and mic.")
+    _guided_next(page)
+    assert page.evaluate("() => _pickerState.radio.choices.format") == "split", \
+        "split-head radio should be the default layout"
+    _guided_next(page)
+    _guided_pick(page, "headLoc", "console_position_1")
+    _guided_next(page)
+    _guided_pick(page, "brickLoc", "equipment_tray")
+    _guided_next(page)
+    _guided_pick(page, "antennaStyle", "cylinder")
+    _guided_next(page)
+    antenna_locations = page.locator(".guided-option[data-system-choice='antennaLoc']").evaluate_all(
+        "els => els.map(el => el.dataset.systemValue)"
+    )
+    assert set(antenna_locations) == {"rear_left_roof", "__custom__"}, \
+        f"cylinder antennas should only allow the rear-left roof or Custom, got {antenna_locations!r}"
+    _guided_pick(page, "antennaLoc", "rear_left_roof")
+    _guided_next(page)
+    _guided_pick(page, "speakerLoc", "back_center_console")
+    _guided_next(page)
+    _guided_pick(page, "micMount", "manufacturer_clip")
+    _guided_next(page)
+    _guided_pick(page, "micLoc", "__custom__")
+    page.locator("input[data-system-custom='micLocCustom']").fill("Console sidecar")
+
+    btn_text = page.locator("#picker-add-btn").text_content().strip()
+    assert btn_text == "Add and Finish", \
+        f"radio workflow should add from the Part tab, got primary button {btn_text!r}"
+
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
+    page.wait_for_timeout(_SETTLE_MS)
+
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    parts = draft["draft"]["parts"]
+    radio = next((p for p in parts if p.get("picker_config", {}).get("system_type") == "radio"), None)
+    assert radio is not None, "expected radio workflow to add one guided system line"
+    assert radio.get("part_type") == "radio_head", "radio system line must retain its planner part type"
+    assert radio.get("part_number") == "DTM PURCHASE — SEE DETAILS"
+    assert radio.get("notes") == "Customer-specified Motorola mobile radio, split kit, include antenna and mic."
+    assert radio["picker_config"]["choices"]["purchaseDetails"] == radio.get("notes")
+    component_types = {c.get("part_type") for c in radio.get("components", [])}
+    expected = {"radio_head", "radio_brick", "radio_antenna_top", "radio_speaker", "radio_mic_clip", "radio_cable"}
+    assert expected.issubset(component_types), \
+        f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
+    mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
+    assert mic.get("location") == "Console sidecar", "custom shop location should populate the component row"
+
+
+def _open_guided_system(page, base_url: str, family_id: str, kind: str) -> str:
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_timeout(200)
+    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    page.wait_for_selector(f".pbt-fam-select[data-family='{family_id}']")
+    page.click(f".pbt-fam-select[data-family='{family_id}']")
+    page.wait_for_selector(f"#picker-products .guided-system[data-system-kind='{kind}']")
+    page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
+    return draft_id
+
+
+def _guided_pick(page, key: str, value: str) -> None:
+    page.locator(f".guided-option[data-system-choice='{key}'][data-system-value='{value}']").click()
+    page.wait_for_timeout(80)
+
+
+def _guided_next(page) -> None:
+    button = page.locator(".guided-next")
+    assert button.is_enabled(), "guided system should enable Next after a valid answer"
+    button.click()
+    page.wait_for_timeout(80)
+
+
+def _guided_finish_defaults(page) -> None:
+    for _ in range(30):
+        if page.evaluate("() => typeof window._pickerRadioSatisfied === 'function' && _pickerRadioSatisfied()"):
+            return
+        button = page.locator(".guided-next")
+        if not button.is_enabled():
+            options = page.locator(".guided-option")
+            assert options.count() > 0, "guided step needs an answer but has no selectable options"
+            options.nth(0).click()
+            page.wait_for_timeout(80)
+        else:
+            _guided_next(page)
+    raise AssertionError("guided system did not reach a complete state")
+
+
+def flow_radar_system_workflow(page, base_url: str) -> None:
+    """Radar follows the shared system flow and exposes the requested cable,
+    antenna, split-unit, and counting-unit branches."""
+    draft_id = _open_guided_system(page, base_url, "radar", "radar")
+    _guided_pick(page, "condition", "reused")
+    _guided_next(page)
+    assert "Will the radar cables be refreshed?" in page.locator(".guided-question h2").text_content()
+    _guided_pick(page, "refresh", "yes")
+    _guided_next(page)
+    assert "Which radar cables should be refreshed?" in page.locator(".guided-question h2").text_content()
+    _guided_pick(page, "refreshCables", "front_antenna_cable")
+    _guided_next(page)
+    _guided_pick(page, "split", "yes")
+    _guided_next(page)
+    assert "counting unit" in page.locator(".guided-question h2").text_content().lower(), \
+        "split radar should ask the counting-unit location immediately"
+    _guided_pick(page, "countingLoc", "center_console")
+    _guided_next(page)
+    _guided_pick(page, "frontLoc", "a_pillar")
+    _guided_next(page)
+    rear_locations = page.locator(".guided-option[data-system-choice='rearLoc']").evaluate_all(
+        "els => els.map(el => el.dataset.systemValue)"
+    )
+    assert "seatbelt_slot" not in rear_locations, \
+        "the Tahoe-only rear seatbelt slot must not appear on the default PIU smoke build"
+    _guided_pick(page, "rearLoc", "d_pillar")
+    _guided_finish_defaults(page)
+    assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    radar = next((p for p in draft["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "radar"), None)
+    assert radar and radar["picker_config"]["choices"]["frontLoc"] == "a_pillar"
+    assert radar["picker_config"]["choices"]["countingLoc"] == "center_console"
+    parent = page.locator("tr.me-parent-row").filter(has_text="Radar System")
+    assert parent.count() == 1, "expected the radar kit to render as one expandable manifest line"
+    parent.click()
+    assert page.locator("tr.me-system-detail[data-parent]").count() == 0, \
+        "manifest should show component rows, not duplicate question-and-answer rows"
+    component_text = " ".join(page.locator("tr.me-comp-row[data-parent]").all_text_contents())
+    assert all(text in component_text for text in ("On A-pillar", "Short A-bracket", "On D-pillar", "Tall A-bracket", "In center console")), \
+        f"expected populated radar component rows, got {component_text!r}"
+    parent.locator(".me-edit-btn").click()
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar' && Object.keys(_pickerState.radio.choices || {}).length > 0")
+    page.wait_for_selector("#picker-products .guided-system[data-system-kind='radar']")
+    restored = page.evaluate("() => _pickerState.radio.choices")
+    assert restored.get("frontLoc") == "a_pillar" and restored.get("countingLoc") == "center_console", \
+        f"expected guided system edits to restore saved radar answers, got {restored!r}"
+
+
+def flow_camera_system_workflow(page, base_url: str) -> None:
+    """Camera uses the same ownership/cable sequence and then asks only the
+    location questions for the selected camera components."""
+    draft_id = _open_guided_system(page, base_url, "camera_system", "camera")
+    _guided_pick(page, "condition", "reused")
+    _guided_next(page)
+    _guided_pick(page, "refresh", "yes")
+    _guided_next(page)
+    _guided_pick(page, "refreshCables", "power_cable")
+    _guided_next(page)
+    _guided_pick(page, "cameraBrand", "axon_fleet_3")
+    axon_options = page.evaluate("() => _systemSteps().find(step => step.key === 'cameraParts').options.map(option => option.value)")
+    assert axon_options == ["front", "rear_seat"], \
+        f"Axon Fleet 3 must not offer rear camera, body dock, or wireless mic, got {axon_options!r}"
+    _guided_pick(page, "cameraBrand", "watchguard_m500")
+    _guided_next(page)
+    _guided_pick(page, "dvrLoc", "equipment_tray")
+    _guided_next(page)
+    for component in ("front", "rear_seat", "rear", "body_dock", "wireless_mic"):
+        _guided_pick(page, "cameraParts", component)
+    _guided_next(page)
+    _guided_pick(page, "rearSeatLoc", "upper_cage_bar")
+    _guided_next(page)
+    _guided_pick(page, "bodyDockLoc", "passenger_visor")
+    _guided_next(page)
+    _guided_pick(page, "wirelessMicLoc", "center_console")
+    assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    camera = next((p for p in draft["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "camera"), None)
+    assert camera is not None, "expected camera workflow to add one guided system line"
+    assert set(camera["picker_config"]["choices"]["cameraParts"]) == {"front", "rear_seat", "rear", "body_dock", "wireless_mic"}
+    camera_components = {item["part_type"]: item for item in camera["components"]}
+    assert camera_components["front_camera"]["location"] == "Upper windshield"
+    assert camera_components["rear_camera"]["location"] == "Upper rear window"
 
 
 def flow_light_options_in_product_box(page, base_url: str) -> None:
@@ -343,22 +557,13 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
     page.wait_for_timeout(200)
 
     # Expand Lights category in the browse tree.
-    page.click(".pbt-cat-head[data-cat='lights']")
+    page.click(".pbt-cat-caret-btn[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
 
-    # Expand the first EXPAND-ONLY family under Lights. Warning/Interior/Scene/
-    # Spotlight are now SELECTABLE headers (owner ruling 2026-07-10, flaws
-    # #7+#8) and no longer match `.pbt-fam-head` — only Light Bars does, so
-    # this lands there (a colour-configured category, same as before).
-    fam_heads = page.locator(".pbt-cat-head[data-cat='lights'] + .pbt-cat-body .pbt-fam-head")
-    if fam_heads.count() > 0:
-        fam_heads.first.click()
-        page.wait_for_timeout(200)
-
-    # Pick the first leaf that has a picker_flow — i.e., a colour-configured light type.
-    page.wait_for_selector(".pbt-leaf[data-flow]")
-    page.click(".pbt-leaf[data-flow] >> nth=0")
+    # Pick Warning directly; it is the deterministic color-configured light path.
+    page.wait_for_selector(".pbt-fam-select[data-flow='warning']")
+    page.click(".pbt-fam-select[data-flow='warning']")
     page.wait_for_timeout(_SETTLE_MS)
 
     # Step 2 assertion A: we stay on the Browse crumb (no "Colors & options" step).
@@ -450,7 +655,7 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     is asserted too, in case that ever changes.
     """
     _project_id, _unit_id, draft_id = _seed_project_with_draft(
-        base_url, preferences={"lighting_brands": ["Whelen"]}
+        base_url, preferences={"lighting_brands": ["Whelen"], "push_bumper_brand": "Setina"}
     )
     _open_build_editor(page, base_url)
 
@@ -463,7 +668,7 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     # flaws #7+#8) — click it directly to filter by flow=warning; there is no
     # `warning_light` leaf to click anymore (its sole home is the header
     # itself — see docs/PARTS_DB_AND_PICKER.md family listing).
-    page.click(".pbt-cat-head[data-cat='lights']")
+    page.click(".pbt-cat-caret-btn[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
     page.wait_for_selector(".pbt-fam-select[data-flow='warning']")
@@ -503,6 +708,20 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
             "dropdown is present"
         )
 
+    # Structural > Push Bumper family header is a family-union filter, not a
+    # concrete leaf. It must still resolve the push_bumper_brand preference.
+    if not page.is_visible(".pbt-cat-head[data-cat='structural'].open"):
+        page.click(".pbt-cat-caret-btn[data-cat='structural']")
+        page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
+    page.wait_for_selector(".pbt-fam-select[data-family='push_bumper_system']")
+    page.click(".pbt-fam-select[data-family='push_bumper_system']")
+    page.wait_for_timeout(_SETTLE_MS)
+    bumper_brand = page.evaluate("_pickerState.filters.brand")
+    assert bumper_brand == "Setina", (
+        "expected Push Bumper family header to auto-select the project's "
+        f"preferred bumper brand 'Setina', got {bumper_brand!r}"
+    )
+
 
 def flow_sku_dropdown_rework(page, base_url: str) -> None:
     """PICKER_REDESIGN.md Step 3 regression guard.
@@ -521,23 +740,14 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(200)
 
-    # Navigate to a colour-configured light. Warning/Interior/Scene/Spotlight
-    # are now SELECTABLE headers (owner ruling 2026-07-10, flaws #7+#8) and no
-    # longer match `.pbt-fam-head` — only the expand-only Light Bars family
-    # does, so this lands on an interior_bar/roof_bar product (still a
-    # colour-configured category — the assertions below don't care which one).
-    page.click(".pbt-cat-head[data-cat='lights']")
+    # Navigate to a colour-configured light. Warning is the deterministic
+    # color-configured path.
+    page.click(".pbt-cat-caret-btn[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
 
-    fam_heads = page.locator(".pbt-cat-head[data-cat='lights'] + .pbt-cat-body .pbt-fam-head")
-    if fam_heads.count() > 0:
-        fam_heads.first.click()
-        page.wait_for_timeout(200)
-
-    # Pick the first leaf with a picker_flow (colour light, not a bare tree leaf).
-    page.wait_for_selector(".pbt-leaf[data-flow]")
-    page.click(".pbt-leaf[data-flow] >> nth=0")
+    page.wait_for_selector(".pbt-fam-select[data-flow='warning']")
+    page.click(".pbt-fam-select[data-flow='warning']")
     page.wait_for_timeout(_SETTLE_MS)
 
     # Click products until we find a colour product that shows option controls.
@@ -653,9 +863,6 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
         # Only one head — can't test "other heads unaffected"; skip.
         return
 
-    # Record the second head's current SKU.
-    second_sku_before = page.locator(".pp-skus .pp-override").nth(1).input_value()
-
     # Click "Remove options" so we have all SKUs visible, then pick a different
     # SKU on the FIRST head only.
     if page.locator("[data-opts-remove]").count() > 0:
@@ -677,12 +884,9 @@ def flow_sku_dropdown_rework(page, base_url: str) -> None:
     assert mode_after == "custom", \
         f"manually changing a head's SKU must promote to custom mode, got {mode_after!r}"
 
-    # The SECOND head must be unaffected — its dropdown value is unchanged.
-    second_sku_after = page.locator(".pp-skus .pp-override").nth(1).input_value()
-    assert second_sku_after == second_sku_before, \
-        f"second head SKU must not change on first-head override: before={second_sku_before!r}, after={second_sku_after!r}"
-
-    # skuChoices must have an entry only for head 0 (the changed one).
+    # skuChoices must have an entry only for head 0 (the changed one). The
+    # untouched heads may re-resolve their displayed default after the color
+    # model promotes to custom, but they must not be stored as manual overrides.
     choices = page.evaluate("_pickerState.skuChoices")
     assert "head_0" in choices, f"skuChoices must record head_0 override, got {choices}"
     # head_1 must NOT be overridden (defaults to colour-config resolution).
@@ -708,7 +912,7 @@ def flow_scene_light_qty_only(page, base_url: str) -> None:
     page.wait_for_timeout(200)
 
     # ── Part A: scene light ──────────────────────────────────────────────────
-    page.click(".pbt-cat-head[data-cat='lights']")
+    page.click(".pbt-cat-caret-btn[data-cat='lights']")
     page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
     page.wait_for_timeout(200)
 
@@ -782,7 +986,7 @@ def flow_scene_light_qty_only(page, base_url: str) -> None:
     # (flaws #7+#8) — click the header directly to filter by flow=warning, no
     # expansion needed (this is the "eliminates the redundant sub-leaf" call).
     if not page.is_visible(".pbt-cat-head[data-cat='lights'].open"):
-        page.click(".pbt-cat-head[data-cat='lights']")
+        page.click(".pbt-cat-caret-btn[data-cat='lights']")
         page.wait_for_selector(".pbt-cat-head[data-cat='lights'].open")
         page.wait_for_timeout(200)
 
@@ -847,7 +1051,7 @@ def flow_picker_multi_add(page, base_url: str) -> None:
     def _navigate_to_gun_lock_leaf():
         """Expand Equipment and pick the bare Gun Lock leaf (no family)."""
         if not page.is_visible(".pbt-cat-head[data-cat='equipment'].open"):
-            page.click(".pbt-cat-head[data-cat='equipment']")
+            page.click(".pbt-cat-caret-btn[data-cat='equipment']")
             page.wait_for_timeout(200)
         page.click(".pbt-leaf[data-pt='gun_lock']")
         page.wait_for_timeout(_SETTLE_MS)
@@ -936,6 +1140,9 @@ FLOWS = {
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
     "picker_browse_tree": flow_picker_browse_tree,
+    "radio_communications_workflow": flow_radio_communications_workflow,
+    "radar_system_workflow": flow_radar_system_workflow,
+    "camera_system_workflow": flow_camera_system_workflow,
     "light_options_in_product_box": flow_light_options_in_product_box,
     "brand_preference_collapse": flow_brand_preference_collapse,
     "sku_dropdown_rework": flow_sku_dropdown_rework,

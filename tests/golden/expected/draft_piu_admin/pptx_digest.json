@@ -9205,40 +9205,20 @@
           "image_ext": "png",
           "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
           "kind": "PICTURE (13)",
-          "left_emu": 2169570,
+          "left_emu": 2155149,
           "name": "Picture",
           "top_emu": 4462478,
-          "width_emu": 391966
+          "width_emu": 420809
         },
         {
           "height_emu": 480713,
           "image_ext": "png",
           "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
           "kind": "PICTURE (13)",
-          "left_emu": 3107744,
+          "left_emu": 3093323,
           "name": "Picture",
           "top_emu": 4462478,
-          "width_emu": 391966
-        },
-        {
-          "height_emu": 480713,
-          "image_ext": "png",
-          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
-          "kind": "PICTURE (13)",
-          "left_emu": 2169570,
-          "name": "Picture",
-          "top_emu": 4462478,
-          "width_emu": 391966
-        },
-        {
-          "height_emu": 480713,
-          "image_ext": "png",
-          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
-          "kind": "PICTURE (13)",
-          "left_emu": 3107744,
-          "name": "Picture",
-          "top_emu": 4462478,
-          "width_emu": 391966
+          "width_emu": 420809
         },
         {
           "flip_v": true,

@@ -43,6 +43,7 @@ CASES: list[tuple[str, str, str, dict]] = [
     ("root_doc", "GET", "/api/parts-db", {}),
     ("types", "GET", "/api/parts-db/types", {}),
     ("browse_tree", "GET", "/api/parts-db/browse-tree", {}),
+    ("manifest_groups", "GET", "/api/parts-db/manifest-groups", {}),
     ("sections", "GET", "/api/parts-db/sections", {}),
     ("zones_all", "GET", "/api/parts-db/zones", {}),
     ("zones_by_section", "GET", "/api/parts-db/zones?section=exterior", {}),
@@ -65,6 +66,7 @@ CASES: list[tuple[str, str, str, dict]] = [
     ("category_zones", "GET", "/api/parts-db/category-zones?type=lights&category=scene", {}),
     ("placements_non_lights", "GET", "/api/parts-db/placements?type=structural", {}),
     ("accessories", "GET", "/api/parts-db/accessories?product_id=setina_pb400", {}),
+    ("accessories_u_series", "GET", "/api/parts-db/accessories?product_id=whelen_u_series", {}),
     ("accessories_missing_param", "GET", "/api/parts-db/accessories", {}),
     (
         "tracer_heads",
@@ -73,13 +75,26 @@ CASES: list[tuple[str, str, str, dict]] = [
         {},
     ),
     ("category_skus", "GET", "/api/parts-db/category-skus?type=lights&category=scene", {}),
+    ("category_skus_all", "GET", "/api/parts-db/category-skus?all=1", {}),
     (
         "category_skus_by_part_type",
         "GET",
         "/api/parts-db/category-skus?type=structural&part_type=console",
         {},
     ),
+    (
+        "category_skus_by_family",
+        "GET",
+        "/api/parts-db/category-skus?type=equipment&family=radar",
+        {},
+    ),
     ("category_locations_lights", "GET", "/api/parts-db/category-locations?type=lights&category=scene", {}),
+    (
+        "category_locations_preemption",
+        "GET",
+        "/api/parts-db/category-locations?type=equipment&product=nova_preemption_light_head&vehicle=PIU",
+        {},
+    ),
     (
         "category_locations_non_lights",
         "GET",

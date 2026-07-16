@@ -16,6 +16,8 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
         flip_v (bool)       — replaces flip_v
         anchor_dx (float)   — delta added to anchor.x (relative_image units)
         anchor_dy (float)   — delta added to anchor.y (relative_image units)
+        translate_dx (float)— uniform x translation applied after slot/mirror layout
+        translate_dy (float)— uniform y translation applied after slot/mirror layout
         size_scale (float)  — multiplier applied to size_override w/h values
         layer (int)         — Z-order layer (0 = default, positive = on top, negative = behind)
 
@@ -53,6 +55,11 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
                 pl.anchor["y"] = round(
                     float(pl.anchor.get("y", 0)) + float(ov.get("anchor_dy", 0)), 6
                 )
+
+            if "translate_dx" in ov:
+                pl.translate_dx = float(ov["translate_dx"])
+            if "translate_dy" in ov:
+                pl.translate_dy = float(ov["translate_dy"])
 
             if "size_scale" in ov:
                 scale = float(ov["size_scale"])

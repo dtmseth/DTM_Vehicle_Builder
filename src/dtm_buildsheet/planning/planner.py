@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..config_loader import ConfigBundle
 from ..config.loader import model_lookup_keys
-from ..domain import BuildPlan, PlannedPart, PlannedPlacement, RenderInstance, slot_roles
+from ..domain import BuildPlan, PartInput, PlannedPart, PlannedPlacement, RenderInstance, slot_roles
 from ..domain.rules import RuleSeverity
 from ..naming import canonical_name
 from ..rules.engine import run_rules
@@ -59,6 +59,21 @@ _WARNING_BASE_NAMES = {
     "forward warning", "side warning", "rear warning", "front side warning",
     "mirror warning", "pit bar warning", "lower lift gate warning", "warning",
 }
+_NUMBERED_SIREN_SLOT_INDEX = {"SIREN SPEAKER 1": 0, "SIREN SPEAKER 2": 1}
+_SETINA_PB450L_PREFIX_COUNTS: dict[str, int] = {
+    # Setina PB450L lighted bumper SKU families. The friendly names in
+    # parts_db are authoritative where available; these keep legacy imports
+    # and future compatible SKUs rendering without extra draft rows.
+    "BK2017": 2,
+    "BK2166": 2,
+    "BK2124": 2,
+    "BK2019": 4,
+    "BK2168": 4,
+    "BK0802": 4,
+    "BK1001": 6,
+    "BK2338": 6,
+    "BK0282": 6,
+}
 
 
 def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
@@ -79,6 +94,16 @@ def _find_part_type_by_name(name: str, svc) -> tuple[object | None, str]:
         label = (pt.label or "").strip()
         label_base = _re.sub(r"\s+\{n\}$", "", label).strip()
         if label_base.lower() == base.lower():
+            return pt, base
+    # Picker-created lines carry a line_id, so they resolve through parts_db
+    # instead of the legacy catalog. Some part types intentionally author a
+    # legacy/workbook display name that differs from the picker label
+    # (Preemption → Opticom); allow those names to resolve to the part_type too.
+    for pt in svc.list_part_types():
+        pattern = (getattr(pt, "workbook_label_pattern", "") or "").strip()
+        if "{" in pattern:
+            pattern = _re.sub(r"\s+\{n\}$", "", pattern).strip()
+        if pattern and pattern.lower() == base.lower():
             return pt, base
     # Warning lights collapsed to one home: every zone/legacy warning name
     # (Forward/Side/Rear/Front Side/Mirror/Pit Bar/Lower Lift Gate Warning)
@@ -106,7 +131,8 @@ def _synthesize_spec(pt, location_key: str) -> dict:
     # Bars draw from bar_assets keyed by asset_key, which differs from the
     # part_type_id (e.g. roof_light_bar → "roof"); without this the synthesized
     # spec resolves no bar asset and the bar renders blank.
-    asset_key = _BAR_ASSET_KEY.get(pt.part_type_id, pt.part_type_id)
+    render = dict(getattr(pt, "render", {}) or {})
+    asset_key = render.get("asset_key") or _BAR_ASSET_KEY.get(pt.part_type_id, pt.part_type_id)
     return {
         "part_id":                  pt.part_type_id,
         "display_name":             pt.label,
@@ -122,9 +148,113 @@ def _synthesize_spec(pt, location_key: str) -> dict:
         "model_remaps":             {},
         "co_part_rules":            [],
         "location_asset_rules":     {},
-        "size_per_view":            {},
-        "quantity_rules":           [],
+        "size_per_view":            dict(render.get("size_per_view") or {}),
+        "quantity_rules":           list(render.get("quantity_rules") or []),
+        "images":                   dict(render.get("images") or {}),
+        "_parts_db_render":          True,
     }
+
+
+def _part_number_candidates(part: PartInput) -> list[str]:
+    candidates: list[str] = []
+    if part.part_number:
+        candidates.append(part.part_number)
+    for component in getattr(part, "components", []) or []:
+        if isinstance(component, dict) and component.get("part_number"):
+            candidates.append(str(component["part_number"]))
+    out: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        sku = candidate.strip().upper()
+        if sku and sku not in seen:
+            seen.add(sku)
+            out.append(sku)
+    return out
+
+
+def _setina_lighted_bumper_count(part: PartInput, svc) -> tuple[int, str]:
+    manufacturer = (part.manufacturer or "").strip().lower()
+    part_numbers = _part_number_candidates(part)
+    if not part_numbers:
+        return 0, ""
+    if manufacturer and "setina" not in manufacturer:
+        return 0, ""
+
+    try:
+        product = svc.get_product("setina_pb450l")
+        for pn in getattr(product, "part_numbers", []) or []:
+            matched_sku = (pn.part_number or "").strip().upper()
+            if matched_sku not in part_numbers:
+                continue
+            text = f"{getattr(product, 'model', '')} {pn.friendly_name or ''}".upper()
+            match = _re.search(r"\bPB450L([246])\b", text)
+            if match:
+                return int(match.group(1)), matched_sku
+            match = _re.search(r"\b([246])\s+(?:TOTAL\s+)?LIGHTS?\b", text)
+            if match:
+                return int(match.group(1)), matched_sku
+    except Exception:
+        pass
+
+    for part_number in part_numbers:
+        for prefix, count in _SETINA_PB450L_PREFIX_COUNTS.items():
+            if part_number.startswith(prefix):
+                return count, part_number
+    return 0, ""
+
+
+def _lighted_bumper_virtual_parts(part: PartInput, svc) -> list[PartInput]:
+    light_count, source_sku = _setina_lighted_bumper_count(part, svc)
+    if light_count not in {2, 4, 6}:
+        return []
+
+    base_line_id = part.line_id or part.part_number or "push_bumper"
+    source_sku = source_sku or part.part_number
+    virtual = [
+        PartInput(
+            name="Forward Warning",
+            include=True,
+            manufacturer="Whelen",
+            part_number=f"{source_sku}:included-top-tube",
+            location="TOP TUBE",
+            raw_color="Red/Blue/White",
+            quantity=4 if light_count == 6 else light_count,
+            lens="clear",
+            notes="Included with Setina PB450L lighted push bumper",
+            line_id=f"{base_line_id}:included-top-tube",
+        )
+    ]
+    if light_count == 6:
+        virtual.append(
+            PartInput(
+                name="Forward Warning",
+                include=True,
+                manufacturer="Whelen",
+                part_number=f"{source_sku}:included-side-push-bumper",
+                location="SIDE OF PUSH BUMPER",
+                raw_color="Red/Blue/White",
+                quantity=2,
+                lens="clear",
+                notes="Included with Setina PB450L lighted push bumper",
+                line_id=f"{base_line_id}:included-side-push-bumper",
+            )
+        )
+    return virtual
+
+
+def _parts_db_render_for_part(part_number: str, svc) -> dict:
+    if not part_number:
+        return {}
+    wanted = part_number.strip().upper()
+    try:
+        products = (svc.raw_doc().get("products") or {}).values()
+    except Exception:
+        return {}
+    for product in products:
+        for pn in product.get("part_numbers") or []:
+            if str(pn.get("part_number", "")).strip().upper() == wanted:
+                return dict(product.get("render") or {})
+    return {}
 
 
 def _views_for_location(location_key: str, view_map: dict[str, dict]) -> list[str]:
@@ -178,7 +308,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         prefix = "[ERROR]" if msg.severity == RuleSeverity.ERROR else "[RULE]"
         warnings.append(f"{prefix} {msg.message}")
 
+    parts_to_plan: list[PartInput] = []
     for part in project.parts:
+        parts_to_plan.append(part)
+        if part.include:
+            parts_to_plan.extend(_lighted_bumper_virtual_parts(part, _get_svc()))
+
+    for part in parts_to_plan:
         if not part.include:
             continue
 
@@ -289,7 +425,14 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         lib_size_per_view: dict = lib_entry.get("size_per_view", {})
         lib_images: dict = lib_entry.get("images", {})
         catalog_size_per_view: dict = spec.get("size_per_view", {})
-        merged_size_per_view = {**lib_size_per_view, **catalog_size_per_view}
+        product_render: dict = {}
+        if spec.get("_parts_db_render"):
+            product_render = _parts_db_render_for_part(part.part_number, _get_svc())
+        product_size_per_view: dict = product_render.get("size_per_view", {})
+        merged_size_per_view = {**lib_size_per_view, **catalog_size_per_view, **product_size_per_view}
+        spec_images: dict = spec.get("images", {})
+        product_images: dict = product_render.get("images", {})
+        merged_images = {**lib_images, **spec_images, **product_images}
 
         is_fixture = bool(spec.get("is_fixture"))
         co_overrides = apply_co_part_rules(spec, present_part_names)
@@ -337,6 +480,19 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 loc_rules = location.get("quantity_rules")
                 if loc_rules:
                     qty_overrides = apply_quantity_rules_list(loc_rules, part.quantity)
+            numbered_siren_slot = _NUMBERED_SIREN_SLOT_INDEX.get(part.name.strip().upper())
+            if (
+                numbered_siren_slot is not None
+                and spec.get("_parts_db_render")
+                and "SIREN SPEAKER 1" in present_part_names
+                and "SIREN SPEAKER 2" in present_part_names
+                and (part.quantity or 1) == 1
+            ):
+                qty_overrides = {
+                    "slot_count": 2,
+                    "slot_indices": [numbered_siren_slot],
+                    "pattern": "mirror",
+                }
             if qty_overrides.get("slot_count"):
                 slot_count = int(qty_overrides["slot_count"])
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
@@ -414,7 +570,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             )
 
             if quantity_policy == "location_slots":
-                if part.quantity and part.quantity != placement.location_slot_count:
+                if part.quantity and part.quantity != placement.location_slot_count and not slot_indices:
                     is_side_light = view == "side" and spec["render_kind"] in ("light", "bar")
                     if not is_side_light and location_key not in _SUPPRESS_QTY_MISMATCH_LOCATIONS:
                         placement.warnings.append(
@@ -439,8 +595,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                     orientation=orientation,
                     color_token=color_token,
                     asset_manifest=manifest,
-                    fallback_images=lib_images,
+                    fallback_images=merged_images,
                 )
+                if spec.get("_parts_db_render") and merged_images.get(view):
+                    asset_path = merged_images[view]
                 instance = RenderInstance(
                     slot_index=index,
                     slot_role=slot_role,

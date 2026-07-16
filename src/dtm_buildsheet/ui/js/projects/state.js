@@ -128,7 +128,7 @@ function _ptIndRowHtml(ind) {
         <input class="ind-unit-number" type="text" value="${esc(ind.unit_number || "")}" placeholder="101">
       </div>
       <div class="form-group proj-ind-field-xs">
-        <label class="proj-ind-label">Year</label>
+        <label class="proj-ind-label">Vehicle Year</label>
         <input class="ind-year" type="text" value="${esc(ind.year || "")}" placeholder="2026">
       </div>
       <div class="form-group proj-ind-field-sm">

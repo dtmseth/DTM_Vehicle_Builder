@@ -159,6 +159,16 @@ def test_apply_overrides_anchor_preserves_units():
     assert result.planned_parts[0].placements[0].anchor["units"] == "relative_image"
 
 
+def test_apply_overrides_translate_preserves_anchor():
+    plan = _make_plan(_make_placement(anchor={"x": 0.5, "y": 0.1, "units": "relative_image"}))
+    result = apply_overrides(plan, {"led_bar:front": {"translate_dx": 0.1, "translate_dy": -0.05}})
+    pl = result.planned_parts[0].placements[0]
+
+    assert pl.anchor == {"x": 0.5, "y": 0.1, "units": "relative_image"}
+    assert pl.translate_dx == 0.1
+    assert pl.translate_dy == -0.05
+
+
 # ── size_scale ────────────────────────────────────────────────────────────────
 
 def test_apply_overrides_size_scale():
@@ -265,6 +275,89 @@ def test_preview_service_full_plan(app_paths, stearns_input):
     assert "planned_parts" in res
     assert len(res["views"]) > 0
     assert len(res["planned_parts"]) > 0
+
+
+def test_preview_service_includes_render_only_setina_pb450l6_lights(app_paths):
+    from dtm_buildsheet.app.services.preview_service import handle_preview_plan
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft
+
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "PB450L-PREVIEW"},
+        parts=[
+            PartInput(
+                name="Push Bumper",
+                manufacturer="Setina",
+                part_number="PB450L",
+                location="Push Bumper",
+                quantity=1,
+                line_id="pb1",
+                components=[{"part_number": "BK1001ITU20", "quantity": 1}],
+            )
+        ],
+        notes={},
+    )
+    draft = draft_from_project_input(project)
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    res = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    assert res["ok"], res.get("error")
+    included = [
+        pp for pp in res["planned_parts"]
+        if any(":included-" in pl["override_key"] for pl in pp["placements"])
+    ]
+    assert len(included) == 2
+    bumper_groups = {
+        pl["group_key"]
+        for pp in res["planned_parts"]
+        if pp["part_name"] == "Push Bumper"
+        for pl in pp["placements"]
+    }
+    included_groups = {
+        pl["group_key"]
+        for pp in included
+        for pl in pp["placements"]
+    }
+    grouped_keys = [
+        pl
+        for pp in res["planned_parts"]
+        for pl in pp["placements"]
+        if pl["group_key"] in bumper_groups
+    ]
+    assert len(bumper_groups) == 1
+    assert included_groups == bumper_groups
+    assert len(grouped_keys) == 6  # PB front/side/top + top-tube front + side-PB front/side
+    instances = [
+        inst
+        for pp in included
+        for pl in pp["placements"]
+        for inst in pl["instances"]
+    ]
+    assert len(instances) == 7  # 4 front top tube + 2 front side PB + 1 side-view side PB
+    assert all(inst["asset_url"].endswith(".png") for inst in instances)
+    assert {inst["color_token"] for inst in instances} == {"red-blue-white"}
+
+    before = {
+        pl["override_key"]: [inst["x_pct"] for inst in pl["instances"]]
+        for pp in res["planned_parts"]
+        for pl in pp["placements"]
+        if pl["group_key"] in bumper_groups and pl["view"] == "front"
+    }
+    draft.placement_overrides = {
+        key: {"translate_dx": 0.05, "translate_dy": -0.02}
+        for key in before
+    }
+    save_draft(draft, app_paths.workspace_drafts_dir)
+    moved = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    assert moved["ok"], moved.get("error")
+    after = {
+        pl["override_key"]: [inst["x_pct"] for inst in pl["instances"]]
+        for pp in moved["planned_parts"]
+        for pl in pp["placements"]
+        if pl["override_key"] in before
+    }
+    for key, xs in before.items():
+        assert [round(x - old_x, 6) for x, old_x in zip(after[key], xs)] == [0.05] * len(xs)
 
 
 def test_preview_service_views_have_bg_url(app_paths, stearns_input):

@@ -32,6 +32,7 @@ _PLACEMENTS_PATH = f"{_PREFIX}/placements"
 _CATEGORY_LOCATIONS_PATH = f"{_PREFIX}/category-locations"
 _CATEGORY_SKUS_PATH = f"{_PREFIX}/category-skus"
 _BROWSE_TREE_PATH = f"{_PREFIX}/browse-tree"
+_MANIFEST_GROUPS_PATH = f"{_PREFIX}/manifest-groups"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
@@ -89,6 +90,10 @@ _CATEGORY_KEYWORDS = {
     "roof_bar": "roof",
     "visor_bar": "visor",
     "spotlight": "spot",
+}
+_FIXTURE_PART_ALIASES = {
+    # The legacy renderer/catalog name predates the parts_db part_type id.
+    "front_interior_light_bar": "interior_light_bar_front",
 }
 
 
@@ -287,6 +292,123 @@ def _build_browse_tree(svc) -> list[dict]:
     return out
 
 
+def _build_manifest_groups(svc) -> dict:
+    """Sales/build-manifest grouping model.
+
+    The picker browse tree is a navigation taxonomy; the manifest needs a
+    scan/order taxonomy that matches how a salesperson thinks through a car.
+    `manifest_groups` provides that layer and resolves every part_type to a
+    main group + subgroup with specificity: explicit part_type, family, type,
+    then zone fallback.
+    """
+    doc = svc.raw_doc()
+    part_types: dict = doc.get("part_types") or {}
+    families: dict = doc.get("families") or {}
+    groups: list[dict] = list((doc.get("manifest_groups") or {}).get("groups") or [])
+
+    family_for_pt: dict[str, str] = {}
+    for fid, family in families.items():
+        for pt_id in family.get("members") or []:
+            family_for_pt.setdefault(pt_id, fid)
+
+    def _ids(spec: dict, key: str) -> set[str]:
+        return {str(x) for x in (spec.get(key) or []) if str(x)}
+
+    def _pt_zones(pt: dict) -> set[str]:
+        return {str(pos.get("zone", "")) for pos in (pt.get("tree_positions") or []) if pos.get("zone")}
+
+    def _matches(spec: dict, pt_id: str, pt: dict, family_id: str, specificity: str) -> bool:
+        if specificity == "part_type":
+            return pt_id in _ids(spec, "part_types")
+        if specificity == "family":
+            return bool(family_id and family_id in _ids(spec, "families"))
+        if specificity == "type":
+            return pt.get("type_id", "") in _ids(spec, "type_ids")
+        if specificity == "zone":
+            return bool(_pt_zones(pt) & _ids(spec, "zones"))
+        return False
+
+    def _pick(pt_id: str, pt: dict) -> tuple[dict | None, dict | None]:
+        family_id = family_for_pt.get(pt_id, "")
+        for specificity in ("part_type", "family", "type", "zone"):
+            for group in groups:
+                for subgroup in group.get("subgroups") or []:
+                    if _matches(subgroup, pt_id, pt, family_id, specificity):
+                        return group, subgroup
+                if _matches(group, pt_id, pt, family_id, specificity):
+                    fallback = {
+                        "subgroup_id": group.get("group_id", "group"),
+                        "label": group.get("label", "Other"),
+                        "order": 999,
+                    }
+                    return group, fallback
+        return None, None
+
+    part_type_map: dict[str, dict] = {}
+    legacy_label_map: dict[str, str] = {}
+    ordered_groups: dict[str, dict] = {}
+
+    def _ensure_group(group: dict) -> dict:
+        gid = group.get("group_id", "_other")
+        if gid not in ordered_groups:
+            ordered_groups[gid] = {
+                "group_id": gid,
+                "label": group.get("label", "Other"),
+                "order": int(group.get("order", 999)),
+                "subgroups": [],
+            }
+        return ordered_groups[gid]
+
+    def _add_subgroup(out_group: dict, subgroup: dict) -> dict:
+        sid = subgroup.get("subgroup_id", out_group["group_id"])
+        section_key = f"{out_group['group_id']}:{sid}"
+        found = next((s for s in out_group["subgroups"] if s["section_key"] == section_key), None)
+        if found is None:
+            found = {
+                "section_key": section_key,
+                "subgroup_id": sid,
+                "label": subgroup.get("label", out_group["label"]),
+                "order": int(subgroup.get("order", 999)),
+                "part_types": [],
+            }
+            out_group["subgroups"].append(found)
+        return found
+
+    for pt_id, pt in part_types.items():
+        if pt.get("accessory_of") or pt.get("accessory_category"):
+            continue
+        group, subgroup = _pick(pt_id, pt)
+        if group is None or subgroup is None:
+            group = {"group_id": "_other", "label": "Other", "order": 999}
+            subgroup = {"subgroup_id": "_other", "label": "Other", "order": 999}
+        out_group = _ensure_group(group)
+        out_subgroup = _add_subgroup(out_group, subgroup)
+        out_subgroup["part_types"].append(pt_id)
+        part_type_map[pt_id] = {
+            "group_id": out_group["group_id"],
+            "group_label": out_group["label"],
+            "group_order": out_group["order"],
+            "section_key": out_subgroup["section_key"],
+            "section_label": out_subgroup["label"],
+            "section_order": out_subgroup["order"],
+        }
+        label = (pt.get("label") or "").strip().lower()
+        if label:
+            legacy_label_map[label] = out_subgroup["section_key"]
+
+    for group in ordered_groups.values():
+        group["subgroups"].sort(key=lambda s: (s["order"], s["label"]))
+        for subgroup in group["subgroups"]:
+            subgroup["part_types"].sort()
+
+    ordered = sorted(ordered_groups.values(), key=lambda g: (g["order"], g["label"]))
+    return {
+        "groups": ordered,
+        "part_type_map": part_type_map,
+        "legacy_label_map": legacy_label_map,
+    }
+
+
 def _catalog_parts_for_label(catalog_parts: list, label: str) -> list:
     """Catalog parts whose display_name matches a part_type label (ignoring a
     trailing sequence number). These are the names the planner actually renders."""
@@ -301,11 +423,39 @@ def _catalog_parts_for_label(catalog_parts: list, label: str) -> list:
     return out
 
 
+def _catalog_parts_for_part_type(catalog_parts: list, pt) -> list:
+    labels = [pt.label]
+    wb = (pt.workbook_label_pattern or "").strip()
+    if wb and "{" not in wb:
+        labels.append(wb)
+    out: list[dict] = []
+    seen: set[str] = set()
+    for label in labels:
+        for p in _catalog_parts_for_label(catalog_parts, label):
+            key = p.get("part_id") or p.get("display_name") or id(p)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(p)
+    return out
+
+
 def _default_views_for_label(catalog_parts: list, label: str) -> set[str]:
     views: set[str] = set()
     for p in _catalog_parts_for_label(catalog_parts, label):
         views |= set(p.get("default_views") or [])
     return views
+
+
+def _fixture_catalog_id(part_type_id: str) -> str:
+    return _FIXTURE_PART_ALIASES.get(part_type_id, part_type_id)
+
+
+def _catalog_part_by_id(catalog_parts: list, part_id: str) -> dict:
+    for p in catalog_parts:
+        if p.get("part_id") == part_id:
+            return p
+    return {}
 
 
 def _resolve_product_locations(svc, paths, type_id: str, category: str,
@@ -345,7 +495,7 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
     out: list[dict] = []
     seen: set[str] = set()
     for pt in fit:
-        cparts = _catalog_parts_for_label(catalog_parts, pt.label)
+        cparts = _catalog_parts_for_part_type(catalog_parts, pt)
         dviews: set[str] = set()
         for p in cparts:
             dviews |= set(p.get("default_views") or [])
@@ -358,16 +508,21 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
         # the picker assigns the lowest unused one (e.g. Forward Warning 1, 2).
         catalog_names = sorted(
             (p.get("display_name") or "").strip() for p in cparts if (p.get("display_name") or "").strip())
-        # Curated locations, in precedence: the part_type's editable
+        # Curated locations, in precedence: the part_type's rendered placement
+        # allow-list → editable
         # location_options (Part Manager) → the legacy workbook list (minus
-        # "specify" placeholders). These drive the picker's location DROPDOWN for
-        # non-diagram parts — the placement data the picker used to lose.
+        # "specify" placeholders). Renderable options become diagram dots; the
+        # rest stay in the picker's location dropdown.
         raw_pt = (doc.get("part_types") or {}).get(pt.part_type_id) or {}
+        allowed = [str(l).strip().upper() for l in (raw_pt.get("allowed_placements") or [])
+                   if str(l).strip()]
         edited = [str(l).strip().upper() for l in (raw_pt.get("location_options") or [])
                   if str(l).strip()]
         ruled = edited or [l.upper() for l in svc.locations_by_legacy_name(pt.label)
                            if "SPECIFY" not in l.upper()]
-        if ruled:
+        if allowed:
+            cand = allowed
+        elif ruled:
             cand = ruled
         elif renders:
             # Diagram part with no curated list: any location that has coordinates
@@ -426,6 +581,18 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
         if acc_pid not in g["option_ids"]:
             g["option_ids"].append(acc_pid)
 
+    # Product-specific relationships are more precise than part_type-level
+    # fallbacks. If a product curates a category explicitly, do not union in
+    # every generic accessory part_type for that same category.
+    specific_categories: set[str] = set()
+    for a in prod.get("accessories") or []:
+        category = a.get("category")
+        if category:
+            specific_categories.add(category)
+    for ap in products.values():
+        if product_id in (ap.get("accessory_of_products") or []):
+            specific_categories.add(ap.get("accessory_category") or "other")
+
     # 1. Product-level accessories.
     for a in prod.get("accessories") or []:
         add(a.get("category"), a.get("product_id"), bool(a.get("required")))
@@ -440,6 +607,8 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             for apid, ap in products.items():
                 ap_fits = set(ap.get("fits_part_types") or [])
                 for pt_id, cat in acc_pt_cat.items():
+                    if cat in specific_categories:
+                        continue
                     if pt_id in ap_fits:
                         add(cat, apid, False)
 
@@ -838,6 +1007,12 @@ def _handle_edit(svc, paths, sub: str, body: dict) -> dict:
     raise ValueError(f"unknown edit action: {sub}")
 
 
+def _part_type_response(part_type) -> dict:
+    data = asdict(part_type)
+    data.pop("render", None)
+    return data
+
+
 def route_parts_db(
     handler: BaseHTTPRequestHandler, method: str, path: str, body: dict, paths: AppPaths
 ) -> bool:
@@ -856,6 +1031,10 @@ def route_parts_db(
 
     if method == "GET" and path == _BROWSE_TREE_PATH:
         send_json(handler, {"categories": _build_browse_tree(svc)})
+        return True
+
+    if method == "GET" and path == _MANIFEST_GROUPS_PATH:
+        send_json(handler, _build_manifest_groups(svc))
         return True
 
     if method == "GET" and path == _SECTIONS_PATH:
@@ -900,7 +1079,7 @@ def route_parts_db(
             results = svc.list_part_types_at(type_id, section, zone, sub_zone)
         else:
             results = svc.list_part_types()
-        send_json(handler, {"part_types": [asdict(pt) for pt in results]})
+        send_json(handler, {"part_types": [_part_type_response(pt) for pt in results]})
         return True
 
     if method == "GET" and path.startswith(_PART_TYPES_PATH + "/"):
@@ -922,7 +1101,7 @@ def route_parts_db(
         if pt is None:
             send_json(handler, {"error": f"unknown part_type_id: {tail}"}, status=404)
             return True
-        send_json(handler, asdict(pt))
+        send_json(handler, _part_type_response(pt))
         return True
 
     if method == "GET" and path == _PRODUCTS_PATH:
@@ -1128,12 +1307,14 @@ def route_parts_db(
         # Products + their SKUs for one category (drives the two-pane live list).
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
-        # Optional exact part_type filter (picker sidebar accordion, Step 1):
-        # narrows the list to one specific part_type instead of the whole
-        # category/type. Additive — omitting it keeps every prior caller's
-        # behavior (whole-category or whole-type list) unchanged.
+        all_products = qs.get("all", [""])[0].lower() in {"1", "true", "yes"}
+        # Optional exact family / part_type filters (picker sidebar accordion):
+        # narrow the list to a family or one specific part_type instead of the
+        # whole category/type. Additive — omitting them keeps every prior
+        # caller's behavior (whole-category or whole-type list) unchanged.
+        family_filter = qs.get("family", [""])[0]
         part_type_filter = qs.get("part_type", [""])[0]
-        if not type_id:
+        if not type_id and not all_products:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
         from ..services.config_service import load_config_file
@@ -1143,8 +1324,29 @@ def route_parts_db(
             p["part_id"]: p["default_location_key"]
             for p in catalog_parts if p.get("default_location_key")
         }
-        mfrs_doc = svc.raw_doc().get("manufacturers") or {}
-        if part_type_filter:
+        fixture_part_type_ids = {
+            pt.part_type_id for pt in svc.list_part_types()
+            if _fixture_catalog_id(pt.part_type_id) in catalog_fixture_ids
+        }
+        doc = svc.raw_doc()
+        mfrs_doc = doc.get("manufacturers") or {}
+        part_types_doc = doc.get("part_types") or {}
+        types_doc = doc.get("types") or {}
+        families_doc = doc.get("families") or {}
+        family_by_pt: dict[str, tuple[str, dict]] = {}
+        for family_id, family in families_doc.items():
+            for member_id in family.get("members") or []:
+                family_by_pt.setdefault(member_id, (family_id, family))
+
+        if all_products:
+            pt_ids = [
+                pt_id for pt_id, pt in part_types_doc.items()
+                if pt.get("type_id")
+                and not pt.get("accessory_of")
+                and not pt.get("accessory_category")
+                and (not pt.get("browse_hidden") or pt.get("category"))
+            ]
+        elif part_type_filter:
             # Exact part_type filter (picker sidebar leaf): trust it directly.
             # A family can surface a part_type under a different top-level type
             # than the part_type's own `type_id` (e.g. the Structural "Console
@@ -1152,12 +1354,16 @@ def route_parts_db(
             # the leaf's display type must NOT gate the lookup — otherwise the
             # product grid comes back empty for cross-type family members.
             pt_ids = [part_type_filter] if svc.get_part_type(part_type_filter) else []
+        elif family_filter:
+            family = (svc.raw_doc().get("families") or {}).get(family_filter) or {}
+            pt_ids = [pt_id for pt_id in (family.get("members") or []) if svc.get_part_type(pt_id)]
         else:
             pt_ids = [pt.part_type_id for pt in svc.list_part_types()
                       if pt.type_id == type_id and _pt_in_category(pt, category)]
         out: list[dict] = []
         seen: set[str] = set()
         for pid in pt_ids:
+            pt = svc.get_part_type(pid)
             for p in svc.list_products_for_part_type(pid):
                 if p.product_id in seen:
                     continue
@@ -1176,20 +1382,88 @@ def route_parts_db(
                         "vehicle_tags": list(pn.vehicle_tags or []),
                     })
                 fits = p.fits_part_types or []
-                is_fixture = bool(fits) and all(pt_id in catalog_fixture_ids for pt_id in fits)
-                default_loc = next(
-                    (catalog_default_locs[pt_id] for pt_id in fits if pt_id in catalog_default_locs),
-                    ""
+                primary_pt_raw = part_types_doc.get(pid) or {}
+                primary_type_id = primary_pt_raw.get("type_id", "")
+                primary_family_id, primary_family = family_by_pt.get(
+                    pid, (primary_pt_raw.get("family_id", ""), {})
                 )
-                out.append({
+                related_pt_ids = [pt_id for pt_id in fits if pt_id in part_types_doc]
+                related_pt_labels = [
+                    (part_types_doc.get(pt_id) or {}).get("label", pt_id)
+                    for pt_id in related_pt_ids
+                ]
+                related_type_labels = [
+                    (types_doc.get((part_types_doc.get(pt_id) or {}).get("type_id", "")) or {}).get(
+                        "label",
+                        (part_types_doc.get(pt_id) or {}).get("type_id", ""),
+                    )
+                    for pt_id in related_pt_ids
+                ]
+                related_family_labels = [
+                    family.get("label", family_id)
+                    for pt_id in related_pt_ids
+                    for family_id, family in [family_by_pt.get(pt_id, ("", {}))]
+                    if family_id
+                ]
+                vehicle_tags = [
+                    tag for pn in p.part_numbers for tag in (pn.vehicle_tags or [])
+                ]
+                fixture_part_type_id = (
+                    pid if pid in fixture_part_type_ids
+                    else next((pt_id for pt_id in fits if pt_id in fixture_part_type_ids), "")
+                )
+                fixture_catalog_id = _fixture_catalog_id(fixture_part_type_id)
+                fixture_catalog_part = _catalog_part_by_id(catalog_parts, fixture_catalog_id)
+                is_fixture = bool(fixture_part_type_id)
+                default_loc = (
+                    catalog_default_locs.get(fixture_catalog_id)
+                    or (fixture_catalog_part.get("display_name") or "")
+                )
+                fixture_label = (fixture_catalog_part.get("display_name") or (pt.label if pt else "")).strip()
+                fixture_name_pattern = (pt.workbook_label_pattern if pt else "") or fixture_label
+                fixture_base_label = (pt.label if pt else "") or fixture_label
+                entry = {
                     "product_id": p.product_id, "model": p.model,
+                    "description": p.description,
                     "manufacturer_id": p.manufacturer_id,
                     "manufacturer_label": mfr.get("label", p.manufacturer_id),
                     "skus": skus,
                     "fits_part_types": fits,
+                    "primary_part_type_id": pid,
+                    "primary_part_type_label": primary_pt_raw.get("label", pid),
+                    "primary_type_id": primary_type_id,
+                    "primary_type_label": (types_doc.get(primary_type_id) or {}).get("label", primary_type_id),
+                    "primary_category_id": primary_pt_raw.get("category", ""),
+                    "primary_family_id": primary_family_id,
+                    "primary_family_label": primary_family.get("label", primary_family_id) if primary_family_id else "",
+                    "search_text": " ".join(str(x) for x in [
+                        p.model,
+                        p.description,
+                        p.manufacturer_id,
+                        mfr.get("label", p.manufacturer_id),
+                        primary_pt_raw.get("label", pid),
+                        (types_doc.get(primary_type_id) or {}).get("label", primary_type_id),
+                        primary_family.get("label", primary_family_id) if primary_family_id else "",
+                        *related_pt_ids,
+                        *related_pt_labels,
+                        *related_type_labels,
+                        *related_family_labels,
+                        *vehicle_tags,
+                        *[pn.part_number for pn in p.part_numbers],
+                        *[pn.friendly_name for pn in p.part_numbers],
+                    ] if x),
                     "is_fixture": is_fixture,
                     "default_location": default_loc,
-                })
+                }
+                if is_fixture:
+                    entry.update({
+                        "fixture_part_type_id": fixture_part_type_id,
+                        "fixture_catalog_id": fixture_catalog_id,
+                        "fixture_label": fixture_label,
+                        "fixture_name_pattern": fixture_name_pattern,
+                        "fixture_base_label": fixture_base_label,
+                    })
+                out.append(entry)
         out.sort(key=lambda x: x["model"])
         send_json(handler, {"products": out})
         return True
@@ -1197,9 +1471,8 @@ def route_parts_db(
     if method == "GET" and path == _CATEGORY_LOCATIONS_PATH:
         # Location step.
         #   lights      → category-wide placement pool (coords drive diagram dots).
-        #   non-lights  → the selected product's own curated location list (each
-        #                 part_type's options), surfaced as a dropdown because these
-        #                 placements have no diagram coordinates.
+        #   non-lights  → the selected product's own curated location list; coords
+        #                 decide whether each option is a diagram dot or dropdown row.
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
         product_id = qs.get("product", [""])[0]

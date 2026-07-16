@@ -1,0 +1,44 @@
+{
+  "body": {
+    "locations": [
+      {
+        "base_label": "Preemption",
+        "catalog_names": [
+          "Opticom"
+        ],
+        "has_coords": true,
+        "location": "CENTER OF DASH",
+        "name_pattern": "Opticom",
+        "part_type_id": "preemption",
+        "placement_zone": "interior",
+        "placement_zone_label": "Interior"
+      },
+      {
+        "base_label": "Preemption",
+        "catalog_names": [
+          "Opticom"
+        ],
+        "has_coords": true,
+        "location": "IN LIGHT BAR",
+        "name_pattern": "Opticom",
+        "part_type_id": "preemption",
+        "placement_zone": "roof",
+        "placement_zone_label": "Roof"
+      },
+      {
+        "base_label": "Preemption",
+        "catalog_names": [
+          "Opticom"
+        ],
+        "has_coords": true,
+        "location": "UPPER WINDSHIELD",
+        "name_pattern": "Opticom",
+        "part_type_id": "preemption",
+        "placement_zone": "primary_front",
+        "placement_zone_label": "Primary Front"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

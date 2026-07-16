@@ -3,6 +3,7 @@
     "products": [
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -10,7 +11,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "18\" ENCLOSED 10\" HIGH CONSOLE",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_1810",
+        "search_text": "18\" ENCLOSED 10\" HIGH CONSOLE havis Havis Console Structural Console console Console Structural Console any C-1810 HAVIS 18\" ENCLOSED 10\" HIGH CONSOLE",
         "skus": [
           {
             "color": "",
@@ -30,6 +39,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -37,7 +47,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "18\" ENCLOSED CONSOLE",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_1800",
+        "search_text": "18\" ENCLOSED CONSOLE havis Havis Console Structural Console console Console Structural Console any C-1800 HAVIS 18\" ENCLOSED CONSOLE",
         "skus": [
           {
             "color": "",
@@ -57,6 +75,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -64,7 +83,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0784_07",
+        "search_text": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console CHEVY-1500 7170-0784-07 GAMBER JOHNSON 2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
         "skus": [
           {
             "color": "",
@@ -84,6 +111,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -91,7 +119,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0734_00",
+        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-00 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
         "skus": [
           {
             "color": "",
@@ -111,6 +147,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -118,7 +155,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7160_1626",
+        "search_text": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console F-150 SUPER-DUTY 7160-1626 GAMBER JOHNSON 2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
         "skus": [
           {
             "color": "",
@@ -139,6 +184,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -146,7 +192,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0886_00",
+        "search_text": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console CHARGER 7170-0886-00 GAMBER JOHNSON 2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
         "skus": [
           {
             "color": "",
@@ -166,6 +220,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -173,7 +228,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0884_00",
+        "search_text": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console DURANGO 7170-0884-00 GAMBER JOHNSON 2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
         "skus": [
           {
             "color": "",
@@ -193,6 +256,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -200,7 +264,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0884_03",
+        "search_text": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console DURANGO 7170-0884-03 GAMBER JOHNSON 2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
         "skus": [
           {
             "color": "",
@@ -220,6 +292,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -227,7 +300,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_1164_01",
+        "search_text": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console TAHOE 7170-1164-01 GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
         "skus": [
           {
             "color": "",
@@ -247,6 +328,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -254,7 +336,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7160_2022",
+        "search_text": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console TAHOE 7160-2022 GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
         "skus": [
           {
             "color": "",
@@ -274,6 +364,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -281,7 +372,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_1179_00",
+        "search_text": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console TAHOE 7170-1179-00 GAMBER JOHNSON 2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
         "skus": [
           {
             "color": "",
@@ -301,6 +400,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -308,7 +408,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "30\" ENCLOSED 10\" HIGH CONSOLE",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_3010",
+        "search_text": "30\" ENCLOSED 10\" HIGH CONSOLE havis Havis Console Structural Console console Console Structural Console any C-3010 HAVIS 30\" ENCLOSED 10\" HIGH CONSOLE",
         "skus": [
           {
             "color": "",
@@ -328,6 +436,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -335,7 +444,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_1062_00",
+        "search_text": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console CHEVY-1500 7170-1062-00 GAMBER JOHNSON KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
         "skus": [
           {
             "color": "",
@@ -355,6 +472,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -362,7 +480,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_ohc_inut_1",
+        "search_text": "OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP havis Havis Console Structural Console console Console Structural Console any C-OHC-INUT-1 HAVIS OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
         "skus": [
           {
             "color": "",
@@ -382,6 +508,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -389,7 +516,15 @@
         "manufacturer_id": "tiger_tough",
         "manufacturer_label": "Tiger Tough",
         "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "tiger_tough_w0523028_iw_blk",
+        "search_text": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER tiger_tough Tiger Tough Console Structural Console console Console Structural Console any W0523028-IW-BLK TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
         "skus": [
           {
             "color": "",
@@ -409,6 +544,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -416,7 +552,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7160_1460",
+        "search_text": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console any 7160-1460 GAMBER JOHNSON UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
         "skus": [
           {
             "color": "",
@@ -436,6 +580,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -443,7 +588,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "UNIVERSAL",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_universal",
+        "search_text": "UNIVERSAL havis Havis Console Structural Console console Console Structural Console UNIVERSAL",
         "skus": [
           {
             "color": "",
@@ -461,31 +614,7 @@
       },
       {
         "default_location": "",
-        "fits_part_types": [
-          "console"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "havis",
-        "manufacturer_label": "Havis",
-        "model": "VEHICLE SPECIFIC",
-        "product_id": "havis_vehicle_specific",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "",
-            "lens_type": "",
-            "part_number": "VEHICLE SPECIFIC",
-            "price": null,
-            "qb": false,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": []
-          }
-        ]
-      },
-      {
-        "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -493,7 +622,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 11″ UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1100_f150_2",
+        "search_text": "VEHICLE-SPECIFIC 11″ UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION havis Havis Console Structural Console console Console Structural Console F-150 SUPER-DUTY EXPEDITION C-VS-1100-F150-2 HAVIS VEHICLE-SPECIFIC 11″ UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
         "skus": [
           {
             "color": "",
@@ -506,13 +643,16 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY",
+              "EXPEDITION"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -520,7 +660,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 13″ FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1300_mstg",
+        "search_text": "VEHICLE-SPECIFIC 13″ FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E havis Havis Console Structural Console console Console Structural Console MACH-E C-VS-1300-MSTG HAVIS VEHICLE-SPECIFIC 13″ FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
         "skus": [
           {
             "color": "",
@@ -533,13 +681,14 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "MACH-E"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -547,7 +696,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 20″ FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_2000_dur_1",
+        "search_text": "VEHICLE-SPECIFIC 20″ FLAT CONSOLE FOR 2018-2020 DODGE DURANGO havis Havis Console Structural Console console Console Structural Console DURANGO C-VS-2000-DUR-1 HAVIS VEHICLE-SPECIFIC 20″ FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
         "skus": [
           {
             "color": "",
@@ -560,13 +717,14 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -574,7 +732,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1210_inut",
+        "search_text": "VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY havis Havis Console Structural Console console Console Structural Console any C-VS-1210-INUT HAVIS VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
         "skus": [
           {
             "color": "",
@@ -594,6 +760,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -601,7 +768,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1012_inut_2",
+        "search_text": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED) havis Havis Console Structural Console console Console Structural Console any C-VS-1012-INUT-2 HAVIS VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
         "skus": [
           {
             "color": "",
@@ -621,6 +796,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -628,7 +804,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1012_tah_1",
+        "search_text": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE havis Havis Console Structural Console console Console Structural Console TAHOE C-VS-1012-TAH-1 HAVIS VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
         "skus": [
           {
             "color": "",
@@ -641,13 +825,14 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -655,7 +840,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vsw_1012_tah_1",
+        "search_text": "VEHICLE-SPECIFIC 22″ WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE havis Havis Console Structural Console console Console Structural Console TAHOE C-VSW-1012-TAH-1 HAVIS VEHICLE-SPECIFIC 22″ WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
         "skus": [
           {
             "color": "",
@@ -668,13 +861,14 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -682,7 +876,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 23″ FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_2300_dur",
+        "search_text": "VEHICLE-SPECIFIC 23″ FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT havis Havis Console Structural Console console Console Structural Console DURANGO C-VS-2300-DUR HAVIS VEHICLE-SPECIFIC 23″ FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
         "skus": [
           {
             "color": "",
@@ -695,13 +897,14 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ]
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -709,7 +912,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 26″ WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vsw_2600_silv",
+        "search_text": "VEHICLE-SPECIFIC 26″ WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA havis Havis Console Structural Console console Console Structural Console any C-VSW-2600-SILV HAVIS VEHICLE-SPECIFIC 26″ WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
         "skus": [
           {
             "color": "",
@@ -729,6 +940,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -736,7 +948,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 28″ ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_0820_blzr_ev",
+        "search_text": "VEHICLE-SPECIFIC 28″ ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV havis Havis Console Structural Console console Console Structural Console any C-VS-0820-BLZR-EV HAVIS VEHICLE-SPECIFIC 28″ ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
         "skus": [
           {
             "color": "",
@@ -756,6 +976,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -763,7 +984,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vs_1400_inut_1",
+        "search_text": "VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY havis Havis Console Structural Console console Console Structural Console any C-VS-1400-INUT-1 HAVIS VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
         "skus": [
           {
             "color": "",
@@ -783,6 +1012,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -790,7 +1020,15 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_c_vsx_1800_inut",
+        "search_text": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY havis Havis Console Structural Console console Console Structural Console any C-VSX-1800-INUT HAVIS VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
         "skus": [
           {
             "color": "",
@@ -810,6 +1048,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "console"
         ],
@@ -817,7 +1056,15 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0567_00",
+        "search_text": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console any 7170-0567-00 GAMBER JOHNSON WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
         "skus": [
           {
             "color": "",

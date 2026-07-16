@@ -22,6 +22,13 @@ _SLOT_FRONT_REAR = (9.5,   5.3)
 _SLOT_SIDE_TOP   = (13.333, 3.58)   # 7.5 - 3.5 - 0.42 footer
 
 
+def _placement_group_key(line_id: str, part_id: str) -> str:
+    marker = ":included-"
+    if marker in (line_id or ""):
+        return line_id.split(marker, 1)[0]
+    return line_id or part_id
+
+
 def _view_metadata(vehicle_config: dict) -> tuple[list[str], dict[str, dict]]:
     """Return (ordered view IDs, {view_id: {label, category, ...}}) from vehicle config."""
     view_order = vehicle_config.get("view_order", _FALLBACK_VIEW_ORDER)
@@ -197,11 +204,14 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
 
                 instances_out = []
                 for idx, inst in enumerate(pl.instances):
-                    ix, iy = positions[idx] if idx < len(positions) else (anchor_x, anchor_y)
+                    base_ix, base_iy = positions[idx] if idx < len(positions) else (anchor_x, anchor_y)
+                    ix, iy = base_ix, base_iy
+                    ix += getattr(pl, "translate_dx", 0.0) or 0.0
+                    iy += getattr(pl, "translate_dy", 0.0) or 0.0
                     # slot_coeff = (x - anchor) / eff_h_spacing — dimensionless slot position
                     # relative to the anchor. The canvas uses this to apply h_spacing_delta
                     # without re-deriving spacing geometry client-side.
-                    slot_coeff = round((ix - anchor_x) / eff_h_spacing, 6) if eff_h_spacing > 1e-9 else 0.0
+                    slot_coeff = round((base_ix - anchor_x) / eff_h_spacing, 6) if eff_h_spacing > 1e-9 else 0.0
                     instances_out.append({
                         "slot_index":  inst.slot_index,
                         "slot_role":   inst.slot_role,
@@ -218,6 +228,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 placements_out.append({
                     "view":               pl.view,
                     "override_key":       override_key,
+                    "group_key":          _placement_group_key(pl.line_id, pl.part_id),
                     "location_key":       pl.location_key,
                     "anchor":             pl.anchor,
                     "pattern":            pl.pattern,

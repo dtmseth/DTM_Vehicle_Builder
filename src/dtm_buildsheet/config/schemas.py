@@ -337,6 +337,29 @@ def _validate_parts_db(normalized: dict) -> None:
                     f"parts_db.json family '{family_id}' 'members' must be a list of part_type_id strings"
                 )
 
+    manifest_groups = normalized.get("manifest_groups")
+    if manifest_groups is not None:
+        if not isinstance(manifest_groups, dict):
+            raise ValueError("parts_db.json 'manifest_groups' must be an object")
+        groups = manifest_groups.get("groups", [])
+        if not isinstance(groups, list):
+            raise ValueError("parts_db.json manifest_groups.groups must be a list")
+        for group in groups:
+            if not isinstance(group, dict):
+                raise ValueError("parts_db.json manifest_groups.groups entries must be objects")
+            for key in ("group_id", "label"):
+                if not isinstance(group.get(key), str) or not group.get(key):
+                    raise ValueError(f"parts_db.json manifest group missing string '{key}'")
+            subgroups = group.get("subgroups", [])
+            if subgroups is not None and not isinstance(subgroups, list):
+                raise ValueError("parts_db.json manifest group subgroups must be a list")
+            for subgroup in subgroups or []:
+                if not isinstance(subgroup, dict):
+                    raise ValueError("parts_db.json manifest subgroup entries must be objects")
+                for key in ("subgroup_id", "label"):
+                    if not isinstance(subgroup.get(key), str) or not subgroup.get(key):
+                        raise ValueError(f"parts_db.json manifest subgroup missing string '{key}'")
+
     part_types = normalized.get("part_types")
     if not isinstance(part_types, dict):
         raise ValueError("parts_db.json 'part_types' must be an object keyed by part_type_id")
@@ -384,6 +407,38 @@ def _validate_parts_db(normalized: dict) -> None:
         family_id = spec.get("family_id")
         if family_id is not None and not isinstance(family_id, str):
             raise ValueError(f"parts_db.json part_type '{pt_id}' family_id must be a string")
+        render = spec.get("render")
+        if render is not None:
+            if not isinstance(render, dict):
+                raise ValueError(f"parts_db.json part_type '{pt_id}' render must be an object")
+            images = render.get("images")
+            if images is not None and not (
+                isinstance(images, dict)
+                and all(isinstance(k, str) and isinstance(v, str) for k, v in images.items())
+            ):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.images must be an object of view → asset path"
+                )
+            sizes = render.get("size_per_view")
+            if sizes is not None:
+                if not isinstance(sizes, dict):
+                    raise ValueError(
+                        f"parts_db.json part_type '{pt_id}' render.size_per_view must be an object"
+                    )
+                for view, size in sizes.items():
+                    if not isinstance(view, str) or not isinstance(size, dict):
+                        raise ValueError(
+                            f"parts_db.json part_type '{pt_id}' render.size_per_view entries must be objects"
+                        )
+                    if "w" not in size or "h" not in size:
+                        raise ValueError(
+                            f"parts_db.json part_type '{pt_id}' render.size_per_view['{view}'] missing w/h"
+                        )
+            qrules = render.get("quantity_rules")
+            if qrules is not None and not isinstance(qrules, list):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.quantity_rules must be a list"
+                )
 
 
 def _validate_legacy_workbook_index(normalized: dict) -> None:

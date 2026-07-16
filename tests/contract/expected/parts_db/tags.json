@@ -30,6 +30,14 @@
         "tag_id": "unbilled"
       },
       {
+        "label": "Cloud",
+        "tag_id": "cloud"
+      },
+      {
+        "label": "K-9",
+        "tag_id": "k9"
+      },
+      {
         "label": "Light",
         "tag_id": "light"
       }

@@ -3,6 +3,7 @@
     "products": [
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "side_scene",
@@ -12,7 +13,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "700 Series",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_700_series",
+        "search_text": "700 Series whelen Whelen Front Scene Lights Scene front_scene side_scene rear_scene Front Scene Side Scene Rear Scene Lights Lights Lights Scene Scene Scene any any any any 704BTT 704BU 70B02FCR 70R02FCR WHELEN 700 LED BRAKE/TAIL/TURN RED WHELEN 700 LED BACK-UP LIGHT WHELEN 700 LIN.SUPER-LED FLASH BLU/CL WHELEN 700 LIN.SUPER-LED FLASH RED/CL",
         "skus": [
           {
             "color": "red",
@@ -74,6 +83,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "side_scene",
@@ -84,7 +94,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "900 Series",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_900_series",
+        "search_text": "900 Series whelen Whelen Front Scene Lights Scene front_scene side_scene rear_scene warning_light Front Scene Side Scene Rear Scene Warning Light Lights Lights Lights Lights Scene Scene Scene Warning any 90RC5FCR WHELEN 900 LIN.SUPER-LED FLASH, R/W/C",
         "skus": [
           {
             "color": "red",
@@ -104,6 +122,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene"
         ],
@@ -111,7 +130,15 @@
         "manufacturer_id": "feniex",
         "manufacturer_label": "Feniex",
         "model": "AM900 Work Light",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "feniex_am900",
+        "search_text": "AM900 Work Light feniex Feniex Front Scene Lights Scene front_scene Front Scene Lights Scene any any AM900 WL-0118 FENIEX AM900 WORK LIGHT AM900 WORK LIGHT",
         "skus": [
           {
             "color": "",
@@ -145,6 +172,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene",
@@ -154,7 +182,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "EZ Scene Light",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_ez_scene",
+        "search_text": "EZ Scene Light whelen Whelen Front Scene Lights Scene front_scene rear_scene side_scene Front Scene Rear Scene Side Scene Lights Lights Lights Scene Scene Scene any any 604SLB 904SLC WHELEN 600 EZ SCENE LT 10-30V BLACK WHELEN 900 EZ SCENELIGHT 12V CHROME",
         "skus": [
           {
             "color": "white",
@@ -188,6 +224,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -196,7 +233,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Field Series",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_field_series",
+        "search_text": "Field Series whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any FSB03B WHELEN 20\" FIELD SERIES BROW 3-LT BLK",
         "skus": [
           {
             "color": "white",
@@ -216,6 +261,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -224,7 +270,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "M9 Scene",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_m9_scene",
+        "search_text": "M9 Scene whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any any M9LZC M9RCZ WHELEN M9 SURFACE MT LED SCENE LT WHELEN M9 COMBINATION RED WARN/SCENE",
         "skus": [
           {
             "color": "white",
@@ -258,6 +312,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene"
         ],
@@ -265,7 +320,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "PAR-32",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_par32",
+        "search_text": "PAR-32 whelen Whelen Front Scene Lights Scene front_scene Front Scene Lights Scene any P32F2RB WHELEN PAR32 DRIVE/WARN FAIRING LT RB",
         "skus": [
           {
             "color": "red",
@@ -285,6 +348,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene"
         ],
@@ -292,7 +356,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "PAR-46",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_par46",
+        "search_text": "PAR-46 whelen Whelen Front Scene Lights Scene front_scene Front Scene Lights Scene any any P46FLC P46SC WHELEN PAR-46 8 DEG LED SPOT LT 12V WHELEN PAR-46 SUPER-LED SPOT LT 12V",
         "skus": [
           {
             "color": "purple",
@@ -326,6 +398,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene",
@@ -335,7 +408,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Perimeter Enhancement Light",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_pel2",
+        "search_text": "Perimeter Enhancement Light whelen Whelen Front Scene Lights Scene front_scene rear_scene side_scene Front Scene Rear Scene Side Scene Lights Lights Lights Scene Scene Scene any PEL2B PERIMETER LIGHT BLACK",
         "skus": [
           {
             "color": "",
@@ -355,6 +436,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -363,7 +445,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Pioneer Micro",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_pioneer_micro",
+        "search_text": "Pioneer Micro whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any any MPBB MPPBBS WHELEN MICRO PIONEER BAIL MT 12V BLK WHELEN MICRO PIONEER LP PED MT 12V BK",
         "skus": [
           {
             "color": "white",
@@ -397,6 +487,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -405,7 +496,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Pioneer Nano",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_pioneer_nano",
+        "search_text": "Pioneer Nano whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any NP6BB WHELEN NANO-6 PIONEER BAIL MT 12V BLK",
         "skus": [
           {
             "color": "white",
@@ -425,6 +524,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -433,7 +533,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Pioneer Plus",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_pioneer_plus",
+        "search_text": "Pioneer Plus whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any any PBH203 PFH2 WHELEN PIONEER+ DUAL RECESS MT WHT WHELEN PIONEER+ DUAL FLOOD 12V WHT",
         "skus": [
           {
             "color": "white",
@@ -467,6 +575,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -475,7 +584,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Pioneer SlimLine",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_pioneer_slimline",
+        "search_text": "Pioneer SlimLine whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any any PSL1BB PSL2BB WHELEN SINGLE SL PIONEER BAIL MT 12V WHELEN DUAL SL PIONEER BAIL MT 12V BK",
         "skus": [
           {
             "color": "white",
@@ -509,6 +626,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene",
           "rear_scene"
@@ -517,7 +635,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Summit Flood",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_summit_flood",
+        "search_text": "Summit Flood whelen Whelen Front Scene Lights Scene front_scene rear_scene Front Scene Rear Scene Lights Lights Scene Scene any any any S091MB S161MB S30MB WHELEN 9\" SUMMIT WIDE FLOOD W/MKR BLK WHELEN 16\" SUMMIT WIDE FLOOD W/MKR BLK WHELEN 30\" SUMMIT W/ MARKER BLK",
         "skus": [
           {
             "color": "white",
@@ -565,6 +691,7 @@
       },
       {
         "default_location": "",
+        "description": "",
         "fits_part_types": [
           "front_scene"
         ],
@@ -572,7 +699,15 @@
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Wing Plow Light",
+        "primary_category_id": "scene",
+        "primary_family_id": "scene_lights",
+        "primary_family_label": "Scene",
+        "primary_part_type_id": "front_scene",
+        "primary_part_type_label": "Front Scene",
+        "primary_type_id": "lights",
+        "primary_type_label": "Lights",
         "product_id": "whelen_wing_plow_light",
+        "search_text": "Wing Plow Light whelen Whelen Front Scene Lights Scene front_scene Front Scene Lights Scene any WPLOW1A WHELEN WING PLOW OPERATING LT. AMBER",
         "skus": [
           {
             "color": "amber",

@@ -392,7 +392,7 @@ def fill_overview(slide, project) -> None:
     agency     = info.get("Agency",    "—")
     build_type = info.get("BuildType", "")
     # Fall back to ExistingVehicle when NewVehicle fields are absent
-    year      = new_v.get("YEAR",      "") or exist_v.get("YEAR",      "")
+    year      = info.get("BuildYear", "") or new_v.get("YEAR",      "") or exist_v.get("YEAR",      "")
     make      = new_v.get("MAKE",      "") or exist_v.get("MAKE",      "")
     model     = (new_v.get("MODEL",     "") or exist_v.get("MODEL",     "")
                  or info.get("VehicleType", ""))
@@ -493,7 +493,7 @@ def fill_overview(slide, project) -> None:
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)
     card_h = Inches(1.75)
 
-    new_year      = new_v.get("YEAR",    "")
+    new_year      = info.get("BuildYear", "") or new_v.get("YEAR",    "")
     new_make      = new_v.get("MAKE",    "")
     new_model_str = " ".join(filter(None, [new_v.get("MODEL",""), new_v.get("SUB MODEL","")]))
     new_unit      = new_v.get("UNIT ID", new_v.get("UNIT", ""))
@@ -865,6 +865,8 @@ def _manifest_rows(planned_parts) -> list[tuple]:
     for pp in planned_parts:
         if not pp.raw.include:
             continue
+        if is_render_only_part(pp):
+            continue
         cat = pp.category or ""
         rk  = pp.render_kind or ""
         loc   = _clean_location(pp)
@@ -890,6 +892,13 @@ def _manifest_rows(planned_parts) -> list[tuple]:
     return rows
 
 
+def is_render_only_part(part_or_planned) -> bool:
+    raw = getattr(part_or_planned, "raw", part_or_planned)
+    notes = (getattr(raw, "notes", "") or "").strip()
+    part_number = (getattr(raw, "part_number", "") or "").strip()
+    return notes.startswith("Included with Setina PB450L") or ":included-" in part_number
+
+
 def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
     all_rows = _manifest_rows(plan.planned_parts)
     if not all_rows:
@@ -899,7 +908,7 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
     new_v   = proj.get("NewVehicle",      {})
     exist_v = proj.get("ExistingVehicle", {})
     agency  = proj.get("Agency", "")
-    year    = new_v.get("YEAR","") or exist_v.get("YEAR","")
+    year    = proj.get("BuildYear", "") or new_v.get("YEAR","") or exist_v.get("YEAR","")
     make    = new_v.get("MAKE","") or exist_v.get("MAKE","")
     model   = (new_v.get("MODEL","") or exist_v.get("MODEL","")
                or proj.get("VehicleType",""))

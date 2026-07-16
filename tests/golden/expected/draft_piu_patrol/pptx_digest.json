@@ -10071,21 +10071,10 @@
           "image_ext": "png",
           "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
           "kind": "PICTURE (13)",
-          "left_emu": 2095503,
+          "left_emu": 2624236,
           "name": "Picture",
           "top_emu": 3639348,
-          "width_emu": 391966
-        },
-        {
-          "flip_v": true,
-          "height_emu": 480713,
-          "image_ext": "png",
-          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
-          "kind": "PICTURE (13)",
-          "left_emu": 3181810,
-          "name": "Picture",
-          "top_emu": 3639348,
-          "width_emu": 391966
+          "width_emu": 420809
         },
         {
           "height_emu": 84309,

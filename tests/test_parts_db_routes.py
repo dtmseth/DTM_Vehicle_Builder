@@ -88,12 +88,20 @@ _SYNTHETIC_DB = {
     "services": {},
     "preference_filters": {},
     "color_palette": {},
+    "families": {
+        "front_system": {
+            "label": "Front System",
+            "category": "structural",
+            "members": ["push_bumper", "front_camera"],
+        }
+    },
 }
 
 
-def _paths(tmp_path: Path, db: dict | None = _SYNTHETIC_DB) -> AppPaths:
+def _paths(tmp_path: Path, db: dict | None = _SYNTHETIC_DB, catalog: dict | None = None) -> AppPaths:
     if db is not None:
         (tmp_path / "parts_db.json").write_text(json.dumps(db), "utf-8")
+        (tmp_path / "part_catalog.json").write_text(json.dumps(catalog or {"parts": []}), "utf-8")
     return AppPaths(workspace_config_dir=tmp_path)
 
 
@@ -289,11 +297,293 @@ def test_resolve_accessories_product_and_part_type_level():
     assert [g["category"] for g in out] == ["lighthead", "bracket_mount"]
 
 
+def test_resolve_accessories_product_specific_category_overrides_generic_fallback():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = {
+        "accessory_categories": {"bracket_mount": {"label": "Bracket / Mount"}},
+        "manufacturers": {"whelen": {"label": "Whelen"}},
+        "part_types": {
+            "warning_light": {"label": "Warning Light", "type_id": "lights"},
+            "mirror_warning_bracket": {
+                "label": "Mirror Warning Bracket",
+                "type_id": "lights",
+                "accessory_of": "warning_light",
+                "accessory_category": "bracket_mount",
+            },
+        },
+        "products": {
+            "whelen_u_series": {
+                "manufacturer_id": "whelen",
+                "model": "U-Series",
+                "fits_part_types": ["warning_light"],
+                "accessories": [
+                    {
+                        "category": "bracket_mount",
+                        "product_id": "whelen_u_mirror_mount",
+                        "required": True,
+                    }
+                ],
+            },
+            "whelen_u_mirror_mount": {
+                "manufacturer_id": "whelen",
+                "model": "U-Series Under-Mirror Warning Bracket",
+                "fits_part_types": ["mirror_warning_bracket"],
+                "part_numbers": [{"part_number": "U18050", "vehicle_tags": ["PIU"]}],
+            },
+            "generic_warning_bracket": {
+                "manufacturer_id": "whelen",
+                "model": "Generic Warning Bracket",
+                "fits_part_types": ["mirror_warning_bracket"],
+                "part_numbers": [{"part_number": "GEN"}],
+            },
+        },
+    }
+
+    out = _resolve_accessories(_FakeAccSvc(doc), "whelen_u_series")
+
+    assert len(out) == 1
+    assert out[0]["category"] == "bracket_mount"
+    assert out[0]["required"] is True
+    assert [option["product_id"] for option in out[0]["options"]] == ["whelen_u_mirror_mount"]
+    assert out[0]["options"][0]["skus"][0]["part_number"] == "U18050"
+
+
 def test_resolve_accessories_none_for_plain_product():
     from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
     doc = {"accessory_categories": {}, "manufacturers": {}, "part_types": {},
            "products": {"p": {"manufacturer_id": "m", "model": "P", "fits_part_types": []}}}
     assert _resolve_accessories(_FakeAccSvc(doc), "p") == []
+
+
+def test_siren_speaker_locations_use_curated_parts_db_allowed_placements():
+    paths = AppPaths()
+    h = FakeHandler(
+        "/api/parts-db/category-locations?type=equipment&product=whelen_sa315p&vehicle=PIU"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, paths)
+    assert h.status == 200
+    assert {row["location"] for row in h.body_json()["locations"]} == {
+        "TOP OF PUSH BUMPER",
+        "UNDER PUSH BUMPER",
+        "BEHIND GRILL (CENTER)",
+        "BEHIND OEM BUMPER",
+        "VEHICLE SPECIFIC BRACKET",
+    }
+
+
+def test_preemption_locations_are_rendered_vehicle_placements():
+    h = FakeHandler(
+        "/api/parts-db/category-locations?type=equipment&product=nova_preemption_light_head&vehicle=PIU"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, AppPaths())
+
+    assert h.status == 200
+    rows = h.body_json()["locations"]
+    assert {row["location"] for row in rows} == {
+        "IN LIGHT BAR",
+        "UPPER WINDSHIELD",
+        "CENTER OF DASH",
+    }
+    assert all(row["has_coords"] is True for row in rows)
+
+
+def test_preemption_leaf_includes_nova_opticom_search_aliases():
+    h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=preemption")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    nova = products["nova_preemption_light_head"]
+    assert nova["manufacturer_label"] == "Nova"
+    assert nova["model"] == "Opticom Preemption Light Head"
+    assert "Opticam" in nova["description"]
+    assert any("Opticom/Opticam" in sku["friendly_name"] for sku in nova["skus"])
+
+
+def test_radio_antenna_top_leaf_only_contains_radio_antenna_choices():
+    h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=radio_antenna_top")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    ids = {row["product_id"] for row in h.body_json()["products"]}
+    assert ids == {
+        "specify_cylinder_style",
+        "qb_unassigned_ccas_sb_7_800",
+        "laird_qwb800",
+    }
+    assert not any(pid.startswith("stalker_") for pid in ids)
+    assert "ace_k_9_ha_rbm_27_rd" not in ids
+    assert "watchguard_trab58003_wg1" not in ids
+    assert "qb_unassigned_cell_antenna" not in ids
+    labels = {row["product_id"]: row["model"] for row in h.body_json()["products"]}
+    assert labels == {
+        "specify_cylinder_style": "Cylinder-Style Radio Antenna",
+        "qb_unassigned_ccas_sb_7_800": "Covert / Stinger-Style Radio Antenna",
+        "laird_qwb800": "Whip-Style Radio Antenna",
+    }
+    assert {row["manufacturer_label"] for row in h.body_json()["products"]} == {"Shop Detail"}
+
+
+def test_radio_location_rules_are_shop_facing_and_constrained():
+    db_path = Path("src/dtm_buildsheet/resources/config/parts_db.json")
+    part_types = json.loads(db_path.read_text("utf-8"))["part_types"]
+    assert part_types["radio_head"]["location_options"] == [
+        "CONSOLE POSITION 1 (TOP)",
+        "CONSOLE POSITION 2",
+        "CONSOLE POSITION 3",
+        "CONSOLE POSITION 4",
+        "REAR STORAGE AREA (SECONDARY RADIO)",
+    ]
+    assert "ON EQUIPMENT TRAY" not in part_types["radio_head"]["location_options"]
+    assert part_types["radio_brick"]["location_options"] == ["ON EQUIPMENT TRAY", "FRONT OF PARTITION"]
+    assert part_types["radio_antenna_top"]["location_options"] == [
+        "REAR LEFT ROOF",
+        "LEFT CARGO WINDOW",
+        "RIGHT CARGO WINDOW",
+    ]
+    assert part_types["radio_speaker"]["location_options"] == [
+        "BACK OF CENTER CONSOLE",
+        "TOP OF CAGE - CENTER",
+        "TOP OF CAGE - DRIVER SIDE",
+        "TOP OF CAGE - PASSENGER SIDE",
+        "UNDER DASH",
+        "FRONT OF CONSOLE",
+    ]
+
+
+def test_radio_mic_leaf_uses_short_mag_mic_labels():
+    h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=radio_mic_clip")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    assert products["magnetic_mic_mmsu_1"]["model"] == "Mag Mic"
+    assert products["magnetic_mic_mmsu_1b"]["model"] == "Mag Mic with Bracket"
+    assert products["magnetic_mic_mmbp_25"]["model"] == "Mag Mic"
+
+
+def test_radio_head_cable_accessories_include_no_new_and_supply_choices():
+    h = FakeHandler("/api/parts-db/accessories?product_id=motorola_all_in_one_unit")
+    route_parts_db(h, "GET", "/api/parts-db/accessories", {}, AppPaths())
+
+    assert h.status == 200
+    groups = {row["category"]: row for row in h.body_json()["accessories"]}
+    cable_ids = {option["product_id"] for option in groups["cable"]["options"]}
+    assert {
+        "shop_no_radio_cables_needed",
+        "qb_unassigned_radio_antenna",
+        "motorola_radio_refresh_kit",
+        "motorola_pmkn4033a",
+    }.issubset(cable_ids)
+
+
+def test_category_skus_all_searches_all_categories_with_metadata():
+    h = FakeHandler("/api/parts-db/category-skus?all=1")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    nova = products["nova_preemption_light_head"]
+    assert nova["primary_part_type_id"] == "preemption"
+    assert nova["primary_type_id"] == "equipment"
+    search_text = nova["search_text"].lower()
+    assert "nova" in search_text
+    assert "opticam" in search_text
+    assert "preemption" in search_text
+
+
+def test_category_skus_family_filter_uses_member_union(tmp_path):
+    h = FakeHandler("/api/parts-db/category-skus?type=structural&family=front_system")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, _paths(tmp_path))
+
+    assert h.status == 200
+    ids = {p["product_id"] for p in h.body_json()["products"]}
+    assert ids == {"setina_pb400", "whelen_cam"}
+
+
+def test_category_skus_marks_fixture_products_for_location_skip(tmp_path):
+    catalog = {
+        "parts": [
+            {
+                "part_id": "push_bumper",
+                "display_name": "Push Bumper",
+                "category": "vehicle_system",
+                "render_kind": "bar",
+                "default_views": ["front"],
+                "is_fixture": True,
+            }
+        ]
+    }
+    h = FakeHandler("/api/parts-db/category-skus?type=structural&part_type=push_bumper")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, _paths(tmp_path, catalog=catalog))
+
+    assert h.status == 200
+    product = h.body_json()["products"][0]
+    assert product["product_id"] == "setina_pb400"
+    assert product["is_fixture"] is True
+    assert product["default_location"] == "Push Bumper"
+    assert product["fixture_part_type_id"] == "push_bumper"
+    assert product["fixture_catalog_id"] == "push_bumper"
+    assert product["fixture_name_pattern"] == "Push Bumper"
+    assert product["fixture_base_label"] == "Push Bumper"
+
+
+def test_category_skus_fixture_alias_for_front_interior_lightbar():
+    paths = AppPaths()
+    h = FakeHandler("/api/parts-db/category-skus?type=lights&part_type=front_interior_light_bar")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, paths)
+
+    assert h.status == 200
+    products = h.body_json()["products"]
+    assert products
+    assert {p["fixture_catalog_id"] for p in products} == {"interior_light_bar_front"}
+    assert {p["fixture_part_type_id"] for p in products} == {"front_interior_light_bar"}
+    assert {p["default_location"] for p in products} == {"INTERIOR LIGHT BAR (FRONT)"}
+
+
+@pytest.mark.parametrize(
+    ("type_id", "part_type_id", "catalog_id"),
+    [
+        ("structural", "push_bumper", "push_bumper"),
+        ("structural", "pit_bar", "pit_bar"),
+        ("structural", "wing_wraps", "wing_wraps"),
+        ("lights", "roof_light_bar", "roof_light_bar"),
+        ("lights", "front_interior_light_bar", "interior_light_bar_front"),
+        ("lights", "rear_interior_light_bar", "rear_interior_light_bar"),
+    ],
+)
+def test_category_skus_marks_real_fixture_part_types(type_id, part_type_id, catalog_id):
+    paths = AppPaths()
+    h = FakeHandler(f"/api/parts-db/category-skus?type={type_id}&part_type={part_type_id}")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, paths)
+
+    assert h.status == 200
+    products = h.body_json()["products"]
+    assert products
+    assert all(p["is_fixture"] for p in products)
+    assert {p["fixture_part_type_id"] for p in products} == {part_type_id}
+    assert {p["fixture_catalog_id"] for p in products} == {catalog_id}
+
+
+def test_manifest_groups_expose_sales_oriented_grouping():
+    paths = AppPaths()
+    h = FakeHandler("/api/parts-db/manifest-groups")
+    route_parts_db(h, "GET", "/api/parts-db/manifest-groups", {}, paths)
+    assert h.status == 200
+    body = h.body_json()
+    assert [g["label"] for g in body["groups"][:4]] == [
+        "Front Exterior",
+        "Lighting Systems",
+        "Driver Area / Console",
+        "Electronics / Communications",
+    ]
+    pmap = body["part_type_map"]
+    assert pmap["siren_speaker"]["group_label"] == "Front Exterior"
+    assert pmap["siren_speaker"]["section_label"] == "Siren / Speaker"
+    assert pmap["console"]["group_label"] == "Driver Area / Console"
+    assert pmap["console"]["section_label"] == "Console"
+    assert pmap["rear_partition"]["group_label"] == "Prisoner Area"
 
 
 def test_tracer_heads_endpoint(tmp_path):

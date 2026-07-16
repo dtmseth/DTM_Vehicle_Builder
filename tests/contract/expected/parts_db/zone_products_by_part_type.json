@@ -23,7 +23,7 @@
       {
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
-        "model": "HDX",
+        "model": "HDX Push Bumper",
         "price_min": null,
         "product_id": "pro_gard_hdx",
         "qb_count": 0,
@@ -203,7 +203,7 @@
       {
         "manufacturer_id": "go_rhino",
         "manufacturer_label": "Go Rhino",
-        "model": "Go Rhino Push Bumper",
+        "model": "Police Push Bumper",
         "price_min": 330.75,
         "product_id": "go_rhino_pushbumper",
         "qb_count": 3,

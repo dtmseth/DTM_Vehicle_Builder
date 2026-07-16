@@ -1,0 +1,1190 @@
+{
+  "body": {
+    "groups": [
+      {
+        "group_id": "front_exterior",
+        "label": "Front Exterior",
+        "order": 1,
+        "subgroups": [
+          {
+            "label": "Push Bumper",
+            "order": 1,
+            "part_types": [
+              "pit_bar",
+              "push_bumper",
+              "wing_wraps"
+            ],
+            "section_key": "front_exterior:push_bumper",
+            "subgroup_id": "push_bumper"
+          },
+          {
+            "label": "Siren / Speaker",
+            "order": 2,
+            "part_types": [
+              "howler",
+              "siren_speaker"
+            ],
+            "section_key": "front_exterior:siren_speaker",
+            "subgroup_id": "siren_speaker"
+          },
+          {
+            "label": "Front Equipment",
+            "order": 3,
+            "part_types": [
+              "auto_eject",
+              "battery_tender",
+              "thermal_imager"
+            ],
+            "section_key": "front_exterior:front_equipment",
+            "subgroup_id": "front_equipment"
+          },
+          {
+            "label": "Front Exterior",
+            "order": 999,
+            "part_types": [
+              "running_boards_nerf_bars"
+            ],
+            "section_key": "front_exterior:front_exterior",
+            "subgroup_id": "front_exterior"
+          }
+        ]
+      },
+      {
+        "group_id": "lighting_systems",
+        "label": "Lighting Systems",
+        "order": 2,
+        "subgroups": [
+          {
+            "label": "Warning Lights",
+            "order": 1,
+            "part_types": [
+              "headlight_flasher",
+              "tail_light_flasher",
+              "warning_light"
+            ],
+            "section_key": "lighting_systems:warning_lights",
+            "subgroup_id": "warning_lights"
+          },
+          {
+            "label": "Scene Lights",
+            "order": 2,
+            "part_types": [
+              "front_scene",
+              "rear_scene",
+              "side_scene",
+              "spotlight"
+            ],
+            "section_key": "lighting_systems:scene_lights",
+            "subgroup_id": "scene_lights"
+          },
+          {
+            "label": "Light Bars",
+            "order": 3,
+            "part_types": [
+              "front_interior_light_bar",
+              "rear_interior_light_bar",
+              "roof_light_bar"
+            ],
+            "section_key": "lighting_systems:light_bars",
+            "subgroup_id": "light_bars"
+          },
+          {
+            "label": "Interior Lighting",
+            "order": 4,
+            "part_types": [
+              "cargo_lighting",
+              "front_dome_light",
+              "rear_seat_cargo_lights",
+              "rear_seat_lights"
+            ],
+            "section_key": "lighting_systems:interior_lighting",
+            "subgroup_id": "interior_lighting"
+          },
+          {
+            "label": "Lighting Systems",
+            "order": 999,
+            "part_types": [
+              "tracer_2_lamp",
+              "tracer_5_lamp",
+              "tracer_6_lamp"
+            ],
+            "section_key": "lighting_systems:lighting_systems",
+            "subgroup_id": "lighting_systems"
+          }
+        ]
+      },
+      {
+        "group_id": "driver_area_console",
+        "label": "Driver Area / Console",
+        "order": 3,
+        "subgroups": [
+          {
+            "label": "Console",
+            "order": 1,
+            "part_types": [
+              "console",
+              "motion_attachment"
+            ],
+            "section_key": "driver_area_console:console",
+            "subgroup_id": "console"
+          },
+          {
+            "label": "Computer Workstation",
+            "order": 2,
+            "part_types": [
+              "computer",
+              "docking_station"
+            ],
+            "section_key": "driver_area_console:computer_workstation",
+            "subgroup_id": "computer_workstation"
+          },
+          {
+            "label": "Driver Area Equipment",
+            "order": 3,
+            "part_types": [
+              "arges_controller",
+              "arges_face",
+              "arm_rest",
+              "aux_12v_ports",
+              "flashlight",
+              "gpd",
+              "gun_lock",
+              "pa_mic",
+              "pedestal_mount",
+              "photo_eye",
+              "power_timer",
+              "preemption",
+              "printer",
+              "remote_start",
+              "special_face_plate"
+            ],
+            "section_key": "driver_area_console:driver_area_equipment",
+            "subgroup_id": "driver_area_equipment"
+          }
+        ]
+      },
+      {
+        "group_id": "electronics_communications",
+        "label": "Electronics / Communications",
+        "order": 4,
+        "subgroups": [
+          {
+            "label": "Camera System",
+            "order": 1,
+            "part_types": [
+              "body_camera_dock",
+              "camera_dvr",
+              "front_camera",
+              "rear_camera",
+              "rear_seat_camera",
+              "wireless_mic_charger"
+            ],
+            "section_key": "electronics_communications:camera_system",
+            "subgroup_id": "camera_system"
+          },
+          {
+            "label": "Radio Communications",
+            "order": 2,
+            "part_types": [
+              "radio_antenna_cable",
+              "radio_antenna_top",
+              "radio_brick",
+              "radio_cable",
+              "radio_head",
+              "radio_mic_clip",
+              "radio_speaker"
+            ],
+            "section_key": "electronics_communications:radio_comms",
+            "subgroup_id": "radio_comms"
+          },
+          {
+            "label": "Radar",
+            "order": 3,
+            "part_types": [
+              "radar_display_unit"
+            ],
+            "section_key": "electronics_communications:radar",
+            "subgroup_id": "radar"
+          },
+          {
+            "label": "Light Control System",
+            "order": 4,
+            "part_types": [
+              "control_head",
+              "expansion_module",
+              "external_amp",
+              "light_controller",
+              "v2v_sync"
+            ],
+            "section_key": "electronics_communications:light_control_system",
+            "subgroup_id": "light_control_system"
+          },
+          {
+            "label": "Cloud / CradlePoint",
+            "order": 5,
+            "part_types": [
+              "cloud_antenna",
+              "cloud_system_tray",
+              "cradle_point"
+            ],
+            "section_key": "electronics_communications:cloud_cradlepoint",
+            "subgroup_id": "cloud_cradlepoint"
+          },
+          {
+            "label": "Thermal Imaging",
+            "order": 6,
+            "part_types": [
+              "thermal_imager_monitor"
+            ],
+            "section_key": "electronics_communications:thermal_imaging",
+            "subgroup_id": "thermal_imaging"
+          }
+        ]
+      },
+      {
+        "group_id": "prisoner_area",
+        "label": "Prisoner Area",
+        "order": 5,
+        "subgroups": [
+          {
+            "label": "Cage / Prisoner Containment",
+            "order": 1,
+            "part_types": [
+              "chicago_barrier",
+              "floor_pan",
+              "front_partition",
+              "prisoner_transport_insert",
+              "rear_partition",
+              "rear_seat_divider",
+              "rear_window_bars",
+              "replacement_rear_seat"
+            ],
+            "section_key": "prisoner_area:cage_prisoner_containment",
+            "subgroup_id": "cage_prisoner_containment"
+          }
+        ]
+      },
+      {
+        "group_id": "rear_cargo_storage",
+        "label": "Rear Cargo / Storage",
+        "order": 6,
+        "subgroups": [
+          {
+            "label": "Storage / Equipment",
+            "order": 1,
+            "part_types": [
+              "equipment_tray",
+              "rear_storage_box",
+              "tonneau_cover"
+            ],
+            "section_key": "rear_cargo_storage:storage_equipment",
+            "subgroup_id": "storage_equipment"
+          },
+          {
+            "label": "Rear Cargo Equipment",
+            "order": 2,
+            "part_types": [
+              "door_lock_button",
+              "motorcycle_box",
+              "tool_mount",
+              "vehicle_interface"
+            ],
+            "section_key": "rear_cargo_storage:rear_cargo_equipment",
+            "subgroup_id": "rear_cargo_equipment"
+          }
+        ]
+      },
+      {
+        "group_id": "k9",
+        "label": "K-9",
+        "order": 7,
+        "subgroups": [
+          {
+            "label": "K-9 Equipment",
+            "order": 1,
+            "part_types": [
+              "k9_add_ons",
+              "k9_control_head",
+              "k9_heat_alarm_popper",
+              "k9_kennel"
+            ],
+            "section_key": "k9:k9_equipment",
+            "subgroup_id": "k9_equipment"
+          }
+        ]
+      },
+      {
+        "group_id": "extras_appearance",
+        "label": "Extras / Appearance",
+        "order": 8,
+        "subgroups": [
+          {
+            "label": "Extras / Appearance",
+            "order": 1,
+            "part_types": [
+              "bullet_proof_door_panel",
+              "bullet_proof_door_window",
+              "decals",
+              "floor_mats",
+              "harness",
+              "seat_covers",
+              "window_tint"
+            ],
+            "section_key": "extras_appearance:extras_appearance",
+            "subgroup_id": "extras_appearance"
+          }
+        ]
+      }
+    ],
+    "legacy_label_map": {
+      "12v aux ports": "driver_area_console:driver_area_equipment",
+      "2-lamp tracer": "lighting_systems:lighting_systems",
+      "5-lamp tracer": "lighting_systems:lighting_systems",
+      "6-lamp tracer": "lighting_systems:lighting_systems",
+      "arges": "driver_area_console:driver_area_equipment",
+      "arges controller": "driver_area_console:driver_area_equipment",
+      "armrest": "driver_area_console:driver_area_equipment",
+      "auto eject": "front_exterior:front_equipment",
+      "battery tender": "front_exterior:front_equipment",
+      "body camera dock": "electronics_communications:camera_system",
+      "bullet proof door panel": "extras_appearance:extras_appearance",
+      "bullet proof door window": "extras_appearance:extras_appearance",
+      "camera dvr": "electronics_communications:camera_system",
+      "cargo lighting": "lighting_systems:interior_lighting",
+      "chicago barrier": "prisoner_area:cage_prisoner_containment",
+      "cloud antenna": "electronics_communications:cloud_cradlepoint",
+      "cloud system": "electronics_communications:cloud_cradlepoint",
+      "computer / laptop": "driver_area_console:computer_workstation",
+      "computer pedestal / mount base": "driver_area_console:driver_area_equipment",
+      "console": "driver_area_console:console",
+      "decals": "extras_appearance:extras_appearance",
+      "docking station": "driver_area_console:computer_workstation",
+      "dome light": "lighting_systems:interior_lighting",
+      "door lock button": "rear_cargo_storage:rear_cargo_equipment",
+      "equipment tray": "rear_cargo_storage:storage_equipment",
+      "expansion module": "electronics_communications:light_control_system",
+      "external amp": "electronics_communications:light_control_system",
+      "flashlight & charger": "driver_area_console:driver_area_equipment",
+      "floor mats": "extras_appearance:extras_appearance",
+      "floor pan": "prisoner_area:cage_prisoner_containment",
+      "front camera": "electronics_communications:camera_system",
+      "front partition": "prisoner_area:cage_prisoner_containment",
+      "front scene": "lighting_systems:scene_lights",
+      "gps": "driver_area_console:driver_area_equipment",
+      "gun lock": "driver_area_console:driver_area_equipment",
+      "harness": "extras_appearance:extras_appearance",
+      "headlight flasher": "lighting_systems:warning_lights",
+      "howler": "front_exterior:siren_speaker",
+      "interior light bar": "lighting_systems:light_bars",
+      "k-9 add-ons": "k9:k9_equipment",
+      "k-9 control head": "k9:k9_equipment",
+      "k-9 heat alarm / door popper": "k9:k9_equipment",
+      "k-9 kennel": "k9:k9_equipment",
+      "light bar": "lighting_systems:light_bars",
+      "light control head": "electronics_communications:light_control_system",
+      "light controller": "electronics_communications:light_control_system",
+      "motion attachment": "driver_area_console:console",
+      "motorcycle box / mount": "rear_cargo_storage:rear_cargo_equipment",
+      "pa mic": "driver_area_console:driver_area_equipment",
+      "photo eye": "driver_area_console:driver_area_equipment",
+      "pit bar": "front_exterior:push_bumper",
+      "power timer / chargeguard": "driver_area_console:driver_area_equipment",
+      "preemption": "driver_area_console:driver_area_equipment",
+      "printer": "driver_area_console:driver_area_equipment",
+      "prisoner transport insert": "prisoner_area:cage_prisoner_containment",
+      "push bumper": "front_exterior:push_bumper",
+      "radar display unit": "electronics_communications:radar",
+      "radio antenna top": "electronics_communications:radio_comms",
+      "radio brick": "electronics_communications:radio_comms",
+      "radio cables": "electronics_communications:radio_comms",
+      "radio communication cable": "electronics_communications:radio_comms",
+      "radio control head": "electronics_communications:radio_comms",
+      "radio mic clip": "electronics_communications:radio_comms",
+      "radio speaker": "electronics_communications:radio_comms",
+      "rear camera": "electronics_communications:camera_system",
+      "rear partition": "prisoner_area:cage_prisoner_containment",
+      "rear scene": "lighting_systems:scene_lights",
+      "rear seat camera": "electronics_communications:camera_system",
+      "rear seat cargo lights": "lighting_systems:interior_lighting",
+      "rear seat divider": "prisoner_area:cage_prisoner_containment",
+      "rear seat lights": "lighting_systems:interior_lighting",
+      "rear window bars": "prisoner_area:cage_prisoner_containment",
+      "remote start": "driver_area_console:driver_area_equipment",
+      "replacement seat": "prisoner_area:cage_prisoner_containment",
+      "running boards / nerf bars": "front_exterior:front_exterior",
+      "seat covers": "extras_appearance:extras_appearance",
+      "side scene": "lighting_systems:scene_lights",
+      "siren speaker": "front_exterior:siren_speaker",
+      "special face plate": "driver_area_console:driver_area_equipment",
+      "spotlight (pillar/post)": "lighting_systems:scene_lights",
+      "storage box": "rear_cargo_storage:storage_equipment",
+      "tail light flasher": "lighting_systems:warning_lights",
+      "thermal imager": "front_exterior:front_equipment",
+      "thermal imager monitor": "electronics_communications:thermal_imaging",
+      "tonneau / bed cover": "rear_cargo_storage:storage_equipment",
+      "tool mount": "rear_cargo_storage:rear_cargo_equipment",
+      "vehicle interface": "rear_cargo_storage:rear_cargo_equipment",
+      "vehicle to vehicle sync": "electronics_communications:light_control_system",
+      "warning light": "lighting_systems:warning_lights",
+      "window tint": "extras_appearance:extras_appearance",
+      "wing wraps": "front_exterior:push_bumper",
+      "wireless mic charger": "electronics_communications:camera_system"
+    },
+    "part_type_map": {
+      "arges_controller": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "arges_face": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "arm_rest": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "auto_eject": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:front_equipment",
+        "section_label": "Front Equipment",
+        "section_order": 3
+      },
+      "aux_12v_ports": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "battery_tender": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:front_equipment",
+        "section_label": "Front Equipment",
+        "section_order": 3
+      },
+      "body_camera_dock": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      },
+      "bullet_proof_door_panel": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "bullet_proof_door_window": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "camera_dvr": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      },
+      "cargo_lighting": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:interior_lighting",
+        "section_label": "Interior Lighting",
+        "section_order": 4
+      },
+      "chicago_barrier": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "cloud_antenna": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:cloud_cradlepoint",
+        "section_label": "Cloud / CradlePoint",
+        "section_order": 5
+      },
+      "cloud_system_tray": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:cloud_cradlepoint",
+        "section_label": "Cloud / CradlePoint",
+        "section_order": 5
+      },
+      "computer": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:computer_workstation",
+        "section_label": "Computer Workstation",
+        "section_order": 2
+      },
+      "console": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:console",
+        "section_label": "Console",
+        "section_order": 1
+      },
+      "control_head": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
+      },
+      "cradle_point": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:cloud_cradlepoint",
+        "section_label": "Cloud / CradlePoint",
+        "section_order": 5
+      },
+      "decals": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "docking_station": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:computer_workstation",
+        "section_label": "Computer Workstation",
+        "section_order": 2
+      },
+      "door_lock_button": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:rear_cargo_equipment",
+        "section_label": "Rear Cargo Equipment",
+        "section_order": 2
+      },
+      "equipment_tray": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:storage_equipment",
+        "section_label": "Storage / Equipment",
+        "section_order": 1
+      },
+      "expansion_module": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
+      },
+      "external_amp": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
+      },
+      "flashlight": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "floor_mats": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "floor_pan": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "front_camera": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      },
+      "front_dome_light": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:interior_lighting",
+        "section_label": "Interior Lighting",
+        "section_order": 4
+      },
+      "front_interior_light_bar": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:light_bars",
+        "section_label": "Light Bars",
+        "section_order": 3
+      },
+      "front_partition": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "front_scene": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:scene_lights",
+        "section_label": "Scene Lights",
+        "section_order": 2
+      },
+      "gpd": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "gun_lock": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "harness": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "headlight_flasher": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:warning_lights",
+        "section_label": "Warning Lights",
+        "section_order": 1
+      },
+      "howler": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:siren_speaker",
+        "section_label": "Siren / Speaker",
+        "section_order": 2
+      },
+      "k9_add_ons": {
+        "group_id": "k9",
+        "group_label": "K-9",
+        "group_order": 7,
+        "section_key": "k9:k9_equipment",
+        "section_label": "K-9 Equipment",
+        "section_order": 1
+      },
+      "k9_control_head": {
+        "group_id": "k9",
+        "group_label": "K-9",
+        "group_order": 7,
+        "section_key": "k9:k9_equipment",
+        "section_label": "K-9 Equipment",
+        "section_order": 1
+      },
+      "k9_heat_alarm_popper": {
+        "group_id": "k9",
+        "group_label": "K-9",
+        "group_order": 7,
+        "section_key": "k9:k9_equipment",
+        "section_label": "K-9 Equipment",
+        "section_order": 1
+      },
+      "k9_kennel": {
+        "group_id": "k9",
+        "group_label": "K-9",
+        "group_order": 7,
+        "section_key": "k9:k9_equipment",
+        "section_label": "K-9 Equipment",
+        "section_order": 1
+      },
+      "light_controller": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
+      },
+      "motion_attachment": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:console",
+        "section_label": "Console",
+        "section_order": 1
+      },
+      "motorcycle_box": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:rear_cargo_equipment",
+        "section_label": "Rear Cargo Equipment",
+        "section_order": 2
+      },
+      "pa_mic": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "pedestal_mount": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "photo_eye": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "pit_bar": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:push_bumper",
+        "section_label": "Push Bumper",
+        "section_order": 1
+      },
+      "power_timer": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "preemption": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "printer": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "prisoner_transport_insert": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "push_bumper": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:push_bumper",
+        "section_label": "Push Bumper",
+        "section_order": 1
+      },
+      "radar_display_unit": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radar",
+        "section_label": "Radar",
+        "section_order": 3
+      },
+      "radio_antenna_cable": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_antenna_top": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_brick": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_cable": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_head": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_mic_clip": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "radio_speaker": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:radio_comms",
+        "section_label": "Radio Communications",
+        "section_order": 2
+      },
+      "rear_camera": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      },
+      "rear_interior_light_bar": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:light_bars",
+        "section_label": "Light Bars",
+        "section_order": 3
+      },
+      "rear_partition": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "rear_scene": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:scene_lights",
+        "section_label": "Scene Lights",
+        "section_order": 2
+      },
+      "rear_seat_camera": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      },
+      "rear_seat_cargo_lights": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:interior_lighting",
+        "section_label": "Interior Lighting",
+        "section_order": 4
+      },
+      "rear_seat_divider": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "rear_seat_lights": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:interior_lighting",
+        "section_label": "Interior Lighting",
+        "section_order": 4
+      },
+      "rear_storage_box": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:storage_equipment",
+        "section_label": "Storage / Equipment",
+        "section_order": 1
+      },
+      "rear_window_bars": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "remote_start": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "replacement_rear_seat": {
+        "group_id": "prisoner_area",
+        "group_label": "Prisoner Area",
+        "group_order": 5,
+        "section_key": "prisoner_area:cage_prisoner_containment",
+        "section_label": "Cage / Prisoner Containment",
+        "section_order": 1
+      },
+      "roof_light_bar": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:light_bars",
+        "section_label": "Light Bars",
+        "section_order": 3
+      },
+      "running_boards_nerf_bars": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:front_exterior",
+        "section_label": "Front Exterior",
+        "section_order": 999
+      },
+      "seat_covers": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "side_scene": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:scene_lights",
+        "section_label": "Scene Lights",
+        "section_order": 2
+      },
+      "siren_speaker": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:siren_speaker",
+        "section_label": "Siren / Speaker",
+        "section_order": 2
+      },
+      "special_face_plate": {
+        "group_id": "driver_area_console",
+        "group_label": "Driver Area / Console",
+        "group_order": 3,
+        "section_key": "driver_area_console:driver_area_equipment",
+        "section_label": "Driver Area Equipment",
+        "section_order": 3
+      },
+      "spotlight": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:scene_lights",
+        "section_label": "Scene Lights",
+        "section_order": 2
+      },
+      "tail_light_flasher": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:warning_lights",
+        "section_label": "Warning Lights",
+        "section_order": 1
+      },
+      "thermal_imager": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:front_equipment",
+        "section_label": "Front Equipment",
+        "section_order": 3
+      },
+      "thermal_imager_monitor": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:thermal_imaging",
+        "section_label": "Thermal Imaging",
+        "section_order": 6
+      },
+      "tonneau_cover": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:storage_equipment",
+        "section_label": "Storage / Equipment",
+        "section_order": 1
+      },
+      "tool_mount": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:rear_cargo_equipment",
+        "section_label": "Rear Cargo Equipment",
+        "section_order": 2
+      },
+      "tracer_2_lamp": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:lighting_systems",
+        "section_label": "Lighting Systems",
+        "section_order": 999
+      },
+      "tracer_5_lamp": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:lighting_systems",
+        "section_label": "Lighting Systems",
+        "section_order": 999
+      },
+      "tracer_6_lamp": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:lighting_systems",
+        "section_label": "Lighting Systems",
+        "section_order": 999
+      },
+      "v2v_sync": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
+      },
+      "vehicle_interface": {
+        "group_id": "rear_cargo_storage",
+        "group_label": "Rear Cargo / Storage",
+        "group_order": 6,
+        "section_key": "rear_cargo_storage:rear_cargo_equipment",
+        "section_label": "Rear Cargo Equipment",
+        "section_order": 2
+      },
+      "warning_light": {
+        "group_id": "lighting_systems",
+        "group_label": "Lighting Systems",
+        "group_order": 2,
+        "section_key": "lighting_systems:warning_lights",
+        "section_label": "Warning Lights",
+        "section_order": 1
+      },
+      "window_tint": {
+        "group_id": "extras_appearance",
+        "group_label": "Extras / Appearance",
+        "group_order": 8,
+        "section_key": "extras_appearance:extras_appearance",
+        "section_label": "Extras / Appearance",
+        "section_order": 1
+      },
+      "wing_wraps": {
+        "group_id": "front_exterior",
+        "group_label": "Front Exterior",
+        "group_order": 1,
+        "section_key": "front_exterior:push_bumper",
+        "section_label": "Push Bumper",
+        "section_order": 1
+      },
+      "wireless_mic_charger": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:camera_system",
+        "section_label": "Camera System",
+        "section_order": 1
+      }
+    }
+  },
+  "handled": true,
+  "status": 200
+}

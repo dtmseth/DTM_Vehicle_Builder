@@ -23,7 +23,7 @@
       {
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
-        "model": "HDX",
+        "model": "HDX Push Bumper",
         "price_min": null,
         "product_id": "pro_gard_hdx",
         "qb_count": 0,
@@ -203,7 +203,7 @@
       {
         "manufacturer_id": "go_rhino",
         "manufacturer_label": "Go Rhino",
-        "model": "Go Rhino Push Bumper",
+        "model": "Police Push Bumper",
         "price_min": 330.75,
         "product_id": "go_rhino_pushbumper",
         "qb_count": 3,
@@ -221,7 +221,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "PB5",
+        "model": "PB5 Fender Wraps",
         "price_min": 679.0,
         "product_id": "setina_pb5",
         "qb_count": 1,
@@ -230,7 +230,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "PB9",
+        "model": "PB9 Fender Wraps",
         "price_min": 699.0,
         "product_id": "setina_pb9",
         "qb_count": 5,
@@ -239,7 +239,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "PB10",
+        "model": "PB10 Headlight Guard",
         "price_min": 929.0,
         "product_id": "setina_pb10",
         "qb_count": 8,
@@ -257,7 +257,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "PB6",
+        "model": "PB6 Headlight Guard with PB5 Wrap",
         "price_min": 739.0,
         "product_id": "setina_pb6",
         "qb_count": 1,
@@ -266,7 +266,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "PB8",
+        "model": "PB8 Double-Loop Headlight Guard",
         "price_min": 459.0,
         "product_id": "setina_pb8",
         "qb_count": 3,
@@ -288,15 +288,6 @@
         "price_min": 56.0,
         "product_id": "westin_36_2125wc",
         "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "havis",
-        "manufacturer_label": "Havis",
-        "model": "VEHICLE SPECIFIC",
-        "price_min": null,
-        "product_id": "havis_vehicle_specific",
-        "qb_count": 0,
         "sku_count": 1
       },
       {
@@ -626,7 +617,7 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "POLY",
+        "model": "Polycarbonate Window Barrier",
         "price_min": 299.0,
         "product_id": "setina_poly",
         "qb_count": 5,

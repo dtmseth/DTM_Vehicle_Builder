@@ -162,7 +162,13 @@
       {
         "accessories": [],
         "accessory_of": "",
-        "allowed_placements": [],
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "UNDER PUSH BUMPER",
+          "BEHIND GRILL (CENTER)",
+          "BEHIND OEM BUMPER",
+          "VEHICLE SPECIFIC BRACKET"
+        ],
         "allowed_products": [],
         "category": "",
         "label": "Siren Speaker",
@@ -283,9 +289,9 @@
         "accessories": [],
         "accessory_of": "",
         "allowed_placements": [
-          "IN_LIGHT_BAR",
-          "UPPER_WINDSHIELD",
-          "CENTER_OF_DASH"
+          "IN LIGHT BAR",
+          "UPPER WINDSHIELD",
+          "CENTER OF DASH"
         ],
         "allowed_products": [],
         "category": "",
@@ -747,7 +753,7 @@
         "allowed_placements": [],
         "allowed_products": [],
         "category": "",
-        "label": "Radio Head",
+        "label": "Radio Control Head",
         "max_count": null,
         "part_type_id": "radio_head",
         "sequence_scope": "global",
@@ -762,7 +768,36 @@
           }
         ],
         "type_id": "equipment",
-        "workbook_label_pattern": "Radio {n}"
+        "workbook_label_pattern": "Radio Control Head {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Brick",
+        "max_count": null,
+        "part_type_id": "radio_brick",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Brick {n}"
       },
       {
         "accessories": [],
@@ -1167,7 +1202,9 @@
         "max_count": null,
         "part_type_id": "wireless_mic_charger",
         "sequence_scope": "global",
-        "tag_ids": [],
+        "tag_ids": [
+          "camera"
+        ],
         "tree_positions": [
           {
             "section": "interior",
@@ -2165,14 +2202,16 @@
         "allowed_placements": [],
         "allowed_products": [],
         "category": "",
-        "label": "Radio Cable",
+        "label": "Radio Cables",
         "max_count": null,
         "part_type_id": "radio_cable",
         "sequence_scope": "global",
-        "tag_ids": [],
+        "tag_ids": [
+          "comms"
+        ],
         "tree_positions": [],
         "type_id": "equipment",
-        "workbook_label_pattern": "{label}"
+        "workbook_label_pattern": "Radio Cables"
       },
       {
         "accessories": [],

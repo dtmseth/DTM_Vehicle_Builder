@@ -193,6 +193,7 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
             driver_color=p.driver_color,
             passenger_color=p.passenger_color,
             center_color=p.center_color,
+            components=list(getattr(p, "components", []) or []),
             line_id=str(uuid.uuid4()),
         )
         for p in project.parts
@@ -282,6 +283,7 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
             passenger_color=dp.passenger_color,
             center_color=dp.center_color,
             line_id=dp.line_id,
+            components=list(dp.components or []),
         )
         for dp in draft.parts
     ]

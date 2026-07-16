@@ -192,6 +192,11 @@
         "website": ""
       },
       {
+        "label": "Shop Detail",
+        "manufacturer_id": "shop_detail",
+        "website": ""
+      },
+      {
         "label": "Sierra Wireless",
         "manufacturer_id": "sierra_wireless",
         "website": ""

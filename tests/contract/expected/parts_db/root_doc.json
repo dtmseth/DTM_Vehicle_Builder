@@ -123,9 +123,23 @@
           "camera_dvr",
           "front_camera",
           "rear_camera",
-          "rear_seat_camera"
+          "rear_seat_camera",
+          "body_camera_dock",
+          "wireless_mic_charger"
         ],
         "order": 3,
+        "picker_flow": null
+      },
+      "cloud_cradlepoint": {
+        "category": "equipment",
+        "kind": "system",
+        "label": "Cloud / CradlePoint",
+        "members": [
+          "cloud_system_tray",
+          "cloud_antenna",
+          "cradle_point"
+        ],
+        "order": 6,
         "picker_flow": null
       },
       "computer_workstation": {
@@ -187,8 +201,6 @@
           "control_head",
           "external_amp",
           "expansion_module",
-          "cloud_system_tray",
-          "cloud_antenna",
           "v2v_sync",
           "light_controller"
         ],
@@ -227,6 +239,8 @@
         "label": "Radio Communications",
         "members": [
           "radio_head",
+          "radio_brick",
+          "radio_antenna_top",
           "radio_speaker",
           "radio_cable",
           "radio_mic_clip",
@@ -281,7 +295,7 @@
           "thermal_imager",
           "thermal_imager_monitor"
         ],
-        "order": 6,
+        "order": 7,
         "picker_flow": null
       },
       "warning_lights": {
@@ -298,6 +312,306 @@
         "picker_flow": "warning",
         "selectable": true
       }
+    },
+    "manifest_groups": {
+      "groups": [
+        {
+          "group_id": "front_exterior",
+          "label": "Front Exterior",
+          "order": 1,
+          "part_types": [
+            "auto_eject",
+            "battery_tender",
+            "siren_speaker",
+            "howler",
+            "thermal_imager"
+          ],
+          "subgroups": [
+            {
+              "families": [
+                "push_bumper_system"
+              ],
+              "label": "Push Bumper",
+              "order": 1,
+              "subgroup_id": "push_bumper"
+            },
+            {
+              "label": "Siren / Speaker",
+              "order": 2,
+              "part_types": [
+                "siren_speaker",
+                "howler"
+              ],
+              "subgroup_id": "siren_speaker"
+            },
+            {
+              "label": "Front Equipment",
+              "order": 3,
+              "part_types": [
+                "auto_eject",
+                "battery_tender",
+                "thermal_imager"
+              ],
+              "subgroup_id": "front_equipment"
+            }
+          ],
+          "zones": [
+            "front",
+            "side"
+          ]
+        },
+        {
+          "families": [
+            "warning_lights",
+            "scene_lights",
+            "light_bars",
+            "interior_lighting",
+            "spotlight"
+          ],
+          "group_id": "lighting_systems",
+          "label": "Lighting Systems",
+          "order": 2,
+          "subgroups": [
+            {
+              "families": [
+                "warning_lights"
+              ],
+              "label": "Warning Lights",
+              "order": 1,
+              "subgroup_id": "warning_lights"
+            },
+            {
+              "families": [
+                "scene_lights",
+                "spotlight"
+              ],
+              "label": "Scene Lights",
+              "order": 2,
+              "subgroup_id": "scene_lights"
+            },
+            {
+              "families": [
+                "light_bars"
+              ],
+              "label": "Light Bars",
+              "order": 3,
+              "subgroup_id": "light_bars"
+            },
+            {
+              "families": [
+                "interior_lighting"
+              ],
+              "label": "Interior Lighting",
+              "order": 4,
+              "subgroup_id": "interior_lighting"
+            }
+          ],
+          "type_ids": [
+            "lights"
+          ]
+        },
+        {
+          "families": [
+            "console_system",
+            "computer_workstation"
+          ],
+          "group_id": "driver_area_console",
+          "label": "Driver Area / Console",
+          "order": 3,
+          "subgroups": [
+            {
+              "families": [
+                "console_system"
+              ],
+              "label": "Console",
+              "order": 1,
+              "subgroup_id": "console"
+            },
+            {
+              "families": [
+                "computer_workstation"
+              ],
+              "label": "Computer Workstation",
+              "order": 2,
+              "subgroup_id": "computer_workstation"
+            },
+            {
+              "label": "Driver Area Equipment",
+              "order": 3,
+              "subgroup_id": "driver_area_equipment",
+              "zones": [
+                "forward_of_cage"
+              ]
+            }
+          ],
+          "zones": [
+            "forward_of_cage"
+          ]
+        },
+        {
+          "families": [
+            "camera_system",
+            "radio_comms",
+            "radar",
+            "light_control_system",
+            "thermal_imaging"
+          ],
+          "group_id": "electronics_communications",
+          "label": "Electronics / Communications",
+          "order": 4,
+          "subgroups": [
+            {
+              "families": [
+                "camera_system"
+              ],
+              "label": "Camera System",
+              "order": 1,
+              "subgroup_id": "camera_system"
+            },
+            {
+              "families": [
+                "radio_comms"
+              ],
+              "label": "Radio Communications",
+              "order": 2,
+              "part_types": [
+                "radio_antenna_top"
+              ],
+              "subgroup_id": "radio_comms"
+            },
+            {
+              "families": [
+                "radar"
+              ],
+              "label": "Radar",
+              "order": 3,
+              "subgroup_id": "radar"
+            },
+            {
+              "families": [
+                "light_control_system"
+              ],
+              "label": "Light Control System",
+              "order": 4,
+              "subgroup_id": "light_control_system"
+            },
+            {
+              "families": [
+                "cloud_cradlepoint"
+              ],
+              "label": "Cloud / CradlePoint",
+              "order": 5,
+              "subgroup_id": "cloud_cradlepoint"
+            },
+            {
+              "families": [
+                "thermal_imaging"
+              ],
+              "label": "Thermal Imaging",
+              "order": 6,
+              "subgroup_id": "thermal_imaging"
+            }
+          ]
+        },
+        {
+          "families": [
+            "cage_prisoner_containment"
+          ],
+          "group_id": "prisoner_area",
+          "label": "Prisoner Area",
+          "order": 5,
+          "subgroups": [
+            {
+              "families": [
+                "cage_prisoner_containment"
+              ],
+              "label": "Cage / Prisoner Containment",
+              "order": 1,
+              "subgroup_id": "cage_prisoner_containment"
+            },
+            {
+              "label": "Prisoner Area Equipment",
+              "order": 2,
+              "subgroup_id": "prisoner_area_equipment",
+              "zones": [
+                "prisoner_area"
+              ]
+            }
+          ],
+          "zones": [
+            "prisoner_area"
+          ]
+        },
+        {
+          "families": [
+            "storage_equipment"
+          ],
+          "group_id": "rear_cargo_storage",
+          "label": "Rear Cargo / Storage",
+          "order": 6,
+          "subgroups": [
+            {
+              "families": [
+                "storage_equipment"
+              ],
+              "label": "Storage / Equipment",
+              "order": 1,
+              "subgroup_id": "storage_equipment"
+            },
+            {
+              "label": "Rear Cargo Equipment",
+              "order": 2,
+              "subgroup_id": "rear_cargo_equipment",
+              "zones": [
+                "rear",
+                "rear_storage_area",
+                "side_storage"
+              ]
+            }
+          ],
+          "zones": [
+            "rear",
+            "rear_storage_area",
+            "side_storage"
+          ]
+        },
+        {
+          "group_id": "k9",
+          "label": "K-9",
+          "order": 7,
+          "subgroups": [
+            {
+              "label": "K-9 Equipment",
+              "order": 1,
+              "subgroup_id": "k9_equipment",
+              "type_ids": [
+                "k9"
+              ]
+            }
+          ],
+          "type_ids": [
+            "k9"
+          ]
+        },
+        {
+          "group_id": "extras_appearance",
+          "label": "Extras / Appearance",
+          "order": 8,
+          "subgroups": [
+            {
+              "label": "Extras / Appearance",
+              "order": 1,
+              "subgroup_id": "extras_appearance",
+              "type_ids": [
+                "extras"
+              ]
+            }
+          ],
+          "type_ids": [
+            "extras"
+          ]
+        }
+      ]
     },
     "manufacturers": {
       "10_8": {
@@ -450,6 +764,9 @@
       },
       "sho_me": {
         "label": "Sho-Me"
+      },
+      "shop_detail": {
+        "label": "Shop Detail"
       },
       "sierra_wireless": {
         "label": "Sierra Wireless"
@@ -633,6 +950,7 @@
         "workbook_label_pattern": "Battery Tender"
       },
       "body_camera_dock": {
+        "family_id": "camera_system",
         "label": "Body Camera Dock",
         "location_mode": "text",
         "location_options": [
@@ -706,9 +1024,8 @@
         "label": "Camera DVR",
         "location_mode": "text",
         "location_options": [
-          "ON FRONT PARTITION",
           "ON EQUIPMENT TRAY",
-          "IN CENTER CONSOILE"
+          "BEHIND PASSENGER SEAT"
         ],
         "sequence_scope": "global",
         "tag_ids": [
@@ -765,10 +1082,13 @@
         "workbook_label_pattern": "Chicago Barrier"
       },
       "cloud_antenna": {
-        "family_id": "light_control_system",
+        "family_id": "cloud_cradlepoint",
         "label": "Cloud Antenna",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "ROOF MOUNTED",
+          "WINDOW MOUNTED"
+        ],
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [
@@ -781,7 +1101,7 @@
         "workbook_label_pattern": "Cradle Point Antenna"
       },
       "cloud_system_tray": {
-        "family_id": "light_control_system",
+        "family_id": "cloud_cradlepoint",
         "label": "Cloud System",
         "location_mode": "text",
         "location_options": [
@@ -851,6 +1171,8 @@
         "workbook_label_pattern": "Control Head"
       },
       "cradle_point": {
+        "browse_hidden": true,
+        "family_id": "cloud_cradlepoint",
         "label": "Cloud System",
         "location_mode": "text",
         "location_options": [
@@ -902,6 +1224,7 @@
         "workbook_label_pattern": "Docking Station"
       },
       "door_lock_button": {
+        "browse_hidden": true,
         "label": "Door Lock Button",
         "location_mode": "text",
         "location_options": [
@@ -1051,6 +1374,7 @@
         "workbook_label_pattern": "Floor Pan"
       },
       "front_camera": {
+        "browse_hidden": true,
         "family_id": "camera_system",
         "label": "Front Camera",
         "location_mode": "text",
@@ -1194,7 +1518,10 @@
       "gpd": {
         "label": "GPS",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "RIGHT FRONT OF DASH",
+          "ROOF MOUNTED"
+        ],
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [
@@ -1311,6 +1638,7 @@
         "workbook_label_pattern": "K-9 Add-Ons"
       },
       "k9_control_head": {
+        "browse_hidden": true,
         "label": "K-9 Control Head",
         "location_mode": "text",
         "location_options": [
@@ -1542,14 +1870,26 @@
       },
       "preemption": {
         "allowed_placements": [
-          "IN_LIGHT_BAR",
-          "UPPER_WINDSHIELD",
-          "CENTER_OF_DASH"
+          "IN LIGHT BAR",
+          "UPPER WINDSHIELD",
+          "CENTER OF DASH"
         ],
         "label": "Preemption",
-        "location_mode": "text",
+        "location_mode": "placement",
         "location_options": [],
         "max_count": 1,
+        "render": {
+          "asset_key": "opticom",
+          "images": {
+            "front": "equipment/opticom_front.png"
+          },
+          "size_per_view": {
+            "front": {
+              "h": 0.14,
+              "w": 0.41
+            }
+          }
+        },
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [
@@ -1653,6 +1993,28 @@
         "family_id": "push_bumper_system",
         "label": "Push Bumper",
         "location_mode": "placement",
+        "render": {
+          "asset_key": "push_bumper",
+          "images": {
+            "front": "equipment/push_bumper_front.png",
+            "side": "equipment/push_bumper_side.png",
+            "top": "equipment/push_bumper_top.png"
+          },
+          "size_per_view": {
+            "front": {
+              "h": 2.52,
+              "w": 2.75
+            },
+            "side": {
+              "h": 1.56,
+              "w": 0.43
+            },
+            "top": {
+              "h": 1.434,
+              "w": 0.342
+            }
+          }
+        },
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [
@@ -1692,6 +2054,7 @@
         "workbook_label_pattern": "Radar"
       },
       "radio_antenna_cable": {
+        "browse_hidden": true,
         "family_id": "radio_comms",
         "label": "Radio Communication Cable",
         "location_mode": "text",
@@ -1711,7 +2074,12 @@
       },
       "radio_antenna_top": {
         "label": "Radio Antenna Top",
-        "location_mode": "placement",
+        "location_mode": "text",
+        "location_options": [
+          "REAR LEFT ROOF",
+          "LEFT CARGO WINDOW",
+          "RIGHT CARGO WINDOW"
+        ],
         "sequence_scope": "global",
         "tag_ids": [
           "comms"
@@ -1725,20 +2093,61 @@
         "type_id": "equipment",
         "workbook_label_pattern": "Radio Antenna Top"
       },
-      "radio_cable": {
-        "accessory_category": "cable",
+      "radio_brick": {
+        "browse_hidden": true,
         "family_id": "radio_comms",
-        "label": "Radio Cable",
+        "label": "Radio Brick",
         "location_mode": "text",
-        "tag_ids": [],
+        "location_options": [
+          "ON EQUIPMENT TRAY",
+          "FRONT OF PARTITION"
+        ],
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Brick {n}"
+      },
+      "radio_cable": {
+        "family_id": "radio_comms",
+        "label": "Radio Cables",
+        "location_mode": "text",
+        "location_options": [
+          "SUPPLIED WITH RADIO INSTALL"
+        ],
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
         "tree_positions": [],
-        "type_id": "equipment"
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Cables"
       },
       "radio_head": {
         "family_id": "radio_comms",
-        "label": "Radio Head",
+        "label": "Radio Control Head",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "CONSOLE POSITION 1 (TOP)",
+          "CONSOLE POSITION 2",
+          "CONSOLE POSITION 3",
+          "CONSOLE POSITION 4",
+          "REAR STORAGE AREA (SECONDARY RADIO)"
+        ],
         "sequence_scope": "global",
         "tag_ids": [
           "comms"
@@ -1751,13 +2160,18 @@
           }
         ],
         "type_id": "equipment",
-        "workbook_label_pattern": "Radio {n}"
+        "workbook_label_pattern": "Radio Control Head {n}"
       },
       "radio_mic_clip": {
         "family_id": "radio_comms",
         "label": "Radio Mic Clip",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "TOP PLATE OF CONSOLE",
+          "ON CENTER CONSOLE",
+          "DRIVER DOOR",
+          "DASH MOUNT"
+        ],
         "sequence_scope": "global",
         "tag_ids": [
           "comms"
@@ -1775,7 +2189,14 @@
         "family_id": "radio_comms",
         "label": "Radio Speaker",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "BACK OF CENTER CONSOLE",
+          "TOP OF CAGE - CENTER",
+          "TOP OF CAGE - DRIVER SIDE",
+          "TOP OF CAGE - PASSENGER SIDE",
+          "UNDER DASH",
+          "FRONT OF CONSOLE"
+        ],
         "sequence_scope": "global",
         "tag_ids": [
           "comms"
@@ -1793,7 +2214,11 @@
         "family_id": "camera_system",
         "label": "Rear Camera",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "ABOVE LICENSE PLATE",
+          "ON TAILGATE/LIFTGATE",
+          "UPPER REAR WINDOW"
+        ],
         "sequence_scope": "global",
         "tag_ids": [
           "camera"
@@ -1877,8 +2302,9 @@
         "label": "Rear Seat Camera",
         "location_mode": "text",
         "location_options": [
+          "ON UPPER CAGE BAR",
           "ON DRIVER SIDE HEADLINER",
-          "CENTER OF PARTITION"
+          "ON PASSENGER SIDE HEADLINER"
         ],
         "sequence_scope": "global",
         "tag_ids": [
@@ -2109,8 +2535,38 @@
         "workbook_label_pattern": "Side Warning Bracket {n}"
       },
       "siren_speaker": {
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "UNDER PUSH BUMPER",
+          "BEHIND GRILL (CENTER)",
+          "BEHIND OEM BUMPER",
+          "VEHICLE SPECIFIC BRACKET"
+        ],
         "label": "Siren Speaker",
         "location_mode": "placement",
+        "render": {
+          "images": {
+            "front": "equipment/siren_speaker_wo_bracket_front.png"
+          },
+          "quantity_rules": [
+            {
+              "pattern": "single",
+              "qty": 1,
+              "slot_count": 1
+            },
+            {
+              "pattern": "mirror",
+              "qty": 2,
+              "slot_count": 2
+            }
+          ],
+          "size_per_view": {
+            "front": {
+              "h": 0.65,
+              "w": 0.569
+            }
+          }
+        },
         "sequence_scope": "global",
         "tag_ids": [
           "siren"
@@ -2393,6 +2849,7 @@
         "workbook_label_pattern": "Wire Covers"
       },
       "wireless_mic_charger": {
+        "family_id": "camera_system",
         "label": "Wireless Mic Charger",
         "location_mode": "text",
         "location_options": [
@@ -2401,7 +2858,9 @@
           "IN GUNLOCK POCKET"
         ],
         "sequence_scope": "global",
-        "tag_ids": [],
+        "tag_ids": [
+          "camera"
+        ],
         "tree_positions": [
           {
             "section": "interior",
@@ -2840,7 +3299,7 @@
             "qb_sku": "",
             "qb_unit_price": 75.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -2867,7 +3326,7 @@
             "qb_sku": "",
             "qb_unit_price": 15.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -3109,11 +3568,11 @@
       "ace_k_9_ha_rbm_27_rd": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "k9_add_ons"
         ],
         "images": {},
         "manufacturer_id": "ace_k_9",
-        "model": "PAGER KIT WITH 27MHZ ANTENNA",
+        "model": "K-9 Pager Kit with 27 MHz Antenna",
         "part_numbers": [
           {
             "friendly_name": "ACE K9 PAGER KIT WITH 27MHZ ANTENNA",
@@ -3131,7 +3590,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "k9"
+        ]
       },
       "ace_k_9_hap_evs_k": {
         "description": "",
@@ -3648,7 +4109,7 @@
             "qb_sku": "",
             "qb_unit_price": 1424.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -4032,13 +4493,13 @@
         "tag_ids": []
       },
       "cradle_point_first_net_roof_mount": {
-        "description": "",
+        "description": "Carrier-specific cloud system; mount location is chosen separately.",
         "fits_part_types": [
           "cloud_system_tray"
         ],
         "images": {},
         "manufacturer_id": "cradle_point",
-        "model": "FIRST NET ROOF MOUNT",
+        "model": "FirstNet Cloud System",
         "part_numbers": [
           {
             "part_number": "FIRST NET ROOF MOUNT"
@@ -4047,10 +4508,8 @@
         "tag_ids": []
       },
       "cradle_point_first_net_window_mount": {
-        "description": "",
-        "fits_part_types": [
-          "cloud_system_tray"
-        ],
+        "description": "Location-only duplicate hidden from picker; choose CradlePoint FirstNet Cloud System and select window mount as the location.",
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "cradle_point",
         "model": "FIRST NET WINDOW MOUNT",
@@ -4062,13 +4521,13 @@
         "tag_ids": []
       },
       "cradle_point_roof_mount": {
-        "description": "",
+        "description": "Cloud antenna product; roof/window mount is chosen as a location, not as a separate product.",
         "fits_part_types": [
           "cloud_antenna"
         ],
         "images": {},
         "manufacturer_id": "cradle_point",
-        "model": "ROOF MOUNT",
+        "model": "Cloud Antenna",
         "part_numbers": [
           {
             "part_number": "ROOF MOUNT"
@@ -4077,13 +4536,13 @@
         "tag_ids": []
       },
       "cradle_point_verizon_roof_mount": {
-        "description": "",
+        "description": "Carrier-specific cloud system; mount location is chosen separately.",
         "fits_part_types": [
           "cloud_system_tray"
         ],
         "images": {},
         "manufacturer_id": "cradle_point",
-        "model": "VERIZON ROOF MOUNT",
+        "model": "Verizon Cloud System",
         "part_numbers": [
           {
             "part_number": "VERIZON ROOF MOUNT"
@@ -4092,10 +4551,8 @@
         "tag_ids": []
       },
       "cradle_point_verizon_window_mount": {
-        "description": "",
-        "fits_part_types": [
-          "cloud_system_tray"
-        ],
+        "description": "Location-only duplicate hidden from picker; choose CradlePoint Verizon Cloud System and select window mount as the location.",
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "cradle_point",
         "model": "VERIZON WINDOW MOUNT",
@@ -4107,14 +4564,11 @@
         "tag_ids": []
       },
       "cradle_point_window_mount": {
-        "description": "",
-        "fits_part_types": [
-          "cloud_antenna",
-          "radio_antenna_top"
-        ],
+        "description": "Location-only duplicate hidden from picker; choose CradlePoint Cloud Antenna and select window mount as the location.",
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "cradle_point",
-        "model": "WINDOW MOUNT",
+        "model": "Window-Mount Cloud/Radio Antenna",
         "part_numbers": [
           {
             "part_number": "WINDOW MOUNT"
@@ -4156,7 +4610,7 @@
         ],
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
-        "model": "ANGLE BRACKET",
+        "model": "Side Warning Angle Bracket",
         "part_numbers": [
           {
             "part_number": "ANGLE BRACKET"
@@ -4189,7 +4643,7 @@
         ],
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
-        "model": "GROMMET MOUNT",
+        "model": "Rear/Liftgate Warning Grommet Mount",
         "part_numbers": [
           {
             "part_number": "GROMMET MOUNT"
@@ -4207,7 +4661,7 @@
         ],
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
-        "model": "L BRACKET",
+        "model": "Warning Light L-Bracket",
         "part_numbers": [
           {
             "part_number": "L BRACKET"
@@ -4223,7 +4677,7 @@
         ],
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
-        "model": "LICENSE PLATE BRACKET",
+        "model": "Rear Warning License-Plate Bracket",
         "part_numbers": [
           {
             "part_number": "LICENSE PLATE BRACKET"
@@ -4255,7 +4709,7 @@
         ],
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
-        "model": "UNIVERSAL GRILL BRACKET",
+        "model": "Front Warning Universal Grille Bracket",
         "part_numbers": [
           {
             "part_number": "UNIVERSAL GRILL BRACKET"
@@ -4273,7 +4727,7 @@
         "fits_part_types": [],
         "images": {},
         "manufacturer_id": "federal_signal",
-        "model": "RECESS MOUNTING BRACKET",
+        "model": "Federal Signal FS-Q Recess Mounting Bracket",
         "part_numbers": [
           {
             "friendly_name": "FEDERAL SIGNAL RECESS MOUNTING BRACKET",
@@ -4315,7 +4769,7 @@
             "qb_sku": "",
             "qb_unit_price": 49.5,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -4342,7 +4796,7 @@
             "qb_sku": "",
             "qb_unit_price": 51.45,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -4778,7 +5232,7 @@
         ],
         "images": {},
         "manufacturer_id": "feniex",
-        "model": "MOUNTING BRACKET",
+        "model": "FN-4016 Mounting Bracket",
         "part_numbers": [
           {
             "friendly_name": "FENIEX MOUNTING BRACKET",
@@ -4839,7 +5293,7 @@
         ],
         "images": {},
         "manufacturer_id": "feniex",
-        "model": "Fusion Rotating Bracket",
+        "model": "Fusion Warning Light Rotating Bracket",
         "part_numbers": [
           {
             "friendly_name": "FUSION ROTATING BRACKET",
@@ -4979,7 +5433,7 @@
         ],
         "images": {},
         "manufacturer_id": "feniex",
-        "model": "Fusion Surface Mount",
+        "model": "Fusion Surface-Mount Warning Light",
         "part_numbers": [
           {
             "color": "red",
@@ -5978,13 +6432,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7160_0826": {
-        "description": "",
+        "description": "Radio mic mounting detail; not an ordered part.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
-        "model": "ADJUSTABLE MAG CLIP",
+        "model": "Adjustable Radio Mic Mag Clip",
         "part_numbers": [
           {
             "friendly_name": "GAMBER JOHNSON ADJUSTABLE MAG CLIP",
@@ -6002,7 +6456,10 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "gamber_johnson_7160_0846": {
         "description": "",
@@ -7170,13 +7627,13 @@
         "tag_ids": []
       },
       "globesat_front_right_of_dash": {
-        "description": "",
+        "description": "GPS antenna product; dash/roof mount is chosen as a location, not as a separate product.",
         "fits_part_types": [
           "gpd"
         ],
         "images": {},
         "manufacturer_id": "globesat",
-        "model": "FRONT RIGHT OF DASH",
+        "model": "GPS Antenna",
         "part_numbers": [
           {
             "part_number": "FRONT RIGHT OF DASH"
@@ -7185,10 +7642,8 @@
         "tag_ids": []
       },
       "globesat_roof_mounted": {
-        "description": "",
-        "fits_part_types": [
-          "gpd"
-        ],
+        "description": "Location-only duplicate hidden from picker; choose Globesat GPS Antenna and select roof mounted as the location.",
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "globesat",
         "model": "ROOF MOUNTED",
@@ -7248,7 +7703,7 @@
             "qb_sku": "",
             "qb_unit_price": 340.22,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -7275,7 +7730,7 @@
             "qb_sku": "",
             "qb_unit_price": 375.47,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -7289,7 +7744,7 @@
         ],
         "images": {},
         "manufacturer_id": "go_rhino",
-        "model": "Go Rhino Push Bumper",
+        "model": "Police Push Bumper",
         "part_numbers": [
           {
             "friendly_name": "GO RHINO 2020+ FORD UTILITY ALUMINUM TEXTURED BLACK PUSH BUMPER WITH LIGHT FACE FOR 4 WHELEN IONS",
@@ -7302,7 +7757,7 @@
             "qb_sku": "",
             "qb_unit_price": 349.08,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           },
           {
@@ -7316,7 +7771,7 @@
             "qb_sku": "",
             "qb_unit_price": 330.75,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           },
           {
@@ -7330,7 +7785,7 @@
             "qb_sku": "",
             "qb_unit_price": 373.98,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -7692,7 +8147,7 @@
         ],
         "images": {},
         "manufacturer_id": "havis",
-        "model": "SIDE MOUNT ARMREST",
+        "model": "C-ARM-102 Side-Mount Armrest",
         "part_numbers": [
           {
             "friendly_name": "HAVIS SIDE MOUNT ARMREST",
@@ -8137,7 +8592,8 @@
             "qb_sku": "",
             "qb_unit_price": 240.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "CHEVY-1500"
             ]
           }
         ],
@@ -8280,7 +8736,7 @@
         "tag_ids": []
       },
       "havis_c_mcb": {
-        "description": "",
+        "description": "Radio mic mounting detail; not an ordered part.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -8304,7 +8760,10 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "havis_c_md_112": {
         "description": "",
@@ -8461,7 +8920,9 @@
             "qb_sku": "",
             "qb_unit_price": 234.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY",
+              "EXPEDITION"
             ]
           }
         ],
@@ -8488,7 +8949,7 @@
             "qb_sku": "",
             "qb_unit_price": 323.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -8623,7 +9084,7 @@
             "qb_sku": "",
             "qb_unit_price": 845.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -8650,7 +9111,9 @@
             "qb_sku": "",
             "qb_unit_price": 468.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY",
+              "EXPEDITION"
             ]
           }
         ],
@@ -8704,7 +9167,7 @@
             "qb_sku": "",
             "qb_unit_price": 417.0,
             "vehicle_tags": [
-              "any"
+              "MACH-E"
             ]
           }
         ],
@@ -8758,7 +9221,7 @@
             "qb_sku": "",
             "qb_unit_price": 1311.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -8785,7 +9248,7 @@
             "qb_sku": "",
             "qb_unit_price": 640.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -8812,7 +9275,7 @@
             "qb_sku": "",
             "qb_unit_price": 1061.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -8839,7 +9302,7 @@
             "qb_sku": "",
             "qb_unit_price": 924.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -8947,7 +9410,7 @@
             "qb_sku": "",
             "qb_unit_price": 1206.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -9256,7 +9719,7 @@
             "qb_sku": "",
             "qb_unit_price": 6481.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -9364,7 +9827,7 @@
             "qb_sku": "",
             "qb_unit_price": 904.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -9391,7 +9854,8 @@
             "qb_sku": "",
             "qb_unit_price": 940.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "EXPEDITION"
             ]
           }
         ],
@@ -9418,7 +9882,7 @@
             "qb_sku": "",
             "qb_unit_price": 2375.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -9621,10 +10085,8 @@
         "tag_ids": []
       },
       "havis_vehicle_specific": {
-        "description": "",
-        "fits_part_types": [
-          "console"
-        ],
+        "description": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated.",
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "havis",
         "model": "VEHICLE SPECIFIC",
@@ -9655,7 +10117,7 @@
             "qb_sku": "",
             "qb_unit_price": 495.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -9715,6 +10177,30 @@
         ],
         "reviewed": false,
         "tag_ids": []
+      },
+      "kenwood_radio_control_head": {
+        "description": "Kenwood radio control-head install detail; radio brick location is captured separately when needed.",
+        "fits_part_types": [
+          "radio_head"
+        ],
+        "images": {},
+        "manufacturer_id": "kenwood",
+        "model": "Radio Control Head",
+        "part_numbers": [
+          {
+            "friendly_name": "Kenwood Radio Control Head",
+            "options": {},
+            "part_number": "KENWOOD RADIO",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "kussmaul_091_18wp_120": {
         "description": "",
@@ -9777,7 +10263,7 @@
         ],
         "images": {},
         "manufacturer_id": "kussmaul",
-        "model": "NON-WATER PROOF",
+        "model": "Non-Waterproof Auto Eject",
         "part_numbers": [
           {
             "part_number": "NON-WATER PROOF"
@@ -9792,7 +10278,7 @@
         ],
         "images": {},
         "manufacturer_id": "kussmaul",
-        "model": "WATER PROOF",
+        "model": "Waterproof Auto Eject",
         "part_numbers": [
           {
             "part_number": "WATER PROOF"
@@ -9801,16 +10287,16 @@
         "tag_ids": []
       },
       "laird_qwb800": {
-        "description": "",
+        "description": "Standard whip-style radio antenna; billable when supplied.",
         "fits_part_types": [
           "radio_antenna_top"
         ],
         "images": {},
-        "manufacturer_id": "laird",
-        "model": "800 MHZ RADIO ANTENNA WHIP (BLACK)",
+        "manufacturer_id": "shop_detail",
+        "model": "Whip-Style Radio Antenna",
         "part_numbers": [
           {
-            "friendly_name": "LAIRD 800 MHZ RADIO ANTENNA WHIP (BLACK)",
+            "friendly_name": "Whip-Style Radio Antenna",
             "options": {},
             "part_number": "QWB800",
             "price_usd": 17.27,
@@ -9825,7 +10311,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms"
+        ]
       },
       "lind_cblop_f90610": {
         "accessory_category": "cable",
@@ -9917,16 +10405,16 @@
         "tag_ids": []
       },
       "magnetic_mic_mmbp_25": {
-        "description": "",
+        "description": "Radio mic mounting detail; not an ordered part.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
         "images": {},
         "manufacturer_id": "magnetic_mic",
-        "model": "CLIP BULK PACK 25 SINGLE UNIT CONVERTION KITS",
+        "model": "Mag Mic",
         "part_numbers": [
           {
-            "friendly_name": "MAGNETIC MIC CLIP BULK PACK 25 SINGLE UNIT CONVERTION KITS",
+            "friendly_name": "Mag Mic",
             "options": {},
             "part_number": "MMBP-25",
             "price_usd": 725.0,
@@ -9941,19 +10429,22 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "magnetic_mic_mmsu_1": {
-        "description": "",
+        "description": "Radio mic mounting detail; not an ordered part.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
         "images": {},
         "manufacturer_id": "magnetic_mic",
-        "model": "CLIP",
+        "model": "Mag Mic",
         "part_numbers": [
           {
-            "friendly_name": "MAGNETIC MIC CLIP",
+            "friendly_name": "Mag Mic",
             "options": {},
             "part_number": "MMSU-1",
             "price_usd": 39.95,
@@ -9968,19 +10459,22 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "magnetic_mic_mmsu_1b": {
-        "description": "",
+        "description": "Radio mic mounting detail; not an ordered part.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
         "images": {},
         "manufacturer_id": "magnetic_mic",
-        "model": "W/BRACKET",
+        "model": "Mag Mic with Bracket",
         "part_numbers": [
           {
-            "friendly_name": "MAGNETIC MIC W/BRACKET",
+            "friendly_name": "Mag Mic with Bracket",
             "options": {},
             "part_number": "MMSU-1B",
             "price_usd": 49.95,
@@ -9995,23 +10489,33 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "motorola_all_in_one_unit": {
-        "description": "",
+        "description": "All-in-one radio install detail; no separate radio brick location is needed.",
         "fits_part_types": [
           "radio_head"
         ],
         "images": {},
         "manufacturer_id": "motorola",
-        "model": "ALL IN ONE UNIT",
+        "model": "All-In-One Radio",
         "part_numbers": [
           {
-            "part_number": "ALL IN ONE UNIT"
+            "friendly_name": "Motorola All-In-One Radio",
+            "options": {},
+            "part_number": "MOTOROLA ALL-IN-ONE RADIO",
+            "vehicle_tags": [
+              "any"
+            ]
           }
         ],
+        "reviewed": true,
         "tag_ids": [
-          "comms"
+          "comms",
+          "unbilled"
         ]
       },
       "motorola_hln6861d": {
@@ -10065,18 +10569,19 @@
         "accessory_category": "cable",
         "accessory_of_products": [
           "motorola_all_in_one_unit",
-          "motorola_split_unit"
+          "motorola_split_unit",
+          "kenwood_radio_control_head"
         ],
-        "description": "",
+        "description": "Mobile mic extension cable; billable when supplied.",
         "fits_part_types": [
           "radio_cable"
         ],
         "images": {},
         "manufacturer_id": "motorola",
-        "model": "CABLE, MOBILE MIC EXTENSION",
+        "model": "Mobile Mic Extension Cable",
         "part_numbers": [
           {
-            "friendly_name": "MOTOROLA CABLE, MOBILE MIC EXTENSION",
+            "friendly_name": "Mobile Mic Extension Cable",
             "options": {},
             "part_number": "PMKN4033A",
             "price_usd": 42.5,
@@ -10091,24 +10596,27 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms"
+        ]
       },
       "motorola_radio_refresh_kit": {
         "accessory_category": "cable",
         "accessory_of_products": [
           "motorola_all_in_one_unit",
-          "motorola_split_unit"
+          "motorola_split_unit",
+          "kenwood_radio_control_head"
         ],
-        "description": "",
+        "description": "Power, radio antenna, and communication cable kit; billable when supplied.",
         "fits_part_types": [
           "radio_cable"
         ],
         "images": {},
         "manufacturer_id": "motorola",
-        "model": "INCLUDES POWER CABLE, RADIO ANTENNA CABLE AND COMMUNICATION CABLE",
+        "model": "Radio Refresh Cable Kit",
         "part_numbers": [
           {
-            "friendly_name": "MOTOROLA - INCLUDES POWER CABLE, RADIO ANTENNA CABLE AND COMMUNICATION CABLE",
+            "friendly_name": "Radio Refresh Cable Kit (Power, Antenna, Communication)",
             "options": {},
             "part_number": "Radio Refresh Kit",
             "price_usd": 250.0,
@@ -10123,23 +10631,56 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms"
+        ]
+      },
+      "motorola_radio_speaker_detail": {
+        "description": "Typical Motorola radio speaker mount detail; not an ordered part.",
+        "fits_part_types": [
+          "radio_speaker"
+        ],
+        "images": {},
+        "manufacturer_id": "motorola",
+        "model": "Radio Speaker",
+        "part_numbers": [
+          {
+            "friendly_name": "Motorola Radio Speaker",
+            "options": {},
+            "part_number": "MOTOROLA RADIO SPEAKER",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
       },
       "motorola_split_unit": {
-        "description": "",
+        "description": "Split radio control-head install detail; radio brick location is captured separately.",
         "fits_part_types": [
           "radio_head"
         ],
         "images": {},
         "manufacturer_id": "motorola",
-        "model": "SPLIT UNIT",
+        "model": "Split Radio Control Head",
         "part_numbers": [
           {
-            "part_number": "SPLIT UNIT"
+            "friendly_name": "Motorola Split Radio Control Head",
+            "options": {},
+            "part_number": "MOTOROLA SPLIT RADIO",
+            "vehicle_tags": [
+              "any"
+            ]
           }
         ],
+        "reviewed": true,
         "tag_ids": [
-          "comms"
+          "comms",
+          "unbilled"
         ]
       },
       "night_ride_nightride_dsp_kit": {
@@ -10964,7 +11505,7 @@
         ],
         "images": {},
         "manufacturer_id": "night_ride",
-        "model": "NV3 Display Kit",
+        "model": "NV3 Thermal Imager Display Kit",
         "part_numbers": [
           {
             "friendly_name": "DISPLAY KIT INCLUDES - 8\" DISPLAY MONITOR -T-BOLT RAM MOUNT (SIZE C) -ROUND RAM MOUNTING PLATE (SIZE C) -6\" LONG RAM MOUNTING ARM (SIZE C) -MINI USB TO AV CABLE",
@@ -11012,16 +11553,16 @@
         "tag_ids": []
       },
       "nova_preemption_light_head": {
-        "description": "",
+        "description": "Nova preemption light head; searchable as Opticom or Opticam.",
         "fits_part_types": [
           "preemption"
         ],
         "images": {},
         "manufacturer_id": "nova",
-        "model": "LIGHT HEAD FOR NOVA PREEMPTION KIT",
+        "model": "Opticom Preemption Light Head",
         "part_numbers": [
           {
-            "friendly_name": "LIGHT HEAD FOR NOVA PREEMPTION KIT",
+            "friendly_name": "Nova Opticom/Opticam Preemption Light Head",
             "options": {},
             "part_number": "PREEMPTION LIGHT HEAD",
             "price_usd": 128.39,
@@ -11382,7 +11923,7 @@
             "qb_sku": "",
             "qb_unit_price": 203.04,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -11436,7 +11977,7 @@
             "qb_sku": "",
             "qb_unit_price": 374.25,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -11537,7 +12078,7 @@
         ],
         "images": {},
         "manufacturer_id": "pro_gard",
-        "model": "HDX",
+        "model": "HDX Push Bumper",
         "part_numbers": [
           {
             "part_number": "HDX"
@@ -11595,7 +12136,7 @@
             "qb_sku": "",
             "qb_unit_price": 2146.5,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -11667,7 +12208,7 @@
             "qb_sku": "",
             "qb_unit_price": 77.87,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -11724,7 +12265,7 @@
             "qb_sku": "",
             "qb_unit_price": 61.29,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -11751,7 +12292,7 @@
             "qb_sku": "",
             "qb_unit_price": 189.62,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -12004,11 +12545,12 @@
       "qb_unassigned_951688": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "qb_unassigned",
-        "model": "MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
+        "model": "MPH Radar Antenna Window Bracket Ball-and-Arm Assembly",
         "part_numbers": [
           {
             "friendly_name": "MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
@@ -12026,7 +12568,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "qb_unassigned_c_bom701_bc": {
         "description": "",
@@ -12075,7 +12619,7 @@
             "qb_sku": "",
             "qb_unit_price": 0.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -12112,16 +12656,16 @@
         ]
       },
       "qb_unassigned_ccas_sb_7_800": {
-        "description": "",
+        "description": "Low-profile covert/stinger-style radio antenna; billable when supplied.",
         "fits_part_types": [
           "radio_antenna_top"
         ],
         "images": {},
-        "manufacturer_id": "qb_unassigned",
-        "model": "STINGER 760-896 MHZ COVERT ANTENNA",
+        "manufacturer_id": "shop_detail",
+        "model": "Covert / Stinger-Style Radio Antenna",
         "part_numbers": [
           {
-            "friendly_name": "STINGER 760-896 MHZ COVERT ANTENNA",
+            "friendly_name": "Covert / Stinger-Style Radio Antenna",
             "options": {},
             "part_number": "CCAS-SB-7-800",
             "price_usd": 163.57,
@@ -12136,16 +12680,18 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms"
+        ]
       },
       "qb_unassigned_cell_antenna": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "cloud_antenna"
         ],
         "images": {},
         "manufacturer_id": "qb_unassigned",
-        "model": "TOP SIGNAL ONYX 3​⅝-INCH NMO CELLULAR VEHICLE ANTENNA TS210382",
+        "model": "Top Signal Onyx Cellular Cloud Antenna",
         "part_numbers": [
           {
             "friendly_name": "TOP SIGNAL ONYX 3​⅝-INCH NMO CELLULAR VEHICLE ANTENNA TS210382",
@@ -12163,7 +12709,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "cloud"
+        ]
       },
       "qb_unassigned_clpsm": {
         "description": "",
@@ -12255,7 +12803,7 @@
         ],
         "images": {},
         "manufacturer_id": "qb_unassigned",
-        "model": "Ethernet Cable",
+        "model": "Ethernet Cable 10/25 ft",
         "part_numbers": [
           {
             "friendly_name": "ETHERNET CABLE 10FT",
@@ -12323,7 +12871,7 @@
         ],
         "images": {},
         "manufacturer_id": "qb_unassigned",
-        "model": "FIRE EXTINGUISHER BRACKETS",
+        "model": "Fire Extinguisher Mounting Brackets",
         "part_numbers": [
           {
             "friendly_name": "FIRE EXTINGUISHER BRACKETS",
@@ -12365,7 +12913,7 @@
             "qb_unit_price": 499.0,
             "secondary_color": "amber",
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -12546,18 +13094,19 @@
         "accessory_category": "cable",
         "accessory_of_products": [
           "motorola_all_in_one_unit",
-          "motorola_split_unit"
+          "motorola_split_unit",
+          "kenwood_radio_control_head"
         ],
-        "description": "",
+        "description": "New radio antenna cable; billable when supplied.",
         "fits_part_types": [
           "radio_cable"
         ],
         "images": {},
-        "manufacturer_id": "qb_unassigned",
-        "model": "RADIO ANTENNA CABLE",
+        "manufacturer_id": "shop_detail",
+        "model": "New Radio Antenna Cable",
         "part_numbers": [
           {
-            "friendly_name": "RADIO ANTENNA CABLE",
+            "friendly_name": "New Radio Antenna Cable",
             "options": {},
             "part_number": "RADIO ANTENNA",
             "price_usd": 29.95,
@@ -12572,7 +13121,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "comms"
+        ]
       },
       "qb_unassigned_rtm_101_lp_ford_r": {
         "description": "",
@@ -12864,7 +13415,7 @@
             "qb_sku": "",
             "qb_unit_price": 1453.1,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -12920,7 +13471,7 @@
         ],
         "images": {},
         "manufacturer_id": "santa_cruz",
-        "model": "FRONT OVERHEAD BRACKETS",
+        "model": "Front Overhead Gun Lock Brackets",
         "part_numbers": [
           {
             "part_number": "FRONT OVERHEAD BRACKETS"
@@ -12935,7 +13486,7 @@
         ],
         "images": {},
         "manufacturer_id": "santa_cruz",
-        "model": "REAR OVERHEAD BRACKETS",
+        "model": "Rear Overhead Gun Lock Brackets",
         "part_numbers": [
           {
             "part_number": "REAR OVERHEAD BRACKETS"
@@ -14624,7 +15175,7 @@
         ],
         "images": {},
         "manufacturer_id": "santa_cruz",
-        "model": "MOUNTING HINGE",
+        "model": "SC-9302 Gun Lock Mounting Hinge",
         "part_numbers": [
           {
             "friendly_name": "SANTA CRUZ MOUNTING HINGE",
@@ -14813,7 +15364,7 @@
         ],
         "images": {},
         "manufacturer_id": "santa_cruz",
-        "model": "ROLL BAR MOUNT",
+        "model": "SC-932 Gun Lock Roll-Bar Mount",
         "part_numbers": [
           {
             "friendly_name": "SANTA CRUZ ROLL BAR MOUNT",
@@ -14921,7 +15472,7 @@
         ],
         "images": {},
         "manufacturer_id": "santa_cruz",
-        "model": "L-BRACKET",
+        "model": "SC-9903 Gun Lock L-Bracket",
         "part_numbers": [
           {
             "friendly_name": "SANTA CRUZ L-BRACKET",
@@ -15084,7 +15635,7 @@
             "qb_sku": "",
             "qb_unit_price": 1179.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -15140,7 +15691,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "CARGO BRACKET KIT",
+        "model": "Free-Standing Cargo Equipment Tray Bracket Kit",
         "part_numbers": [
           {
             "color": "",
@@ -16398,7 +16949,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "PB10",
+        "model": "PB10 Headlight Guard",
         "part_numbers": [
           {
             "color": "",
@@ -16884,7 +17435,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "PB5",
+        "model": "PB5 Fender Wraps",
         "part_numbers": [
           {
             "color": "",
@@ -16911,7 +17462,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "PB6",
+        "model": "PB6 Headlight Guard with PB5 Wrap",
         "part_numbers": [
           {
             "color": "",
@@ -16938,7 +17489,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "PB8",
+        "model": "PB8 Double-Loop Headlight Guard",
         "part_numbers": [
           {
             "color": "",
@@ -16995,7 +17546,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "PB9",
+        "model": "PB9 Fender Wraps",
         "part_numbers": [
           {
             "color": "",
@@ -17083,7 +17634,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "POLY",
+        "model": "Polycarbonate Window Barrier",
         "part_numbers": [
           {
             "color": "",
@@ -17385,7 +17936,9 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "DURANGO",
+              "F-150"
             ]
           }
         ],
@@ -17846,7 +18399,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "T-RAIL MOUNT KIT",
+        "model": "T-Rail Gun Lock Mount Kit",
         "part_numbers": [
           {
             "color": "",
@@ -18097,6 +18650,156 @@
         ],
         "tag_ids": []
       },
+      "shop_body_camera_dock_detail": {
+        "description": "Shop-facing body camera dock mount detail; not an ordered part.",
+        "fits_part_types": [
+          "body_camera_dock"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "Body Camera Dock Install Detail",
+        "part_numbers": [
+          {
+            "friendly_name": "Body Camera Dock Install Detail",
+            "options": {},
+            "part_number": "BODY CAMERA DOCK DETAIL",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "camera",
+          "unbilled"
+        ]
+      },
+      "shop_no_radio_cables_needed": {
+        "accessory_category": "cable",
+        "accessory_of_products": [
+          "motorola_all_in_one_unit",
+          "motorola_split_unit",
+          "kenwood_radio_control_head"
+        ],
+        "description": "Radio install detail indicating existing cables will be reused.",
+        "fits_part_types": [
+          "radio_cable"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "No New Radio Cables Needed",
+        "part_numbers": [
+          {
+            "friendly_name": "No New Radio Cables Needed",
+            "options": {},
+            "part_number": "NO NEW RADIO CABLES",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
+      },
+      "shop_prisoner_camera_detail": {
+        "description": "Shop-facing prisoner camera mount detail; not an ordered part.",
+        "fits_part_types": [
+          "rear_seat_camera"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "Prisoner Camera Install Detail",
+        "part_numbers": [
+          {
+            "friendly_name": "Prisoner Camera Install Detail",
+            "options": {},
+            "part_number": "PRISONER CAMERA DETAIL",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "camera",
+          "unbilled"
+        ]
+      },
+      "shop_rear_camera_detail": {
+        "description": "Shop-facing rear camera mount detail; not an ordered part.",
+        "fits_part_types": [
+          "rear_camera"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "Rear Camera Install Detail",
+        "part_numbers": [
+          {
+            "friendly_name": "Rear Camera Install Detail",
+            "options": {},
+            "part_number": "REAR CAMERA DETAIL",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "camera",
+          "unbilled"
+        ]
+      },
+      "shop_standard_radio_mic_mount": {
+        "description": "Radio mic mount location detail when no special mounting accessory is supplied.",
+        "fits_part_types": [
+          "radio_mic_clip"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "Standard Radio Mic Mount",
+        "part_numbers": [
+          {
+            "friendly_name": "Standard Radio Mic Mount",
+            "options": {},
+            "part_number": "STANDARD RADIO MIC MOUNT",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ]
+      },
+      "shop_wireless_mic_charger_detail": {
+        "description": "Shop-facing wireless mic charger mount detail; not an ordered part.",
+        "fits_part_types": [
+          "wireless_mic_charger"
+        ],
+        "images": {},
+        "manufacturer_id": "shop_detail",
+        "model": "Wireless Mic Charger Install Detail",
+        "part_numbers": [
+          {
+            "friendly_name": "Wireless Mic Charger Install Detail",
+            "options": {},
+            "part_number": "WIRELESS MIC CHARGER DETAIL",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "reviewed": true,
+        "tag_ids": [
+          "camera",
+          "unbilled"
+        ]
+      },
       "soundoff_ecvcsmledf": {
         "description": "",
         "fits_part_types": [
@@ -18237,7 +18940,7 @@
             "qb_unit_price": 907.67,
             "secondary_color": "amber",
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -18266,7 +18969,7 @@
             "qb_sku": "",
             "qb_unit_price": 704.18,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -18592,7 +19295,7 @@
         ],
         "images": {},
         "manufacturer_id": "soundoff",
-        "model": "M4",
+        "model": "M4 Warning Light",
         "part_numbers": [
           {
             "part_number": "M4"
@@ -19097,7 +19800,7 @@
           "rear_seat_lights"
         ],
         "manufacturer_id": "soundoff",
-        "model": "SOUNDOFF DOME LIGHT",
+        "model": "Dome Light",
         "part_numbers": [
           {
             "color": "white",
@@ -19112,21 +19815,27 @@
         ]
       },
       "specify_cylinder_style": {
-        "description": "",
+        "description": "Radio antenna style detail; not an exact ordered antenna SKU.",
         "fits_part_types": [
           "radio_antenna_top"
         ],
         "images": {},
-        "manufacturer_id": "specify",
-        "model": "CYLINDER STYLE ANTENNA (SHOP)",
+        "manufacturer_id": "shop_detail",
+        "model": "Cylinder-Style Radio Antenna",
         "part_numbers": [
           {
-            "part_number": "CYLINDER STYLE"
+            "friendly_name": "Cylinder-Style Radio Antenna",
+            "options": {},
+            "part_number": "CYLINDER STYLE ANTENNA",
+            "vehicle_tags": [
+              "any"
+            ]
           }
         ],
-        "reviewed": false,
+        "reviewed": true,
         "tag_ids": [
-          "comms"
+          "comms",
+          "unbilled"
         ]
       },
       "stalker_200_0243_00": {
@@ -19160,11 +19869,12 @@
       "stalker_200_0244_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "KA-BAND ANTENNA MOUNT",
+        "model": "KA-Band Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER KA-BAND ANTENNA MOUNT",
@@ -19182,16 +19892,19 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_0245_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "TALL ANTENNA MOUNT",
+        "model": "Tall Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER TALL ANTENNA MOUNT",
@@ -19209,7 +19922,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_0622_00": {
         "description": "",
@@ -19218,7 +19933,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "VSS INSTALLATION KIT",
+        "model": "Radar VSS Installation Kit",
         "part_numbers": [
           {
             "friendly_name": "STALKER VSS INSTALLATION KIT",
@@ -19258,7 +19973,7 @@
             "qb_sku": "",
             "qb_unit_price": 157.5,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -19298,11 +20013,12 @@
       "stalker_200_0986_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "DUAL PIVOT ARM ANTENNA MOUNT",
+        "model": "Dual-Pivot Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER DUAL PIVOT ARM ANTENNA MOUNT",
@@ -19320,16 +20036,18 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1062_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2015-2019 FORD PIU ANTENNA MOUNT",
+        "model": "2015-2019 Ford PIU Front Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2015-2019 FORD PIU ANTENNA MOUNT",
@@ -19342,21 +20060,23 @@
             "qb_sku": "",
             "qb_unit_price": 83.46,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1064_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
+        "model": "2015-2019 Ford PIU Rear Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
@@ -19369,21 +20089,23 @@
             "qb_sku": "",
             "qb_unit_price": 49.5,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1088_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "front_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "TAHOE ANTENNA MOUNT",
+        "model": "Tahoe Front Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER TAHOE ANTENNA MOUNT",
@@ -19396,12 +20118,14 @@
             "qb_sku": "",
             "qb_unit_price": 62.74,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1089_00": {
         "description": "",
@@ -19411,7 +20135,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "TAHOE DISPLAY MOUNT",
+        "model": "Tahoe Radar Display Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER TAHOE DISPLAY MOUNT",
@@ -19424,7 +20148,7 @@
             "qb_sku": "",
             "qb_unit_price": 50.74,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -19434,11 +20158,11 @@
       "stalker_200_1090_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
+        "model": "2015-2021 Chevy Tahoe Rear Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
@@ -19451,21 +20175,23 @@
             "qb_sku": "",
             "qb_unit_price": 132.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1321_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
+        "model": "2019+ Dodge Durango Rear Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
@@ -19478,21 +20204,23 @@
             "qb_sku": "",
             "qb_unit_price": 160.8,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1342_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
+        "model": "2020+ Ford F-150 Rear Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
@@ -19505,21 +20233,23 @@
             "qb_sku": "",
             "qb_unit_price": 111.6,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1378_00": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "rear_radar_antenna_mount"
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
+        "model": "2020+ Ford PIU Rear Radar Antenna Mount",
         "part_numbers": [
           {
             "friendly_name": "STALKER 2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
@@ -19532,12 +20262,14 @@
             "qb_sku": "",
             "qb_unit_price": 157.2,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "radar"
+        ]
       },
       "stalker_200_1503_00": {
         "accessory_category": "other",
@@ -19768,7 +20500,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "DSR",
+        "model": "DSR Radar Display Unit",
         "part_numbers": [
           {
             "part_number": "DSR"
@@ -19805,7 +20537,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "DUAL SWIVEL BRACKET",
+        "model": "Dual-Swivel Radar Antenna Bracket",
         "part_numbers": [
           {
             "part_number": "DUAL SWIVEL BRACKET"
@@ -19824,7 +20556,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "HIGH A BRACKET",
+        "model": "High-A Radar Antenna Bracket",
         "part_numbers": [
           {
             "part_number": "HIGH A BRACKET"
@@ -19843,7 +20575,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "LOW A BRACKET",
+        "model": "Low-A Radar Antenna Bracket",
         "part_numbers": [
           {
             "part_number": "LOW A BRACKET"
@@ -19868,7 +20600,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "Remote Display Cable",
+        "model": "Radar Remote Display Cable",
         "part_numbers": [
           {
             "friendly_name": "STALKER REMOTE DISPLAY CABLE 10FT",
@@ -19910,7 +20642,7 @@
         ],
         "images": {},
         "manufacturer_id": "stalker",
-        "model": "VEHICLE SPECIFIC BRACKET",
+        "model": "Vehicle-Specific Radar Antenna Bracket",
         "part_numbers": [
           {
             "part_number": "VEHICLE SPECIFIC BRACKET"
@@ -20028,7 +20760,7 @@
             "qb_sku": "",
             "qb_unit_price": 321.49,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -20082,7 +20814,7 @@
             "qb_sku": "",
             "qb_unit_price": 218.12,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -20109,7 +20841,7 @@
             "qb_sku": "",
             "qb_unit_price": 321.49,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -20136,7 +20868,7 @@
             "qb_sku": "",
             "qb_unit_price": 218.12,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -20330,7 +21062,8 @@
             "qb_sku": "",
             "qb_unit_price": 283.64,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "EXPEDITION"
             ]
           }
         ],
@@ -20420,7 +21153,7 @@
             "qb_sku": "",
             "qb_unit_price": 87.27,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -20540,7 +21273,7 @@
         ],
         "images": {},
         "manufacturer_id": "watchguard",
-        "model": "M500",
+        "model": "M500 Camera DVR",
         "part_numbers": [
           {
             "part_number": "M500"
@@ -20554,11 +21287,11 @@
       "watchguard_trab58003_wg1": {
         "description": "",
         "fits_part_types": [
-          "radio_antenna_top"
+          "camera_dvr"
         ],
         "images": {},
         "manufacturer_id": "watchguard",
-        "model": "ANTENNA",
+        "model": "Camera Antenna",
         "part_numbers": [
           {
             "friendly_name": "WATCHGUARD ANTENNA",
@@ -20576,7 +21309,9 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
+        "tag_ids": [
+          "camera"
+        ]
       },
       "watchguard_watchguard_dvr": {
         "description": "",
@@ -20585,7 +21320,7 @@
         ],
         "images": {},
         "manufacturer_id": "watchguard",
-        "model": "WATCHGUARD DVR",
+        "model": "Camera DVR",
         "part_numbers": [
           {
             "part_number": "WATCHGUARD DVR"
@@ -20613,7 +21348,7 @@
             "qb_sku": "",
             "qb_unit_price": 138.95,
             "vehicle_tags": [
-              "any"
+              "TRAVERSE"
             ]
           },
           {
@@ -20627,7 +21362,7 @@
             "qb_sku": "",
             "qb_unit_price": 138.95,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           },
           {
@@ -20641,7 +21376,7 @@
             "qb_sku": "",
             "qb_unit_price": 138.95,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           },
           {
@@ -20655,7 +21390,7 @@
             "qb_sku": "",
             "qb_unit_price": 248.9,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           },
           {
@@ -20669,7 +21404,7 @@
             "qb_sku": "",
             "qb_unit_price": 131.95,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -20750,7 +21485,7 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -20777,7 +21512,7 @@
             "qb_sku": "",
             "qb_unit_price": 834.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -20804,7 +21539,7 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -20831,7 +21566,7 @@
             "qb_sku": "",
             "qb_unit_price": 598.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -20858,7 +21593,7 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],
@@ -20885,7 +21620,7 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -20912,7 +21647,7 @@
             "qb_sku": "",
             "qb_unit_price": 834.0,
             "vehicle_tags": [
-              "any"
+              "CHEVY-1500"
             ]
           }
         ],
@@ -20966,7 +21701,7 @@
             "qb_sku": "",
             "qb_unit_price": 834.0,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -20993,7 +21728,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU",
+              "DURANGO"
             ]
           }
         ],
@@ -21020,7 +21756,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU",
+              "DURANGO"
             ]
           }
         ],
@@ -21047,7 +21784,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU",
+              "DURANGO"
             ]
           }
         ],
@@ -21074,7 +21812,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU",
+              "DURANGO"
             ]
           }
         ],
@@ -21101,7 +21840,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "PIU",
+              "DURANGO"
             ]
           }
         ],
@@ -21128,7 +21868,8 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "CHEVY-1500"
             ]
           }
         ],
@@ -21155,7 +21896,9 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "F-150",
+              "CHEVY-1500"
             ]
           }
         ],
@@ -21182,7 +21925,9 @@
             "qb_sku": "",
             "qb_unit_price": 56.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "F-150",
+              "CHEVY-1500"
             ]
           }
         ],
@@ -21239,7 +21984,7 @@
             "qb_sku": "",
             "qb_unit_price": 545.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           },
           {
@@ -21253,7 +21998,7 @@
             "qb_sku": "",
             "qb_unit_price": 545.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           },
           {
@@ -21281,7 +22026,7 @@
             "qb_sku": "",
             "qb_unit_price": 545.0,
             "vehicle_tags": [
-              "any"
+              "CHEVY-1500"
             ]
           },
           {
@@ -21295,7 +22040,7 @@
             "qb_sku": "",
             "qb_unit_price": 545.0,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           }
         ],
@@ -21309,7 +22054,7 @@
         ],
         "images": {},
         "manufacturer_id": "westin",
-        "model": "WESTIN 2 LIGHT TUBE",
+        "model": "2-Light Push Bumper Light Channel",
         "part_numbers": [
           {
             "part_number": "WESTIN 2 LIGHT TUBE"
@@ -21324,7 +22069,7 @@
         ],
         "images": {},
         "manufacturer_id": "westin",
-        "model": "WESTIN 4 LIGHT TUBE",
+        "model": "4-Light Push Bumper Light Channel",
         "part_numbers": [
           {
             "part_number": "WESTIN 4 LIGHT TUBE"
@@ -21355,7 +22100,7 @@
             "qb_sku": "",
             "qb_unit_price": 380.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           },
           {
@@ -21369,7 +22114,7 @@
             "qb_sku": "",
             "qb_unit_price": 380.0,
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           },
           {
@@ -21383,7 +22128,7 @@
             "qb_sku": "",
             "qb_unit_price": 380.0,
             "vehicle_tags": [
-              "any"
+              "F-150"
             ]
           },
           {
@@ -21397,7 +22142,8 @@
             "qb_sku": "",
             "qb_unit_price": 380.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE",
+              "CHEVY-1500"
             ]
           }
         ],
@@ -22148,7 +22894,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Avenger Mount Kit",
+        "model": "Avenger Headliner/Mirror Mount Kit",
         "part_numbers": [
           {
             "color": "",
@@ -22252,7 +22998,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CCTL5",
+        "model": "CCTL5 WeCanX Hand-Held Control Head",
         "part_numbers": [
           {
             "color": "",
@@ -22279,7 +23025,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CCTL6",
+        "model": "CCTL6 WeCanX Knob/Slide Control Head",
         "part_numbers": [
           {
             "color": "",
@@ -22306,7 +23052,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CCTL7",
+        "model": "CCTL7 WeCanX 21-Button/Slide Control Head",
         "part_numbers": [
           {
             "color": "",
@@ -22333,7 +23079,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CCTL8",
+        "model": "CCTL8 WeCanX Control Head",
         "part_numbers": [
           {
             "part_number": "CCTL8"
@@ -22348,7 +23094,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CCTL9",
+        "model": "CCTL9 WeCanX 6-Button/Knob Control Head",
         "part_numbers": [
           {
             "color": "",
@@ -22375,7 +23121,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CEM16",
+        "model": "CEM16 WeCanX 16-Output Expansion Module",
         "part_numbers": [
           {
             "color": "",
@@ -22402,7 +23148,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CEM24",
+        "model": "CEM24 WeCanX 24-Output Expansion Module",
         "part_numbers": [
           {
             "color": "",
@@ -22429,7 +23175,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CEM8",
+        "model": "CEM8 WeCanX 8-Output Expansion Module",
         "part_numbers": [
           {
             "color": "",
@@ -22702,7 +23448,7 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           },
           {
@@ -22717,7 +23463,7 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           },
           {
@@ -22732,7 +23478,7 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "SUPER-DUTY"
             ]
           },
           {
@@ -23034,7 +23780,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Fender Mount",
+        "model": "Arges Vehicle-Specific Fender Mount",
         "part_numbers": [
           {
             "color": "",
@@ -23093,7 +23839,8 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "F-150-LIGHTNING"
+              "F-150-LIGHTNING",
+              "F-150"
             ]
           },
           {
@@ -23886,7 +24633,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Howler Mounting Bracket",
+        "model": "Howler Vehicle-Specific Mounting Bracket",
         "part_numbers": [
           {
             "color": "",
@@ -23946,7 +24693,7 @@
             "qb_sku": "",
             "qb_unit_price": 756.0,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -24171,7 +24918,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "ION",
+        "model": "ION Warning Light",
         "part_numbers": [
           {
             "color": "amber",
@@ -24441,7 +25188,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "ION Grille Mount",
+        "model": "ION Grille-Mount Bracket",
         "part_numbers": [
           {
             "color": "",
@@ -24844,7 +25591,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "L31",
+        "model": "L31 Super-LED Beacon",
         "part_numbers": [
           {
             "color": "red",
@@ -24873,7 +25620,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "L32",
+        "model": "L32 Super-LED Beacon",
         "part_numbers": [
           {
             "color": "amber",
@@ -28875,7 +29622,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "SAK1",
+        "model": "SAK1 Siren Speaker L-Bracket",
         "part_numbers": [
           {
             "color": "",
@@ -28902,7 +29649,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "SAK9",
+        "model": "SAK9 Siren Speaker Swivel Bail Bracket",
         "part_numbers": [
           {
             "color": "",
@@ -28983,7 +29730,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Strip-Lite+ Mount Kit",
+        "model": "Strip-Lite+ 90-Degree Mount Kit",
         "part_numbers": [
           {
             "color": "",
@@ -30201,7 +30948,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Tracer Mounting Kit",
+        "model": "Tracer Vehicle-Specific Mounting Kit",
         "part_numbers": [
           {
             "color": "",
@@ -30917,7 +31664,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "U-Series Under-Mirror Mount",
+        "model": "U-Series Under-Mirror Warning Bracket",
         "part_numbers": [
           {
             "color": "",
@@ -31016,6 +31763,13 @@
         "tag_ids": []
       },
       "whelen_u_series": {
+        "accessories": [
+          {
+            "category": "bracket_mount",
+            "product_id": "whelen_u_mirror_mount",
+            "required": true
+          }
+        ],
         "description": "",
         "fits_part_types": [
           "warning_light"
@@ -31344,7 +32098,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "Vertex Adapter Kit",
+        "model": "Vertex Twist-In Adapter Kit",
         "part_numbers": [
           {
             "color": "",
@@ -31470,7 +32224,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "VXE",
+        "model": "VXE Warning Light",
         "part_numbers": [
           {
             "color": "red",
@@ -31820,7 +32574,7 @@
             "qb_sku": "",
             "qb_unit_price": 2254.0,
             "vehicle_tags": [
-              "any"
+              "TAHOE"
             ]
           }
         ],
@@ -31872,8 +32626,14 @@
       "camera": {
         "label": "Camera"
       },
+      "cloud": {
+        "label": "Cloud"
+      },
       "comms": {
         "label": "Communications"
+      },
+      "k9": {
+        "label": "K-9"
       },
       "light": {
         "label": "Light"

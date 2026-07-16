@@ -244,8 +244,20 @@
             "members": [
               {
                 "browse_hidden": false,
-                "label": "Radio Head",
+                "label": "Radio Control Head",
                 "part_type_id": "radio_head",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": true,
+                "label": "Radio Brick",
+                "part_type_id": "radio_brick",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": false,
+                "label": "Radio Antenna Top",
+                "part_type_id": "radio_antenna_top",
                 "picker_flow": null
               },
               {
@@ -256,7 +268,7 @@
               },
               {
                 "browse_hidden": false,
-                "label": "Radio Cable",
+                "label": "Radio Cables",
                 "part_type_id": "radio_cable",
                 "picker_flow": null
               },
@@ -267,7 +279,7 @@
                 "picker_flow": null
               },
               {
-                "browse_hidden": false,
+                "browse_hidden": true,
                 "label": "Radio Communication Cable",
                 "part_type_id": "radio_antenna_cable",
                 "picker_flow": null
@@ -290,7 +302,7 @@
                 "picker_flow": null
               },
               {
-                "browse_hidden": false,
+                "browse_hidden": true,
                 "label": "Front Camera",
                 "part_type_id": "front_camera",
                 "picker_flow": null
@@ -305,6 +317,18 @@
                 "browse_hidden": false,
                 "label": "Rear Seat Camera",
                 "part_type_id": "rear_seat_camera",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": false,
+                "label": "Body Camera Dock",
+                "part_type_id": "body_camera_dock",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": false,
+                "label": "Wireless Mic Charger",
+                "part_type_id": "wireless_mic_charger",
                 "picker_flow": null
               }
             ],
@@ -361,18 +385,6 @@
               },
               {
                 "browse_hidden": false,
-                "label": "Cloud System",
-                "part_type_id": "cloud_system_tray",
-                "picker_flow": null
-              },
-              {
-                "browse_hidden": false,
-                "label": "Cloud Antenna",
-                "part_type_id": "cloud_antenna",
-                "picker_flow": null
-              },
-              {
-                "browse_hidden": false,
                 "label": "Vehicle to Vehicle Sync",
                 "part_type_id": "v2v_sync",
                 "picker_flow": null
@@ -385,6 +397,35 @@
               }
             ],
             "order": 5,
+            "picker_flow": null,
+            "selectable": false
+          },
+          {
+            "browse_collapsed": false,
+            "family_id": "cloud_cradlepoint",
+            "kind": "family",
+            "label": "Cloud / CradlePoint",
+            "members": [
+              {
+                "browse_hidden": false,
+                "label": "Cloud System",
+                "part_type_id": "cloud_system_tray",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": false,
+                "label": "Cloud Antenna",
+                "part_type_id": "cloud_antenna",
+                "picker_flow": null
+              },
+              {
+                "browse_hidden": true,
+                "label": "Cloud System",
+                "part_type_id": "cradle_point",
+                "picker_flow": null
+              }
+            ],
+            "order": 6,
             "picker_flow": null,
             "selectable": false
           },
@@ -407,7 +448,7 @@
                 "picker_flow": null
               }
             ],
-            "order": 6,
+            "order": 7,
             "picker_flow": null,
             "selectable": false
           },
@@ -443,23 +484,8 @@
           },
           {
             "kind": "part_type",
-            "label": "Body Camera Dock",
-            "part_type_id": "body_camera_dock"
-          },
-          {
-            "kind": "part_type",
-            "label": "Cloud System",
-            "part_type_id": "cradle_point"
-          },
-          {
-            "kind": "part_type",
             "label": "Computer Pedestal / Mount Base",
             "part_type_id": "pedestal_mount"
-          },
-          {
-            "kind": "part_type",
-            "label": "Door Lock Button",
-            "part_type_id": "door_lock_button"
           },
           {
             "kind": "part_type",
@@ -513,11 +539,6 @@
           },
           {
             "kind": "part_type",
-            "label": "Radio Antenna Top",
-            "part_type_id": "radio_antenna_top"
-          },
-          {
-            "kind": "part_type",
             "label": "Remote Start",
             "part_type_id": "remote_start"
           },
@@ -540,11 +561,6 @@
             "kind": "part_type",
             "label": "Vehicle Interface",
             "part_type_id": "vehicle_interface"
-          },
-          {
-            "kind": "part_type",
-            "label": "Wireless Mic Charger",
-            "part_type_id": "wireless_mic_charger"
           }
         ],
         "label": "Equipment",
@@ -701,11 +717,6 @@
             "kind": "part_type",
             "label": "K-9 Add-Ons",
             "part_type_id": "k9_add_ons"
-          },
-          {
-            "kind": "part_type",
-            "label": "K-9 Control Head",
-            "part_type_id": "k9_control_head"
           },
           {
             "kind": "part_type",

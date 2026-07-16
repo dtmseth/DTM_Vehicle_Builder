@@ -148,6 +148,7 @@ function pvRenderPlacement(frame, pp, pl) {
     icon.className = "pv-icon";
     icon.title = `${pp.part_name} — ${pl.location_key}`;
     icon.dataset.overrideKey = pl.override_key;
+    icon.dataset.groupKey = pl.group_key || "";
     const layerVal = pl.layer || 0;
     const cssParts = [
       `left:${xPct.toFixed(3)}%`,
@@ -187,11 +188,15 @@ function pvMergeOverride(pl, ov) {
   const savedOv     = pl.override || {};
   const savedDx     = savedOv.anchor_dx      || 0;
   const savedDy     = savedOv.anchor_dy      || 0;
+  const savedTx     = savedOv.translate_dx   || 0;
+  const savedTy     = savedOv.translate_dy   || 0;
   const savedHDelta = savedOv.h_spacing_delta || 0;  // server-saved delta (== serverHDelta)
   const savedScale  = savedOv.size_scale || 1;
 
   const liveDx     = ov.anchor_dx       ?? 0;
   const liveDy     = ov.anchor_dy       ?? 0;
+  const liveTx     = ov.translate_dx    ?? savedTx;
+  const liveTy     = ov.translate_dy    ?? savedTy;
   const liveHDelta = ov.h_spacing_delta ?? savedHDelta;
   const liveRot    = ov.rotation   != null ? ov.rotation  : (pl.rotation ?? 0);
   const liveFlipH  = ov.flip_h     != null ? ov.flip_h    : (pl.flip_h   ?? false);
@@ -201,6 +206,8 @@ function pvMergeOverride(pl, ov) {
 
   const dxDelta     = liveDx - savedDx;
   const dyDelta     = liveDy - savedDy;
+  const txDelta     = liveTx - savedTx;
+  const tyDelta     = liveTy - savedTy;
   // Change in effective h_spacing vs what the server baked (server used pl.h_spacing).
   const hDeltaDelta = liveHDelta - savedHDelta;
   const scaleFactor = savedScale !== 0 ? liveScale / savedScale : liveScale;
@@ -238,8 +245,8 @@ function pvMergeOverride(pl, ov) {
         : 0;
       return {
         ...inst,
-        x_pct: (inst.x_pct ?? 0) + xDelta + hSpacingXDelta,
-        y_pct: (inst.y_pct ?? 0) + dyDelta,
+        x_pct: (inst.x_pct ?? 0) + xDelta + txDelta + hSpacingXDelta,
+        y_pct: (inst.y_pct ?? 0) + dyDelta + tyDelta,
         w_pct: (inst.w_pct ?? pl.icon_w_pct ?? 0.04) * scaleFactor,
         h_pct: (inst.h_pct ?? pl.icon_h_pct ?? 0.02) * scaleFactor,
       };
@@ -284,19 +291,76 @@ function pvLivePreview() {
 //   horizontal symmetric→ h_spacing_delta + anchor_dy  (changes spread, not group offset)
 //   everything else     → anchor_dx + anchor_dy  (simple translation)
 
+function pvCurrentPlacement(pl, pendingOv = null) {
+  const ov = pendingOv || _pvPendingOverrides[pl.override_key];
+  if (ov) return pvMergeOverride(pl, ov);
+  return pl;
+}
+
+function pvOverrideState(pl) {
+  const serverDx     = pl.override?.anchor_dx       || 0;
+  const serverDy     = pl.override?.anchor_dy       || 0;
+  const serverTx     = pl.override?.translate_dx    || 0;
+  const serverTy     = pl.override?.translate_dy    || 0;
+  const serverHDelta = pl.override?.h_spacing_delta || 0;
+  const pendingOv    = _pvPendingOverrides[pl.override_key] || {};
+  return {
+    serverDx,
+    serverDy,
+    serverTx,
+    serverTy,
+    serverHDelta,
+    pendingOv,
+    savedDx:     pendingOv.anchor_dx       != null ? pendingOv.anchor_dx       : serverDx,
+    savedDy:     pendingOv.anchor_dy       != null ? pendingOv.anchor_dy       : serverDy,
+    savedTx:     pendingOv.translate_dx    != null ? pendingOv.translate_dx    : serverTx,
+    savedTy:     pendingOv.translate_dy    != null ? pendingOv.translate_dy    : serverTy,
+    savedHDelta: pendingOv.h_spacing_delta != null ? pendingOv.h_spacing_delta : serverHDelta,
+  };
+}
+
+function pvGroupItemsFor(pl) {
+  const groupKey = pl.group_key || "";
+  if (!groupKey) return [];
+
+  const items = [];
+  for (const pp of (_pvPlan?.planned_parts || [])) {
+    for (const basePl of (pp.placements || [])) {
+      if (basePl.view !== _pvView || basePl.group_key !== groupKey) continue;
+      const state = pvOverrideState(basePl);
+      items.push({ pp, basePl, pl: pvCurrentPlacement(basePl, state.pendingOv), state });
+    }
+  }
+  return items;
+}
+
+function pvTranslatePlacement(pl, dxFrac, dyFrac) {
+  return {
+    ...pl,
+    instances: (pl.instances || []).map(inst => ({
+      ...inst,
+      x_pct: (inst.x_pct ?? 0) + dxFrac,
+      y_pct: (inst.y_pct ?? 0) + dyFrac,
+    })),
+  };
+}
+
+function pvDataSelector(attr, value) {
+  const safe = String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `[data-${attr}="${safe}"]`;
+}
+
 function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
   e.preventDefault();
 
   const frame = e.currentTarget.closest(".pv-frame");
   if (!frame) return;
 
-  const serverDx     = pl.override?.anchor_dx       || 0;
-  const serverDy     = pl.override?.anchor_dy       || 0;
-  const serverHDelta = pl.override?.h_spacing_delta || 0;
-  const pendingOv    = _pvPendingOverrides[pl.override_key] || {};
-  const savedDx      = pendingOv.anchor_dx       != null ? pendingOv.anchor_dx       : serverDx;
-  const savedDy      = pendingOv.anchor_dy       != null ? pendingOv.anchor_dy       : serverDy;
-  const savedHDelta  = pendingOv.h_spacing_delta != null ? pendingOv.h_spacing_delta : serverHDelta;
+  const state = pvOverrideState(pl);
+  const serverHDelta = state.serverHDelta;
+  const savedDx      = state.savedDx;
+  const savedDy      = state.savedDy;
+  const savedHDelta  = state.savedHDelta;
 
   // Identify grabbed instance by closest x_pct to the click position.
   const instances = pl.instances || [];
@@ -324,6 +388,9 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
   const grabbedCoeff  = instances[grabbedInstIndex]?.slot_coeff
     ?? (grabbedXPct >= rawAnchorXPct ? 0.5 : -0.5);
 
+  const groupItems = pvGroupItemsFor(pl);
+  const isGroupDrag = groupItems.length > 1;
+
   _pvDrag = {
     pl, pp, frame,
     frameRect: frame.getBoundingClientRect(),
@@ -331,14 +398,18 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
     startY:    e.clientY,
     savedDx, savedDy, savedHDelta,
     grabbedInstIndex,
-    isSymmetric,
+    isSymmetric: isGroupDrag ? false : isSymmetric,
+    isGroupDrag,
+    groupItems,
     baseHSpacing, grabbedCoeff,
     dxPct: 0,
     dyPct: 0,
   };
 
-  frame.querySelectorAll(`[data-override-key="${pl.override_key}"]`)
-    .forEach(el => el.classList.add("pv-icon-dragging"));
+  const dragSelector = isGroupDrag
+    ? pvDataSelector("group-key", pl.group_key || "")
+    : pvDataSelector("override-key", pl.override_key);
+  frame.querySelectorAll(dragSelector).forEach(el => el.classList.add("pv-icon-dragging"));
 
   document.addEventListener("mousemove", pvDragMove);
   document.addEventListener("mouseup",   pvDragEnd);
@@ -357,6 +428,17 @@ function pvDragMove(e) {
   const rawDxFrac = rawDxPct / 100;
   const rawDyFrac = rawDyPct / 100;
 
+  if (_pvDrag.isGroupDrag) {
+    const groupKey = pl.group_key || "";
+    frame.querySelectorAll(pvDataSelector("group-key", groupKey)).forEach(el => el.remove());
+    for (const item of _pvDrag.groupItems) {
+      pvRenderPlacement(frame, item.pp, pvTranslatePlacement(item.pl, rawDxFrac, rawDyFrac));
+    }
+    frame.querySelectorAll(pvDataSelector("group-key", groupKey))
+      .forEach(el => el.classList.add("pv-icon-dragging"));
+    return;
+  }
+
   // Grabbed icon's side moves with the mouse; the opposite side mirrors in X.
   const grabbedInst  = (pl.instances || [])[grabbedInstIndex];
   const grabbedLeft  = (grabbedInst?.x_pct ?? 0.5) < 0.5;
@@ -373,9 +455,9 @@ function pvDragMove(e) {
     }),
   };
 
-  frame.querySelectorAll(`[data-override-key="${pl.override_key}"]`).forEach(el => el.remove());
+  frame.querySelectorAll(pvDataSelector("override-key", pl.override_key)).forEach(el => el.remove());
   pvRenderPlacement(frame, pp, livePl);
-  frame.querySelectorAll(`[data-override-key="${pl.override_key}"]`).forEach(el => el.classList.add("pv-icon-dragging"));
+  frame.querySelectorAll(pvDataSelector("override-key", pl.override_key)).forEach(el => el.classList.add("pv-icon-dragging"));
 }
 
 function pvDragEnd(e) {
@@ -387,8 +469,10 @@ function pvDragEnd(e) {
   const drag = _pvDrag;
   _pvDrag = null;
 
-  drag.frame.querySelectorAll(`[data-override-key="${drag.pl.override_key}"]`)
-    .forEach(el => el.classList.remove("pv-icon-dragging"));
+  const dragSelector = drag.isGroupDrag
+    ? pvDataSelector("group-key", drag.pl.group_key || "")
+    : pvDataSelector("override-key", drag.pl.override_key);
+  drag.frame.querySelectorAll(dragSelector).forEach(el => el.classList.remove("pv-icon-dragging"));
 
   const dxPct = drag.dxPct || 0;
   const dyPct = drag.dyPct || 0;
@@ -399,10 +483,24 @@ function pvDragEnd(e) {
     return;
   }
 
-  const existingPending = _pvPendingOverrides[drag.pl.override_key] || {};
   const rawDxFrac = dxPct / 100;
   const rawDyFrac = dyPct / 100;
-  const newDy     = +(drag.savedDy + rawDyFrac).toFixed(6);
+
+  if (drag.isGroupDrag) {
+    for (const item of drag.groupItems) {
+      _pvPendingOverrides[item.basePl.override_key] = {
+        ...item.state.pendingOv,
+        translate_dx: +(item.state.savedTx + rawDxFrac).toFixed(6),
+        translate_dy: +(item.state.savedTy + rawDyFrac).toFixed(6),
+      };
+    }
+    pvUpdateBadge();
+    pvRenderView(_pvView);
+    return;
+  }
+
+  const existingPending = _pvPendingOverrides[drag.pl.override_key] || {};
+  const newDy = +(drag.savedDy + rawDyFrac).toFixed(6);
 
   if (drag.isSymmetric) {
     // Symmetric horizontal: the spread (h_spacing) changes, not the group offset.

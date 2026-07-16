@@ -147,7 +147,7 @@
         {
           "anchor": {
             "units": "relative_image",
-            "x": 0.61,
+            "x": 0.5,
             "y": 0.545
           },
           "asset_key": "siren_speaker",
@@ -161,19 +161,11 @@
           "h_spacing_units": "relative_image",
           "instances": [
             {
-              "asset_path": "equipment/siren_speaker_front.png",
+              "asset_path": "equipment/siren_speaker_wo_bracket_front.png",
               "color_token": "",
               "orientation": "h",
               "slot_index": 1,
-              "slot_role": "passenger",
-              "warnings": []
-            },
-            {
-              "asset_path": "equipment/siren_speaker_front.png",
-              "color_token": "",
-              "orientation": "h",
-              "slot_index": 2,
-              "slot_role": "driver",
+              "slot_role": "center",
               "warnings": []
             }
           ],
@@ -185,7 +177,7 @@
           "ordered_quantity": 1,
           "part_id": "siren_speaker",
           "part_name": "Siren Speaker 1",
-          "pattern": "mirror",
+          "pattern": "single",
           "position_slot_count": null,
           "quantity_policy": "location_slots",
           "render_kind": "equipment",
@@ -193,7 +185,7 @@
           "size_class": "sm",
           "size_override": {
             "h": 0.65,
-            "w": 0.53
+            "w": 0.569
           },
           "size_scale": 1.0,
           "slot_indices": null,

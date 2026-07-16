@@ -163,6 +163,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
     vehicle_info: dict = {
         "VehicleType": unit.vehicle_model,
         "Agency": project.customer.agency,
+        "BuildYear": project.customer.build_year,
         "QuoteNumber": project.customer.quote_number,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
@@ -269,7 +270,10 @@ def handle_create_individual_draft(
         (i for i, x in enumerate(unit.individuals) if x.individual_id == individual_id), 0
     )
     unit_label = individual.unit_number or f"Unit-{ind_idx + 1}"
-    ind_year = individual.year or project.customer.build_year or ""
+    # The project build year is the canonical year for generated build sheets.
+    # IndividualUnit.year is retained as legacy vehicle metadata/fallback, but
+    # must not make an older vehicle year leak into a newly tagged project.
+    ind_year = (project.customer.build_year or "").strip() or individual.year or ""
 
     vehicle_model = individual.make or unit.vehicle_model
     if ind_year:
@@ -280,6 +284,7 @@ def handle_create_individual_draft(
     vehicle_info: dict = {
         "VehicleType": unit.vehicle_model,
         "Agency": project.customer.agency,
+        "BuildYear": project.customer.build_year,
         "QuoteNumber": project.customer.quote_number,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,

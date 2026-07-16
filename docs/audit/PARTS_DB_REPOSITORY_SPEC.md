@@ -97,9 +97,10 @@ HTTP. `qb_sync_service` keeps a separate QB-items file cache (not parts_db).
    present but `accessory_categories` — consumed by `_resolve_accessories` — is not). Benign
    today because real docs carry it; the repository's empty-doc factory should include the
    full key set.
-4. **F-4 · Doc drift**: GOTCHAS #21 still claims "`parts_db.json` is populated but not wired
-   into production reads" — false since the planner fallback, picker, estimates, and SKU grid
-   shipped. Reconcile when the extraction lands (three-way rule, roadmap §7).
+4. **F-4 · Doc drift — resolved 2026-07-15**: GOTCHAS #21 used to claim "`parts_db.json` is
+   populated but not wired into production reads" — false since the planner fallback, picker,
+   estimates, and SKU grid shipped. It now records the current mixed-source reality: parts_db is
+   live for several consumers, while legacy config files still feed the generator/template stack.
 5. **F-5 · Duplicate keyword tables** (`_ZONE_PRIMARY_KEYWORD` ≡ `_TREE_PRIMARY_KEYWORD`, and
    a third inline copy `_zone_keyword` inside `_resolve_category_locations`) — one concept,
    three homes; consolidation target when the placement logic moves (C3).

@@ -45,12 +45,14 @@ Rebuilding the legacy name-based draft projects in the new Part Picker and fixin
 picker/placement flaws (owner flaw list). Status + next steps live in the session handoff
 above; findings in the ledger. **Working norms:** run cloud-off
 (`DTM_CLOUD=0 python -m dtm_buildsheet` or preview config "DTM App") — cloud-on triggers the 60s
-SharePoint sync that clobbers `parts_db.json`. Pins must stay green: `pytest tests/golden
-tests/contract` + `tools/ui_smoke/run_smoke.py` (9 flows). Golden masters must NOT move from
-authoring/DB changes; re-record contract snapshots only on intended DB/route changes, diff
-eyeballed. **Open design call:** render **size + image** data must move into `parts_db` at the
-**part-type level** (owner directive) — not the legacy `parts_library.json`/`part_catalog.json`/
-`asset_manifest.json`, and not per-SKU (see LEDGER FINDING-035).
+SharePoint sync that clobbers `parts_db.json`. Safety pins are `pytest tests/golden
+tests/contract` + `tools/ui_smoke/run_smoke.py` (currently 12 smoke flows). Golden masters must
+NOT move from authoring/DB changes; re-record contract snapshots only on intended DB/route
+changes, diff eyeballed. Current dirty-tree note: contract tests and UI smoke are green, but
+`pytest tests/golden tests/contract` has known golden digest drift pending owner review. Render
+**size + image** data now belongs in `parts_db` at the **part-type level** (owner directive), not
+the legacy `parts_library.json`/`part_catalog.json`/`asset_manifest.json`, and not per-SKU
+(see LEDGER FINDING-035).
 
 ## QuickBooks (conditionally relevant)
 

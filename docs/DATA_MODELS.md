@@ -12,7 +12,7 @@ class CustomerInfo:
     agency_id: str = ""       # FK → agencies/{id}.json
     sales_rep_id: str = ""    # FK → sales_reps/{id}.json
     quote_number: str = ""
-    build_year: str = ""
+    build_year: str = ""        # canonical project year used in generated outputs
     notes: str = ""
 ```
 
@@ -48,7 +48,7 @@ class BuildUnit:
 class IndividualUnit:
     unit_number: str = ""
     vin: str = ""
-    year: str = ""
+    year: str = ""             # per-vehicle/model year; fallback metadata, not project build year
     color: str = ""
     draft_id: str = ""
     output_path: str = ""     # set when build sheet is generated

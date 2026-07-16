@@ -23,6 +23,7 @@ from .ppt_helpers import (
     fill_notes,
     fill_overview,
     icon_size_in_inches,
+    is_render_only_part,
     place_legend,
     place_legend_grid,
     place_logo,
@@ -38,7 +39,7 @@ _log = logging.getLogger(__name__)
 def _project_shim(plan) -> SimpleNamespace:
     parts = []
     for pp in plan.planned_parts:
-        if not pp.raw.include:
+        if not pp.raw.include or is_render_only_part(pp):
             continue
         raw = pp.raw
         parts.append(SimpleNamespace(
@@ -83,6 +84,8 @@ def _unplaced_for_view(plan, view: str):
     seen     = set()
     prefix   = f"{view}:"
     for pp in plan.planned_parts:
+        if is_render_only_part(pp):
+            continue
         matching = [w for w in pp.warnings if w.startswith(prefix)]
         if not matching:
             continue
@@ -223,6 +226,8 @@ def _build_accessory_map(plan) -> dict[str, list[tuple[str, str]]]:
     """Returns {parent_name: [(acc_name, part_number), ...]}."""
     acc_map: dict[str, list[tuple[str, str]]] = {}
     for pp in plan.planned_parts:
+        if is_render_only_part(pp):
+            continue
         if pp.accessory_of:
             pnum = (pp.raw.part_number or "").strip()
             acc_map.setdefault(pp.accessory_of, []).append((pp.part_name, pnum))
@@ -281,7 +286,7 @@ def build_output_filename(project: dict) -> str:
     new_v      = project.get("NewVehicle") or {}
     old_v      = project.get("ExistingVehicle") or {}
     unit       = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
-    year       = _safe_part(str(new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
+    year       = _safe_part(str(project.get("BuildYear", "") or new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
     now        = datetime.now()
     hour       = now.hour % 12 or 12
     ampm       = "AM" if now.hour < 12 else "PM"
@@ -314,7 +319,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     exist_v    = plan.project.get("ExistingVehicle", {})
     agency     = plan.project.get("Agency", "")
     build_type = plan.project.get("BuildType", "")
-    year     = new_v.get("YEAR",  "") or exist_v.get("YEAR",  "")
+    year     = plan.project.get("BuildYear", "") or new_v.get("YEAR",  "") or exist_v.get("YEAR",  "")
     make     = new_v.get("MAKE",  "") or exist_v.get("MAKE",  "")
     model    = (new_v.get("MODEL","") or exist_v.get("MODEL","")
                 or plan.project.get("VehicleType",""))
@@ -424,6 +429,13 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         h_spacing_emu, v_spacing_emu,
                         slot_roles=[inst.slot_role for inst in placement.instances],
                     )
+                translate_dx = int(img_box[2] * (getattr(placement, "translate_dx", 0.0) or 0.0))
+                translate_dy = int(img_box[3] * (getattr(placement, "translate_dy", 0.0) or 0.0))
+                if translate_dx or translate_dy:
+                    positions = [
+                        (px + translate_dx, py + translate_dy)
+                        for px, py in positions
+                    ]
 
                 placement_shapes: list = []
 
@@ -518,6 +530,8 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
         seen_unrendered: set[tuple] = set()
 
         for pp in plan.planned_parts:
+            if is_render_only_part(pp):
+                continue
             for pl in pp.placements:
                 if pl.view != view:
                     continue

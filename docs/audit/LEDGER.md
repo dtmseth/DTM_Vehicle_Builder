@@ -1111,3 +1111,127 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   Push-Bumper mirrored-slot render (qty=1 CENTERED, qty=2 both) + dot count; bracket-nesting fix
   (accessory child lands in "Other" — group children into the parent's section in
   `manifest_editor.js`); qty=2 → two brackets. See `docs/audit/SESSION_HANDOFF_2026-07-13.md` §B/§C.
+
+## Session 2026-07-14 — Codex continuation
+
+### FINDING-026 update: empty visible browse leaves curated — RESOLVED
+- **Status:** RESOLVED (2026-07-14).
+- Owner rulings were applied in `parts_db.json`: front camera is hidden/inferred; camera DVR keeps
+  selectable tray-vs-passenger-seat location options; rear camera and prisoner camera are visible
+  unbilled shop-facing details; body cam dock and wireless mic charger live with the camera system;
+  radio cables are consolidated into one visible `Radio Cables` leaf; radio speaker is an unbilled
+  mount-location detail; radio antenna cable, door-lock button, and K-9 control head are hidden.
+- Cloud tray, cloud antenna, and CradlePoint are now grouped under a dedicated
+  `cloud_cradlepoint` family. A fresh visible-leaf sweep after curation returned zero empty leaves.
+
+### FINDING-035 update: siren render/qty/bracket behavior implemented — RESOLVED
+- **Status:** RESOLVED (2026-07-14) for the owner-visible picker/render behavior.
+- Implemented part-type render metadata in `parts_db.json` and hydrated it through the
+  parts_db domain/service/schema path. The planner now consumes parts_db render image/size data
+  for picker-built siren speakers instead of falling through to raw image size or legacy
+  name/model-only size rules.
+- Implemented siren quantity 1/2 behavior, curated siren placement options, per-speaker bracket
+  selection, vertical bracket stacking for dual speakers, and image aspect-ratio preservation.
+- Final owner tuning removed the temporary 70% scale once the blocker was found; the selected
+  image's natural aspect ratio is preserved with height held stable and width adjusted.
+
+### FINDING-036: vague product display names in parts_db picker — OPEN
+- **Location:** `src/dtm_buildsheet/resources/config/parts_db.json` product `model` values and the
+  picker product-card display that exposes those names.
+- **Category:** data-curation / picker UX · **Severity:** MEDIUM (salesperson cannot identify some
+  selectable products) · **Status:** OPEN.
+- **Owner complaint:** products are showing up as non-descript names such as `WINDOW MOUNT`,
+  `ROOF MOUNT`, `W/BRACKET`, `CLIP`, `ALL IN ONE UNIT`, and `VEHICLE SPECIFIC BRACKET`.
+- **Audit:** `docs/audit/VAGUE_PRODUCT_NAME_AUDIT_2026-07-14.md` flags 81 products out of 784.
+  Highest-priority exact/generic rows include `cradle_point_roof_mount`,
+  `cradle_point_window_mount`, `magnetic_mic_mmsu_1`, `magnetic_mic_mmsu_1b`,
+  `motorola_all_in_one_unit`, `motorola_split_unit`, `stalker_dual_swivel_bracket`,
+  `stalker_high_a_bracket`, `stalker_low_a_bracket`, `stalker_vehicle_specific_bracket`,
+  `watchguard_trab58003_wg1`, and `havis_vehicle_specific`.
+- **Fix direction:** every selectable product row needs a sales-readable product name containing
+  enough object/system context to identify it. Prefer curated `parts_db.json` display/model text
+  copied from known QB friendly-name detail where available. If the product is only a shop detail
+  or agency-supplied placeholder, mark it unbilled or browse-hidden consistently. If it is not a
+  real selectable item, remove it from browse. Add a data-quality guard for exact generic model
+  names after the first curation pass.
+
+### FINDING-036 update: high-priority exact-generic picker names curated — PARTIAL
+- **Status:** high-priority slice complete; secondary cleanup remains open. Curated sales-readable
+  `model` values for the exact generic selectable rows in the audit: CradlePoint roof/window mounts,
+  Magnetic Mic MMSU-1/MMSU-1B, Motorola all-in-one/split radio heads, Stalker radar antenna brackets,
+  and WatchGuard TRAB58003-WG1 antenna.
+- **Hidden instead of renamed:** `havis_vehicle_specific` had no exact console series or vehicle
+  application data, so its `fits_part_types` were cleared and its description now marks it as a
+  placeholder hidden from the picker until curated.
+- **Guard:** `tests/contract/test_parts_db_data_quality.py` now fails when exact generic model names
+  (`CLIP`, `W/BRACKET`, `WINDOW MOUNT`, `ROOF MOUNT`, `ALL IN ONE UNIT`, `SPLIT UNIT`, `ANTENNA`,
+  `VEHICLE SPECIFIC`, `VEHICLE SPECIFIC BRACKET`) remain attached to selectable products.
+
+### FINDING-036 update: location-title products and obvious vehicle tags curated — PARTIAL
+- **Status:** second cleanup slice complete; broad secondary naming review remains open.
+- Renamed Kussmaul `WATER PROOF` / `NON-WATER PROOF` to sales-readable Auto Eject products.
+- Collapsed location-only picker rows: CradlePoint roof/window variants, carrier roof/window cloud
+  system variants, and Globesat `FRONT RIGHT OF DASH` / `ROOF MOUNTED`. One real product remains
+  selectable per choice, and the mount wording moved to the relevant part-type `location_options`.
+- Added obvious `vehicle_tags` where SKU text clearly names a supported vehicle family, including
+  existing partial-tag rows where the text named additional vehicles.
+- Extended `tests/contract/test_parts_db_data_quality.py` to guard those exact location-only titles
+  and to fail when explicit vehicle-fit text lacks the matching vehicle tag.
+
+### FINDING-036 update: secondary bracket/mount and model-code titles curated — PARTIAL
+- **Status:** secondary audit slice complete. Renamed the listed bracket/mount rows to include
+  product/system context, including 5-0 Fab warning brackets, Santa Cruz gun-lock brackets, Setina
+  gun-lock/cargo brackets, Stalker radar cable/display mount, Havis/Gamber radio/console details,
+  and Whelen/Feniex mount kits.
+- Reviewed the short model-code rows and renamed the ambiguous picker-facing ones with object
+  context, e.g. Setina PB-series guard/wrap rows, Whelen WeCanX control heads and expansion modules,
+  Whelen ION/VXE/L31/L32 lights, Whelen SAK siren-speaker brackets, Stalker DSR, WatchGuard M500,
+  Pro-Gard HDX, SoundOff M4, and Setina Polycarbonate Window Barrier.
+- Extended the exact-title data-quality guard to block the old secondary/model-code labels from
+  returning as selectable product names.
+
+## Session 2026-07-15 — docs + post-radio audit
+
+### FINDING-037: radio cargo-window antenna choices are not guaranteed renderable — OPEN
+- **Location:** `src/dtm_buildsheet/ui/js/part_picker.js` radio workflow,
+  `src/dtm_buildsheet/resources/config/parts_db.json` `radio_antenna_top.location_options`,
+  `src/dtm_buildsheet/resources/config/vehicle_layouts.json`.
+- **Category:** picker/render data contract · **Severity:** HIGH · **Status:** OPEN.
+- The radio workflow offers `LEFT CARGO WINDOW` and `RIGHT CARGO WINDOW`, but the layout file
+  currently has `UPPER CARGO WINDOW` / `LOWER CARGO WINDOW` coordinates and no exact left/right
+  cargo-window keys. The synthesized planner path resolves views by exact location key, so these
+  choices can add a friendly draft row without drawing where the salesperson expects.
+- **Fix direction:** decide whether left/right cargo-window antenna choices should be new layout
+  coordinates, aliases to existing upper/lower cargo-window points, or text-only shop details. If
+  they should render, add/migrate exact coordinates or a resolver alias and test the preview/PPT.
+
+### FINDING-038: plan/render warnings remain hidden in the build editor — OPEN
+- **Location:** existing FINDING-006 area; planner/preview warnings reach service payloads but are
+  not surfaced in the manifest/preview editing flow.
+- **Category:** UX/debuggability · **Severity:** MEDIUM-HIGH · **Status:** OPEN.
+- The current picker makes more synthesized parts and text-location choices, so hidden warnings now
+  directly affect user expectation. A row can be added successfully while failing to render, with
+  the reason only visible in generated-warning data or tests.
+- **Fix direction:** surface `plan.warnings`, planned-part warnings, placement warnings, and
+  instance warnings in the build editor near the preview/manifest, with enough context to identify
+  the part and location.
+
+### FINDING-039: radio speaker is presented as location-only but still depends on hidden product data — OPEN
+- **Location:** `src/dtm_buildsheet/ui/js/part_picker.js` `_pickerLoadRadioWorkflow` /
+  `_pickerAddRadio`, and `parts_db.json` `radio_speaker` product rows.
+- **Category:** picker workflow robustness · **Severity:** MEDIUM · **Status:** OPEN.
+- Owner expectation is that a radio speaker is assumed and the user only chooses where it goes.
+  The implemented workflow still loads a hidden/default `radio_speaker` product/SKU and requires it
+  to satisfy the flow. If that hidden shop-detail row is later removed or filtered unexpectedly,
+  the radio workflow can become impossible to complete with no visible product decision to fix.
+- **Fix direction:** make radio speaker a true synthetic workflow row, or add a guard/test ensuring
+  exactly one stable unbilled default speaker row is always available to the workflow.
+
+### FINDING-040: radio workflow test coverage is mostly data/API, not UX contract — OPEN
+- **Location:** `tools/ui_smoke/flows.py`, `tests/test_parts_db_routes.py`.
+- **Category:** regression coverage · **Severity:** LOW-MEDIUM · **Status:** OPEN.
+- Current tests cover the constrained radio data and a smoke add path, but they do not assert the
+  exact owner-facing UX rules: custom speaker text persists, all-in-one hides the brick row, head
+  never offers tray placement, and the radio flow stays in the main SKU/product pane.
+- **Fix direction:** add one focused UI smoke assertion set or lightweight JS/route-backed test for
+  those rules after the next radio workflow code change.

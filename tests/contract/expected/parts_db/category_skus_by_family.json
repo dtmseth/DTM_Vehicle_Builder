@@ -1,0 +1,990 @@
+{
+  "body": {
+    "products": [
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2015-2019 Ford PIU Front Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1062_00",
+        "search_text": "2015-2019 Ford PIU Front Radar Antenna Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount Front Radar Antenna Mount Equipment Radar PIU 200-1062-00 STALKER 2015-2019 FORD PIU ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2015-2019 FORD PIU ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1062-00",
+            "price": 83.46,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2015-2019 Ford PIU Rear Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "rear_radar_antenna_mount",
+        "primary_part_type_label": "Rear Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1064_00",
+        "search_text": "2015-2019 Ford PIU Rear Radar Antenna Mount stalker Stalker Rear Radar Antenna Mount Equipment Radar rear_radar_antenna_mount Rear Radar Antenna Mount Equipment Radar PIU 200-1064-00 STALKER 2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2015-2019 FORD PIU REAR RADAR ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1064-00",
+            "price": 49.5,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2015-2021 Chevy Tahoe Rear Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "rear_radar_antenna_mount",
+        "primary_part_type_label": "Rear Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1090_00",
+        "search_text": "2015-2021 Chevy Tahoe Rear Radar Antenna Mount stalker Stalker Rear Radar Antenna Mount Equipment Radar rear_radar_antenna_mount Rear Radar Antenna Mount Equipment Radar TAHOE 200-1090-00 STALKER 2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2015-2021 CHEVY TAHOE REAR ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1090-00",
+            "price": 132.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_cable"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2015-PRESENT TAHOE VSS CABLE KIT",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_cable",
+        "primary_part_type_label": "Radar Cable",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0622_01",
+        "search_text": "2015-PRESENT TAHOE VSS CABLE KIT stalker Stalker Radar Cable Equipment Radar radar_cable Radar Cable Equipment Radar TAHOE 200-0622-01 STALKER 2015-PRESENT TAHOE VSS CABLE KIT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2015-PRESENT TAHOE VSS CABLE KIT",
+            "lens_type": "",
+            "part_number": "200-0622-01",
+            "price": 157.5,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2019+ Dodge Durango Rear Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "rear_radar_antenna_mount",
+        "primary_part_type_label": "Rear Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1321_00",
+        "search_text": "2019+ Dodge Durango Rear Radar Antenna Mount stalker Stalker Rear Radar Antenna Mount Equipment Radar rear_radar_antenna_mount Rear Radar Antenna Mount Equipment Radar DURANGO 200-1321-00 STALKER 2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2019-PRESENT DODGE DURANGO REAR ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1321-00",
+            "price": 160.8,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2020+ Ford F-150 Rear Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "rear_radar_antenna_mount",
+        "primary_part_type_label": "Rear Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1342_00",
+        "search_text": "2020+ Ford F-150 Rear Radar Antenna Mount stalker Stalker Rear Radar Antenna Mount Equipment Radar rear_radar_antenna_mount Rear Radar Antenna Mount Equipment Radar F-150 200-1342-00 STALKER 2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2020-PRESENT FORD F-150 REAR ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1342-00",
+            "price": 111.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "2020+ Ford PIU Rear Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "rear_radar_antenna_mount",
+        "primary_part_type_label": "Rear Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1378_00",
+        "search_text": "2020+ Ford PIU Rear Radar Antenna Mount stalker Stalker Rear Radar Antenna Mount Equipment Radar rear_radar_antenna_mount Rear Radar Antenna Mount Equipment Radar PIU 200-1378-00 STALKER 2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2020-PRESENT FORD INTERCEPTOR SUV REAR ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1378-00",
+            "price": 157.2,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_cable"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Antenna Cable",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_cable",
+        "primary_part_type_label": "Radar Cable",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_antenna_cable",
+        "search_text": "Antenna Cable stalker Stalker Radar Cable Equipment Radar radar_cable Radar Cable Equipment Radar any any any any any any 155-2591-02 155-2591-04 155-2591-08 155-2591-16 155-2591-20 155-2591-25 STALKER 2 FT. ANTENNA CABLE STALKER 4 FT ANTENNA CABLE STALKER 8 FT ANTENNA CABLE STALKER 16 FT ANTENNA CABLE STALKER 20 FT ANTENNA CABLE STALKER 25 FT ANTENNA CABLE",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-02",
+            "price": 99.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER 4 FT ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-04",
+            "price": 124.8,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER 8 FT ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-08",
+            "price": 124.8,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER 16 FT ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-16",
+            "price": 168.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER 20 FT ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-20",
+            "price": 188.4,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER 25 FT ANTENNA CABLE",
+            "lens_type": "",
+            "part_number": "155-2591-25",
+            "price": 188.4,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "COUNTING UNIT MOUNT - TALL",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0243_00",
+        "search_text": "COUNTING UNIT MOUNT - TALL stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar any 200-0243-00 STALKER COUNTING UNIT MOUNT - TALL",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER COUNTING UNIT MOUNT - TALL",
+            "lens_type": "",
+            "part_number": "200-0243-00",
+            "price": 63.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_display_unit"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "DSR 2 ANETNNA RADAR",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_display_unit",
+        "primary_part_type_label": "Radar Display Unit",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_806_0036_00",
+        "search_text": "DSR 2 ANETNNA RADAR stalker Stalker Radar Display Unit Equipment Radar radar_display_unit Radar Display Unit Equipment Radar any 806-0036-00 STALKER DSR 2 ANETNNA RADAR",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER DSR 2 ANETNNA RADAR",
+            "lens_type": "",
+            "part_number": "806-0036-00",
+            "price": 3250.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_display_unit"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_display_unit",
+        "primary_part_type_label": "Radar Display Unit",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_806_0022_00",
+        "search_text": "DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY stalker Stalker Radar Display Unit Equipment Radar radar_display_unit Radar Display Unit Equipment Radar any 806-0022-00 STALKER DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER DSR 2 ANTENNA RADAR UNIT INCLUDES COUNTING UNIT, DISPLAY, ANTENNAS, CABLING, BRACKETS, VSS CABLE, POWER CABLE, TUNING FORKS, 36 MONTH WARRANTY",
+            "lens_type": "",
+            "part_number": "806-0022-00",
+            "price": 2995.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_display_unit"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "DSR 2X",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_display_unit",
+        "primary_part_type_label": "Radar Display Unit",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_dsr_2x",
+        "search_text": "DSR 2X stalker Stalker Radar Display Unit Equipment Radar radar_display_unit Radar Display Unit Equipment Radar DSR 2X",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "DSR 2X",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_display_unit"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "DSR Radar Display Unit",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_display_unit",
+        "primary_part_type_label": "Radar Display Unit",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_dsr",
+        "search_text": "DSR Radar Display Unit stalker Stalker Radar Display Unit Equipment Radar radar_display_unit Radar Display Unit Equipment Radar DSR",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "DSR",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Dual-Pivot Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0986_00",
+        "search_text": "Dual-Pivot Radar Antenna Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar any 200-0986-00 STALKER DUAL PIVOT ARM ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER DUAL PIVOT ARM ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-0986-00",
+            "price": 84.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Dual-Swivel Radar Antenna Bracket",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_dual_swivel_bracket",
+        "search_text": "Dual-Swivel Radar Antenna Bracket stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar DUAL SWIVEL BRACKET",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "DUAL SWIVEL BRACKET",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "High-A Radar Antenna Bracket",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_high_a_bracket",
+        "search_text": "High-A Radar Antenna Bracket stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar HIGH A BRACKET",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "HIGH A BRACKET",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "KA-Band Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0244_00",
+        "search_text": "KA-Band Radar Antenna Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar any 200-0244-00 STALKER KA-BAND ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER KA-BAND ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-0244-00",
+            "price": 63.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Low-A Radar Antenna Bracket",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_low_a_bracket",
+        "search_text": "Low-A Radar Antenna Bracket stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar LOW A BRACKET",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "LOW A BRACKET",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "qb_unassigned",
+        "manufacturer_label": "Unassigned (QB Import)",
+        "model": "MPH Radar Antenna Window Bracket Ball-and-Arm Assembly",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "qb_unassigned_951688",
+        "search_text": "MPH Radar Antenna Window Bracket Ball-and-Arm Assembly qb_unassigned Unassigned (QB Import) Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar any 951688 MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "MPH INDUSTRIES WINDOW BRACKET ANTENNA BALL AND ARM ASSEMBLY",
+            "lens_type": "",
+            "part_number": "951688",
+            "price": 0.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_cable"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Radar Remote Display Cable",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_cable",
+        "primary_part_type_label": "Radar Cable",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_remote_display_cable",
+        "search_text": "Radar Remote Display Cable stalker Stalker Radar Cable Equipment Radar radar_cable Radar Cable Equipment Radar any any 155-2211-00 155-2211-25 STALKER REMOTE DISPLAY CABLE 10FT STALKER REMOTE DISPLAY CABLE 25 FT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER REMOTE DISPLAY CABLE 10FT",
+            "lens_type": "",
+            "part_number": "155-2211-00",
+            "price": 79.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "STALKER REMOTE DISPLAY CABLE 25 FT",
+            "lens_type": "",
+            "part_number": "155-2211-25",
+            "price": 134.4,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "radar_cable"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Radar VSS Installation Kit",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "radar_cable",
+        "primary_part_type_label": "Radar Cable",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0622_00",
+        "search_text": "Radar VSS Installation Kit stalker Stalker Radar Cable Equipment Radar radar_cable Radar Cable Equipment Radar any 200-0622-00 STALKER VSS INSTALLATION KIT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER VSS INSTALLATION KIT",
+            "lens_type": "",
+            "part_number": "200-0622-00",
+            "price": 168.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Tahoe Front Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1088_00",
+        "search_text": "Tahoe Front Radar Antenna Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount Front Radar Antenna Mount Equipment Radar TAHOE 200-1088-00 STALKER TAHOE ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER TAHOE ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-1088-00",
+            "price": 62.74,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Tahoe Radar Display Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_1089_00",
+        "search_text": "Tahoe Radar Display Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar TAHOE 200-1089-00 STALKER TAHOE DISPLAY MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER TAHOE DISPLAY MOUNT",
+            "lens_type": "",
+            "part_number": "200-1089-00",
+            "price": 50.74,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Tall Radar Antenna Mount",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_200_0245_00",
+        "search_text": "Tall Radar Antenna Mount stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar any 200-0245-00 STALKER TALL ANTENNA MOUNT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "STALKER TALL ANTENNA MOUNT",
+            "lens_type": "",
+            "part_number": "200-0245-00",
+            "price": 63.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "front_radar_antenna_mount",
+          "rear_radar_antenna_mount"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "stalker",
+        "manufacturer_label": "Stalker",
+        "model": "Vehicle-Specific Radar Antenna Bracket",
+        "primary_category_id": "",
+        "primary_family_id": "radar",
+        "primary_family_label": "Radar",
+        "primary_part_type_id": "front_radar_antenna_mount",
+        "primary_part_type_label": "Front Radar Antenna Mount",
+        "primary_type_id": "equipment",
+        "primary_type_label": "Equipment",
+        "product_id": "stalker_vehicle_specific_bracket",
+        "search_text": "Vehicle-Specific Radar Antenna Bracket stalker Stalker Front Radar Antenna Mount Equipment Radar front_radar_antenna_mount rear_radar_antenna_mount Front Radar Antenna Mount Rear Radar Antenna Mount Equipment Equipment Radar Radar VEHICLE SPECIFIC BRACKET",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "",
+            "lens_type": "",
+            "part_number": "VEHICLE SPECIFIC BRACKET",
+            "price": null,
+            "qb": false,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": []
+          }
+        ]
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

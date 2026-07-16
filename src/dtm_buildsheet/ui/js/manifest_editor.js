@@ -53,6 +53,39 @@ async function _meBuildGroupMap() {
   _meSectionMeta = new Map();
   _meLegacyLabelIndex = new Map();
 
+  try {
+    const res = await api("/api/parts-db/manifest-groups");
+    if (res?.groups?.length && res?.part_type_map) {
+      for (const group of res.groups) {
+        for (const subgroup of (group.subgroups || [])) {
+          _meSectionMeta.set(subgroup.section_key, {
+            label: subgroup.label,
+            type_id: group.group_id,
+            type_label: group.label,
+            order: (group.order || 999) * 1000 + (subgroup.order || 999),
+            kind: "manifest_subgroup",
+            ref_id: subgroup.subgroup_id,
+          });
+        }
+      }
+      for (const [ptid, info] of Object.entries(res.part_type_map || {})) {
+        _meGroupMap.set(ptid, {
+          type_id: info.group_id,
+          type_label: info.group_label,
+          section_key: info.section_key,
+          section_label: info.section_label,
+          order: (info.group_order || 999) * 1000 + (info.section_order || 999),
+        });
+      }
+      for (const [label, key] of Object.entries(res.legacy_label_map || {})) {
+        if (label && key) _meLegacyLabelIndex.set(label, key);
+      }
+      return;
+    }
+  } catch (e) {
+    console.error("Manifest: manifest-groups failed, falling back to browse-tree grouping:", e);
+  }
+
   let categories = [];
   try {
     const res = await api("/api/parts-db/browse-tree");
@@ -126,10 +159,29 @@ function _meSectionForPart(part) {
   return _meSectionKeyForName(part?.name);
 }
 
+function _meSectionForPartWithParent(part, byLineId) {
+  const parentId = part?.parent_line_id || "";
+  if (parentId && byLineId?.has(parentId)) {
+    return _meSectionForPart(byLineId.get(parentId));
+  }
+  return _meSectionForPart(part);
+}
+
+function _meTopLevelParts(parts) {
+  return (parts || []).filter(p => {
+    const pid = p.parent_line_id || "";
+    return !pid || !(parts || []).some(x => x.line_id === pid);
+  });
+}
+
 function _meStatusRowStyle(status) {
   if (status === "New")    return ' style="background:#eaf4fd"';
   if (status === "Used" || status === "Reused") return ' style="background:#fff3e0"';
   return "";
+}
+
+function _meDisplayName(part) {
+  return part?.picker_config?.system_label || part?.name || "";
 }
 
 function _meMakeRows(parts) {
@@ -140,10 +192,7 @@ function _meMakeRows(parts) {
     const pid = p.parent_line_id || "";
     if (pid) (childrenByParent[pid] = childrenByParent[pid] || []).push(p);
   }
-  const topLevel = parts.filter(p => {
-    const pid = p.parent_line_id || "";
-    return !pid || !parts.some(x => x.line_id === pid);   // orphan children fall back to top-level
-  });
+  const topLevel = _meTopLevelParts(parts);
 
   return topLevel.map(p => {
     const mfgModel = [p.manufacturer, p.part_number].filter(Boolean).join(" / ") || "—";
@@ -152,7 +201,8 @@ function _meMakeRows(parts) {
       : "—";
     const comps = p.components || [];
     const kids = childrenByParent[p.line_id] || [];
-    // Expandable if it has concrete SKUs (display-only) or accessory children.
+    // Guided systems expand into their concrete shop components, not a second
+    // transcript of every question already captured in picker_config.
     const childCount = comps.length + kids.length;
     const expandable = childCount > 0;
     const caret = expandable
@@ -160,7 +210,7 @@ function _meMakeRows(parts) {
       : `<span class="me-expand-spacer"></span>`;
     const rowAttrs = expandable ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
     let html = `<tr${rowAttrs}${_meStatusRowStyle(p.new_or_used)}>
-      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(p.name)}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}</td>
+      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(_meDisplayName(p))}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}</td>
       <td style="color:var(--muted)">${esc(p.location || "—")}</td>
       <td>${esc(p.raw_color || "—")}</td>
       <td style="text-align:center">${p.quantity || "—"}</td>
@@ -175,12 +225,14 @@ function _meMakeRows(parts) {
     // Display-only SKU breakdown (the build sheet sees just the parent).
     for (const cm of comps) {
       const price = (cm.price != null) ? ` · $${cm.price}` : "";
+      const label = cm.label || cm.name || cm.part_number || "Component";
+      const detail = cm.detail || cm.value || "";
       html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
-        <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(cm.part_number || "")}</td>
-        <td></td>
+        <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(label)}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(cm.location || "—")}</td>
         <td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>
         <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
-        <td colspan="4" style="font-size:11px;color:var(--muted)">${price}</td>
+        <td colspan="4" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${price}</td>
       </tr>`;
     }
     // Accessory child lines — real parts, individually editable/removable.
@@ -217,9 +269,10 @@ function _meRender() {
   if (!container) return;
 
   // Group parts by parts_db category + family/part-type section
+  const byLineId = new Map(parts.map(p => [p.line_id, p]));
   const grouped = new Map();
   for (const p of parts) {
-    const sid = _meSectionForPart(p);
+    const sid = _meSectionForPartWithParent(p, byLineId);
     if (!grouped.has(sid)) grouped.set(sid, []);
     grouped.get(sid).push(p);
   }
@@ -242,23 +295,27 @@ function _meRender() {
       html += `<div class="me-cat-group-head">${esc(meta.type_label)}</div>`;
       lastTypeId = meta.type_id;
     }
-    html += `<div class="me-cat-section">
-      <div class="me-cat-header">
+    const topLevel = _meTopLevelParts(secParts);
+    const sectionHeader = `<div class="me-cat-header">
         <span class="me-cat-label">${esc(meta.label)}</span>
-        <span class="me-cat-count">(${secParts.length})</span>
+        <span class="me-cat-count">(${topLevel.length})</span>
         <button class="btn btn-secondary btn-sm me-cat-add-btn" data-section="${esc(key)}">+ Add</button>
-      </div>
+      </div>`;
+    html += `<div class="me-cat-section">
+      ${sectionHeader}
       <table class="parts-tbl">${_meThead}<tbody>${_meMakeRows(secParts)}</tbody></table>
     </div>`;
   }
   const otherParts = grouped.get("_other");
   if (otherParts?.length) {
-    html += `<div class="me-cat-section">
-      <div class="me-cat-header">
+    const otherTopLevel = _meTopLevelParts(otherParts);
+    const otherHeader = `<div class="me-cat-header">
         <span class="me-cat-label">Other</span>
-        <span class="me-cat-count">(${otherParts.length})</span>
+        <span class="me-cat-count">(${otherTopLevel.length})</span>
         <button class="btn btn-secondary btn-sm me-cat-add-btn" data-section="_other">+ Add</button>
-      </div>
+      </div>`;
+    html += `<div class="me-cat-section">
+      ${otherHeader}
       <table class="parts-tbl">${_meThead}<tbody>${_meMakeRows(otherParts)}</tbody></table>
     </div>`;
   }

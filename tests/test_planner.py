@@ -137,6 +137,26 @@ def test_to_dict_planned_parts_are_dicts(stearns_input, config):
         assert isinstance(item, dict)
 
 
+def test_to_dict_omits_empty_components_but_keeps_selected_components(config):
+    plain = PartInput(name="Light Bar", part_number="EB2DEDE", location="ROOF LIGHT BAR")
+    with_components = PartInput(
+        name="Push Bumper",
+        manufacturer="Setina",
+        part_number="PB450L",
+        location="Push Bumper",
+        components=[{"part_number": "BK1001ITU20", "quantity": 1}],
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "COMPONENTS"},
+        parts=[plain, with_components],
+        notes={},
+    )
+
+    rows = {p["raw"]["part_number"]: p["raw"] for p in build_plan(project, config).to_dict()["planned_parts"]}
+    assert "components" not in rows["EB2DEDE"]
+    assert rows["PB450L"]["components"] == [{"part_number": "BK1001ITU20", "quantity": 1}]
+
+
 # ── second sample workbook also plans ─────────────────────────────────────────
 
 def test_test_build_plans_successfully(test_build_input, config):
@@ -189,3 +209,139 @@ def test_roof_bar_resolves_bar_asset(config):
     assert pp.render_kind == "bar" and pp.on_diagram is True
     assets = [i.asset_path for pl in (pp.placements or []) for i in (getattr(pl, "instances", []) or [])]
     assert assets and all(a for a in assets), "bar should resolve an asset in every placement"
+
+
+def _setina_lighted_bumper_plan(config, sku):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "PB450L"},
+        parts=[PartInput(name="Push Bumper", manufacturer="Setina", part_number=sku,
+                         location="Push Bumper", quantity=1, line_id="pb1")],
+        notes={})
+    return build_plan(proj, config)
+
+
+def test_picker_push_bumper_uses_parts_db_fixture_size_metadata(config):
+    plan = _setina_lighted_bumper_plan(config, "BK1001ITU20")
+    bumper = next(p for p in plan.planned_parts if p.part_name == "Push Bumper")
+    placements = {p.view: p for p in bumper.placements}
+
+    assert bumper.part_id == "push_bumper"
+    assert bumper.render_kind == "equipment"
+    assert bumper.on_diagram is True
+    assert placements["front"].size_override == {"w": 2.75, "h": 2.52}
+    assert placements["side"].size_override == {"w": 0.43, "h": 1.56}
+    assert placements["top"].size_override == {"w": 0.342, "h": 1.434}
+    assert placements["front"].instances[0].asset_path == "equipment/push_bumper_front.png"
+
+
+def test_setina_pb450l2_injects_render_only_top_tube_lights(config):
+    plan = _setina_lighted_bumper_plan(config, "BK2017ITU20")
+    assert [p.part_name for p in plan.planned_parts].count("Push Bumper") == 1
+    included = [p for p in plan.planned_parts if p.raw.notes.startswith("Included with Setina")]
+    assert len(included) == 1
+    placement = included[0].placements[0]
+    assert placement.location_key == "TOP TUBE"
+    assert placement.slot_indices == [0, 3]
+    assert len(placement.instances) == 2
+    assert {i.color_token for i in placement.instances} == {"red-blue-white"}
+    assert placement.line_id == "pb1:included-top-tube"
+
+
+def test_setina_pb450l4_injects_four_top_tube_lights(config):
+    plan = _setina_lighted_bumper_plan(config, "BK2019ITU20")
+    included = [p for p in plan.planned_parts if p.raw.notes.startswith("Included with Setina")]
+    assert len(included) == 1
+    placement = included[0].placements[0]
+    assert placement.location_key == "TOP TUBE"
+    assert placement.slot_indices is None
+    assert len(placement.instances) == 4
+
+
+def test_setina_pb450l6_adds_side_push_bumper_lights(config):
+    plan = _setina_lighted_bumper_plan(config, "BK1001ITU20")
+    included = [p for p in plan.planned_parts if p.raw.notes.startswith("Included with Setina")]
+    assert len(included) == 2
+    placements = {p.placements[0].location_key: p.placements[0] for p in included}
+    assert len(placements["TOP TUBE"].instances) == 4
+    assert len(placements["SIDE OF PUSH BUMPER"].instances) == 2
+
+
+def _siren_plan(config, qty):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "SIREN"},
+        parts=[PartInput(name="Siren Speaker", part_number="SA315P", location="TOP OF PUSH BUMPER",
+                         quantity=qty, line_id="s1")],
+        notes={})
+    return build_plan(proj, config)
+
+
+def test_siren_speaker_qty_one_uses_parts_db_render_metadata(config):
+    plan = _siren_plan(config, 1)
+    pp = next(p for p in plan.planned_parts if p.raw.part_number == "SA315P")
+    assert pp.part_id == "siren_speaker"
+    assert pp.render_kind == "equipment"
+    assert pp.on_diagram is True
+    placement = pp.placements[0]
+    assert placement.pattern == "single"
+    assert placement.anchor["x"] == 0.5
+    assert placement.size_override == {"w": 0.569, "h": 0.65}
+    assert len(placement.instances) == 1
+    assert placement.instances[0].asset_path == "equipment/siren_speaker_wo_bracket_front.png"
+
+
+def test_siren_speaker_qty_two_renders_two_slots(config):
+    plan = _siren_plan(config, 2)
+    pp = next(p for p in plan.planned_parts if p.raw.part_number == "SA315P")
+    placement = pp.placements[0]
+    assert placement.pattern == "mirror"
+    assert len(placement.instances) == 2
+
+
+def test_numbered_siren_speaker_uses_parts_db_render_metadata(config):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "SIREN-NUMBERED"},
+        parts=[PartInput(name="Siren Speaker 1", part_number="SA315P",
+                         location="TOP OF PUSH BUMPER", quantity=1, line_id="s1")],
+        notes={})
+    pp = next(p for p in build_plan(proj, config).planned_parts if p.raw.part_number == "SA315P")
+    placement = pp.placements[0]
+    assert pp.part_id == "siren_speaker"
+    assert placement.size_override == {"w": 0.569, "h": 0.65}
+    assert placement.instances[0].asset_path == "equipment/siren_speaker_wo_bracket_front.png"
+
+
+def test_picker_opticom_uses_preemption_parts_db_render_metadata(config):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "OPTICOM"},
+        parts=[PartInput(name="Opticom", part_number="PREEMPTION LIGHT HEAD",
+                         location="IN LIGHT BAR", quantity=1, line_id="o1")],
+        notes={})
+    pp = next(p for p in build_plan(proj, config).planned_parts if p.raw.part_number == "PREEMPTION LIGHT HEAD")
+    assert pp.part_id == "preemption"
+    assert pp.render_kind == "equipment"
+    assert pp.on_diagram is True
+    placement = pp.placements[0]
+    assert placement.location_key == "IN LIGHT BAR"
+    assert placement.size_override == {"w": 0.41, "h": 0.14}
+    assert placement.instances[0].asset_path == "equipment/opticom_front.png"
+
+
+def test_separate_numbered_siren_speakers_keep_distinct_slots(config):
+    from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
+    proj = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "SIREN-NUMBERED-PAIR"},
+        parts=[
+            PartInput(name="Siren Speaker 1", part_number="SA315P",
+                      location="TOP OF PUSH BUMPER", quantity=1, line_id="s1"),
+            PartInput(name="Siren Speaker 2", part_number="SA315P",
+                      location="TOP OF PUSH BUMPER", quantity=1, line_id="s2"),
+        ],
+        notes={})
+    speakers = [p for p in build_plan(proj, config).planned_parts if p.raw.part_number == "SA315P"]
+    assert [p.placements[0].slot_indices for p in speakers] == [[0], [1]]
+    assert all(p.placements[0].pattern == "mirror" for p in speakers)
+    assert all(p.placements[0].size_override == {"w": 0.569, "h": 0.65} for p in speakers)

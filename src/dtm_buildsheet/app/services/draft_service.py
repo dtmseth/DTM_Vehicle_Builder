@@ -284,20 +284,44 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                 _proj_rec = load_project(_proj_id_param, paths)
                 _agency = (_proj_rec.customer.agency or "").strip() or _agency
                 _year = (_proj_rec.customer.build_year or "").strip() or _year
+                if _year:
+                    project.info["BuildYear"] = _year
 
-                # Freshen UNIT ID, YEAR, and BuildType from the current project
-                # data so values set after draft creation are reflected in output.
+                # Freshen project-owned build metadata from the current project
+                # so values set after draft creation are reflected in output.
+                _matched_project_unit = False
                 for _bu in _proj_rec.build_units:
                     for _idx, _ind in enumerate(_bu.individuals):
                         if _ind.draft_id == draft_id:
+                            _matched_project_unit = True
                             _nv = dict(project.info.get("NewVehicle") or {})
                             _nv["UNIT ID"] = _ind.unit_number or f"Unit-{_idx + 1}"
-                            _ind_year = _ind.year or _proj_rec.customer.build_year or ""
+                            _year = (_proj_rec.customer.build_year or "").strip() or _year
+                            project.info["BuildYear"] = _year
+                            _ind_year = _year or _ind.year or ""
                             if _ind_year:
                                 _nv["YEAR"] = _ind_year
+                                vehicle_model = _ind.make or _bu.vehicle_model or ""
+                                if _ind.model:
+                                    vehicle_model = f"{vehicle_model} {_ind.model}".strip()
+                                if vehicle_model:
+                                    _nv["MODEL"] = f"{_ind_year} {vehicle_model}".strip()
                             project.info["NewVehicle"] = _nv
                             project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
                             break
+                    if _matched_project_unit:
+                        break
+                    if not _bu.individuals and _bu.draft_id == draft_id:
+                        _matched_project_unit = True
+                        _nv = dict(project.info.get("NewVehicle") or {})
+                        if _year:
+                            _nv["YEAR"] = _year
+                            if _bu.vehicle_model:
+                                _nv["MODEL"] = f"{_year} {_bu.vehicle_model}".strip()
+                        _nv["UNIT ID"] = _nv.get("UNIT ID") or "Group Build"
+                        project.info["NewVehicle"] = _nv
+                        project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
+                        break
             except Exception:
                 _log.exception("Could not resolve project metadata for draft %s", draft_id)
 

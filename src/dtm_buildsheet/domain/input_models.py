@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -22,6 +22,7 @@ class PartInput:
     passenger_color: str = ""
     center_color: str = ""
     line_id: str = ""
+    components: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass

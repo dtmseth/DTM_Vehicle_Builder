@@ -470,6 +470,7 @@ def _hyd_part_type(pid: str, spec: dict) -> PartType:
         allowed_placements=list(spec.get("allowed_placements") or []),
         workbook_label_pattern=spec.get("workbook_label_pattern", "{label}"),
         sequence_scope=spec.get("sequence_scope", "global"),
+        render=dict(spec.get("render") or {}),
     )
 
 

@@ -61,10 +61,12 @@ transfer" symptom — the code translated fine; the *data* kept getting reverted
 Replaces the flat "Add Part" modal with a tree-guided picker surfacing QB-linked part numbers,
 prices, vehicle compatibility, and color configuration. Two entry paths, one destination:
 **Guided Browse** ("warning light for the front") and **Reverse Search** ("ION" / "Setina PB").
-Both converge on SKU confirmation → resolve into `PartInput` records via a translation layer.
+Both converge on SKU confirmation or a guided-system workflow → resolve into `PartInput` records
+via the translation layer.
 
-**Status: ~80% built and working for Whelen lights.** Chunks 1–7 done; Chunk 8 (search) and
-Chunk 9 (polish + remove flat modal) remain, plus non-light / no-color product coverage.
+**Status: actively usable and under owner rebuild testing.** The original Chunks 1-8 are built.
+Current work is polish, guided-system coverage, data quality, and retiring old fallback surfaces
+once the owner rebuilds the real projects.
 
 | Chunk | Goal | Status |
 |-------|------|--------|
@@ -76,15 +78,20 @@ Chunk 9 (polish + remove flat modal) remain, plus non-light / no-color product c
 | 5 — Products grid | Product cards w/ price, QB badge, SKU count | ✅ Done (the "Chunk 5 JS bug" was a server-side `AttributeError`, fixed) |
 | 6 — Color configurator | Mode-based color selection (Uniform / Standard Split / Custom × Single/Duo/Trio) | ✅ Done |
 | 7 — SKU table + translation | `planning/sku_resolver.py` (`match_heads`/`build_rows`); `/match-skus`, `/resolve-selection`; SKU-confirm UI | ✅ Done |
-| 8 — Search path | Reverse lookup from search bar | 🔴 Not started |
-| 9 — Polish + remove flat modal | Images, vehicle diagrams, remove the old modal | 🔴 Not started |
+| 8 — Search path | Reverse lookup from search bar | ✅ Done; defaults to all categories/brands/vehicle tags |
+| 9 — Polish + remove flat modal | Images, vehicle diagrams, remove the old modal | 🟡 In progress |
 
-**Sidebar browse (shipped 2026-07-09, see `docs/audit/PICKER_REDESIGN.md` Step 1):** the sidebar
-is a server-derived `category → family → part_type` accordion — `GET /api/parts-db/browse-tree` —
-every category/family expands inline; every part type is browsable, not just Lights. Picking a
-light family leaf hands off to the unchanged category/color/SKU flow; a non-light leaf narrows
-`category-skus` via an additive `part_type` query param. Filled part types show a green
-manifest-highlight dot (matches on the `part_type` field now carried by picker-added `DraftPart`s).
+**Sidebar browse (shipped 2026-07-09, extended 2026-07-14/15):** the sidebar is a server-derived
+`category → family → part_type` accordion — `GET /api/parts-db/browse-tree` — every category/family
+expands inline, and headers are also selectable filters. Every visible part type is browsable, not
+just Lights. Picking a light family leaf hands off to the category/color/SKU flow; a non-light leaf
+narrows `category-skus` via `type`, `family`, or `part_type` query params. Filled part types show a
+green manifest-highlight dot (matches on the `part_type` field carried by picker-added `DraftPart`s).
+
+**Search behavior (owner-corrected 2026-07-15):** typing in the picker search box searches across
+all categories, brands, vehicle tags, product names, SKU text, and sales descriptions by default.
+The "Current filters only" checkbox scopes search back to the selected category/family/brand/vehicle
+filters when the user wants to stay inside the current browse context.
 
 Key files: `ui/js/part_picker.js` (panel UI), `app/routes/parts_db.py` (endpoints),
 `planning/sku_resolver.py` (translation), `ui/js/manifest_editor.js` (entry + fallback modal).
@@ -257,6 +264,44 @@ picker.
 
 ---
 
+## 4.5 Guided systems and fixtures (current rebuild work)
+
+Some picker entries are systems or fixtures rather than ordinary "choose product, then choose
+location" rows.
+
+- **Fixtures auto-locate.** Part types/products marked as fixtures, such as push bumpers and roof
+  lightbars, skip the manual location prompt and use their fixture render/location metadata.
+- **Render metadata lives in `parts_db`.** Part-type render data can carry `asset_key`,
+  `size_per_view`, `images`, and `quantity_rules`; planner hydration consumes it for picker-built
+  parts such as siren speakers and push bumpers. Do not re-add these rules to legacy per-SKU files.
+- **Setina PB450L lighted push bumpers.** Recognized 2/4/6-light PB450L SKUs inject render-only
+  included Whelen tri-color lights. They are not manifest or quote lines. They share a preview group
+  with the push bumper so moving the bumper moves the included lights.
+- **Westin push bumpers.** Base Westin bumpers can add wire-cover and light-channel accessory rows.
+  Westin does not sell pre-lighted bumpers; the later billed-light choice for a selected channel is
+  still a product/workflow follow-up.
+- **Guided systems.** Radio, radar, and camera families open one question at a time, then write one
+  expandable kit line. Its child rows are the concrete shop components with their selected mounting
+  data; the manifest deliberately does not repeat the full questionnaire. Purchase text is retained
+  in the kit’s saved choices/notes for Sales. Location choices are shop-reference data and always
+  include Custom — they do not create render placements.
+  - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
+    `radio_speaker`, `radio_mic_clip`, and `radio_cable` component rows. Split-head is the default;
+    cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
+    plate of console (or Custom).
+  - **Radar System** records antenna locations separately from its fixed brackets: short A-bracket
+    at the front and tall A-bracket at the rear. The rear seatbelt-slot option appears only for a
+    Tahoe build.
+  - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
+    prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
+    wireless-mic charger. Front and rear cameras use fixed upper-window locations.
+
+**Location/render caveat:** text `location_options` are only friendly choices unless the same key
+exists in `vehicle_layouts.json` or has an alias. See
+`docs/audit/PICKER_POST_RADIO_AUDIT_2026-07-15.md` for the current radio antenna cargo-window risk.
+
+---
+
 ## 5. Pending-QB parts (shipped)
 
 Lets us pre-add a real, orderable part to `parts_db.json` **before it exists in QuickBooks**, and use
@@ -369,9 +414,12 @@ Let a SKU be marked a **kit** that **includes other SKUs**. New per-SKU concept 
 estimate behavior (does the kit bill as one line, or expand to its components?). Scope before building.
 
 ### Picker finish-line work (lower priority)
-- **Chunk 8** (search path) and **Chunk 9** (real images, vehicle diagrams, remove the flat modal).
-- **Non-light / no-color products** still show a placeholder in the SKU step — a plain SKU-list add
-  path is the follow-up.
+- **Chunk 9 polish**: real images where useful, final visual QA, and retiring the flat modal once
+  picker rebuilds prove it is no longer needed.
+- **Guided-system hardening**: finish Westin light-channel billed-light selection, resolve radio
+  render/text location aliasing, and broaden UI smoke coverage for owner-facing workflow rules.
+- **Non-light / no-color products** still need continued data-quality review so sales-facing names
+  explain the object and system context without relying on hidden QB descriptions.
 - **More bar SKUs/configs** beyond the few wired (Legacy 3, Liberty 2, Edge 9X 6) — blocked on Seth
   providing SKUs.
 

@@ -459,7 +459,7 @@ def _job_display_name(project, build_unit, unit) -> str:
     number and quote number; if neither is present we suffix a short id slice
     so two unnamed vehicles on one project don't collide.
     """
-    year = (unit.year or project.customer.build_year or "").strip()
+    year = (project.customer.build_year or unit.year or "").strip()
     model = (unit.model or build_unit.vehicle_model or "").strip()
     head = " ".join(p for p in (year, model) if p) or "Vehicle"
     tail: list[str] = []

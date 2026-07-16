@@ -105,9 +105,17 @@ you're touching. New gotchas get appended to the bottom with a date.
 
 ## Data migrations
 
-21. **`parts_db.json` is populated but not wired into production reads** (Phase 3). The build sheet
-    generator, planner, manifest editor, rule engine, and excel reader still drive off
+21. **`parts_db.json` is no longer just seed data, but it is not the only source of truth yet.**
+    The Part Picker, parts-db routes, manifest grouping, some planner hydration, and several
+    render image/size rules now consume it directly. The generator/template stack still also reads
     `workbook_rules.json` / `parts_library.json` / `vehicle_layouts.json` / `part_catalog.json`.
+    Before moving a rule or deleting a legacy field, trace the specific consumer path.
 22. **`agencies.json` / `sales_reps.json` flat files** are legacy migration sources only.
     Current storage is per-record (`workspace/agencies/{id}.json`, `workspace/sales_reps/{id}.json`)
     with SharePoint direct-mirror.
+23. **Text location options do not create render coordinates.** A part_type with
+    `location_mode:"text"` and `location_options` only gives the picker/dropdown a friendly list.
+    If the selected location is expected to render, the exact location key must exist in
+    `vehicle_layouts.json` or be mapped through a resolver/alias.
+24. **Smoke flow count is currently 10.** Older docs and ledger entries may mention 9/9; the current
+    command is still `.venv/bin/python tools/ui_smoke/run_smoke.py`, but expected success is 10/10.

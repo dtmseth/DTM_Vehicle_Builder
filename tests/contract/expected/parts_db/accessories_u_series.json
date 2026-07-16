@@ -1,0 +1,103 @@
+{
+  "body": {
+    "accessories": [
+      {
+        "category": "bracket_mount",
+        "label": "Bracket / Mount",
+        "options": [
+          {
+            "manufacturer_label": "Whelen",
+            "model": "U-Series Under-Mirror Warning Bracket",
+            "product_id": "whelen_u_mirror_mount",
+            "skus": [
+              {
+                "color": "",
+                "friendly_name": "Silverado 1500/2500 '19-24",
+                "lens_type": "",
+                "part_number": "U18013",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "CHEVY-1500",
+                  "SILVERADO-HD"
+                ]
+              },
+              {
+                "color": "",
+                "friendly_name": "Durango '13-24",
+                "lens_type": "",
+                "part_number": "U18044",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "DURANGO"
+                ]
+              },
+              {
+                "color": "",
+                "friendly_name": "F-150 PPV '22-24 / Lightning '22-23",
+                "lens_type": "",
+                "part_number": "U18047",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "F-150",
+                  "F-150-LIGHTNING"
+                ]
+              },
+              {
+                "color": "",
+                "friendly_name": "PIU '20-25",
+                "lens_type": "",
+                "part_number": "U18050",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "PIU"
+                ]
+              },
+              {
+                "color": "",
+                "friendly_name": "Tahoe '21-24 / Suburban '24",
+                "lens_type": "",
+                "part_number": "U18054",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "TAHOE",
+                  "SUBURBAN"
+                ]
+              },
+              {
+                "color": "",
+                "friendly_name": "Blazer EV PPV '24",
+                "lens_type": "",
+                "part_number": "U18059",
+                "price": 35.0,
+                "qb_pending": false,
+                "secondary_color": "",
+                "tertiary_color": "",
+                "vehicle_tags": [
+                  "BLAZER"
+                ]
+              }
+            ]
+          }
+        ],
+        "required": true
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

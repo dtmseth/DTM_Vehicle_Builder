@@ -513,7 +513,7 @@
         "part_number": "HDX",
         "price_usd": null,
         "product_id": "pro_gard_hdx",
-        "product_model": "HDX",
+        "product_model": "HDX Push Bumper",
         "qb_inactive": false,
         "qb_item_id": "",
         "qb_pending": false,
@@ -565,7 +565,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE"
         ]
       },
       {
@@ -587,7 +587,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE"
         ]
       },
       {
@@ -609,7 +609,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "DURANGO"
         ]
       },
       {
@@ -631,7 +631,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "DURANGO"
         ]
       },
       {
@@ -653,7 +653,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "F-150"
         ]
       },
       {
@@ -675,7 +675,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "CHEVY-1500"
         ]
       },
       {
@@ -719,7 +719,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "F-150"
         ]
       },
       {
@@ -741,7 +741,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU",
+          "DURANGO"
         ]
       },
       {
@@ -763,7 +764,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU",
+          "DURANGO"
         ]
       },
       {
@@ -785,7 +787,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU",
+          "DURANGO"
         ]
       },
       {
@@ -807,7 +810,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU",
+          "DURANGO"
         ]
       },
       {
@@ -829,7 +833,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU",
+          "DURANGO"
         ]
       },
       {
@@ -851,7 +856,8 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "F-150",
+          "CHEVY-1500"
         ]
       },
       {
@@ -873,7 +879,9 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE",
+          "F-150",
+          "CHEVY-1500"
         ]
       },
       {
@@ -895,7 +903,9 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE",
+          "F-150",
+          "CHEVY-1500"
         ]
       },
       {
@@ -917,7 +927,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE"
         ]
       },
       {
@@ -939,7 +949,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "DURANGO"
         ]
       },
       {
@@ -951,7 +961,7 @@
         "part_number": "5344A-4L61",
         "price_usd": 349.08,
         "product_id": "go_rhino_pushbumper",
-        "product_model": "Go Rhino Push Bumper",
+        "product_model": "Police Push Bumper",
         "qb_inactive": false,
         "qb_item_id": "157",
         "qb_pending": false,
@@ -961,7 +971,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "PIU"
         ]
       },
       {
@@ -973,7 +983,7 @@
         "part_number": "5165A-4L",
         "price_usd": 330.75,
         "product_id": "go_rhino_pushbumper",
-        "product_model": "Go Rhino Push Bumper",
+        "product_model": "Police Push Bumper",
         "qb_inactive": false,
         "qb_item_id": "154",
         "qb_pending": false,
@@ -983,7 +993,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE"
         ]
       },
       {
@@ -995,7 +1005,7 @@
         "part_number": "5165T-4L61",
         "price_usd": 373.98,
         "product_id": "go_rhino_pushbumper",
-        "product_model": "Go Rhino Push Bumper",
+        "product_model": "Police Push Bumper",
         "qb_inactive": false,
         "qb_item_id": "155",
         "qb_pending": false,
@@ -1005,7 +1015,7 @@
         "secondary_color": "",
         "tertiary_color": "",
         "vehicle_tags": [
-          "any"
+          "TAHOE"
         ]
       }
     ]
