@@ -25,7 +25,7 @@ let _pickerState = {
   expanded: new Set(),     // product_ids whose SKU list is open
   sel: null,               // { product_id, model, mfr, sku? }  current selection
   loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, name_pattern: "", base_label: "" },
-  partDetails: { paMicLocation: "", paMicLocationCustom: "" },
+  partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" },
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
   accLoadedFor: null,      // product_id accessories were loaded for
@@ -339,6 +339,7 @@ async function _pickerOpenEdit(part) {
   _pickerState.partDetails = {
     paMicLocation: pc.details?.paMicLocation || "",
     paMicLocationCustom: pc.details?.paMicLocationCustom || "",
+    paMicClip: pc.details?.paMicClip || "",
   };
 
   // ── 3. Pre-set location so Save from the Part tab works without touching Location ──
@@ -391,7 +392,7 @@ function _pickerResetState() {
   _pickerState.skuChoices = {};   // "head_N" → chosen part_number (per-head override, Step 3)
   _pickerState.optionsRemoved = false;
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, name_pattern: "", base_label: "" };
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
   _pickerState.accLoadedFor = null;
@@ -1424,8 +1425,9 @@ async function _pickerRenderLocation() {
 function _pickerPartDetailsSatisfied() {
   if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return true;
   const details = _pickerState.partDetails || {};
-  return details.paMicLocation === "drivers_door"
+  const hasLocation = details.paMicLocation === "drivers_door"
     || (details.paMicLocation === "__custom__" && Boolean(String(details.paMicLocationCustom || "").trim()));
+  return hasLocation && ["magnetic_mic", "manufacturer_clip"].includes(details.paMicClip);
 }
 
 function _pickerPaMicLocation() {
@@ -1435,10 +1437,19 @@ function _pickerPaMicLocation() {
   return "";
 }
 
+function _pickerPaMicClip() {
+  const clip = (_pickerState.partDetails || {}).paMicClip;
+  return {
+    magnetic_mic: "Magnetic mic",
+    manufacturer_clip: "Manufacturer clip",
+  }[clip] || "";
+}
+
 function _pickerPartDetailsNote() {
   if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return "";
   const location = _pickerPaMicLocation();
-  return location ? `PA mic: ${location}` : "";
+  const clip = _pickerPaMicClip();
+  return location && clip ? `PA mic: ${location} · ${clip}` : "";
 }
 
 // Components are display-only manifest rows carried by the parent line. This
@@ -1447,7 +1458,8 @@ function _pickerPartDetailsNote() {
 function _pickerPartDetailsComponent() {
   if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return null;
   const location = _pickerPaMicLocation();
-  return location ? { label: "PA Mic", location, detail: "Shop installation detail" } : null;
+  const clip = _pickerPaMicClip();
+  return location && clip ? { label: "PA Mic", location, detail: clip } : null;
 }
 
 function _pickerRenderPartDetails() {
@@ -1463,15 +1475,24 @@ function _pickerRenderPartDetails() {
   const details = _pickerState.partDetails || {};
   const custom = details.paMicLocation === "__custom__";
   panel.hidden = false;
-  panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">Light Control Head detail</div>`
-    + `<h3>Where will the PA microphone go?</h3><p>This is a shop-reference installation detail.</p><div class="picker-location-grid">`
+  panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">PA microphone setup</div>`
+    + `<h3>How will the PA microphone be installed?</h3><p>Choose the microphone location and clip type for the shop.</p>`
+    + `<div class="picker-detail-section"><div class="picker-detail-label">PA microphone location</div><div class="picker-location-grid picker-detail-choice-grid">`
     + `<button type="button" class="picker-location-card${details.paMicLocation === "drivers_door" ? " is-selected" : ""}" data-pa-mic-location="drivers_door" aria-pressed="${details.paMicLocation === "drivers_door" ? "true" : "false"}"><span class="picker-location-card-check">${details.paMicLocation === "drivers_door" ? "✓" : ""}</span><span>Driver's door</span></button>`
     + `<button type="button" class="picker-location-card picker-location-card--custom${custom ? " is-selected" : ""}" data-pa-mic-location="__custom__" aria-pressed="${custom ? "true" : "false"}"><span class="picker-location-card-check">${custom ? "✓" : ""}</span><span>Custom location<small>Enter a specific shop reference</small></span></button></div>`
-    + (custom ? `<label class="picker-location-custom-field"><span>Custom PA-mic location</span><input id="picker-pa-mic-custom" class="picker-location-custom-input" placeholder="Type the PA-mic location" value="${esc(details.paMicLocationCustom || "")}"></label>` : "")
+    + (custom ? `<label class="picker-location-custom-field"><span>Custom PA microphone location</span><input id="picker-pa-mic-custom" class="picker-location-custom-input" placeholder="Enter the PA microphone location" value="${esc(details.paMicLocationCustom || "")}"></label>` : "")
+    + `</div><div class="picker-detail-section"><div class="picker-detail-label">PA microphone clip</div><div class="picker-location-grid picker-detail-choice-grid">`
+    + `<button type="button" class="picker-location-card${details.paMicClip === "magnetic_mic" ? " is-selected" : ""}" data-pa-mic-clip="magnetic_mic" aria-pressed="${details.paMicClip === "magnetic_mic" ? "true" : "false"}"><span class="picker-location-card-check">${details.paMicClip === "magnetic_mic" ? "✓" : ""}</span><span>Magnetic mic</span></button>`
+    + `<button type="button" class="picker-location-card${details.paMicClip === "manufacturer_clip" ? " is-selected" : ""}" data-pa-mic-clip="manufacturer_clip" aria-pressed="${details.paMicClip === "manufacturer_clip" ? "true" : "false"}"><span class="picker-location-card-check">${details.paMicClip === "manufacturer_clip" ? "✓" : ""}</span><span>Manufacturer clip</span></button></div></div>`
     + `</section>`;
   panel.querySelectorAll("[data-pa-mic-location]").forEach(button => button.addEventListener("click", () => {
     _pickerState.partDetails.paMicLocation = button.dataset.paMicLocation;
     if (button.dataset.paMicLocation !== "__custom__") _pickerState.partDetails.paMicLocationCustom = "";
+    _pickerRenderPartDetails();
+    _pickerUpdateFooter();
+  }));
+  panel.querySelectorAll("[data-pa-mic-clip]").forEach(button => button.addEventListener("click", () => {
+    _pickerState.partDetails.paMicClip = button.dataset.paMicClip;
     _pickerRenderPartDetails();
     _pickerUpdateFooter();
   }));
@@ -1526,6 +1547,16 @@ function _pickerDrawLocation() {
     if (dots) dots.hidden = true;
     if (btns) {
       btns.hidden = false;
+      const isControlHead = _pickerResolvedPartTypeId(f) === "control_head";
+      const locationCopy = isControlHead ? {
+        kicker: "Control head setup",
+        question: "Where will the control head be mounted?",
+        help: "Choose the control head location before setting up the PA microphone below.",
+      } : {
+        kicker: "Mounting location",
+        question: "Where will this part be mounted?",
+        help: "Choose a standard location or enter a shop-specific location.",
+      };
       const setTextLocation = (value, entry = null, custom = false) => {
         loc.selected = value;
         loc.textCustom = custom;
@@ -1552,8 +1583,8 @@ function _pickerDrawLocation() {
           return `<button type="button" class="picker-location-card${selected ? " is-selected" : ""}" data-text-location="${esc(l.location)}" aria-pressed="${selected ? "true" : "false"}">`
             + `<span class="picker-location-card-check">${selected ? "✓" : ""}</span><span>${esc(_pickerTitleCase(l.location))}</span></button>`;
         }).join("");
-        btns.innerHTML = `<section class="picker-location-chooser"><div class="picker-location-kicker">Shop-reference location</div>`
-          + `<h3>Where will this part be mounted?</h3><p>Choose the standard location or enter a shop-specific one.</p>`
+        btns.innerHTML = `<section class="picker-location-chooser"><div class="picker-location-kicker">${esc(locationCopy.kicker)}</div>`
+          + `<h3>${esc(locationCopy.question)}</h3><p>${esc(locationCopy.help)}</p>`
           + `<div class="picker-location-grid">${cards}<button type="button" class="picker-location-card picker-location-card--custom${customActive ? " is-selected" : ""}" data-text-location-custom aria-pressed="${customActive ? "true" : "false"}">`
           + `<span class="picker-location-card-check">${customActive ? "✓" : ""}</span><span>Custom location<small>Enter a specific shop reference</small></span></button></div>`
           + (customActive ? `<label class="picker-location-custom-field"><span>Custom shop location</span><input id="picker-loc-custom-text" class="picker-location-custom-input" placeholder="Type the exact mount location" value="${esc(loc.selected || "")}"></label>` : "")
@@ -1579,8 +1610,8 @@ function _pickerDrawLocation() {
         // No preset locations for this part type: keep a generous free-text
         // field, but give it the same deliberate presentation as card choices.
         setTextLocation(loc.selected || "", null, true);
-        btns.innerHTML = `<section class="picker-location-chooser picker-location-chooser--custom"><div class="picker-location-kicker">Shop-reference location</div>`
-          + `<h3>Where will this part be mounted?</h3><p>Enter the exact location the shop should use.</p>`
+        btns.innerHTML = `<section class="picker-location-chooser picker-location-chooser--custom"><div class="picker-location-kicker">${esc(locationCopy.kicker)}</div>`
+          + `<h3>${esc(locationCopy.question)}</h3><p>Enter the shop-specific mounting location.</p>`
           + `<label class="picker-location-custom-field"><span>Custom shop location</span><input id="picker-loc-text" class="picker-location-custom-input" placeholder="Type the mount location" value="${esc(loc.selected || "")}"></label></section>`;
         const txt = $("picker-loc-text");
         if (txt) txt.addEventListener("input", () => {
@@ -2095,7 +2126,7 @@ function _pickerIsLightbar(product) {
 function _pickerResetLocation() {
   const loc = _pickerState.loc;
   loc.selected = null; loc.textCustom = false; loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
 }
 
 function _pickerSelIsFixture() {

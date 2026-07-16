@@ -300,9 +300,9 @@ location" rows.
   - **Light Control System.** Every leaf follows the project’s preferred lighting brand. Its
     non-rendered shop-reference locations use selection cards plus Custom text rather than a native
     dropdown. Light Control Head offers In Center Console or Custom, then records the PA-mic
-    location as Driver's door or Custom. The selected PA-mic location is retained in the control
-    head picker data/notes and shown as a display-only **PA Mic** child row in the manifest; it is
-    not a purchasable or renderable part.
+    location as Driver's door or Custom, along with a Magnetic mic or Manufacturer clip. The
+    selected PA-mic setup is retained in the control head picker data/notes and shown as a
+    display-only **PA Mic** child row in the manifest; it is not a purchasable or renderable part.
   - **Center Console.** It has one fixed physical location (In Center Console), so selecting its
     SKU skips the Details/placement step.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and

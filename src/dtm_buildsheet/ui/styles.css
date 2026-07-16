@@ -527,8 +527,13 @@
     .picker-location-custom-input{width:100%;padding:12px 13px;border:2px solid #cfdbe4;border-radius:9px;background:#fff;color:var(--text);font:13px/1.4 inherit;outline:none}
     .picker-location-custom-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,64,175,.13)}
     #picker-part-details{margin:8px 26px 22px}
-    #picker-part-details .picker-location-chooser{width:100%;padding:18px}
+    /* Match the compact text-location card above rather than letting PA setup
+       stretch across the full Details pane. */
+    #picker-part-details .picker-location-chooser{width:min(514px,100%);margin:0 auto;padding:18px}
     #picker-part-details .picker-location-chooser h3{font-size:18px}
+    .picker-detail-section{margin-top:16px}
+    .picker-detail-label{margin-bottom:7px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+    #picker-part-details .picker-location-card{min-height:56px;padding:11px 12px}
     @media(max-width:560px){.picker-location-grid{grid-template-columns:1fr}.picker-location-chooser{padding:17px}}
     /* footer lighthead preview */
     .picker-foot-heads{display:inline-flex;gap:5px;vertical-align:middle;margin-right:10px}

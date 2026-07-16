@@ -848,6 +848,14 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.wait_for_timeout(_SETTLE_MS)
     assert page.locator("#picker-pane-location").is_visible()
     assert page.evaluate("getComputedStyle(document.getElementById('picker-pane-location')).overflowY") == "auto"
+    assert "Where will the control head be mounted?" in page.locator(".picker-loc-btns").text_content()
+    detail_card_widths = page.evaluate("""() => [
+      document.querySelector('.picker-loc-btns .picker-location-chooser')?.getBoundingClientRect().width || 0,
+      document.querySelector('#picker-part-details .picker-location-chooser')?.getBoundingClientRect().width || 0,
+    ]""")
+    assert all(detail_card_widths) and abs(detail_card_widths[0] - detail_card_widths[1]) < 2, (
+        f"control-head and PA-mic setup cards should share a compact width, got {detail_card_widths!r}"
+    )
     assert page.locator("[data-pa-mic-location='drivers_door']").count() == 1, (
         "Initial family-based control-head add must show the PA-mic detail"
     )
@@ -857,6 +865,9 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.wait_for_selector("#picker-pa-mic-custom")
     page.fill("#picker-pa-mic-custom", "Passenger kick panel")
     assert page.evaluate("_pickerState.partDetails.paMicLocationCustom") == "Passenger kick panel"
+    assert page.locator("#picker-add-btn").is_disabled(), "PA-mic clip must be selected before adding"
+    page.click("[data-pa-mic-clip='magnetic_mic']")
+    assert page.evaluate("_pickerState.partDetails.paMicClip") == "magnetic_mic"
 
     # The PA-mic selection is a display-only manifest child on the Control
     # Head, not a second purchased/rendered part. Set the ordinary mounting
@@ -875,7 +886,7 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     control_head = next(p for p in draft["draft"]["parts"] if p.get("part_type") == "control_head")
     pa_mic = next((c for c in control_head.get("components", []) if c.get("label") == "PA Mic"), None)
     assert pa_mic == {
-        "label": "PA Mic", "location": "Passenger kick panel", "detail": "Shop installation detail",
+        "label": "PA Mic", "location": "Passenger kick panel", "detail": "Magnetic mic",
     }, f"expected PA-mic manifest component, got {control_head.get('components')!r}"
     page.wait_for_selector(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
     page.click(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
