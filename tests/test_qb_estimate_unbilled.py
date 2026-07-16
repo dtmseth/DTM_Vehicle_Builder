@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+from pathlib import Path
 from types import SimpleNamespace
 
 from dtm_buildsheet.app.services import qb_estimate_service, parts_db_service
@@ -38,5 +40,20 @@ def test_unbilled_parts_are_skipped(tmp_path):
         assert all(p["part_number"] != "CAM-1" for p in problems)
         # The billable, QB-linked light still resolves.
         assert any(l["part_number"] == "ION-RW" for l in lines)
+    finally:
+        parts_db_service.reset_for_testing()
+
+
+def test_magnetic_mics_from_the_catalog_are_billable(tmp_path):
+    """Mag Mic choices in guided setup must reach a real QB estimate line."""
+    parts_db_service.reset_for_testing()
+    try:
+        source = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "resources" / "config" / "parts_db.json"
+        shutil.copyfile(source, tmp_path / "parts_db.json")
+        paths = AppPaths(workspace_config_dir=tmp_path)
+        draft = SimpleNamespace(parts=[_part("MMSU-1", "Mag Mic"), _part("MMSU-1B", "Mag Mic with Bracket")])
+        lines, problems = qb_estimate_service.resolve_build_lines(paths, draft)
+        assert not problems
+        assert {line["part_number"] for line in lines} == {"MMSU-1", "MMSU-1B"}
     finally:
         parts_db_service.reset_for_testing()

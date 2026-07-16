@@ -22,6 +22,10 @@ class PartInput:
     passenger_color: str = ""
     center_color: str = ""
     line_id: str = ""
+    # Picker-created parts carry their canonical parts_db type. The planner
+    # uses it when a manifest-friendly line name cannot be inferred from the
+    # old workbook naming convention.
+    part_type: str = ""
     components: list[dict[str, Any]] = field(default_factory=list)
 
 

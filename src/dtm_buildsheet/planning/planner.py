@@ -330,7 +330,15 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
         if spec is None:
             svc = _get_svc()
-            pt, base_name = _find_part_type_by_name(part.name, svc)
+            # A picker line carries its exact parts_db type. Prefer that over
+            # guessing from its display name: nested build parts deliberately
+            # use descriptive manifest names such as "Center Console · Face
+            # Plate 1 · …", which have no legacy workbook equivalent.
+            part_type_id = str(getattr(part, "part_type", "") or "").strip()
+            pt = svc.get_part_type(part_type_id) if part_type_id else None
+            base_name = part.name
+            if pt is None:
+                pt, base_name = _find_part_type_by_name(part.name, svc)
             if pt is not None:
                 spec = _synthesize_spec(pt, part.location)
             else:

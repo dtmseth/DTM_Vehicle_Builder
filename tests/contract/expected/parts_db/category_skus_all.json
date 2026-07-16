@@ -15299,7 +15299,7 @@
       },
       {
         "default_location": "",
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -15315,7 +15315,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "magnetic_mic_mmbp_25",
-        "search_text": "Mag Mic Radio mic mounting detail; not an ordered part. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMBP-25 Mag Mic",
+        "search_text": "Mag Mic Billable magnetic microphone mount. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMBP-25 Mag Mic",
         "skus": [
           {
             "color": "",
@@ -15335,7 +15335,7 @@
       },
       {
         "default_location": "",
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -15351,7 +15351,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "magnetic_mic_mmsu_1",
-        "search_text": "Mag Mic Radio mic mounting detail; not an ordered part. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMSU-1 Mag Mic",
+        "search_text": "Mag Mic Billable magnetic microphone mount. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMSU-1 Mag Mic",
         "skus": [
           {
             "color": "",
@@ -15371,7 +15371,7 @@
       },
       {
         "default_location": "",
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -15387,7 +15387,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "magnetic_mic_mmsu_1b",
-        "search_text": "Mag Mic with Bracket Radio mic mounting detail; not an ordered part. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMSU-1B Mag Mic with Bracket",
+        "search_text": "Mag Mic with Bracket Billable magnetic microphone mount. magnetic_mic Magnetic Mic Radio Mic Clip Equipment Radio Communications radio_mic_clip Radio Mic Clip Equipment Radio Communications any MMSU-1B Mag Mic with Bracket",
         "skus": [
           {
             "color": "",

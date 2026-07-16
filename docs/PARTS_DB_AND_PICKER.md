@@ -291,7 +291,8 @@ location" rows.
   - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
     `radio_speaker`, `radio_mic_clip`, and `radio_cable` component rows. Split-head is the default;
     cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
-    plate of console (or Custom).
+    plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked
+    Mag Mic SKU as a billable child line under the radio kit.
   - **Radar System** records each antenna location and its bracket separately. Short A-bracket is
     the default front choice and tall A-bracket the default rear choice; either can instead use a
     swivel arm. A split system writes separate display and counting-unit component rows, while an
@@ -302,9 +303,14 @@ location" rows.
     dropdown. Light Control Head offers In Center Console or Custom, then records the PA-mic
     location as Driver's door or Custom, along with a Magnetic mic or Manufacturer clip. The
     selected PA-mic setup is retained in the control head picker data/notes and shown as a
-    display-only **PA Mic** child row in the manifest; it is not a purchasable or renderable part.
-  - **Center Console.** It has one fixed physical location (In Center Console), so selecting its
-    SKU skips the Details/placement step.
+    display-only **PA Mic** child row in the manifest. A Magnetic mic additionally creates its
+    real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains shop detail
+    only.
+  - **Center Console.** It has one fixed physical location (In Center Console). After selecting
+    its SKU, **Set up Center Console** opens the Details tab to add real faceplate, armrest, motion
+    attachment, and docking-station SKUs. Faceplates can be dragged into physical order and are
+    saved as numbered child lines in that exact manifest order. Compatible light-control, radio,
+    and K-9 faceplates are suggested when that equipment is already in the console.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
     wireless-mic charger. Front and rear cameras use fixed upper-window locations.

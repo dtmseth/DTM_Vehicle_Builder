@@ -10407,7 +10407,7 @@
         "tag_ids": []
       },
       "magnetic_mic_mmbp_25": {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -10432,12 +10432,11 @@
         ],
         "reviewed": false,
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       "magnetic_mic_mmsu_1": {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -10462,12 +10461,11 @@
         ],
         "reviewed": false,
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       "magnetic_mic_mmsu_1b": {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -10492,8 +10490,7 @@
         ],
         "reviewed": false,
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       "motorola_all_in_one_unit": {

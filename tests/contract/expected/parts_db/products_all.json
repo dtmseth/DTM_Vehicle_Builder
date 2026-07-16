@@ -27793,7 +27793,7 @@
         ]
       },
       {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -27823,12 +27823,11 @@
         ],
         "product_id": "magnetic_mic_mmbp_25",
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -27858,12 +27857,11 @@
         ],
         "product_id": "magnetic_mic_mmsu_1",
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       {
-        "description": "Radio mic mounting detail; not an ordered part.",
+        "description": "Billable magnetic microphone mount.",
         "fits_part_types": [
           "radio_mic_clip"
         ],
@@ -27893,8 +27891,7 @@
         ],
         "product_id": "magnetic_mic_mmsu_1b",
         "tag_ids": [
-          "comms",
-          "unbilled"
+          "comms"
         ]
       },
       {

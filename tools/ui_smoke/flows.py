@@ -122,11 +122,8 @@ def flow_tab_load(page, base_url: str) -> None:
 
 
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
-    """A Center Console has one fixed location and therefore skips Details.
-
-    The picker still needs to resolve a real part name — never the literal
-    ``Part`` — so the planner can identify its part type without warnings.
-    """
+    """A Center Console has one fixed physical location, then opens its
+    dedicated faceplate/order and component setup in Details."""
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
 
@@ -161,14 +158,48 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.wait_for_timeout(200)
         assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
         assert page.locator("#picker-tab-btn-location").is_hidden()
+        assert page.locator("#picker-add-btn").text_content().strip() == "Set up Center Console →"
+        page.click("#picker-add-btn")
+        page.wait_for_selector("[data-console-setup]")
+        assert page.locator("#picker-tab-btn-location").is_visible()
+        page.fill("#picker-console-faceplate-search", "CUP HOLDERS")
+        page.wait_for_selector("[data-console-faceplate-add='havis_cup_holders']")
+        page.click("[data-console-faceplate-add='havis_cup_holders']")
+        page.fill("#picker-console-faceplate-search", "CENCOM")
+        page.wait_for_selector("[data-console-faceplate-add='havis_c_eb40_ccs_1p']")
+        page.click("[data-console-faceplate-add='havis_c_eb40_ccs_1p']")
+        # The edit surface supports both mouse drag order and keyboard-style
+        # move buttons. Exercise the latter deterministically in headless CI.
+        page.click("[data-console-faceplate-move='-1'][data-console-faceplate-index='1']")
+        assert page.evaluate("_pickerState.consoleSetup.choices.faceplates[0].product_id") == "havis_c_eb40_ccs_1p"
+        page.click("[data-console-component-open='armRest']")
+        page.wait_for_selector("[data-console-component-choice='havis_standard_arm_rest']")
+        page.click("[data-console-component-choice='havis_standard_arm_rest']")
+        page.click("[data-console-component-open='motionAttachment']")
+        page.wait_for_selector("[data-console-component-choice='havis_c_md_112']")
+        page.click("[data-console-component-choice='havis_c_md_112']")
+        page.click("[data-console-motion-location='mounted_to_pedestal']")
+        page.click("[data-console-component-open='dockingStation']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_18540']")
+        page.click("[data-console-component-choice='gamber_johnson_18540']")
+        assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
         page.click("#picker-add-btn")
         page.wait_for_timeout(_SETTLE_MS)
 
     add_console_part()
 
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
-    names = [p["name"] for p in draft["draft"]["parts"]]
-    assert names == ["Center Console"], f"expected fixed-label Center Console, got {names}"
+    parts = draft["draft"]["parts"]
+    console = next(p for p in parts if p.get("part_type") == "console")
+    children = [p for p in parts if p.get("parent_line_id") == console["line_id"]]
+    faceplates = [p for p in children if p.get("accessory_category") == "console_faceplate"]
+    assert [p["name"] for p in faceplates] == [
+        "Center Console · Face Plate 1 · 1-PIECE EQUIPMENT MOUNTING BRACKET, 4\" MOUNTING SPACE, FITS WHELEN CENCOM CCSRN, CCSRNTA, MPC03",
+        "Center Console · Face Plate 2 · CUP HOLDERS",
+    ], f"expected numbered faceplates in the configured order, got {faceplates!r}"
+    assert {p.get("part_type") for p in children} >= {"special_face_plate", "arm_rest", "motion_attachment", "docking_station"}
+    assert next(p for p in children if p.get("part_type") == "motion_attachment")["location"] == "MOUNTED TO PEDESTAL"
+    assert console["picker_config"]["console_setup"]["faceplates"][0]["product_id"] == "havis_c_eb40_ccs_1p"
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -176,6 +207,23 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         draft_id,
     )
     assert not plan.get("warnings"), f"expected no plan warnings, got {plan.get('warnings')}"
+
+    # Reopening the console must return to the Details setup with every real
+    # choice intact, rather than treating the SKU like a fresh generic part.
+    console_parent = page.locator("tr.me-parent-row").filter(has_text="Center Console")
+    console_parent.locator(".me-edit-btn").click()
+    page.wait_for_selector("[data-console-setup]")
+    page.wait_for_function("() => _pickerState?.consoleSetup?.active && !_pickerState.consoleSetup.loading")
+    restored = page.evaluate("() => _pickerState.consoleSetup.choices")
+    assert [item["product_id"] for item in restored["faceplates"]] == [
+        "havis_c_eb40_ccs_1p", "havis_cup_holders",
+    ], f"console edit must restore its ordered faceplates, got {restored!r}"
+    assert restored["armRest"]["product_id"] == "havis_standard_arm_rest"
+    assert restored["motionAttachment"]["product_id"] == "havis_c_md_112"
+    assert restored["motionLocation"] == "mounted_to_pedestal"
+    assert restored["dockingStation"]["product_id"] == "gamber_johnson_18540"
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
 
 
 def flow_edit_preserves_fields(page, base_url: str) -> None:
@@ -383,7 +431,7 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     _guided_next(page)
     _guided_pick(page, "speakerLoc", "back_center_console")
     _guided_next(page)
-    _guided_pick(page, "micMount", "manufacturer_clip")
+    _guided_pick(page, "micMount", "magnetic_with_bracket")
     _guided_next(page)
     _guided_pick(page, "micLoc", "__custom__")
     page.locator("input[data-system-custom='micLocCustom']").fill("Console sidecar")
@@ -410,6 +458,10 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
         f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
     mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
     assert mic.get("location") == "Console sidecar", "custom shop location should populate the component row"
+    magnetic_mic = next((p for p in parts if p.get("parent_line_id") == radio["line_id"]
+                         and p.get("accessory_category") == "magnetic_mic"), None)
+    assert magnetic_mic and magnetic_mic.get("part_number") == "MMSU-1B", \
+        f"a bracketed radio Mag Mic must be a real billable child line, got {magnetic_mic!r}"
     parent = page.locator("tr.me-parent-row").filter(has_text="Radio Communications")
     parent.locator(".me-edit-btn").click()
     page.wait_for_selector("#picker-panel.open")
@@ -869,9 +921,9 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     page.click("[data-pa-mic-clip='magnetic_mic']")
     assert page.evaluate("_pickerState.partDetails.paMicClip") == "magnetic_mic"
 
-    # The PA-mic selection is a display-only manifest child on the Control
-    # Head, not a second purchased/rendered part. Set the ordinary mounting
-    # location here so this flow can verify the saved parent payload directly.
+    # The parent keeps the shop-install detail, while a Magnetic mic also
+    # creates a separate, billable child part. Set the ordinary mounting
+    # location here so this flow can verify both saved forms of the detail.
     page.evaluate("""() => {
       Object.assign(_pickerState.loc, {
         selected: 'IN CENTER CONSOLE', name_pattern: 'Control Head',
@@ -888,15 +940,19 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     assert pa_mic == {
         "label": "PA Mic", "location": "Passenger kick panel", "detail": "Magnetic mic",
     }, f"expected PA-mic manifest component, got {control_head.get('components')!r}"
+    billable_pa_mic = next((p for p in draft["draft"]["parts"]
+                            if p.get("parent_line_id") == control_head["line_id"]
+                            and p.get("accessory_category") == "magnetic_mic"), None)
+    assert billable_pa_mic and billable_pa_mic.get("part_number") == "MMSU-1", \
+        f"a PA Magnetic mic must be a real billable child line, got {billable_pa_mic!r}"
     page.wait_for_selector(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
     page.click(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
     manifest_pa_mic = page.locator(f"tr.me-comp-row[data-parent='{control_head['line_id']}']").filter(has_text="PA Mic")
     assert manifest_pa_mic.is_visible()
     assert "PA Mic" in manifest_pa_mic.text_content() and "Passenger kick panel" in manifest_pa_mic.text_content()
 
-    # A Center Console has one physical location, so it should add directly
-    # from the SKU tab with its fixed placement already populated. It must
-    # not expose the generic Details/placement tab.
+    # A Center Console has one physical location, but its selected SKU leads
+    # to the dedicated Details setup rather than a generic placement step.
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
     page.click(".pbt-cat-caret-btn[data-cat='structural']")
@@ -913,11 +969,17 @@ def flow_part_details_and_console(page, base_url: str) -> None:
         "Center Console should receive its fixed location automatically"
     )
     assert page.locator("#picker-tab-btn-location").is_hidden(), (
-        "Center Console should not ask for a separate placement"
+        "Center Console should not expose a generic placement tab before setup"
     )
-    assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish", (
-        "Center Console should be ready to add after selecting its SKU"
+    assert page.locator("#picker-add-btn").text_content().strip() == "Set up Center Console →", (
+        "Center Console should lead into its dedicated setup after selecting a SKU"
     )
+    page.click("#picker-add-btn")
+    page.wait_for_selector("[data-console-setup]")
+    assert page.locator("#picker-tab-btn-location").is_visible(), (
+        "Center Console setup should use the Details tab"
+    )
+    assert "Configure the Center Console" in page.locator("[data-console-setup]").text_content()
 
 
 def flow_sku_dropdown_rework(page, base_url: str) -> None:

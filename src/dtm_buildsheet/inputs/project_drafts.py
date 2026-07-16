@@ -84,7 +84,8 @@ class DraftPart:
     accessory_parent_product: str = ""
     # part_type_id the picker resolved this line to (picker-created parts only;
     # empty for legacy/flat-modal parts). Drives the browse-tree manifest
-    # highlight (PICKER_REDESIGN.md Step 1b) — never consumed by the planner.
+    # highlight and allows the planner to resolve descriptive picker line
+    # names without falling back to legacy workbook naming.
     part_type: str = ""
     # Full picker configuration snapshot written by _pickerDoAdd for every
     # picker-created part (PICKER_REDESIGN.md Step 6). Allows _pickerOpenEdit
@@ -283,6 +284,7 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
             passenger_color=dp.passenger_color,
             center_color=dp.center_color,
             line_id=dp.line_id,
+            part_type=dp.part_type,
             components=list(dp.components or []),
         )
         for dp in draft.parts

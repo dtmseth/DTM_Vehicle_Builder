@@ -65,6 +65,26 @@ def test_unmapped_part_gets_warning_not_exception(config):
     assert unmapped[0].warnings
 
 
+def test_picker_part_type_resolves_a_descriptive_manifest_child(config):
+    """Nested picker lines need not reuse legacy workbook display names."""
+    faceplate = PartInput(
+        name="Center Console · Face Plate 1 · Example",
+        include=True,
+        line_id="faceplate-1",
+        part_type="special_face_plate",
+        location="IN CENTER CONSOLE",
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "TEST"},
+        parts=[faceplate],
+        notes=[],
+    )
+    plan = build_plan(project, config)
+    assert len(plan.planned_parts) == 1
+    assert plan.planned_parts[0].part_id == "special_face_plate"
+    assert not plan.warnings
+
+
 def test_excluded_parts_not_in_plan(config):
     excluded = PartInput(name="Light Bar", include=False)
     included = PartInput(name="Light Bar", include=True, location="roof")
