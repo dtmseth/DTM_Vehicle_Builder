@@ -241,7 +241,7 @@ function _meMakeRows(parts) {
       const cMfgModel = [c.manufacturer, c.part_number].filter(Boolean).join(" / ") || "—";
       const childTag = c.accessory_category === "console_faceplate"
         ? "face plate"
-        : c.accessory_category === "console_component" ? "console" : "accessory";
+        : ["console_component", "console_wings"].includes(c.accessory_category) ? "console" : "accessory";
       html += `<tr class="me-comp-row me-acc-row" data-parent="${esc(p.line_id)}" hidden>
         <td style="padding-left:24px;font-size:12px"><span class="me-acc-tag">${esc(childTag)}</span> ${esc(c.name)}</td>
         <td style="color:var(--muted);font-size:12px">${esc(c.location || "—")}</td>

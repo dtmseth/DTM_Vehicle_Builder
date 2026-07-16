@@ -2234,6 +2234,7 @@ function _pickerNewConsoleSetup(saved = null) {
       motionAttachment: copyChoice(source.motionAttachment),
       motionLocation: source.motionLocation || "mounted_to_console",
       dockingStation: copyChoice(source.dockingStation),
+      wings: copyChoice(source.wings),
     },
     faceplateSearch: "", showAllFaceplates: false, openComponent: "",
   };
@@ -2242,7 +2243,8 @@ function _pickerNewConsoleSetup(saved = null) {
 function _pickerConsoleChoiceFromProduct(product, autoFor = "") {
   if (!product) return null;
   const skus = product.skus || [];
-  const sku = skus.find(item => _skuCompatible(item, _pickerVehicle())) || skus[0];
+  const vehicle = _pickerVehicle();
+  const sku = skus.find(item => _skuCompatible(item, vehicle)) || (!vehicle ? skus[0] : null);
   if (!sku?.part_number) return null;
   return {
     product_id: product.product_id,
@@ -2252,6 +2254,32 @@ function _pickerConsoleChoiceFromProduct(product, autoFor = "") {
     price: sku.price ?? null,
     ...(autoFor ? { auto_for: autoFor } : {}),
   };
+}
+
+function _pickerConsoleBrand() {
+  const selected = _pickerState.sel;
+  if (selected?.mfr) return selected.mfr;
+  return (_pickerState.products || []).find(product => product.product_id === selected?.product_id)?.manufacturer_label || "";
+}
+
+function _pickerConsoleHasCompatibleSku(product) {
+  return !!_pickerConsoleChoiceFromProduct(product);
+}
+
+function _pickerConsoleFaceplateProducts(setup) {
+  const brand = _pickerConsoleBrand().toLowerCase();
+  return (setup.catalog.faceplates || []).filter(product =>
+    _pickerConsoleHasCompatibleSku(product)
+    && (!brand || String(product.manufacturer_label || "").toLowerCase() === brand)
+  );
+}
+
+function _pickerConsoleWingProducts(setup) {
+  return _pickerConsoleFaceplateProducts(setup).filter(product => /\bwings?\b/i.test(String(product.model || "")));
+}
+
+function _pickerConsoleProductsForKey(setup, key) {
+  return key === "wings" ? _pickerConsoleWingProducts(setup) : (setup.catalog[key] || []);
 }
 
 function _pickerConsoleIsInConsole(location) {
@@ -2280,7 +2308,7 @@ function _pickerApplyConsoleAutoFaceplates() {
   const faceplates = setup.choices.faceplates;
   for (const [productId, autoFor, present] of specs) {
     if (!present || faceplates.some(item => item.product_id === productId)) continue;
-    const product = (setup.catalog.faceplates || []).find(item => item.product_id === productId);
+    const product = _pickerConsoleFaceplateProducts(setup).find(item => item.product_id === productId);
     const choice = _pickerConsoleChoiceFromProduct(product, autoFor);
     if (choice) faceplates.push(choice);
   }
@@ -2316,7 +2344,9 @@ function _pickerConsoleChoiceLabel(choice) {
 
 function _pickerConsoleFaceplateCards(setup) {
   const query = String(setup.faceplateSearch || "").trim().toLowerCase();
-  const all = [...(setup.catalog.faceplates || [])].sort((a, b) => String(a.model || "").localeCompare(String(b.model || "")));
+  const all = _pickerConsoleFaceplateProducts(setup)
+    .filter(product => !/\bwings?\b/i.test(String(product.model || "")))
+    .sort((a, b) => String(a.model || "").localeCompare(String(b.model || "")));
   const matching = query
     ? all.filter(product => [product.model, product.manufacturer_label, ...(product.skus || []).map(sku => sku.part_number)].join(" ").toLowerCase().includes(query))
     : all;
@@ -2346,10 +2376,11 @@ function _pickerConsoleOrderCards(setup) {
   </article>`).join("");
 }
 
-function _pickerConsoleComponentSection(setup, key, label, help) {
+function _pickerConsoleComponentSection(setup, key, label, help, catalogProducts = null) {
   const choice = setup.choices[key];
   const isOpen = setup.openComponent === key;
-  const products = [...(setup.catalog[key] || [])].sort((a, b) => String(a.model || "").localeCompare(String(b.model || "")));
+  const products = [...(catalogProducts || _pickerConsoleProductsForKey(setup, key))]
+    .sort((a, b) => String(a.model || "").localeCompare(String(b.model || "")));
   const picker = !isOpen ? "" : `<div class="console-component-picker"><button type="button" class="console-catalog-card console-catalog-card--none${!choice ? " is-added" : ""}" data-console-component-choice="" data-console-component-key="${esc(key)}"><strong>None</strong><small>Do not include this console component</small></button>${products.map(product => {
     const item = _pickerConsoleChoiceFromProduct(product);
     if (!item) return "";
@@ -2378,11 +2409,22 @@ function _pickerRenderConsoleSetup() {
     return;
   }
   const error = setup.error ? `<div class="console-setup-error">${esc(setup.error)}</div>` : "";
+  const consoleBrand = _pickerConsoleBrand();
+  const faceplateBrandNote = consoleBrand
+    ? `<p>Showing only ${esc(consoleBrand)} faceplates so they match the selected console.</p>`
+    : "";
+  const wingProducts = _pickerConsoleWingProducts(setup);
+  const wingSection = wingProducts.length
+    ? _pickerConsoleComponentSection(
+      setup, "wings", "Console wings",
+      "Optional side wings matched to this console brand and vehicle.", wingProducts,
+    )
+    : "";
   details.innerHTML = `<section class="console-setup" data-console-setup>
     <header class="console-setup-header"><div><span class="guided-chip">CONSOLE</span><h2>Configure the Center Console</h2><p>Pick the actual faceplates and console components, then put faceplates in their physical order for the shop.</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></header>${error}
-    <section class="console-faceplate-section"><div class="console-section-heading"><div><div class="console-section-kicker">1 · Pick faceplates</div><h3>Add every faceplate the console needs</h3><p>Light-control, radio, and K-9 faceplates are suggested when their equipment is already mounted in the console. Add items such as cupholders here too.</p></div><label class="console-faceplate-search"><span>Search catalog</span><input id="picker-console-faceplate-search" value="${esc(setup.faceplateSearch || "")}" placeholder="Search faceplates, pockets, cupholders…"></label></div>${_pickerConsoleFaceplateCards(setup)}</section>
+    <section class="console-faceplate-section"><div class="console-section-heading"><div><div class="console-section-kicker">1 · Pick faceplates</div><h3>Add every faceplate the console needs</h3><p>Light-control, radio, and K-9 faceplates are suggested when their equipment is already mounted in the console. Add items such as cupholders here too.</p>${faceplateBrandNote}</div><label class="console-faceplate-search"><span>Search catalog</span><input id="picker-console-faceplate-search" value="${esc(setup.faceplateSearch || "")}" placeholder="Search faceplates, pockets, cupholders…"></label></div>${_pickerConsoleFaceplateCards(setup)}</section>
     <section class="console-faceplate-section console-faceplate-section--order"><div class="console-section-heading"><div><div class="console-section-kicker">2 · Arrange faceplates</div><h3>Drag into the order they appear on the console</h3><p>The manifest numbers these faceplates in exactly this order.</p></div></div><div class="console-faceplate-order" id="picker-console-faceplate-order">${_pickerConsoleOrderCards(setup)}</div></section>
-    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">3 · Complete the console</div><h3>Choose the remaining console hardware</h3><p>Only the components you select become billed, nested lines under the Center Console.</p></div></div>${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose the armrest that belongs with this console.")}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device and record whether it mounts to the console or pedestal.")}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}</section>
+    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">3 · Complete the console</div><h3>Choose the remaining console hardware</h3><p>Only the components you select become billed, nested lines under the Center Console.</p></div></div>${wingSection}${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose the armrest that belongs with this console.")}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device and record whether it mounts to the console or pedestal.")}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}</section>
   </section>`;
 
   details.querySelector("#picker-console-faceplate-search")?.addEventListener("input", event => {
@@ -2394,7 +2436,7 @@ function _pickerRenderConsoleSetup() {
     _pickerRenderConsoleSetup();
   });
   details.querySelectorAll("[data-console-faceplate-add]").forEach(button => button.addEventListener("click", () => {
-    const product = (setup.catalog.faceplates || []).find(item => item.product_id === button.dataset.consoleFaceplateAdd);
+    const product = _pickerConsoleFaceplateProducts(setup).find(item => item.product_id === button.dataset.consoleFaceplateAdd);
     const choice = _pickerConsoleChoiceFromProduct(product);
     if (choice && !setup.choices.faceplates.some(item => item.product_id === choice.product_id)) setup.choices.faceplates.push(choice);
     _pickerRenderConsoleSetup();
@@ -2436,7 +2478,7 @@ function _pickerRenderConsoleSetup() {
   }));
   details.querySelectorAll("[data-console-component-choice]").forEach(button => button.addEventListener("click", () => {
     const key = button.dataset.consoleComponentKey;
-    const product = (setup.catalog[key] || []).find(item => item.product_id === button.dataset.consoleComponentChoice);
+    const product = _pickerConsoleProductsForKey(setup, key).find(item => item.product_id === button.dataset.consoleComponentChoice);
     setup.choices[key] = _pickerConsoleChoiceFromProduct(product);
     setup.openComponent = "";
     _pickerRenderConsoleSetup();
@@ -2456,6 +2498,7 @@ function _pickerConsoleSetupSnapshot() {
     motionAttachment: copy(choices.motionAttachment),
     motionLocation: choices.motionLocation || "mounted_to_console",
     dockingStation: copy(choices.dockingStation),
+    wings: copy(choices.wings),
   };
 }
 
@@ -2476,12 +2519,13 @@ function _pickerConsoleChildRows(parentLineId, parentName) {
   const motionLocation = choices.motionLocation === "mounted_to_pedestal" ? "MOUNTED TO PEDESTAL" : "MOUNTED TO CONSOLE";
   add(`${parentName} · Motion Attachment · ${choices.motionAttachment?.model || ""}`.replace(/ · $/, ""), choices.motionAttachment, "motion_attachment", motionLocation, "console_component");
   add(`${parentName} · Docking Station · ${choices.dockingStation?.model || ""}`.replace(/ · $/, ""), choices.dockingStation, "docking_station", "IN CENTER CONSOLE", "console_component");
+  add(`${parentName} · Console Wings · ${choices.wings?.model || ""}`.replace(/ · $/, ""), choices.wings, "special_face_plate", "IN CENTER CONSOLE", "console_wings");
   return rows;
 }
 
 async function _pickerReplaceConsoleChildren(draftId, parentLineId, parentName) {
   const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
-    part.parent_line_id === parentLineId && ["console_faceplate", "console_component"].includes(part.accessory_category)
+    part.parent_line_id === parentLineId && ["console_faceplate", "console_component", "console_wings"].includes(part.accessory_category)
   );
   for (const child of existing) {
     const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});

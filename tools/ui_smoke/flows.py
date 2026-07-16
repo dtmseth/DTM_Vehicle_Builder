@@ -38,8 +38,9 @@ def _api(base_url: str, path: str, body: dict | None = None, method: str | None 
         return json.loads(r.read())
 
 
-def _seed_project_with_draft(base_url: str, preferences: dict | None = None) -> tuple[str, str, str]:
-    """Create a throwaway project + one PIU build unit + its draft. Returns
+def _seed_project_with_draft(base_url: str, preferences: dict | None = None,
+                             vehicle_model: str = "PIU") -> tuple[str, str, str]:
+    """Create a throwaway project + one build unit + its draft. Returns
     (project_id, unit_id, draft_id).
 
     ``preferences`` is optional and, when omitted, the project ends up with a
@@ -51,7 +52,7 @@ def _seed_project_with_draft(base_url: str, preferences: dict | None = None) -> 
     unchanged."""
     body = {
         "customer": {"name": "UI Smoke PD", "agency": "UI Smoke PD", "build_year": "2026"},
-        "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
+        "build_units": [{"vehicle_model": vehicle_model, "build_type": "Patrol"}],
     }
     if preferences is not None:
         body["preferences"] = preferences
@@ -124,7 +125,7 @@ def flow_tab_load(page, base_url: str) -> None:
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     """A Center Console has one fixed physical location, then opens its
     dedicated faceplate/order and component setup in Details."""
-    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="TAHOE")
     _open_build_editor(page, base_url)
 
     def add_console_part():
@@ -148,9 +149,9 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
             page.wait_for_timeout(200)
         page.click(".pbt-leaf[data-pt='console']")
         page.wait_for_timeout(_SETTLE_MS)
-        # Gamber Johnson PIU low-profile console box — zero curated
-        # location_options (the exact FINDING-004 repro).
-        page.fill("#pf-search", "7170-0734-00")
+        # Gamber Johnson Tahoe console — the selected-brand faceplate filter
+        # and Tahoe-only wing option are both covered below.
+        page.fill("#pf-search", "7170-1164-01")
         page.wait_for_timeout(_SETTLE_MS)
         page.click(".pp-head >> nth=0")
         page.wait_for_timeout(200)
@@ -162,16 +163,24 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.click("#picker-add-btn")
         page.wait_for_selector("[data-console-setup]")
         assert page.locator("#picker-tab-btn-location").is_visible()
-        page.fill("#picker-console-faceplate-search", "CUP HOLDERS")
-        page.wait_for_selector("[data-console-faceplate-add='havis_cup_holders']")
-        page.click("[data-console-faceplate-add='havis_cup_holders']")
-        page.fill("#picker-console-faceplate-search", "CENCOM")
-        page.wait_for_selector("[data-console-faceplate-add='havis_c_eb40_ccs_1p']")
-        page.click("[data-console-faceplate-add='havis_c_eb40_ccs_1p']")
+        faceplate_brands = page.locator(".console-faceplate-catalog .console-catalog-card-brand").all_text_contents()
+        assert faceplate_brands and all(brand.strip() == "Gamber Johnson" for brand in faceplate_brands), (
+            f"faceplates must follow the selected Gamber Johnson console, got {faceplate_brands!r}"
+        )
+        page.fill("#picker-console-faceplate-search", "CUP HOLDER")
+        page.wait_for_selector("[data-console-faceplate-add='gamber_johnson_7160_0846']")
+        page.click("[data-console-faceplate-add='gamber_johnson_7160_0846']")
+        page.fill("#picker-console-faceplate-search", "MOTOROLA")
+        page.wait_for_selector("[data-console-faceplate-add='gamber_johnson_7160_0321']")
+        page.click("[data-console-faceplate-add='gamber_johnson_7160_0321']")
         # The edit surface supports both mouse drag order and keyboard-style
         # move buttons. Exercise the latter deterministically in headless CI.
         page.click("[data-console-faceplate-move='-1'][data-console-faceplate-index='1']")
-        assert page.evaluate("_pickerState.consoleSetup.choices.faceplates[0].product_id") == "havis_c_eb40_ccs_1p"
+        assert page.evaluate("_pickerState.consoleSetup.choices.faceplates[0].product_id") == "gamber_johnson_7160_0321"
+        page.wait_for_selector("[data-console-component-open='wings']")
+        page.click("[data-console-component-open='wings']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7110_1201']")
+        page.click("[data-console-component-choice='gamber_johnson_7110_1201']")
         page.click("[data-console-component-open='armRest']")
         page.wait_for_selector("[data-console-component-choice='havis_standard_arm_rest']")
         page.click("[data-console-component-choice='havis_standard_arm_rest']")
@@ -194,12 +203,16 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     children = [p for p in parts if p.get("parent_line_id") == console["line_id"]]
     faceplates = [p for p in children if p.get("accessory_category") == "console_faceplate"]
     assert [p["name"] for p in faceplates] == [
-        "Center Console · Face Plate 1 · 1-PIECE EQUIPMENT MOUNTING BRACKET, 4\" MOUNTING SPACE, FITS WHELEN CENCOM CCSRN, CCSRNTA, MPC03",
-        "Center Console · Face Plate 2 · CUP HOLDERS",
+        "Center Console · Face Plate 1 · FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
+        "Center Console · Face Plate 2 · INTERNAL CUP HOLDER",
     ], f"expected numbered faceplates in the configured order, got {faceplates!r}"
     assert {p.get("part_type") for p in children} >= {"special_face_plate", "arm_rest", "motion_attachment", "docking_station"}
     assert next(p for p in children if p.get("part_type") == "motion_attachment")["location"] == "MOUNTED TO PEDESTAL"
-    assert console["picker_config"]["console_setup"]["faceplates"][0]["product_id"] == "havis_c_eb40_ccs_1p"
+    assert console["picker_config"]["console_setup"]["faceplates"][0]["product_id"] == "gamber_johnson_7160_0321"
+    console_wings = next((p for p in children if p.get("accessory_category") == "console_wings"), None)
+    assert console_wings and console_wings["part_number"] == "7110-1201", (
+        f"Tahoe console must save the selected Gamber wings as a real child part, got {console_wings!r}"
+    )
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -216,12 +229,13 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.consoleSetup?.active && !_pickerState.consoleSetup.loading")
     restored = page.evaluate("() => _pickerState.consoleSetup.choices")
     assert [item["product_id"] for item in restored["faceplates"]] == [
-        "havis_c_eb40_ccs_1p", "havis_cup_holders",
+        "gamber_johnson_7160_0321", "gamber_johnson_7160_0846",
     ], f"console edit must restore its ordered faceplates, got {restored!r}"
     assert restored["armRest"]["product_id"] == "havis_standard_arm_rest"
     assert restored["motionAttachment"]["product_id"] == "havis_c_md_112"
     assert restored["motionLocation"] == "mounted_to_pedestal"
     assert restored["dockingStation"]["product_id"] == "gamber_johnson_18540"
+    assert restored["wings"]["product_id"] == "gamber_johnson_7110_1201"
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
@@ -764,7 +778,10 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     is asserted too, in case that ever changes.
     """
     _project_id, _unit_id, draft_id = _seed_project_with_draft(
-        base_url, preferences={"lighting_brands": ["Whelen"], "push_bumper_brand": "Setina"}
+        base_url, preferences={
+            "lighting_brands": ["Whelen"], "push_bumper_brand": "Setina",
+            "console_brand": "Gamber Johnson",
+        }
     )
     _open_build_editor(page, base_url)
 
@@ -829,6 +846,23 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     assert bumper_brand == "Setina", (
         "expected Push Bumper family header to auto-select the project's "
         f"preferred bumper brand 'Setina', got {bumper_brand!r}"
+    )
+
+    # The Console leaf must likewise begin restricted to the project's
+    # preferred console manufacturer.
+    if not page.is_visible(".pbt-leaf[data-pt='console']"):
+        page.click(".pbt-fam-caret-btn[data-fam='console_system']")
+    page.wait_for_selector(".pbt-leaf[data-pt='console']")
+    page.click(".pbt-leaf[data-pt='console']")
+    page.wait_for_timeout(_SETTLE_MS)
+    console_brand = page.evaluate("_pickerState.filters.brand")
+    assert console_brand == "Gamber Johnson", (
+        "expected Console to auto-select the project's preferred console "
+        f"brand 'Gamber Johnson', got {console_brand!r}"
+    )
+    console_brands = page.locator(".pp-row .pp-brandchip").all_text_contents()
+    assert console_brands and all(brand.strip() == "Gamber Johnson" for brand in console_brands), (
+        f"expected Console to show only Gamber Johnson SKUs, got {console_brands!r}"
     )
 
     # Every individual Light Control System leaf uses the same lighting-brand

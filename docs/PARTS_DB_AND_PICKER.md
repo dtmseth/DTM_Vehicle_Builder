@@ -308,9 +308,12 @@ location" rows.
     only.
   - **Center Console.** It has one fixed physical location (In Center Console). After selecting
     its SKU, **Set up Center Console** opens the Details tab to add real faceplate, armrest, motion
-    attachment, and docking-station SKUs. Faceplates can be dragged into physical order and are
-    saved as numbered child lines in that exact manifest order. Compatible light-control, radio,
-    and K-9 faceplates are suggested when that equipment is already in the console.
+    attachment, and docking-station SKUs. Faceplates are restricted to the selected console’s
+    manufacturer, can be dragged into physical order, and are saved as numbered child lines in
+    that exact manifest order. Compatible light-control, radio, and K-9 faceplates are suggested
+    only when they match that console manufacturer. Vehicle-specific console wings appear as a
+    separate optional detail rather than a numbered faceplate; the current catalog offers Gamber
+    Johnson 2015+ Tahoe wings only on Tahoe builds.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
     wireless-mic charger. Front and rear cameras use fixed upper-window locations.
