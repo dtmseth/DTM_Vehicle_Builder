@@ -1157,7 +1157,9 @@
         "family_id": "light_control_system",
         "label": "Light Control Head",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "IN CENTER CONSOLE"
+        ],
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [

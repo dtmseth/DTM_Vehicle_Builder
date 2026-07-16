@@ -65,6 +65,7 @@ async function _meBuildGroupMap() {
             order: (group.order || 999) * 1000 + (subgroup.order || 999),
             kind: "manifest_subgroup",
             ref_id: subgroup.subgroup_id,
+            part_type_ids: subgroup.part_types || [],
           });
         }
       }
@@ -739,14 +740,24 @@ function _meModalSetColorVisibility(partName) {
   if (colorRow) colorRow.style.display = show ? "" : "none";
 }
 
-// The intelligent picker (part_picker.js) has no "open scoped to a
-// family/part_type" entry point today, so this — same as before the
-// parts_db-shaped regrouping — just opens the picker normally (addPart) and,
-// for the flat-modal fallback, reorders its part-name datalist so this
-// section's catalog entries sort first. Never leaves the button non-functional.
+// Manifest groups are sales-oriented, so route each subgroup's Add button
+// through the picker with its resolved part-type set. The picker translates
+// that back to the matching browse-tree family or leaf.
 async function addPartInSection(sectionId) {
-  await addPart();
   const meta = _meSectionMeta?.get(sectionId);
+  if (typeof openPickerInSection === "function") {
+    try {
+      await openPickerInSection({
+        label: meta?.label || "",
+        refId: meta?.ref_id || "",
+        partTypeIds: meta?.part_type_ids || [],
+      });
+      return;
+    } catch (e) {
+      console.error("Scoped picker failed, falling back to unscoped picker:", e);
+    }
+  }
+  await addPart();
   if (!meta) return;
   const all = _catalog?.parts || [];
   const inSec  = all.filter(p => _meSectionKeyForName(p.display_name || "") === sectionId);

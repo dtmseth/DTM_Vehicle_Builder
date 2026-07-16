@@ -96,6 +96,12 @@ CASES: list[tuple[str, str, str, dict]] = [
         {},
     ),
     (
+        "category_locations_light_control_head",
+        "GET",
+        "/api/parts-db/category-locations?type=equipment&product=whelen_cctl5&vehicle=PIU",
+        {},
+    ),
+    (
         "category_locations_non_lights",
         "GET",
         "/api/parts-db/category-locations?type=structural&product=setina_pb400",

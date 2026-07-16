@@ -328,6 +328,10 @@
     .radio-wide{grid-column:1/-1}
     /* Guided system picker — one clear question at a time. */
     .guided-system{--guided-accent:#0f766e;--guided-soft:#ecfdf5;background:#fff;border:1px solid #99f6e4;border-radius:14px;overflow:hidden;box-shadow:0 5px 18px rgba(15,118,110,.08);min-height:440px}
+    .system-product-picker{--system-accent:#0f766e;--system-soft:#ecfdf5;padding:28px;min-height:330px;background:linear-gradient(135deg,var(--system-soft),#fff 68%);border:1px solid #99f6e4;border-radius:14px}
+    .system-product-picker--radar{--system-accent:#2563eb;--system-soft:#eff6ff;border-color:#bfdbfe}.system-product-picker--camera{--system-accent:#7c3aed;--system-soft:#f5f3ff;border-color:#ddd6fe}.system-product-picker--review{--system-accent:#0f766e;--system-soft:#f8fafb;border-color:#d8e2e7}
+    .system-product-picker-kicker{font-size:10px;font-weight:850;letter-spacing:.8px;color:var(--system-accent);text-transform:uppercase;margin-bottom:7px}.system-product-picker h2{margin:0;color:var(--text);font-size:23px;line-height:1.2}.system-product-picker>p{max-width:640px;margin:9px 0 20px;color:var(--muted);font-size:13px;line-height:1.45}
+    .system-product-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:760px}.system-product-choice{display:flex;gap:11px;align-items:flex-start;min-height:76px;padding:13px 14px;border:2px solid #dce6e8;border-radius:11px;background:#fff;color:var(--text);text-align:left;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}.system-product-choice:hover{border-color:var(--system-accent);background:var(--system-soft);transform:translateY(-1px)}.system-product-choice.is-selected{border-color:var(--system-accent);background:var(--system-soft);box-shadow:0 0 0 1px var(--system-accent)}.system-product-choice-check{display:flex;align-items:center;justify-content:center;flex:0 0 21px;width:21px;height:21px;border:2px solid #cbd5da;border-radius:50%;color:#fff;font-size:13px;font-weight:800}.system-product-choice.is-selected .system-product-choice-check{background:var(--system-accent);border-color:var(--system-accent)}.system-product-choice-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.system-product-choice-copy small{font-size:10px;font-weight:750;letter-spacing:.45px;color:var(--system-accent);text-transform:uppercase}.system-product-choice-copy strong{font-size:13px;line-height:1.25}.system-product-empty{padding:18px;border:1px dashed #b6c5c9;border-radius:9px;color:var(--muted);font-size:13px}.system-review-actions{display:flex;flex-wrap:wrap;gap:9px}
     .guided-system--radar{--guided-accent:#2563eb;--guided-soft:#eff6ff;border-color:#bfdbfe}
     .guided-system--camera{--guided-accent:#7c3aed;--guided-soft:#f5f3ff;border-color:#ddd6fe}
     .guided-system-header{display:flex;justify-content:space-between;gap:16px;padding:20px 22px 14px;background:linear-gradient(135deg,var(--guided-soft),#fff 72%)}
@@ -501,6 +505,23 @@
     .picker-loc-btns .pf-group{width:100%;max-width:340px}
     .pf-select{padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:14px;background:#fff;cursor:pointer}
     .pf-hint{font-size:11px;color:var(--muted);margin-top:4px}
+    .picker-location-chooser{width:min(680px,100%);margin:auto;padding:22px;border:1px solid #dbe4e9;border-radius:14px;background:linear-gradient(145deg,#f8fbfc,#fff);box-shadow:0 5px 18px rgba(15,23,42,.05)}
+    .picker-location-kicker{font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--navy);margin-bottom:6px}
+    .picker-location-chooser h3{margin:0;color:var(--text);font-size:20px;line-height:1.2}
+    .picker-location-chooser p{margin:7px 0 16px;color:var(--muted);font-size:13px;line-height:1.4}
+    .picker-location-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .picker-location-card{display:flex;align-items:flex-start;gap:10px;min-height:64px;padding:13px;border:2px solid #dbe4e9;border-radius:10px;background:#fff;color:var(--text);font:600 13px/1.25 inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
+    .picker-location-card:hover{border-color:var(--navy);background:#f2f6fc;transform:translateY(-1px)}
+    .picker-location-card.is-selected{border-color:var(--navy);background:#edf4ff;box-shadow:0 0 0 1px var(--navy)}
+    .picker-location-card-check{display:flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;border:2px solid #c6d2db;border-radius:50%;color:#fff;font-size:12px;font-weight:800}
+    .picker-location-card.is-selected .picker-location-card-check{background:var(--navy);border-color:var(--navy)}
+    .picker-location-card--custom span:last-child{display:flex;flex-direction:column;gap:3px}
+    .picker-location-card--custom small{font-size:11px;font-weight:400;color:var(--muted);line-height:1.3}
+    .picker-location-custom-field{display:flex;flex-direction:column;gap:6px;margin-top:13px}
+    .picker-location-custom-field>span{font-size:12px;font-weight:750;color:var(--text)}
+    .picker-location-custom-input{width:100%;padding:12px 13px;border:2px solid #cfdbe4;border-radius:9px;background:#fff;color:var(--text);font:13px/1.4 inherit;outline:none}
+    .picker-location-custom-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,64,175,.13)}
+    @media(max-width:560px){.picker-location-grid{grid-template-columns:1fr}.picker-location-chooser{padding:17px}}
     /* footer lighthead preview */
     .picker-foot-heads{display:inline-flex;gap:5px;vertical-align:middle;margin-right:10px}
     .picker-foot-head{display:inline-flex;flex-direction:column;width:16px;height:26px;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.25)}
@@ -619,6 +640,7 @@
       .guided-progress-head{padding-left:15px;padding-right:15px}
       .guided-progress{margin-left:15px;margin-right:15px}
       .guided-system-layout{padding-left:15px;padding-right:15px}
+      .system-product-choice-grid{grid-template-columns:1fr}
       .guided-choice-grid,.guided-choice-grid--multi{grid-template-columns:1fr}
       .guided-question h2{font-size:18px}
     }

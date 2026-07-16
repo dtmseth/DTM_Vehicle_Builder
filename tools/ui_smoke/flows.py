@@ -122,13 +122,11 @@ def flow_tab_load(page, base_url: str) -> None:
 
 
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
-    """LEDGER.md FINDING-004 + FINDING-027 regression guard: a part_type with
-    zero curated location options (e.g. `console`) must get a real name from
-    the picker's free-text location branch — never the literal "Part" (which
-    the planner can't match to any part_type and reports as "Unmapped").
-    `console` is also single-instance (max_count == 1), so both adds must
-    resolve to the bare label "Console" with no sequence number (owner
-    flaw #2 — there is only ever one console per vehicle)."""
+    """A Center Console has one fixed location and therefore skips Details.
+
+    The picker still needs to resolve a real part name — never the literal
+    ``Part`` — so the planner can identify its part type without warnings.
+    """
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
 
@@ -161,20 +159,16 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.wait_for_timeout(200)
         page.click(".pp-sku [data-pick] >> nth=0")
         page.wait_for_timeout(200)
-        page.click("#picker-tab-btn-location")
-        page.wait_for_timeout(_SETTLE_MS)
-        page.wait_for_selector("#picker-loc-text")
-        page.fill("#picker-loc-text", "Front console mount")
-        page.wait_for_timeout(200)
+        assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
+        assert page.locator("#picker-tab-btn-location").is_hidden()
         page.click("#picker-add-btn")
         page.wait_for_timeout(_SETTLE_MS)
 
     add_console_part()
-    add_console_part()   # second add must NOT sequence — console is single-instance
 
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     names = [p["name"] for p in draft["draft"]["parts"]]
-    assert names == ["Console", "Console"], f"expected bare 'Console' names (no sequence), got {names}"
+    assert names == ["Center Console"], f"expected fixed-label Center Console, got {names}"
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -347,16 +341,21 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
     page.wait_for_selector(".pbt-fam-select[data-family='radio_comms']")
     page.click(".pbt-fam-select[data-family='radio_comms']")
-    page.wait_for_selector("#picker-products .guided-system[data-system-kind='radio']")
+    page.wait_for_selector("#picker-products [data-system-select-kind='radio']")
+    page.click("[data-system-product-id='motorola_split_unit']")
+    assert page.locator("#picker-add-btn").text_content().strip() == "Set up Radio Communications →"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
     page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
     assert page.evaluate("() => _pickerState.radio.choices.provider") == "customer", \
         "new system provider should default to customer supplied"
+    assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "motorola_split_unit"
 
-    assert page.locator("#picker-products .guided-progress").count() == 1, \
+    assert page.locator("#picker-system-details .guided-progress").count() == 1, \
         "expected the guided radio progress bar"
-    assert page.locator("#picker-products .guided-choice-grid").count() == 1, \
+    assert page.locator("#picker-system-details .guided-choice-grid").count() == 1, \
         "expected one focused radio question instead of a dense form"
-    assert page.locator("#picker-products .guided-summary").count() == 1, \
+    assert page.locator("#picker-system-details .guided-summary").count() == 1, \
         "expected the radio answer summary"
 
     # Exercise the DTM purchase branch so its free-text note is covered too.
@@ -411,6 +410,16 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
         f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
     mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
     assert mic.get("location") == "Console sidecar", "custom shop location should populate the component row"
+    parent = page.locator("tr.me-parent-row").filter(has_text="Radio Communications")
+    parent.locator(".me-edit-btn").click()
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radio'")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
+    assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radio edits must restart at the first question"
+    assert "new or reused radio system" in page.locator(".guided-question h2").text_content().lower()
+    restored = page.evaluate("() => _pickerState.radio.choices")
+    assert restored.get("purchaseDetails") == radio.get("notes") and restored.get("micLocCustom") == "Console sidecar", \
+        f"guided radio edits must retain saved answers, got {restored!r}"
 
 
 def _open_guided_system(page, base_url: str, family_id: str, kind: str) -> str:
@@ -423,7 +432,11 @@ def _open_guided_system(page, base_url: str, family_id: str, kind: str) -> str:
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
     page.wait_for_selector(f".pbt-fam-select[data-family='{family_id}']")
     page.click(f".pbt-fam-select[data-family='{family_id}']")
-    page.wait_for_selector(f"#picker-products .guided-system[data-system-kind='{kind}']")
+    page.wait_for_selector(f"#picker-products [data-system-select-kind='{kind}']")
+    product_id = {"radar": "stalker_dsr", "camera": "watchguard_m500"}[kind]
+    page.click(f"[data-system-product-id='{product_id}']")
+    page.click("#picker-add-btn")
+    page.wait_for_selector(f"#picker-system-details .guided-system[data-system-kind='{kind}']")
     page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
     return draft_id
 
@@ -475,13 +488,28 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     _guided_next(page)
     _guided_pick(page, "frontLoc", "a_pillar")
     _guided_next(page)
+    assert "bracket" in page.locator(".guided-question h2").text_content().lower(), \
+        "front antenna location should be followed by its bracket choice"
+    _guided_pick(page, "frontBracket", "swivel_arm")
+    _guided_next(page)
     rear_locations = page.locator(".guided-option[data-system-choice='rearLoc']").evaluate_all(
         "els => els.map(el => el.dataset.systemValue)"
     )
     assert "seatbelt_slot" not in rear_locations, \
         "the Tahoe-only rear seatbelt slot must not appear on the default PIU smoke build"
     _guided_pick(page, "rearLoc", "d_pillar")
+    _guided_next(page)
+    _guided_pick(page, "rearBracket", "tall_a_bracket")
     _guided_finish_defaults(page)
+    integrated_components = page.evaluate("""
+        () => _systemComponentRows("radar", {
+            ..._pickerState.radio.choices,
+            split: "no",
+        }).map(component => component.label)
+    """)
+    assert "Radar display / counting unit" in integrated_components
+    assert "Radar display unit" not in integrated_components and "Radar counting unit" not in integrated_components, \
+        "only integrated radar systems may use the combined display/counting manifest component"
     assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
     page.click("#picker-add-btn")
     page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
@@ -489,20 +517,43 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     radar = next((p for p in draft["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "radar"), None)
     assert radar and radar["picker_config"]["choices"]["frontLoc"] == "a_pillar"
     assert radar["picker_config"]["choices"]["countingLoc"] == "center_console"
+    assert radar["picker_config"]["choices"]["frontBracket"] == "swivel_arm"
+    assert radar["picker_config"]["choices"]["rearBracket"] == "tall_a_bracket"
     parent = page.locator("tr.me-parent-row").filter(has_text="Radar System")
     assert parent.count() == 1, "expected the radar kit to render as one expandable manifest line"
     parent.click()
     assert page.locator("tr.me-system-detail[data-parent]").count() == 0, \
         "manifest should show component rows, not duplicate question-and-answer rows"
     component_text = " ".join(page.locator("tr.me-comp-row[data-parent]").all_text_contents())
-    assert all(text in component_text for text in ("On A-pillar", "Short A-bracket", "On D-pillar", "Tall A-bracket", "In center console")), \
+    assert all(text in component_text for text in ("Radar display unit", "Radar counting unit", "On A-pillar", "Swivel arm mount", "On D-pillar", "Tall A-bracket", "In center console")), \
         f"expected populated radar component rows, got {component_text!r}"
+    assert "Radar display / counting unit" not in component_text, \
+        "split systems must not combine the display and counting unit into one manifest component"
+
+    # The contextual Add button should open this system's family directly,
+    # instead of leaving the user at an unrelated root picker screen.
+    section_add = page.locator(".me-cat-section").filter(has_text="Radar System").locator(".me-cat-add-btn")
+    assert section_add.count() == 1, "expected the Radar manifest section to expose one scoped Add button"
+    section_add.click()
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_selector("#picker-products [data-system-select-kind='radar']")
+    page.click("[data-system-product-id='stalker_dsr']")
+    page.click("#picker-add-btn")
+    page.wait_for_function("() => _pickerState?.radio?.active && _pickerState.radio.kind === 'radar'")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
+    assert page.evaluate("() => _pickerState.radio.step") == 0
+    assert "new or reused radar system" in page.locator(".guided-question h2").text_content().lower()
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
     parent.locator(".me-edit-btn").click()
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar' && Object.keys(_pickerState.radio.choices || {}).length > 0")
-    page.wait_for_selector("#picker-products .guided-system[data-system-kind='radar']")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
+    assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radar edits must restart at the first question"
+    assert "new or reused radar system" in page.locator(".guided-question h2").text_content().lower()
     restored = page.evaluate("() => _pickerState.radio.choices")
-    assert restored.get("frontLoc") == "a_pillar" and restored.get("countingLoc") == "center_console", \
+    assert restored.get("frontLoc") == "a_pillar" and restored.get("frontBracket") == "swivel_arm" and restored.get("countingLoc") == "center_console", \
         f"expected guided system edits to restore saved radar answers, got {restored!r}"
 
 
@@ -516,12 +567,8 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     _guided_next(page)
     _guided_pick(page, "refreshCables", "power_cable")
     _guided_next(page)
-    _guided_pick(page, "cameraBrand", "axon_fleet_3")
-    axon_options = page.evaluate("() => _systemSteps().find(step => step.key === 'cameraParts').options.map(option => option.value)")
-    assert axon_options == ["front", "rear_seat"], \
-        f"Axon Fleet 3 must not offer rear camera, body dock, or wireless mic, got {axon_options!r}"
-    _guided_pick(page, "cameraBrand", "watchguard_m500")
-    _guided_next(page)
+    assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "watchguard_m500"
+    assert page.evaluate("() => _cameraSupportsExtendedComponents(_systemCameraPlatform({systemProduct:{product_id:'axon_fleet_3'}}))") is False
     _guided_pick(page, "dvrLoc", "equipment_tray")
     _guided_next(page)
     for component in ("front", "rear_seat", "rear", "body_dock", "wireless_mic"):
@@ -542,6 +589,16 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     camera_components = {item["part_type"]: item for item in camera["components"]}
     assert camera_components["front_camera"]["location"] == "Upper windshield"
     assert camera_components["rear_camera"]["location"] == "Upper rear window"
+    parent = page.locator("tr.me-parent-row").filter(has_text="Camera System")
+    parent.locator(".me-edit-btn").click()
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'camera'")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='camera']")
+    assert page.evaluate("() => _pickerState.radio.step") == 0, "guided camera edits must restart at the first question"
+    assert "new or reused camera system" in page.locator(".guided-question h2").text_content().lower()
+    restored = page.evaluate("() => _pickerState.radio.choices")
+    assert restored.get("systemProduct", {}).get("product_id") == "watchguard_m500" and restored.get("wirelessMicLoc") == "center_console", \
+        f"guided camera edits must retain saved answers, got {restored!r}"
 
 
 def flow_light_options_in_product_box(page, base_url: str) -> None:
@@ -720,6 +777,96 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     assert bumper_brand == "Setina", (
         "expected Push Bumper family header to auto-select the project's "
         f"preferred bumper brand 'Setina', got {bumper_brand!r}"
+    )
+
+    # Every individual Light Control System leaf uses the same lighting-brand
+    # preference, not just the primary Lights category. This is intentionally
+    # tested leaf by leaf because the family contains several very different
+    # kinds of control hardware.
+    if not page.is_visible(".pbt-cat-head[data-cat='equipment'].open"):
+        page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+        page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    if not page.is_visible(".pbt-leaf[data-pt='light_controller']"):
+        page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+        page.wait_for_selector(".pbt-leaf[data-pt='light_controller']")
+    for part_type in ("control_head", "external_amp", "expansion_module", "v2v_sync", "light_controller"):
+        page.click(f".pbt-leaf[data-pt='{part_type}']")
+        page.wait_for_timeout(_SETTLE_MS)
+        light_control_brand = page.evaluate("_pickerState.filters.brand")
+        assert light_control_brand == "Whelen", (
+            f"expected Light Control System leaf {part_type!r} to auto-select "
+            f"the preferred lighting brand 'Whelen', got {light_control_brand!r}"
+        )
+        rendered_brands = page.locator(".pp-row .pp-brandchip").all_text_contents()
+        assert rendered_brands and all(brand.strip() == "Whelen" for brand in rendered_brands), (
+            f"expected Light Control System leaf {part_type!r} to show only Whelen products, "
+            f"got {rendered_brands!r}"
+        )
+
+
+
+def flow_part_details_and_console(page, base_url: str) -> None:
+    """The Details tab holds non-SKU setup; fixed-location parts skip it."""
+    _project_id, _unit_id, _draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+    page.wait_for_selector(".pbt-leaf[data-pt='control_head']")
+
+    # Light Control Head is text-only (no diagram), so its placement and
+    # PA-mic detail should both use clear cards rather than native selects.
+    page.click(".pbt-leaf[data-pt='control_head']")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click(".pp-head >> nth=0")
+    page.wait_for_timeout(200)
+    page.click(".pp-sku [data-pick] >> nth=0")
+    page.wait_for_timeout(200)
+    page.click("#picker-tab-btn-location")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.wait_for_selector(".picker-location-card[data-text-location='IN CENTER CONSOLE']")
+    assert page.locator("#picker-loc-select").count() == 0, "text-only locations should use selection cards, not a native dropdown"
+    page.click(".picker-location-card[data-text-location='IN CENTER CONSOLE']")
+    assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
+    page.click(".picker-location-card[data-text-location-custom]")
+    page.wait_for_selector("#picker-loc-custom-text")
+    page.fill("#picker-loc-custom-text", "Right side equipment bay")
+    assert page.evaluate("_pickerState.loc.selected") == "Right side equipment bay"
+    page.click("[data-pa-mic-location='drivers_door']")
+    assert page.evaluate("_pickerState.partDetails.paMicLocation") == "drivers_door"
+    page.click("[data-pa-mic-location='__custom__']")
+    page.wait_for_selector("#picker-pa-mic-custom")
+    page.fill("#picker-pa-mic-custom", "Passenger kick panel")
+    assert page.evaluate("_pickerState.partDetails.paMicLocationCustom") == "Passenger kick panel"
+
+    # A Center Console has one physical location, so it should add directly
+    # from the SKU tab with its fixed placement already populated. It must
+    # not expose the generic Details/placement tab.
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel", state="hidden")
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.click(".pbt-cat-caret-btn[data-cat='structural']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
+    page.click(".pbt-fam-caret-btn[data-fam='console_system']")
+    page.wait_for_selector(".pbt-leaf[data-pt='console']")
+    page.click(".pbt-leaf[data-pt='console']")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click(".pp-head >> nth=0")
+    page.wait_for_timeout(200)
+    page.click(".pp-sku [data-pick] >> nth=0")
+    page.wait_for_timeout(200)
+    assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE", (
+        "Center Console should receive its fixed location automatically"
+    )
+    assert page.locator("#picker-tab-btn-location").is_hidden(), (
+        "Center Console should not ask for a separate placement"
+    )
+    assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish", (
+        "Center Console should be ready to add after selecting its SKU"
     )
 
 
@@ -1145,6 +1292,7 @@ FLOWS = {
     "camera_system_workflow": flow_camera_system_workflow,
     "light_options_in_product_box": flow_light_options_in_product_box,
     "brand_preference_collapse": flow_brand_preference_collapse,
+    "part_details_and_console": flow_part_details_and_console,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,
     "picker_multi_add": flow_picker_multi_add,

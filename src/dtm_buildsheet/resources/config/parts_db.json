@@ -30437,7 +30437,9 @@
       "workbook_label_pattern": "Control Head",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": [],
+      "location_options": [
+        "IN CENTER CONSOLE"
+      ],
       "family_id": "light_control_system"
     },
     "vehicle_interface": {

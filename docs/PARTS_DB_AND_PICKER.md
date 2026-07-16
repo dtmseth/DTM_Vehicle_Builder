@@ -280,18 +280,29 @@ location" rows.
 - **Westin push bumpers.** Base Westin bumpers can add wire-cover and light-channel accessory rows.
   Westin does not sell pre-lighted bumpers; the later billed-light choice for a selected channel is
   still a product/workflow follow-up.
-- **Guided systems.** Radio, radar, and camera families open one question at a time, then write one
-  expandable kit line. Its child rows are the concrete shop components with their selected mounting
-  data; the manifest deliberately does not repeat the full questionnaire. Purchase text is retained
-  in the kit’s saved choices/notes for Sales. Location choices are shop-reference data and always
-  include Custom — they do not create render placements.
+- **Guided systems.** Radio, radar, and camera families first select the system brand/model on the
+  SKU tab. **Set up [system]** then moves to the Details tab for one clear question at a time, and
+  writes one expandable kit line. Its child rows are the concrete shop components with their
+  selected mounting data; the manifest deliberately does not repeat the full questionnaire.
+  Purchase text is retained in the kit’s saved choices/notes for Sales. Location choices are
+  shop-reference data and always include Custom — they do not create render placements. Editing a
+  guided kit restarts at question one while retaining all saved answers, and its manifest-section
+  **Add** button returns directly to the matching picker family or leaf.
   - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
     `radio_speaker`, `radio_mic_clip`, and `radio_cable` component rows. Split-head is the default;
     cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
     plate of console (or Custom).
-  - **Radar System** records antenna locations separately from its fixed brackets: short A-bracket
-    at the front and tall A-bracket at the rear. The rear seatbelt-slot option appears only for a
-    Tahoe build.
+  - **Radar System** records each antenna location and its bracket separately. Short A-bracket is
+    the default front choice and tall A-bracket the default rear choice; either can instead use a
+    swivel arm. A split system writes separate display and counting-unit component rows, while an
+    integrated system uses one combined row. The rear seatbelt-slot option appears only for a Tahoe
+    build.
+  - **Light Control System.** Every leaf follows the project’s preferred lighting brand. Its
+    non-rendered shop-reference locations use selection cards plus Custom text rather than a native
+    dropdown. Light Control Head offers In Center Console or Custom, then records the PA-mic
+    location as Driver's door or Custom.
+  - **Center Console.** It has one fixed physical location (In Center Console), so selecting its
+    SKU skips the Details/placement step.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
     wireless-mic charger. Front and rear cameras use fixed upper-window locations.

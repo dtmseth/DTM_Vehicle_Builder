@@ -1762,7 +1762,7 @@
     </div>
     <div class="picker-tabs">
       <button class="picker-tab active" id="picker-tab-btn-part" data-tab="part">1 · Part</button>
-      <button class="picker-tab" id="picker-tab-btn-location" data-tab="location">2 · Location</button>
+      <button class="picker-tab" id="picker-tab-btn-location" data-tab="location">2 · Details</button>
     </div>
     <!-- PART TAB: two-pane (filters | live product list) -->
     <div class="picker-tabpane" id="picker-pane-part">
@@ -1771,14 +1771,19 @@
         <div class="picker-products" id="picker-products"></div>
       </div>
     </div>
-    <!-- LOCATION TAB: vehicle diagram + clickable dots -->
+    <!-- DETAILS TAB: normal parts use the vehicle/location detail view; guided
+         systems use the same second tab for their sequential shop setup. -->
     <div class="picker-tabpane" id="picker-pane-location" hidden>
-      <div class="picker-loc-views" id="picker-loc-views"></div>
-      <div class="picker-loc-stage" id="picker-loc-stage">
-        <img id="picker-loc-img" alt="vehicle view">
-        <div class="picker-loc-dots" id="picker-loc-dots"></div>
-        <div class="picker-loc-btns" id="picker-loc-btns" hidden></div>
+      <div id="picker-location-content">
+        <div class="picker-loc-views" id="picker-loc-views"></div>
+        <div class="picker-loc-stage" id="picker-loc-stage">
+          <img id="picker-loc-img" alt="vehicle view">
+          <div class="picker-loc-dots" id="picker-loc-dots"></div>
+          <div class="picker-loc-btns" id="picker-loc-btns" hidden></div>
+        </div>
+        <div id="picker-part-details" hidden></div>
       </div>
+      <div id="picker-system-details" hidden></div>
     </div>
     <!-- Tracer/head-parent config: Standard Duo/Trio + secondary color, with a
          live preview of the resolved housings + head SKUs. Replaces the color
