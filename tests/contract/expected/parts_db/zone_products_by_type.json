@@ -347,9 +347,54 @@
       {
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+        "price_min": 1232.0,
+        "product_id": "gamber_johnson_7170_0734_02",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+        "price_min": 1379.0,
+        "product_id": "gamber_johnson_7170_0734_04",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+        "price_min": 1690.0,
+        "product_id": "gamber_johnson_7170_0734_09",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
         "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
         "price_min": 787.0,
         "product_id": "gamber_johnson_7170_0784_07",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+        "price_min": 1869.0,
+        "product_id": "gamber_johnson_7170_0882_02",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+        "price_min": 1478.0,
+        "product_id": "gamber_johnson_7170_0882_03",
         "qb_count": 1,
         "sku_count": 1
       },
@@ -548,6 +593,15 @@
         "model": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
         "price_min": 848.0,
         "product_id": "havis_c_vsx_1800_inut",
+        "qb_count": 1,
+        "sku_count": 1
+      },
+      {
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
+        "price_min": 2375.0,
+        "product_id": "havis_pkg_vsx_1800_tah_pm_5",
         "qb_count": 1,
         "sku_count": 1
       },

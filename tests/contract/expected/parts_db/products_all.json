@@ -6335,7 +6335,7 @@
         ],
         "images": {},
         "manufacturer_id": "whelen",
-        "model": "CORE CONTROL HEAD",
+        "model": "CORE CONTROL HEAD FACEPLATE",
         "part_numbers": [
           {
             "color": "",
@@ -6689,12 +6689,10 @@
         "tag_ids": []
       },
       {
-        "description": "",
-        "fits_part_types": [
-          "motion_attachment"
-        ],
+        "description": "Legacy generic Mongoose placeholder; superseded by Gamber Johnson 7160-0220 and hidden from the picker to avoid a duplicate choice.",
+        "fits_part_types": [],
         "images": {},
-        "manufacturer_id": "havis",
+        "manufacturer_id": "gamber_johnson",
         "model": "9\"\" MONGOOSE",
         "part_numbers": [
           {
@@ -6724,7 +6722,7 @@
           "motion_attachment"
         ],
         "images": {},
-        "manufacturer_id": "havis",
+        "manufacturer_id": "gamber_johnson",
         "model": "9\"\" XE",
         "part_numbers": [
           {
@@ -18187,7 +18185,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "bracket"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -20263,7 +20261,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "bracket"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -20295,7 +20293,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "bracket"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -20455,11 +20453,11 @@
       {
         "description": "",
         "fits_part_types": [
-          "pedestal_mount"
+          "motion_attachment"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
-        "model": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+        "model": "MONGOOSE 9\" LOCKING SLIDE ARM WITH 360 DEGREE CLEVIS",
         "part_numbers": [
           {
             "color": "",
@@ -21613,7 +21611,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -21645,7 +21643,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -21677,7 +21675,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -21773,7 +21771,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -21806,7 +21804,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -22128,7 +22126,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "cable"
         ],
         "images": {},
         "manufacturer_id": "gamber_johnson",
@@ -24882,7 +24880,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "cable"
         ],
         "images": {},
         "manufacturer_id": "lind",
@@ -25238,7 +25236,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "cable"
         ],
         "images": {},
         "manufacturer_id": "lind",
@@ -27440,7 +27438,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "bracket"
         ],
         "images": {},
         "manufacturer_id": "havis",
@@ -29147,7 +29145,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "console"
         ],
         "images": {},
         "manufacturer_id": "havis",
@@ -34820,7 +34818,7 @@
       {
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "cable"
         ],
         "images": {},
         "manufacturer_id": "lind",

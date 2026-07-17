@@ -5289,7 +5289,7 @@
     },
     "whelen_core_control_head": {
       "manufacturer_id": "whelen",
-      "model": "CORE CONTROL HEAD",
+      "model": "CORE CONTROL HEAD FACEPLATE",
       "fits_part_types": [
         "special_face_plate"
       ],
@@ -5468,13 +5468,11 @@
       ]
     },
     "havis_9_mongoose": {
-      "manufacturer_id": "havis",
+      "manufacturer_id": "gamber_johnson",
       "model": "9\"\" MONGOOSE",
-      "fits_part_types": [
-        "motion_attachment"
-      ],
+      "fits_part_types": [],
       "tag_ids": [],
-      "description": "",
+      "description": "Legacy generic Mongoose placeholder; superseded by Gamber Johnson 7160-0220 and hidden from the picker to avoid a duplicate choice.",
       "images": {},
       "part_numbers": [
         {
@@ -5483,7 +5481,7 @@
       ]
     },
     "havis_9_xe": {
-      "manufacturer_id": "havis",
+      "manufacturer_id": "gamber_johnson",
       "model": "9\"\" XE",
       "fits_part_types": [
         "motion_attachment"
@@ -14523,7 +14521,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "HEADS UP SMARTPHONE DOCK BRACKET",
       "fits_part_types": [
-        "docking_station"
+        "bracket"
       ],
       "tag_ids": [],
       "description": "",
@@ -16311,7 +16309,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
       "fits_part_types": [
-        "docking_station"
+        "bracket"
       ],
       "tag_ids": [],
       "description": "",
@@ -16338,7 +16336,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
       "fits_part_types": [
-        "docking_station"
+        "bracket"
       ],
       "tag_ids": [],
       "description": "",
@@ -16471,9 +16469,9 @@
     },
     "gamber_johnson_7160_0220": {
       "manufacturer_id": "gamber_johnson",
-      "model": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+      "model": "MONGOOSE 9\" LOCKING SLIDE ARM WITH 360 DEGREE CLEVIS",
       "fits_part_types": [
-        "pedestal_mount"
+        "motion_attachment"
       ],
       "tag_ids": [],
       "description": "",
@@ -17451,7 +17449,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
       "fits_part_types": [
-        "arm_rest"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -17478,7 +17476,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
       "fits_part_types": [
-        "arm_rest"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -17505,7 +17503,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
       "fits_part_types": [
-        "arm_rest"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -17586,7 +17584,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
       "fits_part_types": [
-        "arm_rest"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -17614,7 +17612,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
       "fits_part_types": [
-        "arm_rest"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -17886,7 +17884,7 @@
       "manufacturer_id": "gamber_johnson",
       "model": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
       "fits_part_types": [
-        "docking_station"
+        "cable"
       ],
       "tag_ids": [],
       "description": "",
@@ -20227,7 +20225,7 @@
       "manufacturer_id": "lind",
       "model": "ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE",
       "fits_part_types": [
-        "docking_station"
+        "cable"
       ],
       "tag_ids": [],
       "description": "",
@@ -20537,7 +20535,7 @@
       "manufacturer_id": "lind",
       "model": "20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
       "fits_part_types": [
-        "docking_station"
+        "cable"
       ],
       "tag_ids": [],
       "description": "",
@@ -22459,7 +22457,7 @@
       "manufacturer_id": "havis",
       "model": "MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
       "fits_part_types": [
-        "docking_station"
+        "bracket"
       ],
       "tag_ids": [],
       "description": "",
@@ -23903,7 +23901,7 @@
       "manufacturer_id": "havis",
       "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
       "fits_part_types": [
-        "docking_station"
+        "console"
       ],
       "tag_ids": [],
       "description": "",
@@ -28765,7 +28763,7 @@
       "manufacturer_id": "lind",
       "model": "Dell Isolated Power Adapter",
       "fits_part_types": [
-        "docking_station"
+        "cable"
       ],
       "tag_ids": [],
       "description": "",

@@ -1045,21 +1045,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "arm_rest",
-        "primary_part_type_label": "Armrest",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0734_04",
-        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT gamber_johnson Gamber Johnson Armrest Equipment arm_rest Armrest Equipment PIU 7170-0734-04 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-04 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
         "skus": [
           {
             "color": "",
@@ -1081,21 +1081,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "arm_rest",
-        "primary_part_type_label": "Armrest",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0734_02",
-        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT gamber_johnson Gamber Johnson Armrest Equipment arm_rest Armrest Equipment PIU 7170-0734-02 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-02 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
         "skus": [
           {
             "color": "",
@@ -1153,21 +1153,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "arm_rest",
-        "primary_part_type_label": "Armrest",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0734_09",
-        "search_text": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT gamber_johnson Gamber Johnson Armrest Equipment arm_rest Armrest Equipment PIU 7170-0734-09 GAMBER JOHNSON 2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+        "search_text": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-09 GAMBER JOHNSON 2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
         "skus": [
           {
             "color": "",
@@ -1262,21 +1262,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "arm_rest",
-        "primary_part_type_label": "Armrest",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0882_02",
-        "search_text": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST gamber_johnson Gamber Johnson Armrest Equipment arm_rest Armrest Equipment F-150 SUPER-DUTY 7170-0882-02 GAMBER JOHNSON 2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+        "search_text": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console F-150 SUPER-DUTY 7170-0882-02 GAMBER JOHNSON 2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
         "skus": [
           {
             "color": "",
@@ -1407,21 +1407,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "arm_rest"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "arm_rest",
-        "primary_part_type_label": "Armrest",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "gamber_johnson_7170_0882_03",
-        "search_text": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST gamber_johnson Gamber Johnson Armrest Equipment arm_rest Armrest Equipment F-150 SUPER-DUTY 7170-0882-03 GAMBER JOHNSON 2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+        "search_text": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console F-150 SUPER-DUTY 7170-0882-03 GAMBER JOHNSON 2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
         "skus": [
           {
             "color": "",
@@ -1617,42 +1617,6 @@
             "tertiary_color": "",
             "vehicle_tags": [
               "TAHOE"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "lind",
-        "manufacturer_label": "Lind",
-        "model": "20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "lind_de2045_1342",
-        "search_text": "20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION lind Lind Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any DE2045-1342 LIND 20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "LIND 20VDC OUTPUT POWER SUPPLY FOR DELL LAPTOP/DOCKING STATION",
-            "lens_type": "",
-            "part_number": "DE2045-1342",
-            "price": 124.95,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
             ]
           }
         ]
@@ -3300,40 +3264,6 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "motion_attachment"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "havis",
-        "manufacturer_label": "Havis",
-        "model": "9\"\" MONGOOSE",
-        "primary_category_id": "",
-        "primary_family_id": "console_system",
-        "primary_family_label": "Console",
-        "primary_part_type_id": "motion_attachment",
-        "primary_part_type_label": "Motion Attachment",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "havis_9_mongoose",
-        "search_text": "9\"\" MONGOOSE havis Havis Motion Attachment Equipment Console motion_attachment Motion Attachment Equipment Console 9\"\" MONGOOSE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "",
-            "lens_type": "",
-            "part_number": "9\"\" MONGOOSE",
-            "price": null,
-            "qb": false,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": []
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
           "thermal_imager_monitor"
         ],
         "is_fixture": false,
@@ -3371,8 +3301,8 @@
           "motion_attachment"
         ],
         "is_fixture": false,
-        "manufacturer_id": "havis",
-        "manufacturer_label": "Havis",
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
         "model": "9\"\" XE",
         "primary_category_id": "",
         "primary_family_id": "console_system",
@@ -3382,7 +3312,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "havis_9_xe",
-        "search_text": "9\"\" XE havis Havis Motion Attachment Equipment Console motion_attachment Motion Attachment Equipment Console 9\"\" XE",
+        "search_text": "9\"\" XE gamber_johnson Gamber Johnson Motion Attachment Equipment Console motion_attachment Motion Attachment Equipment Console 9\"\" XE",
         "skus": [
           {
             "color": "",
@@ -5813,7 +5743,7 @@
         "is_fixture": false,
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
-        "model": "CORE CONTROL HEAD",
+        "model": "CORE CONTROL HEAD FACEPLATE",
         "primary_category_id": "",
         "primary_family_id": "",
         "primary_family_label": "",
@@ -5822,7 +5752,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "whelen_core_control_head",
-        "search_text": "CORE CONTROL HEAD whelen Whelen Special Face Plate Equipment special_face_plate Special Face Plate Equipment CORE CONTROL HEAD",
+        "search_text": "CORE CONTROL HEAD FACEPLATE whelen Whelen Special Face Plate Equipment special_face_plate Special Face Plate Equipment CORE CONTROL HEAD",
         "skus": [
           {
             "color": "",
@@ -6457,42 +6387,6 @@
             "part_number": "CYLINDER STYLE ANTENNA",
             "price": null,
             "qb": false,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "gamber_johnson",
-        "manufacturer_label": "Gamber Johnson",
-        "model": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "gamber_johnson_7110_1213",
-        "search_text": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT gamber_johnson Gamber Johnson Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any 7110-1213 GAMBER JOHNSON DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "GAMBER JOHNSON DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
-            "lens_type": "",
-            "part_number": "7110-1213",
-            "price": 76.0,
-            "qb": true,
             "qb_pending": false,
             "secondary_color": "",
             "tertiary_color": "",
@@ -7194,42 +7088,6 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "lind",
-        "manufacturer_label": "Lind",
-        "model": "Dell Isolated Power Adapter",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "lind_dell_power_adapter_2542",
-        "search_text": "Dell Isolated Power Adapter lind Lind Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any DE2045I-2542 ISOLATED POWER ADAPTER FOR DELL LATITUDE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "ISOLATED POWER ADAPTER FOR DELL LATITUDE",
-            "lens_type": "",
-            "part_number": "DE2045I-2542",
-            "price": 262.45,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
           "cargo_lighting",
           "front_dome_light",
           "rear_seat_lights"
@@ -7496,42 +7354,6 @@
             "lens_type": "",
             "part_number": "SC-1300",
             "price": 45.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "lind",
-        "manufacturer_label": "Lind",
-        "model": "ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "lind_cblop_f90610",
-        "search_text": "ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE lind Lind Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any CBLOP-F90610 LIND ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "LIND ELECTRONICS COMPUTER POWER SUPPLY OUTPUT CABLE FOR A DELL LATITUDE",
-            "lens_type": "",
-            "part_number": "CBLOP-F90610",
-            "price": 35.0,
             "qb": true,
             "qb_pending": false,
             "secondary_color": "",
@@ -10289,42 +10111,6 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": []
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "gamber_johnson",
-        "manufacturer_label": "Gamber Johnson",
-        "model": "HEADS UP SMARTPHONE DOCK BRACKET",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "gamber_johnson_18540",
-        "search_text": "HEADS UP SMARTPHONE DOCK BRACKET gamber_johnson Gamber Johnson Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any 18540 GAMBER JOHNSON HEADS UP SMARTPHONE DOCK BRACKET",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "GAMBER JOHNSON HEADS UP SMARTPHONE DOCK BRACKET",
-            "lens_type": "",
-            "part_number": "18540",
-            "price": 50.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
           }
         ]
       },
@@ -13426,42 +13212,6 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "gamber_johnson",
-        "manufacturer_label": "Gamber Johnson",
-        "model": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "gamber_johnson_7300_0468",
-        "search_text": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS gamber_johnson Gamber Johnson Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any 7300-0468 GAMBER JOHNSON LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "GAMBER JOHNSON LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
-            "lens_type": "",
-            "part_number": "7300-0468",
-            "price": 170.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
           "warning_light"
         ],
         "is_fixture": false,
@@ -14706,21 +14456,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "pedestal_mount"
+          "motion_attachment"
         ],
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
-        "model": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+        "model": "MONGOOSE 9\" LOCKING SLIDE ARM WITH 360 DEGREE CLEVIS",
         "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "pedestal_mount",
-        "primary_part_type_label": "Computer Pedestal / Mount Base",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "motion_attachment",
+        "primary_part_type_label": "Motion Attachment",
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "gamber_johnson_7160_0220",
-        "search_text": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS gamber_johnson Gamber Johnson Computer Pedestal / Mount Base Equipment pedestal_mount Computer Pedestal / Mount Base Equipment any 7160-0220 GAMBER JOHNSON MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+        "search_text": "MONGOOSE 9\" LOCKING SLIDE ARM WITH 360 DEGREE CLEVIS gamber_johnson Gamber Johnson Motion Attachment Equipment Console motion_attachment Motion Attachment Equipment Console any 7160-0220 GAMBER JOHNSON MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
         "skus": [
           {
             "color": "",
@@ -15251,42 +15001,6 @@
             "lens_type": "",
             "part_number": "SHO-ME 14.0434",
             "price": 46.96,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "havis",
-        "manufacturer_label": "Havis",
-        "model": "MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "havis_lps_211",
-        "search_text": "MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES havis Havis Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any LPS-211 HAVIS MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "HAVIS MULTIPURPOSE BRACKET SECURES POWER SUPPLIES ON HAVIS DOCKING STATIONS OR CRADLES",
-            "lens_type": "",
-            "part_number": "LPS-211",
-            "price": 47.0,
             "qb": true,
             "qb_pending": false,
             "secondary_color": "",
@@ -21124,42 +20838,6 @@
       },
       {
         "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "docking_station"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "gamber_johnson",
-        "manufacturer_label": "Gamber Johnson",
-        "model": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
-        "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
-        "product_id": "gamber_johnson_7110_1385",
-        "search_text": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION gamber_johnson Gamber Johnson Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation any 7110-1385 GAMBER JOHNSON RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "GAMBER JOHNSON RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
-            "lens_type": "",
-            "part_number": "7110-1385",
-            "price": 97.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
         "description": "Kenwood radio control-head install detail; radio brick location is captured separately when needed.",
         "fits_part_types": [
           "radio_head"
@@ -26789,21 +26467,21 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "docking_station"
+          "console"
         ],
         "is_fixture": false,
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
         "primary_category_id": "",
-        "primary_family_id": "computer_workstation",
-        "primary_family_label": "Computer Workstation",
-        "primary_part_type_id": "docking_station",
-        "primary_part_type_label": "Docking Station",
-        "primary_type_id": "equipment",
-        "primary_type_label": "Equipment",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
         "product_id": "havis_pkg_vsx_1800_tah_pm_5",
-        "search_text": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV havis Havis Docking Station Equipment Computer Workstation docking_station Docking Station Equipment Computer Workstation TAHOE PKG-VSX-1800-TAH-PM-5 HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
+        "search_text": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV havis Havis Console Structural Console console Console Structural Console TAHOE PKG-VSX-1800-TAH-PM-5 HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
         "skus": [
           {
             "color": "",

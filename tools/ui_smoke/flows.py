@@ -167,6 +167,9 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         assert faceplate_brands and all(brand.strip() == "Gamber Johnson" for brand in faceplate_brands), (
             f"faceplates must follow the selected Gamber Johnson console, got {faceplate_brands!r}"
         )
+        page.fill("#picker-console-faceplate-search", "CORE CONTROL HEAD")
+        page.wait_for_selector("[data-console-faceplate-add='whelen_core_control_head']")
+        assert page.locator("[data-console-faceplate-add='whelen_core_control_head'] .console-catalog-card-brand").text_content().strip() == "Gamber Johnson"
         page.fill("#picker-console-faceplate-search", "CUP HOLDER")
         page.wait_for_selector("[data-console-faceplate-add='gamber_johnson_7160_0846']")
         page.click("[data-console-faceplate-add='gamber_johnson_7160_0846']")
@@ -182,15 +185,27 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7110_1201']")
         page.click("[data-console-component-choice='gamber_johnson_7110_1201']")
         page.click("[data-console-component-open='armRest']")
-        page.wait_for_selector("[data-console-component-choice='havis_standard_arm_rest']")
-        page.click("[data-console-component-choice='havis_standard_arm_rest']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7110_1013']")
+        armrest_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
+        assert armrest_brands and all(brand.strip() == "Gamber Johnson" for brand in armrest_brands), (
+            f"armrests must follow the selected Gamber Johnson console, got {armrest_brands!r}"
+        )
+        page.click("[data-console-component-choice='gamber_johnson_7110_1013']")
         page.click("[data-console-component-open='motionAttachment']")
-        page.wait_for_selector("[data-console-component-choice='havis_c_md_112']")
-        page.click("[data-console-component-choice='havis_c_md_112']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0220']")
+        motion_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
+        assert motion_brands and all(brand.strip() == "Gamber Johnson" for brand in motion_brands), (
+            f"motion attachments must follow the selected Gamber Johnson console, got {motion_brands!r}"
+        )
+        page.click("[data-console-component-choice='gamber_johnson_7160_0220']")
         page.click("[data-console-motion-location='mounted_to_pedestal']")
         page.click("[data-console-component-open='dockingStation']")
-        page.wait_for_selector("[data-console-component-choice='gamber_johnson_18540']")
-        page.click("[data-console-component-choice='gamber_johnson_18540']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_1982_10']")
+        dock_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
+        assert dock_brands and all(brand.strip() == "Gamber Johnson" for brand in dock_brands), (
+            f"docking stations must follow the selected Gamber Johnson console, got {dock_brands!r}"
+        )
+        page.click("[data-console-component-choice='gamber_johnson_7160_1982_10']")
         assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
         page.click("#picker-add-btn")
         page.wait_for_timeout(_SETTLE_MS)
@@ -206,8 +221,14 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         "Center Console · Face Plate 1 · FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
         "Center Console · Face Plate 2 · INTERNAL CUP HOLDER",
     ], f"expected numbered faceplates in the configured order, got {faceplates!r}"
-    assert {p.get("part_type") for p in children} >= {"special_face_plate", "arm_rest", "motion_attachment", "docking_station"}
-    assert next(p for p in children if p.get("part_type") == "motion_attachment")["location"] == "MOUNTED TO PEDESTAL"
+    assert {p.get("part_type") for p in children} == {"special_face_plate"}
+    related_parts = [
+        p for p in parts
+        if p.get("picker_config", {}).get("console_setup_owner_line_id") == console["line_id"]
+    ]
+    assert {p.get("part_type") for p in related_parts} == {"arm_rest", "motion_attachment", "docking_station"}
+    assert all(not p.get("parent_line_id") for p in related_parts), f"console components must be top-level lines, got {related_parts!r}"
+    assert next(p for p in related_parts if p.get("part_type") == "motion_attachment")["location"] == "MOUNTED TO PEDESTAL"
     assert console["picker_config"]["console_setup"]["faceplates"][0]["product_id"] == "gamber_johnson_7160_0321"
     console_wings = next((p for p in children if p.get("accessory_category") == "console_wings"), None)
     assert console_wings and console_wings["part_number"] == "7110-1201", (
@@ -231,11 +252,20 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     assert [item["product_id"] for item in restored["faceplates"]] == [
         "gamber_johnson_7160_0321", "gamber_johnson_7160_0846",
     ], f"console edit must restore its ordered faceplates, got {restored!r}"
-    assert restored["armRest"]["product_id"] == "havis_standard_arm_rest"
-    assert restored["motionAttachment"]["product_id"] == "havis_c_md_112"
+    assert restored["armRest"]["product_id"] == "gamber_johnson_7110_1013"
+    assert restored["motionAttachment"]["product_id"] == "gamber_johnson_7160_0220"
     assert restored["motionLocation"] == "mounted_to_pedestal"
-    assert restored["dockingStation"]["product_id"] == "gamber_johnson_18540"
+    assert restored["dockingStation"]["product_id"] == "gamber_johnson_7160_1982_10"
     assert restored["wings"]["product_id"] == "gamber_johnson_7110_1201"
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    # The related lines are independent manifest rows, but their edit action
+    # must return to the one console setup that owns the combined choices.
+    motion_attachment = next(p for p in related_parts if p.get("part_type") == "motion_attachment")
+    page.evaluate("(lineId) => openPartEditModal(lineId)", motion_attachment["line_id"])
+    page.wait_for_selector("[data-console-setup]")
+    assert page.evaluate("_pickerState.editLineId") == console["line_id"]
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 

@@ -118,6 +118,78 @@
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "gamber_johnson_7170_0734_04",
+        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-04 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+            "lens_type": "",
+            "part_number": "7170-0734-04",
+            "price": 1379.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "gamber_johnson_7170_0734_02",
+        "search_text": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-02 GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "GAMBER JOHNSON 2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+            "lens_type": "",
+            "part_number": "7170-0734-02",
+            "price": 1232.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
         "primary_category_id": "",
         "primary_family_id": "console_system",
@@ -154,6 +226,42 @@
         "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
+        "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "gamber_johnson_7170_0734_09",
+        "search_text": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console PIU 7170-0734-09 GAMBER JOHNSON 2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "GAMBER JOHNSON 2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+            "lens_type": "",
+            "part_number": "7170-0734-09",
+            "price": 1690.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
         "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
         "primary_category_id": "",
         "primary_family_id": "console_system",
@@ -171,6 +279,43 @@
             "lens_type": "",
             "part_number": "7160-1626",
             "price": 1138.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150",
+              "SUPER-DUTY"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "gamber_johnson_7170_0882_02",
+        "search_text": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console F-150 SUPER-DUTY 7170-0882-02 GAMBER JOHNSON 2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "GAMBER JOHNSON 2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+            "lens_type": "",
+            "part_number": "7170-0882-02",
+            "price": 1869.0,
             "qb": true,
             "qb_pending": false,
             "secondary_color": "",
@@ -286,6 +431,43 @@
             "tertiary_color": "",
             "vehicle_tags": [
               "DURANGO"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "gamber_johnson",
+        "manufacturer_label": "Gamber Johnson",
+        "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "gamber_johnson_7170_0882_03",
+        "search_text": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST gamber_johnson Gamber Johnson Console Structural Console console Console Structural Console F-150 SUPER-DUTY 7170-0882-03 GAMBER JOHNSON 2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "GAMBER JOHNSON 2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+            "lens_type": "",
+            "part_number": "7170-0882-03",
+            "price": 1478.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ]
@@ -1078,6 +1260,42 @@
             "tertiary_color": "",
             "vehicle_tags": [
               "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "console"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "havis",
+        "manufacturer_label": "Havis",
+        "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
+        "primary_category_id": "",
+        "primary_family_id": "console_system",
+        "primary_family_label": "Console",
+        "primary_part_type_id": "console",
+        "primary_part_type_label": "Console",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "havis_pkg_vsx_1800_tah_pm_5",
+        "search_text": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV havis Havis Console Structural Console console Console Structural Console TAHOE PKG-VSX-1800-TAH-PM-5 HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "HAVIS WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
+            "lens_type": "",
+            "part_number": "PKG-VSX-1800-TAH-PM-5",
+            "price": 2375.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
             ]
           }
         ]

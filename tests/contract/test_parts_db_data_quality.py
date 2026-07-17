@@ -192,3 +192,41 @@ def test_clear_vehicle_fit_text_has_vehicle_tags(tmp_path):
                 offenders.append(f"{product_id}/{sku.get('part_number')}: missing {missing or expected}")
 
     assert offenders == []
+
+
+def test_console_setup_catalogs_keep_only_matching_equipment(tmp_path):
+    """Guard the curated console setup lists against obvious inventory mis-homes."""
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+    products = doc.get("products") or {}
+
+    # The legacy workbook records Mongoose and XE under Gamber Johnson.
+    assert products["havis_9_mongoose"]["manufacturer_id"] == "gamber_johnson"
+    assert products["havis_9_mongoose"]["fits_part_types"] == []
+    assert products["havis_9_xe"]["manufacturer_id"] == "gamber_johnson"
+    assert products["gamber_johnson_7160_0220"]["fits_part_types"] == ["motion_attachment"]
+
+    # These are complete console kits, not loose armrests.
+    for product_id in (
+        "gamber_johnson_7170_0734_02",
+        "gamber_johnson_7170_0734_04",
+        "gamber_johnson_7170_0734_09",
+        "gamber_johnson_7170_0882_02",
+        "gamber_johnson_7170_0882_03",
+        "havis_pkg_vsx_1800_tah_pm_5",
+    ):
+        assert products[product_id]["fits_part_types"] == ["console"]
+
+    # These accessories support a dock; they are not themselves a dock choice.
+    expected_types = {
+        "gamber_johnson_18540": "bracket",
+        "gamber_johnson_7110_1213": "bracket",
+        "gamber_johnson_7110_1385": "bracket",
+        "gamber_johnson_7300_0468": "cable",
+        "lind_cblop_f90610": "cable",
+        "lind_de2045_1342": "cable",
+        "havis_lps_211": "bracket",
+        "lind_dell_power_adapter_2542": "cable",
+    }
+    for product_id, part_type in expected_types.items():
+        assert products[product_id]["fits_part_types"] == [part_type]
