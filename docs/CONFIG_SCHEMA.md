@@ -18,7 +18,8 @@ Last updated: 2026-05-18 (Phases 1–5)
 8. [agencies.json](#agenciesjson)
 9. [sales_reps.json](#sales_repsjson)
 10. [Preset Files](#preset-files)
-11. [Common Conventions](#common-conventions)
+11. [parts_db.json](#parts_dbjson)
+12. [Common Conventions](#common-conventions)
 
 ---
 
@@ -482,6 +483,42 @@ Example: `"St. Cloud PD Patrol PIU/Tahoe"`, `"General Patrol PIU/Tahoe — Fleet
 
 ### v1 Compatibility
 Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `build_types`, or `tag` fields). They behave as universal presets.
+
+---
+
+## parts_db.json
+
+The canonical Part Picker catalog. The full picker behavior and data-routing notes live in
+[`PARTS_DB_AND_PICKER.md`](PARTS_DB_AND_PICKER.md). Product records may include a structured
+console-kit definition when one QuickBooks console SKU includes multiple shop components.
+
+```json
+{
+  "products": {
+    "<product_id>": {
+      "manufacturer_id": "<string>",
+      "model": "<string>",
+      "fits_part_types": ["console"],
+      "part_numbers": ["<PartNumber>"],
+      "console_kit": {
+        "style": "<non-empty string>",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "printer",
+          "motion_attachment": "mongoose"
+        }
+      }
+    }
+  }
+}
+```
+
+`console_kit` is optional and belongs on the product (not the individual SKU): it identifies the
+kit's selectable style and the physical components already covered by its QuickBooks price.
+`included` is a free-form object so it can describe the precise armrest or motion variant when
+needed. Included components remain on the shop manifest and are intentionally skipped by estimate
+resolution.
 
 ---
 

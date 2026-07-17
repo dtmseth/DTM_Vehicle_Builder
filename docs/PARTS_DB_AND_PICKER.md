@@ -306,16 +306,17 @@ location" rows.
     display-only **PA Mic** child row in the manifest. A Magnetic mic additionally creates its
     real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains shop detail
     only.
-  - **Center Console.** It has one fixed physical location (In Center Console). After selecting
-    its SKU, **Set up Center Console** opens the Details tab to add real faceplate, armrest, motion
-    attachment, and docking-station SKUs. Faceplates are restricted to the selected console’s
-    manufacturer (with the contextual Core Control Head faceplate offered under that console
-    brand), can be dragged into physical order, and are saved as numbered child lines in that
-    exact manifest order. Armrests, motion attachments, and docking stations use the same setup
-    screen but are saved as independent top-level, billable build lines. Compatible light-control,
-    radio, and K-9 faceplates are suggested only when they match that console manufacturer.
-    Vehicle-specific console wings appear as a separate optional detail rather than a numbered
-    faceplate; the current catalog offers Gamber Johnson 2015+ Tahoe wings only on Tahoe builds.
+  - **Center Console.** It has one fixed physical location (In Center Console). **Set up Center
+    Console** starts with the console style and required features, then selects the best compatible
+    QuickBooks kit. Core and radio faceplates are always placed in the lineup; vehicle-specific
+    kits also place their OEM relocation plate and, when supplied, cupholder plate in physical
+    shop order. Included kit items remain visible under the console in the manifest but are not
+    billed separately. An armrest or motion attachment is omitted as a separate estimate line
+    when that exact feature is included with the selected kit; docking stations and other non-kit
+    hardware remain independent billed lines. Faceplates and related hardware are filtered to the
+    preferred console manufacturer. Vehicle-specific console wings remain an optional detail
+    rather than a numbered faceplate; the current catalog offers Gamber Johnson 2015+ Tahoe wings
+    only on Tahoe builds.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
     wireless-mic charger. Front and rear cameras use fixed upper-window locations.

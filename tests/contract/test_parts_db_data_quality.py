@@ -217,6 +217,22 @@ def test_console_setup_catalogs_keep_only_matching_equipment(tmp_path):
     ):
         assert products[product_id]["fits_part_types"] == ["console"]
 
+    # Kit contents are structured so the picker can select the closest QB
+    # package and avoid billing components already included in its price.
+    assert products["gamber_johnson_7170_0734_09"]["console_kit"] == {
+        "style": "low_profile",
+        "included": {
+            "cup_holder": True,
+            "oem_relocation_plate": True,
+            "armrest": "printer",
+            "motion_attachment": "mongoose",
+        },
+    }
+    assert products["havis_pkg_vsx_1800_tah_pm_5"]["console_kit"] == {
+        "style": "wide_body",
+        "included": {"cup_holder": True, "oem_relocation_plate": True},
+    }
+
     # These accessories support a dock; they are not themselves a dock choice.
     expected_types = {
         "gamber_johnson_18540": "bracket",

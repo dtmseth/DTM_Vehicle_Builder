@@ -446,7 +446,8 @@ def _hyd_product(pid: str, spec: dict) -> Product:
                     tag_ids=list(spec.get("tag_ids") or []),
                     description=spec.get("description", ""),
                     images=dict(spec.get("images") or {}),
-                    part_numbers=[_hyd_part_number(pn) for pn in (spec.get("part_numbers") or [])])
+                    part_numbers=[_hyd_part_number(pn) for pn in (spec.get("part_numbers") or [])],
+                    console_kit=dict(spec.get("console_kit") or {}))
 
 
 def _hyd_part_type(pid: str, spec: dict) -> PartType:

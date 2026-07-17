@@ -186,6 +186,20 @@ def test_resolve_skips_excluded_and_defaults_qty(paths):
     assert len(lines) == 1 and lines[0]["qty"] == 1 and lines[0]["amount"] == 5.0
 
 
+def test_resolve_skips_console_parts_included_with_kit(paths):
+    _write_parts_db(paths, {
+        "kit": _linked_product("Console kit", "KIT", "1", 500.0),
+        "cup": _linked_product("Cup holder", "CUP", "2", 25.0),
+    })
+    draft = new_draft(parts=[
+        DraftPart(name="Center Console", part_number="KIT"),
+        DraftPart(name="Cup Holder Faceplate", part_number="CUP", picker_config={"console_kit_included": True}),
+    ])
+    lines, problems = est.resolve_build_lines(paths, draft)
+    assert problems == []
+    assert [line["part_number"] for line in lines] == ["KIT"]
+
+
 # ── pending-QB parts (docs/PARTS_DB_AND_PICKER.md) ───────────────────────────────
 
 
@@ -377,4 +391,3 @@ def test_create_estimates_batch_mixed(paths, monkeypatch):
     by_id = {r["individual_id"]: r for r in res["results"]}
     assert by_id["ok"]["ok"] is True
     assert by_id["bad"]["ok"] is False and by_id["bad"]["error"] == "validation_failed"
-

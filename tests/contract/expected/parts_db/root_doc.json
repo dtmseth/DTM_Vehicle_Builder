@@ -7005,6 +7005,12 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0567_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7032,6 +7038,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0734_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7059,6 +7072,14 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0734_02": {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7086,6 +7107,15 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0734_04": {
+        "console_kit": {
+          "included": {
+            "armrest": "rear",
+            "cup_holder": true,
+            "motion_attachment": "mongoose",
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7113,6 +7143,15 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0734_09": {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "motion_attachment": "mongoose",
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7140,6 +7179,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0784_07": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7194,6 +7240,14 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0882_02": {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7222,6 +7276,14 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0882_03": {
+        "console_kit": {
+          "included": {
+            "armrest": "side",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7250,6 +7312,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0884_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7277,6 +7346,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0884_03": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7304,6 +7380,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_0886_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "short"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7331,6 +7414,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_1062_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7385,6 +7475,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_1164_01": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard_width"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -7412,6 +7509,13 @@
         "tag_ids": []
       },
       "gamber_johnson_7170_1179_00": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"
@@ -9863,6 +9967,13 @@
         "tag_ids": []
       },
       "havis_pkg_vsx_1800_tah_pm_5": {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "description": "",
         "fits_part_types": [
           "console"

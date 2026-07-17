@@ -317,6 +317,20 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fits_part_types' must be a list"
             )
+        console_kit = spec.get("console_kit")
+        if console_kit is not None:
+            if not isinstance(console_kit, dict):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' 'console_kit' must be an object"
+                )
+            if not isinstance(console_kit.get("style", ""), str) or not console_kit.get("style", "").strip():
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' console_kit requires a non-empty 'style'"
+                )
+            if not isinstance(console_kit.get("included", {}), dict):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' console_kit 'included' must be an object"
+                )
 
     # Optional families collection (browse-time grouping, orthogonal to type_id/
     # zone/section — see docs/audit/PART_TYPE_TAXONOMY_PROPOSAL.md). Additive: absent

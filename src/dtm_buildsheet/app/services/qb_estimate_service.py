@@ -180,6 +180,11 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     for dp in draft.parts:
         if not dp.include:
             continue
+        # Console kits include some physical rows (for example a cup holder or
+        # OEM relocation plate). Keep those in the build manifest, but the kit
+        # itself already covers their price in QuickBooks.
+        if (dp.picker_config or {}).get("console_kit_included"):
+            continue
         # Unbilled parts (agency-supplied cameras/radios etc., tagged "unbilled"):
         # tracked on the build but never quoted — skip with no line and no problem.
         if (str(dp.part_number or "").strip().lower() in unbilled

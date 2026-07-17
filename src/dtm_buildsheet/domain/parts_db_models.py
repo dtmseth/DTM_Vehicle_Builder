@@ -145,6 +145,9 @@ class Product:
     description: str = ""
     images: dict[str, str] = field(default_factory=dict)
     part_numbers: list[PartNumber] = field(default_factory=list)
+    # Optional console-kit composition. This is intentionally product-level:
+    # each QB kit SKU includes a different set of shop components.
+    console_kit: dict[str, Any] = field(default_factory=dict)
 
 
 # ── Part types ───────────────────────────────────────────────────────────────

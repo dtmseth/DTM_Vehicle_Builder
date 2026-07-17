@@ -239,6 +239,7 @@ function _meMakeRows(parts) {
     // Accessory child lines — real parts, individually editable/removable.
     for (const c of kids) {
       const cMfgModel = [c.manufacturer, c.part_number].filter(Boolean).join(" / ") || "—";
+      const kitIncluded = !!c.picker_config?.console_kit_included;
       const childTag = c.accessory_category === "console_faceplate"
         ? "face plate"
         : ["console_component", "console_wings"].includes(c.accessory_category) ? "console" : "accessory";
@@ -249,7 +250,7 @@ function _meMakeRows(parts) {
         <td style="text-align:center;font-size:12px">${c.quantity || "—"}</td>
         <td style="font-size:11px;color:var(--muted)">${esc(cMfgModel)}</td>
         <td></td>
-        <td><span class="badge ${c.include ? "badge-on" : "badge-off"}">${c.include ? "Yes" : "No"}</span></td>
+        <td><span class="badge ${kitIncluded || c.include ? "badge-on" : "badge-off"}">${kitIncluded ? "Kit" : c.include ? "Yes" : "No"}</span></td>
         <td class="me-row-actions">
           <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(c.line_id)}" title="Edit">≡</button>
           <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(c.line_id)}" title="Remove">✕</button>

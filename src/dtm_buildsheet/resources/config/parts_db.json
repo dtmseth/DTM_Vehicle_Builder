@@ -17397,6 +17397,12 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "wide_body",
+        "included": {
+          "cup_holder": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17424,6 +17430,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "low_profile",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17451,6 +17464,14 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "low_profile",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "printer"
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17478,6 +17499,15 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "low_profile",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "rear",
+          "motion_attachment": "mongoose"
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17505,6 +17535,15 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "low_profile",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "printer",
+          "motion_attachment": "mongoose"
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17532,6 +17571,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "standard",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17586,6 +17632,14 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "wide_body",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "printer"
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17614,6 +17668,14 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "wide_body",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "side"
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17642,6 +17704,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "standard",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17669,6 +17738,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "standard",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17696,6 +17772,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "short",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17723,6 +17806,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "wide_body",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17777,6 +17867,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "standard_width",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -17804,6 +17901,13 @@
       "fits_part_types": [
         "console"
       ],
+      "console_kit": {
+        "style": "wide_body",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true
+        }
+      },
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -23897,7 +24001,7 @@
       ],
       "reviewed": false
     },
-    "havis_pkg_vsx_1800_tah_pm_5": {
+  "havis_pkg_vsx_1800_tah_pm_5": {
       "manufacturer_id": "havis",
       "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
       "fits_part_types": [
@@ -23922,8 +24026,15 @@
           "options": {}
         }
       ],
-      "reviewed": false
-    },
+    "reviewed": false,
+    "console_kit": {
+      "style": "wide_body",
+      "included": {
+        "cup_holder": true,
+        "oem_relocation_plate": true
+      }
+    }
+  },
     "whelen_plf46": {
       "manufacturer_id": "whelen",
       "model": "PROGRAMMABLE LIGHT FLASHER",

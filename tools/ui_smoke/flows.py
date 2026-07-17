@@ -123,9 +123,9 @@ def flow_tab_load(page, base_url: str) -> None:
 
 
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
-    """A Center Console has one fixed physical location, then opens its
-    dedicated faceplate/order and component setup in Details."""
-    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="TAHOE")
+    """A Center Console is chosen as a style/features-driven QB kit, then its
+    included and separately billed parts are persisted correctly."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="PIU")
     _open_build_editor(page, base_url)
 
     def add_console_part():
@@ -149,48 +149,28 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
             page.wait_for_timeout(200)
         page.click(".pbt-leaf[data-pt='console']")
         page.wait_for_timeout(_SETTLE_MS)
-        # Gamber Johnson Tahoe console — the selected-brand faceplate filter
-        # and Tahoe-only wing option are both covered below.
-        page.fill("#pf-search", "7170-1164-01")
-        page.wait_for_timeout(_SETTLE_MS)
-        page.click(".pp-head >> nth=0")
-        page.wait_for_timeout(200)
-        page.click(".pp-sku [data-pick] >> nth=0")
-        page.wait_for_timeout(200)
+        # A console no longer starts with a raw SKU. It is a kit: choose its
+        # style and feature requirements, then let the picker select the QB
+        # item that contains as much as possible.
         assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
         assert page.locator("#picker-tab-btn-location").is_hidden()
         assert page.locator("#picker-add-btn").text_content().strip() == "Set up Center Console →"
         page.click("#picker-add-btn")
         page.wait_for_selector("[data-console-setup]")
         assert page.locator("#picker-tab-btn-location").is_visible()
-        faceplate_brands = page.locator(".console-faceplate-catalog .console-catalog-card-brand").all_text_contents()
+        page.click("[data-console-style='low_profile']")
+        page.wait_for_function("() => _pickerState?.consoleSetup?.choices?.consoleChoice?.product_id")
+        faceplate_brands = page.locator(".console-extra-faceplates .console-catalog-card-brand").all_text_contents()
         assert faceplate_brands and all(brand.strip() == "Gamber Johnson" for brand in faceplate_brands), (
             f"faceplates must follow the selected Gamber Johnson console, got {faceplate_brands!r}"
         )
-        page.fill("#picker-console-faceplate-search", "CORE CONTROL HEAD")
-        page.wait_for_selector("[data-console-faceplate-add='whelen_core_control_head']")
-        assert page.locator("[data-console-faceplate-add='whelen_core_control_head'] .console-catalog-card-brand").text_content().strip() == "Gamber Johnson"
-        page.fill("#picker-console-faceplate-search", "CUP HOLDER")
-        page.wait_for_selector("[data-console-faceplate-add='gamber_johnson_7160_0846']")
-        page.click("[data-console-faceplate-add='gamber_johnson_7160_0846']")
-        page.fill("#picker-console-faceplate-search", "MOTOROLA")
-        page.wait_for_selector("[data-console-faceplate-add='gamber_johnson_7160_0321']")
-        page.click("[data-console-faceplate-add='gamber_johnson_7160_0321']")
-        # The edit surface supports both mouse drag order and keyboard-style
-        # move buttons. Exercise the latter deterministically in headless CI.
-        page.click("[data-console-faceplate-move='-1'][data-console-faceplate-index='1']")
-        assert page.evaluate("_pickerState.consoleSetup.choices.faceplates[0].product_id") == "gamber_johnson_7160_0321"
-        page.wait_for_selector("[data-console-component-open='wings']")
-        page.click("[data-console-component-open='wings']")
-        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7110_1201']")
-        page.click("[data-console-component-choice='gamber_johnson_7110_1201']")
         page.click("[data-console-component-open='armRest']")
-        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7110_1013']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0430']")
         armrest_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
         assert armrest_brands and all(brand.strip() == "Gamber Johnson" for brand in armrest_brands), (
             f"armrests must follow the selected Gamber Johnson console, got {armrest_brands!r}"
         )
-        page.click("[data-console-component-choice='gamber_johnson_7110_1013']")
+        page.click("[data-console-component-choice='gamber_johnson_7160_0430']")
         page.click("[data-console-component-open='motionAttachment']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0220']")
         motion_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
@@ -218,22 +198,23 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     children = [p for p in parts if p.get("parent_line_id") == console["line_id"]]
     faceplates = [p for p in children if p.get("accessory_category") == "console_faceplate"]
     assert [p["name"] for p in faceplates] == [
-        "Center Console · Face Plate 1 · FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
-        "Center Console · Face Plate 2 · INTERNAL CUP HOLDER",
-    ], f"expected numbered faceplates in the configured order, got {faceplates!r}"
+        "Center Console · Face Plate 1 · Core Control Head Faceplate",
+        "Center Console · Face Plate 2 · Radio Faceplate",
+        "Center Console · Face Plate 3 · Cup Holder Faceplate",
+        "Center Console · Face Plate 4 · OEM Relocation Plate",
+    ], f"expected numbered auto-populated faceplates in the configured order, got {faceplates!r}"
     assert {p.get("part_type") for p in children} == {"special_face_plate"}
+    included_parts = {p["part_number"] for p in faceplates if p.get("picker_config", {}).get("console_kit_included")}
+    assert included_parts == {"7160-0846", "15250"}, f"kit items must remain shop rows but be unbilled, got {faceplates!r}"
     related_parts = [
         p for p in parts
         if p.get("picker_config", {}).get("console_setup_owner_line_id") == console["line_id"]
     ]
-    assert {p.get("part_type") for p in related_parts} == {"arm_rest", "motion_attachment", "docking_station"}
+    assert {p.get("part_type") for p in related_parts} == {"docking_station"}
     assert all(not p.get("parent_line_id") for p in related_parts), f"console components must be top-level lines, got {related_parts!r}"
-    assert next(p for p in related_parts if p.get("part_type") == "motion_attachment")["location"] == "MOUNTED TO PEDESTAL"
-    assert console["picker_config"]["console_setup"]["faceplates"][0]["product_id"] == "gamber_johnson_7160_0321"
-    console_wings = next((p for p in children if p.get("accessory_category") == "console_wings"), None)
-    assert console_wings and console_wings["part_number"] == "7110-1201", (
-        f"Tahoe console must save the selected Gamber wings as a real child part, got {console_wings!r}"
-    )
+    setup = console["picker_config"]["console_setup"]
+    assert setup["style"] == "low_profile"
+    assert setup["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -250,20 +231,22 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.consoleSetup?.active && !_pickerState.consoleSetup.loading")
     restored = page.evaluate("() => _pickerState.consoleSetup.choices")
     assert [item["product_id"] for item in restored["faceplates"]] == [
-        "gamber_johnson_7160_0321", "gamber_johnson_7160_0846",
+        "gamber_johnson_7160_0339", "gamber_johnson_7160_0321",
+        "gamber_johnson_7160_0846", "gamber_johnson_15250",
     ], f"console edit must restore its ordered faceplates, got {restored!r}"
-    assert restored["armRest"]["product_id"] == "gamber_johnson_7110_1013"
+    assert restored["style"] == "low_profile"
+    assert restored["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
+    assert restored["armRest"]["product_id"] == "gamber_johnson_7160_0430"
     assert restored["motionAttachment"]["product_id"] == "gamber_johnson_7160_0220"
     assert restored["motionLocation"] == "mounted_to_pedestal"
     assert restored["dockingStation"]["product_id"] == "gamber_johnson_7160_1982_10"
-    assert restored["wings"]["product_id"] == "gamber_johnson_7110_1201"
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
     # The related lines are independent manifest rows, but their edit action
     # must return to the one console setup that owns the combined choices.
-    motion_attachment = next(p for p in related_parts if p.get("part_type") == "motion_attachment")
-    page.evaluate("(lineId) => openPartEditModal(lineId)", motion_attachment["line_id"])
+    docking_station = next(p for p in related_parts if p.get("part_type") == "docking_station")
+    page.evaluate("(lineId) => openPartEditModal(lineId)", docking_station["line_id"])
     page.wait_for_selector("[data-console-setup]")
     assert page.evaluate("_pickerState.editLineId") == console["line_id"]
     page.evaluate("pickerClose()")

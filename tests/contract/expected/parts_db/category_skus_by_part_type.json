@@ -74,6 +74,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -110,6 +117,15 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "armrest": "rear",
+            "cup_holder": true,
+            "motion_attachment": "mongoose",
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -146,6 +162,14 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -182,6 +206,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -218,6 +249,15 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "motion_attachment": "mongoose",
+            "oem_relocation_plate": true
+          },
+          "style": "low_profile"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -291,6 +331,14 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "armrest": "printer",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -328,6 +376,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "short"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -364,6 +419,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -400,6 +462,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -436,6 +505,14 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "armrest": "side",
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -473,6 +550,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "standard_width"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -545,6 +629,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -617,6 +708,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -1229,6 +1327,12 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [
@@ -1265,6 +1369,13 @@
         ]
       },
       {
+        "console_kit": {
+          "included": {
+            "cup_holder": true,
+            "oem_relocation_plate": true
+          },
+          "style": "wide_body"
+        },
         "default_location": "",
         "description": "",
         "fits_part_types": [

@@ -1013,6 +1013,14 @@ def _part_type_response(part_type) -> dict:
     return data
 
 
+def _product_response(product) -> dict:
+    """Keep optional structured product metadata out of ordinary product payloads."""
+    data = asdict(product)
+    if not data.get("console_kit"):
+        data.pop("console_kit", None)
+    return data
+
+
 def route_parts_db(
     handler: BaseHTTPRequestHandler, method: str, path: str, body: dict, paths: AppPaths
 ) -> bool:
@@ -1093,7 +1101,7 @@ def route_parts_db(
             if svc.get_part_type(pt_id) is None:
                 send_json(handler, {"error": f"unknown part_type_id: {pt_id}"}, status=404)
                 return True
-            send_json(handler, {"products": [asdict(p) for p in svc.list_products_for_part_type(pt_id)]})
+            send_json(handler, {"products": [_product_response(p) for p in svc.list_products_for_part_type(pt_id)]})
             return True
         if "/" in tail:
             return False
@@ -1110,7 +1118,7 @@ def route_parts_db(
             results = svc.list_products_with_tag(tag)
         else:
             results = svc.list_products()
-        send_json(handler, {"products": [asdict(p) for p in results]})
+        send_json(handler, {"products": [_product_response(p) for p in results]})
         return True
 
     if method == "GET" and path.startswith(_PRODUCTS_PATH + "/"):
@@ -1132,7 +1140,7 @@ def route_parts_db(
         if product is None:
             send_json(handler, {"error": f"unknown product_id: {tail}"}, status=404)
             return True
-        send_json(handler, asdict(product))
+        send_json(handler, _product_response(product))
         return True
 
     if method == "GET" and path == _MANIFEST_DATA_PATH:
@@ -1455,6 +1463,8 @@ def route_parts_db(
                     "is_fixture": is_fixture,
                     "default_location": default_loc,
                 }
+                if p.console_kit:
+                    entry["console_kit"] = dict(p.console_kit)
                 if is_fixture:
                     entry.update({
                         "fixture_part_type_id": fixture_part_type_id,
