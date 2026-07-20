@@ -56,6 +56,20 @@ class TestPartsDbValidator:
                                     "fits_part_types": "not a list"}},
             })
 
+    def test_rejects_product_non_list_location_options(self):
+        with pytest.raises(ValueError, match="location_options"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "location_options": "not a list"}},
+            })
+
+    def test_rejects_product_non_string_fixed_location(self):
+        with pytest.raises(ValueError, match="fixed_location"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "fixed_location": ["ON REAR PARTITION"]}},
+            })
+
     def test_rejects_part_type_missing_label(self):
         with pytest.raises(ValueError, match="label"):
             validate_config_payload("parts_db.json", {

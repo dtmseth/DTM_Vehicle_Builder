@@ -214,7 +214,7 @@ function _pickerApplyBrowseTarget(target) {
   f.category_id = target.flow || "";
   f.category_label = target.flow ? ((_LIGHT_CATEGORIES.find(x => x.id === target.flow) || {}).label || target.flow) : "";
   f.brand = ""; _pickerState._brandAutoSet = false;
-  c._noColor = target.flow === "scene" || target.flow === "interior";
+  c._noColor = target.flow === "scene";
   _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
   _pickerState.radio = { active: false, kind: "", loading: false, products: {}, choices: {}, step: 0 };
   _pickerState.systemSetup = { active: false, kind: "", product: null };
@@ -348,8 +348,9 @@ async function _pickerOpenEdit(part) {
       else if (colors.length >= 3) { c.uniform = colors.slice(0, 3); c.colorsPerHead = "trio"; }
     }
     if (part.lens) _pickerState.filters.lens = part.lens;
-    // scene/interior default to _noColor
-    c._noColor = (foundCategoryId === "scene" || foundCategoryId === "interior");
+    // Scene products have no color filter. Interior lights retain their saved
+    // red/blue/white selection, like warning lights.
+    c._noColor = foundCategoryId === "scene";
   }
   _pickerState.partDetails = {
     paMicLocation: pc.details?.paMicLocation || "",
@@ -382,7 +383,7 @@ async function _pickerOpenEdit(part) {
     _pickerState._brandAutoSet = true;
     await _pickerLoadAccessories(prod.product_id, { restoreFromDraft: true });
   }
-  if (_pickerHasFixedPartLocation() && pc.console_setup) {
+  if (_pickerIsConsoleContext() && pc.console_setup) {
     await _pickerBeginConsoleSetup(pc.console_setup);
     return;
   }
@@ -687,11 +688,17 @@ function _pickerOptionsHtml(countHtml, filterHtml) {
   return btn + countHtml + (off ? "" : filterHtml);
 }
 
+function _pickerAllowedColors() {
+  return _pickerState.filters.category_id === "interior"
+    ? ["red", "blue", "white"]
+    : _PICKER_COLOR_ORDER;
+}
+
 function _pickerColorConfigHtml() {
   const c = _pickerState.config;
   const f = _pickerState.filters;
   const cat = f.category_id;
-  const isSceneInterior = cat === "scene" || cat === "interior";
+  const isScene = cat === "scene";
   const isBar = cat === "interior_bar" || cat === "roof_bar";
   const slots = _COLORS_PER_HEAD[c.colorsPerHead];
   const seg = (k, v, label, active, disabled) =>
@@ -723,7 +730,7 @@ function _pickerColorConfigHtml() {
       ${seg("cph", "duo", "Duo", c.colorsPerHead === "duo")}
       ${seg("cph", "trio", "Trio", c.colorsPerHead === "trio")}</div></div>`;
 
-  if (isSceneInterior) {
+  if (isScene) {
     const noColor = c._noColor === true;
     const whiteSwatches = _PICKER_COLOR_ORDER.map(col => {
       const d = _PICKER_COLORS[col];
@@ -758,7 +765,7 @@ function _pickerColorConfigHtml() {
 function _pickerSwatchRow(kind, slot, selected) {
   const c = _pickerState.config;
   return `<div class="picker-swatches" data-kind="${kind}" data-slot="${slot}">` +
-    _PICKER_COLOR_ORDER.map(col => {
+    _pickerAllowedColors().map(col => {
       const avail = c.__allowAll || _pickerState.availAll.has(col);
       const d = _PICKER_COLORS[col];
       return `<button class="picker-swatch${selected === col ? " sel" : ""}${avail ? "" : " dim"}" data-color="${col}" ${avail ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
@@ -767,7 +774,7 @@ function _pickerSwatchRow(kind, slot, selected) {
 
 function _pickerSwatchMulti(head, arr, max) {
   return `<div class="picker-swatches" data-kind="custom" data-head="${head}">` +
-    _PICKER_COLOR_ORDER.map(col => {
+    _pickerAllowedColors().map(col => {
       const avail = _pickerState.availAll.has(col);
       const d = _PICKER_COLORS[col];
       return `<button class="picker-swatch${arr.includes(col) ? " sel" : ""}${avail ? "" : " dim"}" data-color="${col}" ${avail ? "" : "disabled"} title="${esc(d.label)}" style="background:${d.hex};border-color:${d.border || d.hex}"></button>`;
@@ -857,10 +864,9 @@ function _pickerWireFilters() {
     // type-lock already confines leaf clicks there to the locked part_type,
     // and the pre-filled edit brand must survive a re-click of that leaf.
     if (!_pickerState.editLineId) { f.brand = ""; _pickerState._brandAutoSet = false; }
-    // Scene/interior lights are white — default to NO color filter (all SKUs
-    // match); the user opts into a color only if they want one. Other light
-    // categories keep the normal per-color selection.
-    c._noColor = (flow === "scene" || flow === "interior");
+    // Scene products have no color filter. Interior lights use the same
+    // configurable flow as warning lights, restricted to red, blue, and white.
+    c._noColor = flow === "scene";
     _pickerState.sel = null; _pickerState.expanded = new Set(); _pickerState.skuChoices = {};
     _pickerState.radio = { active: false, kind: "", loading: false, products: {}, choices: {}, step: 0 };
     _pickerState.systemSetup = { active: false, kind: "", product: null };
@@ -909,12 +915,12 @@ function _pickerNormalizeConfig() {
   const c = _pickerState.config;
   const cat = _pickerState.filters.category_id;
   const isBar = cat === "interior_bar" || cat === "roof_bar";
-  const isSceneInterior = cat === "scene" || cat === "interior";
+  const isScene = cat === "scene";
   // Bar categories: enforce duo minimum (no single)
   if (isBar && c.colorsPerHead === "single") c.colorsPerHead = "duo";
   const slots = _COLORS_PER_HEAD[c.colorsPerHead];
-  const catDefault = isSceneInterior ? "white" : "red";
-  const firstAvail = _PICKER_COLOR_ORDER.find(x => _pickerState.availAll.has(x)) || catDefault;
+  const catDefault = isScene ? "white" : "red";
+  const firstAvail = _pickerAllowedColors().find(x => _pickerState.availAll.has(x)) || catDefault;
   c.splitAllowed = (c.count % 2 === 0) && slots <= 2;
   if (c.mode === "split" && !c.splitAllowed) c.mode = "uniform";
   c.uniform = Array.from({ length: slots }, (_, i) => c.uniform[i] || firstAvail);
@@ -954,6 +960,12 @@ function _pickerComboLabel(hs) { return hs.length ? hs.map(x => x[0].toUpperCase
 // Programmable (WeCanX) bars have none → picked directly by SKU.
 function _pickerProductHasColor(p) {
   return (p.skus || []).some(s => s.color || s.secondary_color || s.tertiary_color);
+}
+
+function _pickerSkuAllowedForCurrentFlow(sku) {
+  if (_pickerState.filters.category_id !== "interior") return true;
+  const colors = [sku.color, sku.secondary_color, sku.tertiary_color].filter(Boolean);
+  return colors.every(color => _pickerAllowedColors().includes(color));
 }
 
 function _pickerIsSirenSpeakerContext() {
@@ -1135,6 +1147,12 @@ function _pickerRenderProducts() {
   });
   // Vehicle-compat: drop products with no SKU that fits the selected vehicle.
   if (!globalSearch && vehFiltering) list = list.filter(p => p.skus.some(s => _skuCompatible(s, veh)));
+  // Interior-light choices are intentionally restricted to red, blue, and
+  // white. Keep unsupported colors out even when the user removes the other
+  // option filters, so an amber warning-light SKU cannot slip into this flow.
+  if (f.category_id === "interior") {
+    list = list.filter(p => p.skus.some(s => _pickerSkuAllowedForCurrentFlow(s)));
+  }
   // Step 2: grid is no longer pre-sorted by color match — options live in the
   // product box and are configured per-product after selection, not before.
   list = [...list].sort((a, b) => {
@@ -1148,7 +1166,8 @@ function _pickerRenderProducts() {
     const open = _pickerState.expanded.has(p.product_id);
     const selected = _pickerState.sel && _pickerState.sel.product_id === p.product_id;
     // SKUs shown for this product, narrowed to the selected vehicle when filtering.
-    const skus = vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus;
+    const skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
+      .filter(s => _pickerSkuAllowedForCurrentFlow(s));
     const prices = skus.map(s => s.price).filter(v => v != null);
     const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
     const qb = skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
@@ -2343,17 +2362,42 @@ function _pickerFixtureAutoLocation(product) {
   _pickerUpdateFooter();
 }
 
-function _pickerHasFixedPartLocation() {
+function _pickerIsConsoleContext() {
   return _pickerResolvedPartTypeId(_pickerState.filters) === "console";
+}
+
+function _pickerFixedPartLocation() {
+  if (_pickerIsConsoleContext()) {
+    return {
+      location: "IN CENTER CONSOLE",
+      namePattern: "Center Console",
+      baseLabel: "Center Console",
+      catalogNames: ["Center Console"],
+    };
+  }
+  const sel = _pickerState.sel;
+  const product = sel && _pickerState.products.find(item => item.product_id === sel.product_id);
+  if (!product?.fixed_location) return null;
+  return {
+    location: product.fixed_location,
+    namePattern: product.primary_part_type_label || product.model || "Part",
+    baseLabel: product.primary_part_type_label || product.model || "Part",
+    catalogNames: [],
+  };
+}
+
+function _pickerHasFixedPartLocation() {
+  return !!_pickerFixedPartLocation();
 }
 
 function _pickerApplyFixedPartLocation() {
   const loc = _pickerState.loc;
-  if (_pickerState.editLineId || loc.selected || !_pickerHasFixedPartLocation()) return;
-  loc.selected = "IN CENTER CONSOLE";
-  loc.name_pattern = "Center Console";
-  loc.base_label = "Center Console";
-  loc.catalog_names = ["Center Console"];
+  const fixed = _pickerFixedPartLocation();
+  if (_pickerState.editLineId || loc.selected || !fixed) return;
+  loc.selected = fixed.location;
+  loc.name_pattern = fixed.namePattern;
+  loc.base_label = fixed.baseLabel;
+  loc.catalog_names = fixed.catalogNames;
   loc.textCustom = false;
   _pickerUpdateFooter();
 }
@@ -2575,7 +2619,7 @@ function _pickerConsoleProductsForKey(setup, key) {
 }
 
 async function _pickerBeginConsoleSetup(saved = null) {
-  if (!_pickerHasFixedPartLocation()) return;
+  if (!_pickerIsConsoleContext()) return;
   _pickerApplyFixedPartLocation();
   const setup = _pickerNewConsoleSetup(saved || _pickerState.editPart?.picker_config?.console_setup);
   setup.active = true;
@@ -3720,7 +3764,7 @@ function _pickerUpdateFooter() {
       btn.disabled = !(sel && ready);
       _pickerState.footerHandler = (sel && ready) ? _pickerDoAdd : null;
       _showTwoButtons(false, null);
-    } else if (_pickerHasFixedPartLocation()) {
+    } else if (_pickerIsConsoleContext()) {
       _pickerApplyFixedPartLocation();
       text.innerHTML = `<span class="picker-foot-label">${esc(selName || "Choose console style and features")}</span>`;
       btn.textContent = "Set up Center Console →";

@@ -10857,6 +10857,11 @@
     "whelen_round_lighthead": {
       "manufacturer_id": "whelen",
       "model": "Round Lighthead",
+      "location_options": [
+        "Lower Kick Panels",
+        "Prisoner Headliner",
+        "Liftgate Mounted"
+      ],
       "fits_part_types": [
         "rear_seat_cargo_lights",
         "cargo_lighting",
@@ -14359,9 +14364,13 @@
       "model": "Dome Light",
       "description": "",
       "fits_part_types": [
-        "cargo_lighting",
         "front_dome_light",
+        "cargo_lighting",
         "rear_seat_lights"
+      ],
+      "location_options": [
+        "Cargo Area Headliner",
+        "Driver Area Headliner"
       ],
       "tag_ids": [
         "light"
@@ -21303,6 +21312,7 @@
     "5_0_fab_dtm_ets20fpiu": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "EQUIPMENT TRAY USED WITH SETINA 12VS REAR PARTITION 2020+ FORD PIU",
+      "fixed_location": "ON REAR PARTITION",
       "fits_part_types": [
         "equipment_tray"
       ],
@@ -32688,7 +32698,7 @@
       "picker_flow": "interior",
       "order": 3,
       "selectable": true,
-      "browse_collapsed": false
+      "browse_collapsed": true
     },
     "scene_lights": {
       "label": "Scene",

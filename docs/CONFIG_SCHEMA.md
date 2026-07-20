@@ -500,6 +500,8 @@ console-kit definition when one QuickBooks console SKU includes multiple shop co
       "model": "<string>",
       "fits_part_types": ["console"],
       "part_numbers": ["<PartNumber>"],
+      "location_options": ["<shop-reference location>"],
+      "fixed_location": "<single shop-reference location>",
       "console_kit": {
         "style": "<non-empty string>",
         "included": {
@@ -514,8 +516,11 @@ console-kit definition when one QuickBooks console SKU includes multiple shop co
 }
 ```
 
-`console_kit` is optional and belongs on the product (not the individual SKU): it identifies the
-kit's selectable style and the physical components already covered by its QuickBooks price.
+`location_options` is optional and belongs on the product when a model has more precise
+shop-reference choices than its part type. `fixed_location` skips the location step entirely for
+a product that can only be installed in one place. `console_kit` is optional and belongs on the
+product (not the individual SKU): it identifies the kit's selectable style and the physical
+components already covered by its QuickBooks price.
 `included` is a free-form object so it can describe the precise armrest or motion variant when
 needed. Included components remain on the shop manifest and are intentionally skipped by estimate
 resolution.

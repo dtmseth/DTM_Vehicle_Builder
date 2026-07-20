@@ -460,18 +460,23 @@ def _catalog_part_by_id(catalog_parts: list, part_id: str) -> dict:
 
 def _resolve_product_locations(svc, paths, type_id: str, category: str,
                                product_id: str, vehicle: str) -> list[dict]:
-    """Locations a specific PRODUCT can go, guaranteed to render.
+    """Locations a specific PRODUCT can use.
 
     Driven by the schema's `fits_part_types` (intersected with the category) AND
     each part_type's catalog `default_views`: a location is only offered if it
     exists in the vehicle layout in one of the part's render views — exactly the
     test the planner applies — so every offered placement loads in the preview.
-    Curated workbook-rule locations are preferred where present.
+    Curated product-level choices take precedence over the part-type choices.
+    They are primarily for shop-reference locations, so text choices need not
+    render on a vehicle diagram.
     """
     from ..services.config_service import load_config_file
     product = svc.get_product(product_id)
     if not product:
         return _resolve_category_locations(svc, type_id, category)
+    doc = svc.raw_doc()
+    raw_product = (doc.get("products") or {}).get(product_id) or {}
+    product_location_options = list(raw_product.get("location_options") or [])
 
     catalog_parts = (load_config_file("part_catalog.json", paths).get("parts") or [])
     layouts = load_config_file("vehicle_layouts.json", paths)
@@ -487,9 +492,19 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
     fit = [pt for pt in cat_pts if pt.part_type_id in (product.fits_part_types or [])]
     if not fit:
         fit = cat_pts
+    # A product-specific location list belongs to one logical part home, not
+    # every historical part_type it happens to fit. Preserve the product's own
+    # ordering so a dome light keeps its Dome Light label rather than borrowing
+    # the first family member's label.
+    if product_location_options and fit:
+        preferred_ids = set(product.fits_part_types or [])
+        fit.sort(key=lambda pt: next(
+            (index for index, pt_id in enumerate(product.fits_part_types or []) if pt_id == pt.part_type_id),
+            len(preferred_ids),
+        ))
+        fit = fit[:1]
     fit.sort(key=lambda pt: 0 if svc.locations_by_legacy_name(pt.label) else 1)
 
-    doc = svc.raw_doc()
     placements_doc = doc.get("placements") or {}
     pzones_doc = doc.get("placement_zones") or {}
     out: list[dict] = []
@@ -516,7 +531,7 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
         raw_pt = (doc.get("part_types") or {}).get(pt.part_type_id) or {}
         allowed = [str(l).strip().upper() for l in (raw_pt.get("allowed_placements") or [])
                    if str(l).strip()]
-        edited = [str(l).strip().upper() for l in (raw_pt.get("location_options") or [])
+        edited = [str(l).strip().upper() for l in (product_location_options or raw_pt.get("location_options") or [])
                   if str(l).strip()]
         ruled = edited or [l.upper() for l in svc.locations_by_legacy_name(pt.label)
                            if "SPECIFY" not in l.upper()]
@@ -682,7 +697,8 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 # mirror). Tiny network payload, no fragile whole-document round-trips.
 
 _PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
-                        "reviewed", "accessory_category", "accessory_of_products", "accessory_required"}
+                        "location_options", "fixed_location", "reviewed", "accessory_category",
+                        "accessory_of_products", "accessory_required"}
 _SKU_EDIT_FIELDS = {
     "part_number", "friendly_name", "color", "secondary_color", "tertiary_color",
     "lens_type", "price_usd", "qb_pending", "vehicle_tags",
@@ -1490,6 +1506,11 @@ def route_parts_db(
                     "is_fixture": is_fixture,
                     "default_location": default_loc,
                 }
+                product_spec = (doc.get("products") or {}).get(p.product_id) or {}
+                if product_spec.get("location_options"):
+                    entry["location_options"] = list(product_spec["location_options"])
+                if product_spec.get("fixed_location"):
+                    entry["fixed_location"] = product_spec["fixed_location"]
                 if p.console_kit:
                     entry["console_kit"] = dict(p.console_kit)
                 if is_fixture:
@@ -1507,7 +1528,8 @@ def route_parts_db(
 
     if method == "GET" and path == _CATEGORY_LOCATIONS_PATH:
         # Location step.
-        #   lights      → category-wide placement pool (coords drive diagram dots).
+        #   exterior lights → category-wide placement pool (coords drive diagram dots).
+        #   interior lights → the selected product's own text locations.
         #   non-lights  → the selected product's own curated location list; coords
         #                 decide whether each option is a diagram dot or dropdown row.
         type_id = qs.get("type", [""])[0]
@@ -1517,7 +1539,7 @@ def route_parts_db(
         if not type_id:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
-        if type_id == "lights":
+        if type_id == "lights" and category != "interior":
             locs = _resolve_category_locations(svc, type_id, category)
         else:
             locs = _resolve_product_locations(svc, paths, type_id, category, product_id, vehicle)

@@ -317,6 +317,18 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fits_part_types' must be a list"
             )
+        location_options = spec.get("location_options")
+        if location_options is not None and not (
+            isinstance(location_options, list) and all(isinstance(x, str) for x in location_options)
+        ):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'location_options' must be a list of strings"
+            )
+        fixed_location = spec.get("fixed_location")
+        if fixed_location is not None and not isinstance(fixed_location, str):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
+            )
         console_kit = spec.get("console_kit")
         if console_kit is not None:
             if not isinstance(console_kit, dict):

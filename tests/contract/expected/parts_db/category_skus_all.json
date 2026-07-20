@@ -7182,11 +7182,15 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "cargo_lighting",
           "front_dome_light",
+          "cargo_lighting",
           "rear_seat_lights"
         ],
         "is_fixture": false,
+        "location_options": [
+          "Cargo Area Headliner",
+          "Driver Area Headliner"
+        ],
         "manufacturer_id": "soundoff",
         "manufacturer_label": "Soundoff",
         "model": "Dome Light",
@@ -7198,7 +7202,7 @@
         "primary_type_id": "lights",
         "primary_type_label": "Lights",
         "product_id": "soundoff_soundoff_dome_light_2",
-        "search_text": "Dome Light soundoff Soundoff Dome Light Lights Interior Lighting cargo_lighting front_dome_light rear_seat_lights Cargo Lighting Dome Light Rear Seat Lights Lights Lights Lights Interior Lighting Interior Lighting Interior Lighting ECVDMLTAL00 SOUNDOFF DOME LIGHT - 6\" ROUND, WHITE AND RED NIGHT LIGHT LEDS, WHITE LENS",
+        "search_text": "Dome Light soundoff Soundoff Dome Light Lights Interior Lighting front_dome_light cargo_lighting rear_seat_lights Dome Light Cargo Lighting Rear Seat Lights Lights Lights Lights Interior Lighting Interior Lighting Interior Lighting ECVDMLTAL00 SOUNDOFF DOME LIGHT - 6\" ROUND, WHITE AND RED NIGHT LIGHT LEDS, WHITE LENS",
         "skus": [
           {
             "color": "white",
@@ -7770,6 +7774,7 @@
         "fits_part_types": [
           "equipment_tray"
         ],
+        "fixed_location": "ON REAR PARTITION",
         "is_fixture": false,
         "manufacturer_id": "5_0_fab_dtm",
         "manufacturer_label": "5-0 Fab (Dtm)",
@@ -21175,6 +21180,11 @@
           "warning_light"
         ],
         "is_fixture": false,
+        "location_options": [
+          "Lower Kick Panels",
+          "Prisoner Headliner",
+          "Liftgate Mounted"
+        ],
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",
         "model": "Round Lighthead",

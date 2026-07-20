@@ -177,7 +177,7 @@
         "picker_flow": null
       },
       "interior_lighting": {
-        "browse_collapsed": false,
+        "browse_collapsed": true,
         "category": "lights",
         "kind": "lighting_group",
         "label": "Interior Lighting",
@@ -3244,6 +3244,7 @@
         "fits_part_types": [
           "equipment_tray"
         ],
+        "fixed_location": "ON REAR PARTITION",
         "images": {},
         "manufacturer_id": "5_0_fab_dtm",
         "model": "EQUIPMENT TRAY USED WITH SETINA 12VS REAR PARTITION 2020+ FORD PIU",
@@ -19915,9 +19916,13 @@
       "soundoff_soundoff_dome_light_2": {
         "description": "",
         "fits_part_types": [
-          "cargo_lighting",
           "front_dome_light",
+          "cargo_lighting",
           "rear_seat_lights"
+        ],
+        "location_options": [
+          "Cargo Area Headliner",
+          "Driver Area Headliner"
         ],
         "manufacturer_id": "soundoff",
         "model": "Dome Light",
@@ -29175,6 +29180,11 @@
           "warning_light"
         ],
         "images": {},
+        "location_options": [
+          "Lower Kick Panels",
+          "Prisoner Headliner",
+          "Liftgate Mounted"
+        ],
         "manufacturer_id": "whelen",
         "model": "Round Lighthead",
         "part_numbers": [

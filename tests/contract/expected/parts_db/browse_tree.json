@@ -627,7 +627,7 @@
             "selectable": false
           },
           {
-            "browse_collapsed": false,
+            "browse_collapsed": true,
             "family_id": "interior_lighting",
             "kind": "family",
             "label": "Interior Lighting",

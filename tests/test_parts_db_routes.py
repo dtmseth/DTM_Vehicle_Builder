@@ -512,6 +512,40 @@ def test_siren_speaker_locations_use_curated_parts_db_allowed_placements():
     }
 
 
+def test_interior_lighting_is_one_collapsed_picker_leaf():
+    h = FakeHandler("/api/parts-db/browse-tree")
+    route_parts_db(h, "GET", "/api/parts-db/browse-tree", {}, AppPaths())
+
+    lights = next(category for category in h.body_json()["categories"] if category["type_id"] == "lights")
+    interior = next(child for child in lights["children"] if child.get("family_id") == "interior_lighting")
+    assert interior["browse_collapsed"] is True
+    assert {member["part_type_id"] for member in interior["members"]} == {
+        "cargo_lighting", "front_dome_light", "rear_seat_cargo_lights", "rear_seat_lights",
+    }
+
+
+@pytest.mark.parametrize(("product_id", "expected_locations"), [
+    ("whelen_round_lighthead", {"LOWER KICK PANELS", "PRISONER HEADLINER", "LIFTGATE MOUNTED"}),
+    ("soundoff_soundoff_dome_light_2", {"CARGO AREA HEADLINER", "DRIVER AREA HEADLINER"}),
+])
+def test_interior_light_product_locations_override_shared_part_type_locations(product_id, expected_locations):
+    h = FakeHandler(
+        f"/api/parts-db/category-locations?type=lights&category=interior&product={product_id}&vehicle=PIU"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, AppPaths())
+
+    assert h.status == 200
+    assert {row["location"] for row in h.body_json()["locations"]} == expected_locations
+
+
+def test_50_fab_equipment_tray_declares_its_fixed_rear_partition_location():
+    h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=equipment_tray")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    assert products["5_0_fab_dtm_ets20fpiu"]["fixed_location"] == "ON REAR PARTITION"
+
+
 def test_preemption_locations_are_rendered_vehicle_placements():
     h = FakeHandler(
         "/api/parts-db/category-locations?type=equipment&product=nova_preemption_light_head&vehicle=PIU"
