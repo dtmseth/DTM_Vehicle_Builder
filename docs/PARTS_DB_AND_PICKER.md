@@ -228,6 +228,8 @@ happens *through* this feature.
   excluded from other products' generic choices. For an item that is merely filed under an
   accessory part type but is not universally compatible (such as a push-bumper light channel),
   set `include_in_generic_accessory_options: false` until it is linked to its intended parent.
+  Use the `custom_patch` category for a billable custom-patch option that belongs with its parent
+  product (for example, Tiger Tough seat-cover embroidery).
 - **API:** `GET /api/parts-db/accessories?product_id=<id>` returns both, grouped by category.
 - **Picker UX:** an "Accessories" section appears with per-category selectors + "None needed";
   users can add another item within a selector when the install needs multiples. **Hard-gated Add**

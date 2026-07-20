@@ -7,6 +7,9 @@
       "cable": {
         "label": "Cable"
       },
+      "custom_patch": {
+        "label": "Custom Patch"
+      },
       "flange": {
         "label": "Flange"
       },
@@ -20811,18 +20814,26 @@
         "tag_ids": []
       },
       "tiger_tough_embroidery": {
-        "accessory_category": "other",
+        "accessory_category": "custom_patch",
         "accessory_of_products": [
-          "tiger_tough_standard"
+          "tiger_tough_t0511045_iw_blk",
+          "tiger_tough_t0512017_iw_blk",
+          "tiger_tough_t0512032_iw_blk",
+          "tiger_tough_t0611031_iw_blk",
+          "tiger_tough_t0612013_iw_blk",
+          "tiger_tough_w0521045_iw_blk",
+          "tiger_tough_w0523028_iw_blk",
+          "tiger_tough_w0555062_iw_blk",
+          "tiger_tough_w0721000_iw_blk"
         ],
         "description": "",
         "fits_part_types": [],
         "images": {},
         "manufacturer_id": "tiger_tough",
-        "model": "Stock Embroidery",
+        "model": "Custom Patch Embroidery",
         "part_numbers": [
           {
-            "friendly_name": "TIGHER TOUGH STOCK EMBROIDERY",
+            "friendly_name": "TIGER TOUGH CUSTOM PATCH EMBROIDERY",
             "options": {},
             "part_number": "Tiger Tough Embroidery",
             "price_usd": 39.19,
@@ -20837,24 +20848,6 @@
           }
         ],
         "reviewed": false,
-        "tag_ids": []
-      },
-      "tiger_tough_standard": {
-        "description": "",
-        "fits_part_types": [
-          "seat_covers"
-        ],
-        "images": {},
-        "manufacturer_id": "tiger_tough",
-        "model": "Seat Cover",
-        "part_numbers": [
-          {
-            "part_number": "STANDARD"
-          },
-          {
-            "part_number": "w/ CUSTOM PATCH"
-          }
-        ],
         "tag_ids": []
       },
       "tiger_tough_t0511045_iw_blk": {
@@ -20904,7 +20897,7 @@
             "qb_sku": "",
             "qb_unit_price": 218.12,
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ],
@@ -20999,10 +20992,10 @@
         ],
         "images": {},
         "manufacturer_id": "tiger_tough",
-        "model": "BUCKET SEAT COVERZS FOR FORD TRUCK",
+        "model": "Bucket Seat Covers for Ford Truck",
         "part_numbers": [
           {
-            "friendly_name": "TIGER TOUGH BUCKET SEAT COVERZS FOR FORD TRUCK",
+            "friendly_name": "TIGER TOUGH BUCKET SEAT COVERS FOR FORD TRUCK",
             "options": {},
             "part_number": "W0521045-IW-BLK",
             "price_usd": 278.6,
@@ -21012,7 +21005,9 @@
             "qb_sku": "",
             "qb_unit_price": 278.6,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "F-150-LIGHTNING",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -21022,14 +21017,14 @@
       "tiger_tough_w0523028_iw_blk": {
         "description": "",
         "fits_part_types": [
-          "console"
+          "seat_covers"
         ],
         "images": {},
         "manufacturer_id": "tiger_tough",
-        "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+        "model": "Seat Covers for Ford Truck, Includes Center Console Cover",
         "part_numbers": [
           {
-            "friendly_name": "TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+            "friendly_name": "TIGER TOUGH SEAT COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
             "options": {},
             "part_number": "W0523028-IW-BLK",
             "price_usd": 338.24,
@@ -21039,7 +21034,8 @@
             "qb_sku": "",
             "qb_unit_price": 338.24,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -21066,7 +21062,9 @@
             "qb_sku": "",
             "qb_unit_price": 329.72,
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "F-150-LIGHTNING",
+              "SUPER-DUTY"
             ]
           }
         ],
@@ -21093,7 +21091,8 @@
             "qb_sku": "",
             "qb_unit_price": 278.6,
             "vehicle_tags": [
-              "any"
+              "RAM-1500",
+              "RAM-HD"
             ]
           }
         ],

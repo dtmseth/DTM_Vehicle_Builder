@@ -4858,7 +4858,7 @@
         "primary_type_id": "extras",
         "primary_type_label": "Extras",
         "product_id": "tiger_tough_w0721000_iw_blk",
-        "search_text": "BUCKET SEAT COVERS FOR RAM TRUCK tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras any W0721000-IW-BLK TIGER TOUGH BUCKET SEAT COVERS FOR RAM TRUCK",
+        "search_text": "BUCKET SEAT COVERS FOR RAM TRUCK tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras RAM-1500 RAM-HD W0721000-IW-BLK TIGER TOUGH BUCKET SEAT COVERS FOR RAM TRUCK",
         "skus": [
           {
             "color": "",
@@ -4871,43 +4871,8 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "seat_covers"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "tiger_tough",
-        "manufacturer_label": "Tiger Tough",
-        "model": "BUCKET SEAT COVERZS FOR FORD TRUCK",
-        "primary_category_id": "",
-        "primary_family_id": "",
-        "primary_family_label": "",
-        "primary_part_type_id": "seat_covers",
-        "primary_part_type_label": "Seat Covers",
-        "primary_type_id": "extras",
-        "primary_type_label": "Extras",
-        "product_id": "tiger_tough_w0521045_iw_blk",
-        "search_text": "BUCKET SEAT COVERZS FOR FORD TRUCK tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras any W0521045-IW-BLK TIGER TOUGH BUCKET SEAT COVERZS FOR FORD TRUCK",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "TIGER TOUGH BUCKET SEAT COVERZS FOR FORD TRUCK",
-            "lens_type": "",
-            "part_number": "W0521045-IW-BLK",
-            "price": 278.6,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
+              "RAM-1500",
+              "RAM-HD"
             ]
           }
         ]
@@ -5088,6 +5053,44 @@
             "tertiary_color": "",
             "vehicle_tags": [
               "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "seat_covers"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "tiger_tough",
+        "manufacturer_label": "Tiger Tough",
+        "model": "Bucket Seat Covers for Ford Truck",
+        "primary_category_id": "",
+        "primary_family_id": "",
+        "primary_family_label": "",
+        "primary_part_type_id": "seat_covers",
+        "primary_part_type_label": "Seat Covers",
+        "primary_type_id": "extras",
+        "primary_type_label": "Extras",
+        "product_id": "tiger_tough_w0521045_iw_blk",
+        "search_text": "Bucket Seat Covers for Ford Truck tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras F-150 F-150-LIGHTNING SUPER-DUTY W0521045-IW-BLK TIGER TOUGH BUCKET SEAT COVERS FOR FORD TRUCK",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "TIGER TOUGH BUCKET SEAT COVERS FOR FORD TRUCK",
+            "lens_type": "",
+            "part_number": "W0521045-IW-BLK",
+            "price": 278.6,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150",
+              "F-150-LIGHTNING",
+              "SUPER-DUTY"
             ]
           }
         ]
@@ -8457,7 +8460,7 @@
         "primary_type_id": "extras",
         "primary_type_label": "Extras",
         "product_id": "tiger_tough_t0512017_iw_blk",
-        "search_text": "FORD POLICE INTERCEPTOR DRIVERS SEAT COVER tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras any T0512017-IW-BLK TIGER TOUGH FORD POLICE INTERCEPTOR DRIVERS SEAT COVER",
+        "search_text": "FORD POLICE INTERCEPTOR DRIVERS SEAT COVER tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras PIU T0512017-IW-BLK TIGER TOUGH FORD POLICE INTERCEPTOR DRIVERS SEAT COVER",
         "skus": [
           {
             "color": "",
@@ -8470,7 +8473,7 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "PIU"
             ]
           }
         ]
@@ -20796,7 +20799,7 @@
         "primary_type_id": "extras",
         "primary_type_label": "Extras",
         "product_id": "tiger_tough_w0555062_iw_blk",
-        "search_text": "REAR SEAT COVERS FOR FORD TRUCK tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras any W0555062-IW-BLK TIGER TOUGH REAR SEAT COVERS FOR FORD TRUCK",
+        "search_text": "REAR SEAT COVERS FOR FORD TRUCK tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras F-150 F-150-LIGHTNING SUPER-DUTY W0555062-IW-BLK TIGER TOUGH REAR SEAT COVERS FOR FORD TRUCK",
         "skus": [
           {
             "color": "",
@@ -20809,7 +20812,9 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "F-150",
+              "F-150-LIGHTNING",
+              "SUPER-DUTY"
             ]
           }
         ]
@@ -21339,42 +21344,6 @@
             "lens_type": "",
             "part_number": "SA315U",
             "price": 412.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "console"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "tiger_tough",
-        "manufacturer_label": "Tiger Tough",
-        "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-        "primary_category_id": "",
-        "primary_family_id": "console_system",
-        "primary_family_label": "Console",
-        "primary_part_type_id": "console",
-        "primary_part_type_label": "Console",
-        "primary_type_id": "structural",
-        "primary_type_label": "Structural",
-        "product_id": "tiger_tough_w0523028_iw_blk",
-        "search_text": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER tiger_tough Tiger Tough Console Structural Console console Console Structural Console any W0523028-IW-BLK TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-            "lens_type": "",
-            "part_number": "W0523028-IW-BLK",
-            "price": 338.24,
             "qb": true,
             "qb_pending": false,
             "secondary_color": "",
@@ -22812,7 +22781,7 @@
         "is_fixture": false,
         "manufacturer_id": "tiger_tough",
         "manufacturer_label": "Tiger Tough",
-        "model": "Seat Cover",
+        "model": "Seat Covers for Ford Truck, Includes Center Console Cover",
         "primary_category_id": "",
         "primary_family_id": "",
         "primary_family_label": "",
@@ -22820,32 +22789,23 @@
         "primary_part_type_label": "Seat Covers",
         "primary_type_id": "extras",
         "primary_type_label": "Extras",
-        "product_id": "tiger_tough_standard",
-        "search_text": "Seat Cover tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras STANDARD w/ CUSTOM PATCH",
+        "product_id": "tiger_tough_w0523028_iw_blk",
+        "search_text": "Seat Covers for Ford Truck, Includes Center Console Cover tiger_tough Tiger Tough Seat Covers Extras seat_covers Seat Covers Extras F-150 SUPER-DUTY W0523028-IW-BLK TIGER TOUGH SEAT COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
         "skus": [
           {
             "color": "",
-            "friendly_name": "",
+            "friendly_name": "TIGER TOUGH SEAT COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
             "lens_type": "",
-            "part_number": "STANDARD",
-            "price": null,
-            "qb": false,
+            "part_number": "W0523028-IW-BLK",
+            "price": 338.24,
+            "qb": true,
             "qb_pending": false,
             "secondary_color": "",
             "tertiary_color": "",
-            "vehicle_tags": []
-          },
-          {
-            "color": "",
-            "friendly_name": "",
-            "lens_type": "",
-            "part_number": "w/ CUSTOM PATCH",
-            "price": null,
-            "qb": false,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": []
+            "vehicle_tags": [
+              "F-150",
+              "SUPER-DUTY"
+            ]
           }
         ]
       },

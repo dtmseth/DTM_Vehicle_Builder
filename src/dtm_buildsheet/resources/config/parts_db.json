@@ -7717,24 +7717,6 @@
         }
       ]
     },
-    "tiger_tough_standard": {
-      "manufacturer_id": "tiger_tough",
-      "model": "Seat Cover",
-      "fits_part_types": [
-        "seat_covers"
-      ],
-      "tag_ids": [],
-      "description": "",
-      "images": {},
-      "part_numbers": [
-        {
-          "part_number": "STANDARD"
-        },
-        {
-          "part_number": "w/ CUSTOM PATCH"
-        }
-      ]
-    },
     "5_0_fab_dtm_complete_squad_harness": {
       "manufacturer_id": "5_0_fab_dtm",
       "model": "COMPLETE SQUAD HARNESS",
@@ -27302,7 +27284,7 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 218.12,
           "vehicle_tags": [
-            "any"
+            "PIU"
           ],
           "options": {}
         }
@@ -27697,7 +27679,7 @@
     },
     "tiger_tough_w0521045_iw_blk": {
       "manufacturer_id": "tiger_tough",
-      "model": "BUCKET SEAT COVERZS FOR FORD TRUCK",
+      "model": "Bucket Seat Covers for Ford Truck",
       "fits_part_types": [
         "seat_covers"
       ],
@@ -27707,7 +27689,7 @@
       "part_numbers": [
         {
           "part_number": "W0521045-IW-BLK",
-          "friendly_name": "TIGER TOUGH BUCKET SEAT COVERZS FOR FORD TRUCK",
+          "friendly_name": "TIGER TOUGH BUCKET SEAT COVERS FOR FORD TRUCK",
           "qb_item_id": "1253",
           "qb_sku": "",
           "qb_unit_price": 278.6,
@@ -27715,7 +27697,9 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 278.6,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "F-150-LIGHTNING",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -27724,9 +27708,9 @@
     },
     "tiger_tough_w0523028_iw_blk": {
       "manufacturer_id": "tiger_tough",
-      "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+      "model": "Seat Covers for Ford Truck, Includes Center Console Cover",
       "fits_part_types": [
-        "console"
+        "seat_covers"
       ],
       "tag_ids": [],
       "description": "",
@@ -27734,7 +27718,7 @@
       "part_numbers": [
         {
           "part_number": "W0523028-IW-BLK",
-          "friendly_name": "TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
+          "friendly_name": "TIGER TOUGH SEAT COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
           "qb_item_id": "1254",
           "qb_sku": "",
           "qb_unit_price": 338.24,
@@ -27742,7 +27726,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 338.24,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -27769,7 +27754,9 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 329.72,
           "vehicle_tags": [
-            "any"
+            "F-150",
+            "F-150-LIGHTNING",
+            "SUPER-DUTY"
           ],
           "options": {}
         }
@@ -27796,7 +27783,8 @@
           "qb_last_synced": "2026-06-30T20:47:55.991474+00:00",
           "price_usd": 278.6,
           "vehicle_tags": [
-            "any"
+            "RAM-1500",
+            "RAM-HD"
           ],
           "options": {}
         }
@@ -29317,7 +29305,7 @@
     },
     "tiger_tough_embroidery": {
       "manufacturer_id": "tiger_tough",
-      "model": "Stock Embroidery",
+      "model": "Custom Patch Embroidery",
       "fits_part_types": [],
       "tag_ids": [],
       "description": "",
@@ -29325,7 +29313,7 @@
       "part_numbers": [
         {
           "part_number": "Tiger Tough Embroidery",
-          "friendly_name": "TIGHER TOUGH STOCK EMBROIDERY",
+          "friendly_name": "TIGER TOUGH CUSTOM PATCH EMBROIDERY",
           "qb_item_id": "1209",
           "qb_sku": "",
           "qb_unit_price": 39.19,
@@ -29339,9 +29327,17 @@
         }
       ],
       "reviewed": false,
-      "accessory_category": "other",
+      "accessory_category": "custom_patch",
       "accessory_of_products": [
-        "tiger_tough_standard"
+        "tiger_tough_t0511045_iw_blk",
+        "tiger_tough_t0512017_iw_blk",
+        "tiger_tough_t0512032_iw_blk",
+        "tiger_tough_t0611031_iw_blk",
+        "tiger_tough_t0612013_iw_blk",
+        "tiger_tough_w0521045_iw_blk",
+        "tiger_tough_w0523028_iw_blk",
+        "tiger_tough_w0555062_iw_blk",
+        "tiger_tough_w0721000_iw_blk"
       ]
     },
     "feniex_fusion_rotating_bracket": {
@@ -32342,6 +32338,9 @@
     },
     "takedown": {
       "label": "Take-Down / Alley Lights"
+    },
+    "custom_patch": {
+      "label": "Custom Patch"
     },
     "other": {
       "label": "Other"

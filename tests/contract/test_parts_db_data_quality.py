@@ -307,3 +307,33 @@ def test_warning_bracket_scope_metadata_keeps_family_specific_mounts_out_of_gene
         "whelen_tracer_l_brackets_x2_per",
     ):
         assert products[product_id]["include_in_generic_accessory_options"] is False
+
+
+def test_tiger_tough_seat_covers_are_vehicle_scoped_and_offer_custom_patch_embroidery(tmp_path):
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+    products = doc["products"]
+
+    assert "tiger_tough_standard" not in products
+    assert doc["accessory_categories"]["custom_patch"]["label"] == "Custom Patch"
+    assert products["tiger_tough_w0523028_iw_blk"]["fits_part_types"] == ["seat_covers"]
+    expected_tags = {
+        "tiger_tough_t0512017_iw_blk": ["PIU"],
+        "tiger_tough_w0521045_iw_blk": ["F-150", "F-150-LIGHTNING", "SUPER-DUTY"],
+        "tiger_tough_w0523028_iw_blk": ["F-150", "SUPER-DUTY"],
+        "tiger_tough_w0555062_iw_blk": ["F-150", "F-150-LIGHTNING", "SUPER-DUTY"],
+        "tiger_tough_w0721000_iw_blk": ["RAM-1500", "RAM-HD"],
+    }
+    for product_id, tags in expected_tags.items():
+        assert products[product_id]["part_numbers"][0]["vehicle_tags"] == tags
+
+    embroidery = products["tiger_tough_embroidery"]
+    assert embroidery["accessory_category"] == "custom_patch"
+    assert embroidery["part_numbers"][0]["qb_item_id"] == "1209"
+    assert "unbilled" not in embroidery["tag_ids"]
+    assert set(embroidery["accessory_of_products"]) == {
+        product_id for product_id, product in products.items()
+        if product.get("manufacturer_id") == "tiger_tough"
+        and "seat_covers" in product.get("fits_part_types", [])
+    }
+    assert not any("digit" in product_id for product_id in products)

@@ -433,6 +433,22 @@ def test_warning_bracket_options_are_scoped_to_their_light_family():
     assert "dtm_twist_lock_adaptor" in bracket_ids("whelen_vertex")
 
 
+def test_tiger_tough_seat_covers_offer_custom_patch_embroidery_only():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = json.loads(
+        (Path(__file__).parents[1] / "src/dtm_buildsheet/resources/config/parts_db.json").read_text("utf-8")
+    )
+    groups = _resolve_accessories(_FakeAccSvc(doc), "tiger_tough_w0523028_iw_blk")
+    custom_patch = next(group for group in groups if group["category"] == "custom_patch")
+
+    assert custom_patch["label"] == "Custom Patch"
+    assert [option["product_id"] for option in custom_patch["options"]] == ["tiger_tough_embroidery"]
+    assert custom_patch["options"][0]["model"] == "Custom Patch Embroidery"
+    assert custom_patch["options"][0]["skus"][0]["price"] == 39.19
+    assert all("digit" not in option["product_id"] for option in custom_patch["options"])
+
+
 def test_resolve_accessories_keeps_printer_mount_and_cables_separate():
     from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
 

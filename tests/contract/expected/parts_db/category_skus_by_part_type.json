@@ -793,42 +793,6 @@
           "console"
         ],
         "is_fixture": false,
-        "manufacturer_id": "tiger_tough",
-        "manufacturer_label": "Tiger Tough",
-        "model": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-        "primary_category_id": "",
-        "primary_family_id": "console_system",
-        "primary_family_label": "Console",
-        "primary_part_type_id": "console",
-        "primary_part_type_label": "Console",
-        "primary_type_id": "structural",
-        "primary_type_label": "Structural",
-        "product_id": "tiger_tough_w0523028_iw_blk",
-        "search_text": "SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER tiger_tough Tiger Tough Console Structural Console console Console Structural Console any W0523028-IW-BLK TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "TIGER TOUGH SEAR COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
-            "lens_type": "",
-            "part_number": "W0523028-IW-BLK",
-            "price": 338.24,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "any"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "console"
-        ],
-        "is_fixture": false,
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
