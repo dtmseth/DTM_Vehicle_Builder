@@ -349,6 +349,44 @@ def test_resolve_accessories_product_specific_category_overrides_generic_fallbac
     assert out[0]["options"][0]["skus"][0]["part_number"] == "U18050"
 
 
+def test_resolve_accessories_can_keep_generic_choices_with_product_specific_one():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = {
+        "accessory_categories": {"bracket_mount": {"label": "Bracket / Mount"}},
+        "manufacturers": {"whelen": {"label": "Whelen"}},
+        "part_types": {
+            "warning_light": {"label": "Warning Light", "type_id": "lights"},
+            "warning_bracket": {
+                "label": "Warning Bracket", "type_id": "lights",
+                "accessory_of": "warning_light", "accessory_category": "bracket_mount",
+            },
+        },
+        "products": {
+            "mega_t": {
+                "manufacturer_id": "whelen", "model": "Mega T-Series",
+                "fits_part_types": ["warning_light"],
+                "accessories": [{
+                    "category": "bracket_mount", "product_id": "psbkt90",
+                    "include_generic": True,
+                }],
+            },
+            "psbkt90": {
+                "manufacturer_id": "whelen", "model": "90-Degree Mount Kit",
+                "part_numbers": [{"part_number": "PSBKT90"}],
+            },
+            "generic_mount": {
+                "manufacturer_id": "whelen", "model": "Generic Warning Mount",
+                "fits_part_types": ["warning_bracket"],
+                "part_numbers": [{"part_number": "GEN-BRACKET"}],
+            },
+        },
+    }
+
+    out = _resolve_accessories(_FakeAccSvc(doc), "mega_t")
+    assert [option["product_id"] for option in out[0]["options"]] == ["psbkt90", "generic_mount"]
+
+
 def test_resolve_accessories_keeps_printer_mount_and_cables_separate():
     from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
 

@@ -3762,7 +3762,8 @@
         {
           "category": "bracket_mount",
           "product_id": "whelen_strip_lite_mount",
-          "required": false
+          "required": false,
+          "include_generic": true
         }
       ]
     },

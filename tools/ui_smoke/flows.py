@@ -283,6 +283,12 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
         },
     })
     line_id = add_resp["line_id"]
+    _api(base_url, f"/api/draft/{draft_id}/part", {
+        "name": "Forward Warning 1 · Rear Warning License-Plate Bracket",
+        "location": "FRONT WARNING 1", "manufacturer": "DTM", "part_number": "LICENSE PLATE BRACKET",
+        "quantity": 1, "new_or_used": "New", "source": "", "parent_line_id": line_id,
+        "accessory_category": "bracket_mount", "accessory_parent_product": "whelen_ion",
+    })
 
     _open_build_editor(page, base_url)
 
@@ -295,6 +301,20 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
     page.click(".me-edit-btn")
     page.wait_for_selector("#picker-panel.open")
     page.wait_for_timeout(_SETTLE_MS)
+
+    selected_product_visible = page.evaluate("""() => {
+        const list = document.querySelector('#picker-products');
+        const product = document.querySelector("#picker-products .pp-row[data-pid='whelen_ion']");
+        if (!list || !product) return false;
+        const listRect = list.getBoundingClientRect();
+        const productRect = product.getBoundingClientRect();
+        return productRect.top >= listRect.top && productRect.bottom <= listRect.bottom;
+    }""")
+    assert selected_product_visible, "editing must scroll the restored product into view"
+    restored_bracket = page.locator("select[data-cat='bracket_mount']")
+    assert restored_bracket.input_value().endswith("::LICENSE PLATE BRACKET"), (
+        "a manifest accessory missing from the current catalog must still restore in parent edit"
+    )
 
     # ── Assert (Step 7): edit mode must NOT show "Add another part" button ───
     # Multi-add is for building, not editing.
@@ -349,6 +369,12 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
             f"field '{field}' changed on a no-op Save: "
             f"before={before.get(field)!r} after={after.get(field)!r}"
         )
+    migrated_children = [part for part in page.evaluate(
+        "(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id,
+    )["draft"]["parts"] if part.get("parent_line_id") == line_id]
+    assert len(migrated_children) == 1
+    assert migrated_children[0].get("accessory_parent_product") == "whelen_ion"
+    assert migrated_children[0].get("accessory_category") == "bracket_mount"
 
 
 def flow_printer_accessory_round_trip(page, base_url: str) -> None:
@@ -405,6 +431,15 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
         "printer_mount", "printer_power_cable", "printer_usb_cable",
     }, f"printer should save one child for every selected accessory role, got {children!r}"
 
+    # Existing drafts may have the accessory rows in the manifest without the
+    # newer helper metadata. Parent edit must derive their choices from the
+    # child row + SKU, then rewrite the metadata on Save.
+    for child in children:
+        legacy_child = {**child, "accessory_category": "", "accessory_parent_product": ""}
+        _api(base_url, f"/api/draft/{draft_id}/part/{child['line_id']}/update", legacy_child)
+    page.evaluate("(id) => loadDraftManifest(id)", draft_id)
+    page.wait_for_timeout(_SETTLE_MS)
+
     page.evaluate("(lineId) => openPartEditModal(lineId)", printer["line_id"])
     page.wait_for_selector("#picker-panel.open")
     for category in ("printer_mount", "printer_power_cable", "printer_usb_cable"):
@@ -427,6 +462,9 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     assert categories.count("printer_mount") == 2
     assert categories.count("printer_power_cable") == 1
     assert categories.count("printer_usb_cable") == 1
+    assert all(part.get("accessory_parent_product") == "brother_pj_822" for part in saved_children), (
+        f"saving a migrated parent must restore the accessory metadata, got {saved_children!r}"
+    )
 
     # PSBKT90 exists in the catalog and is an optional Mega T-Series mount.
     # Its SKU comes first so it remains identifiable even in a narrow selector.
@@ -443,6 +481,9 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     mount_options = page.locator("select[data-cat='bracket_mount'] option").all_text_contents()
     assert any(option.startswith("PSBKT90 · 90° mount kit") for option in mount_options), (
         f"Mega T-Series must identify its 90-degree mount by SKU, got {mount_options!r}"
+    )
+    assert len(mount_options) > 3, (
+        f"Mega T-Series must keep compatible generic bracket choices too, got {mount_options!r}"
     )
 
 

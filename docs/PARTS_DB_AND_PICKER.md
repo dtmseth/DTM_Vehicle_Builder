@@ -222,14 +222,18 @@ happens *through* this feature.
   Cable**, and **USB Cable**) rather than putting unlike items in a generic Cable selector. Two
   applicability levels: **part_type-level**
   (`accessory_of` — generic, e.g. any forward_warning → FW brackets) and **product-level**
-  (`products.<id>.accessories = [{category, product_id, required}]` — specific).
+  (`products.<id>.accessories = [{category, product_id, required}]` — specific). A specific
+  relationship can set `include_generic: true` when its option is additional rather than a
+  replacement for the normal compatible group.
 - **API:** `GET /api/parts-db/accessories?product_id=<id>` returns both, grouped by category.
 - **Picker UX:** an "Accessories" section appears with per-category selectors + "None needed";
   users can add another item within a selector when the install needs multiples. **Hard-gated Add**
   prevents required accessories from being skipped; prices show inline. Each choice leads with its
   orderable SKU (when one exists), then its shop description so similarly named brackets and cables
   remain distinguishable. Editing the parent restores its selected accessory children in the same
-  picker and replaces that selected set on Save.
+  picker and replaces that selected set on Save. Saved manifest children also remain selectable
+  during an edit when an old SKU is no longer linked in the current catalog; saving normalizes their
+  metadata without requiring the user to rebuild the choice by hand.
 - **Draft/build sheet:** each chosen accessory is its own priced `DraftPart` line carrying
   `parent_line_id`; nested under its parent in the manifest; **delete confirms first** ("This part
   has N accessories — remove them too?").

@@ -583,11 +583,14 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 
     # Product-specific relationships are more precise than part_type-level
     # fallbacks. If a product curates a category explicitly, do not union in
-    # every generic accessory part_type for that same category.
+    # every generic accessory part_type for that same category — unless that
+    # relationship deliberately opts back in via ``include_generic``. This is
+    # for products such as Mega T-Series, which have a product-specific mount
+    # in addition to their normal compatible bracket choices.
     specific_categories: set[str] = set()
     for a in prod.get("accessories") or []:
         category = a.get("category")
-        if category:
+        if category and not a.get("include_generic"):
             specific_categories.add(category)
     for ap in products.values():
         if product_id in (ap.get("accessory_of_products") or []):

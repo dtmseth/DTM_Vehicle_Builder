@@ -27305,6 +27305,7 @@
         "accessories": [
           {
             "category": "bracket_mount",
+            "include_generic": true,
             "product_id": "whelen_strip_lite_mount",
             "required": false
           }

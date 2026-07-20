@@ -272,9 +272,12 @@ def test_mega_t_series_exposes_its_90_degree_mount_kit(tmp_path):
     doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
 
     products = doc["products"]
-    assert {item["product_id"] for item in products["whelen_mega_t_series"]["accessories"]} == {
-        "whelen_strip_lite_mount",
-    }
+    assert products["whelen_mega_t_series"]["accessories"] == [{
+        "category": "bracket_mount",
+        "product_id": "whelen_strip_lite_mount",
+        "required": False,
+        "include_generic": True,
+    }]
     sku = products["whelen_strip_lite_mount"]["part_numbers"][0]
     assert sku["part_number"] == "PSBKT90"
     assert sku["friendly_name"] == "90° mount kit"

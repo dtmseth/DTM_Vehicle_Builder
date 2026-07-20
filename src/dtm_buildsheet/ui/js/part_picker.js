@@ -387,6 +387,9 @@ async function _pickerOpenEdit(part) {
     return;
   }
   _pickerSwitchTab("part");
+  // An edit can restore a valid product far down a long catalog. Keep the
+  // expanded product in view so it is obvious that its SKU/options were found.
+  requestAnimationFrame(_pickerScrollSelectedProductIntoView);
 }
 
 // ── Shell ──────────────────────────────────────────────
@@ -1886,6 +1889,7 @@ async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = 
     const res = await api(`/api/parts-db/accessories?product_id=${encodeURIComponent(productId)}`);
     _pickerState.accessories = (res && res.accessories) || [];
   } catch (e) { console.error("accessories load failed:", e); _pickerState.accessories = []; }
+  if (restoreFromDraft) _pickerMergeManifestAccessories(_pickerState.accessories);
   _pickerState.accessoryChoices = restoreFromDraft
     ? _pickerRestoreAccessoryChoices(productId, _pickerState.accessories)
     : Object.fromEntries(_pickerState.accessories.map(g => [g.category, ""]));
@@ -1905,20 +1909,101 @@ function _pickerAccessoryPickForChild(group, child) {
   return "";
 }
 
+function _pickerSavedAccessoryModel(child, parent) {
+  const prefix = parent?.name ? `${parent.name} · ` : "";
+  const name = child.name || "";
+  return prefix && name.startsWith(prefix) ? name.slice(prefix.length) : (name || child.part_number || "Saved accessory");
+}
+
+const _PICKER_NONSTANDARD_ACCESSORY_CHILDREN = new Set([
+  "magnetic_mic", "console_faceplate", "console_component", "console_wings",
+]);
+
+// Old builds may carry an accessory child whose SKU is no longer linked to the
+// parent in today's parts database. Retain that saved choice in the same picker
+// instead of making a user re-enter it manually. It is intentionally draft-only:
+// saving the parent writes the current accessory metadata back to the child.
+function _pickerMergeManifestAccessories(groups) {
+  const parentLineId = _pickerState.editLineId;
+  const productId = _pickerState.sel?.product_id || "";
+  const parts = (typeof _meDraft !== "undefined" && _meDraft?.parts) || [];
+  const parent = parts.find(part => part.line_id === parentLineId);
+  for (const child of parts.filter(part =>
+    part.parent_line_id === parentLineId
+    && part.part_number
+    && !_PICKER_NONSTANDARD_ACCESSORY_CHILDREN.has(part.accessory_category)
+    && (!part.accessory_parent_product || part.accessory_parent_product === productId)
+  )) {
+    const inCatalog = (groups || []).some(group => _pickerAccessoryPickForChild(group, child));
+    if (inCatalog) continue;
+    let group = (groups || []).find(candidate => candidate.category === child.accessory_category);
+    if (!group) {
+      const category = child.accessory_category || "other";
+      group = {
+        category,
+        label: category === "bracket_mount" ? "Bracket / Mount" : "Saved accessory",
+        required: false,
+        options: [],
+      };
+      groups.push(group);
+    }
+    if (_pickerAccessoryPickForChild(group, child)) continue;
+    group.options.push({
+      product_id: `saved_${child.line_id}`,
+      model: _pickerSavedAccessoryModel(child, parent),
+      manufacturer_label: child.manufacturer || "",
+      skus: [{
+        part_number: child.part_number,
+        friendly_name: _pickerSavedAccessoryModel(child, parent),
+        price: null,
+        color: "", secondary_color: "", tertiary_color: "", lens_type: "",
+        vehicle_tags: [], qb_pending: false,
+      }],
+    });
+  }
+}
+
+// Resolve a saved child against the groups currently offered for its parent.
+// Older drafts did not store accessory metadata (and printer roles later split
+// from generic Cable), so the actual parent relationship + SKU is the durable
+// source of truth. Prefer a matching saved category, then fall back to the
+// SKU's current group.
+function _pickerAccessoryChoiceForChild(groups, child) {
+  const allGroups = groups || [];
+  const preferred = allGroups.find(group => group.category === child.accessory_category);
+  const candidates = preferred
+    ? [preferred, ...allGroups.filter(group => group !== preferred)]
+    : allGroups;
+  for (const group of candidates) {
+    const pick = _pickerAccessoryPickForChild(group, child);
+    if (pick) return { category: group.category, pick };
+  }
+  return null;
+}
+
 function _pickerRestoreAccessoryChoices(productId, groups) {
   const choices = Object.fromEntries((groups || []).map(group => [group.category, ""]));
   const parentLineId = _pickerState.editLineId;
-  const children = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
-    part.parent_line_id === parentLineId && part.accessory_parent_product === productId
-  );
+  const saved = {};
+  for (const child of ((typeof _meDraft !== "undefined" && _meDraft?.parts) || [])) {
+    if (child.parent_line_id !== parentLineId) continue;
+    const match = _pickerAccessoryChoiceForChild(groups, child);
+    if (!match) continue;
+    (saved[match.category] ||= []).push(match.pick);
+  }
   for (const group of (groups || [])) {
-    const picks = children
-      .filter(child => child.accessory_category === group.category)
-      .map(child => _pickerAccessoryPickForChild(group, child))
-      .filter(Boolean);
+    const picks = saved[group.category] || [];
     choices[group.category] = picks.length > 1 ? picks : (picks[0] || "");
   }
   return choices;
+}
+
+function _pickerScrollSelectedProductIntoView() {
+  const productId = _pickerState.editLineId && _pickerState.sel?.product_id;
+  if (!productId) return;
+  const row = Array.from(document.querySelectorAll("#picker-products .pp-row"))
+    .find(candidate => candidate.dataset.pid === productId);
+  row?.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
 function _pickerAccLabel(opt, sku) {
@@ -3508,11 +3593,9 @@ async function _pickerReplaceAccessoryChildren(draftId, parentLineId, parentName
   const productId = _pickerState.sel?.product_id || "";
   const groups = _pickerVisibleAccessoryGroups();
   if (!productId || !groups.length) return;
-  const byCategory = new Map(groups.map(group => [group.category, group]));
   const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part => {
-    if (part.parent_line_id !== parentLineId || part.accessory_parent_product !== productId) return false;
-    const group = byCategory.get(part.accessory_category);
-    return group && _pickerAccessoryPickForChild(group, part);
+    if (part.parent_line_id !== parentLineId) return false;
+    return !!_pickerAccessoryChoiceForChild(groups, part);
   });
   for (const child of existing) {
     const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
