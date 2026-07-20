@@ -584,6 +584,8 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
     prod = products.get(product_id)
     if not prod:
         return []
+    if prod.get("accessories_disabled"):
+        return []
 
     groups: dict[str, dict] = {}
 
@@ -697,7 +699,8 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 # mirror). Tiny network payload, no fragile whole-document round-trips.
 
 _PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
-                        "location_options", "fixed_location", "reviewed", "accessory_category",
+                        "location_options", "fixed_location", "default_colors", "accessories_disabled",
+                        "reviewed", "accessory_category",
                         "accessory_of_products", "accessory_required"}
 _SKU_EDIT_FIELDS = {
     "part_number", "friendly_name", "color", "secondary_color", "tertiary_color",
@@ -1511,6 +1514,8 @@ def route_parts_db(
                     entry["location_options"] = list(product_spec["location_options"])
                 if product_spec.get("fixed_location"):
                     entry["fixed_location"] = product_spec["fixed_location"]
+                if product_spec.get("default_colors"):
+                    entry["default_colors"] = list(product_spec["default_colors"])
                 if p.console_kit:
                     entry["console_kit"] = dict(p.console_kit)
                 if is_fixture:

@@ -1041,6 +1041,23 @@ function _pickerActivateWestinBumper(product) {
   if (!_pickerState.westin.active) _pickerState.westin = { active: true, wire: "", channel: "" };
 }
 
+// Product-level color defaults are for a fresh selection only. An edited line
+// always retains its saved picker_config, even if the catalog's default changes.
+function _pickerApplyProductColorDefaults(product) {
+  const colors = (product?.default_colors || [])
+    .map(color => String(color).toLowerCase())
+    .filter(color => _pickerAllowedColors().includes(color));
+  if (!colors.length) return;
+  const c = _pickerState.config;
+  c.colorsPerHead = colors.length === 1 ? "single" : colors.length === 2 ? "duo" : "trio";
+  c.mode = "uniform";
+  c.uniform = colors.slice(0, 3);
+  c.splitSecondary = [];
+  c.custom = [];
+  c._noColor = false;
+  _pickerNormalizeConfig();
+}
+
 function _pickerApplyProductContext(product) {
   if (!product || !_pickerUseGlobalSearch()) return false;
   const f = _pickerState.filters;
@@ -1310,7 +1327,11 @@ function _pickerRenderProducts() {
     const nowUsesColor = _pickerUsesColor();
     const pColor = nowUsesColor && _pickerProductHasColor(p);
     const selectsOnClick = pColor || (nowUsesColor && f.category_id === "scene");
-    if (selectsOnClick && (!_pickerState.sel || _pickerState.sel.product_id !== pid)) _pickerResetLocation();
+    const selectingNewProduct = selectsOnClick && (!_pickerState.sel || _pickerState.sel.product_id !== pid);
+    if (selectingNewProduct) {
+      _pickerResetLocation();
+      _pickerApplyProductColorDefaults(p);
+    }
     if (selectsOnClick) {
       _pickerState.sel = { product_id: pid, model: p.model, mfr: p.manufacturer_label }; _pickerState.skuChoices = {}; _pickerState.optionsRemoved = false;
       _pickerActivateWestinBumper(p);

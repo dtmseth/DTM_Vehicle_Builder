@@ -10862,6 +10862,11 @@
         "Prisoner Headliner",
         "Liftgate Mounted"
       ],
+      "default_colors": [
+        "red",
+        "white"
+      ],
+      "accessories_disabled": true,
       "fits_part_types": [
         "rear_seat_cargo_lights",
         "cargo_lighting",
@@ -10932,13 +10937,6 @@
           "tertiary_color": "",
           "lens_type": "clear",
           "friendly_name": "WHELEN 4\" FLAT SYNCH SUPER-LED WHT."
-        }
-      ],
-      "accessories": [
-        {
-          "category": "flange",
-          "product_id": "whelen_round_grommet_mount",
-          "required": false
         }
       ]
     },

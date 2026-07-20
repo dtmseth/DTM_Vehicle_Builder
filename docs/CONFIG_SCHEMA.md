@@ -502,6 +502,8 @@ console-kit definition when one QuickBooks console SKU includes multiple shop co
       "part_numbers": ["<PartNumber>"],
       "location_options": ["<shop-reference location>"],
       "fixed_location": "<single shop-reference location>",
+      "default_colors": ["red", "white"],
+      "accessories_disabled": true,
       "console_kit": {
         "style": "<non-empty string>",
         "included": {
@@ -518,7 +520,10 @@ console-kit definition when one QuickBooks console SKU includes multiple shop co
 
 `location_options` is optional and belongs on the product when a model has more precise
 shop-reference choices than its part type. `fixed_location` skips the location step entirely for
-a product that can only be installed in one place. `console_kit` is optional and belongs on the
+a product that can only be installed in one place. `default_colors` optionally preselects a
+light's colors for a new picker selection; it never overwrites an existing line's saved colors.
+`accessories_disabled` suppresses both explicit and inferred accessory options for a product.
+`console_kit` is optional and belongs on the
 product (not the individual SKU): it identifies the kit's selectable style and the physical
 components already covered by its QuickBooks price.
 `included` is a free-form object so it can describe the precise armrest or motion variant when

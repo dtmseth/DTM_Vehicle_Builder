@@ -329,6 +329,18 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
             )
+        default_colors = spec.get("default_colors")
+        if default_colors is not None and not (
+            isinstance(default_colors, list) and all(isinstance(x, str) for x in default_colors)
+        ):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'default_colors' must be a list of strings"
+            )
+        accessories_disabled = spec.get("accessories_disabled")
+        if accessories_disabled is not None and not isinstance(accessories_disabled, bool):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'accessories_disabled' must be a boolean"
+            )
         console_kit = spec.get("console_kit")
         if console_kit is not None:
             if not isinstance(console_kit, dict):

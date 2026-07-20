@@ -70,6 +70,16 @@ class TestPartsDbValidator:
                                     "fixed_location": ["ON REAR PARTITION"]}},
             })
 
+    @pytest.mark.parametrize(("field", "value"), [
+        ("default_colors", "red"),
+        ("accessories_disabled", "true"),
+    ])
+    def test_rejects_invalid_product_picker_metadata(self, field, value):
+        with pytest.raises(ValueError, match=field):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y", field: value}},
+            })
+
     def test_rejects_part_type_missing_label(self):
         with pytest.raises(ValueError, match="label"):
             validate_config_payload("parts_db.json", {

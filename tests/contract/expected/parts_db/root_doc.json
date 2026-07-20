@@ -29166,12 +29166,10 @@
         "tag_ids": []
       },
       "whelen_round_lighthead": {
-        "accessories": [
-          {
-            "category": "flange",
-            "product_id": "whelen_round_grommet_mount",
-            "required": false
-          }
+        "accessories_disabled": true,
+        "default_colors": [
+          "red",
+          "white"
         ],
         "description": "",
         "fits_part_types": [

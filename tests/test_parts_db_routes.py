@@ -496,6 +496,21 @@ def test_resolve_accessories_none_for_plain_product():
     assert _resolve_accessories(_FakeAccSvc(doc), "p") == []
 
 
+def test_resolve_accessories_can_be_disabled_per_product():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+    doc = {
+        "accessory_categories": {"bracket_mount": {"label": "Bracket / Mount"}},
+        "manufacturers": {},
+        "part_types": {"bracket": {"accessory_of": "light", "accessory_category": "bracket_mount"}},
+        "products": {
+            "light": {"manufacturer_id": "m", "model": "Light", "fits_part_types": ["light"],
+                      "accessories_disabled": True},
+            "mount": {"manufacturer_id": "m", "model": "Mount", "fits_part_types": ["bracket"]},
+        },
+    }
+    assert _resolve_accessories(_FakeAccSvc(doc), "light") == []
+
+
 def test_siren_speaker_locations_use_curated_parts_db_allowed_placements():
     paths = AppPaths()
     h = FakeHandler(
@@ -544,6 +559,18 @@ def test_50_fab_equipment_tray_declares_its_fixed_rear_partition_location():
 
     products = {row["product_id"]: row for row in h.body_json()["products"]}
     assert products["5_0_fab_dtm_ets20fpiu"]["fixed_location"] == "ON REAR PARTITION"
+
+
+def test_round_lighthead_has_no_accessories_and_defaults_to_red_white():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    svc = parts_db_service.get_parts_db_service(AppPaths())
+    h = FakeHandler("/api/parts-db/category-skus?type=lights&category=interior")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    assert products["whelen_round_lighthead"]["default_colors"] == ["red", "white"]
+    assert _resolve_accessories(svc, "whelen_round_lighthead") == []
 
 
 def test_preemption_locations_are_rendered_vehicle_placements():
