@@ -3865,10 +3865,22 @@ function _tracerColorFields(t) {
   return { raw_color: t.mode === "trio" ? `Red/Blue/${sec}` : `Red/${sec}` };
 }
 
+// A family may use one shared manifest name even though its individual
+// part_types remain distinct for grouping, editing, and catalog matching.
+function _pickerFamilyPartLabel(filters = _pickerState.filters) {
+  const familyId = filters?.family_id || "";
+  if (!familyId) return "";
+  for (const category of (_pickerState.browseTree || [])) {
+    const family = (category.children || []).find(child => child.kind === "family" && child.family_id === familyId);
+    if (family?.picker_part_label) return family.picker_part_label;
+  }
+  return "";
+}
+
 // Pick the next auto-sequenced name by counting existing draft parts with the
 // same base name (e.g. 2 existing "Forward Warning *" → "Forward Warning 3").
 function _pickerChooseName(loc) {
-  return _pickerSequencedName(loc.name_pattern, loc.base_label);
+  return _pickerFamilyPartLabel() || _pickerSequencedName(loc.name_pattern, loc.base_label);
 }
 
 function _pickerSequencedName(pattern, base) {

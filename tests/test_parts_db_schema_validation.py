@@ -86,6 +86,13 @@ class TestPartsDbValidator:
                 "part_types": {"x": {"type_id": "lights"}},
             })
 
+    def test_rejects_non_string_family_picker_part_label(self):
+        with pytest.raises(ValueError, match="picker_part_label"):
+            validate_config_payload("parts_db.json", {
+                "families": {"x": {"label": "X", "category": "lights", "members": [],
+                                   "picker_part_label": ["Interior Lights"]}},
+            })
+
     def test_rejects_part_type_tree_position_missing_zone(self):
         with pytest.raises(ValueError, match="zone"):
             validate_config_payload("parts_db.json", {

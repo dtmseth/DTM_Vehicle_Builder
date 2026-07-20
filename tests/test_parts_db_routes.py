@@ -534,6 +534,7 @@ def test_interior_lighting_is_one_collapsed_picker_leaf():
     lights = next(category for category in h.body_json()["categories"] if category["type_id"] == "lights")
     interior = next(child for child in lights["children"] if child.get("family_id") == "interior_lighting")
     assert interior["browse_collapsed"] is True
+    assert interior["picker_part_label"] == "Interior Lights"
     assert {member["part_type_id"] for member in interior["members"]} == {
         "cargo_lighting", "front_dome_light", "rear_seat_cargo_lights", "rear_seat_lights",
     }

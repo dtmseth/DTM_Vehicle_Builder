@@ -233,7 +233,7 @@ def _build_browse_tree(svc) -> list[dict]:
         in_family.update(members)
         type_id = spec.get("category", "")
         family_flow = spec.get("picker_flow")
-        families_by_type.setdefault(type_id, []).append({
+        family_entry = {
             "kind": "family",
             "family_id": family_id,
             "label": spec.get("label", family_id),
@@ -260,7 +260,12 @@ def _build_browse_tree(svc) -> list[dict]:
                 }
                 for m in members
             ],
-        })
+        }
+        # A collapsed family can give its members one shared manifest name
+        # while retaining their underlying part_type for grouping and editing.
+        if spec.get("picker_part_label"):
+            family_entry["picker_part_label"] = spec["picker_part_label"]
+        families_by_type.setdefault(type_id, []).append(family_entry)
 
     bare_by_type: dict[str, list[dict]] = {}
     for pt_id, spec in part_types_doc.items():

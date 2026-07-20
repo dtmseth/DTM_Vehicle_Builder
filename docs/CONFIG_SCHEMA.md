@@ -530,6 +530,10 @@ components already covered by its QuickBooks price.
 needed. Included components remain on the shop manifest and are intentionally skipped by estimate
 resolution.
 
+`families.<family_id>.picker_part_label` is optional. It gives every part selected through that
+family one shared Part-column label without changing the individual part types used for manifest
+grouping, editing, or catalog compatibility.
+
 ---
 
 ## Common Conventions

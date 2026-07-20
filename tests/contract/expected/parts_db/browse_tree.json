@@ -659,6 +659,7 @@
             ],
             "order": 3,
             "picker_flow": "interior",
+            "picker_part_label": "Interior Lights",
             "selectable": true
           },
           {
