@@ -582,8 +582,23 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             g["option_ids"].append(acc_pid)
 
     # Product-specific relationships are more precise than part_type-level
-    # fallbacks. If a product curates a category explicitly, do not union in
-    # every generic accessory part_type for that same category — unless that
+    # fallbacks. Keep an inverse lookup as well: an accessory which belongs to
+    # a named product must not leak into every other product that happens to
+    # share its accessory part_type. For example, an U-Series mirror mount is
+    # a warning-light bracket in the catalog, but it is not a Mega T bracket.
+    specific_parents_by_accessory: dict[str, set[str]] = {}
+    for parent_id, parent in products.items():
+        for relationship in parent.get("accessories") or []:
+            accessory_id = relationship.get("product_id")
+            if accessory_id in products:
+                specific_parents_by_accessory.setdefault(accessory_id, set()).add(parent_id)
+    for accessory_id, accessory in products.items():
+        for parent_id in accessory.get("accessory_of_products") or []:
+            if parent_id in products:
+                specific_parents_by_accessory.setdefault(accessory_id, set()).add(parent_id)
+
+    # If a product curates a category explicitly, do not union in every
+    # generic accessory part_type for that same category — unless that
     # relationship deliberately opts back in via ``include_generic``. This is
     # for products such as Mega T-Series, which have a product-specific mount
     # in addition to their normal compatible bracket choices.
@@ -611,6 +626,15 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                 ap_fits = set(ap.get("fits_part_types") or [])
                 for pt_id, cat in acc_pt_cat.items():
                     if cat in specific_categories:
+                        continue
+                    specific_parents = specific_parents_by_accessory.get(apid)
+                    if specific_parents and product_id not in specific_parents:
+                        continue
+                    # A product can be filed under an accessory part type for
+                    # catalog purposes while waiting for its actual parent
+                    # picker (for example, a Westin light channel). It must
+                    # not appear as a universal bracket in the meantime.
+                    if ap.get("include_in_generic_accessory_options") is False:
                         continue
                     if pt_id in ap_fits:
                         add(cat, apid, False)

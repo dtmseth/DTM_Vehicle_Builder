@@ -281,3 +281,29 @@ def test_mega_t_series_exposes_its_90_degree_mount_kit(tmp_path):
     sku = products["whelen_strip_lite_mount"]["part_numbers"][0]
     assert sku["part_number"] == "PSBKT90"
     assert sku["friendly_name"] == "90° mount kit"
+
+
+def test_warning_bracket_scope_metadata_keeps_family_specific_mounts_out_of_generic_lists(tmp_path):
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+    products = doc["products"]
+
+    assert any(
+        accessory["product_id"] == "whelen_u_mirror_mount"
+        for accessory in products["whelen_u_series"]["accessories"]
+    )
+    assert any(
+        accessory["product_id"] == "whelen_fender_mount"
+        for accessory in products["whelen_pro_focus"]["accessories"]
+    )
+    for product_id in ("whelen_vxe", "whelen_vertex"):
+        assert any(
+            accessory["product_id"] == "dtm_twist_lock_adaptor"
+            for accessory in products[product_id]["accessories"]
+        )
+    for product_id in (
+        "westin_westin_2_light_tube",
+        "westin_westin_4_light_tube",
+        "whelen_tracer_l_brackets_x2_per",
+    ):
+        assert products[product_id]["include_in_generic_accessory_options"] is False

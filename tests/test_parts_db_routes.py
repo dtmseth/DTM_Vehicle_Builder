@@ -380,11 +380,57 @@ def test_resolve_accessories_can_keep_generic_choices_with_product_specific_one(
                 "fits_part_types": ["warning_bracket"],
                 "part_numbers": [{"part_number": "GEN-BRACKET"}],
             },
+            "u_series": {
+                "manufacturer_id": "whelen", "model": "U-Series",
+                "fits_part_types": ["warning_light"],
+                "accessories": [{
+                    "category": "bracket_mount", "product_id": "u_only_mount",
+                }],
+            },
+            "u_only_mount": {
+                "manufacturer_id": "whelen", "model": "U-Series Mount",
+                "fits_part_types": ["warning_bracket"],
+                "part_numbers": [{"part_number": "U-ONLY"}],
+            },
+            "not_a_universal_mount": {
+                "manufacturer_id": "whelen", "model": "Push Bumper Light Channel",
+                "fits_part_types": ["warning_bracket"],
+                "include_in_generic_accessory_options": False,
+                "part_numbers": [{"part_number": "CHANNEL"}],
+            },
         },
     }
 
     out = _resolve_accessories(_FakeAccSvc(doc), "mega_t")
     assert [option["product_id"] for option in out[0]["options"]] == ["psbkt90", "generic_mount"]
+
+
+def test_warning_bracket_options_are_scoped_to_their_light_family():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = json.loads(
+        (Path(__file__).parents[1] / "src/dtm_buildsheet/resources/config/parts_db.json").read_text("utf-8")
+    )
+
+    def bracket_ids(product_id: str) -> list[str]:
+        groups = _resolve_accessories(_FakeAccSvc(doc), product_id)
+        group = next(group for group in groups if group["category"] == "bracket_mount")
+        return [option["product_id"] for option in group["options"]]
+
+    mega_t_mounts = bracket_ids("whelen_mega_t_series")
+    assert "whelen_strip_lite_mount" in mega_t_mounts
+    assert not {
+        "whelen_u_mirror_mount",
+        "whelen_fender_mount",
+        "whelen_tracer_l_brackets_x2_per",
+        "westin_westin_2_light_tube",
+        "westin_westin_4_light_tube",
+        "dtm_twist_lock_adaptor",
+    } & set(mega_t_mounts)
+    assert bracket_ids("whelen_u_series") == ["whelen_u_mirror_mount"]
+    assert "whelen_fender_mount" in bracket_ids("whelen_pro_focus")
+    assert "dtm_twist_lock_adaptor" in bracket_ids("whelen_vxe")
+    assert "dtm_twist_lock_adaptor" in bracket_ids("whelen_vertex")
 
 
 def test_resolve_accessories_keeps_printer_mount_and_cables_separate():

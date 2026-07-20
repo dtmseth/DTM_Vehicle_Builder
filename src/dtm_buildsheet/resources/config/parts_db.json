@@ -1701,6 +1701,14 @@
           "tertiary_color": "",
           "friendly_name": "WHELEN VXE, HIDEAWAY TWIST-IN OMNIDIRECTIONAL DUO LIGHTHEAD, 12\u201d PIGTAIL, BLUE/WHITE"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "dtm_twist_lock_adaptor",
+          "required": false,
+          "include_generic": true
+        }
       ]
     },
     "westin_westin_2_light_tube": {
@@ -1709,6 +1717,7 @@
       "fits_part_types": [
         "fw_bracket"
       ],
+      "include_in_generic_accessory_options": false,
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -1724,6 +1733,7 @@
       "fits_part_types": [
         "fw_bracket"
       ],
+      "include_in_generic_accessory_options": false,
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -1739,6 +1749,7 @@
       "fits_part_types": [
         "fw_bracket"
       ],
+      "include_in_generic_accessory_options": false,
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -2157,6 +2168,11 @@
         {
           "category": "bracket_mount",
           "product_id": "whelen_vertex_adapter",
+          "required": false
+        },
+        {
+          "category": "bracket_mount",
+          "product_id": "dtm_twist_lock_adaptor",
           "required": false
         }
       ],
@@ -7542,6 +7558,13 @@
           "tertiary_color": "",
           "friendly_name": "WHELEN PRO FOCUS ARGES SPOT AND/OR FLOOD LIGHT"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_fender_mount",
+          "required": false
+        }
       ]
     },
     "whelen_arges_w_bail_bracket": {
@@ -7583,6 +7606,14 @@
           "lens_type": "",
           "tertiary_color": "",
           "friendly_name": "WHELEN ARGES BAIL MT CONTROL HEAD"
+        }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_fender_mount",
+          "required": false,
+          "include_generic": true
         }
       ]
     },

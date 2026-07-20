@@ -22170,6 +22170,7 @@
           "fw_bracket"
         ],
         "images": {},
+        "include_in_generic_accessory_options": false,
         "manufacturer_id": "westin",
         "model": "2-Light Push Bumper Light Channel",
         "part_numbers": [
@@ -22185,6 +22186,7 @@
           "fw_bracket"
         ],
         "images": {},
+        "include_in_generic_accessory_options": false,
         "manufacturer_id": "westin",
         "model": "4-Light Push Bumper Light Channel",
         "part_numbers": [
@@ -22854,6 +22856,14 @@
         "tag_ids": []
       },
       "whelen_arges_w_bail_bracket": {
+        "accessories": [
+          {
+            "category": "bracket_mount",
+            "include_generic": true,
+            "product_id": "whelen_fender_mount",
+            "required": false
+          }
+        ],
         "description": "",
         "fits_part_types": [
           "arges_controller"
@@ -28791,6 +28801,13 @@
         "tag_ids": []
       },
       "whelen_pro_focus": {
+        "accessories": [
+          {
+            "category": "bracket_mount",
+            "product_id": "whelen_fender_mount",
+            "required": false
+          }
+        ],
         "description": "",
         "fits_part_types": [
           "arges_face"
@@ -31045,6 +31062,7 @@
           "fw_bracket"
         ],
         "images": {},
+        "include_in_generic_accessory_options": false,
         "manufacturer_id": "whelen",
         "model": "TRACER L BRACKETS X2 PER",
         "part_numbers": [
@@ -32095,6 +32113,11 @@
             "category": "bracket_mount",
             "product_id": "whelen_vertex_adapter",
             "required": false
+          },
+          {
+            "category": "bracket_mount",
+            "product_id": "dtm_twist_lock_adaptor",
+            "required": false
           }
         ],
         "description": "",
@@ -32343,6 +32366,14 @@
         "tag_ids": []
       },
       "whelen_vxe": {
+        "accessories": [
+          {
+            "category": "bracket_mount",
+            "include_generic": true,
+            "product_id": "dtm_twist_lock_adaptor",
+            "required": false
+          }
+        ],
         "description": "",
         "fits_part_types": [
           "warning_light"
