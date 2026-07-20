@@ -380,6 +380,7 @@ async function _pickerOpenEdit(part) {
     // this is the only place f.brand gets set in edit mode.
     _pickerState.filters.brand = prod.manufacturer_label || "";
     _pickerState._brandAutoSet = true;
+    await _pickerLoadAccessories(prod.product_id, { restoreFromDraft: true });
   }
   if (_pickerHasFixedPartLocation() && pc.console_setup) {
     await _pickerBeginConsoleSetup(pc.console_setup);
@@ -1870,23 +1871,24 @@ function _pickerHeadsPreviewHtml() {
 
 // ── Accessories (Phase 5) ──────────────────────────────
 
-// Fetch + render the accessories for the selected product. Edit mode is not
-// handled yet, so the section stays hidden there.
-async function _pickerLoadAccessories(productId) {
-  if (!productId || _pickerState.editLineId) {
+// Fetch + render the accessories for the selected product.  During a parent
+// edit, rebuild the choices from the saved child rows so the selector is a
+// true round-trip rather than silently dropping accessories on Save.
+async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = {}) {
+  if (!productId) {
     _pickerState.accessories = []; _pickerState.accessoryChoices = {};
     _pickerState.accLoadedFor = productId || null;
     _pickerRenderAccessories(); _pickerUpdateFooter(); return;
   }
-  if (_pickerState.accLoadedFor === productId) return;   // already loaded
+  if (_pickerState.accLoadedFor === productId && !restoreFromDraft) return;   // already loaded
   _pickerState.accLoadedFor = productId;
   try {
     const res = await api(`/api/parts-db/accessories?product_id=${encodeURIComponent(productId)}`);
     _pickerState.accessories = (res && res.accessories) || [];
   } catch (e) { console.error("accessories load failed:", e); _pickerState.accessories = []; }
-  // Reset to unset so every category demands an explicit decision.
-  _pickerState.accessoryChoices = {};
-  for (const g of _pickerState.accessories) _pickerState.accessoryChoices[g.category] = "";
+  _pickerState.accessoryChoices = restoreFromDraft
+    ? _pickerRestoreAccessoryChoices(productId, _pickerState.accessories)
+    : Object.fromEntries(_pickerState.accessories.map(g => [g.category, ""]));
   _pickerRenderAccessories();
   // Custom tracer mode reads its head list from the lighthead accessory group;
   // refresh the panel now that it's loaded.
@@ -1894,15 +1896,41 @@ async function _pickerLoadAccessories(productId) {
   _pickerUpdateFooter();
 }
 
+function _pickerAccessoryPickForChild(group, child) {
+  for (const option of (group.options || [])) {
+    if ((option.skus || []).some(sku => sku.part_number === child.part_number)) {
+      return `${option.product_id}::${child.part_number}`;
+    }
+  }
+  return "";
+}
+
+function _pickerRestoreAccessoryChoices(productId, groups) {
+  const choices = Object.fromEntries((groups || []).map(group => [group.category, ""]));
+  const parentLineId = _pickerState.editLineId;
+  const children = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
+    part.parent_line_id === parentLineId && part.accessory_parent_product === productId
+  );
+  for (const group of (groups || [])) {
+    const picks = children
+      .filter(child => child.accessory_category === group.category)
+      .map(child => _pickerAccessoryPickForChild(group, child))
+      .filter(Boolean);
+    choices[group.category] = picks.length > 1 ? picks : (picks[0] || "");
+  }
+  return choices;
+}
+
 function _pickerAccLabel(opt, sku) {
   const colors = [sku.color, sku.secondary_color, sku.tertiary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
   const price = sku.price != null ? ` · $${sku.price}` : "";
-  // Prefer a curated short description (friendly_name) so installers don't have
-  // to decipher part numbers; fall back to the product model. SKU + price always
-  // shown so the orderable number stays visible.
+  // Put the orderable SKU first. Native selects truncate from the right, and
+  // accessories frequently have nearly identical friendly descriptions, so the
+  // part number must be the first thing a purchaser can identify.
   const lead = sku.friendly_name || opt.model;
   const pend = sku.qb_pending ? " · ⧗ pending QB" : "";
-  return `${lead} · ${sku.part_number}${colors ? " · " + colors : ""}${price}${pend}`;
+  const skuPrefix = sku.part_number ? `${sku.part_number}${lead ? " · " : ""}` : "";
+  return `${skuPrefix}${lead}${colors ? " · " + colors : ""}${price}${pend}`;
 }
 
 function _pickerRenderAccessories() {
@@ -1938,9 +1966,18 @@ function _pickerRenderAccessories() {
       ).join("");
       return `<div class="pa-row pa-row-stack"><label>${esc(g.label)}${g.required ? '<span class="pa-req">*</span>' : ""}</label><div class="pa-subrows">${selects}</div></div>`;
     }
-    const val = _pickerState.accessoryChoices[g.category] || "";
-    return `<div class="pa-row"><label>${esc(g.label)}${g.required ? '<span class="pa-req">*</span>' : ""}</label>`
-         + `<select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}">${_optionsHtml(g, val)}</select></div>`;
+    const saved = _pickerState.accessoryChoices[g.category];
+    const vals = Array.isArray(saved) ? saved : [saved || ""];
+    const canAdd = vals.length > 0 && vals.every(value => value && value !== "none");
+    const selects = vals.map((val, idx) => {
+      const indexed = Array.isArray(saved);
+      const remove = indexed && vals.length > 1
+        ? `<button type="button" class="pa-accessory-remove" data-accessory-remove="${esc(g.category)}" data-idx="${idx}" title="Remove this accessory">×</button>`
+        : "";
+      return `<div class="pa-subrow"><select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""}>${_optionsHtml(g, val)}</select>${remove}</div>`;
+    }).join("");
+    const add = `<button type="button" class="pa-accessory-add" data-accessory-add="${esc(g.category)}"${canAdd ? "" : " disabled"}>+ Add another ${esc(g.label)}</button>`;
+    return `<div class="pa-row pa-row-stack"><label>${esc(g.label)}${g.required ? '<span class="pa-req">*</span>' : ""}</label><div class="pa-subrows">${selects}</div>${add}</div>`;
   }).join("");
   const pending = !_accessoriesSatisfied();
   el.innerHTML = `<div class="pa-banner"><span class="pa-chip">${groups.length}</span>`
@@ -1957,6 +1994,22 @@ function _pickerRenderAccessories() {
     } else {
       _pickerState.accessoryChoices[sel.dataset.cat] = sel.value;
     }
+    _pickerRenderAccessories(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-accessory-add]").forEach(button => button.addEventListener("click", () => {
+    const category = button.dataset.accessoryAdd;
+    const current = _pickerState.accessoryChoices[category];
+    const values = Array.isArray(current) ? [...current] : [current || ""];
+    if (!values.every(value => value && value !== "none")) return;
+    _pickerState.accessoryChoices[category] = [...values, ""];
+    _pickerRenderAccessories(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-accessory-remove]").forEach(button => button.addEventListener("click", () => {
+    const category = button.dataset.accessoryRemove;
+    const values = Array.isArray(_pickerState.accessoryChoices[category])
+      ? [..._pickerState.accessoryChoices[category]] : [];
+    values.splice(Number(button.dataset.idx), 1);
+    _pickerState.accessoryChoices[category] = values.length <= 1 ? (values[0] || "") : values;
     _pickerRenderAccessories(); _pickerUpdateFooter();
   }));
 }
@@ -3451,6 +3504,26 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   return rows;
 }
 
+async function _pickerReplaceAccessoryChildren(draftId, parentLineId, parentName, locName) {
+  const productId = _pickerState.sel?.product_id || "";
+  const groups = _pickerVisibleAccessoryGroups();
+  if (!productId || !groups.length) return;
+  const byCategory = new Map(groups.map(group => [group.category, group]));
+  const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part => {
+    if (part.parent_line_id !== parentLineId || part.accessory_parent_product !== productId) return false;
+    const group = byCategory.get(part.accessory_category);
+    return group && _pickerAccessoryPickForChild(group, part);
+  });
+  for (const child of existing) {
+    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    if (!result?.ok) throw new Error(result?.error || "could not replace an accessory");
+  }
+  for (const row of _pickerChosenAccessoryRows(parentName, locName, parentLineId)) {
+    const result = await api(`/api/draft/${draftId}/part`, row);
+    if (!result?.ok) throw new Error(result?.error || "could not add an accessory");
+  }
+}
+
 function _pickerChosenWestinRows(parentName, locName, parentLineId) {
   if (!_pickerState.westin || !_pickerState.westin.active || !_pickerState.sel) return [];
   const rows = [];
@@ -3815,13 +3888,18 @@ async function _pickerDoAdd(addAndContinue) {
     }
   }
 
-  // Accessories → their own child lines under the parent (new adds only).
+  // Accessories are real child lines. Recreate the selected set on parent
+  // edits so the picker remains the authoritative editor, while individual
+  // child edits still work as their own manifest actions.
+  try {
+    await _pickerReplaceAccessoryChildren(draftId, parentLineId, baseName, locName);
+  } catch (error) {
+    console.error("accessory save failed:", error);
+    toast("Part saved, but its accessories could not be updated", "error");
+    if (btn) btn.disabled = false;
+    return;
+  }
   if (!_pickerState.editLineId) {
-    const accRows = _pickerChosenAccessoryRows(baseName, locName, parentLineId);
-    for (const arow of accRows) {
-      try { await api(`/api/draft/${draftId}/part`, arow); }
-      catch (e) { console.error("add accessory failed:", e); }
-    }
     for (const wrow of _pickerChosenWestinRows(baseName, locName, parentLineId)) {
       try { await api(`/api/draft/${draftId}/part`, wrow); }
       catch (e) { console.error("add Westin bumper option failed:", e); }

@@ -19,6 +19,15 @@
       "other": {
         "label": "Other"
       },
+      "printer_mount": {
+        "label": "Bracket / Mount"
+      },
+      "printer_power_cable": {
+        "label": "Power Cable"
+      },
+      "printer_usb_cable": {
+        "label": "USB Cable"
+      },
       "shroud": {
         "label": "Shroud"
       },
@@ -1928,7 +1937,7 @@
         "workbook_label_pattern": "Printer"
       },
       "printer_mount": {
-        "accessory_category": "bracket_mount",
+        "accessory_category": "printer_mount",
         "accessory_of": "printer",
         "label": "Printer Mount",
         "location_mode": "text",
@@ -1940,7 +1949,7 @@
         "workbook_label_pattern": "Printer Mount"
       },
       "printer_power": {
-        "accessory_category": "flasher_power",
+        "accessory_category": "printer_power_cable",
         "accessory_of": "printer",
         "label": "Printer Power",
         "location_mode": "text",
@@ -1957,7 +1966,7 @@
         "workbook_label_pattern": "Printer Power"
       },
       "printer_usb": {
-        "accessory_category": "cable",
+        "accessory_category": "printer_usb_cable",
         "accessory_of": "printer",
         "label": "Printer USB",
         "location_mode": "text",
@@ -4405,7 +4414,7 @@
         "tag_ids": []
       },
       "brother_pocketjet_power_cable": {
-        "accessory_category": "cable",
+        "accessory_category": "printer_power_cable",
         "accessory_of_products": [
           "brother_pj_822"
         ],
@@ -4450,7 +4459,7 @@
         "tag_ids": []
       },
       "brother_pocketjet_usb_cable": {
-        "accessory_category": "cable",
+        "accessory_category": "printer_usb_cable",
         "accessory_of_products": [
           "brother_pj_822"
         ],
@@ -27293,6 +27302,13 @@
         "tag_ids": []
       },
       "whelen_mega_t_series": {
+        "accessories": [
+          {
+            "category": "bracket_mount",
+            "product_id": "whelen_strip_lite_mount",
+            "required": false
+          }
+        ],
         "description": "",
         "fits_part_types": [
           "warning_light",

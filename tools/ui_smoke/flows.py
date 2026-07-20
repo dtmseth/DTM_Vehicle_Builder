@@ -351,6 +351,101 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
         )
 
 
+def flow_printer_accessory_round_trip(page, base_url: str) -> None:
+    """Printer accessories use distinct shop labels, survive a parent edit,
+    can add another item from the same accessory group, and surface orderable
+    SKUs before the accessory description."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "PJ-822")
+    page.wait_for_selector(".pp-head[data-pid='brother_pj_822']")
+    if page.locator("#pp-veh-only").count() and page.locator("#pp-veh-only").is_checked():
+        page.click("#pp-veh-only")
+    page.click(".pp-head[data-pid='brother_pj_822']")
+    page.wait_for_selector("[data-pick='PJ-822'][data-pid='brother_pj_822']")
+    page.click("[data-pick='PJ-822'][data-pid='brother_pj_822']")
+
+    for category in ("printer_mount", "printer_power_cable", "printer_usb_cable"):
+        page.wait_for_selector(f"select[data-cat='{category}']")
+        labels = page.locator(f".pa-row:has(select[data-cat='{category}']) > label").all_text_contents()
+        expected = {
+            "printer_mount": "Bracket / Mount",
+            "printer_power_cable": "Power Cable",
+            "printer_usb_cable": "USB Cable",
+        }[category]
+        assert labels == [expected], f"{category} needs its shop-facing label, got {labels!r}"
+        first_choice = page.locator(f"select[data-cat='{category}'] option").nth(2)
+        first_value = first_choice.get_attribute("value") or ""
+        first_sku = first_value.rsplit("::", 1)[-1]
+        assert first_choice.text_content().startswith(f"{first_sku} · "), (
+            f"{category} accessory choices must lead with their orderable SKU, "
+            f"got {first_choice.text_content()!r}"
+        )
+        page.select_option(f"select[data-cat='{category}']", index=2)
+
+    page.click("#picker-tab-btn-location")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.evaluate("""() => {
+        Object.assign(_pickerState.loc, {
+            selected: 'PRINTER ARMREST MOUNT', name_pattern: 'Printer',
+            base_label: 'Printer', catalog_names: [], textCustom: false,
+        });
+        _pickerUpdateFooter();
+    }""")
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    printer = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "printer")
+    children = [part for part in draft["draft"]["parts"] if part.get("parent_line_id") == printer["line_id"]]
+    assert {part.get("accessory_category") for part in children} == {
+        "printer_mount", "printer_power_cable", "printer_usb_cable",
+    }, f"printer should save one child for every selected accessory role, got {children!r}"
+
+    page.evaluate("(lineId) => openPartEditModal(lineId)", printer["line_id"])
+    page.wait_for_selector("#picker-panel.open")
+    for category in ("printer_mount", "printer_power_cable", "printer_usb_cable"):
+        selector = f"select[data-cat='{category}']"
+        page.wait_for_selector(selector)
+        assert page.locator(selector).input_value(), f"{category} selection must restore in parent edit"
+
+    add_mount = page.locator("[data-accessory-add='printer_mount']")
+    assert add_mount.is_enabled(), "an accessory group should allow another selected item"
+    add_mount.click()
+    page.wait_for_selector("select[data-cat='printer_mount'][data-idx='1']")
+    page.select_option("select[data-cat='printer_mount'][data-idx='1']", index=3)
+    assert page.locator("#picker-add-btn").text_content().strip() == "Save edits"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    saved = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    saved_children = [part for part in saved["draft"]["parts"] if part.get("parent_line_id") == printer["line_id"]]
+    categories = [part.get("accessory_category") for part in saved_children]
+    assert categories.count("printer_mount") == 2
+    assert categories.count("printer_power_cable") == 1
+    assert categories.count("printer_usb_cable") == 1
+
+    # PSBKT90 exists in the catalog and is an optional Mega T-Series mount.
+    # Its SKU comes first so it remains identifiable even in a narrow selector.
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "Mega T-Series")
+    page.wait_for_selector(".pp-head[data-pid='whelen_mega_t_series']")
+    if page.locator("#pp-veh-only").count() and page.locator("#pp-veh-only").is_checked():
+        page.click("#pp-veh-only")
+    page.click(".pp-head[data-pid='whelen_mega_t_series']")
+    # This is a color-configured light; selecting its product card activates it
+    # and loads its accessories (individual SKUs use the per-head selector).
+    page.wait_for_selector("select[data-cat='bracket_mount']")
+    mount_options = page.locator("select[data-cat='bracket_mount'] option").all_text_contents()
+    assert any(option.startswith("PSBKT90 · 90° mount kit") for option in mount_options), (
+        f"Mega T-Series must identify its 90-degree mount by SKU, got {mount_options!r}"
+    )
+
+
 def flow_picker_browse_tree(page, base_url: str) -> None:
     """PICKER_REDESIGN.md Step 1 regression guard: every sidebar category
     expands INLINE (no navigate-away) and renders its part types/families —
@@ -1026,7 +1121,7 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     assert page.locator("#picker-tab-btn-location").is_visible(), (
         "Center Console setup should use the Details tab"
     )
-    assert "Configure the Center Console" in page.locator("[data-console-setup]").text_content()
+    assert "Build a Center Console Kit" in page.locator("[data-console-setup]").text_content()
 
 
 def flow_sku_dropdown_rework(page, base_url: str) -> None:
@@ -1445,6 +1540,7 @@ FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
+    "printer_accessory_round_trip": flow_printer_accessory_round_trip,
     "picker_browse_tree": flow_picker_browse_tree,
     "radio_communications_workflow": flow_radio_communications_workflow,
     "radar_system_workflow": flow_radar_system_workflow,

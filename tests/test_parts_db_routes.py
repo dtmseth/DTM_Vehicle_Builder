@@ -349,6 +349,46 @@ def test_resolve_accessories_product_specific_category_overrides_generic_fallbac
     assert out[0]["options"][0]["skus"][0]["part_number"] == "U18050"
 
 
+def test_resolve_accessories_keeps_printer_mount_and_cables_separate():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = {
+        "accessory_categories": {
+            "printer_mount": {"label": "Bracket / Mount"},
+            "printer_power_cable": {"label": "Power Cable"},
+            "printer_usb_cable": {"label": "USB Cable"},
+        },
+        "manufacturers": {"brother": {"label": "Brother"}},
+        "part_types": {
+            "printer": {"label": "Printer", "type_id": "equipment"},
+            "printer_mount": {"accessory_of": "printer", "accessory_category": "printer_mount"},
+            "printer_power": {"accessory_of": "printer", "accessory_category": "printer_power_cable"},
+            "printer_usb": {"accessory_of": "printer", "accessory_category": "printer_usb_cable"},
+        },
+        "products": {
+            "printer": {"manufacturer_id": "brother", "model": "PocketJet", "fits_part_types": ["printer"]},
+            "mount": {"manufacturer_id": "brother", "model": "Printer Mount", "fits_part_types": ["printer_mount"],
+                      "part_numbers": [{"part_number": "MOUNT"}]},
+            "power": {"manufacturer_id": "brother", "model": "Power Cable", "fits_part_types": ["printer_power"],
+                      "part_numbers": [{"part_number": "POWER"}], "accessory_category": "printer_power_cable",
+                      "accessory_of_products": ["printer"]},
+            "usb": {"manufacturer_id": "brother", "model": "USB Cable", "fits_part_types": ["printer_usb"],
+                    "part_numbers": [{"part_number": "USB"}], "accessory_category": "printer_usb_cable",
+                    "accessory_of_products": ["printer"]},
+        },
+    }
+
+    out = _resolve_accessories(_FakeAccSvc(doc), "printer")
+    assert [(group["category"], group["label"]) for group in out] == [
+        ("printer_mount", "Bracket / Mount"),
+        ("printer_power_cable", "Power Cable"),
+        ("printer_usb_cable", "USB Cable"),
+    ]
+    assert [[option["product_id"] for option in group["options"]] for group in out] == [
+        ["mount"], ["power"], ["usb"],
+    ]
+
+
 def test_resolve_accessories_none_for_plain_product():
     from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
     doc = {"accessory_categories": {}, "manufacturers": {}, "part_types": {},

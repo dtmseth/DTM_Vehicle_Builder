@@ -418,6 +418,7 @@
     .pa-subrows{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
     .pa-subrow{display:flex;align-items:center;gap:8px;flex:1}
     .pa-sub-label{flex:0 0 70px;font-size:11px;color:var(--muted);font-weight:700}
+    .pa-accessory-add{margin-left:140px;padding:4px 7px;border:1px dashed #94a3b8;border-radius:6px;background:#fff;color:#1d4ed8;font:700 11px/1.2 inherit;cursor:pointer}.pa-accessory-add:disabled{opacity:.45;cursor:default}.pa-accessory-remove{display:grid;flex:0 0 24px;width:24px;height:24px;place-items:center;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#b91c1c;font-size:14px;cursor:pointer}
     .picker-foot-acc{color:#c2410c;font-weight:600}
     .picker-product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
     .picker-prod-btn{display:flex;gap:12px;align-items:flex-start;padding:14px;background:#fff;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:left;width:100%}

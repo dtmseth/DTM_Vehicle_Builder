@@ -117,7 +117,7 @@ you're touching. New gotchas get appended to the bottom with a date.
     `location_mode:"text"` and `location_options` only gives the picker/dropdown a friendly list.
     If the selected location is expected to render, the exact location key must exist in
     `vehicle_layouts.json` or be mapped through a resolver/alias.
-24. **Smoke flow count is currently 13.** Older docs and ledger entries may mention 9/9, 10/10,
+24. **Smoke flow count is currently 14.** Older docs and ledger entries may mention 9/9, 10/10,
     or 12/12;
     the current command is still `.venv/bin/python tools/ui_smoke/run_smoke.py`, but expected
-    success is 13/13.
+    success is 14/14.

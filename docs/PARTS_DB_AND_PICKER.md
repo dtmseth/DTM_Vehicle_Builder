@@ -37,7 +37,7 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 | `manufacturers` | `label`, `website` |
 | `tags` | `label` (vehicle/attribute tags) |
 | `placements` | Physical location vocabulary |
-| `accessory_categories` | `lighthead, bracket_mount, cable, flange, shroud, flasher_power, other` (+ `takedown`) |
+| `accessory_categories` | Picker-facing group vocabulary (for example `lighthead`, `bracket_mount`, `cable`, and the printer-specific `printer_mount`, `printer_power_cable`, `printer_usb_cable`) |
 
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
@@ -217,13 +217,19 @@ When a user adds a part, any accessories it needs (lighthead, bracket, cable, fl
 until each is addressed (a choice, or explicit "None"). Linking the unlinked Whelen accessory SKUs
 happens *through* this feature.
 
-- **Data:** `accessory_categories` vocab (`lighthead, bracket_mount, cable, flange, shroud,
-  flasher_power, other`, + `takedown`). Two applicability levels: **part_type-level**
+- **Data:** `accessory_categories` supplies the shop-facing selector label. Use a distinct category
+  whenever one parent needs separate decisions (for example Printer **Bracket / Mount**, **Power
+  Cable**, and **USB Cable**) rather than putting unlike items in a generic Cable selector. Two
+  applicability levels: **part_type-level**
   (`accessory_of` — generic, e.g. any forward_warning → FW brackets) and **product-level**
   (`products.<id>.accessories = [{category, product_id, required}]` — specific).
 - **API:** `GET /api/parts-db/accessories?product_id=<id>` returns both, grouped by category.
 - **Picker UX:** an "Accessories" section appears with per-category selectors + "None needed";
-  **hard-gated Add** (required accessories can't be skipped); prices shown inline.
+  users can add another item within a selector when the install needs multiples. **Hard-gated Add**
+  prevents required accessories from being skipped; prices show inline. Each choice leads with its
+  orderable SKU (when one exists), then its shop description so similarly named brackets and cables
+  remain distinguishable. Editing the parent restores its selected accessory children in the same
+  picker and replaces that selected set on Save.
 - **Draft/build sheet:** each chosen accessory is its own priced `DraftPart` line carrying
   `parent_line_id`; nested under its parent in the manifest; **delete confirms first** ("This part
   has N accessories — remove them too?").

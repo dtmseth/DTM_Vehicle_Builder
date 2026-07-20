@@ -246,3 +246,35 @@ def test_console_setup_catalogs_keep_only_matching_equipment(tmp_path):
     }
     for product_id, part_type in expected_types.items():
         assert products[product_id]["fits_part_types"] == [part_type]
+
+
+def test_printer_accessory_roles_have_distinct_shop_labels(tmp_path):
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+
+    categories = doc["accessory_categories"]
+    assert categories["printer_mount"]["label"] == "Bracket / Mount"
+    assert categories["printer_power_cable"]["label"] == "Power Cable"
+    assert categories["printer_usb_cable"]["label"] == "USB Cable"
+
+    part_types = doc["part_types"]
+    assert part_types["printer_mount"]["accessory_category"] == "printer_mount"
+    assert part_types["printer_power"]["accessory_category"] == "printer_power_cable"
+    assert part_types["printer_usb"]["accessory_category"] == "printer_usb_cable"
+
+    products = doc["products"]
+    assert products["brother_pocketjet_power_cable"]["accessory_category"] == "printer_power_cable"
+    assert products["brother_pocketjet_usb_cable"]["accessory_category"] == "printer_usb_cable"
+
+
+def test_mega_t_series_exposes_its_90_degree_mount_kit(tmp_path):
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+
+    products = doc["products"]
+    assert {item["product_id"] for item in products["whelen_mega_t_series"]["accessories"]} == {
+        "whelen_strip_lite_mount",
+    }
+    sku = products["whelen_strip_lite_mount"]["part_numbers"][0]
+    assert sku["part_number"] == "PSBKT90"
+    assert sku["friendly_name"] == "90° mount kit"

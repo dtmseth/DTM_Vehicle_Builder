@@ -3757,6 +3757,13 @@
           "tertiary_color": "",
           "friendly_name": "WHELEN MEGA T-SERIES RED"
         }
+      ],
+      "accessories": [
+        {
+          "category": "bracket_mount",
+          "product_id": "whelen_strip_lite_mount",
+          "required": false
+        }
       ]
     },
     "whelen_mini_t_series": {
@@ -28820,7 +28827,7 @@
         }
       ],
       "reviewed": false,
-      "accessory_category": "cable",
+      "accessory_category": "printer_power_cable",
       "accessory_of_products": [
         "brother_pj_822"
       ]
@@ -28865,7 +28872,7 @@
         }
       ],
       "reviewed": false,
-      "accessory_category": "cable",
+      "accessory_category": "printer_usb_cable",
       "accessory_of_products": [
         "brother_pj_822"
       ]
@@ -30814,7 +30821,7 @@
       "workbook_label_pattern": "Printer Mount",
       "sequence_scope": "global",
       "accessory_of": "printer",
-      "accessory_category": "bracket_mount",
+      "accessory_category": "printer_mount",
       "location_mode": "text",
       "location_options": []
     },
@@ -30831,7 +30838,7 @@
       "workbook_label_pattern": "Printer Power",
       "sequence_scope": "global",
       "accessory_of": "printer",
-      "accessory_category": "flasher_power",
+      "accessory_category": "printer_power_cable",
       "location_mode": "text",
       "location_options": []
     },
@@ -30848,7 +30855,7 @@
       "workbook_label_pattern": "Printer USB",
       "sequence_scope": "global",
       "accessory_of": "printer",
-      "accessory_category": "cable",
+      "accessory_category": "printer_usb_cable",
       "location_mode": "text",
       "location_options": []
     },
@@ -32279,6 +32286,15 @@
     },
     "bracket_mount": {
       "label": "Bracket / Mount"
+    },
+    "printer_mount": {
+      "label": "Bracket / Mount"
+    },
+    "printer_power_cable": {
+      "label": "Power Cable"
+    },
+    "printer_usb_cable": {
+      "label": "USB Cable"
     },
     "cable": {
       "label": "Cable"
