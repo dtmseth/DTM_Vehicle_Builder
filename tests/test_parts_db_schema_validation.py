@@ -30,8 +30,25 @@ class TestPartsDbValidator:
         # All top-level keys get filled
         for key in ("types", "sections", "zones", "sub_zones", "build_attributes",
                     "tags", "manufacturers", "placements", "placement_zones",
-                    "services", "preference_filters", "color_palette", "naming_rules"):
+                    "services", "system_cable_refreshes", "preference_filters", "color_palette", "naming_rules"):
             assert key in result
+
+    def test_rejects_system_cable_refresh_without_live_qb_sku(self):
+        with pytest.raises(ValueError, match="must be live and QB-linked"):
+            validate_config_payload("parts_db.json", {
+                "products": {
+                    "cable": {
+                        "manufacturer_id": "m", "model": "Cable",
+                        "part_numbers": [{"part_number": "CABLE-1"}],
+                    },
+                },
+                "system_cable_refreshes": {
+                    "radio": [{
+                        "id": "power", "label": "Power cable", "part_type": "radio_cable",
+                        "billing_options": [{"product_id": "cable", "part_number": "CABLE-1"}],
+                    }],
+                },
+            })
 
     def test_rejects_non_dict_products(self):
         with pytest.raises(ValueError, match="'products' must be an object"):

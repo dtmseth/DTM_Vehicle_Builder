@@ -57,3 +57,22 @@ def test_magnetic_mics_from_the_catalog_are_billable(tmp_path):
         assert {line["part_number"] for line in lines} == {"MMSU-1", "MMSU-1B"}
     finally:
         parts_db_service.reset_for_testing()
+
+
+def test_guided_system_parent_is_unbilled_but_its_refresh_cable_is_billable(tmp_path):
+    parts_db_service.reset_for_testing()
+    try:
+        source = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "resources" / "config" / "parts_db.json"
+        shutil.copyfile(source, tmp_path / "parts_db.json")
+        paths = AppPaths(workspace_config_dir=tmp_path)
+        system = _part("CUSTOMER SUPPLIED KIT", "Radio Communications")
+        system.picker_config = {"system_type": "radio"}
+        cable = _part("Radio Refresh Kit", "Radio Communications · Radio Refresh Cable Kit")
+
+        lines, problems = qb_estimate_service.resolve_build_lines(paths, SimpleNamespace(parts=[system, cable]))
+
+        assert not problems
+        assert [line["part_number"] for line in lines] == ["Radio Refresh Kit"]
+        assert lines[0]["qb_item_id"] == "956"
+    finally:
+        parts_db_service.reset_for_testing()

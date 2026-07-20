@@ -18618,84 +18618,6 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "rear_window_bars"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "setina",
-        "manufacturer_label": "Setina",
-        "model": "POLY TINTED",
-        "primary_category_id": "",
-        "primary_family_id": "cage_prisoner_containment",
-        "primary_family_label": "Cage / Prisoner Containment",
-        "primary_part_type_id": "rear_window_bars",
-        "primary_part_type_label": "Rear Window Bars",
-        "primary_type_id": "structural",
-        "primary_type_label": "Structural",
-        "product_id": "setina_poly_tinted",
-        "search_text": "POLY TINTED setina Setina Rear Window Bars Structural Cage / Prisoner Containment rear_window_bars Rear Window Bars Structural Cage / Prisoner Containment DURANGO F-150 PIU TAHOE WK1491DUR11T WK1491FDT15F150T WK1491ITU20T WK1491TAH21T SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150 SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "WK1491DUR11T",
-            "price": 409.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
-            "lens_type": "",
-            "part_number": "WK1491FDT15F150T",
-            "price": 409.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "F-150"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK1491ITU20T",
-            "price": 409.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK1491TAH21T",
-            "price": 409.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
           "rear_partition"
         ],
         "is_fixture": false,
@@ -20251,8 +20173,7 @@
         "default_location": "",
         "description": "",
         "fits_part_types": [
-          "chicago_barrier",
-          "rear_window_bars"
+          "chicago_barrier"
         ],
         "is_fixture": false,
         "manufacturer_id": "setina",
@@ -20266,7 +20187,7 @@
         "primary_type_id": "structural",
         "primary_type_label": "Structural",
         "product_id": "setina_poly",
-        "search_text": "Polycarbonate Window Barrier setina Setina Chicago Barrier Structural Cage / Prisoner Containment chicago_barrier rear_window_bars Chicago Barrier Rear Window Bars Structural Structural Cage / Prisoner Containment Cage / Prisoner Containment CHARGER DURANGO F-150 PIU TAHOE WK0594CGR11 WK0595DUR11 WK0595FDT15F150P WK0595ITU20 WK0595TAH21 SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150 SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+        "search_text": "Polycarbonate Window Barrier setina Setina Chicago Barrier Structural Cage / Prisoner Containment chicago_barrier Chicago Barrier Structural Cage / Prisoner Containment CHARGER DURANGO F-150 PIU TAHOE WK0594CGR11 WK0595DUR11 WK0595FDT15F150P WK0595ITU20 WK0595TAH21 SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150 SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
         "skus": [
           {
             "color": "",
@@ -22284,176 +22205,6 @@
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": []
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "rear_window_bars"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "setina",
-        "manufacturer_label": "Setina",
-        "model": "STEEL HORIZONTAL",
-        "primary_category_id": "",
-        "primary_family_id": "cage_prisoner_containment",
-        "primary_family_label": "Cage / Prisoner Containment",
-        "primary_part_type_id": "rear_window_bars",
-        "primary_part_type_label": "Rear Window Bars",
-        "primary_type_id": "structural",
-        "primary_type_label": "Structural",
-        "product_id": "setina_steel_horizontal",
-        "search_text": "STEEL HORIZONTAL setina Setina Rear Window Bars Structural Cage / Prisoner Containment rear_window_bars Rear Window Bars Structural Cage / Prisoner Containment BLAZER PIU TAHOE WK0514BLE24H WK0514ITU20H WK0514TAH21H SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV",
-            "lens_type": "",
-            "part_number": "WK0514BLE24H",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "BLAZER"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK0514ITU20H",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK0514TAH21H",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
-          }
-        ]
-      },
-      {
-        "default_location": "",
-        "description": "",
-        "fits_part_types": [
-          "rear_window_bars"
-        ],
-        "is_fixture": false,
-        "manufacturer_id": "setina",
-        "manufacturer_label": "Setina",
-        "model": "STEEL VERTICAL",
-        "primary_category_id": "",
-        "primary_family_id": "cage_prisoner_containment",
-        "primary_family_label": "Cage / Prisoner Containment",
-        "primary_part_type_id": "rear_window_bars",
-        "primary_part_type_label": "Rear Window Bars",
-        "primary_type_id": "structural",
-        "primary_type_label": "Structural",
-        "product_id": "setina_steel_vertical",
-        "search_text": "STEEL VERTICAL setina Setina Rear Window Bars Structural Cage / Prisoner Containment rear_window_bars Rear Window Bars Structural Cage / Prisoner Containment CHARGER CHEVY-1500 RAM-1500 DURANGO PIU TAHOE WK0513CGR11 WK0514CHT191500 WK0514DRT191500CL WK0514DUR11 WK0514ITU20 WK0514TAH21 SETINA WINDOW BARRIER STEEL VERTICAL 2011-2023 DODGE CHARGER SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH STOCK OR ALUMINUM DOOR PANEL 2019-2026 CHEVROLET TRUCK 1500 SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -CREW CAB 2019-2024 DODGE RAM 1500 CLASSIC SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER VS STEEL VERTICAL 2020-2026 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-        "skus": [
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL 2011-2023 DODGE CHARGER",
-            "lens_type": "",
-            "part_number": "WK0513CGR11",
-            "price": 279.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "CHARGER"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH STOCK OR ALUMINUM DOOR PANEL 2019-2026 CHEVROLET TRUCK 1500",
-            "lens_type": "",
-            "part_number": "WK0514CHT191500",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "CHEVY-1500"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -CREW CAB 2019-2024 DODGE RAM 1500 CLASSIC",
-            "lens_type": "",
-            "part_number": "WK0514DRT191500CL",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "RAM-1500"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "WK0514DUR11",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS STEEL VERTICAL 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK0514ITU20",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK0514TAH21",
-            "price": 329.0,
-            "qb": true,
-            "qb_pending": false,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
           }
         ]
       },
@@ -26916,6 +26667,280 @@
             "tertiary_color": "",
             "vehicle_tags": [
               "any"
+            ]
+          }
+        ]
+      },
+      {
+        "default_location": "",
+        "description": "",
+        "fits_part_types": [
+          "rear_window_bars"
+        ],
+        "is_fixture": false,
+        "manufacturer_id": "setina",
+        "manufacturer_label": "Setina",
+        "model": "Window Barrier",
+        "primary_category_id": "",
+        "primary_family_id": "cage_prisoner_containment",
+        "primary_family_label": "Cage / Prisoner Containment",
+        "primary_part_type_id": "rear_window_bars",
+        "primary_part_type_label": "Rear Window Bars",
+        "primary_type_id": "structural",
+        "primary_type_label": "Structural",
+        "product_id": "setina_steel_vertical",
+        "search_text": "Window Barrier setina Setina Rear Window Bars Structural Cage / Prisoner Containment rear_window_bars Rear Window Bars Structural Cage / Prisoner Containment CHARGER CHEVY-1500 RAM-1500 DURANGO PIU TAHOE BLAZER PIU TAHOE CHARGER DURANGO F-150 PIU TAHOE DURANGO F-150 PIU TAHOE WK0513CGR11 WK0514CHT191500 WK0514DRT191500CL WK0514DUR11 WK0514ITU20 WK0514TAH21 WK0514BLE24H WK0514ITU20H WK0514TAH21H WK0594CGR11 WK0595DUR11 WK0595FDT15F150P WK0595ITU20 WK0595TAH21 WK1491DUR11T WK1491FDT15F150T WK1491ITU20T WK1491TAH21T SETINA WINDOW BARRIER STEEL VERTICAL 2011-2023 DODGE CHARGER SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH STOCK OR ALUMINUM DOOR PANEL 2019-2026 CHEVROLET TRUCK 1500 SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -CREW CAB 2019-2024 DODGE RAM 1500 CLASSIC SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER VS STEEL VERTICAL 2020-2026 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150 SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150 SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+        "skus": [
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL 2011-2023 DODGE CHARGER",
+            "lens_type": "",
+            "part_number": "WK0513CGR11",
+            "price": 279.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "CHARGER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH STOCK OR ALUMINUM DOOR PANEL 2019-2026 CHEVROLET TRUCK 1500",
+            "lens_type": "",
+            "part_number": "WK0514CHT191500",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "CHEVY-1500"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -CREW CAB 2019-2024 DODGE RAM 1500 CLASSIC",
+            "lens_type": "",
+            "part_number": "WK0514DRT191500CL",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "RAM-1500"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK0514DUR11",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS STEEL VERTICAL 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK0514ITU20",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL VERTICAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK0514TAH21",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV",
+            "lens_type": "",
+            "part_number": "WK0514BLE24H",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "BLAZER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK0514ITU20H",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK0514TAH21H",
+            "price": 329.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER",
+            "lens_type": "",
+            "part_number": "WK0594CGR11",
+            "price": 299.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "CHARGER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK0595DUR11",
+            "price": 359.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150",
+            "lens_type": "",
+            "part_number": "WK0595FDT15F150P",
+            "price": 359.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK0595ITU20",
+            "price": 359.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK0595TAH21",
+            "price": 359.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK1491DUR11T",
+            "price": 409.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
+            "lens_type": "",
+            "part_number": "WK1491FDT15F150T",
+            "price": 409.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK1491ITU20T",
+            "price": 409.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK1491TAH21T",
+            "price": 409.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
             ]
           }
         ]

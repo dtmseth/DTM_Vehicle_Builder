@@ -38,6 +38,7 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 | `tags` | `label` (vehicle/attribute tags) |
 | `placements` | Physical location vocabulary |
 | `accessory_categories` | Picker-facing group vocabulary (for example `lighthead`, `bracket_mount`, `cable`, and the printer-specific `printer_mount`, `printer_power_cable`, `printer_usb_cable`) |
+| `system_cable_refreshes` | Guided radio/radar/camera refresh choices. Each choice maps only to live QB-linked SKU options, and can expose a length-specific follow-up choice. |
 
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
@@ -304,15 +305,19 @@ location" rows.
   guided kit restarts at question one while retaining all saved answers, and its manifest-section
   **Add** button returns directly to the matching picker family or leaf.
   - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
-    `radio_speaker`, `radio_mic_clip`, and `radio_cable` component rows. Split-head is the default;
+    `radio_speaker`, and `radio_mic_clip` component rows. Split-head is the default; the center
+    console setup owns the control-head position, so radio setup does not ask for it again.
     cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
     plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked
-    Mag Mic SKU as a billable child line under the radio kit.
+    Mag Mic SKU as a billable child line under the radio kit. Any selected cable refresh creates a
+    separate nested QB-linked cable line; the shared Radio Refresh Cable Kit bills once even when
+    more than one of its included cable runs is refreshed.
   - **Radar System** records each antenna location and its bracket separately. Short A-bracket is
     the default front choice and tall A-bracket the default rear choice; either can instead use a
     swivel arm. A split system writes separate display and counting-unit component rows, while an
     integrated system uses one combined row. The rear seatbelt-slot option appears only for a Tahoe
-    build.
+    build. Refreshed radar cable runs require an exact, QB-linked length/SKU selection before they
+    are added as billable child lines.
   - **Light Control System.** Every leaf follows the project’s preferred lighting brand. Its
     non-rendered shop-reference locations use selection cards plus Custom text rather than a native
     dropdown. Light Control Head offers In Center Console or Custom, then records the PA-mic
@@ -334,7 +339,8 @@ location" rows.
     only on Tahoe builds.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
-    wireless-mic charger. Front and rear cameras use fixed upper-window locations.
+    wireless-mic charger. Front and rear cameras use fixed upper-window locations. Camera refresh
+    choices appear only when a corresponding QB-linked cable SKU is available.
 
 **Location/render caveat:** text `location_options` are only friendly choices unless the same key
 exists in `vehicle_layouts.json` or has an alias. See

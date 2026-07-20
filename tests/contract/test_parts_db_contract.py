@@ -88,6 +88,7 @@ CASES: list[tuple[str, str, str, dict]] = [
         "/api/parts-db/category-skus?type=equipment&family=radar",
         {},
     ),
+    ("system_cable_refreshes_radar", "GET", "/api/parts-db/system-cable-refreshes?system=radar&vehicle=PIU", {}),
     ("category_locations_lights", "GET", "/api/parts-db/category-locations?type=lights&category=scene", {}),
     (
         "category_locations_preemption",

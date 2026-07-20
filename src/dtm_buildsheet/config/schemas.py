@@ -265,6 +265,7 @@ _PARTS_DB_REQUIRED_TOP_KEYS = (
     "placements",
     "placement_zones",
     "services",
+    "system_cable_refreshes",
     "preference_filters",
     "color_palette",
     "naming_rules",
@@ -355,6 +356,80 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(
                     f"parts_db.json product '{product_id}' console_kit 'included' must be an object"
                 )
+
+    # Guided radio/radar/camera cable-refresh choices are intentionally
+    # authored separately from the product browse tree.  Each choice must
+    # resolve to a live QB-linked SKU so selecting a refresh creates a billable
+    # estimate line rather than a descriptive, unpriced manifest note.
+    cable_refreshes = normalized.get("system_cable_refreshes")
+    if not isinstance(cable_refreshes, dict):
+        raise ValueError("parts_db.json 'system_cable_refreshes' must be an object")
+    for system_id, entries in cable_refreshes.items():
+        if system_id not in {"radio", "radar", "camera"}:
+            raise ValueError(
+                f"parts_db.json system_cable_refreshes has unknown system '{system_id}'"
+            )
+        if not isinstance(entries, list):
+            raise ValueError(
+                f"parts_db.json system_cable_refreshes '{system_id}' must be a list"
+            )
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] must be an object"
+                )
+            for key in ("id", "label", "part_type", "billing_options"):
+                if key not in entry:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] missing '{key}'"
+                    )
+            if not isinstance(entry["id"], str) or not entry["id"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a non-empty id"
+                )
+            if not isinstance(entry["label"], str) or not entry["label"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a non-empty label"
+                )
+            if not isinstance(entry["part_type"], str) or not entry["part_type"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a part_type"
+                )
+            if "billing_once" in entry and not isinstance(entry["billing_once"], bool):
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_once must be a boolean"
+                )
+            options = entry["billing_options"]
+            if not isinstance(options, list) or not options:
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires billing_options"
+                )
+            for opt_idx, option in enumerate(options):
+                if not isinstance(option, dict):
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_options[{opt_idx}] must be an object"
+                    )
+                product_id = option.get("product_id")
+                part_number = option.get("part_number")
+                if not isinstance(product_id, str) or not product_id or not isinstance(part_number, str) or not part_number:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_options[{opt_idx}] requires product_id and part_number"
+                    )
+                product = products.get(product_id)
+                if not product:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] references unknown product '{product_id}'"
+                    )
+                sku = next((pn for pn in (product.get("part_numbers") or [])
+                            if pn.get("part_number") == part_number), None)
+                if not sku:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] references unknown SKU '{part_number}'"
+                    )
+                if not sku.get("qb_item_id") or sku.get("qb_inactive"):
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] SKU '{part_number}' must be live and QB-linked"
+                    )
 
     # Optional families collection (browse-time grouping, orthogonal to type_id/
     # zone/section — see docs/audit/PART_TYPE_TAXONOMY_PROPOSAL.md). Additive: absent

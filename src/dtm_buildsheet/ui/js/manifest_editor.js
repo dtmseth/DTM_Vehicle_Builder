@@ -242,7 +242,8 @@ function _meMakeRows(parts) {
       const kitIncluded = !!c.picker_config?.console_kit_included;
       const childTag = c.accessory_category === "console_faceplate"
         ? "face plate"
-        : ["console_component", "console_wings"].includes(c.accessory_category) ? "console" : "accessory";
+        : ["console_component", "console_wings"].includes(c.accessory_category) ? "console"
+          : c.accessory_category === "system_cable_refresh" ? "cable refresh" : "accessory";
       html += `<tr class="me-comp-row me-acc-row" data-parent="${esc(p.line_id)}" hidden>
         <td style="padding-left:24px;font-size:12px"><span class="me-acc-tag">${esc(childTag)}</span> ${esc(c.name)}</td>
         <td style="color:var(--muted);font-size:12px">${esc(c.location || "—")}</td>

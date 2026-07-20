@@ -62,6 +62,7 @@ def _empty_parts_db_doc() -> dict:
         "placements": {},
         "placement_zones": {},
         "services": {},
+        "system_cable_refreshes": {},
         "preference_filters": {},
         "color_palette": {},
         "naming_rules": {},

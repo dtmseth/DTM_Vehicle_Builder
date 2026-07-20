@@ -1,0 +1,225 @@
+{
+  "body": {
+    "refreshes": [
+      {
+        "billing_once": false,
+        "billing_options": [
+          {
+            "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-02",
+            "price": 99.6,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "35",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 4 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-04",
+            "price": 124.8,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "36",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 8 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-08",
+            "price": 124.8,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "37",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 16 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-16",
+            "price": 168.0,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "38",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 20 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-20",
+            "price": 188.4,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "39",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 25 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-25",
+            "price": 188.4,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "40",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "help": "Choose the exact Stalker antenna-cable length to replace.",
+        "id": "front_antenna_cable",
+        "label": "Front antenna cable",
+        "part_type": "radar_cable"
+      },
+      {
+        "billing_once": false,
+        "billing_options": [
+          {
+            "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-02",
+            "price": 99.6,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "35",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 4 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-04",
+            "price": 124.8,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "36",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 8 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-08",
+            "price": 124.8,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "37",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 16 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-16",
+            "price": 168.0,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "38",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 20 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-20",
+            "price": 188.4,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "39",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER 25 FT ANTENNA CABLE",
+            "manufacturer_label": "Stalker",
+            "model": "Antenna Cable",
+            "part_number": "155-2591-25",
+            "price": 188.4,
+            "product_id": "stalker_antenna_cable",
+            "qb_item_id": "40",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "help": "Choose the exact Stalker antenna-cable length to replace.",
+        "id": "rear_antenna_cable",
+        "label": "Rear antenna cable",
+        "part_type": "radar_cable"
+      },
+      {
+        "billing_once": false,
+        "billing_options": [
+          {
+            "friendly_name": "STALKER REMOTE DISPLAY CABLE 10FT",
+            "manufacturer_label": "Stalker",
+            "model": "Radar Remote Display Cable",
+            "part_number": "155-2211-00",
+            "price": 79.0,
+            "product_id": "stalker_remote_display_cable",
+            "qb_item_id": "33",
+            "vehicle_tags": [
+              "any"
+            ]
+          },
+          {
+            "friendly_name": "STALKER REMOTE DISPLAY CABLE 25 FT",
+            "manufacturer_label": "Stalker",
+            "model": "Radar Remote Display Cable",
+            "part_number": "155-2211-25",
+            "price": 134.4,
+            "product_id": "stalker_remote_display_cable",
+            "qb_item_id": "34",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "help": "Choose the exact remote-display cable length to replace.",
+        "id": "display_counting_unit_cable",
+        "label": "Display / counting-unit cable",
+        "part_type": "radar_cable"
+      },
+      {
+        "billing_once": false,
+        "billing_options": [
+          {
+            "friendly_name": "STALKER VSS INSTALLATION KIT",
+            "manufacturer_label": "Stalker",
+            "model": "Radar VSS Installation Kit",
+            "part_number": "200-0622-00",
+            "price": 168.0,
+            "product_id": "stalker_200_0622_00",
+            "qb_item_id": "71",
+            "vehicle_tags": [
+              "any"
+            ]
+          }
+        ],
+        "help": "Select the vehicle-appropriate Stalker VSS cable kit.",
+        "id": "vss_speed_cable",
+        "label": "VSS / speed cable",
+        "part_type": "radar_cable"
+      }
+    ],
+    "system": "radar"
+  },
+  "handled": true,
+  "status": 200
+}

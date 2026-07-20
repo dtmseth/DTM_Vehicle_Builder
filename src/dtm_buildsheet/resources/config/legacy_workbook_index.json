@@ -484,9 +484,6 @@
     ],
     "Rear Window Bars": [
       "setina_steel_vertical",
-      "setina_steel_horizontal",
-      "setina_poly",
-      "setina_poly_tinted",
       "stalker_specify_model"
     ],
     "Replacement Rear Seat": [
@@ -773,8 +770,8 @@
     "POLY DIVIDER": "setina_poly_divider",
     "CARGO MAXX": "setina_cargo_maxx",
     "STEEL VERTICAL": "setina_steel_vertical",
-    "STEEL HORIZONTAL": "setina_steel_horizontal",
-    "POLY TINTED": "setina_poly_tinted",
+    "STEEL HORIZONTAL": "setina_steel_vertical",
+    "POLY TINTED": "setina_steel_vertical",
     "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS": "pro_gard_full_replacment_seat_w_center_pull_seat_belts",
     "POLY SEAT COVER": "pro_gard_poly_seat_cover",
     "STEEL WINDOW": "setina_steel_window",

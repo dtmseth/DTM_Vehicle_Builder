@@ -680,6 +680,30 @@ def test_radio_head_cable_accessories_include_no_new_and_supply_choices():
     }.issubset(cable_ids)
 
 
+@pytest.mark.parametrize("system, vehicle, expected_ids", [
+    ("radio", "PIU", {"antenna_cable", "power_cable", "blue_communication_cable"}),
+    ("radar", "TAHOE", {"front_antenna_cable", "rear_antenna_cable", "display_counting_unit_cable", "vss_speed_cable"}),
+    ("camera", "PIU", {"signal_data_cable"}),
+])
+def test_guided_system_cable_refreshes_are_live_qb_items(system, vehicle, expected_ids):
+    h = FakeHandler(f"/api/parts-db/system-cable-refreshes?system={system}&vehicle={vehicle}")
+    route_parts_db(h, "GET", "/api/parts-db/system-cable-refreshes", {}, AppPaths())
+
+    assert h.status == 200
+    refreshes = h.body_json()["refreshes"]
+    assert {entry["id"] for entry in refreshes} == expected_ids
+    assert all(option["qb_item_id"] and option["price"] is not None
+               for entry in refreshes for option in entry["billing_options"])
+
+
+def test_guided_system_cable_refreshes_hide_tahoe_only_vss_kit_elsewhere():
+    h = FakeHandler("/api/parts-db/system-cable-refreshes?system=radar&vehicle=PIU")
+    route_parts_db(h, "GET", "/api/parts-db/system-cable-refreshes", {}, AppPaths())
+
+    vss = next(entry for entry in h.body_json()["refreshes"] if entry["id"] == "vss_speed_cable")
+    assert {option["part_number"] for option in vss["billing_options"]} == {"200-0622-00"}
+
+
 def test_category_skus_all_searches_all_categories_with_metadata():
     h = FakeHandler("/api/parts-db/category-skus?all=1")
     route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
@@ -693,6 +717,26 @@ def test_category_skus_all_searches_all_categories_with_metadata():
     assert "nova" in search_text
     assert "opticam" in search_text
     assert "preemption" in search_text
+
+
+def test_setina_rear_window_barriers_are_one_product_with_all_variants():
+    h = FakeHandler("/api/parts-db/category-skus?type=structural&part_type=rear_window_bars")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    products = h.body_json()["products"]
+    setina_products = [product for product in products if product["manufacturer_id"] == "setina"]
+    assert len(setina_products) == 1
+    barrier = setina_products[0]
+    assert barrier["product_id"] == "setina_steel_vertical"
+    assert barrier["model"] == "Window Barrier"
+    part_numbers = {sku["part_number"] for sku in barrier["skus"]}
+    assert {
+        "WK0514TAH21",   # steel vertical
+        "WK0514TAH21H",  # steel horizontal
+        "WK0595TAH21",   # polycarbonate
+        "WK1491TAH21T",  # tinted polycarbonate
+    }.issubset(part_numbers)
 
 
 def test_category_skus_family_filter_uses_member_union(tmp_path):

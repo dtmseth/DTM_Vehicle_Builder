@@ -180,10 +180,16 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     for dp in draft.parts:
         if not dp.include:
             continue
+        picker_config = getattr(dp, "picker_config", {}) or {}
         # Console kits include some physical rows (for example a cup holder or
         # OEM relocation plate). Keep those in the build manifest, but the kit
         # itself already covers their price in QuickBooks.
-        if (dp.picker_config or {}).get("console_kit_included"):
+        if picker_config.get("console_kit_included"):
+            continue
+        # Guided radio/radar/camera parents are shop-install records. Their
+        # separately nested cable-refresh children are the only system rows
+        # that are billable through QB.
+        if picker_config.get("system_type"):
             continue
         # Unbilled parts (agency-supplied cameras/radios etc., tagged "unbilled"):
         # tracked on the build but never quoted — skip with no line and no problem.

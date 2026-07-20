@@ -17751,8 +17751,7 @@
       "setina_poly": {
         "description": "",
         "fits_part_types": [
-          "chicago_barrier",
-          "rear_window_bars"
+          "chicago_barrier"
         ],
         "images": {},
         "manufacturer_id": "setina",
@@ -17847,78 +17846,6 @@
         "part_numbers": [
           {
             "part_number": "POLY DIVIDER"
-          }
-        ],
-        "tag_ids": []
-      },
-      "setina_poly_tinted": {
-        "description": "",
-        "fits_part_types": [
-          "rear_window_bars"
-        ],
-        "images": {},
-        "manufacturer_id": "setina",
-        "model": "POLY TINTED",
-        "part_numbers": [
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "WK1491DUR11T",
-            "qb_inactive": false,
-            "qb_item_id": "1274",
-            "qb_sku": "",
-            "qb_unit_price": 409.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
-            "lens_type": "",
-            "part_number": "WK1491FDT15F150T",
-            "qb_inactive": false,
-            "qb_item_id": "1275",
-            "qb_sku": "",
-            "qb_unit_price": 409.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "F-150"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK1491ITU20T",
-            "qb_inactive": false,
-            "qb_item_id": "1276",
-            "qb_sku": "",
-            "qb_unit_price": 409.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK1491TAH21T",
-            "qb_inactive": false,
-            "qb_item_id": "1277",
-            "qb_sku": "",
-            "qb_unit_price": 409.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
           }
         ],
         "tag_ids": []
@@ -18327,63 +18254,6 @@
         ],
         "tag_ids": []
       },
-      "setina_steel_horizontal": {
-        "description": "",
-        "fits_part_types": [
-          "rear_window_bars"
-        ],
-        "images": {},
-        "manufacturer_id": "setina",
-        "model": "STEEL HORIZONTAL",
-        "part_numbers": [
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV",
-            "lens_type": "",
-            "part_number": "WK0514BLE24H",
-            "qb_inactive": false,
-            "qb_item_id": "1261",
-            "qb_sku": "",
-            "qb_unit_price": 329.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "BLAZER"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK0514ITU20H",
-            "qb_inactive": false,
-            "qb_item_id": "1266",
-            "qb_sku": "",
-            "qb_unit_price": 329.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK0514TAH21H",
-            "qb_inactive": false,
-            "qb_item_id": "1268",
-            "qb_sku": "",
-            "qb_unit_price": 329.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
-          }
-        ],
-        "tag_ids": []
-      },
       "setina_steel_vertical": {
         "description": "",
         "fits_part_types": [
@@ -18391,7 +18261,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "STEEL VERTICAL",
+        "model": "Window Barrier",
         "part_numbers": [
           {
             "color": "",
@@ -18477,6 +18347,186 @@
             "qb_item_id": "1267",
             "qb_sku": "",
             "qb_unit_price": 329.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2024-2025 CHEVROVLET BLAZER EV",
+            "lens_type": "",
+            "part_number": "WK0514BLE24H",
+            "qb_inactive": false,
+            "qb_item_id": "1261",
+            "qb_sku": "",
+            "qb_unit_price": 329.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "BLAZER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS STEEL HORIZONTAL 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK0514ITU20H",
+            "qb_inactive": false,
+            "qb_item_id": "1266",
+            "qb_sku": "",
+            "qb_unit_price": 329.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER STEEL HORIZONTAL *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK0514TAH21H",
+            "qb_inactive": false,
+            "qb_item_id": "1268",
+            "qb_sku": "",
+            "qb_unit_price": 329.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER",
+            "lens_type": "",
+            "part_number": "WK0594CGR11",
+            "qb_inactive": false,
+            "qb_item_id": "1269",
+            "qb_sku": "",
+            "qb_unit_price": 299.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "CHARGER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK0595DUR11",
+            "qb_inactive": false,
+            "qb_item_id": "1270",
+            "qb_sku": "",
+            "qb_unit_price": 359.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150",
+            "lens_type": "",
+            "part_number": "WK0595FDT15F150P",
+            "qb_inactive": false,
+            "qb_item_id": "1271",
+            "qb_sku": "",
+            "qb_unit_price": 359.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK0595ITU20",
+            "qb_inactive": false,
+            "qb_item_id": "1272",
+            "qb_sku": "",
+            "qb_unit_price": 359.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK0595TAH21",
+            "qb_inactive": false,
+            "qb_item_id": "1273",
+            "qb_sku": "",
+            "qb_unit_price": 359.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK1491DUR11T",
+            "qb_inactive": false,
+            "qb_item_id": "1274",
+            "qb_sku": "",
+            "qb_unit_price": 409.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
+            "lens_type": "",
+            "part_number": "WK1491FDT15F150T",
+            "qb_inactive": false,
+            "qb_item_id": "1275",
+            "qb_sku": "",
+            "qb_unit_price": 409.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK1491ITU20T",
+            "qb_inactive": false,
+            "qb_item_id": "1276",
+            "qb_sku": "",
+            "qb_unit_price": 409.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK1491TAH21T",
+            "qb_inactive": false,
+            "qb_item_id": "1277",
+            "qb_sku": "",
+            "qb_unit_price": 409.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
@@ -32785,6 +32835,161 @@
         "requires_attribute": "has_equipment_tray",
         "zone": "rear_storage_area"
       }
+    },
+    "system_cable_refreshes": {
+      "camera": [
+        {
+          "billing_options": [
+            {
+              "part_number": "25 FT CAT 6 CABLE",
+              "product_id": "qb_unassigned_25_ft_cat_6_cable"
+            }
+          ],
+          "help": "25 ft CAT6 cable, billed as the camera-system data run.",
+          "id": "signal_data_cable",
+          "label": "Camera signal / data cable",
+          "part_type": "cable"
+        }
+      ],
+      "radar": [
+        {
+          "billing_options": [
+            {
+              "part_number": "155-2591-02",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-04",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-08",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-16",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-20",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-25",
+              "product_id": "stalker_antenna_cable"
+            }
+          ],
+          "help": "Choose the exact Stalker antenna-cable length to replace.",
+          "id": "front_antenna_cable",
+          "label": "Front antenna cable",
+          "part_type": "radar_cable"
+        },
+        {
+          "billing_options": [
+            {
+              "part_number": "155-2591-02",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-04",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-08",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-16",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-20",
+              "product_id": "stalker_antenna_cable"
+            },
+            {
+              "part_number": "155-2591-25",
+              "product_id": "stalker_antenna_cable"
+            }
+          ],
+          "help": "Choose the exact Stalker antenna-cable length to replace.",
+          "id": "rear_antenna_cable",
+          "label": "Rear antenna cable",
+          "part_type": "radar_cable"
+        },
+        {
+          "billing_options": [
+            {
+              "part_number": "155-2211-00",
+              "product_id": "stalker_remote_display_cable"
+            },
+            {
+              "part_number": "155-2211-25",
+              "product_id": "stalker_remote_display_cable"
+            }
+          ],
+          "help": "Choose the exact remote-display cable length to replace.",
+          "id": "display_counting_unit_cable",
+          "label": "Display / counting-unit cable",
+          "part_type": "radar_cable"
+        },
+        {
+          "billing_options": [
+            {
+              "part_number": "200-0622-00",
+              "product_id": "stalker_200_0622_00"
+            },
+            {
+              "part_number": "200-0622-01",
+              "product_id": "stalker_200_0622_01"
+            }
+          ],
+          "help": "Select the vehicle-appropriate Stalker VSS cable kit.",
+          "id": "vss_speed_cable",
+          "label": "VSS / speed cable",
+          "part_type": "radar_cable"
+        }
+      ],
+      "radio": [
+        {
+          "billing_once": true,
+          "billing_options": [
+            {
+              "part_number": "Radio Refresh Kit",
+              "product_id": "motorola_radio_refresh_kit"
+            }
+          ],
+          "help": "Billed through the Radio Refresh Cable Kit.",
+          "id": "antenna_cable",
+          "label": "Antenna cable",
+          "part_type": "radio_cable"
+        },
+        {
+          "billing_once": true,
+          "billing_options": [
+            {
+              "part_number": "Radio Refresh Kit",
+              "product_id": "motorola_radio_refresh_kit"
+            }
+          ],
+          "help": "Billed through the Radio Refresh Cable Kit.",
+          "id": "power_cable",
+          "label": "Power cable",
+          "part_type": "radio_cable"
+        },
+        {
+          "billing_once": true,
+          "billing_options": [
+            {
+              "part_number": "Radio Refresh Kit",
+              "product_id": "motorola_radio_refresh_kit"
+            }
+          ],
+          "help": "Billed through the Radio Refresh Cable Kit.",
+          "id": "blue_communication_cable",
+          "label": "Blue communication cable",
+          "part_type": "radio_cable"
+        }
+      ]
     },
     "tags": {
       "camera": {

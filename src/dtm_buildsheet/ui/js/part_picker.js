@@ -85,6 +85,7 @@ const _PREF_CAGE_PART_TYPES = new Set([
   "cage", "front_partition", "rear_partition", "rear_seat_divider",
   "floor_pan", "replacement_rear_seat", "k9_kennel",
 ]);
+const _PREF_CAGE_FAMILIES = new Set(["cage_prisoner_containment"]);
 //   camera_brand scope (parts_db.json preference_filters.camera_brand uses
 //   filter_scope_kind:"tag_ids" → ["camera"]; these are the part_type_ids
 //   that currently carry that tag_id, listed directly since the picker's
@@ -114,7 +115,7 @@ function _pickerPreferredBrand(f) {
     want = (prefs.lighting_brands && prefs.lighting_brands[0]) || prefs.lighting || "";
   } else if (_PREF_BUMPER_PART_TYPES.has(f.part_type_id) || _PREF_BUMPER_FAMILIES.has(f.family_id)) {
     want = prefs.push_bumper_brand || "";
-  } else if (_PREF_CAGE_PART_TYPES.has(f.part_type_id)) {
+  } else if (_PREF_CAGE_PART_TYPES.has(f.part_type_id) || _PREF_CAGE_FAMILIES.has(f.family_id)) {
     want = prefs.cage_brand || "";
   } else if (_PREF_CAMERA_PART_TYPES.has(f.part_type_id)) {
     want = prefs.camera_brand || "";
@@ -1956,7 +1957,7 @@ function _pickerSavedAccessoryModel(child, parent) {
 }
 
 const _PICKER_NONSTANDARD_ACCESSORY_CHILDREN = new Set([
-  "magnetic_mic", "console_faceplate", "console_component", "console_wings",
+  "magnetic_mic", "console_faceplate", "console_component", "console_wings", "system_cable_refresh",
 ]);
 
 // Old builds may carry an accessory child whose SKU is no longer linked to the
@@ -3030,13 +3031,6 @@ function _pickerLightbarSatisfied() {
 // expandable manifest line instead of pretending every kit component is a
 // separate purchase.
 const _SYSTEM_LOC = {
-  radioHead: [
-    { value: "console_position_1", label: "Console position 1 (top)" },
-    { value: "console_position_2", label: "Console position 2" },
-    { value: "console_position_3", label: "Console position 3" },
-    { value: "console_position_4", label: "Console position 4" },
-    { value: "secondary_radio", label: "Rear storage area (secondary radio)" },
-  ],
   radioBrick: [
     { value: "equipment_tray", label: "On equipment tray" },
     { value: "front_partition", label: "Front of partition" },
@@ -3088,11 +3082,60 @@ const _SYSTEM_LOC = {
   ],
 };
 
-const _SYSTEM_CABLES = {
-  radio: ["Antenna cable", "Power cable", "Blue communication cable"],
-  radar: ["Front antenna cable", "Rear antenna cable", "Display / counting-unit cable", "VSS / speed cable", "Power cable"],
-  camera: ["Power cable", "Camera signal / data cable", "DVR / display cable", "GPS / antenna cable"],
-};
+// Cable refresh choices are read from parts_db via /system-cable-refreshes.
+// That route only returns live QB-linked SKUs, so each option this workflow
+// offers is safe to bill on the estimate.
+function _systemCableRefreshes(kind) {
+  const state = _pickerState.radio || {};
+  return state.kind === kind ? (state.cableRefreshes || []) : [];
+}
+
+function _systemCableOptionValue(option) {
+  return `${option.product_id || ""}::${option.part_number || ""}`;
+}
+
+function _systemCableRefreshMultiStep(kind) {
+  const label = { radio: "radio", radar: "radar", camera: "camera" }[kind] || "system";
+  return _systemStep(
+    "refreshCables", "multi", `Which ${label} cables should be refreshed?`,
+    "Select every cable run the shop should replace. The exact QB item is selected next when more than one length is available.",
+    _systemCableRefreshes(kind).map(cable => [cable.id, cable.label, cable.help || ""]),
+  );
+}
+
+function _systemCableSkuSteps(kind, choices) {
+  const byId = new Map(_systemCableRefreshes(kind).map(cable => [cable.id, cable]));
+  return (choices.refreshCables || []).flatMap(id => {
+    const cable = byId.get(id);
+    const options = cable?.billing_options || [];
+    if (!cable || options.length <= 1) return [];
+    return [_systemStep(
+      `refreshSku_${id}`, "choice", `Which ${cable.label} should be billed?`,
+      "Choose the exact replacement SKU for this cable run.",
+      options.map(option => [
+        _systemCableOptionValue(option),
+        option.friendly_name || option.part_number,
+        `${option.part_number}${option.price != null ? ` · $${option.price}` : ""}`,
+      ]),
+    )];
+  });
+}
+
+function _systemClearCableRefreshSelections(choices) {
+  choices.refreshCables = [];
+  for (const key of Object.keys(choices)) {
+    if (key.startsWith("refreshSku_")) delete choices[key];
+  }
+}
+
+function _systemKeepAvailableCableRefreshSelections(choices, cableRefreshes) {
+  const available = new Set((cableRefreshes || []).map(cable => cable.id));
+  choices.refreshCables = (choices.refreshCables || []).filter(id => available.has(id));
+  for (const key of Object.keys(choices)) {
+    if (key.startsWith("refreshSku_") && !available.has(key.slice("refreshSku_".length))) delete choices[key];
+  }
+  return choices;
+}
 
 const _RADAR_BRACKETS = [
   ["short_a_bracket", "Short A-bracket", "Standard low-profile radar antenna mount"],
@@ -3107,7 +3150,7 @@ const _SYSTEM_DEFS = {
     intro: "Answer one install question at a time. Customer-supplied hardware only needs the decisions the shop must build around.",
     defaults: {
       systemProduct: null, condition: "", provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
-      format: "split", headLoc: "", brickLoc: "",
+      format: "split", brickLoc: "",
       antennaStyle: "", antennaLoc: "", speakerLoc: "",
       micMount: "", micLoc: "",
     },
@@ -3118,13 +3161,12 @@ const _SYSTEM_DEFS = {
         ]),
         ...(c.condition === "reused" ? [
           _systemStep("refresh", "choice", "Will the radio cables be refreshed?", "Choose No when the existing cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemStep("refreshCables", "multi", "Which radio cables should be refreshed?", "Select every cable run the shop should replace.", _SYSTEM_CABLES.radio.map(x => [x.toLowerCase().replace(/[^a-z]+/g, "_"), x]))] : []),
+          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("radio"), ..._systemCableSkuSteps("radio", c)] : []),
         ] : [
           _systemStep("provider", "choice", "Who is providing the new radio system?", "Customer supplied is the normal path. Choose DTM only when we are purchasing the kit.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
           ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter model, quantity, accessories, vendor notes, or any other purchasing detail.", [])] : []),
         ]),
         _systemStep("format", "choice", "What radio layout is being installed?", "This determines whether the radio brick gets its own location.", [["all_in_one", "All-in-one radio", "No separate brick location"], ["split", "Split radio", "Control head and brick are separate"]]),
-        _systemLocationStep("headLoc", "Where will the radio control head go?", "Pick the console position the shop should use.", _SYSTEM_LOC.radioHead),
         ...(c.format === "split" ? [_systemLocationStep("brickLoc", "Where will the radio brick go?", "The brick is the remote electronics module behind the control head.", _SYSTEM_LOC.radioBrick)] : []),
         _systemStep("antennaStyle", "choice", "What antenna style is expected?", "This is an install note; it does not create a purchase order.", [["cylinder", "Cylinder style", "Common roof-mounted radio antenna"], ["whip", "Whip style", "Flexible whip antenna"], ["covert", "Covert / window style", "Low-profile or window-mounted antenna"], ["customer_specified", "Customer specified", "Use the customer hardware as supplied"]]),
         _systemLocationStep("antennaLoc", "Where will the radio antenna go?", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? "Cylinder and whip antennas normally use the rear left roof." : "Choose the roof or cargo-window location.", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? [_SYSTEM_LOC.radioAntenna[0]] : _SYSTEM_LOC.radioAntenna),
@@ -3153,7 +3195,7 @@ const _SYSTEM_DEFS = {
         _systemStep("condition", "choice", "Is this a new or reused radar system?", "This controls whether cable refresh questions appear.", [["new", "New system", "A new radar kit is being purchased"], ["reused", "Reused system", "The existing radar hardware stays in service"]]),
         ...(c.condition === "reused" ? [
           _systemStep("refresh", "choice", "Will the radar cables be refreshed?", "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemStep("refreshCables", "multi", "Which radar cables should be refreshed?", "Select every cable run the shop should replace.", _SYSTEM_CABLES.radar.map(x => [x.toLowerCase().replace(/[^a-z]+/g, "_"), x]))] : []),
+          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("radar"), ..._systemCableSkuSteps("radar", c)] : []),
         ] : [
           _systemStep("provider", "choice", "Who is providing the new radar system?", "Customer supplied is the default. Choose DTM only when we are purchasing it.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
           ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter the radar model, kit contents, vendor, or any other purchasing detail.", [])] : []),
@@ -3186,7 +3228,7 @@ const _SYSTEM_DEFS = {
         _systemStep("condition", "choice", "Is this a new or reused camera system?", "This controls whether cable refresh questions appear.", [["new", "New system", "A new camera kit is being purchased"], ["reused", "Reused system", "The existing camera hardware stays in service"]]),
         ...(c.condition === "reused" ? [
           _systemStep("refresh", "choice", "Will the camera cables be refreshed?", "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemStep("refreshCables", "multi", "Which camera cables should be refreshed?", "Select every cable run the shop should replace.", _SYSTEM_CABLES.camera.map(x => [x.toLowerCase().replace(/[^a-z]+/g, "_"), x]))] : []),
+          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("camera"), ..._systemCableSkuSteps("camera", c)] : []),
         ] : [
           _systemStep("provider", "choice", "Who is providing the new camera system?", "Customer supplied is the default. Choose DTM only when we are purchasing it.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
           ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter the camera platform, kit contents, vendor, or any other purchasing detail.", [])] : []),
@@ -3267,6 +3309,13 @@ function _systemDefaults(kind, existing = {}) {
     const legacyMicMounts = { standard: "manufacturer_clip", magnetic: "magnetic_no_bracket", bracket: "magnetic_with_bracket" };
     if (legacyMicMounts[base.micMount]) base.micMount = legacyMicMounts[base.micMount];
   }
+  if (kind === "camera") {
+    // The original camera refresh label became the more concise
+    // signal_data_cable ID once the choice was linked to its QB SKU.
+    base.refreshCables = (base.refreshCables || []).map(id =>
+      id === "camera_signal_data_cable" ? "signal_data_cable" : id
+    );
+  }
   return base;
 }
 
@@ -3334,10 +3383,22 @@ function _pickerSetSystemFilters(kind) {
 async function _pickerLoadSystemWorkflow(kind, existingChoices = null, step = 0) {
   if (!_SYSTEM_DEFS[kind]) return;
   const prior = _pickerState.radio || {};
+  let cableRefreshes = prior.kind === kind ? (prior.cableRefreshes || []) : [];
+  try {
+    const vehicle = _pickerVehicle();
+    const query = vehicle ? `&vehicle=${encodeURIComponent(vehicle)}` : "";
+    const res = await api(`/api/parts-db/system-cable-refreshes?system=${encodeURIComponent(kind)}${query}`);
+    cableRefreshes = res?.refreshes || [];
+  } catch (e) {
+    console.error("Picker: system cable refreshes failed:", e);
+  }
+  const choices = _systemKeepAvailableCableRefreshSelections(
+    _systemDefaults(kind, existingChoices || prior.choices || {}), cableRefreshes,
+  );
   _pickerState.systemSetup = { active: false, kind: "", product: null };
   _pickerState.radio = {
     active: true, kind, loading: false, products: prior.products || {},
-    choices: _systemDefaults(kind, existingChoices || prior.choices || {}), step: Number(step) || 0,
+    cableRefreshes, choices, step: Number(step) || 0,
   };
   _systemClampStep();
   _pickerRenderProducts();
@@ -3462,12 +3523,11 @@ function _systemComponentRows(kind, c) {
   const stepFor = key => _systemSteps().find(s => s.key === key) || { options: [] };
   const answer = key => _systemAnswerLabel(stepFor(key), c[key], c);
   if (kind === "radio") {
-    add("Radio control head", "radio_head", answer("headLoc"), c.format === "split" ? "Split radio layout" : "All-in-one radio");
+    add("Radio control head", "radio_head", "", c.format === "split" ? "Split radio layout — console position is set with the center console." : "All-in-one radio — console position is set with the center console.");
     if (c.format === "split") add("Radio brick", "radio_brick", answer("brickLoc"), "Separate electronics module");
     add("Radio antenna", "radio_antenna_top", answer("antennaLoc"), answer("antennaStyle"));
     add("Radio speaker", "radio_speaker", answer("speakerLoc"), "Shop mounting location");
     add("Radio microphone", "radio_mic_clip", answer("micLoc"), answer("micMount"));
-    add("Radio cables", "radio_cable", "", c.condition === "reused" ? (c.refresh === "yes" ? `Refresh: ${answer("refreshCables")}` : "Reuse existing cable set") : "New kit cables supplied with system");
   } else if (kind === "radar") {
     if (c.split === "yes") {
       add("Radar display unit", "radar_display_unit", "", "Separate display unit");
@@ -3477,7 +3537,6 @@ function _systemComponentRows(kind, c) {
     }
     add("Front radar antenna", "front_radar_antenna_mount", answer("frontLoc"), answer("frontBracket"));
     add("Rear radar antenna", "rear_radar_antenna_mount", answer("rearLoc"), answer("rearBracket"));
-    if (c.condition === "reused" && c.refresh === "yes") add("Radar cable refresh", "radar_cable", "", `Refresh: ${answer("refreshCables")}`);
   } else if (kind === "camera") {
     add("Camera DVR / recorder", "camera_dvr", answer("dvrLoc"), `Platform: ${_systemProductLabel(c) || _systemCameraPlatform(c)}`);
     const map = {
@@ -3492,9 +3551,60 @@ function _systemComponentRows(kind, c) {
       const location = key === "wireless_mic" ? answer("wirelessMicLoc") : item[2];
       add(item[0], item[1], location, item[3] || "Selected camera component");
     }
-    if (c.condition === "reused" && c.refresh === "yes") add("Camera cable refresh", "camera_dvr", "", `Refresh: ${answer("refreshCables")}`);
   }
   return rows;
+}
+
+// Unlike the other guided-system details, refreshed cables are actual parts we
+// sell.  Keep them as nested draft children so the manifest shows the precise
+// billable SKU and QuickBooks sees a normal, linked part line.
+function _pickerSystemCableRefreshRows(parentLineId, parentName, kind, choices) {
+  if (choices.condition !== "reused" || choices.refresh !== "yes" || !parentLineId) return [];
+  const byId = new Map(_systemCableRefreshes(kind).map(cable => [cable.id, cable]));
+  const grouped = new Map();
+  for (const cableId of (choices.refreshCables || [])) {
+    const cable = byId.get(cableId);
+    if (!cable) continue;
+    const options = cable.billing_options || [];
+    const selected = options.length === 1
+      ? options[0]
+      : options.find(option => _systemCableOptionValue(option) === choices[`refreshSku_${cableId}`]);
+    if (!selected?.part_number) continue;
+    const key = `${selected.product_id}::${selected.part_number}`;
+    const prior = grouped.get(key);
+    if (prior) {
+      prior.labels.push(cable.label);
+      if (!cable.billing_once) prior.quantity += 1;
+      continue;
+    }
+    grouped.set(key, {
+      ...selected,
+      partType: cable.part_type || "cable",
+      labels: [cable.label],
+      quantity: 1,
+    });
+  }
+  return [...grouped.values()].map(item => ({
+    name: `${parentName} · ${item.model || item.friendly_name || item.part_number}`,
+    location: "", manufacturer: item.manufacturer_label || "", part_number: item.part_number,
+    quantity: item.quantity, new_or_used: "New", source: "", parent_line_id: parentLineId,
+    accessory_category: "system_cable_refresh", accessory_parent_product: "", part_type: item.partType,
+    notes: `Cable refresh: ${item.labels.join(", ")}`,
+  }));
+}
+
+async function _pickerReplaceSystemCableRefreshChildren(draftId, parentLineId, parentName, kind, choices) {
+  const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
+    part.parent_line_id === parentLineId && part.accessory_category === "system_cable_refresh"
+  );
+  for (const child of existing) {
+    const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
+    if (!result?.ok) throw new Error(result?.error || "could not replace a system cable refresh line");
+  }
+  for (const row of _pickerSystemCableRefreshRows(parentLineId, parentName, kind, choices)) {
+    const result = await api(`/api/draft/${draftId}/part`, row);
+    if (!result?.ok) throw new Error(result?.error || "could not add a system cable refresh line");
+  }
 }
 
 function _pickerRenderRadio() {
@@ -3550,9 +3660,15 @@ function _pickerRenderSystemIn(el) {
     if (step.type === "multi") {
       const list = Array.isArray(target[key]) ? [...target[key]] : [];
       const pos = list.indexOf(selected); if (pos >= 0) list.splice(pos, 1); else list.push(selected); target[key] = list;
+      if (key === "refreshCables") {
+        for (const choiceKey of Object.keys(target)) {
+          if (choiceKey.startsWith("refreshSku_") && !list.includes(choiceKey.slice("refreshSku_".length))) delete target[choiceKey];
+        }
+      }
     } else {
       target[key] = selected;
-      if (key === "condition") { target.refresh = ""; target.refreshCables = []; target.provider = "customer"; target.purchaseDetails = ""; }
+      if (key === "condition") { target.refresh = ""; _systemClearCableRefreshSelections(target); target.provider = "customer"; target.purchaseDetails = ""; }
+      if (key === "refresh" && selected !== "yes") _systemClearCableRefreshSelections(target);
       if (key === "provider" && selected === "customer") target.purchaseDetails = "";
       if (key === "antennaStyle" && ["cylinder", "whip"].includes(selected) && target.antennaLoc && !["rear_left_roof", "__custom__"].includes(target.antennaLoc)) target.antennaLoc = "";
       if (key === "cameraBrand" && !_cameraSupportsExtendedComponents(selected)) {
@@ -3580,7 +3696,7 @@ function _pickerRenderSystemIn(el) {
 }
 
 function _pickerSystemPrimaryLocation(kind, choices) {
-  if (kind === "radio") return _systemAnswerLabel(_systemSteps().find(s => s.key === "headLoc") || { options: [] }, choices.headLoc, choices);
+  if (kind === "radio") return "";
   if (kind === "camera") return _systemAnswerLabel(_systemSteps().find(s => s.key === "dvrLoc") || { options: [] }, choices.dvrLoc, choices);
   return choices.split === "yes" ? _systemAnswerLabel(_systemSteps().find(s => s.key === "countingLoc") || { options: [] }, choices.countingLoc, choices) : "Integrated display unit";
 }
@@ -3611,11 +3727,13 @@ async function _pickerAddSystem(addAndContinue) {
     const endpoint = editing ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update` : `/api/draft/${draftId}/part`;
     const result = await api(endpoint, row);
     if (!result?.ok) throw new Error(result?.error || "system add failed");
+    const parentLineId = result.line_id || _pickerState.editLineId;
+    await _pickerReplaceSystemCableRefreshChildren(draftId, parentLineId, row.name, state.kind, c);
     if (state.kind === "radio") {
       const micStep = _systemSteps().find(step => step.key === "micLoc") || { options: [] };
       const micLocation = _systemAnswerLabel(micStep, c.micLoc, c);
       await _pickerReplaceMagneticMicChild(
-        draftId, result.line_id || _pickerState.editLineId, row.name, micLocation, c.micMount,
+        draftId, parentLineId, row.name, micLocation, c.micMount,
       );
     }
     toast(editing ? `${def.label} updated` : `${def.label} added`, "success");

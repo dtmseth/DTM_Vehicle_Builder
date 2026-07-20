@@ -491,6 +491,8 @@ Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `b
 The canonical Part Picker catalog. The full picker behavior and data-routing notes live in
 [`PARTS_DB_AND_PICKER.md`](PARTS_DB_AND_PICKER.md). Product records may include a structured
 console-kit definition when one QuickBooks console SKU includes multiple shop components.
+Guided-system cable refresh choices live in `system_cable_refreshes`; each listed billing option
+must refer to a live QB-linked SKU.
 
 ```json
 {
@@ -514,6 +516,18 @@ console-kit definition when one QuickBooks console SKU includes multiple shop co
         }
       }
     }
+  },
+  "system_cable_refreshes": {
+    "radar": [
+      {
+        "id": "front_antenna_cable",
+        "label": "Front antenna cable",
+        "part_type": "radar_cable",
+        "billing_options": [
+          {"product_id": "stalker_antenna_cable", "part_number": "155-2591-08"}
+        ]
+      }
+    ]
   }
 }
 ```
@@ -529,6 +543,11 @@ components already covered by its QuickBooks price.
 `included` is a free-form object so it can describe the precise armrest or motion variant when
 needed. Included components remain on the shop manifest and are intentionally skipped by estimate
 resolution.
+
+`system_cable_refreshes` is an optional per-system catalog for guided radio, radar, and camera
+workflows. A user first selects the cable run, then selects the exact SKU if that run has several
+lengths. Every `billing_options[]` reference must resolve to an active `part_numbers[]` entry with
+`qb_item_id`; selected refreshes become nested, billable draft lines rather than manifest-only text.
 
 `families.<family_id>.picker_part_label` is optional. It gives every part selected through that
 family one shared Part-column label without changing the individual part types used for manifest

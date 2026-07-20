@@ -752,29 +752,11 @@
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
-        "model": "STEEL VERTICAL",
+        "model": "Window Barrier",
         "price_min": 279.0,
         "product_id": "setina_steel_vertical",
-        "qb_count": 6,
-        "sku_count": 6
-      },
-      {
-        "manufacturer_id": "setina",
-        "manufacturer_label": "Setina",
-        "model": "STEEL HORIZONTAL",
-        "price_min": 329.0,
-        "product_id": "setina_steel_horizontal",
-        "qb_count": 3,
-        "sku_count": 3
-      },
-      {
-        "manufacturer_id": "setina",
-        "manufacturer_label": "Setina",
-        "model": "POLY TINTED",
-        "price_min": 409.0,
-        "product_id": "setina_poly_tinted",
-        "qb_count": 4,
-        "sku_count": 4
+        "qb_count": 18,
+        "sku_count": 18
       },
       {
         "manufacturer_id": "pro_gard",

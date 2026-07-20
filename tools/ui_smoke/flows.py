@@ -579,8 +579,6 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     assert page.evaluate("() => _pickerState.radio.choices.format") == "split", \
         "split-head radio should be the default layout"
     _guided_next(page)
-    _guided_pick(page, "headLoc", "console_position_1")
-    _guided_next(page)
     _guided_pick(page, "brickLoc", "equipment_tray")
     _guided_next(page)
     _guided_pick(page, "antennaStyle", "cylinder")
@@ -616,7 +614,7 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     assert radio.get("notes") == "Customer-specified Motorola mobile radio, split kit, include antenna and mic."
     assert radio["picker_config"]["choices"]["purchaseDetails"] == radio.get("notes")
     component_types = {c.get("part_type") for c in radio.get("components", [])}
-    expected = {"radio_head", "radio_brick", "radio_antenna_top", "radio_speaker", "radio_mic_clip", "radio_cable"}
+    expected = {"radio_head", "radio_brick", "radio_antenna_top", "radio_speaker", "radio_mic_clip"}
     assert expected.issubset(component_types), \
         f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
     mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
@@ -695,6 +693,8 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     assert "Which radar cables should be refreshed?" in page.locator(".guided-question h2").text_content()
     _guided_pick(page, "refreshCables", "front_antenna_cable")
     _guided_next(page)
+    _guided_pick(page, "refreshSku_front_antenna_cable", "stalker_antenna_cable::155-2591-08")
+    _guided_next(page)
     _guided_pick(page, "split", "yes")
     _guided_next(page)
     assert "counting unit" in page.locator(".guided-question h2").text_content().lower(), \
@@ -734,6 +734,10 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     assert radar["picker_config"]["choices"]["countingLoc"] == "center_console"
     assert radar["picker_config"]["choices"]["frontBracket"] == "swivel_arm"
     assert radar["picker_config"]["choices"]["rearBracket"] == "tall_a_bracket"
+    radar_cable = next((p for p in draft["draft"]["parts"] if p.get("parent_line_id") == radar["line_id"]
+                         and p.get("accessory_category") == "system_cable_refresh"), None)
+    assert radar_cable and radar_cable.get("part_number") == "155-2591-08", \
+        f"refreshed radar cable should be a billable QB child line, got {radar_cable!r}"
     parent = page.locator("tr.me-parent-row").filter(has_text="Radar System")
     assert parent.count() == 1, "expected the radar kit to render as one expandable manifest line"
     parent.click()
@@ -780,7 +784,7 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     _guided_next(page)
     _guided_pick(page, "refresh", "yes")
     _guided_next(page)
-    _guided_pick(page, "refreshCables", "power_cable")
+    _guided_pick(page, "refreshCables", "signal_data_cable")
     _guided_next(page)
     assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "watchguard_m500"
     assert page.evaluate("() => _cameraSupportsExtendedComponents(_systemCameraPlatform({systemProduct:{product_id:'axon_fleet_3'}}))") is False
@@ -929,7 +933,7 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     _project_id, _unit_id, draft_id = _seed_project_with_draft(
         base_url, preferences={
             "lighting_brands": ["Whelen"], "push_bumper_brand": "Setina",
-            "console_brand": "Gamber Johnson",
+            "cage_brand": "Setina", "console_brand": "Gamber Johnson",
         }
     )
     _open_build_editor(page, base_url)
@@ -995,6 +999,18 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
     assert bumper_brand == "Setina", (
         "expected Push Bumper family header to auto-select the project's "
         f"preferred bumper brand 'Setina', got {bumper_brand!r}"
+    )
+
+    # Cage / Prisoner Containment is also entered through a family-union
+    # header. It must apply cage_brand before a specific cage component is
+    # chosen, just like Push Bumper above.
+    page.wait_for_selector(".pbt-fam-select[data-family='cage_prisoner_containment']")
+    page.click(".pbt-fam-select[data-family='cage_prisoner_containment']")
+    page.wait_for_timeout(_SETTLE_MS)
+    cage_brand = page.evaluate("_pickerState.filters.brand")
+    assert cage_brand == "Setina", (
+        "expected Cage / Prisoner Containment family header to auto-select "
+        f"the preferred cage brand 'Setina', got {cage_brand!r}"
     )
 
     # The Console leaf must likewise begin restricted to the project's

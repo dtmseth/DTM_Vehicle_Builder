@@ -36,6 +36,7 @@ _MANIFEST_GROUPS_PATH = f"{_PREFIX}/manifest-groups"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
+_SYSTEM_CABLE_REFRESHES_PATH = f"{_PREFIX}/system-cable-refreshes"
 _TRACER_HEADS_PATH = f"{_PREFIX}/tracer-heads"
 _EDIT_PREFIX = f"{_PREFIX}/edit"
 
@@ -698,6 +699,66 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
     return out
 
 
+def _system_cable_vehicle_compatible(vehicle_tags: list[str], vehicle: str) -> bool:
+    """Whether a curated cable SKU is applicable to the current vehicle.
+
+    The guided picker still shows universal SKUs when no vehicle has been
+    selected.  A vehicle-specific SKU (currently the Tahoe VSS kit) only
+    appears when the active vehicle clearly matches its tag.
+    """
+    tags = {str(tag).strip().upper() for tag in vehicle_tags if str(tag).strip()}
+    if not tags or "ANY" in tags:
+        return True
+    vehicle_upper = (vehicle or "").upper()
+    return any(tag in vehicle_upper for tag in tags)
+
+
+def _resolve_system_cable_refreshes(svc, system_id: str, vehicle: str = "") -> list[dict]:
+    """Expand curated guided-system refresh choices into orderable QB SKUs.
+
+    The parts DB owns the supported choices.  This route resolves only
+    referenced, live QB-linked SKU records, so the browser cannot present a
+    refresh that would later fail estimate creation.
+    """
+    doc = svc.raw_doc()
+    products = doc.get("products") or {}
+    manufacturers = doc.get("manufacturers") or {}
+    entries = (doc.get("system_cable_refreshes") or {}).get(system_id) or []
+    resolved: list[dict] = []
+    for entry in entries:
+        options: list[dict] = []
+        for ref in entry.get("billing_options") or []:
+            product = products.get(ref.get("product_id")) or {}
+            sku = next((pn for pn in (product.get("part_numbers") or [])
+                        if pn.get("part_number") == ref.get("part_number")), None)
+            if not sku or not sku.get("qb_item_id") or sku.get("qb_inactive"):
+                continue
+            tags = list(sku.get("vehicle_tags") or [])
+            if not _system_cable_vehicle_compatible(tags, vehicle):
+                continue
+            manufacturer_id = product.get("manufacturer_id", "")
+            options.append({
+                "product_id": ref.get("product_id", ""),
+                "model": product.get("model", ref.get("product_id", "")),
+                "manufacturer_label": (manufacturers.get(manufacturer_id) or {}).get("label", manufacturer_id),
+                "part_number": sku.get("part_number", ""),
+                "friendly_name": sku.get("friendly_name", ""),
+                "price": sku.get("qb_unit_price") if sku.get("qb_unit_price") is not None else sku.get("price_usd"),
+                "qb_item_id": str(sku.get("qb_item_id", "")),
+                "vehicle_tags": tags,
+            })
+        if options:
+            resolved.append({
+                "id": entry.get("id", ""),
+                "label": entry.get("label", ""),
+                "help": entry.get("help", ""),
+                "part_type": entry.get("part_type", "cable"),
+                "billing_once": bool(entry.get("billing_once")),
+                "billing_options": options,
+            })
+    return resolved
+
+
 # ── Granular edit endpoints (Part Manager SKU grid + hierarchy) ──────────────
 # The client sends a small patch; the server applies it to the full doc and
 # persists via save_config_file (keeping _validate_parts_db + the SharePoint
@@ -1342,6 +1403,18 @@ def route_parts_db(
             send_json(handler, {"error": "missing product_id"}, status=400)
             return True
         send_json(handler, {"accessories": _resolve_accessories(svc, product_id)})
+        return True
+
+    if method == "GET" and path == _SYSTEM_CABLE_REFRESHES_PATH:
+        system_id = qs.get("system", [""])[0]
+        if system_id not in {"radio", "radar", "camera"}:
+            send_json(handler, {"error": "system must be radio, radar, or camera"}, status=400)
+            return True
+        vehicle = qs.get("vehicle", [""])[0]
+        send_json(handler, {
+            "system": system_id,
+            "refreshes": _resolve_system_cable_refreshes(svc, system_id, vehicle),
+        })
         return True
 
     if method == "GET" and path == _TRACER_HEADS_PATH:
