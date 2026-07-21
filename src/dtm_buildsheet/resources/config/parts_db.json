@@ -6392,6 +6392,7 @@
       "fits_part_types": [
         "rear_window_bars"
       ],
+      "fixed_location": "REAR WINDOWS",
       "tag_ids": [],
       "description": "",
       "images": {},
@@ -31387,7 +31388,16 @@
       "workbook_label_pattern": "Gunlock {n}",
       "sequence_scope": "global",
       "location_mode": "text",
-      "location_options": []
+      "location_options": [
+        "OVERHEAD ON FRONT PARTITION",
+        "GUN LOCK POCKET",
+        "LEFT GUN LOCK POCKET",
+        "RIGHT GUN LOCK POCKET",
+        "OVERHEAD IN REAR",
+        "CARGO AREA MOUNT",
+        "REAR SEAT MOUNT",
+        "SINGLE PRISONER FACING FORWARD"
+      ]
     },
     "gun_lock_bracket": {
       "label": "Gun Lock Bracket",
@@ -32990,6 +33000,7 @@
     "cage_prisoner_containment": {
       "label": "Cage / Prisoner Containment",
       "category": "structural",
+      "fixed_location": "PRISONER AREA",
       "members": [
         "front_partition",
         "rear_partition",

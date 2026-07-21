@@ -110,6 +110,13 @@ class TestPartsDbValidator:
                                    "picker_part_label": ["Interior Lights"]}},
             })
 
+    def test_rejects_non_string_family_fixed_location(self):
+        with pytest.raises(ValueError, match="fixed_location"):
+            validate_config_payload("parts_db.json", {
+                "families": {"x": {"label": "X", "category": "structural", "members": [],
+                                   "fixed_location": ["PRISONER AREA"]}},
+            })
+
     def test_rejects_part_type_tree_position_missing_zone(self):
         with pytest.raises(ValueError, match="zone"):
             validate_config_payload("parts_db.json", {

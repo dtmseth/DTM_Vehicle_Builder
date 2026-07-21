@@ -527,6 +527,25 @@ def test_siren_speaker_locations_use_curated_parts_db_allowed_placements():
     }
 
 
+def test_gun_lock_locations_recover_the_legacy_workbook_choices():
+    h = FakeHandler(
+        "/api/parts-db/category-locations?type=equipment&product=pro_gard_single_handcuff&vehicle=PIU"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, AppPaths())
+
+    assert h.status == 200
+    assert {row["location"] for row in h.body_json()["locations"]} == {
+        "OVERHEAD ON FRONT PARTITION",
+        "GUN LOCK POCKET",
+        "LEFT GUN LOCK POCKET",
+        "RIGHT GUN LOCK POCKET",
+        "OVERHEAD IN REAR",
+        "CARGO AREA MOUNT",
+        "REAR SEAT MOUNT",
+        "SINGLE PRISONER FACING FORWARD",
+    }
+
+
 def test_interior_lighting_is_one_collapsed_picker_leaf():
     h = FakeHandler("/api/parts-db/browse-tree")
     route_parts_db(h, "GET", "/api/parts-db/browse-tree", {}, AppPaths())
@@ -730,6 +749,7 @@ def test_setina_rear_window_barriers_are_one_product_with_all_variants():
     barrier = setina_products[0]
     assert barrier["product_id"] == "setina_steel_vertical"
     assert barrier["model"] == "Window Barrier"
+    assert barrier["fixed_location"] == "REAR WINDOWS"
     part_numbers = {sku["part_number"] for sku in barrier["skus"]}
     assert {
         "WK0514TAH21",   # steel vertical
@@ -737,6 +757,16 @@ def test_setina_rear_window_barriers_are_one_product_with_all_variants():
         "WK0595TAH21",   # polycarbonate
         "WK1491TAH21T",  # tinted polycarbonate
     }.issubset(part_numbers)
+
+
+def test_cage_family_uses_a_fixed_prisoner_area_location_with_product_overrides():
+    h = FakeHandler("/api/parts-db/category-skus?type=structural&family=cage_prisoner_containment")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    products = {product["product_id"]: product for product in h.body_json()["products"]}
+    assert products["setina_full_partition"]["fixed_location"] == "PRISONER AREA"
+    assert products["setina_steel_vertical"]["fixed_location"] == "REAR WINDOWS"
 
 
 def test_category_skus_family_filter_uses_member_union(tmp_path):

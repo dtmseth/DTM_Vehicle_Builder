@@ -367,6 +367,7 @@
         "fits_part_types": [
           "prisoner_transport_insert"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
@@ -5187,6 +5188,7 @@
         "fits_part_types": [
           "rear_seat_divider"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -5546,6 +5548,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -5584,6 +5587,7 @@
         "fits_part_types": [
           "floor_pan"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -6958,6 +6962,7 @@
         "fits_part_types": [
           "front_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -8705,6 +8710,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -8769,6 +8775,7 @@
         "fits_part_types": [
           "front_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -9049,6 +9056,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -9253,6 +9261,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -9395,6 +9404,7 @@
         "fits_part_types": [
           "front_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -17445,6 +17455,7 @@
         "fits_part_types": [
           "front_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -18484,6 +18495,7 @@
         "fits_part_types": [
           "rear_seat_divider"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -18518,6 +18530,7 @@
         "fits_part_types": [
           "floor_pan"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -18552,6 +18565,7 @@
         "fits_part_types": [
           "floor_pan"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -18586,6 +18600,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -18620,6 +18635,7 @@
         "fits_part_types": [
           "rear_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -18841,6 +18857,7 @@
         "fits_part_types": [
           "rear_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -20175,6 +20192,7 @@
         "fits_part_types": [
           "chicago_barrier"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -20677,6 +20695,7 @@
         "fits_part_types": [
           "rear_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "pro_gard",
         "manufacturer_label": "Pro-Gard",
@@ -21615,6 +21634,7 @@
         "fits_part_types": [
           "front_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -21777,6 +21797,7 @@
         "fits_part_types": [
           "replacement_rear_seat"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -22180,6 +22201,7 @@
         "fits_part_types": [
           "chicago_barrier"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -22250,6 +22272,7 @@
         "fits_part_types": [
           "rear_partition"
         ],
+        "fixed_location": "PRISONER AREA",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
@@ -26677,6 +26700,7 @@
         "fits_part_types": [
           "rear_window_bars"
         ],
+        "fixed_location": "REAR WINDOWS",
         "is_fixture": false,
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",

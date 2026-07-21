@@ -1499,9 +1499,9 @@ def flow_picker_multi_add(page, base_url: str) -> None:
     Uses `gun_lock` (Equipment > Gun Lock, a bare leaf with no family) rather
     than `console` — console became single-instance under FINDING-027 (owner
     flaw #2: only one console per vehicle) and no longer sequences, so it
-    can't guard multi-instance numbering. gun_lock is text-mode with zero
-    location_options, same free-text branch console used to exercise, but it
-    keeps sequencing ("Gun Lock 1" / "Gun Lock 2").
+    can't guard multi-instance numbering. Gun Lock keeps its legacy
+    "Gunlock 1" / "Gunlock 2" sequencing and has workbook-derived location
+    cards.
     """
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
@@ -1529,8 +1529,8 @@ def flow_picker_multi_add(page, base_url: str) -> None:
             page.wait_for_timeout(200)
         page.click("#picker-tab-btn-location")
         page.wait_for_timeout(_SETTLE_MS)
-        page.wait_for_selector("#picker-loc-text")
-        page.fill("#picker-loc-text", "Front seat gun lock mount")
+        page.wait_for_selector("[data-text-location='GUN LOCK POCKET']")
+        page.click("[data-text-location='GUN LOCK POCKET']")
         page.wait_for_timeout(200)
 
     # ── Open picker for a first part ──────────────────────────────────────────
@@ -1589,8 +1589,8 @@ def flow_picker_multi_add(page, base_url: str) -> None:
     # Two gun lock parts must be in the draft, sequenced correctly.
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     names = [p["name"] for p in draft["draft"]["parts"]]
-    assert len(names) >= 2 and "Gun Lock 1" in names and "Gun Lock 2" in names, \
-        f"Step 7: expected two sequenced Gun Lock parts after multi-add, got {names}"
+    assert len(names) >= 2 and "Gunlock 1" in names and "Gunlock 2" in names, \
+        f"Step 7: expected two sequenced Gunlock parts after multi-add, got {names}"
 
 
 FLOWS = {

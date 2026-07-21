@@ -553,6 +553,10 @@ lengths. Every `billing_options[]` reference must resolve to an active `part_num
 family one shared Part-column label without changing the individual part types used for manifest
 grouping, editing, or catalog compatibility.
 
+`families.<family_id>.fixed_location` is optional. It skips the location step for every member of
+that family and saves the supplied shop-reference location; a product-level `fixed_location` takes
+precedence when that product has a more specific location.
+
 ---
 
 ## Common Conventions

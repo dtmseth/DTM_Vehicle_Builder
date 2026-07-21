@@ -112,6 +112,7 @@
     "families": {
       "cage_prisoner_containment": {
         "category": "structural",
+        "fixed_location": "PRISONER AREA",
         "kind": "system",
         "label": "Cage / Prisoner Containment",
         "members": [
@@ -1551,7 +1552,16 @@
       "gun_lock": {
         "label": "Gun Lock",
         "location_mode": "text",
-        "location_options": [],
+        "location_options": [
+          "OVERHEAD ON FRONT PARTITION",
+          "GUN LOCK POCKET",
+          "LEFT GUN LOCK POCKET",
+          "RIGHT GUN LOCK POCKET",
+          "OVERHEAD IN REAR",
+          "CARGO AREA MOUNT",
+          "REAR SEAT MOUNT",
+          "SINGLE PRISONER FACING FORWARD"
+        ],
         "sequence_scope": "global",
         "tag_ids": [],
         "tree_positions": [
@@ -18259,6 +18269,7 @@
         "fits_part_types": [
           "rear_window_bars"
         ],
+        "fixed_location": "REAR WINDOWS",
         "images": {},
         "manufacturer_id": "setina",
         "model": "Window Barrier",

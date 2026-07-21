@@ -454,6 +454,11 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(
                     f"parts_db.json family '{family_id}' 'picker_part_label' must be a string"
                 )
+            fixed_location = spec.get("fixed_location")
+            if fixed_location is not None and not isinstance(fixed_location, str):
+                raise ValueError(
+                    f"parts_db.json family '{family_id}' 'fixed_location' must be a string"
+                )
 
     manifest_groups = normalized.get("manifest_groups")
     if manifest_groups is not None:

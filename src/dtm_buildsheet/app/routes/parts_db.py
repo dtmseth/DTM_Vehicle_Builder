@@ -1592,6 +1592,10 @@ def route_parts_db(
                     entry["location_options"] = list(product_spec["location_options"])
                 if product_spec.get("fixed_location"):
                     entry["fixed_location"] = product_spec["fixed_location"]
+                elif primary_family.get("fixed_location"):
+                    # A family-level fixed location covers every member unless
+                    # the product has a more precise physical location.
+                    entry["fixed_location"] = primary_family["fixed_location"]
                 if product_spec.get("default_colors"):
                     entry["default_colors"] = list(product_spec["default_colors"])
                 if p.console_kit:
