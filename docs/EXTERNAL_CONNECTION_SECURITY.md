@@ -1,7 +1,7 @@
 # External Connection Security Standards
 
 **Applies to**: All external API integrations in DTM Vehicle Builder  
-**Last updated**: 2026-06-15
+**Last updated**: 2026-08-10
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
 
@@ -73,6 +73,15 @@ The application log must never contain:
 - Raw API response bodies from external services (which may contain customer data)
 
 Log only: operation names, HTTP status codes, timestamps, and service-provided trace IDs (e.g., `intuit_tid` from QuickBooks, correlation IDs from Microsoft Graph).
+
+### Rule: Never Log External Request or Redirect URLs
+
+External providers may redirect a download to a time-limited, signed URL. Those URLs can carry
+temporary authorization query parameters even when the original request did not. Do not log raw
+`requests` exceptions, response URLs, request URLs, redirect targets, or exception text derived
+from them. Convert provider failures into a safe application error containing only the operation,
+the app-relative record path, and an HTTP status or exception type. Suppress the original exception
+chain when doing so.
 
 ```python
 # Correct
@@ -161,6 +170,7 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | OS keychain token storage | ✅ | `msal_extensions` uses Keychain/DPAPI/libsecret |
 | No plaintext token storage | ✅ | Tokens are ephemeral in memory |
 | No credentials in logs | ✅ | Verified in audit |
+| Signed redirect URLs excluded from logs/errors | ✅ | `SharePointGraphProvider` converts HTTP and transport failures to safe summaries without request/redirect URLs |
 | CSRF protection | ✅ | MSAL handles state internally |
 | HTTPS only | ✅ | Microsoft Graph is HTTPS-only |
 | Discovery document | ✅ | MSAL handles automatically |

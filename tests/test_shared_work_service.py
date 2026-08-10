@@ -67,6 +67,18 @@ class _EtagRemote(_FakeRemote):
         ]
 
 
+class _ReadTrackingRemote(_EtagRemote):
+    """Records content reads so startup work can be kept deliberately small."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.read_paths: list[str] = []
+
+    def read_bytes(self, path: str) -> bytes:
+        self.read_paths.append(path)
+        return super().read_bytes(path)
+
+
 class _BlockingRemote(_EtagRemote):
     """Lets a test queue a second save while the first upload is in flight."""
 
@@ -250,6 +262,50 @@ def test_sync_pulls_projects_into_workspace(cloud_on, paths):
 
     assert (paths.workspace_projects_dir / "proj-a" / "project.json").read_bytes() == b'{"name": "A"}'
     assert (paths.workspace_projects_dir / "proj-b" / "project.json").read_bytes() == b'{"name": "B"}'
+
+
+def test_project_first_sync_defers_historical_draft_downloads(cloud_on, paths):
+    remote = _ReadTrackingRemote()
+    remote.files["Projects/proj-a.json"] = b'{"name": "A"}'
+    remote.files["Drafts/draft-1.json"] = b'{"draft_id": "draft-1"}'
+    remote.files["Drafts/draft-2.json"] = b'{"draft_id": "draft-2"}'
+    set_active_bundle(_make_bundle(storage=remote))
+
+    report = shared_work_service.sync_work_data(paths, include_drafts=False)
+
+    assert report["projects_updated"] == 1
+    assert report["drafts_deferred"] is True
+    assert not (paths.workspace_drafts_dir / "draft-1.json").exists()
+    assert remote.read_paths == ["Projects/proj-a.json"]
+
+
+def test_hydrate_draft_downloads_only_the_requested_build(cloud_on, paths):
+    remote = _ReadTrackingRemote()
+    remote.files["Drafts/draft-1.json"] = b'{"draft_id": "draft-1"}'
+    remote.files["Drafts/draft-2.json"] = b'{"draft_id": "draft-2"}'
+    set_active_bundle(_make_bundle(storage=remote))
+
+    assert shared_work_service.hydrate_draft_from_cloud("draft-1", paths) is True
+
+    assert (paths.workspace_drafts_dir / "draft-1.json").read_bytes() == remote.files["Drafts/draft-1.json"]
+    assert not (paths.workspace_drafts_dir / "draft-2.json").exists()
+    assert remote.read_paths == ["Drafts/draft-1.json"]
+
+
+def test_refresh_keeps_a_newer_local_draft(cloud_on, paths):
+    remote = _ReadTrackingRemote()
+    remote.files["Drafts/draft-1.json"] = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T10:00:00+00:00","parts":[]}'
+    )
+    local = paths.workspace_drafts_dir / "draft-1.json"
+    local_payload = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T12:00:00+00:00","parts":[{"name":"new"}]}'
+    )
+    local.write_bytes(local_payload)
+    set_active_bundle(_make_bundle(storage=remote))
+
+    assert shared_work_service.hydrate_draft_from_cloud("draft-1", paths, refresh=True) is True
+    assert local.read_bytes() == local_payload
 
 
 def test_sync_skips_unchanged_files(cloud_on, paths):

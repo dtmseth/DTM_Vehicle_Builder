@@ -5,11 +5,12 @@ import traceback
 
 from ...config.loader import load_configs
 from ...domain.geometry import slot_relative_positions
-from ...inputs.project_drafts import draft_to_project_input, load_draft
+from ...inputs.project_drafts import draft_to_project_input
 from ...paths import AppPaths
 from ...planning.override_applier import apply_overrides
 from ...planning.planner import build_plan
 from ...ppt_helpers import icon_size_in_inches
+from .draft_service import load_draft_for_request
 
 _log = logging.getLogger(__name__)
 
@@ -97,7 +98,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
         if not draft_id:
             return {"ok": False, "error": "draft_id required"}
 
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         project = draft_to_project_input(draft)
         config = load_configs(paths)
         plan = build_plan(project, config)

@@ -13,6 +13,7 @@ from dtm_buildsheet.app.adapters.cloud.config import (
 from dtm_buildsheet.app.adapters.cloud.sharepoint_graph_provider import (
     SMALL_UPLOAD_LIMIT_BYTES,
     SharePointGraphProvider,
+    SharePointRequestError,
 )
 from dtm_buildsheet.app.adapters.wiring import (
     CLOUD_ENV_FLAG,
@@ -181,6 +182,29 @@ def test_read_bytes_404_raises_filenotfound(cloud_config):
     )
     with pytest.raises(FileNotFoundError):
         provider.read_bytes("Settings/missing.json")
+
+
+def test_graph_failure_never_exposes_temporary_redirect_url(cloud_config):
+    """Graph download errors may contain a signed redirect URL from requests."""
+    temporary_url = "https://download.example.invalid/file?tempauth=should-not-leak"
+    response = _mock_response(429)
+    response.url = temporary_url
+    from requests import HTTPError
+    response.raise_for_status.side_effect = HTTPError(
+        f"429 Client Error for url: {temporary_url}", response=response,
+    )
+    session = MagicMock()
+    session.get.return_value = response
+    provider = SharePointGraphProvider(
+        cloud_config, token_provider=lambda: "TOK", session=session,
+    )
+
+    with pytest.raises(SharePointRequestError) as raised:
+        provider.read_bytes("Drafts/build-1.json")
+
+    assert "tempauth" not in str(raised.value)
+    assert temporary_url not in str(raised.value)
+    assert raised.value.__cause__ is None
 
 
 def test_write_bytes_puts_octet_stream(cloud_config):

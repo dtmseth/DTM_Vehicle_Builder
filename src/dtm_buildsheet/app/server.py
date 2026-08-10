@@ -485,7 +485,11 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             sales_rep_service.warmup_cache(active_paths, force=True)
 
             from .services.shared_work_service import sync_work_data
-            work_report = sync_work_data(active_paths)
+            # Project records make the overview usable immediately.  Drafts
+            # are hydrated only when their build is opened; downloading every
+            # historical draft here can trigger SharePoint throttling and make
+            # the desktop shell appear unresponsive.
+            work_report = sync_work_data(active_paths, include_drafts=False)
             report["work"] = work_report
 
             work_changed = bool(
@@ -545,9 +549,12 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
                 _bump_data_version()
                 _record_change_summary(work_report, settings_report, queue_report,
                                        update_report if update_changed else None)
-        except Exception as exc:
-            logger.exception("Sync cycle failed")
-            report = {"ok": False, "error": str(exc)}
+        except Exception:
+            # Do not surface or log raw third-party exception text here: some
+            # providers embed redirect URLs or other transient credentials in
+            # their diagnostic messages.
+            logger.warning("Sync cycle failed; it will retry on the next pass")
+            report = {"ok": False, "error": "Cloud sync could not be completed. Please try again."}
         finally:
             _sync_in_progress = False
             _sync_quiet = False

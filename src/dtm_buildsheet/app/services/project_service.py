@@ -7,7 +7,7 @@ _log = logging.getLogger(__name__)
 
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
 from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences, IndividualUnit
-from ...inputs.project_drafts import DraftPart, load_draft, new_draft, save_draft
+from ...inputs.project_drafts import DraftPart, new_draft, save_draft
 from ...inputs.project_entry import (
     delete_project,
     list_projects,
@@ -17,6 +17,7 @@ from ...inputs.project_entry import (
 )
 from ...naming import safe_project_id
 from ...paths import AppPaths
+from .draft_service import load_draft_for_request
 from .preset_service import load_preset
 
 
@@ -92,7 +93,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         }
         for draft_id in draft_ids:
             try:
-                draft = load_draft(draft_id, paths.workspace_drafts_dir)
+                draft = load_draft_for_request(draft_id, paths)
                 if draft.project_notes != project.project_notes:
                     draft.project_notes = project.project_notes
                     save_draft(draft, paths.workspace_drafts_dir)

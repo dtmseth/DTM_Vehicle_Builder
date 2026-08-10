@@ -9,10 +9,9 @@ Two operations:
   the local write. Pushes the file to SharePoint /Projects/ or /Drafts/.
   No-op outside cloud mode.
 - ``sync_work_data``: called by the periodic sync loop in server.py.
-  Pulls every file from /Projects/ and /Drafts/ on SharePoint and writes
-  any that differ from the local copy. Content-equality decides changes —
-  no clock comparison, since SharePoint and the local filesystem don't
-  share a reference frame.
+  It synchronizes projects immediately.  Drafts are deliberately fetched
+  only when a user opens one, so a new device never freezes while downloading
+  an entire historical build archive.
 
 Storage shape:
 - Cloud: ``/Projects/{project_id}.json`` and ``/Drafts/{draft_id}.json``
@@ -230,7 +229,7 @@ def _mirror_to_cloud_unlocked(*, kind: str, record_id: str, local_path: Path, re
         storage.write_text(f"{remote_folder}/{record_id}.json", content)
         return True
     except Exception:
-        logger.exception("Failed to mirror %s %s to cloud", kind, record_id)
+        logger.warning("Failed to mirror %s %s to cloud", kind, record_id)
         return False
 
 
@@ -244,7 +243,7 @@ def delete_project_from_cloud(project_id: str) -> bool:
     except FileNotFoundError:
         return True  # already gone
     except Exception:
-        logger.exception("Failed to delete project %s from cloud", project_id)
+        logger.warning("Failed to delete project %s from cloud", project_id)
         return False
 
 
@@ -258,7 +257,7 @@ def delete_draft_from_cloud(draft_id: str) -> bool:
     except FileNotFoundError:
         return True
     except Exception:
-        logger.exception("Failed to delete draft %s from cloud", draft_id)
+        logger.warning("Failed to delete draft %s from cloud", draft_id)
         return False
 
 
@@ -288,7 +287,7 @@ def save_setting_to_cloud(target_file: str, serialized_content: str) -> bool:
         storage.write_text(f"{SETTINGS_REMOTE_FOLDER}/{target_file}", serialized_content)
         return True
     except Exception:
-        logger.exception("Failed to direct-save %s to SharePoint", target_file)
+        logger.warning("Failed to direct-save %s to SharePoint", target_file)
         return False
 
 
@@ -446,7 +445,7 @@ def delete_setting_from_cloud(target_file: str, *, attempts: int = 3) -> bool:
                 break
             except Exception:
                 if attempt == attempts - 1:
-                    logger.exception(
+                    logger.warning(
                         "Failed to direct-delete %s from SharePoint after %d attempts",
                         path, attempts,
                     )
@@ -459,8 +458,8 @@ def delete_setting_from_cloud(target_file: str, *, attempts: int = 3) -> bool:
 # ── Inbound: pull cloud changes into local cache ─────────────────────────────
 
 
-def sync_work_data(paths: AppPaths) -> dict:
-    """Reconcile local project + draft workspaces with SharePoint.
+def sync_work_data(paths: AppPaths, *, include_drafts: bool = True) -> dict:
+    """Reconcile local workspaces with SharePoint.
 
     Cloud is the source of truth for remote changes. On each sync:
       1. Pull every cloud file to local (content-equality skips no-ops),
@@ -471,21 +470,24 @@ def sync_work_data(paths: AppPaths) -> dict:
          (they were created here and never made it to cloud, OR they're
          legacy data from before mirror was wired).
 
-    First sync on every device makes cloud the union of all known data, then
-    every subsequent sync converges. Returns a counts dict the periodic
-    loop logs. Never raises.
+    ``include_drafts`` is retained for explicit maintenance reconciliation
+    and test coverage.  Normal app startup and periodic sync pass ``False``:
+    project records are enough to populate the overview, while opening a
+    build retrieves only that one draft through ``hydrate_draft_from_cloud``.
+    Returns a counts dict the periodic loop logs. Never raises.
     """
     with _work_data_io_lock:
-        return _sync_work_data_unlocked(paths)
+        return _sync_work_data_unlocked(paths, include_drafts=include_drafts)
 
 
-def _sync_work_data_unlocked(paths: AppPaths) -> dict:
+def _sync_work_data_unlocked(paths: AppPaths, *, include_drafts: bool) -> dict:
     """Reconcile work data while no background upload can interleave."""
     storage = _cloud_storage()
     if storage is None:
         return {
             "projects_updated": 0, "projects_deleted": 0, "projects_uploaded": 0,
             "drafts_updated": 0,   "drafts_deleted": 0,   "drafts_uploaded": 0,
+            "drafts_deferred": not include_drafts,
             "skipped_local_mode": True,
         }
 
@@ -494,10 +496,22 @@ def _sync_work_data_unlocked(paths: AppPaths) -> dict:
         storage, paths, _state_as_etag_map(state.get("projects")),
         _state_as_hash_map(state.get("project_hashes")),
     )
-    draf = _reconcile_drafts(
-        storage, paths, _state_as_etag_map(state.get("drafts")),
-        _state_as_hash_map(state.get("draft_hashes")),
-    )
+    draft_etags = _state_as_etag_map(state.get("drafts"))
+    draft_hashes = _state_as_hash_map(state.get("draft_hashes"))
+    if include_drafts:
+        draf = _reconcile_drafts(storage, paths, draft_etags, draft_hashes)
+    else:
+        # Retain draft state untouched.  Walking hundreds of historical
+        # builds at launch is slow enough to trigger Graph throttling and can
+        # make the native shell look frozen.  A selected build is hydrated on
+        # demand instead, one safe request at a time.
+        draf = {
+            "current_etags": draft_etags,
+            "current_hashes": draft_hashes,
+            "updated": 0,
+            "deleted": 0,
+            "uploaded": 0,
+        }
     _save_state(paths, {
         "schema_version": _STATE_SCHEMA_VERSION,
         "projects": proj["current_etags"],
@@ -520,8 +534,69 @@ def _sync_work_data_unlocked(paths: AppPaths) -> dict:
         "drafts_updated":  draf["updated"],
         "drafts_deleted":  draf["deleted"],
         "drafts_uploaded": draf["uploaded"],
+        "drafts_deferred": not include_drafts,
         "skipped_local_mode": False,
     }
+
+
+def hydrate_draft_from_cloud(
+    draft_id: str,
+    paths: AppPaths,
+    *,
+    refresh: bool = False,
+) -> bool:
+    """Ensure one requested draft is available in the local workspace.
+
+    This is the narrow counterpart to the project-first background sync.  It
+    never performs a folder listing and never overwrites a newer local save.
+    If a cached draft cannot be refreshed, the cached copy remains usable;
+    callers only receive ``False`` when no local or cloud copy exists.
+    """
+    try:
+        validate_safe_id(draft_id, label="draft_id")
+    except ValueError:
+        logger.warning("Refusing to hydrate draft with unsafe id: %r", draft_id)
+        return False
+
+    local_path = paths.workspace_drafts_dir / f"{draft_id}.json"
+    with _work_data_io_lock:
+        local_exists = local_path.exists()
+        if local_exists and not refresh:
+            return True
+
+        storage = _cloud_storage()
+        if storage is None:
+            return local_exists
+        try:
+            remote_payload = storage.read_bytes(f"{DRAFTS_REMOTE_FOLDER}/{draft_id}.json")
+        except FileNotFoundError:
+            return local_exists
+        except Exception:
+            if local_exists:
+                logger.warning("Could not refresh cloud draft %s; using cached copy", draft_id)
+                return True
+            logger.warning("Could not retrieve requested cloud draft %s", draft_id)
+            return False
+
+        if local_exists:
+            try:
+                local_payload = local_path.read_bytes()
+            except OSError:
+                logger.warning("Could not read cached draft %s before cloud refresh", draft_id)
+                return True
+            if local_payload == remote_payload:
+                return True
+            if _local_record_is_newer(local_payload, remote_payload):
+                logger.warning("Preserving newer local draft %s during cloud refresh", draft_id)
+                return True
+
+        try:
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            local_path.write_bytes(remote_payload)
+        except OSError:
+            logger.warning("Could not cache requested cloud draft %s", draft_id)
+            return local_exists
+        return True
 
 
 # ── State manifest ───────────────────────────────────────────────────────────
@@ -682,7 +757,7 @@ def _reconcile_records(
     except FileNotFoundError:
         remote_entries = []
     except Exception:
-        logger.exception("Could not list remote %s; keeping last-known state", remote_folder)
+        logger.warning("Could not list remote %s; keeping last-known state", remote_folder)
         return {
             "current_etags": last_known, "current_hashes": last_hashes,
             "updated": 0, "deleted": 0, "uploaded": 0,
@@ -736,7 +811,7 @@ def _reconcile_records(
         try:
             payload = storage.read_bytes(remote_path)
         except Exception:
-            logger.exception("Could not read remote %s %s", id_label, remote_path)
+            logger.warning("Could not read remote %s %s", id_label, remote_path)
             # Preserve the prior etag so we try again next iteration.
             if prior_etag:
                 remote_etags[record_id] = prior_etag

@@ -20,8 +20,8 @@ Update this document as release decisions are made; it is the single short recor
 ## Current starting point
 
 - The two targeted legacy projects have been rebuilt with the new Part Picker.
-- The release candidate, its PPT references, and the newer `main` fixes are committed on
-  `codex/main-integration-2026-08-10`.
+- The approved release candidate was merged to `main` through
+  [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8).
 - A recoverable pre-integration backup branch exists at `codex/pre-main-integration-2026-08-10`.
 - The cloud-off test, contract, golden-master, visual-PPT, and browser-smoke gates have been
   rerun after integration.
@@ -46,7 +46,7 @@ Update this document as release decisions are made; it is the single short recor
 
 | Item | Current result | Release disposition |
 | --- | --- | --- |
-| Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the dedicated integration branch to `main`; all four refreshed hosted checks passed | Await owner approval, then merge normally |
+| Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is merged to `main`; the post-merge checks and Mac/Windows builds passed | Release follow-up below must land before tagging/publishing |
 | Working tree | Source and reference changes are committed; local `.hermes/` scratch notes remain intentionally untracked and excluded | Ready |
 | Contract suite | 54/54 passed after reviewing and recording the intended pit-bar/wing-wrap and rendered-antenna data changes | Ready |
 | Golden masters | 6/6 passed after visual review and deliberate post-integration re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, build-card quantities, and the current image-sizing behavior |
@@ -78,6 +78,25 @@ Update this document as release decisions are made; it is the single short recor
 7. **Complete:** raised the release dependencies past the current audit advisories, corrected the
    case-sensitive push-bumper asset reference caught by Linux CI, and updated the audit job's
    installer before scanning. The refreshed hosted PR checks all passed.
+
+## Release stability follow-up — 2026-08-10
+
+Installer testing revealed that the background sync tried to download the full historical Drafts
+archive on first launch. That can hit SharePoint throttling, make the shell appear unresponsive,
+and delay the project list. This is a **release blocker**, but no public v3 tag/release has been
+published yet.
+
+- Startup and periodic sync must retrieve project records only; the project list can then populate
+  without waiting on every historical build.
+- Opening a build must retrieve only that requested draft if it is absent locally. An explicit build
+  open may refresh that one cached draft, while preserving a locally newer unsynced edit.
+- SharePoint HTTP/transport failures must be reduced to safe status-only errors. Temporary redirect
+  URLs and their authorization query parameters must not reach logs or local API responses.
+- Rebuild both installers after the fix. On a clean Windows profile, sign in and confirm the 2027
+  projects appear; then open a build and confirm only that build is retrieved. On the existing Mac
+  profile, confirm startup remains responsive and no bulk Drafts download occurs.
+
+Do not create the public `v3.0.0` tag or announce the release until these checks pass.
 
 ## Release sequence
 
@@ -113,10 +132,10 @@ Update this document as release decisions are made; it is the single short recor
 
 ### 5. Review and merge to `main`
 
-- **Complete:** [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the tested integration branch to `main`.
-- **Complete:** the final diff and refreshed CI results have been reviewed; all hosted checks pass.
-- Merge normally after owner approval.
-- Confirm the ordinary `main` build artifacts complete on both macOS and Windows.
+- **Complete:** [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) merged normally to `main`.
+- **Complete:** post-merge checks and Mac/Windows artifacts completed successfully.
+- **Required follow-up:** merge the startup/cloud-safety correction and rerun the installer checks
+  described above before the public release tag is made.
 
 ### 6. Publish and validate
 
