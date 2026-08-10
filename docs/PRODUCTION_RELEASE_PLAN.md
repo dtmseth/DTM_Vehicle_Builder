@@ -45,7 +45,7 @@ Update this document as release decisions are made; it is the single short recor
 
 | Item | Current result | Release disposition |
 | --- | --- | --- |
-| Branch position | `origin/main` was merged into the dedicated integration branch; the release candidate and reference updates are committed | Fetch once more immediately before opening the PR |
+| Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the dedicated integration branch to `main` | Wait for automated checks, then merge normally |
 | Working tree | Source and reference changes are committed; local `.hermes/` scratch notes remain intentionally untracked and excluded | Ready |
 | Contract suite | 54/54 passed after reviewing and recording the intended pit-bar/wing-wrap and rendered-antenna data changes | Ready |
 | Golden masters | 6/6 passed after visual review and deliberate post-integration re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, build-card quantities, and the current image-sizing behavior |
@@ -108,7 +108,7 @@ Update this document as release decisions are made; it is the single short recor
 
 ### 5. Review and merge to `main`
 
-- Open a pull request from the tested integration branch to `main`.
+- **Complete:** [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the tested integration branch to `main`.
 - Review the final diff and CI results, then merge normally.
 - Confirm the ordinary `main` build artifacts complete on both macOS and Windows.
 
