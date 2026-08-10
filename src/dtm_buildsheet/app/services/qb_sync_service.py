@@ -186,8 +186,8 @@ def get_cached_items(paths: AppPaths) -> dict:
 # Reconciliation is the "live catalog" half: it pushes QBO's authoritative
 # sku / unit_price / active status onto parts the owner has ALREADY linked.
 # It is deliberately bounded:
-#   - Only QB-owned fields are written (qb_sku, qb_unit_price, qb_inactive,
-#     qb_last_synced). The owner's categorization (model, manufacturer,
+#   - Only QB-owned fields are written (qb_sku, qb_sales_description,
+#     qb_unit_price, qb_inactive, qb_last_synced). The owner's categorization (model, manufacturer,
 #     fits_part_types, tags, placements, …) is never touched.
 #   - Only LINKED products are considered. Unlinked parts are never modified.
 #   - Parts are never created or deleted. An item that vanished from QBO's
@@ -237,31 +237,41 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
 
     for product in products.values():
         qb_id = str(product.get("qb_item_id", "")).strip()
-        if not qb_id:
-            continue  # unlinked — never touch
+        linked_specs = []
+        if qb_id:
+            linked_specs.append(product)
+        linked_specs.extend(
+            pn for pn in (product.get("part_numbers") or [])
+            if str(pn.get("qb_item_id", "")).strip()
+        )
 
-        item = active_by_id.get(qb_id)
-        if item is not None:
-            changed = False
-            if product.get("qb_sku") != item.get("sku", ""):
-                product["qb_sku"] = item.get("sku", "")
-                changed = True
-            if product.get("qb_unit_price") != item.get("unit_price"):
-                product["qb_unit_price"] = item.get("unit_price")
-                changed = True
-            if product.get("qb_inactive"):
-                product["qb_inactive"] = False
-                reactivated += 1
-                changed = True
-            if changed:
-                product["qb_last_synced"] = now_iso
-                updated += 1
-        else:
-            # Linked, but no longer in QBO's active set → flag (don't delete).
-            if not product.get("qb_inactive"):
-                product["qb_inactive"] = True
-                product["qb_last_synced"] = now_iso
-                flagged_inactive += 1
+        for linked_spec in linked_specs:
+            linked_id = str(linked_spec.get("qb_item_id", "")).strip()
+            item = active_by_id.get(linked_id)
+            if item is not None:
+                changed = False
+                if linked_spec.get("qb_sku") != item.get("sku", ""):
+                    linked_spec["qb_sku"] = item.get("sku", "")
+                    changed = True
+                if linked_spec.get("qb_unit_price") != item.get("unit_price"):
+                    linked_spec["qb_unit_price"] = item.get("unit_price")
+                    changed = True
+                if linked_spec.get("qb_sales_description", "") != item.get("description", ""):
+                    linked_spec["qb_sales_description"] = item.get("description", "")
+                    changed = True
+                if linked_spec.get("qb_inactive"):
+                    linked_spec["qb_inactive"] = False
+                    reactivated += 1
+                    changed = True
+                if changed:
+                    linked_spec["qb_last_synced"] = now_iso
+                    updated += 1
+            else:
+                # Linked, but no longer in QBO's active set → flag (don't delete).
+                if not linked_spec.get("qb_inactive"):
+                    linked_spec["qb_inactive"] = True
+                    linked_spec["qb_last_synced"] = now_iso
+                    flagged_inactive += 1
 
     # Reconcile pending-QB parts: a SKU pre-added with qb_pending=true that has
     # now appeared in QBO gets linked (fill qb_item_id/sku/price, clear the flag)
@@ -277,6 +287,7 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
             pn["qb_item_id"] = str(item.get("qb_item_id", ""))
             pn["qb_sku"] = item.get("sku", "")
             pn["qb_unit_price"] = item.get("unit_price")
+            pn["qb_sales_description"] = item.get("description", "")
             pn["qb_pending"] = False
             pn["qb_last_synced"] = now_iso
             reconciled_pending += 1
@@ -352,6 +363,113 @@ def import_customers(paths: AppPaths) -> dict:
     return result
 
 
+def get_pricing_status(paths: AppPaths) -> dict:
+    """Report whether the connected company uses QB customer price levels."""
+    client, err = _build_client(paths)
+    if err:
+        return err
+    try:
+        prefs = client.fetch_preferences()
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks pricing preference fetch failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
+    using_levels = bool(prefs.get("using_price_levels"))
+    return {
+        "ok": True,
+        "using_price_levels": using_levels,
+        "warning": (
+            "Customer price levels are enabled. The QuickBooks API does not expose "
+            "custom price-level rates; estimate lines will use the synced sandbox "
+            "item prices unless you adjust them in QuickBooks."
+            if using_levels else ""
+        ),
+    }
+
+
+def get_estimate_field_setup(paths: AppPaths) -> dict:
+    """Return only the configured QB legacy sales-form field metadata.
+
+    This is a read-only diagnostic for the estimate workflow. It exposes
+    labels and QBO's positional ids, never the customer or vehicle values that
+    would later be placed in those fields.
+    """
+    client, err = _build_client(paths)
+    if err:
+        return err
+    try:
+        preferences = client.fetch_preferences()
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks sales-form settings lookup failed: %s", exc)
+        return {"ok": False, "error": "sales_form_settings_unavailable"}
+    fields = preferences.get("sales_custom_fields") or []
+    return {
+        "ok": True,
+        "fields": [
+            {
+                "definition_id": str(field.get("definition_id") or ""),
+                "name": str(field.get("name") or ""),
+            }
+            for field in fields
+            if str(field.get("definition_id") or "") and str(field.get("name") or "")
+        ],
+    }
+
+
+def preview_estimate_customer(paths: AppPaths, project_id: str) -> dict:
+    """Read the estimate's agency customer without creating anything."""
+    from ...inputs import project_entry
+    from . import agency_service
+
+    try:
+        project = project_entry.load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": "unknown_project"}
+    agency_id = (project.customer.agency_id or "").strip()
+    agency = agency_service.get_agency(paths, agency_id) if agency_id else None
+    if agency is None:
+        return {"ok": False, "error": "no_agency"}
+
+    local = agency_service.customer_profile_fields(agency)
+    client, err = _build_client(paths)
+    if err:
+        return err
+
+    if agency.qb_customer_id:
+        raw = client.read_customer(agency.qb_customer_id)
+        if raw is not None:
+            customer = _normalized_customer_from_raw(raw)
+            if customer.get("is_sub"):
+                return {"ok": False, "error": "customer_is_sub"}
+            profile = _merge_customer_profile(local, customer)
+            return {
+                "ok": True,
+                "customer": {**customer, **profile},
+                "customer_linked": True,
+                "customer_complete": not agency_service.missing_estimate_customer_fields(profile),
+                "missing_fields": agency_service.missing_estimate_customer_fields(profile),
+            }
+
+    finder = getattr(client, "find_top_level_customer_by_display_name", None)
+    customer = finder(agency.name) if finder is not None else None
+    if customer:
+        profile = _merge_customer_profile(local, customer)
+        return {
+            "ok": True,
+            "customer": {**customer, **profile},
+            "customer_linked": True,
+            "matched": True,
+            "customer_complete": not agency_service.missing_estimate_customer_fields(profile),
+            "missing_fields": agency_service.missing_estimate_customer_fields(profile),
+        }
+    return {
+        "ok": True,
+        "customer": local,
+        "customer_linked": False,
+        "customer_complete": not agency_service.missing_estimate_customer_fields(local),
+        "missing_fields": agency_service.missing_estimate_customer_fields(local),
+    }
+
+
 # ── agency → customer up-sync (Phase 3, Slice 2) ─────────────────────────────
 #
 # The mirror in the other direction: when an agency is saved, create or update
@@ -361,8 +479,8 @@ def import_customers(paths: AppPaths) -> dict:
 #   - On first create, the new Customer.Id is written back via
 #     agency_service.set_qb_customer_id — NOT handle_save_agency — so the
 #     write-back never re-triggers another push.
-#   - Updates are sparse and touch only the contact fields the agency owns;
-#     QBO stays the source of truth for everything else on the Customer.
+#   - Updates are sparse and touch only the agency customer-profile fields;
+#     QBO stays the source of truth for accounting-only Customer fields.
 
 
 def push_agency(paths: AppPaths, agency_id: str) -> dict:
@@ -382,12 +500,7 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     if err:
         return err
 
-    fields = {
-        "name": record.name,
-        "contact_name": record.contact_name,
-        "contact_email": record.contact_email,
-        "contact_phone": record.contact_phone,
-    }
+    fields = agency_service.customer_profile_fields(record)
 
     try:
         existing_id = (record.qb_customer_id or "").strip()
@@ -398,6 +511,21 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
                 logger.info("QB agency push: updated existing customer")
                 return {"ok": True, "qb_customer_id": existing_id, "action": "updated"}
             # Linked Id no longer exists in QBO (deleted there) → recreate.
+
+        # A newly-created app agency may already exist in QuickBooks (for
+        # example after a customer spreadsheet import). Link that top-level
+        # Customer instead of creating a duplicate. We deliberately do not
+        # overwrite its profile during this automatic background path.
+        finder = getattr(client, "find_top_level_customer_by_display_name", None)
+        matched = finder(record.name) if finder is not None else None
+        if matched:
+            matched_id = str(matched.get("qb_customer_id", "")).strip()
+            if matched_id:
+                agency_service.merge_missing_customer_profile(record, matched)
+                agency_service.set_qb_customer_id(paths, agency_id, matched_id)
+                logger.info("QB agency push: linked existing customer")
+                return {"ok": True, "qb_customer_id": matched_id, "action": "linked"}
+
         result = client.create_customer(fields)
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks agency push failed: %s", exc)
@@ -433,14 +561,172 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
     threading.Thread(target=_run, name="qb-agency-push", daemon=True).start()
 
 
-# ── per-vehicle job bridge (Phase 3, Slice 3) ────────────────────────────────
+def _normalized_customer_from_raw(raw: dict) -> dict:
+    """Normalize the QBO Customer fields stored by the estimate flow."""
+    from ..adapters.quickbooks.api_client import _normalize_customer
+    return _normalize_customer(raw)
+
+
+def _has_customer_value(value: object) -> bool:
+    return value is not None and bool(str(value).strip())
+
+
+def _merge_customer_profile(local: dict, remote: dict, supplied: dict | None = None) -> dict:
+    """Combine app, explicit confirmation, and QB values without data loss.
+
+    Explicit non-empty confirmation values win. Existing app values win over
+    QBO values (the same additive policy as the pull). QBO fills only gaps.
+    """
+    from ...domain.agency_models import CUSTOMER_PROFILE_FIELDS
+
+    merged = {field: local.get(field) for field in CUSTOMER_PROFILE_FIELDS}
+    for field, value in (supplied or {}).items():
+        if field in merged and _has_customer_value(value):
+            merged[field] = value
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if not _has_customer_value(merged.get(field)) and _has_customer_value(remote.get(field)):
+            merged[field] = remote[field]
+    return merged
+
+
+def ensure_top_level_customer(
+    paths: AppPaths,
+    project,
+    *,
+    client,
+    confirmed: bool = False,
+    fields: dict | None = None,
+) -> dict:
+    """Resolve the agency's top-level Customer without creating a job.
+
+    An existing QB link is authoritative. If there is no link, an exact
+    top-level name match is reused. A new Customer is created only after the UI
+    explicitly confirms the customer fields, which prevents an estimate click
+    from silently creating a malformed customer.
+    """
+    from . import agency_service
+
+    agency_id = (project.customer.agency_id or "").strip()
+    agency = agency_service.get_agency(paths, agency_id) if agency_id else None
+    if agency is None:
+        return {"ok": False, "error": "no_agency"}
+
+    supplied = fields or {}
+    local_fields = agency_service.customer_profile_fields(agency)
+
+    customer = None
+    customer_id = (agency.qb_customer_id or "").strip()
+    if customer_id:
+        raw = client.read_customer(customer_id)
+        if raw is not None:
+            customer = _normalized_customer_from_raw(raw)
+            if customer.get("is_sub"):
+                return {"ok": False, "error": "customer_is_sub"}
+        else:
+            customer_id = ""
+
+    if not customer_id:
+        finder = getattr(client, "find_top_level_customer_by_display_name", None)
+        if finder is not None:
+            customer = finder(local_fields["name"])
+        else:
+            # Compatibility for test doubles and older adapters. The real
+            # client uses the top-level-filtering method above.
+            existing_id = client.find_customer_by_display_name(local_fields["name"])
+            raw = client.read_customer(existing_id) if existing_id else None
+            customer = _normalized_customer_from_raw(raw) if raw else None
+        if customer:
+            customer_id = str(customer.get("qb_customer_id", "")).strip()
+            if customer_id:
+                agency_service.set_qb_customer_id(paths, agency.agency_id, customer_id)
+
+    effective_fields = _merge_customer_profile(local_fields, customer or {}, supplied)
+
+    if not customer_id:
+        if not confirmed:
+            return {
+                "ok": False,
+                "error": "customer_required",
+                "customer": effective_fields,
+            }
+        missing = agency_service.missing_estimate_customer_fields(effective_fields)
+        if missing:
+            return {
+                "ok": False,
+                "error": "customer_incomplete",
+                "customer": effective_fields,
+                "missing_fields": missing,
+            }
+        try:
+            created = client.create_customer(effective_fields)
+        except QuickBooksApiError as exc:
+            logger.warning("QuickBooks customer create failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        customer_id = str(created.get("qb_customer_id", "")).strip()
+        if not customer_id:
+            return {"ok": False, "error": "customer_create_failed"}
+        agency_service.set_qb_customer_id(paths, agency.agency_id, customer_id)
+        customer = {"qb_customer_id": customer_id, **effective_fields, "is_sub": False}
+    else:
+        missing = agency_service.missing_estimate_customer_fields(effective_fields)
+        if missing:
+            return {
+                "ok": False,
+                "error": "customer_incomplete",
+                "customer": effective_fields,
+                "missing_fields": missing,
+            }
+        if confirmed:
+            # This is an explicit user confirmation in the estimate dialog.
+            # Only a sparse Customer update is made; no financial document is
+            # created unless the profile is complete and this function returns
+            # successfully to the estimate service. Updating even when the
+            # merged app profile is already complete ensures newly entered
+            # addresses/contact fields reach the linked QB Customer too.
+            try:
+                current = client.read_customer(customer_id)
+                sync_token = (current or {}).get("SyncToken", (customer or {}).get("sync_token", "0"))
+                client.update_customer(customer_id, sync_token, effective_fields)
+            except QuickBooksApiError as exc:
+                logger.warning("QuickBooks customer profile update failed: %s", exc)
+                return {"ok": False, "error": str(exc)}
+            customer = {**(customer or {}), **effective_fields, "qb_customer_id": customer_id}
+
+    # Persist the profile confirmed above, or the additional fields retrieved
+    # from an already-complete QB Customer. This never schedules another QB
+    # write; it only makes future pulls/estimates use the same local profile.
+    agency_service.update_agency_customer_profile(paths, agency.agency_id, effective_fields)
+
+    customer_name = str((customer or {}).get("name", "") or effective_fields["name"]).strip()
+    if customer_name and not project.customer.name:
+        project.customer.name = customer_name
+    if customer_name and not project.customer.agency:
+        project.customer.agency = customer_name
+    if customer:
+        if not project.customer.contact:
+            project.customer.contact = str(customer.get("contact_name", "")).strip()
+        if not project.customer.phone:
+            project.customer.phone = str(customer.get("contact_phone", "")).strip()
+        if not project.customer.email:
+            project.customer.email = str(customer.get("contact_email", "")).strip()
+
+    return {
+        "ok": True,
+        "qb_customer_id": customer_id,
+        # Keep every existing QB attribute but overlay the additive profile.
+        # A linked customer response can be sparse (for example a fake/test
+        # client or a QBO response without PrimaryPhone), while the local
+        # agency profile may already have the phone the estimate form needs.
+        "customer": {**(customer or {}), **effective_fields},
+        "customer_source": "existing" if not confirmed else "confirmed",
+    }
+
+
+# ── legacy per-vehicle job bridge (backward compatibility) ───────────────────
 #
-# Each individual vehicle becomes a QBO sub-customer ("job") under its agency's
-# Customer. That job is the per-vehicle "project" container estimates attach to.
-# (QBO's API cannot create real Projects — IsProject is read-only — so a job is
-# the only path; it nests under the customer and converts to a Project in the
-# QBO UI.) Creating a job ensures the agency's Customer exists first (pushing it
-# up if needed), then writes qb_job_id back onto the unit.
+# Older builds may still need to inspect or explicitly maintain a QBO
+# sub-customer/job, so this endpoint remains available. New estimate creation
+# does not call it; new estimates use the agency's top-level Customer directly.
 
 
 def _find_individual(project, individual_id: str):
@@ -597,7 +883,8 @@ def _update_cache_link(paths: AppPaths, qb_item_id: str, product_id: str) -> Non
 def link_item(paths: AppPaths, *, qb_item_id: str, product_id: str) -> dict:
     """Attach a QB item to an existing VB product (explicit, additive).
 
-    Writes ``qb_item_id`` / ``qb_sku`` / ``qb_unit_price`` / ``qb_last_synced``
+    Writes ``qb_item_id`` / ``qb_sku`` / ``qb_sales_description`` /
+    ``qb_unit_price`` / ``qb_last_synced``
     onto the chosen product and saves through the config pipeline. Rejects the
     link if the item is already linked elsewhere or the product already carries
     a different QB item, so the mapping stays one-to-one.
@@ -633,6 +920,7 @@ def link_item(paths: AppPaths, *, qb_item_id: str, product_id: str) -> dict:
     product["qb_item_id"] = qb_item_id
     product["qb_sku"] = item.get("sku", "")
     product["qb_unit_price"] = item.get("unit_price")
+    product["qb_sales_description"] = item.get("description", "")
     product["qb_last_synced"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     result = save_config_file("parts_db.json", doc, paths)
@@ -665,7 +953,9 @@ def unlink_item(paths: AppPaths, *, qb_item_id: str) -> dict:
     for pid, product in products.items():
         if str(product.get("qb_item_id", "")).strip() == qb_item_id:
             target_id = pid
-            for field in ("qb_item_id", "qb_sku", "qb_unit_price", "qb_last_synced"):
+            for field in (
+                "qb_item_id", "qb_sku", "qb_unit_price", "qb_sales_description", "qb_last_synced"
+            ):
                 product.pop(field, None)
             break
 

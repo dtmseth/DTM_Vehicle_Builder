@@ -6,6 +6,7 @@ GET:
 - /api/quickbooks/callback  — OAuth redirect target; always 302s, never HTML
 - /api/quickbooks/items     — locally cached pulled items (no network)
 - /api/quickbooks/customers/preview — dry-run count of a customer import
+- /api/quickbooks/pricing-status — read-only price-level capability check
 
 POST:
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
@@ -14,7 +15,9 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
-- /api/quickbooks/push-vehicle-job — create the per-vehicle sub-customer (job)
+- /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
+- /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
+- /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
 - /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
 - /api/quickbooks/estimates/create — create one vehicle's estimate
 - /api/quickbooks/estimates/create-batch — create estimates for many vehicles
@@ -72,6 +75,18 @@ def route_quickbooks(
     if method == "GET" and path == "/api/quickbooks/items":
         _send_json(handler, qb_sync_service.get_cached_items(paths))
         return True
+    if method == "GET" and path == "/api/quickbooks/pricing-status":
+        _send_json(handler, qb_sync_service.get_pricing_status(paths))
+        return True
+    if method == "GET" and path == "/api/quickbooks/estimate-field-setup":
+        _send_json(handler, qb_sync_service.get_estimate_field_setup(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/customer-preview":
+        _send_json(
+            handler,
+            qb_sync_service.preview_estimate_customer(paths, body.get("project_id", "")),
+        )
+        return True
     if method == "GET" and path == "/api/quickbooks/customers/preview":
         _send_json(handler, qb_sync_service.preview_customer_import(paths))
         return True
@@ -105,6 +120,17 @@ def route_quickbooks(
             ),
         )
         return True
+    if method == "POST" and path == "/api/quickbooks/projects/bind":
+        _send_json(
+            handler,
+            qb_estimate_service.bind_project(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
+                qb_project_id=body.get("qb_project_id", ""),
+            ),
+        )
+        return True
     if method == "POST" and path == "/api/quickbooks/estimates/validate":
         _send_json(
             handler,
@@ -123,6 +149,8 @@ def route_quickbooks(
                 project_id=body.get("project_id", ""),
                 individual_id=body.get("individual_id", ""),
                 memo=body.get("memo", ""),
+                customer_confirmed=bool(body.get("customer_confirmed", False)),
+                customer_fields=body.get("customer_fields") or None,
             ),
         )
         return True

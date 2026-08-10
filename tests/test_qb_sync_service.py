@@ -122,6 +122,28 @@ def test_sync_no_realm_returns_error(paths, monkeypatch):
     assert res["error"] == "no_realm_id"
 
 
+def test_estimate_field_setup_returns_only_safe_field_metadata(paths, monkeypatch):
+    monkeypatch.setattr(
+        _FakeApiClient,
+        "fetch_preferences",
+        lambda self: {
+            "sales_custom_fields": [
+                {"definition_id": "1", "name": "Customer Phone"},
+                {"definition_id": "2", "name": "Vehicle Year, Make, Model"},
+            ],
+        },
+        raising=False,
+    )
+
+    assert sync.get_estimate_field_setup(paths) == {
+        "ok": True,
+        "fields": [
+            {"definition_id": "1", "name": "Customer Phone"},
+            {"definition_id": "2", "name": "Vehicle Year, Make, Model"},
+        ],
+    }
+
+
 # ── api_client normalization (pure, no network) ──────────────────────────────
 
 
@@ -258,6 +280,7 @@ def test_reconcile_updates_linked_part_price_and_sku(paths, _link_fakes):
         if it["qb_item_id"] == "1":
             it["unit_price"] = 1399.0
             it["sku"] = "WL-LIB2-NEW"
+            it["description"] = "WHELEN QB SALES DESCRIPTION"
     sync._write_cache(paths, cache)
 
     res = sync.reconcile_linked_parts(paths)
@@ -266,6 +289,7 @@ def test_reconcile_updates_linked_part_price_and_sku(paths, _link_fakes):
     product = _link_fakes["saved"]["data"]["products"]["whelen_lib2"]
     assert product["qb_unit_price"] == 1399.0
     assert product["qb_sku"] == "WL-LIB2-NEW"
+    assert product["qb_sales_description"] == "WHELEN QB SALES DESCRIPTION"
 
 
 def test_reconcile_flags_missing_item_inactive(paths, _link_fakes):

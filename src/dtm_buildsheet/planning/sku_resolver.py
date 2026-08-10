@@ -14,9 +14,9 @@ for a 4-head standard-split duo). This module:
      PartInput-shaped row dicts (one per combo) plus a consolidated build-sheet
      description.
 
-SKU color matching is set-equality on {color, secondary_color}. Because a
-PartNumber holds at most two colors, a 3-color "trio" head can never match a
-single SKU and is reported as unmatched (the caller decides how to surface it).
+SKU color matching is set-equality on the SKU's colors, after first rejecting
+any repeated-color request (for example, Red/Red). A 3-color "trio" head can
+match only an actual three-color SKU; otherwise it is reported as unmatched.
 """
 
 from __future__ import annotations
@@ -39,8 +39,13 @@ def _ion_rank(part_number: str) -> int:
 
 
 def _color_key(colors: list[str]) -> tuple[str, ...]:
-    """Order-insensitive key for a color set (drops blanks, dedupes)."""
-    return tuple(sorted({c.lower() for c in colors if c}))
+    """Order-insensitive key for a requested head, retaining multiplicity.
+
+    A repeated color is not a valid two-/three-color lighthead. Keeping it in
+    the key lets ``match_heads`` reject it instead of resolving a single-color
+    or lower-color-count SKU.
+    """
+    return tuple(sorted(c.lower() for c in colors if c))
 
 
 def _color_label(colors: list[str]) -> str:
@@ -95,26 +100,29 @@ def match_heads(part_numbers: list[Any], heads: list[list[str]],
     for key in order:
         want = set(key)
         matches: list[SkuOption] = []
-        for pn in part_numbers:
-            have = {c for c in (getattr(pn, "color", ""),
-                                getattr(pn, "secondary_color", ""),
-                                getattr(pn, "tertiary_color", "")) if c}
-            # An empty `want` is the picker's "no color filter" choice: every SKU
-            # matches (scene/interior lights are white and need no filter). Only a
-            # non-empty want requires exact color-set equality. Without this guard,
-            # an empty want matched ONLY colorless SKUs — the inverted-filter bug.
-            if want and {c.lower() for c in have} != want:
-                continue
-            lt = getattr(pn, "lens_type", "") or ""
-            if lens and lt and lt != lens:
-                continue
-            price = getattr(pn, "qb_unit_price", None) or getattr(pn, "price_usd", None)
-            matches.append(SkuOption(
-                part_number=getattr(pn, "part_number", ""),
-                price=price,
-                lens_type=lt,
-                qb=bool(getattr(pn, "qb_item_id", "")),
-            ))
+        # The picker has no valid meaning for Red/Red or Red/Blue/Blue. Reject
+        # impossible requests even if a client accidentally sends one.
+        if len(key) == len(want):
+            for pn in part_numbers:
+                have = {c for c in (getattr(pn, "color", ""),
+                                    getattr(pn, "secondary_color", ""),
+                                    getattr(pn, "tertiary_color", "")) if c}
+                # An empty `want` is the picker's "no color filter" choice: every SKU
+                # matches (scene/interior lights are white and need no filter). Only a
+                # non-empty want requires exact color-set equality. Without this guard,
+                # an empty want matched ONLY colorless SKUs — the inverted-filter bug.
+                if want and {c.lower() for c in have} != want:
+                    continue
+                lt = getattr(pn, "lens_type", "") or ""
+                if lens and lt and lt != lens:
+                    continue
+                price = getattr(pn, "qb_unit_price", None) or getattr(pn, "price_usd", None)
+                matches.append(SkuOption(
+                    part_number=getattr(pn, "part_number", ""),
+                    price=price,
+                    lens_type=lt,
+                    qb=bool(getattr(pn, "qb_item_id", "")),
+                ))
         matches.sort(key=lambda s: (_ion_rank(s.part_number), s.price if s.price is not None else 9e9, s.part_number))
         combos.append(Combo(
             colors=buckets[key],

@@ -50,6 +50,7 @@ const HEADER_DEFAULT_STAB = {
   "general-settings": "projects-defaults",
   "advanced-settings": "placements",
 };
+const QUICKBOOKS_UI_ENABLED = window.DTM_QUICKBOOKS_UI_ENABLED === true;
 
 let _activeHeaderTab = null;
 const _stabPerHeader = { "general-settings": null, "advanced-settings": null };
@@ -66,6 +67,7 @@ function _hideAllStabContents() {
 }
 
 function _showOuterStab(stab) {
+  if (stab === "quickbooks" && !QUICKBOOKS_UI_ENABLED) stab = "projects-defaults";
   _hideAllStabContents();
   if (INNER_STAB_GROUPS[stab]) {
     const group = INNER_STAB_GROUPS[stab];
@@ -104,7 +106,7 @@ function _runStabSideEffects(stab) {
   if (stab === "sales-reps" && typeof initSalesRepsTab === "function") initSalesRepsTab();
   if (stab === "sku-grid" && typeof initSkuGridTab === "function") initSkuGridTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
-  if (stab === "quickbooks" && typeof initQuickBooksTab === "function") initQuickBooksTab();
+  if (stab === "quickbooks" && QUICKBOOKS_UI_ENABLED && typeof initQuickBooksTab === "function") initQuickBooksTab();
 }
 
 function switchTab(t) {

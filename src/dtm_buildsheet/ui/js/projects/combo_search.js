@@ -3,9 +3,9 @@
 
 function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
   let timer = null;
-  const notify = () => { if (typeof onSelect === "function") onSelect(); };
+  const notify = agency => { if (typeof onSelect === "function") onSelect(agency); };
   inputEl.addEventListener("input", () => {
-    if (idEl && idEl.value) { idEl.value = ""; notify(); }
+    if (idEl && idEl.value) { idEl.value = ""; notify(null); }
     clearTimeout(timer);
     const q = inputEl.value.trim();
     if (!q) { suggEl.style.display = "none"; return; }
@@ -23,7 +23,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
           inputEl.value = el.dataset.name;
           if (idEl) idEl.value = el.dataset.id;
           suggEl.style.display = "none";
-          notify();
+          notify({ agency_id: el.dataset.id, name: el.dataset.name });
         });
       });
       const createEl = suggEl.querySelector(".sug-create");
@@ -34,7 +34,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
             openAgencyModal({ prefill: q, onSuccess: a => {
               inputEl.value = a.name;
               if (idEl) idEl.value = a.agency_id;
-              notify();
+              notify(a);
             }});
           }
         });

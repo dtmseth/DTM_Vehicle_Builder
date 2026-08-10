@@ -64,6 +64,10 @@ class DraftPart:
     quantity: int = 0
     lens: str = ""
     notes: str = ""
+    # A user-authored note that must be shown in the build manifest.  Technical
+    # picker details continue to live in ``notes`` so the two do not overwrite
+    # one another when a part is edited.
+    comment: str = ""
     explicit_color_profile: str = ""
     driver_color: str = ""
     passenger_color: str = ""
@@ -78,6 +82,11 @@ class DraftPart:
     # equals the parent part's line_id. Used to nest in the manifest and to
     # cascade-delete. Empty for ordinary top-level parts.
     parent_line_id: str = ""
+    # A lifecycle-only dependency on another top-level part.  Unlike
+    # parent_line_id this part remains a normal manifest/planner line, but is
+    # removed when the linked parent is removed (for example, IONs included in
+    # a Westin bumper light channel).
+    linked_parent_line_id: str = ""
     # On accessory lines: the accessory_category and the PARENT product_id, so the
     # manifest can offer a category-scoped swap dropdown when editing one.
     accessory_category: str = ""
@@ -93,7 +102,9 @@ class DraftPart:
     # per-head colors, per-head SKU choices, count, lens. Parts saved before
     # this field existed (and legacy flat-modal parts) have an empty dict →
     # the editor derives what it can from components/colors as a fallback.
-    # Draft-local only; never consumed by the planner/renderer.
+    # This is generally draft-local.  A configured physical product may also
+    # carry a narrowly-scoped rendering directive here (currently Inner Edge
+    # FST/RST coverage), so the build sheet matches its saved picker choice.
     picker_config: dict[str, Any] = field(default_factory=dict)
 
 
@@ -106,6 +117,10 @@ class BuildDraft:
     vehicle_info: dict[str, Any]
     parts: list[DraftPart] = field(default_factory=list)
     notes: dict[str, list[str]] = field(default_factory=dict)
+    # Copied from the containing project.  It is intentionally separate from
+    # ``notes`` so changing project-wide instructions does not modify unit
+    # notes, and vice versa.
+    project_notes: str = ""
     placement_overrides: dict[str, Any] = field(default_factory=dict)
     validation_messages: list[str] = field(default_factory=list)
     audit_trail: list[dict[str, Any]] = field(default_factory=list)
@@ -120,6 +135,7 @@ def new_draft(
     vehicle_info: dict[str, Any] | None = None,
     parts: list[DraftPart] | None = None,
     notes: dict[str, list[str]] | None = None,
+    project_notes: str = "",
 ) -> BuildDraft:
     now = _utcnow()
     draft = BuildDraft(
@@ -129,6 +145,7 @@ def new_draft(
         vehicle_info=vehicle_info or {},
         parts=parts or [],
         notes=notes or {},
+        project_notes=_s(project_notes),
     )
     _ensure_line_ids(draft)
     return draft
@@ -142,36 +159,59 @@ def _ensure_line_ids(draft: BuildDraft) -> None:
 
 
 _NUMBERED_NAME = re.compile(r"^(.*?)\s+(\d+)\s*$")
+_CONTROL_HEAD_NAME = re.compile(r"^control head(?:\s+\d+)?$", re.IGNORECASE)
+
+
+def _rename_part_and_children(draft: BuildDraft, part: DraftPart, new_name: str) -> None:
+    """Rename one top-level part and retain its accessory display prefix."""
+    if part.name == new_name:
+        return
+    old_name = part.name
+    part.name = new_name
+    for child in draft.parts:
+        if getattr(child, "parent_line_id", "") == part.line_id and child.name.startswith(old_name + " · "):
+            child.name = new_name + child.name[len(old_name):]
+
+
+def _is_control_head(part: DraftPart) -> bool:
+    """Recognize picker-shaped and legacy control-head draft rows."""
+    return part.part_type == "control_head" or bool(_CONTROL_HEAD_NAME.fullmatch((part.name or "").strip()))
 
 
 def renumber_parts(draft: BuildDraft) -> None:
-    """Re-sequence numbered top-level parts so each base name runs 1..n with no
-    gaps (e.g. after deleting "Forward Warning 2", "...3" becomes "...2").
+    """Normalize top-level names after draft mutations.
+
+    Ordinary numbered names run 1..n with no gaps (for example after deleting
+    "Forward Warning 2", "...3" becomes "...2"). Control heads are different:
+    one is the unnumbered "Control Head", while two or more are numbered in
+    draft order so their manifest entries stay distinct.
 
     Only top-level parts (no parent_line_id) are renumbered; accessory child
     lines follow their parent's name, so when a parent is renumbered its
     children's "<parent> · <accessory>" prefix is updated to match.
     """
     groups: dict[str, list] = {}
+    control_heads: list[DraftPart] = []
     for p in draft.parts:
         if getattr(p, "parent_line_id", ""):
+            continue
+        if _is_control_head(p):
+            control_heads.append(p)
             continue
         m = _NUMBERED_NAME.match(p.name or "")
         if m:
             groups.setdefault(m.group(1).strip(), []).append(p)
 
+    if control_heads:
+        for index, part in enumerate(control_heads, 1):
+            name = "Control Head" if len(control_heads) == 1 else f"Control Head {index}"
+            _rename_part_and_children(draft, part, name)
+
     for base, plist in groups.items():
         plist.sort(key=lambda p: int(_NUMBERED_NAME.match(p.name).group(2)))
         for i, p in enumerate(plist, 1):
             new_name = f"{base} {i}"
-            if p.name == new_name:
-                continue
-            old_name = p.name
-            p.name = new_name
-            # Keep accessory children's display prefix in sync.
-            for c in draft.parts:
-                if getattr(c, "parent_line_id", "") == p.line_id and c.name.startswith(old_name + " · "):
-                    c.name = new_name + c.name[len(old_name):]
+            _rename_part_and_children(draft, p, new_name)
 
 
 def draft_from_project_input(project: ProjectInput, draft_id: str | None = None) -> BuildDraft:
@@ -190,12 +230,18 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
             quantity=p.quantity,
             lens=p.lens,
             notes=p.notes,
+            comment=getattr(p, "comment", ""),
             explicit_color_profile=p.explicit_color_profile,
             driver_color=p.driver_color,
             passenger_color=p.passenger_color,
             center_color=p.center_color,
             components=list(getattr(p, "components", []) or []),
-            line_id=str(uuid.uuid4()),
+            # This conversion is also used by the preview/build-sheet path.
+            # Keep picker metadata, not just display fields: configured
+            # assemblies (for example Outer Edge) depend on it for rendering.
+            part_type=getattr(p, "part_type", ""),
+            picker_config=dict(getattr(p, "picker_config", {}) or {}),
+            line_id=getattr(p, "line_id", "") or str(uuid.uuid4()),
         )
         for p in project.parts
     ]
@@ -236,6 +282,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         quantity=quantity,
         lens=_s(body.get("lens", "")),
         notes=_s(body.get("notes", "")),
+        comment=_s(body.get("comment", "")),
         explicit_color_profile=_s(body.get("explicit_color_profile", "")),
         driver_color=_s(body.get("driver_color", "")),
         passenger_color=_s(body.get("passenger_color", "")),
@@ -244,6 +291,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         components=body.get("components") if isinstance(body.get("components"), list) else [],
         line_id=line_id or str(uuid.uuid4()),
         parent_line_id=_s(body.get("parent_line_id", "")),
+        linked_parent_line_id=_s(body.get("linked_parent_line_id", "")),
         accessory_category=_s(body.get("accessory_category", "")),
         accessory_parent_product=_s(body.get("accessory_parent_product", "")),
         part_type=_s(body.get("part_type", "")),
@@ -279,17 +327,26 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
             quantity=dp.quantity,
             lens=dp.lens,
             notes=dp.notes,
+            comment=dp.comment,
             explicit_color_profile=dp.explicit_color_profile,
             driver_color=dp.driver_color,
             passenger_color=dp.passenger_color,
             center_color=dp.center_color,
             line_id=dp.line_id,
             part_type=dp.part_type,
+            parent_line_id=dp.parent_line_id,
+            linked_parent_line_id=dp.linked_parent_line_id,
+            accessory_category=dp.accessory_category,
+            accessory_parent_product=dp.accessory_parent_product,
             components=list(dp.components or []),
+            picker_config=dict(dp.picker_config or {}),
         )
         for dp in draft.parts
     ]
-    return ProjectInput(info=info, parts=parts, notes=dict(draft.notes))
+    notes = dict(draft.notes)
+    if draft.project_notes:
+        notes["PROJECT-WIDE NOTES"] = [draft.project_notes]
+    return ProjectInput(info=info, parts=parts, notes=notes)
 
 
 # ---------------------------------------------------------------------------

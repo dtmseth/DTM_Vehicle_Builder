@@ -44,17 +44,24 @@ def test_unbilled_parts_are_skipped(tmp_path):
         parts_db_service.reset_for_testing()
 
 
-def test_magnetic_mics_from_the_catalog_are_billable(tmp_path):
-    """Mag Mic choices in guided setup must reach a real QB estimate line."""
+def test_magnetic_mics_and_radio_mic_brackets_from_the_catalog_are_billable(tmp_path):
+    """Guided mic choices and console brackets must reach real QB estimate lines."""
     parts_db_service.reset_for_testing()
     try:
         source = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "resources" / "config" / "parts_db.json"
         shutil.copyfile(source, tmp_path / "parts_db.json")
         paths = AppPaths(workspace_config_dir=tmp_path)
-        draft = SimpleNamespace(parts=[_part("MMSU-1", "Mag Mic"), _part("MMSU-1B", "Mag Mic with Bracket")])
+        draft = SimpleNamespace(parts=[
+            _part("MMSU-1", "Mag Mic"),
+            _part("MMSU-1B", "Mag Mic with Bracket"),
+            _part("C-MCB", "Radio Mic Clip"),
+            _part("7160-0826", "Adjustable Radio Mic Mag Clip"),
+        ])
         lines, problems = qb_estimate_service.resolve_build_lines(paths, draft)
         assert not problems
-        assert {line["part_number"] for line in lines} == {"MMSU-1", "MMSU-1B"}
+        assert {line["part_number"] for line in lines} == {
+            "MMSU-1", "MMSU-1B", "C-MCB", "7160-0826",
+        }
     finally:
         parts_db_service.reset_for_testing()
 

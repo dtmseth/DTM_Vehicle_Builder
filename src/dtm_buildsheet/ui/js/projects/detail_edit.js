@@ -1,4 +1,28 @@
-// ── Projects module: detail Edit tab ─────────────────────────────────────────
+// ── Projects module: Project Details tab ─────────────────────────────────────
+
+function _ptProjectBuildSummary(project) {
+  const groups = new Map();
+  for (const unit of (project.build_units || [])) {
+    const vm = _PT.vehicleMap[unit.vehicle_model] || {};
+    const vehicle = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "—");
+    const buildType = unit.build_type || "—";
+    const key = `${vehicle}\u0000${buildType}`;
+    const count = (unit.individuals || []).length || unit.quantity || 1;
+    groups.set(key, {
+      vehicle,
+      buildType,
+      count: (groups.get(key)?.count || 0) + count,
+    });
+  }
+
+  if (!groups.size) return `<p class="proj-empty-msg">No builds defined yet.</p>`;
+  const rows = [...groups.values()].map(group => `
+    <tr><td>${esc(group.vehicle)}</td><td>${esc(group.buildType)}</td><td>${group.count}</td></tr>`).join("");
+  return `<table class="proj-build-summary-table">
+    <thead><tr><th>Vehicle</th><th>Build type</th><th>Builds</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
 
 function _ptRenderEditTab(project, editable) {
   _PT.editTabEditable = editable;
@@ -7,13 +31,13 @@ function _ptRenderEditTab(project, editable) {
 
   const c  = project.customer    || {};
   const pr = project.preferences || {};
+  const projectNotes = project.project_notes || "";
 
   if (!editable) {
     // ── Read-only mode ──
     const custPairs = [
       ["Agency",     c.agency],
       ["Build Year", c.build_year],
-      ["Quote #",    c.quote_number],
       ["Sales Rep",  c.sales_rep],
     ].filter(([, v]) => v);
 
@@ -35,12 +59,22 @@ function _ptRenderEditTab(project, editable) {
       ${custPairs.length
         ? custPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
         : `<p class="proj-empty-msg">No customer info saved.</p>`}
+      <section class="proj-project-notes-card">
+        <div>
+          <h3>Project-wide final-page notes</h3>
+          <p>Included on the final page of every build sheet in this project.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" type="button" onclick="PT_editProjectNotes()">${projectNotes ? "Edit shared notes" : "+ Add shared notes"}</button>
+      </section>
+      ${projectNotes
+        ? _ptInfoRow("Shared across every build", projectNotes)
+        : `<p class="proj-empty-msg">No project-wide final-page notes saved.</p>`}
       <div class="proj-section-label">Equipment Preferences</div>
       ${prefPairs.length
         ? prefPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
         : `<p class="proj-empty-msg">No preferences saved.</p>`}
-      <div class="proj-section-label">Fleet Units</div>
-      ${_ptUnitFleetSummaryCards(project.build_units || [])}`;
+      <div class="proj-section-label">Build Summary</div>
+      ${_ptProjectBuildSummary(project)}`;
   } else {
     // ── Edit mode ──
     _PT.editTabUnits = (project.build_units || []).map(u => ({
@@ -53,34 +87,8 @@ function _ptRenderEditTab(project, editable) {
       output_path:   u.output_path   || "",
       individuals:   (u.individuals  || []).map(ind => ({ ...ind })),
       _indOpen:      false,
+      _customBuildTypeOpen: _ptIsCustomBuildType(u.build_type || ""),
     }));
-
-    const lightBrands = new Set(pr.lighting_brands || []);
-    const lightOptions = _ptLightingBrandsFromConfig();
-    const lightChecks = lightOptions.map(m =>
-      `<label class="proj-brand-check-label">
-        <input type="checkbox" class="et-lighting-cb" value="${esc(m)}"${lightBrands.has(m) ? " checked" : ""}> ${esc(m)}
-      </label>`
-    ).join("");
-
-    const cameraOptions = (_PT.projectOptions?.camera_brands || []);
-    const cameraOpts = [`<option value=""${!pr.camera_brand ? " selected" : ""}>— Not specified —</option>`,
-      ...cameraOptions.map(b =>
-        `<option${pr.camera_brand === b ? " selected" : ""}>${esc(b)}</option>`)
-    ].join("");
-
-    const bumperMfgs = _PT.projectOptions?.bumper_brands?.length
-      ? _PT.projectOptions.bumper_brands
-      : ["SETINA", "WESTIN", "GO RHINO", "PRO-GARD"];
-    const cageMfgs = _PT.projectOptions?.cage_brands?.length
-      ? _PT.projectOptions.cage_brands
-      : ["SETINA", "PRO-GARD"];
-    // No console_brands key in project_options.json (config-driven list wasn't
-    // extended for this preference) — static fallback of the DB's known
-    // console manufacturers, same pattern as the bumper/cage static fallbacks.
-    const consoleMfgs = _PT.projectOptions?.console_brands?.length
-      ? _PT.projectOptions.console_brands
-      : ["Gamber Johnson", "Havis", "Tiger Tough"];
 
     panel.innerHTML = `
       <div class="proj-edit-toolbar">
@@ -103,10 +111,6 @@ function _ptRenderEditTab(project, editable) {
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Quote #</label>
-          <input type="text" id="et-quote" value="${esc(c.quote_number || "")}">
-        </div>
         <div class="form-group proj-rep-group">
           <label>Sales Rep <span class="req">*</span></label>
           <input type="text" id="et-salesrep" value="${esc(c.sales_rep || "")}" autocomplete="off">
@@ -115,35 +119,47 @@ function _ptRenderEditTab(project, editable) {
         </div>
       </div>
 
-      <div class="proj-section-label">Equipment Preferences</div>
+      <div class="proj-section-label">Project-specific equipment preferences</div>
+      <p class="proj-form-hint">These are this project's choices. Use the option below only when they should become the agency standard for future projects.</p>
       <div class="form-row">
         <div class="form-group">
           <label>Camera System</label>
-          <select id="et-camera">${cameraOpts}</select>
+          <select id="et-camera-brand">${_ptPreferenceSelectOptions("camera_brand", pr.camera_brand || "")}</select>
         </div>
         <div class="form-group">
           <label>Push Bumper Brand</label>
-          <input type="text" id="et-bumper-brand" value="${esc(pr.push_bumper_brand || "")}" placeholder="e.g. Setina" list="et-bumper-list" autocomplete="off">
-          <datalist id="et-bumper-list">${bumperMfgs.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+          <select id="et-push-bumper-brand">${_ptPreferenceSelectOptions("push_bumper_brand", pr.push_bumper_brand || "")}</select>
         </div>
         <div class="form-group">
           <label>Cage / Partition Brand</label>
-          <input type="text" id="et-cage-brand" value="${esc(pr.cage_brand || "")}" placeholder="e.g. Pro-Gard" list="et-cage-list" autocomplete="off">
-          <datalist id="et-cage-list">${cageMfgs.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+          <select id="et-cage-brand">${_ptPreferenceSelectOptions("cage_brand", pr.cage_brand || "")}</select>
         </div>
         <div class="form-group">
           <label>Console Brand</label>
-          <input type="text" id="et-console-brand" value="${esc(pr.console_brand || "")}" placeholder="e.g. Gamber Johnson" list="et-console-list" autocomplete="off">
-          <datalist id="et-console-list">${consoleMfgs.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+          <select id="et-console-brand">${_ptPreferenceSelectOptions("console_brand", pr.console_brand || "")}</select>
         </div>
       </div>
-      <div class="form-group">
-        <label>Lighting Brand(s)</label>
-        <div class="proj-brand-checks">${lightChecks}</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Lighting Brand</label>
+          <select id="et-lighting">${_ptPreferenceSelectOptions("lighting", _ptPrimaryLightingBrand(pr))}</select>
+        </div>
       </div>
       <div class="form-group">
         <label>Preferences Notes</label>
         <textarea id="et-pref-notes" rows="2" class="proj-textarea-full">${esc(pr.notes || "")}</textarea>
+      </div>
+      <div class="proj-preferences-default-action">
+        <button class="btn btn-secondary btn-sm" type="button"
+          onclick="PT_setPreferencesAsAgencyDefault('et', 'et-agency-id', this)">Set selected choices as agency defaults</button>
+        <p>This sets the starting choices for future projects only. Click Save Changes separately to apply them to this project. This does not update QuickBooks.</p>
+      </div>
+
+      <div class="proj-section-label">Project-wide final-page note</div>
+      <p class="proj-form-hint">This appears on the final page of every build sheet in this project. Use the build editor for notes that apply to only one unit.</p>
+      <div class="form-group">
+        <label for="et-project-notes">Shared build instruction</label>
+        <textarea id="et-project-notes" rows="3" class="proj-textarea-full" placeholder="Example: Confirm graphics package with the customer before final inspection.">${esc(projectNotes)}</textarea>
       </div>
 
       <div class="proj-section-label">Fleet Units</div>
@@ -173,11 +189,7 @@ function _ptRenderEditUnits() {
   const btVals = _PT.projectOptions?.build_types || ["Patrol", "Admin", "Unmarked", "K-9", "Fire"];
 
   listEl.innerHTML = _PT.editTabUnits.map((u, i) => {
-    const localBtVals = [...btVals];
-    if (u.build_type && !localBtVals.includes(u.build_type)) localBtVals.push(u.build_type);
-    const btOpts = localBtVals.map(t =>
-      `<option${t === u.build_type ? " selected" : ""}>${esc(t)}</option>`
-    ).join("");
+    const btOpts = _ptBuildTypeOptions(u.build_type, u._customBuildTypeOpen);
 
     const vpsts  = _ptCompatiblePresets(u);  // filtered by vehicle + build_type
     const selPst = _ptVisiblePresets().find(p => p.preset_id === u.preset_id);
@@ -221,6 +233,7 @@ function _ptRenderEditUnits() {
           <input type="number" class="et-u-qty" min="1" value="${u.quantity}">
         </div>
       </div>
+      ${_ptCustomBuildTypeInput(u.build_type, "et-u-buildtype-custom", u._customBuildTypeOpen)}
       <div class="proj-et-preset-row">
         <div class="proj-preset-hdr">
           <span class="proj-preset-hdr-label">Preset</span>
@@ -273,11 +286,18 @@ function _ptRenderEditUnits() {
     const onUnitContextChange = () => {
       _ptCollectEditUnits();
       const live = _PT.editTabUnits.find(x => x.uid === u.uid);
+      if (live && btSelect?.value === _PT_CUSTOM_BUILD_TYPE) {
+        live._customBuildTypeOpen = true;
+        if (!_ptIsCustomBuildType(live.build_type)) live.build_type = "";
+      }
       if (live && live.preset_id) {
         const stillCompatible = _ptCompatiblePresets(live).some(p => p.preset_id === live.preset_id);
         if (!stillCompatible) live.preset_id = "";
       }
       _ptRenderEditUnits();
+      if (btSelect?.value === _PT_CUSTOM_BUILD_TYPE) {
+        listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"] .et-u-buildtype-custom`)?.focus();
+      }
     };
     vehSelect?.addEventListener("change", onUnitContextChange);
     btSelect?.addEventListener("change", onUnitContextChange);
@@ -301,7 +321,14 @@ function _ptCollectEditUnits() {
     const row = listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"]`);
     if (!row) return;
     u.vehicle_model = row.querySelector(".et-u-vehicle").value;
-    u.build_type    = row.querySelector(".et-u-buildtype").value;
+    const buildType = row.querySelector(".et-u-buildtype");
+    if (buildType?.value === _PT_CUSTOM_BUILD_TYPE) {
+      u._customBuildTypeOpen = true;
+      u.build_type = row.querySelector(".et-u-buildtype-custom")?.value.trim() || u.build_type || "";
+    } else {
+      u._customBuildTypeOpen = false;
+      u.build_type = buildType?.value || "";
+    }
     u.quantity      = Math.max(1, parseInt(row.querySelector(".et-u-qty").value, 10) || 1);
     const indRows = row.querySelectorAll(".proj-ind-row");
     if (indRows.length) {
@@ -331,28 +358,17 @@ function _ptCollectEditUnits() {
 function _ptCollectEditForm() {
   _ptCollectEditUnits();
   _PT.editTabUnits.forEach(u => _ptEnsureIndividuals(u));
-  const lightingBrands = Array.from(
-    document.querySelectorAll(".et-lighting-cb:checked")
-  ).map(cb => cb.value);
-
   return {
     project_id: _PT.viewProject?.project_id,
     customer: {
       agency:       ($("et-agency")?.value    || "").trim(),
       agency_id:    ($("et-agency-id")?.value  || "").trim(),
       build_year:   ($("et-build-year")?.value || "").trim(),
-      quote_number: ($("et-quote")?.value      || "").trim(),
       sales_rep:    ($("et-salesrep")?.value   || "").trim(),
       sales_rep_id: ($("et-salesrep-id")?.value || "").trim(),
     },
-    preferences: {
-      camera_brand:      $("et-camera")?.value           || "",
-      push_bumper_brand: ($("et-bumper-brand")?.value    || "").trim(),
-      cage_brand:        ($("et-cage-brand")?.value      || "").trim(),
-      console_brand:     ($("et-console-brand")?.value   || "").trim(),
-      lighting_brands:   lightingBrands,
-      notes:             ($("et-pref-notes")?.value      || "").trim(),
-    },
+    preferences: _ptPreferencePayload("et"),
+    project_notes: ($("et-project-notes")?.value || "").trim(),
     build_units: _PT.editTabUnits.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,
@@ -384,9 +400,16 @@ function _ptWireEditTabSearch() {
 
 // ── Public actions ─────────────────────────────────────────────────────────────
 
-window.PT_enterEditMode = function () {
+window.PT_enterEditMode = function (focusProjectNotes = false) {
   if (!_PT.viewProject) return;
-  _ptLoadPrefsOptions().then(() => _ptRenderEditTab(_PT.viewProject, true));
+  _ptLoadPrefsOptions().then(() => {
+    _ptRenderEditTab(_PT.viewProject, true);
+    if (focusProjectNotes) requestAnimationFrame(() => $("et-project-notes")?.focus());
+  });
+};
+
+window.PT_editProjectNotes = function () {
+  window.PT_enterEditMode(true);
 };
 
 window.PT_cancelEditMode = function () {

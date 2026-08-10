@@ -34,10 +34,13 @@ _CATEGORY_SKUS_PATH = f"{_PREFIX}/category-skus"
 _BROWSE_TREE_PATH = f"{_PREFIX}/browse-tree"
 _MANIFEST_GROUPS_PATH = f"{_PREFIX}/manifest-groups"
 _MATCH_SKUS_PATH = f"{_PREFIX}/match-skus"
+_SKU_LOOKUP_PATH = f"{_PREFIX}/sku-lookup"
 _RESOLVE_PATH = f"{_PREFIX}/resolve-selection"
 _ACCESSORIES_PATH = f"{_PREFIX}/accessories"
 _SYSTEM_CABLE_REFRESHES_PATH = f"{_PREFIX}/system-cable-refreshes"
 _TRACER_HEADS_PATH = f"{_PREFIX}/tracer-heads"
+_INNER_EDGE_HEADS_PATH = f"{_PREFIX}/inner-edge-heads"
+_OUTER_EDGE_PILLAR_HEADS_PATH = f"{_PREFIX}/outer-edge-pillar-heads"
 _EDIT_PREFIX = f"{_PREFIX}/edit"
 
 
@@ -163,10 +166,24 @@ def _resolve_category_locations(svc, type_id: str, category: str) -> list[dict]:
     # tree_zone → part_type used only for NON-warning categories' naming.
     zone_pt: dict[str, object] = {}
     if category != "warning":
-        _zone_keyword = {"front": "forward", "side": "side", "rear": "rear"}
-        for tree, kw in _zone_keyword.items():
+        # The data's tree position is authoritative.  Labels are presentation
+        # text: "Front Scene" is a valid front-scene type even though it does
+        # not contain the old "forward" keyword.
+        for tree in pzones:
+            positioned = next(
+                (pt for pt in candidates if any(p.zone == tree for p in pt.tree_positions)),
+                None,
+            )
+            if positioned:
+                zone_pt[tree] = positioned
+        # A small backward-compatible fallback covers older types without a
+        # tree position. It must never override an explicit position above.
+        _zone_keyword = {"front": ("forward", "front"), "side": ("side",), "rear": ("rear",)}
+        for tree, keywords in _zone_keyword.items():
+            if tree in zone_pt:
+                continue
             for pt in candidates:
-                if kw in (pt.label or "").lower() and any(p.zone == tree for p in pt.tree_positions):
+                if any(keyword in (pt.label or "").lower() for keyword in keywords):
                     zone_pt[tree] = pt
                     break
 
@@ -258,6 +275,15 @@ def _build_browse_tree(svc) -> list[dict]:
                     "label": label_of(m),
                     "picker_flow": (part_types_doc.get(m) or {}).get("category") or family_flow,
                     "browse_hidden": bool((part_types_doc.get(m) or {}).get("browse_hidden", False)),
+                    # A visible picker leaf can intentionally collect more
+                    # than one physical part type.  Interior light bars are
+                    # the current example: front and rear bars need separate
+                    # fixture/render mappings, but duplicate labels make a
+                    # confusing sidebar.  The selector keeps that distinction
+                    # in the product response while presenting one leaf.
+                    "browse_part_type_ids": list(
+                        (part_types_doc.get(m) or {}).get("browse_part_type_ids") or [m]
+                    ),
                 }
                 for m in members
             ],
@@ -573,6 +599,57 @@ def _resolve_product_locations(svc, paths, type_id: str, category: str,
     return out
 
 
+def _resolve_scene_product_locations(svc, product_id: str,
+                                     category_locations: list[dict]) -> list[dict]:
+    """Restrict a selected scene product to its scene-light homes.
+
+    The category-level scene pool is still useful for the browse contract and
+    for the custom-location picker.  Once a product is selected, though, the
+    ordinary location step must not turn every exterior layout point into a
+    scene-light choice.  Use the product's scene part-type homes and their
+    curated/legacy location vocabulary for that standard path.  Custom
+    placement deliberately does not use this filtered list: the picker draws
+    every exterior layout location and fixture there.
+    """
+    product = svc.get_product(product_id)
+    if not product:
+        return category_locations
+
+    doc = svc.raw_doc()
+    scene_types = {
+        pt.part_type_id: pt
+        for pt in svc.list_part_types()
+        if pt.type_id == "lights" and _pt_in_category(pt, "scene")
+    }
+    fit_ids = set(product.fits_part_types or []) & set(scene_types)
+    if not fit_ids:
+        return category_locations
+
+    raw_products = doc.get("products") or {}
+    raw_product = raw_products.get(product_id) or {}
+    product_locations = [str(value).strip().upper()
+                         for value in (raw_product.get("location_options") or [])
+                         if str(value).strip() and "SPECIFY" not in str(value).upper()]
+    allowed: set[str] = set(product_locations)
+    if not allowed:
+        for part_type_id in fit_ids:
+            pt = scene_types[part_type_id]
+            raw_pt = (doc.get("part_types") or {}).get(part_type_id) or {}
+            declared = raw_pt.get("allowed_placements") or raw_pt.get("location_options")
+            locations = declared or svc.locations_by_legacy_name(pt.label)
+            allowed.update(
+                str(value).strip().upper()
+                for value in locations
+                if str(value).strip() and "SPECIFY" not in str(value).upper()
+            )
+
+    return [
+        row for row in category_locations
+        if row.get("part_type_id") in fit_ids
+        and str(row.get("location") or "").upper() in allowed
+    ]
+
+
 def _resolve_accessories(svc, product_id: str) -> list[dict]:
     """Resolve a product's accessories, grouped by accessory_category.
 
@@ -595,14 +672,23 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 
     groups: dict[str, dict] = {}
 
-    def add(category: str, acc_pid: str, required: bool) -> None:
+    def add(category: str, acc_pid: str, required: bool, recommendation: dict | None = None) -> None:
         if not category or not acc_pid or acc_pid == product_id or acc_pid not in products:
             return
-        g = groups.setdefault(category, {"required": False, "option_ids": []})
+        g = groups.setdefault(category, {"required": False, "option_ids": [], "recommendations": []})
         if required:
             g["required"] = True
         if acc_pid not in g["option_ids"]:
             g["option_ids"].append(acc_pid)
+        if recommendation:
+            payload = {
+                "product_id": acc_pid,
+                "when_existing_part_type": recommendation["when_existing_part_type"],
+                "minimum_existing_count": recommendation["minimum_existing_count"],
+                "message": recommendation["message"],
+            }
+            if payload not in g["recommendations"]:
+                g["recommendations"].append(payload)
 
     # Product-specific relationships are more precise than part_type-level
     # fallbacks. Keep an inverse lookup as well: an accessory which belongs to
@@ -626,13 +712,24 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
     # for products such as Mega T-Series, which have a product-specific mount
     # in addition to their normal compatible bracket choices.
     specific_categories: set[str] = set()
+    generic_categories: set[str] = {
+        a.get("category")
+        for a in prod.get("accessories") or []
+        if a.get("category") and a.get("include_generic")
+    }
     for a in prod.get("accessories") or []:
         category = a.get("category")
         if category and not a.get("include_generic"):
             specific_categories.add(category)
     for ap in products.values():
         if product_id in (ap.get("accessory_of_products") or []):
-            specific_categories.add(ap.get("accessory_category") or "other")
+            category = ap.get("accessory_category") or "other"
+            # A child-side accessory role is normally a curated category, but
+            # a parent can explicitly opt back into generic choices. This
+            # keeps legacy/product-specific roles (for example a PIU ION
+            # bracket) from hiding the universal warning-light brackets.
+            if category not in generic_categories:
+                specific_categories.add(category)
 
     # 1. Product-level accessories.
     for a in prod.get("accessories") or []:
@@ -668,6 +765,20 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
         if product_id in (ap.get("accessory_of_products") or []):
             add(ap.get("accessory_category") or "other", apid, bool(ap.get("accessory_required")))
 
+    # 4. Contextual recommendations are authored on a parent part type rather
+    # than duplicated across every product that fits it.  The client knows the
+    # current draft and only shows/preselects a recommendation whose condition
+    # is met (for example, the harness on a second control head).
+    for parent_pt_id in prod.get("fits_part_types") or []:
+        parent_pt = part_types.get(parent_pt_id) or {}
+        for recommendation in parent_pt.get("recommended_accessories") or []:
+            add(
+                recommendation["category"],
+                recommendation["product_id"],
+                False,
+                recommendation,
+            )
+
     out: list[dict] = []
     for cat_id in acc_cats:                      # vocabulary order
         g = groups.get(cat_id)
@@ -692,10 +803,13 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
                 "manufacturer_label": mfr.get("label", ap.get("manufacturer_id", "")),
                 "skus": skus,
             })
-        out.append({
+        entry = {
             "category": cat_id, "label": acc_cats[cat_id].get("label", cat_id),
             "required": g["required"], "options": options,
-        })
+        }
+        if g["recommendations"]:
+            entry["recommendations"] = g["recommendations"]
+        out.append(entry)
     return out
 
 
@@ -766,6 +880,7 @@ def _resolve_system_cable_refreshes(svc, system_id: str, vehicle: str = "") -> l
 
 _PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
                         "location_options", "fixed_location", "default_colors", "accessories_disabled",
+                        "allow_custom_location", "pa_mic_required",
                         "reviewed", "accessory_category",
                         "accessory_of_products", "accessory_required"}
 _SKU_EDIT_FIELDS = {
@@ -1153,6 +1268,15 @@ def route_parts_db(
         send_json(handler, {"categories": _build_browse_tree(svc)})
         return True
 
+    if method == "GET" and path == _SKU_LOOKUP_PATH:
+        sku = qs.get("sku", [""])[0]
+        if not str(sku).strip():
+            send_json(handler, {"ok": False, "error": "sku required"}, status=400)
+            return True
+        match = svc.find_sku(sku)
+        send_json(handler, {"ok": True, "found": bool(match), "part": match})
+        return True
+
     if method == "GET" and path == _MANIFEST_GROUPS_PATH:
         send_json(handler, _build_manifest_groups(svc))
         return True
@@ -1435,17 +1559,64 @@ def route_parts_db(
         send_json(handler, result)
         return True
 
+    if method == "GET" and path == _INNER_EDGE_HEADS_PATH:
+        # FST/RST head count lives on the exact selected QB SKU's sales
+        # description, not the generic product model.  The resolver returns
+        # the housing and child head lines the picker will persist.
+        from ..services.lighthead_resolver import resolve_inner_edge
+        product_id = qs.get("product_id", [""])[0]
+        part_number = qs.get("part_number", [""])[0]
+        if not product_id or not part_number:
+            send_json(handler, {"error": "missing product_id or part_number"}, status=400)
+            return True
+        result = resolve_inner_edge(
+            svc.raw_doc(), product_id,
+            housing_part_number=part_number,
+            mode=qs.get("mode", ["duo"])[0],
+            secondary_color=qs.get("secondary", ["white"])[0],
+        )
+        send_json(handler, result)
+        return True
+
+    if method == "GET" and path == _OUTER_EDGE_PILLAR_HEADS_PATH:
+        # Rear-pillar Outer Edge housings include exactly six IONs.  Their
+        # selected QB SKU fixes Duo vs Trio; only Duo exposes White/Amber.
+        from ..services.lighthead_resolver import resolve_outer_edge_pillar
+        product_id = qs.get("product_id", [""])[0]
+        part_number = qs.get("part_number", [""])[0]
+        if not product_id or not part_number:
+            send_json(handler, {"error": "missing product_id or part_number"}, status=400)
+            return True
+        result = resolve_outer_edge_pillar(
+            svc.raw_doc(), product_id,
+            housing_part_number=part_number,
+            secondary_color=qs.get("secondary", ["white"])[0],
+        )
+        send_json(handler, result)
+        return True
+
     if method == "GET" and path == _CATEGORY_SKUS_PATH:
         # Products + their SKUs for one category (drives the two-pane live list).
         type_id = qs.get("type", [""])[0]
         category = qs.get("category", [""])[0]
         all_products = qs.get("all", [""])[0].lower() in {"1", "true", "yes"}
+        include_accessory_links = qs.get("include_accessory_links", [""])[0].lower() in {"1", "true", "yes"}
         # Optional exact family / part_type filters (picker sidebar accordion):
         # narrow the list to a family or one specific part_type instead of the
         # whole category/type. Additive — omitting them keeps every prior
         # caller's behavior (whole-category or whole-type list) unchanged.
         family_filter = qs.get("family", [""])[0]
         part_type_filter = qs.get("part_type", [""])[0]
+        # A visible browse leaf may intentionally combine several physical
+        # part types.  Keep the existing singular `part_type` query for all
+        # callers and accept comma-separated `part_types` for that one
+        # picker-only case.
+        part_type_filters = [
+            part_type_id
+            for value in qs.get("part_types", [])
+            for part_type_id in value.split(",")
+            if part_type_id
+        ]
         if not type_id and not all_products:
             send_json(handler, {"error": "missing type"}, status=400)
             return True
@@ -1478,14 +1649,17 @@ def route_parts_db(
                 and not pt.get("accessory_category")
                 and (not pt.get("browse_hidden") or pt.get("category"))
             ]
-        elif part_type_filter:
+        elif part_type_filter or part_type_filters:
             # Exact part_type filter (picker sidebar leaf): trust it directly.
             # A family can surface a part_type under a different top-level type
             # than the part_type's own `type_id` (e.g. the Structural "Console
             # System" family lists the equipment-typed `motion_attachment`), so
             # the leaf's display type must NOT gate the lookup — otherwise the
-            # product grid comes back empty for cross-type family members.
-            pt_ids = [part_type_filter] if svc.get_part_type(part_type_filter) else []
+            # product grid comes back empty for cross-type family members. A
+            # combined leaf preserves the declared ordering so a product that
+            # fits several collected types gets one stable primary mapping.
+            requested_pt_ids = part_type_filters or [part_type_filter]
+            pt_ids = [pt_id for pt_id in requested_pt_ids if svc.get_part_type(pt_id)]
         elif family_filter:
             family = (svc.raw_doc().get("families") or {}).get(family_filter) or {}
             pt_ids = [pt_id for pt_id in (family.get("members") or []) if svc.get_part_type(pt_id)]
@@ -1514,10 +1688,27 @@ def route_parts_db(
                         "vehicle_tags": list(pn.vehicle_tags or []),
                     })
                 fits = p.fits_part_types or []
-                primary_pt_raw = part_types_doc.get(pid) or {}
+                product_spec = (doc.get("products") or {}).get(p.product_id) or {}
+                # A product can legitimately fit more than one physical part
+                # type.  Its picker context is nevertheless a product property:
+                # selecting a T-Series head must use the warning-light picker
+                # whether it was reached from Lights, Warning, or search.  The
+                # optional declaration supplies that semantic home while the
+                # browse leaf still controls which products are listed.
+                primary_pid = pid
+                picker_primary_pid = (
+                    product_spec.get("picker_primary_part_type", "")
+                    # Backward compatibility for saved/remote config written
+                    # before this field described all picker entry points.
+                    or product_spec.get("global_search_part_type", "")
+                )
+                if picker_primary_pid in fits and picker_primary_pid in part_types_doc:
+                    primary_pid = picker_primary_pid
+                primary_pt = svc.get_part_type(primary_pid)
+                primary_pt_raw = part_types_doc.get(primary_pid) or {}
                 primary_type_id = primary_pt_raw.get("type_id", "")
                 primary_family_id, primary_family = family_by_pt.get(
-                    pid, (primary_pt_raw.get("family_id", ""), {})
+                    primary_pid, (primary_pt_raw.get("family_id", ""), {})
                 )
                 related_pt_ids = [pt_id for pt_id in fits if pt_id in part_types_doc]
                 related_pt_labels = [
@@ -1541,7 +1732,7 @@ def route_parts_db(
                     tag for pn in p.part_numbers for tag in (pn.vehicle_tags or [])
                 ]
                 fixture_part_type_id = (
-                    pid if pid in fixture_part_type_ids
+                    primary_pid if primary_pid in fixture_part_type_ids
                     else next((pt_id for pt_id in fits if pt_id in fixture_part_type_ids), "")
                 )
                 fixture_catalog_id = _fixture_catalog_id(fixture_part_type_id)
@@ -1551,9 +1742,9 @@ def route_parts_db(
                     catalog_default_locs.get(fixture_catalog_id)
                     or (fixture_catalog_part.get("display_name") or "")
                 )
-                fixture_label = (fixture_catalog_part.get("display_name") or (pt.label if pt else "")).strip()
-                fixture_name_pattern = (pt.workbook_label_pattern if pt else "") or fixture_label
-                fixture_base_label = (pt.label if pt else "") or fixture_label
+                fixture_label = (fixture_catalog_part.get("display_name") or (primary_pt.label if primary_pt else "")).strip()
+                fixture_name_pattern = (primary_pt.workbook_label_pattern if primary_pt else "") or fixture_label
+                fixture_base_label = (primary_pt.label if primary_pt else "") or fixture_label
                 entry = {
                     "product_id": p.product_id, "model": p.model,
                     "description": p.description,
@@ -1561,8 +1752,8 @@ def route_parts_db(
                     "manufacturer_label": mfr.get("label", p.manufacturer_id),
                     "skus": skus,
                     "fits_part_types": fits,
-                    "primary_part_type_id": pid,
-                    "primary_part_type_label": primary_pt_raw.get("label", pid),
+                    "primary_part_type_id": primary_pid,
+                    "primary_part_type_label": primary_pt_raw.get("label", primary_pid),
                     "primary_type_id": primary_type_id,
                     "primary_type_label": (types_doc.get(primary_type_id) or {}).get("label", primary_type_id),
                     "primary_category_id": primary_pt_raw.get("category", ""),
@@ -1573,7 +1764,7 @@ def route_parts_db(
                         p.description,
                         p.manufacturer_id,
                         mfr.get("label", p.manufacturer_id),
-                        primary_pt_raw.get("label", pid),
+                        primary_pt_raw.get("label", primary_pid),
                         (types_doc.get(primary_type_id) or {}).get("label", primary_type_id),
                         primary_family.get("label", primary_family_id) if primary_family_id else "",
                         *related_pt_ids,
@@ -1587,7 +1778,6 @@ def route_parts_db(
                     "is_fixture": is_fixture,
                     "default_location": default_loc,
                 }
-                product_spec = (doc.get("products") or {}).get(p.product_id) or {}
                 if product_spec.get("location_options"):
                     entry["location_options"] = list(product_spec["location_options"])
                 if product_spec.get("fixed_location"):
@@ -1598,6 +1788,15 @@ def route_parts_db(
                     entry["fixed_location"] = primary_family["fixed_location"]
                 if product_spec.get("default_colors"):
                     entry["default_colors"] = list(product_spec["default_colors"])
+                # Focused picker flows can opt into product-scoped accessory
+                # links. For example, a console printer armrest can show only
+                # the power/USB cables authored for the selected printer,
+                # without expanding the established general catalog response.
+                if include_accessory_links and product_spec.get("accessory_of_products"):
+                    entry["accessory_of_products"] = list(product_spec["accessory_of_products"])
+                for field in ("allow_custom_location", "pa_mic_required"):
+                    if field in product_spec:
+                        entry[field] = bool(product_spec[field])
                 if p.console_kit:
                     entry["console_kit"] = dict(p.console_kit)
                 if is_fixture:
@@ -1615,7 +1814,8 @@ def route_parts_db(
 
     if method == "GET" and path == _CATEGORY_LOCATIONS_PATH:
         # Location step.
-        #   exterior lights → category-wide placement pool (coords drive diagram dots).
+        #   exterior lights → category-wide placement pool for browse/custom;
+        #                    selected Scene products use their scene homes.
         #   interior lights → the selected product's own text locations.
         #   non-lights  → the selected product's own curated location list; coords
         #                 decide whether each option is a diagram dot or dropdown row.
@@ -1628,6 +1828,8 @@ def route_parts_db(
             return True
         if type_id == "lights" and category != "interior":
             locs = _resolve_category_locations(svc, type_id, category)
+            if category == "scene" and product_id:
+                locs = _resolve_scene_product_locations(svc, product_id, locs)
         else:
             locs = _resolve_product_locations(svc, paths, type_id, category, product_id, vehicle)
         send_json(handler, {"locations": locs})

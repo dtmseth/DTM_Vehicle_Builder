@@ -21,10 +21,11 @@ class CustomerInfo:
 ```python
 @dataclass
 class EquipmentPreferences:
-    lighting: str = ""
-    camera: str = ""
-    bumper: str = ""
-    cage: str = ""
+    lighting_brands: list[str] = field(default_factory=list)  # one choice in the current UI
+    camera_brand: str = ""
+    push_bumper_brand: str = ""
+    cage_brand: str = ""
+    console_brand: str = ""
     slick_top: bool = False
     notes: str = ""
 ```
@@ -63,6 +64,7 @@ class ProjectRecord:
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
+    project_notes: str = ""   # shown on every build's final PowerPoint page
     export_dir: str = ""      # empty = default output location
     created_at: str = ""
     updated_at: str = ""
@@ -77,6 +79,8 @@ alongside the record without polluting a flat list.
 Lives in `workspace/agencies/{agency_id}.json`. Mirrored to SharePoint.
 Carries optional `qb_customer_id` (FK → QuickBooks `Customer.Id`).
 Contact info comes from the agency record — no separate contact field on the project.
+`default_preferences` stores the agency's normal equipment choices. They are copied to a new
+project once; editing a project never changes the agency defaults or another project's choices.
 
 ## SalesRepRecord
 

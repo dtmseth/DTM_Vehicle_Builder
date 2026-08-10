@@ -3,12 +3,10 @@
     "locations": [
       {
         "base_label": "Light Control Head",
-        "catalog_names": [
-          "Control Head"
-        ],
+        "catalog_names": [],
         "has_coords": false,
         "location": "IN CENTER CONSOLE",
-        "name_pattern": "Control Head",
+        "name_pattern": "Control Head {n}",
         "part_type_id": "control_head",
         "placement_zone": "",
         "placement_zone_label": ""

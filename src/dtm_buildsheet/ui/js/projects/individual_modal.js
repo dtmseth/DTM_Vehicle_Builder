@@ -131,7 +131,7 @@ async function _ptSaveDetailIndModal(thenBuild) {
     const theUnit = proj.build_units[unitIdx];
     const theInd  = theUnit.individuals.find(i => i.individual_id === _PT.indModalIndId);
     if (theInd?.draft_id) {
-      await _ptShowBuildEditor(theInd.draft_id, theUnit, proj, "builds", theInd);
+      await _ptShowBuildEditor(theInd.draft_id, theUnit, proj, "overview", theInd);
     } else {
       PT_startBuildIndividual(proj.project_id, unitIdx, _PT.indModalIndId);
     }

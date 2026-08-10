@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from lxml import etree
@@ -14,18 +16,35 @@ from .paths import AppPaths, ensure_workspace
 
 
 _manifest_cache: dict | None = None
+_manifest_cache_path: Path | None = None
+_manifest_cache_mtime_ns: int | None = None
 
 
 def _load_manifest(paths: AppPaths | None = None) -> dict:
-    global _manifest_cache
-    if _manifest_cache is None:
-        active_paths = paths or ensure_workspace()
+    """Load the current asset manifest, reloading after an in-app save.
+
+    The size-rules page saves its profile definitions while the desktop server
+    is running.  Preview and PowerPoint rendering share this helper, so a
+    process-lifetime cache made those edits look ineffective until restart.
+    """
+    global _manifest_cache, _manifest_cache_path, _manifest_cache_mtime_ns
+    active_paths = paths or ensure_workspace()
+    manifest_path = active_paths.workspace_config_dir / "asset_manifest.json"
+    try:
+        mtime_ns = manifest_path.stat().st_mtime_ns
+    except OSError:
+        mtime_ns = None
+    if (
+        _manifest_cache is None
+        or _manifest_cache_path != manifest_path
+        or _manifest_cache_mtime_ns != mtime_ns
+    ):
         try:
-            _manifest_cache = json.loads(
-                (active_paths.workspace_config_dir / "asset_manifest.json").read_text("utf-8")
-            )
+            _manifest_cache = json.loads(manifest_path.read_text("utf-8"))
         except Exception:
             _manifest_cache = {}
+        _manifest_cache_path = manifest_path
+        _manifest_cache_mtime_ns = mtime_ns
     return _manifest_cache
 
 
@@ -69,22 +88,59 @@ BAR_TOP_SIZES = {
 }
 EQUIP_SIZES = {
     "Push Bumper": {"front": (3.128, 2.870), "side": (0.373, 1.353), "top": (0.342, 1.434)},
-    "Pit Bar":     {"front": (3.128, 2.870), "side": (3.128, 2.870)},
 }
 
 # ── Manifest layout ───────────────────────────────────────────────────────────
 MANIFEST_LIGHT_CATS = {"warning_light", "scene_light", "light_bar"}
+MANIFEST_STRUCTURAL_PART_TYPES = {
+    "arm_rest", "console", "docking_station", "equipment_tray", "gun_lock",
+    "motion_attachment", "pedestal_mount", "pit_bar", "push_bumper", "rear_partition",
+    "seat_cover", "special_face_plate", "wing_wraps", "wire_covers",
+}
 
-MANIFEST_COL_HEADERS   = ["PART", "MANUFACTURER", "MODEL / PART #", "QTY",
-                           "COLOR / LENS", "LOCATION", "SOURCE", "NOTES"]
-MANIFEST_COL_WIDTHS_IN = [2.0, 1.3, 1.6, 0.35, 1.2, 1.45, 1.35, 3.08]
+# These related systems should be read together rather than be scattered by
+# alphabetical order across a customer-facing manifest page.  The picker and
+# build preview keep their existing names/order; this is presentation-only.
+MANIFEST_SYSTEM_SORT_ORDER = {
+    "push_bumper": 0,
+    "pit_bar": 1,
+    "wing_wraps": 2,
+    "wire_covers": 3,
+    "siren_speaker": 0,
+    "howler": 1,
+}
+
+MANIFEST_COL_HEADERS   = ["PART / SKU", "DETAILS / SALES DESCRIPTION", "QTY", "LOCATION", "SOURCE"]
+MANIFEST_COL_WIDTHS_IN = [3.15, 4.10, 0.48, 3.30, 1.30]
 
 MANIFEST_TABLE_LEFT  = Inches(0.5)
-MANIFEST_TABLE_TOP   = Inches(1.10)
+MANIFEST_TABLE_TOP   = Inches(1.07)
 MANIFEST_TABLE_W     = sum(Inches(w) for w in MANIFEST_COL_WIDTHS_IN)
-MANIFEST_HDR_ROW_H   = Inches(0.34)
-MANIFEST_DATA_ROW_H  = Inches(0.34)
-MANIFEST_SEC_ROW_H   = Inches(0.34)
+MANIFEST_HDR_ROW_H   = Inches(0.30)
+MANIFEST_DATA_MIN_H  = Inches(0.36)
+
+# Diagram pages retain a short in-context warning for a few missing items.  A
+# dedicated exception page is clearer (and cannot clip) when a stress-test or
+# an incomplete configuration has many legitimate render failures.
+INLINE_RENDER_FAILURE_LIMIT = 4
+RENDER_EXCEPTION_COL_HEADERS = ["PART", "LOCATION", "RENDERING ISSUE"]
+RENDER_EXCEPTION_COL_WIDTHS_IN = [4.15, 2.35, 5.83]
+
+
+@dataclass
+class _ManifestEntry:
+    """One rendered row in the customer-facing parts manifest."""
+    raw: object
+    location: str
+    name: str
+    manufacturer: str = ""
+    part_number: str = ""
+    quantity: object = ""
+    description: str = ""
+    detail: str = ""
+    comment: str = ""
+    is_sku: bool = False
+    indent: int = 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,31 +148,46 @@ MANIFEST_SEC_ROW_H   = Inches(0.34)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _is_reused(part) -> bool:
-    noru   = getattr(part, "new_or_used", "").strip().lower()
-    source = getattr(part, "source",      "").strip()
-    return noru not in ("new", "n", "") or bool(source)
+    """True only for non-new hardware, never merely because it has a source."""
+    noru = getattr(part, "new_or_used", "").strip().lower()
+    return noru in {"used", "u", "reused", "r", "transfer", "transferred"}
 
 
 def _source_label(part) -> str:
     noru   = getattr(part, "new_or_used", "").strip()
     source = getattr(part, "source",      "").strip()
-    if source and noru.lower() not in ("new", "n", ""):
-        return f"Reused — {source}"
+    status = noru or "New"
     if source:
-        return f"From: {source}"
-    if noru:
-        return noru
-    return "New"
+        return f"{source} — {status}"
+    return status
 
 
 def _color_label(part) -> str:
     """Return color string only (no lens)."""
-    return getattr(part, "color", "").strip()
+    return (getattr(part, "raw_color", "") or getattr(part, "color", "")).strip()
 
 
 def _lens_label(part) -> str:
     """Return lens string only (no 'Lens:' prefix — the value already contains 'Lens')."""
     return getattr(part, "lens", "").strip()
+
+
+def _quantity_label(part) -> str:
+    """Return a clear quantity for a build-page component card.
+
+    Older workbook rows use zero/blank as the implicit single-unit default.
+    A card only exists for a rendered component, so make that default explicit
+    rather than showing an ambiguous dash.
+    """
+    quantity = getattr(part, "quantity", "")
+    try:
+        numeric = float(quantity)
+    except (TypeError, ValueError):
+        return "QTY: 1"
+    if numeric <= 0:
+        return "QTY: 1"
+    rendered = str(int(numeric)) if numeric.is_integer() else str(numeric)
+    return f"QTY: {rendered}"
 
 
 def _color_lens_label(part) -> str:
@@ -383,6 +454,60 @@ def _find_part(parts, *names) -> object | None:
     return None
 
 
+_KNOWN_VEHICLE_MAKES = frozenset({
+    "Ford", "Chevrolet", "Dodge", "Ram", "GMC", "Jeep", "Toyota",
+    "Nissan", "Kia", "Tesla", "Honda", "Hyundai", "Volkswagen",
+})
+
+
+def _vehicle_fields(vehicle: dict, fallback_year: object = "", fallback_model: object = "") -> tuple[str, str, str, str]:
+    """Normalize vehicle year/make/model when legacy drafts store all three in MODEL."""
+    year = str(vehicle.get("YEAR", "") or fallback_year or "").strip()
+    make = str(vehicle.get("MAKE", "") or "").strip()
+    model = str(vehicle.get("MODEL", "") or fallback_model or "").strip()
+    sub_model = str(vehicle.get("SUB MODEL", "") or "").strip()
+
+    # The project build year is authoritative. Legacy drafts sometimes keep
+    # the vehicle's original year in MODEL, so remove *any* leading model year
+    # before splitting its make/model fields.
+    if re.match(r"^\d{4}\s+", model):
+        model = re.sub(r"^\d{4}\s+", "", model, count=1)
+    if not make and model:
+        candidate = model.split(None, 1)[0]
+        if candidate.casefold() in {item.casefold() for item in _KNOWN_VEHICLE_MAKES}:
+            make = candidate
+    if make and model.casefold().startswith(make.casefold() + " "):
+        model = model[len(make):].strip()
+    return year, make, model, sub_model
+
+
+def _project_vehicle_fields(info: dict) -> tuple[str, str, str, str]:
+    new_v = info.get("NewVehicle", {}) or {}
+    exist_v = info.get("ExistingVehicle", {}) or {}
+    source = dict(new_v if any(new_v.values()) else exist_v)
+    if info.get("BuildYear", ""):
+        source["YEAR"] = info["BuildYear"]
+    return _vehicle_fields(
+        source,
+        fallback_year=info.get("BuildYear", ""),
+        fallback_model=info.get("VehicleType", ""),
+    )
+
+
+def _build_unit_label(build_type: object, unit_id: object) -> str:
+    """Use the customer-facing ``Build Type #Number`` label wherever possible."""
+    kind = str(build_type or "").strip()
+    raw_unit = str(unit_id or "").strip()
+    match = re.search(r"(\d+)\s*$", raw_unit)
+    if kind and match:
+        return f"{kind} #{match.group(1)}"
+    if kind and raw_unit:
+        return f"{kind} · {raw_unit}"
+    if raw_unit and match:
+        return f"Unit #{match.group(1)}"
+    return raw_unit
+
+
 def fill_overview(slide, project) -> None:
     info    = project.info
     new_v   = info.get("NewVehicle",      {})
@@ -391,12 +516,7 @@ def fill_overview(slide, project) -> None:
 
     agency     = info.get("Agency",    "—")
     build_type = info.get("BuildType", "")
-    # Fall back to ExistingVehicle when NewVehicle fields are absent
-    year      = info.get("BuildYear", "") or new_v.get("YEAR",      "") or exist_v.get("YEAR",      "")
-    make      = new_v.get("MAKE",      "") or exist_v.get("MAKE",      "")
-    model     = (new_v.get("MODEL",     "") or exist_v.get("MODEL",     "")
-                 or info.get("VehicleType", ""))
-    sub_model = new_v.get("SUB MODEL", "") or exist_v.get("SUB MODEL", "")
+    year, make, model, sub_model = _project_vehicle_fields(info)
     unit_id   = (new_v.get("UNIT ID", new_v.get("UNIT", ""))
                  or exist_v.get("UNIT ID", exist_v.get("UNIT", "")))
     vin       = new_v.get("VIN",       "") or exist_v.get("VIN",       "")
@@ -429,7 +549,7 @@ def fill_overview(slide, project) -> None:
 
     # ── Sticky footer bar — prominent, full vehicle identity ──────────────────
     vehicle_line = " ".join(filter(None, [year, make, model, sub_model]))
-    unit_str     = f"Unit #{unit_id}" if unit_id else ""
+    unit_str     = _build_unit_label(build_type, unit_id)
     footer_parts = list(filter(None, [agency, vehicle_line, unit_str, "DTM Fleet Service"]))
     footer_text  = "   •   ".join(footer_parts)
 
@@ -457,10 +577,8 @@ def fill_overview(slide, project) -> None:
 
     # ── H2: Vehicle identity ──────────────────────────────────────────────────
     veh_display = " ".join(filter(None, [year, make, model, sub_model]))
-    if unit_id:
-        veh_display += f"   |   Unit #{unit_id}"
-    if build_type:
-        veh_display += f"   |   {build_type}"
+    if unit_str:
+        veh_display += f"   |   {unit_str}"
     _textbox(slide, L, y, Inches(12.0), Inches(0.46),
              veh_display, font_size=24, bold=True,
              color=RGBColor(0x2A, 0x35, 0x80))
@@ -493,15 +611,18 @@ def fill_overview(slide, project) -> None:
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)
     card_h = Inches(1.75)
 
-    new_year      = info.get("BuildYear", "") or new_v.get("YEAR",    "")
-    new_make      = new_v.get("MAKE",    "")
-    new_model_str = " ".join(filter(None, [new_v.get("MODEL",""), new_v.get("SUB MODEL","")]))
+    new_vehicle_for_display = dict(new_v)
+    if info.get("BuildYear", ""):
+        new_vehicle_for_display["YEAR"] = info["BuildYear"]
+    new_year, new_make, new_model, new_sub_model = _vehicle_fields(
+        new_vehicle_for_display, fallback_year=info.get("BuildYear", ""),
+    )
+    new_model_str = " ".join(filter(None, [new_model, new_sub_model]))
     new_unit      = new_v.get("UNIT ID", new_v.get("UNIT", ""))
     new_vin       = new_v.get("VIN",     "")
 
-    ex_year      = exist_v.get("YEAR",    "")
-    ex_make      = exist_v.get("MAKE",    "")
-    ex_model_str = " ".join(filter(None, [exist_v.get("MODEL",""), exist_v.get("SUB MODEL","")]))
+    ex_year, ex_make, ex_model, ex_sub_model = _vehicle_fields(exist_v)
+    ex_model_str = " ".join(filter(None, [ex_model, ex_sub_model]))
     ex_unit      = exist_v.get("UNIT ID", exist_v.get("UNIT", ""))
     ex_vin       = exist_v.get("VIN",     "")
     exist_has_data = any([ex_year, ex_make, ex_model_str, ex_unit, ex_vin])
@@ -524,7 +645,7 @@ def fill_overview(slide, project) -> None:
         ("Year",    new_year      or "—"),
         ("Make",    new_make      or "—"),
         ("Model",   new_model_str or "—"),
-        ("Unit ID", new_unit      or "—"),
+        ("Build",   unit_str      or new_unit or "—"),
         ("VIN",     new_vin       or "—"),
     ], RIGHT_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
 
@@ -540,7 +661,7 @@ def fill_overview(slide, project) -> None:
             ("Year",    ex_year      or "—"),
             ("Make",    ex_make      or "—"),
             ("Model",   ex_model_str or "—"),
-            ("Unit ID", ex_unit      or "—"),
+            ("Build",   unit_str     or ex_unit or "—"),
             ("VIN",     ex_vin       or "—"),
         ], EXIST_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
 
@@ -550,8 +671,7 @@ def fill_overview(slide, project) -> None:
     lights_count = sum(
         getattr(p, "quantity", 1) or 1
         for p in parts
-        if getattr(p, "category", "") in {"warning_light", "scene_light"}
-        and getattr(p, "render_kind", "") not in ("bar",)
+        if getattr(p, "render_kind", "") == "light"
         and "tracer" not in getattr(p, "name", "").lower()
     )
 
@@ -565,15 +685,15 @@ def fill_overview(slide, project) -> None:
 
     # --- Cage + Tray combined ---
     cage_part  = _find_part(parts, "front partition", "partition")
-    cage_value = (getattr(cage_part, "part_number", "") or "—") if cage_part else "—"
+    cage_value = (getattr(cage_part, "part_number", "") or getattr(cage_part, "manufacturer", "") or "Configured") if cage_part else "None"
     equip_part = _find_part(parts, "equipment tray")
     if equip_part:
-        equip_lines = list(filter(None, [
-            getattr(equip_part, "manufacturer", ""),
-            getattr(equip_part, "part_number",  ""),
-            getattr(equip_part, "location",     ""),
-        ]))
-        equip_value = " · ".join(equip_lines) if equip_lines else "—"
+        equip_value = (
+            getattr(equip_part, "manufacturer", "")
+            or getattr(equip_part, "part_number", "")
+            or getattr(equip_part, "name", "")
+            or "Configured"
+        )
     else:
         equip_value = "—"
 
@@ -606,20 +726,6 @@ def fill_overview(slide, project) -> None:
 
     def _has(keyword: str) -> bool:
         return any(keyword.lower() in getattr(p, "name", "").lower() for p in bumper_parts)
-
-    # Build bumper inline summary line
-    if not bumper_parts:
-        bumper_summary = "✗  None"
-        bumper_summary_color = DTM_RED
-    else:
-        items_present  = [lbl for lbl, kw in [("Push Bumper","push bumper"),("Pit Bars","pit bar"),
-                                               ("Wing Wraps","wing wrap"),("Wire Covers","wire cover")]
-                          if _has(kw)]
-        items_absent   = [lbl for lbl, kw in [("Push Bumper","push bumper"),("Pit Bars","pit bar"),
-                                               ("Wing Wraps","wing wrap"),("Wire Covers","wire cover")]
-                          if not _has(kw)]
-        bumper_summary       = None
-        bumper_summary_color = DTM_DARKTEXT
 
     # ── 5-tile row: [Lights] [Reused] [Bumper] [Cage+Tray] [Lighting+Camera] ─
     SLIDE_USABLE_W = SLIDE_W_EMU - L - Inches(0.45)
@@ -698,16 +804,10 @@ def fill_overview(slide, project) -> None:
     else:
         if bumper_mfg:
             _tile_value(tf, bumper_mfg, font_size=11)
-        check_line = "  ".join(
-            ("✓" if _has(kw) else "✗") + " " + lbl
-            for lbl, kw in [("Bumper","push bumper"),("Pit Bars","pit bar"),
-                             ("Wings","wing wrap"),("Wire Cvr","wire cover")]
-        )
-        p_chk = tf.add_paragraph()
-        r_chk = p_chk.add_run()
-        r_chk.text           = check_line
-        r_chk.font.size      = Pt(10)
-        r_chk.font.color.rgb = DTM_GRAY
+        for label, keyword in [("Push bumper", "push bumper"), ("Pit bars", "pit bar"),
+                               ("Wing wraps", "wing wrap"), ("Wire covers", "wire cover")]:
+            if _has(keyword):
+                _tile_value(tf, f"✓ {label}", font_size=8, color=DTM_GRAY)
 
     # Tile 3: Cage Type + Equipment Tray
     tx = L + 3 * (TILE_W + TILE_GAP)
@@ -768,7 +868,14 @@ def _fmt_cell(cell, text: str, font_size: int = 8, bold: bool = False,
         _set_cell_bg(cell, bg)
 
 
-def _make_manifest_slide(prs, title: str, paths: AppPaths | None = None, footer_text: str = ""):
+def _make_manifest_slide(
+    prs,
+    title: str,
+    paths: AppPaths | None = None,
+    footer_text: str = "",
+    subtitle: str = "",
+    title_font_size: int = 10,
+):
     blank = prs.slide_layouts[6]
     slide = prs.slides.add_slide(blank)
     for ph in list(slide.placeholders):
@@ -777,15 +884,52 @@ def _make_manifest_slide(prs, title: str, paths: AppPaths | None = None, footer_
     hdr = slide.shapes.add_textbox(0, 0, SLIDE_W_EMU, Inches(0.95))
     hdr.fill.solid()
     hdr.fill.fore_color.rgb = DTM_NAVY
-    tf = hdr.text_frame
-    tf.margin_left = Inches(0.3)
-    tf.margin_top  = Inches(0.20)
+    hdr.line.fill.background()
+
+    # Keep category, context, and page number in independent text boxes.  A
+    # single long header paragraph could wrap unpredictably on later pages in
+    # PowerPoint-compatible renderers, leaving only the trailing page number.
+    title_box = slide.shapes.add_textbox(Inches(0.3), Inches(0.09), Inches(10.1), Inches(0.34))
+    tf = title_box.text_frame
+    tf.clear()
+    tf.word_wrap = False
+    tf.margin_left = 0
+    tf.margin_top  = 0
     p = tf.paragraphs[0]
     r = p.add_run()
     r.text           = title
-    r.font.size      = Pt(10)
+    r.font.size      = Pt(title_font_size)
     r.font.bold      = True
     r.font.color.rgb = _WHITE
+
+    if subtitle:
+        context, separator, page_number = subtitle.rpartition("   •   Page ")
+        meta = slide.shapes.add_textbox(Inches(0.3), Inches(0.57), Inches(9.9), Inches(0.18))
+        meta_tf = meta.text_frame
+        meta_tf.clear()
+        meta_tf.word_wrap = False
+        meta_tf.margin_left = 0
+        meta_tf.margin_top = 0
+        meta_p = meta_tf.paragraphs[0]
+        meta_r = meta_p.add_run()
+        meta_r.text = context if separator else subtitle
+        meta_r.font.size = Pt(9)
+        meta_r.font.bold = True
+        meta_r.font.color.rgb = RGBColor(0xD9, 0xDF, 0xF1)
+        if separator:
+            page = slide.shapes.add_textbox(Inches(10.35), Inches(0.57), Inches(2.55), Inches(0.18))
+            page_tf = page.text_frame
+            page_tf.clear()
+            page_tf.word_wrap = False
+            page_tf.margin_left = 0
+            page_tf.margin_top = 0
+            page_p = page_tf.paragraphs[0]
+            page_p.alignment = PP_ALIGN.RIGHT
+            page_r = page_p.add_run()
+            page_r.text = f"Page {page_number}"
+            page_r.font.size = Pt(9)
+            page_r.font.bold = True
+            page_r.font.color.rgb = RGBColor(0xD9, 0xDF, 0xF1)
 
     ftr_top = SLIDE_H_EMU - FOOTER_H
     ftr = slide.shapes.add_textbox(0, ftr_top, SLIDE_W_EMU, FOOTER_H)
@@ -805,91 +949,602 @@ def _make_manifest_slide(prs, title: str, paths: AppPaths | None = None, footer_
     return slide
 
 
-def _section_row(table, row_idx: int, label: str) -> None:
-    n = len(MANIFEST_COL_HEADERS)
-    table.cell(row_idx, 0).merge(table.cell(row_idx, n - 1))
-    display = f"  ━━━  {label.upper()}  ━━━"
-    _fmt_cell(table.cell(row_idx, 0),
-              display,
-              font_size=10, bold=True, color=_WHITE, bg=DTM_NAVY,
-              align=PP_ALIGN.CENTER)
-    table.rows[row_idx].height = MANIFEST_SEC_ROW_H
+def _manifest_catalog(paths: AppPaths | None) -> dict[str, dict[str, dict[str, str]]]:
+    """Index catalog descriptions without making an export depend on catalog I/O.
+
+    A draft intentionally stores a durable SKU/model snapshot rather than an
+    entire parts-db product.  The export can safely enrich that snapshot from
+    the current local catalog when it is available, while old/offline builds
+    remain exportable when it is not.
+    """
+    empty = {"sku": {}, "model": {}, "product": {}}
+    active = paths or ensure_workspace()
+    try:
+        doc = json.loads(
+            (active.workspace_config_dir / "parts_db.json").read_text("utf-8")
+        )
+    except Exception:
+        return empty
+
+    manufacturers = doc.get("manufacturers") or {}
+    for product_id, product in (doc.get("products") or {}).items():
+        if not isinstance(product, dict):
+            continue
+        manufacturer_id = str(product.get("manufacturer_id", "") or "")
+        manufacturer = str(
+            (manufacturers.get(manufacturer_id) or {}).get("label", manufacturer_id)
+        ).strip()
+        info = {
+            "description": str(product.get("description", "") or "").strip(),
+            "manufacturer": manufacturer,
+            "model": str(product.get("model", "") or "").strip(),
+            "color": "",
+            "lens": "",
+        }
+        empty["product"][str(product_id)] = info
+        if info["model"]:
+            empty["model"][info["model"].casefold()] = info
+        for sku in product.get("part_numbers") or []:
+            if not isinstance(sku, dict):
+                continue
+            number = str(sku.get("part_number", "") or "").strip()
+            if number:
+                sku_info = dict(info)
+                sku_info["description"] = str(
+                    sku.get("qb_sales_description")
+                    or sku.get("friendly_name")
+                    or info["description"]
+                    or ""
+                ).strip()
+                sku_info["color"] = " / ".join(
+                    str(sku.get(field, "") or "").strip().title()
+                    for field in ("color", "secondary_color", "tertiary_color")
+                    if str(sku.get(field, "") or "").strip()
+                )
+                sku_info["lens"] = str(sku.get("lens_type", "") or "").strip()
+                empty["sku"][number.casefold()] = sku_info
+    return empty
 
 
-def _part_row(table, row_idx: int, part, location: str, alt_bg: bool) -> None:
-    reused = _is_reused(part)
+def _picker_product_ids(value) -> list[str]:
+    """Return catalog product ids retained anywhere in a picker snapshot."""
+    found: list[str] = []
+    if isinstance(value, dict):
+        product_id = str(value.get("product_id", "") or "").strip()
+        if product_id:
+            found.append(product_id)
+        for child in value.values():
+            found.extend(_picker_product_ids(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.extend(_picker_product_ids(child))
+    return found
+
+
+def _catalog_detail(raw, part_number: str, catalog) -> tuple[str, str, bool, dict[str, str]]:
+    """Return sales description, manufacturer fallback, SKU status, and SKU detail."""
+    custom = (getattr(raw, "picker_config", {}) or {}).get("custom_part", {})
+    if isinstance(custom, dict) and custom.get("description"):
+        return str(custom["description"]).strip(), "", bool(part_number), {}
+
+    normalized = str(part_number or "").strip().casefold()
+    info = catalog["sku"].get(normalized)
+    is_sku = info is not None
+    if info is None:
+        info = catalog["model"].get(normalized)
+    if info is None:
+        for product_id in _picker_product_ids(getattr(raw, "picker_config", {}) or {}):
+            info = catalog["product"].get(product_id)
+            if info is not None:
+                break
+    if not info:
+        return "", "", False, {}
+    return (
+        info.get("description", ""),
+        info.get("manufacturer", ""),
+        is_sku,
+        info,
+    )
+
+
+def _manifest_part_identity(entry: _ManifestEntry) -> tuple[str, str]:
+    """Return a manifest row's clear product name and model/SKU support text."""
+    prefix = "↳ " * entry.indent
+    primary = f"{prefix}{entry.name}".strip()
+    part_number = entry.part_number.strip()
+    if part_number and entry.is_sku:
+        part_number = f"SKU: {part_number}"
+    secondary = "  ·  ".join(filter(None, [entry.manufacturer, part_number]))
+    return primary, secondary
+
+
+def _manifest_details(entry: _ManifestEntry) -> tuple[str, str, str]:
+    """Return sales description, configured detail, and user comment."""
+    return entry.description, entry.detail, entry.comment
+
+
+def _manifest_line_count(text: str, width_inches: float) -> int:
+    """Conservative line estimate used to keep table text inside its row."""
+    if not text:
+        return 1
+    characters_per_line = max(12, int(width_inches * 13.5))
+    return sum(
+        max(1, (len(line) + characters_per_line - 1) // characters_per_line)
+        for line in str(text).splitlines() or [""]
+    )
+
+
+def _manifest_row_height(entry: _ManifestEntry) -> int:
+    """Size a compact row from its longest cell instead of letting text spill."""
+    primary, secondary = _manifest_part_identity(entry)
+    description, detail, comment = _manifest_details(entry)
+    details = "\n".join(filter(None, [description, detail, f"Comment: {comment}" if comment else ""]))
+    source = _source_label(entry.raw)
+    line_count = max(
+        _manifest_line_count("\n".join(filter(None, [primary, secondary])), MANIFEST_COL_WIDTHS_IN[0]),
+        _manifest_line_count(details, MANIFEST_COL_WIDTHS_IN[1]),
+        _manifest_line_count(str(entry.quantity or ""), MANIFEST_COL_WIDTHS_IN[2]),
+        _manifest_line_count(entry.location, MANIFEST_COL_WIDTHS_IN[3]),
+        _manifest_line_count(source, MANIFEST_COL_WIDTHS_IN[4]),
+    )
+    return max(MANIFEST_DATA_MIN_H, Inches(0.08 + 0.14 * line_count))
+
+
+def _fmt_manifest_item_cell(cell, entry: _ManifestEntry, bg: RGBColor | None) -> None:
+    primary, secondary = _manifest_part_identity(entry)
+    tf = cell.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.05)
+    tf.margin_right = Inches(0.03)
+    tf.margin_top = Inches(0.025)
+    tf.margin_bottom = Inches(0.025)
+    p = tf.paragraphs[0]
+    p.space_after = Pt(0)
+    r = p.add_run()
+    r.text = primary
+    r.font.size = Pt(8 if entry.indent else 9)
+    r.font.bold = not entry.indent
+    r.font.color.rgb = DTM_NAVY if not entry.indent else DTM_DARKTEXT
+    if secondary:
+        p2 = tf.add_paragraph()
+        p2.space_after = Pt(0)
+        r2 = p2.add_run()
+        r2.text = secondary
+        r2.font.size = Pt(8)
+        r2.font.color.rgb = DTM_GRAY
+    if bg is not None:
+        _set_cell_bg(cell, bg)
+
+
+def _fmt_manifest_details_cell(cell, entry: _ManifestEntry, bg: RGBColor | None) -> None:
+    description, detail, comment = _manifest_details(entry)
+    tf = cell.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.05)
+    tf.margin_right = Inches(0.03)
+    tf.margin_top = Inches(0.025)
+    tf.margin_bottom = Inches(0.025)
+    if description:
+        p = tf.paragraphs[0]
+        p.space_after = Pt(0)
+        r = p.add_run()
+        r.text = description
+        r.font.size = Pt(8)
+        r.font.color.rgb = DTM_DARKTEXT
+    if detail:
+        p2 = tf.add_paragraph() if description else tf.paragraphs[0]
+        p2.space_after = Pt(0)
+        r2 = p2.add_run()
+        r2.text = detail
+        r2.font.size = Pt(8)
+        r2.font.color.rgb = DTM_GRAY
+    if comment:
+        p3 = tf.add_paragraph() if (description or detail) else tf.paragraphs[0]
+        p3.space_after = Pt(0)
+        r3 = p3.add_run()
+        r3.text = f"Comment: {comment}"
+        r3.font.size = Pt(8)
+        r3.font.italic = True
+        r3.font.color.rgb = DTM_NAVY
+    if not description and not detail and not comment:
+        p = tf.paragraphs[0]
+        r = p.add_run()
+        r.text = "—"
+        r.font.size = Pt(8)
+        r.font.color.rgb = DTM_GRAY
+    if bg is not None:
+        _set_cell_bg(cell, bg)
+
+
+def _part_row(table, row_idx: int, entry: _ManifestEntry, alt_bg: bool, row_h: int) -> None:
+    reused = _is_reused(entry.raw)
     row_bg = RGBColor(0xFF, 0xF3, 0xE8) if reused else (DTM_ALT_BG if alt_bg else None)
 
-    raw_source  = getattr(part, "source", "").strip()
-    source_text  = f"↺  {raw_source}" if raw_source else ("↺  REUSED" if reused else "■  NEW")
+    source_text = _source_label(entry.raw)
+    source_text = f"↺  {source_text}" if reused else f"■  {source_text}"
     source_color = TAG_REUSED if reused else TAG_NEW
     source_bg    = RGBColor(0xFF, 0xE8, 0xD0) if reused else RGBColor(0xD8, 0xEC, 0xFF)
 
-    values = [
-        getattr(part, "name",         "") or "",
-        getattr(part, "manufacturer", "") or "",
-        getattr(part, "part_number",  "") or "",
-        str(getattr(part, "quantity", "") or ""),
-        _color_lens_label(part),
-        location,
-        source_text,
-        getattr(part, "notes",        "") or "",
-    ]
-    for c, val in enumerate(values):
-        is_name   = c == 0
-        is_source = c == 6
-        cell_clr  = (DTM_NAVY      if is_name   else
-                     source_color  if is_source else
-                     DTM_DARKTEXT)
-        cell_bg   = source_bg if is_source else row_bg
-        fs        = 10 if is_name else 12
-        _fmt_cell(table.cell(row_idx, c), val,
-                  font_size=fs, bold=is_name, color=cell_clr, bg=cell_bg)
-    table.rows[row_idx].height = MANIFEST_DATA_ROW_H
+    _fmt_manifest_item_cell(table.cell(row_idx, 0), entry, row_bg)
+    _fmt_manifest_details_cell(table.cell(row_idx, 1), entry, row_bg)
+    _fmt_cell(table.cell(row_idx, 2), str(entry.quantity or "—"),
+              font_size=9, bold=True, bg=row_bg, align=PP_ALIGN.CENTER)
+    _fmt_cell(table.cell(row_idx, 3), entry.location, font_size=9, bg=row_bg)
+    _fmt_cell(table.cell(row_idx, 4), source_text, font_size=8, color=source_color, bg=source_bg)
+    table.rows[row_idx].height = row_h
+
+
+def _clean_manifest_location(location: str, part_name: str = "") -> str:
+    """Return a shop-useful location, omitting picker-only fixture identifiers."""
+    text = str(location or "").strip()
+    if not text or text.upper().startswith("FIXTURE:"):
+        return ""
+
+    location_words = set(re.findall(r"[a-z0-9]+", text.casefold()))
+    part_words = set(re.findall(r"[a-z0-9]+", str(part_name or "").casefold()))
+    # A location such as "Rear Interior Light Bar" adds no installation
+    # information when the row itself is already named Rear Interior Light Bar.
+    if location_words and (location_words == part_words or location_words <= part_words):
+        return ""
+    return text
 
 
 def _clean_location(pp) -> str:
     raw_loc = (pp.raw.location or "").strip()
+    part_name = str(getattr(pp.raw, "name", "") or "")
     if raw_loc:
-        return raw_loc
+        return _clean_manifest_location(raw_loc, part_name)
     if pp.placements:
         key = pp.placements[0].location_key or ""
-        if key.upper().startswith("FIXTURE:"):
-            return key[8:].replace("_", " ").title()
-        return key
-    return "—"
+        return _clean_manifest_location(key, part_name)
+    return ""
 
 
-def _manifest_rows(planned_parts) -> list[tuple]:
-    lights, structural, electronics = [], [], []
-    for pp in planned_parts:
-        if not pp.raw.include:
+def _manifest_group_for_part(pp) -> str:
+    """Assign a manifest item to one of the customer-facing build categories."""
+    raw = pp.raw
+    category = (pp.category or "").lower()
+    render_kind = (pp.render_kind or "").lower()
+    part_type = (getattr(raw, "part_type", "") or "").lower()
+    name = (getattr(raw, "name", "") or "").lower()
+
+    if render_kind in {"light", "bar"} or category in MANIFEST_LIGHT_CATS:
+        return "Lighting"
+    if (
+        part_type in MANIFEST_STRUCTURAL_PART_TYPES
+        or any(keyword in name for keyword in (
+            "bumper", "barrier", "cage", "console", "floor mat", "gun lock",
+            "gunlock", "partition", "seat cover", "window bar",
+        ))
+    ):
+        return "Structural Equipment"
+    if category in {"custom", "unknown"} or render_kind in {"", "none"}:
+        return "Other / Custom"
+    return "Equipment & Electronics"
+
+
+def _lighting_manifest_sort_rank(part) -> int:
+    """Keep the lighting manifest in shop-friendly functional order."""
+    part_type = (getattr(part, "part_type", "") or "").lower()
+    name = (getattr(part, "name", "") or "").lower()
+    combined = f"{part_type} {name}"
+    # Older picker rows can retain ``warning_light`` as their generic type,
+    # so identify tracers from the product name before the broader warning
+    # classification below.
+    if "tracer" in combined:
+        return 4
+    if "warning" in combined or part_type == "lighthead":
+        return 0
+    if "scene" in combined or "spotlight" in combined or "take-down" in combined:
+        return 1
+    if any(token in combined for token in ("interior", "dome", "rear_seat", "cargo")):
+        return 2
+    if "light_bar" in combined or part_type == "roof_light_bar":
+        return 3
+    return 5
+
+
+def _manifest_entry_for_part(pp, catalog, *, indent: int = 0,
+                             display_name: str | None = None) -> _ManifestEntry:
+    raw = pp.raw
+    part_number = str(getattr(raw, "part_number", "") or "").strip()
+    description, catalog_manufacturer, is_sku, catalog_info = _catalog_detail(
+        raw, part_number, catalog
+    )
+    visual = _manifest_visual_detail(raw, catalog_info=catalog_info)
+    notes = _customer_manifest_notes(getattr(raw, "notes", ""))
+    return _ManifestEntry(
+        raw=raw,
+        location=_clean_location(pp),
+        name=_customer_manifest_name(raw, display_name),
+        manufacturer=str(getattr(raw, "manufacturer", "") or "").strip() or catalog_manufacturer,
+        part_number=part_number,
+        quantity=getattr(raw, "quantity", ""),
+        description=description,
+        detail="\n".join(filter(None, [visual, notes])),
+        comment=str(getattr(raw, "comment", "") or "").strip(),
+        is_sku=is_sku,
+        indent=indent,
+    )
+
+
+def _customer_manifest_name(raw, display_name: str | None = None) -> str:
+    """Return the short, customer-facing manifest name for a part.
+
+    Sequence numbers help the editor and build preview distinguish placements,
+    but they add no value in an order manifest.  In particular, a customer
+    should see a quantity of siren speakers—not an implementation-specific
+    ``Siren Speaker 1`` label.
+    """
+    name = str(display_name or getattr(raw, "name", "") or "").strip()
+    part_type = str(getattr(raw, "part_type", "") or "").strip().casefold()
+    if part_type == "siren_speaker" or re.fullmatch(r"siren speaker\s+\d+", name, re.I):
+        return "Siren Speaker(s)"
+    return name
+
+
+def _customer_manifest_notes(value: object) -> str:
+    """Remove picker-process language while preserving meaningful shop notes."""
+    lines = str(value or "").splitlines()
+    return "\n".join(
+        line.strip()
+        for line in lines
+        if "guided system" not in line.casefold()
+    ).strip()
+
+
+def _customer_component_detail(value: object) -> str:
+    """Keep useful configuration facts, not picker or shop-process narration."""
+    detail = _customer_manifest_notes(value)
+    normalized = detail.casefold().strip()
+    if normalized in {
+        "shop mounting location",
+        "uses the selected center-console mic clip",
+    }:
+        return ""
+    # A chosen location is already in the Location column; the rest of this
+    # sentence described how the guided flow recorded it, not the part itself.
+    if " — console position is set with the center console" in detail:
+        detail = detail.split(" — console position is set with the center console", 1)[0].strip()
+    return detail
+
+
+def _is_included_control_head_component(parent: _ManifestEntry, component: dict) -> bool:
+    """A PA microphone is included with the selected control head, not a line item."""
+    part_type = str(getattr(parent.raw, "part_type", "") or "").strip().casefold()
+    label = str(component.get("label", "") or component.get("name", "") or "").strip()
+    return part_type == "control_head" and label.casefold() in {"pa mic", "pa microphone"}
+
+
+def _manifest_system_sort_rank(raw) -> int:
+    """Return a presentation rank for systems whose related pieces stay together."""
+    part_type = str(getattr(raw, "part_type", "") or "").strip().casefold()
+    if part_type in MANIFEST_SYSTEM_SORT_ORDER:
+        return MANIFEST_SYSTEM_SORT_ORDER[part_type]
+
+    # Old name-based builds do not have a part_type. Preserve the same
+    # customer-facing grouping without changing the legacy records themselves.
+    name = re.sub(r"\s+\d+$", "", str(getattr(raw, "name", "") or "").strip()).casefold()
+    for prefix, rank in (
+        ("push bumper", 0),
+        ("pit bar", 1),
+        ("wing wrap", 2),
+        ("wire cover", 3),
+        ("siren speaker", 0),
+        ("howler", 1),
+    ):
+        if name.startswith(prefix):
+            return rank
+    return 99
+
+
+def _manifest_visual_detail(raw, *, component: dict | None = None,
+                            catalog_info: dict[str, str] | None = None,
+                            include_parent_visual: bool = True) -> str:
+    """Present explicit colour and lens details for the exact configured item."""
+    component = component or {}
+    catalog_info = catalog_info or {}
+    color = (
+        str(component.get("color", "") or "").strip()
+        or (_color_label(raw) if include_parent_visual else "")
+        or str(catalog_info.get("color", "") or "").strip()
+    )
+    lens = (
+        str(component.get("lens", "") or component.get("lens_type", "") or "").strip()
+        or (_lens_label(raw) if include_parent_visual else "")
+        or str(catalog_info.get("lens", "") or "").strip()
+    )
+    # The catalog stores named lens variants (for example Smoked) explicitly.
+    # Its older clear-lens lighting records intentionally leave that field
+    # empty, so a colored light without a named variant is a clear lens.
+    if not lens and color:
+        lens = "Clear"
+    details = [color] if color else []
+    if lens:
+        details.append(f"Lens: {lens.title()}")
+    return "\n".join(details)
+
+
+def _manifest_component_entries(parent: _ManifestEntry, catalog, *,
+                                collapse_skus: bool = False) -> list[_ManifestEntry]:
+    """Expand SKU and guided-system details, optionally promoting SKUs to rows."""
+    entries: list[_ManifestEntry] = []
+    promoted_sku_index = 0
+    for component in getattr(parent.raw, "components", []) or []:
+        if not isinstance(component, dict):
             continue
-        if is_render_only_part(pp):
+        if _is_included_control_head_component(parent, component):
             continue
-        cat = pp.category or ""
-        rk  = pp.render_kind or ""
-        loc   = _clean_location(pp)
-        entry = (pp.raw, loc)
-        if cat in MANIFEST_LIGHT_CATS:
-            lights.append(entry)
-        elif rk == "equipment":
-            structural.append(entry)
+        part_number = str(component.get("part_number", "") or "").strip()
+        label = str(component.get("label", "") or "").strip()
+        if not label and not part_number:
+            continue
+        if part_number:
+            description, catalog_manufacturer, is_sku, catalog_info = _catalog_detail(
+                parent.raw, part_number, catalog
+            )
         else:
-            electronics.append(entry)
+            # Guided-system components have no billable SKU of their own. The
+            # parent kit's sales description belongs once on the parent row;
+            # children keep only the installation detail selected by the user.
+            description, catalog_manufacturer, is_sku, catalog_info = "", "", False, {}
+        promote_sku = bool(part_number) and collapse_skus
+        if promote_sku:
+            row_name = parent.name
+            row_indent = parent.indent
+        elif label:
+            row_name = label
+            row_indent = parent.indent + 1
+        else:
+            row_name = "Selected SKU" if part_number else "Configured component"
+            row_indent = parent.indent + 1
+        visual_detail = _manifest_visual_detail(
+            parent.raw,
+            component=component,
+            catalog_info=catalog_info,
+            include_parent_visual=bool(part_number),
+        )
+        component_detail = _customer_component_detail(component.get("detail", ""))
+        notes = ""
+        if promote_sku and promoted_sku_index == 0:
+            notes = _customer_manifest_notes(getattr(parent.raw, "notes", ""))
+        entries.append(_ManifestEntry(
+            raw=parent.raw,
+            location=_clean_manifest_location(
+                component.get("location", ""), parent.name
+            ) or parent.location,
+            name=row_name,
+            manufacturer=catalog_manufacturer or parent.manufacturer,
+            part_number=part_number,
+            quantity=component.get("quantity", 1),
+            description=description,
+            detail="\n".join(filter(None, [visual_detail, component_detail, notes])),
+            comment=parent.comment if promote_sku and promoted_sku_index == 0 else "",
+            is_sku=is_sku or bool(part_number),
+            indent=row_indent,
+        ))
+        if promote_sku:
+            promoted_sku_index += 1
+    return entries
 
-    rows = []
-    for label, group in [
-        ("Lighting",                lights),
-        ("Structural Equipment",    structural),
-        ("Equipment & Electronics", electronics),
-    ]:
-        if not group:
+
+def _has_manifest_sku_components(raw) -> bool:
+    return any(
+        isinstance(component, dict)
+        and str(component.get("part_number", "") or "").strip()
+        for component in (getattr(raw, "components", []) or [])
+    )
+
+
+def _is_derived_manifest_part(candidate, planned_parts) -> bool:
+    """Hide a render-only projection when its source component is already listed."""
+    raw = candidate.raw
+    if getattr(raw, "part_type", "") != "radio_antenna_top":
+        return False
+    line_id = str(getattr(raw, "line_id", "") or "")
+    if not line_id:
+        return False
+    for other in planned_parts:
+        if other is candidate:
             continue
-        rows.append(("section", label, None, ""))
-        for raw, loc in group:
-            rows.append(("part", "", raw, loc))
-    return rows
+        other_raw = other.raw
+        if str(getattr(other_raw, "line_id", "") or "") != line_id:
+            continue
+        if any(
+            isinstance(component, dict)
+            and component.get("part_type") == "radio_antenna_top"
+            for component in (getattr(other_raw, "components", []) or [])
+        ):
+            return True
+    return False
+
+
+def _manifest_groups(planned_parts, paths: AppPaths | None = None) -> list[tuple[str, list[_ManifestEntry]]]:
+    """Build category pages while keeping a product's complete tree together."""
+    catalog = _manifest_catalog(paths)
+    visible_parts = [
+        pp for pp in planned_parts
+        if getattr(pp.raw, "include", True)
+        and not is_render_only_part(pp)
+        and not _is_derived_manifest_part(pp, planned_parts)
+    ]
+    by_line_id = {
+        str(getattr(pp.raw, "line_id", "") or ""): pp
+        for pp in visible_parts
+        if getattr(pp.raw, "line_id", "")
+    }
+    children: dict[str, list] = {}
+    roots: list = []
+    for pp in visible_parts:
+        parent_id = str(getattr(pp.raw, "parent_line_id", "") or "")
+        if parent_id and parent_id in by_line_id and by_line_id[parent_id] is not pp:
+            children.setdefault(parent_id, []).append(pp)
+        else:
+            roots.append(pp)
+
+    def natural(value: str) -> tuple:
+        return tuple(int(chunk) if chunk.isdigit() else chunk.casefold()
+                     for chunk in re.split(r"(\d+)", value or ""))
+
+    def sort_key(pp, label: str) -> tuple:
+        raw = pp.raw
+        return (
+            _lighting_manifest_sort_rank(raw) if label == "Lighting" else 0,
+            _manifest_system_sort_rank(raw),
+            natural(str(getattr(raw, "name", "") or "")),
+            natural(str(getattr(raw, "part_number", "") or "")),
+            natural(_clean_location(pp)),
+        )
+
+    groups = {
+        "Lighting": [],
+        "Structural Equipment": [],
+        "Equipment & Electronics": [],
+        "Other / Custom": [],
+    }
+    visited: set[int] = set()
+
+    def append_tree(pp, entries: list[_ManifestEntry], *, indent: int = 0,
+                    display_name: str | None = None) -> None:
+        marker = id(pp)
+        if marker in visited:
+            return
+        visited.add(marker)
+        entry = _manifest_entry_for_part(pp, catalog, indent=indent, display_name=display_name)
+        has_sku_components = _has_manifest_sku_components(pp.raw)
+        # Picker parents often hold a product/model label while their exact,
+        # orderable SKU lives in ``components``.  The customer-facing manifest
+        # should show the part name and that SKU together—not a generic parent
+        # followed by a "Selected SKU" child row.  Preserve a direct parent
+        # SKU as well when the parent is itself an orderable hardware item.
+        if has_sku_components and not entry.is_sku:
+            entries.extend(_manifest_component_entries(entry, catalog, collapse_skus=True))
+        else:
+            entries.append(entry)
+            entries.extend(_manifest_component_entries(entry, catalog))
+        parent_name = str(getattr(pp.raw, "name", "") or "")
+        for child in sorted(children.get(str(getattr(pp.raw, "line_id", "") or ""), []),
+                            key=lambda item: sort_key(item, _manifest_group_for_part(pp))):
+            child_name = str(getattr(child.raw, "name", "") or "")
+            prefix = f"{parent_name} · "
+            if parent_name and child_name.startswith(prefix):
+                child_name = child_name[len(prefix):]
+            append_tree(child, entries, indent=indent + 1, display_name=child_name)
+
+    for root in roots:
+        label = _manifest_group_for_part(root)
+        groups[label].append(root)
+
+    result: list[tuple[str, list[_ManifestEntry]]] = []
+    for label, roots_in_group in groups.items():
+        entries: list[_ManifestEntry] = []
+        for root in sorted(roots_in_group, key=lambda item: sort_key(item, label)):
+            append_tree(root, entries)
+        if entries:
+            result.append((label, entries))
+    return result
 
 
 def is_render_only_part(part_or_planned) -> bool:
@@ -900,87 +1555,193 @@ def is_render_only_part(part_or_planned) -> bool:
 
 
 def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
-    all_rows = _manifest_rows(plan.planned_parts)
-    if not all_rows:
+    groups = _manifest_groups(plan.planned_parts, paths)
+    if not groups:
         return 0
 
     proj    = plan.project
     new_v   = proj.get("NewVehicle",      {})
     exist_v = proj.get("ExistingVehicle", {})
     agency  = proj.get("Agency", "")
-    year    = proj.get("BuildYear", "") or new_v.get("YEAR","") or exist_v.get("YEAR","")
-    make    = new_v.get("MAKE","") or exist_v.get("MAKE","")
-    model   = (new_v.get("MODEL","") or exist_v.get("MODEL","")
-               or proj.get("VehicleType",""))
-    veh_line = " ".join(filter(None, [year, make, model]))
+    year, make, model, sub_model = _project_vehicle_fields(proj)
+    veh_line = " ".join(filter(None, [year, make, model, sub_model]))
     unit_id  = (new_v.get("UNIT ID", new_v.get("UNIT",""))
                 or exist_v.get("UNIT ID", exist_v.get("UNIT","")))
-    unit_part = f"Unit #{unit_id}" if unit_id else ""
-    hdr_parts = list(filter(None, ["PARTS MANIFEST", agency, veh_line, unit_part]))
+    unit_part = _build_unit_label(proj.get("BuildType", ""), unit_id)
+    hdr_parts = list(filter(None, [agency, veh_line, unit_part]))
     hdr_base  = "   •   ".join(hdr_parts)
     footer_text = "   •   ".join(filter(None, [agency, veh_line, unit_part, "DTM Fleet Service"]))
 
     n_cols     = len(MANIFEST_COL_HEADERS)
     col_widths = [Inches(w) for w in MANIFEST_COL_WIDTHS_IN]
 
-    avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.40)
-    MAX_DATA_ROWS_PER_PAGE = 10
+    # Keep the full table inside the header/footer frame.  Row heights are
+    # calculated from their contents rather than forcing text to spill below.
+    avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.16)
 
     slides_added = 0
-    i = 0
     page_num = 0
 
-    while i < len(all_rows):
-        page_num += 1
-        slide_rows: list[tuple] = []
-        used_h = MANIFEST_HDR_ROW_H
-        data_rows_on_page = 0
+    for group_label, entries in groups:
+        entry_index = 0
+        category_page = 0
 
-        while i < len(all_rows):
-            rtype = all_rows[i][0]
-            row_h = MANIFEST_SEC_ROW_H if rtype == "section" else MANIFEST_DATA_ROW_H
-            if data_rows_on_page >= MAX_DATA_ROWS_PER_PAGE:
-                break
-            if used_h + row_h > avail_h and slide_rows:
-                break
-            slide_rows.append(all_rows[i])
-            used_h += row_h
-            data_rows_on_page += 1
-            i += 1
+        while entry_index < len(entries):
+            category_page += 1
+            page_num += 1
+            slide_rows: list[tuple] = []
+            used_h = MANIFEST_HDR_ROW_H
 
-        if not slide_rows:
-            break
+            while entry_index < len(entries):
+                entry = entries[entry_index]
+                row_h = _manifest_row_height(entry)
+                if used_h + row_h > avail_h and slide_rows:
+                    break
+                slide_rows.append((entry, row_h))
+                used_h += row_h
+                entry_index += 1
 
-        slide_title = f"{hdr_base}   •   Page {page_num}"
-        slide = _make_manifest_slide(prs, slide_title, paths, footer_text=footer_text)
-        slides_added += 1
+            category_suffix = "" if category_page == 1 else " — Continued"
+            manifest_heading = f"{group_label.upper()}{category_suffix}"
+            manifest_context = f"PARTS MANIFEST   •   {hdr_base}   •   Page {page_num}"
+            slide = _make_manifest_slide(
+                prs,
+                manifest_heading,
+                paths,
+                footer_text=footer_text,
+                subtitle=manifest_context,
+                title_font_size=20,
+            )
+            slides_added += 1
 
-        total_rows = 1 + len(slide_rows)
-        table_h    = used_h
-        tbl_shape  = slide.shapes.add_table(
-            total_rows, n_cols,
-            MANIFEST_TABLE_LEFT, MANIFEST_TABLE_TOP,
-            MANIFEST_TABLE_W, table_h,
-        )
-        table = tbl_shape.table
-        for c, w in enumerate(col_widths):
-            table.columns[c].width = w
+            total_rows = 1 + len(slide_rows)
+            tbl_shape = slide.shapes.add_table(
+                total_rows, n_cols,
+                MANIFEST_TABLE_LEFT, MANIFEST_TABLE_TOP,
+                MANIFEST_TABLE_W, used_h,
+            )
+            table = tbl_shape.table
+            for c, w in enumerate(col_widths):
+                table.columns[c].width = w
 
-        table.rows[0].height = MANIFEST_HDR_ROW_H
-        for c, hdr in enumerate(MANIFEST_COL_HEADERS):
-            _fmt_cell(table.cell(0, c), hdr,
-                      font_size=10, bold=True, color=_WHITE,
-                      bg=DTM_NAVY, align=PP_ALIGN.CENTER)
+            table.rows[0].height = MANIFEST_HDR_ROW_H
+            for c, hdr in enumerate(MANIFEST_COL_HEADERS):
+                _fmt_cell(table.cell(0, c), hdr,
+                          font_size=9, bold=True, color=_WHITE,
+                          bg=DTM_NAVY, align=PP_ALIGN.CENTER)
 
-        part_counter = 0
-        for r_idx, (rtype, section_label, raw, loc) in enumerate(slide_rows):
-            tbl_r = r_idx + 1
-            if rtype == "section":
-                _section_row(table, tbl_r, section_label)
-                part_counter = 0
-            else:
-                _part_row(table, tbl_r, raw, loc, alt_bg=(part_counter % 2 == 1))
-                part_counter += 1
+            for r_idx, (entry, row_h) in enumerate(slide_rows, start=1):
+                _part_row(table, r_idx, entry, alt_bg=(r_idx % 2 == 0), row_h=row_h)
+
+    return slides_added
+
+
+def _render_exception_reason(item, view: str) -> str:
+    """Make a planner/rendering message readable in the customer-facing report."""
+    reason = getattr(item, "notes", "") or "Rendering failed for this placement"
+    return reason.replace(f"{view}:", "").strip()
+
+
+def _render_exception_row_height(item, view: str) -> int:
+    """Estimate a table row height conservatively so exception pages never clip."""
+    reason = _render_exception_reason(item, view)
+    line_count = max(
+        _manifest_line_count(getattr(item, "name", "") or "", RENDER_EXCEPTION_COL_WIDTHS_IN[0]),
+        _manifest_line_count(getattr(item, "location", "") or "?", RENDER_EXCEPTION_COL_WIDTHS_IN[1]),
+        _manifest_line_count(reason, RENDER_EXCEPTION_COL_WIDTHS_IN[2]),
+    )
+    return max(Inches(0.36), Inches(0.08 + 0.14 * line_count))
+
+
+def add_render_exception_slides(
+    prs,
+    failures_by_view: list[tuple[str, list]],
+    paths: AppPaths | None = None,
+    footer_text: str = "",
+) -> int:
+    """Append paginated detail pages for diagram components that failed to render.
+
+    The diagram itself keeps a compact red count so the visual remains usable;
+    this companion page preserves the full list and its diagnostic reason.
+    """
+    n_cols = len(RENDER_EXCEPTION_COL_HEADERS)
+    col_widths = [Inches(w) for w in RENDER_EXCEPTION_COL_WIDTHS_IN]
+    table_left = Inches(0.50)
+    table_top = Inches(1.32)
+    table_w = sum(col_widths)
+    hdr_h = Inches(0.30)
+    avail_h = SLIDE_H_EMU - table_top - FOOTER_H - Inches(0.16)
+    slides_added = 0
+
+    for view, failures in failures_by_view:
+        item_index = 0
+        page_num = 0
+        while item_index < len(failures):
+            page_num += 1
+            page_rows: list[tuple] = []
+            used_h = hdr_h
+
+            while item_index < len(failures):
+                item = failures[item_index]
+                row_h = _render_exception_row_height(item, view)
+                if used_h + row_h > avail_h and page_rows:
+                    break
+                page_rows.append((item, row_h))
+                used_h += row_h
+                item_index += 1
+
+            continuation = "" if page_num == 1 else " — Continued"
+            title = f"RENDERING EXCEPTIONS — {view.upper()}{continuation}"
+            slide = _make_manifest_slide(
+                prs,
+                title,
+                paths,
+                footer_text=footer_text or "DTM Fleet Service  •  Vehicle Build Sheet  •  Rendering Exceptions",
+            )
+            slides_added += 1
+
+            intro = slide.shapes.add_textbox(
+                table_left, Inches(1.00), table_w, Inches(0.20)
+            )
+            intro_tf = intro.text_frame
+            intro_tf.margin_left = 0
+            intro_tf.margin_top = 0
+            intro_p = intro_tf.paragraphs[0]
+            intro_r = intro_p.add_run()
+            intro_r.text = (
+                "Configured for this view but not drawn because its asset, instances, or placement could not be resolved."
+            )
+            intro_r.font.size = Pt(8)
+            intro_r.font.color.rgb = DTM_GRAY
+
+            table_shape = slide.shapes.add_table(
+                1 + len(page_rows), n_cols, table_left, table_top, table_w, used_h
+            )
+            table = table_shape.table
+            for c, width in enumerate(col_widths):
+                table.columns[c].width = width
+            table.rows[0].height = hdr_h
+            for c, header in enumerate(RENDER_EXCEPTION_COL_HEADERS):
+                _fmt_cell(
+                    table.cell(0, c), header, font_size=9, bold=True,
+                    color=_WHITE, bg=DTM_NAVY, align=PP_ALIGN.CENTER,
+                )
+
+            for row_idx, (item, row_h) in enumerate(page_rows, start=1):
+                row_bg = DTM_ALT_BG if row_idx % 2 == 0 else None
+                _fmt_cell(
+                    table.cell(row_idx, 0), getattr(item, "name", "") or "?",
+                    font_size=9, bold=True, color=DTM_NAVY, bg=row_bg,
+                )
+                _fmt_cell(
+                    table.cell(row_idx, 1), getattr(item, "location", "") or "?",
+                    font_size=9, bg=row_bg,
+                )
+                _fmt_cell(
+                    table.cell(row_idx, 2), _render_exception_reason(item, view),
+                    font_size=8, color=DTM_RED, bg=row_bg,
+                )
+                table.rows[row_idx].height = row_h
 
     return slides_added
 
@@ -1185,8 +1946,10 @@ def _badge_label(part) -> tuple[str, object]:
         return "↺ REUSED", TAG_REUSED
     if noru in ("USED", "U"):
         return "↺ USED", TAG_REUSED
-    if src or reused:
+    if reused:
         return "↺ REUSED", TAG_REUSED
+    if "customer" in src.lower():
+        return "■ CUSTOMER SUPPLIED", TAG_NEW
     return "■ NEW", TAG_NEW
 
 
@@ -1206,6 +1969,14 @@ def _legend_headline(part) -> str:
     if not loc or loc.upper().startswith("FIXTURE:"):
         return name
     return loc
+
+
+def _legend_accessories(part, accessory_map: dict) -> list:
+    """Return accessories for a concrete card, with legacy name-key fallback."""
+    line_id = str(getattr(part, "line_id", "") or "")
+    if line_id and accessory_map.get(line_id):
+        return accessory_map[line_id]
+    return accessory_map.get(getattr(part, "name", ""), [])
 
 
 def _card_content_height(part, inner_w_in: float,
@@ -1231,14 +2002,14 @@ def _card_content_height(part, inner_w_in: float,
     mfg   = getattr(part, "manufacturer", "") or ""
     pnum  = getattr(part, "part_number",   "") or ""
     color = _color_label(part)
-    specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+    specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
     if specs:
         h += _est_wrapped_lines(specs, inner_w_in, 11) * lh_spec
     lens = _lens_label(part)
     if lens:
         h += _est_wrapped_lines(lens, inner_w_in, 11) * lh_spec
 
-    for acc_entry in (acc.get(part.name) or []):
+    for acc_entry in _legend_accessories(part, acc):
         acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
         acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
         acc_text = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
@@ -1252,7 +2023,8 @@ def _card_content_height(part, inner_w_in: float,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
-                 view: str = "", panel_left_emu=None) -> None:
+                 view: str = "", panel_left_emu=None,
+                 detail_unplaced: bool = False) -> None:
     """Two-column legend panel for front/rear views.
 
     panel_left_emu: left edge of the legend area in EMU (caller sets this to match
@@ -1321,8 +2093,15 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
         for p in placed
     ]
 
-    # Available height per column
-    avail_h = BOTTOM_EDGE - cards_top - (Inches(0.8) if unplaced else Inches(0.06))
+    # Reserve exactly what the inline diagnostic needs.  Larger failure sets are
+    # listed on a dedicated page rather than forcing text below the footer.
+    failure_reserve = (
+        Inches(0.54) if detail_unplaced
+        else Inches(0.30) + len(unplaced) * Inches(0.20)
+        if unplaced else Inches(0.06)
+    )
+    cards_bottom = BOTTOM_EDGE - failure_reserve
+    avail_h = cards_bottom - cards_top
 
     # Distribute cards into 2 columns greedily
     col_fills  = [0, 0]
@@ -1349,7 +2128,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
     for part, card_h, col_i in zip(placed, card_heights, col_assign):
         y   = col_y[col_i]
         cx  = PANEL_LEFT + col_i * (COL_W + COL_GAP)
-        if y + card_h > BOTTOM_EDGE - (Inches(0.8) if unplaced else Inches(0.06)):
+        if y + card_h > cards_bottom:
             break
 
         reused       = getattr(part, "is_reused", False)
@@ -1382,11 +2161,11 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
         badge.font.bold      = True
         badge.font.color.rgb = badge_color
 
-        # Line 2: mfg · part# · color (no lens here)
+        # Line 2: mfg · part# · color · qty (no lens here)
         mfg   = getattr(part, "manufacturer", "") or ""
         pnum  = getattr(part, "part_number",   "") or ""
         color = _color_label(part)
-        specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+        specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
         if specs:
             p2 = tf.add_paragraph()
             r2 = p2.add_run()
@@ -1404,7 +2183,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             r3.font.color.rgb = DTM_GRAY
 
         # Line 4+: accessories with part numbers
-        for acc_entry in acc.get(part.name, []):
+        for acc_entry in _legend_accessories(part, acc):
             acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
             acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
             pa = tf.add_paragraph()
@@ -1419,7 +2198,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
     # ── "Not shown" box spans full panel width ────────────────────────────────
     if unplaced:
         y_note  = max(col_y) + Inches(0.06)
-        box_h   = Inches(0.26) + len(unplaced) * Inches(0.20)
+        box_h   = Inches(0.48) if detail_unplaced else Inches(0.26) + len(unplaced) * Inches(0.20)
         box_h   = min(box_h, BOTTOM_EDGE - y_note - Inches(0.04))
         bordered = slide.shapes.add_textbox(PANEL_LEFT, y_note, PANEL_W, box_h)
         bordered.fill.solid()
@@ -1431,17 +2210,21 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
         tf.margin_top  = Inches(0.04)
         p = tf.paragraphs[0]
         r = p.add_run()
-        r.text           = "ADDITIONAL COMPONENTS NOT SHOWN"
-        r.font.size      = Pt(10)
+        r.text           = (
+            f"{len(unplaced)} COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — {view.upper()}"
+            if detail_unplaced else "ADDITIONAL COMPONENTS NOT SHOWN"
+        )
+        r.font.size      = Pt(8 if detail_unplaced else 10)
         r.font.bold      = True
         r.font.color.rgb = DTM_RED
-        for upart in unplaced:
-            loc = getattr(upart, "location", "") or "?"
-            p2  = tf.add_paragraph()
-            r2  = p2.add_run()
-            r2.text           = f"  {upart.name}  @  {loc}"
-            r2.font.size      = Pt(11)
-            r2.font.color.rgb = DTM_RED
+        if not detail_unplaced:
+            for upart in unplaced:
+                loc = getattr(upart, "location", "") or "?"
+                p2  = tf.add_paragraph()
+                r2  = p2.add_run()
+                r2.text           = f"  {upart.name}  @  {loc}"
+                r2.font.size      = Pt(11)
+                r2.font.color.rgb = DTM_RED
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1449,7 +2232,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None,
-                      view: str = "side") -> None:
+                      view: str = "side", detail_unplaced: bool = False) -> None:
     """Render part cards in a 4-column grid occupying the top portion of the slide.
 
     Used for side and top view slides where the vehicle image is at the bottom.
@@ -1488,7 +2271,13 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
     r.font.color.rgb = _WHITE
 
     card_area_top  = GRID_TOP + hdr_h + Inches(0.06)
-    avail_h        = GRID_BOTTOM - card_area_top
+    failure_reserve = (
+        Inches(0.52) if detail_unplaced
+        else Inches(0.30) + len(unplaced) * Inches(0.20)
+        if unplaced else 0
+    )
+    cards_bottom = GRID_BOTTOM - failure_reserve
+    avail_h        = cards_bottom - card_area_top
     acc = accessory_map or {}
     last_card_bottom = card_area_top
 
@@ -1537,7 +2326,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             cy     = row_tops[row_i]
             card_h = row_heights[row_i]
 
-            if cy + card_h > GRID_BOTTOM:
+            if cy + card_h > cards_bottom:
                 break
             last_card_bottom = cy + card_h
 
@@ -1567,11 +2356,11 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             bdg.text = f"  {badge_text}"; bdg.font.size = Pt(10); bdg.font.bold = True
             bdg.font.color.rgb = badge_color
 
-            # Line 2: mfg · part# · color (no lens)
+            # Line 2: mfg · part# · color · qty (no lens)
             mfg   = getattr(part, "manufacturer", "") or ""
             pnum  = getattr(part, "part_number",   "") or ""
             color = _color_label(part)
-            specs = "  ·  ".join(filter(None, [mfg, pnum, color]))
+            specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
             if specs:
                 p2 = tf.add_paragraph()
                 r2 = p2.add_run()
@@ -1585,7 +2374,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
                 r3.text = lens; r3.font.size = Pt(11); r3.font.color.rgb = DTM_GRAY
 
             # Lines 4+: accessories
-            for acc_entry in acc.get(part.name, []):
+            for acc_entry in _legend_accessories(part, acc):
                 acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
                 acc_pnum = acc_entry[1] if isinstance(acc_entry, tuple) else ""
                 pa = tf.add_paragraph()
@@ -1596,7 +2385,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
     if unplaced:
         # Place "not shown" note just below the lowest rendered card row
         y_note = last_card_bottom + Inches(0.08)
-        box_h  = Inches(0.26) + len(unplaced) * Inches(0.20)
+        box_h  = Inches(0.46) if detail_unplaced else Inches(0.26) + len(unplaced) * Inches(0.20)
         box_h  = min(box_h, GRID_BOTTOM - y_note - Inches(0.04))
         bordered = slide.shapes.add_textbox(GRID_LEFT, y_note,
                                              SLIDE_W_EMU - GRID_LEFT * 2, box_h)
@@ -1609,17 +2398,21 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
         tf.margin_top  = Inches(0.04)
         p = tf.paragraphs[0]
         r = p.add_run()
-        r.text           = "ADDITIONAL COMPONENTS NOT SHOWN ON DIAGRAM"
-        r.font.size      = Pt(10)
+        r.text           = (
+            f"{len(unplaced)} COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — {view.upper()}"
+            if detail_unplaced else "ADDITIONAL COMPONENTS NOT SHOWN ON DIAGRAM"
+        )
+        r.font.size      = Pt(8 if detail_unplaced else 10)
         r.font.bold      = True
         r.font.color.rgb = DTM_RED
-        for upart in unplaced:
-            loc = getattr(upart, "location", "") or "?"
-            p2  = tf.add_paragraph()
-            r2  = p2.add_run()
-            r2.text           = f"  {upart.name}  @  {loc}"
-            r2.font.size      = Pt(11)
-            r2.font.color.rgb = DTM_RED
+        if not detail_unplaced:
+            for upart in unplaced:
+                loc = getattr(upart, "location", "") or "?"
+                p2  = tf.add_paragraph()
+                r2  = p2.add_run()
+                r2.text           = f"  {upart.name}  @  {loc}"
+                r2.font.size      = Pt(11)
+                r2.font.color.rgb = DTM_RED
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1678,6 +2471,7 @@ def place_specify_palette(slide, category: str, img_box, y_offset_emu: int = 0):
 # ─────────────────────────────────────────────────────────────────────────────
 
 NOTES_CATEGORIES = [
+    "PROJECT-WIDE NOTES",
     "INSTALLATION NOTES",
     "CUSTOMER REQUESTS",
     "SPECIAL FABRICATION NOTES",
@@ -1699,6 +2493,7 @@ def fill_notes(slide, notes: dict[str, list[str]]) -> None:
     placeholder_color = RGBColor(0xAA, 0xAA, 0xAA)
 
     _placeholders = {
+        "PROJECT-WIDE NOTES":      "No project-wide notes specified.",
         "INSTALLATION NOTES":      "No installation notes specified.",
         "CUSTOMER REQUESTS":       "No customer requests specified.",
         "SPECIAL FABRICATION NOTES": "No special fabrication notes specified.",

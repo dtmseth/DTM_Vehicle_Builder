@@ -247,6 +247,20 @@ def test_console_setup_catalogs_keep_only_matching_equipment(tmp_path):
     for product_id, part_type in expected_types.items():
         assert products[product_id]["fits_part_types"] == [part_type]
 
+    # Pedestal-mount compatibility is driven by SKU vehicle tags in the
+    # console picker.  Do not let a clearly vehicle-specific Havis mount fall
+    # back to the global ``any`` tag, which would surface it in every build.
+    expected_pedestal_tags = {
+        "havis_c_hdm_1006": {"PIU"},
+        "havis_c_hdm_1026": {"BLAZER"},
+        "havis_c_tmw_inut_02": {"PIU"},
+        "havis_pkg_psm_3003": {"CHEVY-1500"},
+    }
+    for product_id, vehicle_tags in expected_pedestal_tags.items():
+        part_numbers = products[product_id]["part_numbers"]
+        assert len(part_numbers) == 1
+        assert set(part_numbers[0]["vehicle_tags"]) == vehicle_tags
+
 
 def test_printer_accessory_roles_have_distinct_shop_labels(tmp_path):
     paths = hermetic_paths(tmp_path)

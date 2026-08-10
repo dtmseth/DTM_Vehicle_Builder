@@ -1,5 +1,140 @@
 # Session Handoff — Picker flaw-fix pass (2026-07-13/14)
 
+## 2026-08-06 continuation update
+
+This continuation preserved the already-dirty tree, did not stage/commit/reset anything, and ran
+all Python verification cloud-off (`DTM_CLOUD=0`). The owner explicitly asked to avoid the slow,
+screen-capture-dependent test loop, so no UI smoke or screenshot pass was run.
+
+### Completed in this continuation
+
+- **Outer Edge rear pillars:** the selected housing is a `warning_light` semantically but auto-names
+  and groups as **Rear Warning** at `PILLARS`. Duo construction creates six included IONs (three
+  Red/secondary and three Blue/secondary); Trio creates six Red/Blue/Amber IONs. The included heads
+  persist as nested quote lines, and preview/PPT render two centered three-head pillar stacks with
+  mirrored ±55° rotations. The draft conversion now preserves picker `part_type` and
+  `picker_config`, preventing saved previews from losing that assembly directive.
+- **Radio SKU identity:** Radio Communications now presents actual radio-unit SKU cards and opens
+  the guided setup immediately after selection. The selected SKU is saved with the system identity;
+  it determines the all-in-one versus split layout, so the details guide no longer asks that
+  question a second time. Only split systems request a radio-brick location.
+- **Shared radio/console mic clip:** both setup orders now reconcile the physical microphone mount.
+  A radio configured after a console clip asks whether it uses that clip or needs another; a console
+  configured after a radio asks the inverse. Reusing the console clip keeps its C-MCB/Mag Mic line,
+  rewrites the radio's display-only microphone component to reference the console, and removes only
+  the radio-owned Magnetic Mic child while retaining cable-refresh children. The console replacement
+  route performs that reconciliation in the same persisted draft write and rejects a reconciliation
+  payload that lacks a console mic-clip row. PA-mic behavior is unchanged.
+- **Guided system entry:** Radio, Radar, and Camera family entries no longer expand into their
+  individual internal component leaves. Selecting the family starts guided setup; each setup offers
+  **Choose SKUs manually** as an explicit escape hatch to the full family catalog. Radar's guided
+  selector now shows only `radar_display_unit` products, excluding antenna mounts, brackets, and
+  cables.
+
+### Verification completed
+
+- Earlier in this continuation: 258 focused picker/planner/render tests; 242 contract/config/schema/
+  render tests; then 76 planner/preview tests after the final ±55° pillar tuning. A cloud-off direct
+  Outer Edge PowerPoint generation also succeeded.
+- Final guided-system/mic-clip pass: `node --check src/dtm_buildsheet/ui/js/part_picker.js` and
+  `DTM_CLOUD=0 .venv/bin/python -m pytest tests/test_draft_parts.py tests/test_parts_db_routes.py -q`
+  — **133 passed**. The draft regression verifies radio-first console reconciliation removes the
+  old Magnetic Mic but preserves a radio cable-refresh child; a validation regression rejects a
+  shared-clip request without an actual console mic clip.
+- `git diff --check` passed. No contract snapshots were changed for these client/draft-route changes.
+
+### Next safe continuation
+
+1. Owner acceptance can use the normal app without screenshots: start each guided family from its
+   top-level entry, confirm only platform choices appear, and use **Choose SKUs manually** only for
+   a standalone component.
+2. Keep the UI smoke suite unrun unless the owner authorizes it. Existing worktree changes outside
+   the files named above remain unrelated and must be preserved.
+
+## 2026-08-05 continuation update
+
+This is an in-progress owner-led picker find-and-fix pass. The working tree was already dirty
+before this slice; do not reset, checkout, stage, or overwrite unrelated changes. Run cloud-off
+(`DTM_CLOUD=0`) because cloud sync can replace `parts_db.json`.
+
+### Completed in this slice
+
+- **Product-driven light picker context:** `products.<id>.picker_primary_part_type` now declares a
+  product's semantic picker type independent of the browse leaf. T-Series and Mega T-Series declare
+  `warning_light`, so choosing either from **Lights** now opens the same warning-light picker as the
+  Warning leaf. The old `global_search_part_type` is accepted only as an input compatibility alias.
+- **Scene-light locations:** category placement resolution now trusts a part type's declared
+  `tree_positions` before presentation-label keyword fallbacks. `CENTER PLATE OF PB` is now a
+  shared Front Scene option (alongside `TOP OF PUSH BUMPER`) for all scene-light products that
+  fit Front Scene; Pioneer SlimLine retains its Rear Scene `UNDER TAILGATE` option. A scene
+  selection's quantity now drives both picker dots and rendered heads: one stays centered at the
+  location and two or more use the location's authored pattern (or a horizontal row from a
+  single-dot anchor).
+- **Custom locations:** after a user names the custom shop location, its vehicle placement step now
+  optionally exposes every exterior view and all ordinary placement + fixture dots. A named custom
+  location may be saved without a render spot; it remains a manifest/shop reference and deliberately
+  has no diagram placement. **Set your own** hides the dots and enables add/remove free points
+  directly on the vehicle image, including multiple points across views. Saved picker config uses
+  `custom_location.placements`; the planner renders each point as a `CUSTOM:<VIEW>:<n>` placement.
+  Classic custom locations using `render_location` still work.
+- **Tracers:** the tracer card has Clear/Smoked lens pills; resolution and add now use that tracer
+  choice rather than the unrelated general picker lens filter.
+- **CCTL5 control head:** CCTL5 declares that it has no PA microphone, so it skips the PA-mic
+  setup and child-line workflow. It retains **In Center Console** and explicitly allows a Custom
+  shop-reference location alongside it. A single control head is named **Control Head**; two or
+  more renumber as **Control Head 1**, **Control Head 2**, etc., and return to the bare name when
+  only one remains.
+- **Console preference:** the selectable **Console** family header now honors
+  `preferences.console_brand` just like its Console leaf. A Havis preference therefore starts
+  either entry point filtered to Havis; the separate Motion Attachment leaf remains unfiltered.
+- **Havis console setup:** selecting **Mounted to pedestal** for a motion attachment now reveals
+  a required, vehicle-compatible Havis pedestal/mount-base picker. Its selected `pedestal_mount`
+  and the optional Havis C-MCB radio mic clip bracket are persisted with the console setup as
+  nested console build lines. The setup action is product-driven: selecting any
+  main-console SKU (from a family header, broad category, search, or subleaf) skips placement and
+  goes directly to the console setup. Choosing the clip now asks whether to add the live-QB
+  Magnetic Mic `MMSU-1`; it defaults to Yes but can be explicitly declined. A printer armrest
+  now similarly prompts for a printer (default Yes), requires that selection when accepted, and
+  offers its real linked power/USB cable SKUs nested beneath that separate printer parent. Havis faceplate
+  choices now require exact Havis, live-QB SKUs, excluding generic migration placeholders and
+  legacy non-Havis contextual faceplates.
+- **Pending-QB secondary control-head harness:** Whelen `CCTLHARN` is selectable under a dedicated
+  **Secondary Control Head Harness** leaf in Light Control System. It carries the Whelen catalog
+  description, the $10 catalog price, and `qb_pending: true`, so it can be selected now and will
+  reconcile automatically once QuickBooks contains the SKU. Adding a second control head also
+  preselects it as an optional, contextual recommendation; the user can choose **None needed**.
+- **Light size rules:** the settings page uses named profiles plus searchable part-type, product,
+  and SKU assignments backed by `parts_db.json`; free-text and substring size rules are retired.
+  Sizing resolves SKU → product → part type → Small default, with `model_aliases` only for exact
+  legacy product identity translation. Exact per-target dimensions are editable for render metadata,
+  locked profile aspect ratios stay synchronized, and manifest profile saves now reload in the
+  running preview/PPT process without an app restart.
+
+### Verification completed
+
+- `node --check src/dtm_buildsheet/ui/js/part_picker.js`
+- `DTM_CLOUD=0 .venv/bin/python -m pytest tests/test_parts_db_routes.py tests/test_planner.py tests/test_preview.py tests/test_config_loads.py tests/test_size_rules.py -q` — 203 passed
+- `DTM_CLOUD=0 .venv/bin/python -m pytest tests/test_parts_db_schema_validation.py tests/test_parts_db_service.py -q` — 51 passed
+- `DTM_CLOUD=0 .venv/bin/python -m pytest tests/contract/test_parts_db_contract.py -q` — 44 passed
+- `git diff --check`
+
+Focused size-rule verification also passed: `node --check` for the redesigned settings script and
+cloud-off route/planner/config coverage, including 205 tests across the size-rule, planner,
+config-load, parts-db-route, and parts-db-service suites. No UI smoke was run.
+
+The complete contract set was intentionally re-recorded against the current dirty parts DB; the
+Front Scene type snapshots now include the shared center-plate placement. The broad refresh also
+captures the pre-existing size-rule and QB-metadata normalization work. No interactive UI smoke was
+run in this slice.
+
+### Next safe continuation
+
+1. With a restarted cloud-off app, visually test: add T-Series from **Lights** (expect standard
+   warning colors), Pioneer SlimLine (expect CENTER PLATE OF PB or TOP OF PUSH BUMPER), and a custom light with free front
+   + side points (expect gold custom dots and rendered placement in both views).
+2. Continue the owner's broader picker defect list only after preserving this dirty tree. Read
+   `docs/GOTCHAS.md`, this handoff, and `docs/audit/LEDGER.md` first.
+
 ## 2026-07-15 current state update
 
 This is the active handoff. The older 2026-07-13/14 sections below are historical context; several

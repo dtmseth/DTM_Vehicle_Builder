@@ -51,6 +51,30 @@ def test_normalize_customer_falls_back_to_display_name():
     assert n["is_sub"] is False
 
 
+def test_normalize_customer_keeps_contact_and_address_profile():
+    n = _normalize_customer({
+        "Id": 1,
+        "DisplayName": "Alpha PD",
+        "Mobile": {"FreeFormNumber": "555-0111"},
+        "Fax": {"FreeFormNumber": "555-0112"},
+        "WebAddr": {"URI": "https://alpha.example"},
+        "Notes": "Purchasing uses PO numbers",
+        "Taxable": False,
+        "BillAddr": {"Line1": "1 Main", "City": "Alpha", "CountrySubDivisionCode": "MN", "PostalCode": "55001"},
+        "ShipAddr": {"Line1": "2 Depot", "Country": "US"},
+    })
+    assert n["mobile_phone"] == "555-0111"
+    assert n["fax"] == "555-0112"
+    assert n["website"] == "https://alpha.example"
+    assert n["notes"] == "Purchasing uses PO numbers"
+    assert n["taxable"] is False
+    assert n["bill_address_line1"] == "1 Main"
+    assert n["bill_city"] == "Alpha"
+    assert n["bill_state"] == "MN"
+    assert n["ship_address_line1"] == "2 Depot"
+    assert n["ship_country"] == "US"
+
+
 # ── upsert: create / link / fill ─────────────────────────────────────────────
 
 
@@ -73,6 +97,31 @@ def test_import_links_existing_by_name_without_clobbering(paths):
     assert a.qb_customer_id == "1"          # linked
     assert a.contact_phone == "111"          # user's value preserved
     assert a.contact_email == "a@pd.gov"     # empty field filled from QB
+
+
+def test_import_fills_missing_extended_profile_without_erasing_existing(paths):
+    saved = agc.handle_save_agency({
+        "name": "Alpha PD",
+        "mobile_phone": "local-mobile",
+        "bill_address_line1": "Local Street",
+    }, paths)
+    res = agc.upsert_agencies_from_qb([{
+        **_cust(1, "Alpha PD", contact_phone="999"),
+        "mobile_phone": "qb-mobile",
+        "website": "https://alpha.example",
+        "bill_address_line1": "QB Street",
+        "bill_city": "Alpha",
+        "bill_state": "MN",
+        "bill_postal_code": "55001",
+        "taxable": False,
+    }], paths)
+    assert res["updated"] == 1
+    a = agc.get_agency(paths, saved["agency"]["agency_id"])
+    assert a.mobile_phone == "local-mobile"
+    assert a.bill_address_line1 == "Local Street"
+    assert a.website == "https://alpha.example"
+    assert a.bill_city == "Alpha"
+    assert a.taxable is False
 
 
 def test_import_matches_by_qb_id_over_name(paths):

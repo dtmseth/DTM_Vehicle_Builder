@@ -14,6 +14,7 @@ from dtm_buildsheet.app.services.project_service import (
     handle_list_projects,
     handle_save_project,
 )
+from dtm_buildsheet.app.services.agency_service import handle_save_agency
 from dtm_buildsheet.domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences
 from dtm_buildsheet.inputs.project_drafts import draft_to_project_input, load_draft
 from dtm_buildsheet.inputs.project_entry import load_project, new_project, save_project
@@ -28,6 +29,7 @@ def _paths(tmp_path: Path) -> AppPaths:
     drafts_dir = tmp_path / "drafts"
     drafts_dir.mkdir()
     return AppPaths(
+        workspace_dir=tmp_path,
         workspace_projects_dir=projects_dir,
         workspace_drafts_dir=drafts_dir,
         bundled_presets_dir=BUNDLED_PRESETS_DIR,
@@ -88,6 +90,19 @@ class TestHandleSaveProject:
         assert unit.vehicle_model == "Tahoe PPV"
         assert unit.quantity == 2
 
+    def test_custom_build_type_is_saved_only_on_its_project_unit(self, tmp_path):
+        paths = _paths(tmp_path)
+        body = _project_body(build_units=[{
+            "unit_id": "unit-drone",
+            "vehicle_model": "Tahoe PPV",
+            "build_type": "Drone Squad",
+            "quantity": 1,
+        }])
+        result = handle_save_project(body, paths)
+
+        project = load_project(result["project_id"], paths)
+        assert project.build_units[0].build_type == "Drone Squad"
+
     def test_preserves_preferences(self, tmp_path):
         paths = _paths(tmp_path)
         result = handle_save_project(_project_body(), paths)
@@ -95,6 +110,54 @@ class TestHandleSaveProject:
         assert project.preferences.lighting_brands == ["Whelen", "Code 3"]
         assert project.preferences.slick_top is True
         assert project.preferences.camera_brand == "Axon"
+
+    def test_shared_project_note_is_copied_to_new_draft(self, tmp_path):
+        paths = _paths(tmp_path)
+        create = handle_save_project(_project_body(
+            project_notes="Keep the completed unit indoors until pickup.",
+        ), paths)
+
+        result = handle_create_draft(create["project_id"], "unit-1", paths)
+
+        draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
+        assert draft.project_notes == "Keep the completed unit indoors until pickup."
+
+    def test_new_project_copies_agency_defaults_when_preferences_omitted(self, tmp_path):
+        paths = _paths(tmp_path)
+        agency = handle_save_agency({
+            "name": "Alpha PD",
+            "default_preferences": {
+                "lighting_brands": ["Whelen"],
+                "camera_brand": "Axon",
+                "console_brand": "Havis",
+            },
+        }, paths)["agency"]
+
+        result = handle_save_project({
+            "customer": {"agency": "Alpha PD", "agency_id": agency["agency_id"]},
+            "build_units": [],
+        }, paths)
+
+        project = load_project(result["project_id"], paths)
+        assert project.preferences.lighting_brands == ["Whelen"]
+        assert project.preferences.camera_brand == "Axon"
+        assert project.preferences.console_brand == "Havis"
+
+    def test_explicit_project_preferences_override_agency_defaults(self, tmp_path):
+        paths = _paths(tmp_path)
+        agency = handle_save_agency({
+            "name": "Alpha PD",
+            "default_preferences": {"lighting_brands": ["Whelen"]},
+        }, paths)["agency"]
+
+        result = handle_save_project({
+            "customer": {"agency": "Alpha PD", "agency_id": agency["agency_id"]},
+            "preferences": {"lighting_brands": ["Code 3"]},
+            "build_units": [],
+        }, paths)
+
+        project = load_project(result["project_id"], paths)
+        assert project.preferences.lighting_brands == ["Code 3"]
 
     def test_explicit_project_id_honored(self, tmp_path):
         paths = _paths(tmp_path)
@@ -236,7 +299,7 @@ class TestHandleCreateDraft:
         info = draft.vehicle_info
         assert info["VehicleType"] == "Tahoe PPV"
         assert info["Agency"] == "Test PD"
-        assert info["QuoteNumber"] == "Q-001"
+        assert "QuoteNumber" not in info
         assert info["SalesRep"] == "Alice"
         assert info["BuildType"] == "Patrol"
         assert info["ProjectID"]
@@ -334,7 +397,7 @@ class TestHandleCreateDraft:
         assert result["ok"] is False
         assert "error" in result
 
-    def test_project_id_derived_from_quote_number(self, tmp_path):
+    def test_project_id_uses_persistent_project_id(self, tmp_path):
         paths = _paths(tmp_path)
         body = _project_body()
         body["customer"]["quote_number"] = "Q-999"
@@ -342,7 +405,7 @@ class TestHandleCreateDraft:
         pid = create["project_id"]
         result = handle_create_draft(pid, "unit-1", paths)
         draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
-        assert "Q-999" in draft.vehicle_info["ProjectID"] or draft.vehicle_info["ProjectID"] == "Q-999"
+        assert draft.vehicle_info["ProjectID"] == pid
 
     def test_second_create_draft_updates_draft_id(self, tmp_path):
         paths = _paths(tmp_path)

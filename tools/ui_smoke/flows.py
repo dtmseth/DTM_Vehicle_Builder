@@ -70,9 +70,10 @@ def _open_build_editor(page, base_url: str) -> None:
     page.wait_for_selector(".proj-row-clickable")
     page.click(".proj-row-clickable")
     page.wait_for_selector("#proj-detail-view:not([hidden])")
-    page.click("[data-ptab='builds']")
     page.wait_for_timeout(_SETTLE_MS)
-    page.click(".proj-start-btn")
+    # Builds now live on the default Overview tab.  Clicking a card is the
+    # primary edit/set-up action, replacing the old Builds tab's button.
+    page.locator(".proj-build-card--openable").first.locator(".proj-build-card-label").click()
     page.wait_for_selector("#proj-build-editor:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
 
@@ -87,10 +88,17 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector("#tab-projects:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
 
-    # General Settings + its stabs
+    # General Settings + its public stabs. QuickBooks remains available in the
+    # codebase for the later controlled launch but must not appear in this
+    # release's public interface, including via a stale deep-link attempt.
     page.click(".htab[data-tab='general-settings']")
     page.wait_for_selector("#stab-bar-general:not([hidden])")
-    for stab in ("projects-defaults", "agencies", "sales-reps", "presets", "quickbooks"):
+    assert page.evaluate("() => window.DTM_QUICKBOOKS_UI_ENABLED === false")
+    assert page.locator(".stab[data-stab='quickbooks']").is_hidden()
+    assert page.locator("#stab-quickbooks").is_hidden()
+    page.evaluate("() => _showOuterStab('quickbooks')")
+    assert page.locator("#stab-projects-defaults").is_visible()
+    for stab in ("projects-defaults", "agencies", "sales-reps", "presets"):
         page.click(f".stab[data-stab='{stab}']")
         page.wait_for_timeout(_SETTLE_MS)
 
@@ -149,11 +157,12 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
             page.wait_for_timeout(200)
         page.click(".pbt-leaf[data-pt='console']")
         page.wait_for_timeout(_SETTLE_MS)
-        # A console no longer starts with a raw SKU. It is a kit: choose its
-        # style and feature requirements, then let the picker select the QB
-        # item that contains as much as possible.
-        assert page.evaluate("_pickerState.loc.selected") == "IN CENTER CONSOLE"
-        assert page.locator("#picker-tab-btn-location").is_hidden()
+        # A console starts by choosing its actual vehicle-specific base. The
+        # kit configuration then completes the included and add-on hardware.
+        page.click(".pp-head[data-pid='gamber_johnson_7170_0734_09']")
+        page.wait_for_selector("[data-pid='gamber_johnson_7170_0734_09'][data-pick]")
+        page.locator("[data-pid='gamber_johnson_7170_0734_09'][data-pick]").first.click()
+        page.wait_for_function("() => _pickerState?.sel?.product_id === 'gamber_johnson_7170_0734_09'")
         assert page.locator("#picker-add-btn").text_content().strip() == "Set up Center Console →"
         page.click("#picker-add-btn")
         page.wait_for_selector("[data-console-setup]")
@@ -171,6 +180,9 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
             f"armrests must follow the selected Gamber Johnson console, got {armrest_brands!r}"
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_0430']")
+        page.click("[data-console-component-open='printer']")
+        page.wait_for_selector("[data-console-component-choice='brother_pj_822']")
+        page.click("[data-console-component-choice='brother_pj_822']")
         page.click("[data-console-component-open='motionAttachment']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_0220']")
         motion_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
@@ -179,6 +191,9 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_0220']")
         page.click("[data-console-motion-location='mounted_to_pedestal']")
+        page.click("[data-console-component-open='pedestalMount']")
+        page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_1336']")
+        page.click("[data-console-component-choice='gamber_johnson_7160_1336']")
         page.click("[data-console-component-open='dockingStation']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_1982_10']")
         dock_brands = page.locator(".console-component-picker .console-catalog-card-brand").all_text_contents()
@@ -203,15 +218,25 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         "Center Console · Face Plate 3 · Cup Holder Faceplate",
         "Center Console · Face Plate 4 · OEM Relocation Plate",
     ], f"expected numbered auto-populated faceplates in the configured order, got {faceplates!r}"
-    assert {p.get("part_type") for p in children} == {"special_face_plate"}
+    console_components = [p for p in children if p.get("accessory_category") == "console_component"]
+    assert {p.get("part_type") for p in console_components} == {
+        "pedestal_mount", "docking_station",
+    }, f"console hardware must nest with the console, got {console_components!r}"
+    assert {p.get("part_type") for p in children} == {
+        "special_face_plate", "pedestal_mount", "docking_station",
+    }
     included_parts = {p["part_number"] for p in faceplates if p.get("picker_config", {}).get("console_kit_included")}
     assert included_parts == {"7160-0846", "15250"}, f"kit items must remain shop rows but be unbilled, got {faceplates!r}"
     related_parts = [
         p for p in parts
         if p.get("picker_config", {}).get("console_setup_owner_line_id") == console["line_id"]
     ]
-    assert {p.get("part_type") for p in related_parts} == {"docking_station"}
-    assert all(not p.get("parent_line_id") for p in related_parts), f"console components must be top-level lines, got {related_parts!r}"
+    printer = next(p for p in related_parts if p.get("part_type") == "printer")
+    nested_console_parts = [p for p in related_parts if p is not printer]
+    assert all(p.get("parent_line_id") == console["line_id"] for p in nested_console_parts), \
+        f"console components must nest below the console, got {related_parts!r}"
+    assert not printer.get("parent_line_id"), \
+        "the printer must remain a top-level manifest parent for its own cable children"
     setup = console["picker_config"]["console_setup"]
     assert setup["style"] == "low_profile"
     assert setup["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
@@ -237,15 +262,16 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     assert restored["style"] == "low_profile"
     assert restored["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
     assert restored["armRest"]["product_id"] == "gamber_johnson_7160_0430"
+    assert restored["printer"]["product_id"] == "brother_pj_822"
     assert restored["motionAttachment"]["product_id"] == "gamber_johnson_7160_0220"
     assert restored["motionLocation"] == "mounted_to_pedestal"
     assert restored["dockingStation"]["product_id"] == "gamber_johnson_7160_1982_10"
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
-    # The related lines are independent manifest rows, but their edit action
-    # must return to the one console setup that owns the combined choices.
-    docking_station = next(p for p in related_parts if p.get("part_type") == "docking_station")
+    # Nested console hardware still returns to the one setup that owns the
+    # combined choices.
+    docking_station = next(p for p in console_components if p.get("part_type") == "docking_station")
     page.evaluate("(lineId) => openPartEditModal(lineId)", docking_station["line_id"])
     page.wait_for_selector("[data-console-setup]")
     assert page.evaluate("_pickerState.editLineId") == console["line_id"]
@@ -386,6 +412,10 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
 
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
+    assert page.locator("#picker-part-status").is_visible()
+    assert page.get_attribute("[data-picker-part-status='New']", "aria-pressed") == "true"
+    page.click("[data-picker-part-status='Used']")
+    assert page.get_attribute("[data-picker-part-status='Used']", "aria-pressed") == "true"
     page.fill("#pf-search", "PJ-822")
     page.wait_for_selector(".pp-head[data-pid='brother_pj_822']")
     if page.locator("#pp-veh-only").count() and page.locator("#pp-veh-only").is_checked():
@@ -426,6 +456,7 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
 
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     printer = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "printer")
+    assert printer["new_or_used"] == "Used"
     children = [part for part in draft["draft"]["parts"] if part.get("parent_line_id") == printer["line_id"]]
     assert {part.get("accessory_category") for part in children} == {
         "printer_mount", "printer_power_cable", "printer_usb_cable",
@@ -442,6 +473,9 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
 
     page.evaluate("(lineId) => openPartEditModal(lineId)", printer["line_id"])
     page.wait_for_selector("#picker-panel.open")
+    assert page.get_attribute("[data-picker-part-status='Used']", "aria-pressed") == "true", (
+        "editing a picker part must restore its saved condition"
+    )
     for category in ("printer_mount", "printer_power_cable", "printer_usb_cable"):
         selector = f"select[data-cat='{category}']"
         page.wait_for_selector(selector)
@@ -506,11 +540,14 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
     leaf_count = page.locator(".pbt-leaf").count()
     assert leaf_count > 0, "expected Equipment category to render at least one part type/family member"
 
-    # A family expands to its member part types (finer filtering).
-    page.click(".pbt-fam-caret-btn[data-fam='radar']")
-    page.wait_for_selector(".pbt-fam-caret-btn[data-fam='radar'].open")
+    # A conventional family expands to its member part types. Guided systems
+    # (Radar, Radio, Camera) deliberately start their guided setup instead.
+    page.click(".pbt-cat-caret-btn[data-cat='structural']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
+    page.click(".pbt-fam-caret-btn[data-fam='console_system']")
+    page.wait_for_selector(".pbt-fam-caret-btn[data-fam='console_system'].open")
     page.wait_for_timeout(200)
-    page.wait_for_selector(".pbt-leaf[data-pt='radar_display_unit']")
+    page.wait_for_selector(".pbt-leaf[data-pt='console']")
 
     # Collapsing/re-expanding a different category doesn't lose state on the
     # panel — still on the same tab, no navigation occurred.
@@ -519,8 +556,6 @@ def flow_picker_browse_tree(page, base_url: str) -> None:
     # Families sort before standalones within a category (owner ruling
     # 2026-07-10, flaws #7+#8) — verify for Structural: Push Bumper / Cage /
     # Console / Storage families first, running_boards_nerf_bars standalone last.
-    page.click(".pbt-cat-caret-btn[data-cat='structural']")
-    page.wait_for_selector(".pbt-cat-head[data-cat='structural'].open")
     page.wait_for_timeout(_SETTLE_MS)
     child_kinds = page.evaluate("""
         () => {
@@ -553,14 +588,19 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     page.wait_for_selector(".pbt-fam-select[data-family='radio_comms']")
     page.click(".pbt-fam-select[data-family='radio_comms']")
     page.wait_for_selector("#picker-products [data-system-select-kind='radio']")
-    page.click("[data-system-product-id='motorola_split_unit']")
-    assert page.locator("#picker-add-btn").text_content().strip() == "Set up Radio Communications →"
-    page.click("#picker-add-btn")
+    radio_choice = page.locator("[data-system-product-id='motorola_split_unit'][data-system-sku]").first
+    assert radio_choice.count() == 1, "expected a concrete Motorola split-radio SKU choice"
+    radio_choice.click()
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
+    assert page.locator("#picker-part-status").is_hidden(), \
+        f"guided radio picker should hide part status, got {page.locator('#picker-part-status').text_content()!r}"
     page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
     assert page.evaluate("() => _pickerState.radio.choices.provider") == "customer", \
         "new system provider should default to customer supplied"
-    assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "motorola_split_unit"
+    assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "motorola_split_unit", \
+        "radio setup should retain the selected Motorola split-radio product"
+    assert page.evaluate("() => !!_pickerState.radio.choices.systemProduct.part_number"), \
+        "radio setup must retain the selected concrete SKU"
 
     assert page.locator("#picker-system-details .guided-progress").count() == 1, \
         "expected the guided radio progress bar"
@@ -578,7 +618,6 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     _guided_next(page)
     assert page.evaluate("() => _pickerState.radio.choices.format") == "split", \
         "split-head radio should be the default layout"
-    _guided_next(page)
     _guided_pick(page, "brickLoc", "equipment_tray")
     _guided_next(page)
     _guided_pick(page, "antennaStyle", "cylinder")
@@ -610,9 +649,12 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     radio = next((p for p in parts if p.get("picker_config", {}).get("system_type") == "radio"), None)
     assert radio is not None, "expected radio workflow to add one guided system line"
     assert radio.get("part_type") == "radio_head", "radio system line must retain its planner part type"
-    assert radio.get("part_number") == "DTM PURCHASE — SEE DETAILS"
-    assert radio.get("notes") == "Customer-specified Motorola mobile radio, split kit, include antenna and mic."
-    assert radio["picker_config"]["choices"]["purchaseDetails"] == radio.get("notes")
+    assert radio.get("part_number") == "DTM PURCHASE — SEE DETAILS", \
+        f"DTM-purchased radio should use the purchase-details SKU, got {radio.get('part_number')!r}"
+    assert radio.get("notes") == "Customer-specified Motorola mobile radio, split kit, include antenna and mic.", \
+        f"radio purchase notes were not preserved: {radio.get('notes')!r}"
+    assert radio["picker_config"]["choices"]["purchaseDetails"] == radio.get("notes"), \
+        "radio picker configuration should retain its purchase details"
     component_types = {c.get("part_type") for c in radio.get("components", [])}
     expected = {"radio_head", "radio_brick", "radio_antenna_top", "radio_speaker", "radio_mic_clip"}
     assert expected.issubset(component_types), \
@@ -629,7 +671,9 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radio'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radio edits must restart at the first question"
-    assert "new or reused radio system" in page.locator(".guided-question h2").text_content().lower()
+    edit_question = page.locator(".guided-question h2").text_content().lower()
+    assert "condition" in edit_question, \
+        f"guided radio edit should reopen at the condition question, got {edit_question!r}"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("purchaseDetails") == radio.get("notes") and restored.get("micLocCustom") == "Console sidecar", \
         f"guided radio edits must retain saved answers, got {restored!r}"
@@ -761,7 +805,8 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.radio?.active && _pickerState.radio.kind === 'radar'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
     assert page.evaluate("() => _pickerState.radio.step") == 0
-    assert "new or reused radar system" in page.locator(".guided-question h2").text_content().lower()
+    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
+        "new radar setup should begin at the condition question"
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
@@ -770,7 +815,8 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar' && Object.keys(_pickerState.radio.choices || {}).length > 0")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radar edits must restart at the first question"
-    assert "new or reused radar system" in page.locator(".guided-question h2").text_content().lower()
+    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
+        "guided radar edit should reopen at the condition question"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("frontLoc") == "a_pillar" and restored.get("frontBracket") == "swivel_arm" and restored.get("countingLoc") == "center_console", \
         f"expected guided system edits to restore saved radar answers, got {restored!r}"
@@ -814,7 +860,8 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'camera'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='camera']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided camera edits must restart at the first question"
-    assert "new or reused camera system" in page.locator(".guided-question h2").text_content().lower()
+    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
+        "guided camera edit should reopen at the condition question"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("systemProduct", {}).get("product_id") == "watchguard_m500" and restored.get("wirelessMicLoc") == "center_console", \
         f"guided camera edits must retain saved answers, got {restored!r}"
@@ -1080,7 +1127,7 @@ def flow_part_details_and_console(page, base_url: str) -> None:
         page.click("#pp-veh-only")
         page.wait_for_timeout(200)
     control_head_id = page.evaluate(
-        "() => _pickerState.products.find(p => (p.fits_part_types || []).includes('control_head'))?.product_id || ''"
+        "() => _pickerState.products.find(p => (p.fits_part_types || []).includes('control_head') && p.pa_mic_required !== false)?.product_id || ''"
     )
     assert control_head_id, "Light Control System family must include a control-head product"
     assert page.locator(f".pp-head[data-pid='{control_head_id}']").count() == 1, (
@@ -1146,9 +1193,13 @@ def flow_part_details_and_console(page, base_url: str) -> None:
         f"a PA Magnetic mic must be a real billable child line, got {billable_pa_mic!r}"
     page.wait_for_selector(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
     page.click(f"tr.me-parent-row[data-lid='{control_head['line_id']}']")
-    manifest_pa_mic = page.locator(f"tr.me-comp-row[data-parent='{control_head['line_id']}']").filter(has_text="PA Mic")
-    assert manifest_pa_mic.is_visible()
-    assert "PA Mic" in manifest_pa_mic.text_content() and "Passenger kick panel" in manifest_pa_mic.text_content()
+    manifest_children = page.locator(f"tr.me-comp-row[data-parent='{control_head['line_id']}']")
+    assert not manifest_children.filter(has_text="PA Mic").is_visible(), (
+        "the included PA mic belongs in the control-head detail, not as a separate manifest line"
+    )
+    manifest_mag_mic = manifest_children.filter(has_text="Mag Mic")
+    assert manifest_mag_mic.is_visible(), "the billable Mag Mic must remain a visible child line"
+    assert "Passenger kick panel" in manifest_mag_mic.text_content()
 
     # A Center Console has one physical location, but its selected SKU leads
     # to the dedicated Details setup rather than a generic placement step.
@@ -1593,6 +1644,157 @@ def flow_picker_multi_add(page, base_url: str) -> None:
         f"Step 7: expected two sequenced Gunlock parts after multi-add, got {names}"
 
 
+def flow_preview_drag_mirroring(page, base_url: str) -> None:
+    """Preview drag is stable for paired layouts and keeps saved work visible.
+
+    This reproduces the three failure modes that are easy to miss in a normal
+    picker flow: the inspector must stack over icons; vertical and horizontal
+    pairs must render their reflected counterpart while dragging; and a second
+    drag while the first autosave is still in flight must not snap the first
+    part back to its old location.
+    """
+    _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+    page.wait_for_selector("#pv-canvas-wrap .pv-frame")
+    blocked_saves = []
+    page.route("**/api/draft/*/overrides/batch", lambda route: blocked_saves.append(route))
+
+    page.evaluate("""() => {
+      _pvDraftId = "preview-drag-smoke";
+      _pvPendingOverrides = {};
+      _pvInFlightOverrides = {};
+      _pvConfirmedOverrides = {};
+      _pvAutosaveTimer = null;
+      _pvAutosaveInFlight = false;
+      _pvAutosavePromise = null;
+      _pvView = "top";
+      _pvPlan = {
+        views: { top: { label: "Top", bg_url: "" } },
+        planned_parts: [
+          {
+            part_name: "Vertical pair", render_kind: "light", placements: [{
+              view: "top", override_key: "vertical:top", group_key: "vertical",
+              location_key: "TEST", anchor: { x: 0.80, y: 0.75 },
+              pattern: "vertical_mirror", h_spacing: 0.10, h_spacing_units: "relative_image",
+              slot_count: 2, rotation: 0, flip_h: false, flip_v: false,
+              flip_mirrored_h: false, icon_w_pct: 0.04, icon_h_pct: 0.04,
+              layer: 0, override: {}, instances: [
+                { x_pct: 0.80, y_pct: 0.25, w_pct: 0.04, h_pct: 0.04, slot_coeff: 0, slot_role: "slot_1" },
+                { x_pct: 0.80, y_pct: 0.75, w_pct: 0.04, h_pct: 0.04, slot_coeff: 0, slot_role: "slot_2" },
+              ],
+            }],
+          },
+          {
+            part_name: "Horizontal pair", render_kind: "light", placements: [{
+              view: "top", override_key: "horizontal:top", group_key: "horizontal",
+              location_key: "TEST", anchor: { x: 0.50, y: 0.50 },
+              pattern: "horizontal", h_spacing: 0.20, h_spacing_units: "relative_image",
+              slot_count: 2, rotation: 0, flip_h: false, flip_v: false,
+              flip_mirrored_h: false, icon_w_pct: 0.04, icon_h_pct: 0.04,
+              layer: 0, override: {}, instances: [
+                { x_pct: 0.40, y_pct: 0.50, w_pct: 0.04, h_pct: 0.04, slot_coeff: -0.5, slot_role: "passenger" },
+                { x_pct: 0.60, y_pct: 0.50, w_pct: 0.04, h_pct: 0.04, slot_coeff: 0.5, slot_role: "driver" },
+              ],
+            }],
+          },
+        ],
+      };
+      pvRenderView("top");
+      const frame = document.querySelector(".pv-frame");
+      frame.style.height = "400px";
+      return frame.getBoundingClientRect().width;
+    }""")
+
+    def positions(key: str):
+        return page.evaluate("""(key) => Array.from(document.querySelectorAll('.pv-icon')).filter(
+          icon => icon.dataset.overrideKey === key
+        ).map(icon => ({
+          left: parseFloat(icon.style.left), top: parseFloat(icon.style.top),
+        }))""", key)
+
+    def drag(key: str, index: int, dx: float, dy: float):
+        return page.evaluate("""({ key, index, dx, dy }) => {
+          const icons = Array.from(document.querySelectorAll('.pv-icon')).filter(
+            icon => icon.dataset.overrideKey === key
+          );
+          const icon = icons[index];
+          const rect = icon.getBoundingClientRect();
+          const frameEl = document.querySelector('.pv-frame');
+          frameEl.style.height = '400px';
+          const frame = frameEl.getBoundingClientRect();
+          const startX = rect.left + rect.width / 2;
+          const startY = rect.top + rect.height / 2;
+          icon.dispatchEvent(new MouseEvent('mousedown', {
+            bubbles: true, button: 0, clientX: startX, clientY: startY,
+          }));
+          document.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true, clientX: startX + dx, clientY: startY + dy,
+          }));
+          const during = Array.from(document.querySelectorAll('.pv-icon')).filter(
+            item => item.dataset.overrideKey === key
+          ).map(item => ({ left: parseFloat(item.style.left), top: parseFloat(item.style.top) }));
+          document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true, clientX: startX + dx, clientY: startY + dy,
+          }));
+          const after = Array.from(document.querySelectorAll('.pv-icon')).filter(
+            item => item.dataset.overrideKey === key
+          ).map(item => ({ left: parseFloat(item.style.left), top: parseFloat(item.style.top) }));
+          return { during, after, dx_pct: dx / frame.width * 100, dy_pct: dy / frame.height * 100 };
+        }""", {"key": key, "index": index, "dx": dx, "dy": dy})
+
+    # Clicking a part opens the inspector over the icon layer.
+    layer_order = page.evaluate("""() => {
+      const icon = document.querySelector('.pv-icon');
+      const rect = icon.getBoundingClientRect();
+      icon.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: rect.left, clientY: rect.top }));
+      document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: rect.left, clientY: rect.top }));
+      return {
+        inspector: Number(getComputedStyle(document.querySelector('#pv-inspector')).zIndex),
+        icon: Number(getComputedStyle(icon).zIndex),
+      };
+    }""")
+    assert layer_order["inspector"] > layer_order["icon"], layer_order
+    page.evaluate("pvHideInspector()")
+
+    vertical_before = positions("vertical:top")
+    vertical = drag("vertical:top", 0, 60, -40)
+    assert abs(vertical["during"][0]["left"] - (vertical_before[0]["left"] + vertical["dx_pct"])) < 0.02, vertical
+    assert abs(vertical["during"][0]["top"] - (vertical_before[0]["top"] + vertical["dy_pct"])) < 0.02, vertical
+    assert abs(vertical["during"][1]["top"] - (vertical_before[1]["top"] - vertical["dy_pct"])) < 0.02, vertical
+    assert vertical["after"] == vertical["during"], "vertical pair changed when released"
+
+    # Start the first save but deliberately do not resolve it yet. Calling the
+    # save directly avoids timer-throttling differences in headless browsers;
+    # normal interaction still schedules this same function after 300 ms.
+    page.evaluate("void pvApplyChanges()")
+    page.wait_for_timeout(25)
+    first_save_state = page.evaluate("""() => ({
+      pending: _pvPendingOverrides,
+      in_flight: _pvInFlightOverrides,
+      saving: _pvAutosaveInFlight,
+    })""")
+    assert len(blocked_saves) == 1, f"first preview save did not start: {first_save_state!r}"
+
+    vertical_saved = positions("vertical:top")
+    horizontal_before = positions("horizontal:top")
+    horizontal = drag("horizontal:top", 1, 60, 20)
+    assert abs(horizontal["during"][1]["left"] - (horizontal_before[1]["left"] + horizontal["dx_pct"])) < 0.02, horizontal
+    assert abs(horizontal["during"][0]["left"] - (horizontal_before[0]["left"] - horizontal["dx_pct"])) < 0.02, horizontal
+    assert abs(horizontal["during"][0]["top"] - (horizontal_before[0]["top"] + horizontal["dy_pct"])) < 0.02, horizontal
+    assert horizontal["after"] == horizontal["during"], "horizontal pair changed when released"
+    assert positions("vertical:top") == vertical_saved, "in-flight placement snapped during a second drag"
+    page.evaluate("void pvApplyChanges()")
+
+    # Complete both queued autosaves and make sure the visual state remains stable.
+    blocked_saves.pop(0).fulfill(status=200, content_type="application/json", body='{"ok":true}')
+    page.wait_for_timeout(100)
+    assert len(blocked_saves) == 1, "second preview save did not queue"
+    blocked_saves.pop(0).fulfill(status=200, content_type="application/json", body='{"ok":true}')
+    page.wait_for_timeout(50)
+    assert positions("vertical:top") == vertical_saved
+    assert positions("horizontal:top") == horizontal["after"]
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -1608,6 +1810,7 @@ FLOWS = {
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,
     "picker_multi_add": flow_picker_multi_add,
+    "preview_drag_mirroring": flow_preview_drag_mirroring,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,

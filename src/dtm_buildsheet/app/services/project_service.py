@@ -7,7 +7,7 @@ _log = logging.getLogger(__name__)
 
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
 from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences, IndividualUnit
-from ...inputs.project_drafts import DraftPart, new_draft, save_draft
+from ...inputs.project_drafts import DraftPart, load_draft, new_draft, save_draft
 from ...inputs.project_entry import (
     delete_project,
     list_projects,
@@ -48,16 +48,27 @@ def handle_get_project(project_id: str, paths: AppPaths) -> dict:
 def handle_save_project(body: dict, paths: AppPaths) -> dict:
     try:
         project_id = body.get("project_id") or None
+        is_new_project = not project_id
         if project_id:
             try:
                 project = load_project(project_id, paths)
             except FileNotFoundError:
                 project = new_project(project_id=project_id)
+                is_new_project = True
         else:
             project = new_project()
 
         if "customer" in body:
             project.customer = customer_from_dict(body["customer"])
+
+        # Agency defaults are copied only as a project is first created.  This
+        # deliberately avoids retroactively changing existing projects when an
+        # agency updates its normal equipment choices.
+        if is_new_project and project.customer.agency_id:
+            from .agency_service import get_agency
+            agency = get_agency(paths, project.customer.agency_id)
+            if agency is not None:
+                project.preferences = preferences_from_dict(asdict(agency.default_preferences))
 
         if "preferences" in body:
             project.preferences = preferences_from_dict(body["preferences"])
@@ -65,7 +76,30 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         if "build_units" in body:
             project.build_units = [build_unit_from_dict(u) for u in body["build_units"]]
 
+        if "project_notes" in body:
+            project.project_notes = str(body.get("project_notes") or "").strip()
+
         path = save_project(project, paths)
+
+        # Existing drafts need the new shared instruction immediately too.  We
+        # keep it as a separate draft field so a project edit never overwrites
+        # build-specific final-page notes.
+        draft_ids = {
+            draft_id
+            for unit in project.build_units
+            for draft_id in [unit.draft_id, *(ind.draft_id for ind in unit.individuals)]
+            if draft_id
+        }
+        for draft_id in draft_ids:
+            try:
+                draft = load_draft(draft_id, paths.workspace_drafts_dir)
+                if draft.project_notes != project.project_notes:
+                    draft.project_notes = project.project_notes
+                    save_draft(draft, paths.workspace_drafts_dir)
+            except FileNotFoundError:
+                # A draft can be cleared/recreated while its project record is
+                # being edited. The fresh draft receives this value below.
+                continue
 
         # Create the per-project output folder immediately so the directory is
         # ready before generation, and so the user can see it was created.
@@ -148,6 +182,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
             quantity=p.quantity,
             lens=p.lens,
             notes=p.notes,
+            comment=getattr(p, "comment", ""),
             explicit_color_profile=p.explicit_color_profile,
             driver_color=p.driver_color,
             passenger_color=p.passenger_color,
@@ -156,15 +191,15 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         for p in part_inputs
     ]
 
-    raw_id = project.customer.quote_number.strip() or project.project_id
-    project_id_val = safe_project_id(raw_id, fallback=project.project_id)
+    # A project can contain multiple vehicle estimates, so its generated build
+    # sheets must not inherit a single blanket quote number as their identity.
+    project_id_val = safe_project_id(project.project_id, fallback="PROJECT")
     project_total_units = sum(u.quantity for u in project.build_units)
 
     vehicle_info: dict = {
         "VehicleType": unit.vehicle_model,
         "Agency": project.customer.agency,
         "BuildYear": project.customer.build_year,
-        "QuoteNumber": project.customer.quote_number,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
@@ -200,7 +235,12 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
     if pref_notes:
         notes["EQUIPMENT PREFERENCES"] = pref_notes
 
-    draft = new_draft(vehicle_info=vehicle_info, parts=draft_parts, notes=notes)
+    draft = new_draft(
+        vehicle_info=vehicle_info,
+        parts=draft_parts,
+        notes=notes,
+        project_notes=project.project_notes,
+    )
     save_draft(draft, paths.workspace_drafts_dir)
 
     unit.draft_id = draft.draft_id
@@ -262,8 +302,7 @@ def handle_create_individual_draft(
         for p in part_inputs
     ]
 
-    raw_id = project.customer.quote_number.strip() or project.project_id
-    project_id_val = safe_project_id(raw_id, fallback=project.project_id)
+    project_id_val = safe_project_id(project.project_id, fallback="PROJECT")
     project_total_units = sum(u.quantity for u in project.build_units)
 
     ind_idx = next(
@@ -285,7 +324,6 @@ def handle_create_individual_draft(
         "VehicleType": unit.vehicle_model,
         "Agency": project.customer.agency,
         "BuildYear": project.customer.build_year,
-        "QuoteNumber": project.customer.quote_number,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
@@ -328,7 +366,12 @@ def handle_create_individual_draft(
     if pref_notes:
         notes["EQUIPMENT PREFERENCES"] = pref_notes
 
-    draft = new_draft(vehicle_info=vehicle_info, parts=draft_parts, notes=notes)
+    draft = new_draft(
+        vehicle_info=vehicle_info,
+        parts=draft_parts,
+        notes=notes,
+        project_notes=project.project_notes,
+    )
     save_draft(draft, paths.workspace_drafts_dir)
 
     individual.draft_id = draft.draft_id

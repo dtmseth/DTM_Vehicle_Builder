@@ -1021,6 +1021,10 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   visible "extra large" was NOT the `rd` rule — it is the `size_per_view`/fallback path. The real
   fix is FINDING-035. The `asset_manifest.json` `sm` rules added here are harmless but misplaced
   legacy-file data (owner directive: size belongs in parts_db); candidate to unwind when F-035 lands.
+- **Migration completed (2026-08-05):** `part_number_size_rules` is now empty and ignored by the
+  resolver. The Round Lighthead has exact `"3"`/`"6"` model aliases with the `rd` profile, while
+  siren speakers continue to use their part-type `size_per_view`. This removes the substring
+  collision class entirely instead of maintaining exact-match exceptions in a legacy map.
 
 ### FINDING-034: siren→lighting brand pref + console_brand preference added (owner follow-up) — RESOLVED
 - **Location:** `ui/js/part_picker.js::_pickerPreferredBrand`, `domain/project_models.py`
@@ -1079,7 +1083,7 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   brands collapsed into the "Other brands…" dropdown, matching the existing lights/bumper/cage/
   camera UX exactly.
 
-### FINDING-035: siren render size must move into parts_db at the part-type level (owner flaw #6, size — the real fix) — NEEDS-DESIGN
+### FINDING-035: siren render size must move into parts_db at the part-type level (owner flaw #6, size — the real fix) — RESOLVED (2026-08-05)
 - **Supersedes the cosmetic FINDING-033.** Owner directive (2026-07-13): size + image data
   belongs in the **parts_db, at the part-type level** (with per-part override), NOT in the legacy
   `parts_library.json` / `part_catalog.json` / `asset_manifest.json`, and NOT sprayed per-SKU.
@@ -1107,6 +1111,11 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   pointed at parts_db, or build it into the new Part Manager. Ties into the Phase-4 pipeline
   inversion and `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` (size/images are more parts_db data the
   repository should own). Scope with the owner before building.
+- **Resolution:** the part-type `render.size_per_view`/`images` path is now exposed by the
+  redesigned Light Size Rules page for direct editing, with optional `render.size_rule_id` on a
+  part type or product and a rare concrete-SKU `size_rule_id` override. The planner now considers
+  component SKUs when hydrating product render metadata, and size profiles resolve explicitly
+  before the legacy text table. The old manifest map remains preserved for legacy workbook lines.
 - **Related still-open siren work (this session, not started):** qty(1/2) selector + Top/Under
   Push-Bumper mirrored-slot render (qty=1 CENTERED, qty=2 both) + dot count; bracket-nesting fix
   (accessory child lands in "Other" — group children into the parent's section in
@@ -1235,3 +1244,44 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   never offers tray placement, and the radio flow stays in the main SKU/product pane.
 - **Fix direction:** add one focused UI smoke assertion set or lightweight JS/route-backed test for
   those rules after the next radio workflow code change.
+
+## Session 2026-08-06 — guided-system and radio/console continuation
+
+### FINDING-041: guided-system families exposed component leaves and radar's system selector included accessories — RESOLVED
+- **Location:** `ui/js/part_picker.js` browse-tree family rendering and `_pickerSystemProducts`.
+- **Category:** picker workflow / misleading entry paths · **Severity:** MEDIUM · **Status:**
+  RESOLVED (2026-08-06).
+- **Owner repro:** selecting Radar through its top-level family entered guided setup, but its visible
+  subleaves opened ordinary product grids. The guided radar selector itself also mixed actual radar
+  systems with antenna mounts, brackets, and cables. The same competing entry-path risk applied to
+  Radio Communications and Camera System.
+- **Fix:** the three known guided-system families (`radio_comms`, `radar`, `camera_system`) render
+  as non-expandable family entries. Selecting one starts its guided flow; its individual component
+  products remain available only from the explicit **Choose SKUs manually** action. Radar's guided
+  selector filters to `radar_display_unit` products, matching the existing radio `radio_head` and
+  camera-platform filters. Radio selection uses the selected radio-unit SKU as its identity and
+  opens its details immediately; its all-in-one/split layout is derived from that selection, removing
+  the duplicate layout question.
+- **Verification:** `node --check src/dtm_buildsheet/ui/js/part_picker.js`; cloud-off
+  `pytest tests/test_draft_parts.py tests/test_parts_db_routes.py -q` — 133 passed. No UI smoke or
+  screenshot validation ran at the owner's direction; this leaves FINDING-040's broader UX-coverage
+  gap open.
+
+### FINDING-042: a console radio mic clip and a radio mic mount could describe the same physical hardware twice — RESOLVED
+- **Location:** `ui/js/part_picker.js` guided radio and console setup; atomic
+  `app/services/draft_service.py::handle_replace_console_setup_parts`.
+- **Category:** manifest/quote integrity · **Severity:** MEDIUM · **Status:** RESOLVED (2026-08-06).
+- **Owner requirement:** Havis console setup must ask about the C-MCB radio mic clip so it is not
+  forgotten, while radio setup must also ask about its microphone mount. In either setup order, the
+  operator needs to declare whether those choices are one physical clip or an additional clip. PA
+  microphone hardware is a separate flow and must not participate.
+- **Fix:** a console-first radio flow asks whether to use the existing console clip; selecting it
+  skips the radio's separate mount/location questions and suppresses its Magnetic Mic child. A
+  radio-first console flow requires the inverse shared-versus-additional answer before save.
+  Reuse is reconciled atomically with the console-owned rows: the radio's saved choices/details and
+  display component reference the console clip, only its `magnetic_mic` child is removed, and its
+  cable-refresh children survive. The route validates that a requested reconciliation actually adds
+  a console `radio_mic_clip` row.
+- **Verification:** new draft-service regressions cover successful radio-first reconciliation,
+  preservation of a cable-refresh child, and rejection of a malformed shared-clip request; included
+  in the same 133-passing cloud-off focused suite above.

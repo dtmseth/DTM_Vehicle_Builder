@@ -6,7 +6,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB400",
-        "price_min": 579.0,
+        "price_min": 579,
         "product_id": "setina_pb400",
         "qb_count": 10,
         "sku_count": 10
@@ -15,7 +15,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB450L",
-        "price_min": 949.0,
+        "price_min": 949,
         "product_id": "setina_pb450l",
         "qb_count": 12,
         "sku_count": 12
@@ -33,7 +33,7 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2020-2026 FORD POLCE INTERCEPTOR UTILITY",
-        "price_min": 598.0,
+        "price_min": 598,
         "product_id": "westin_36_2125",
         "qb_count": 1,
         "sku_count": 1
@@ -42,7 +42,7 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2021-2026 CHEVROLET TAHOE PPV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_4045",
         "qb_count": 1,
         "sku_count": 1
@@ -50,17 +50,8 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 CHEVROLET TAHOE PPV",
-        "price_min": 56.0,
-        "product_id": "westin_36_4045wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2021-2026 DODGE DURANGO",
-        "price_min": 598.0,
+        "price_min": 598,
         "product_id": "westin_36_4075",
         "qb_count": 1,
         "sku_count": 1
@@ -68,26 +59,8 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_4075wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITEXD WIRE COVER 2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
-        "price_min": 56.0,
-        "product_id": "westin_36_52065wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_52135",
         "qb_count": 1,
         "sku_count": 1
@@ -95,90 +68,9 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
-        "price_min": 56.0,
-        "product_id": "westin_36_52135wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITEXD 2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_54085",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005s4",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005smp2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005w2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005w4",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL 2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015w2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015w4",
         "qb_count": 1,
         "sku_count": 1
       },
@@ -195,7 +87,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB450L4 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 4 TOTAL LIGHTS: 2 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
-        "price_min": 1179.0,
+        "price_min": 1179,
         "product_id": "setina_c",
         "qb_count": 1,
         "sku_count": 1

@@ -52,14 +52,7 @@
         "Pit Bar"
       ],
       "accessory_of": "Push Bumper",
-      "co_part_rules": [
-        {
-          "co_part": "Wing Wraps",
-          "if_present": {
-            "skip": true
-          }
-        }
-      ]
+      "co_part_rules": []
     },
     {
       "part_id": "wing_wraps",
@@ -273,6 +266,43 @@
         "TRACER 5 LAMP",
         "TRACER 5-LAMP",
         "Tracer 5 Lamp"
+      ],
+      "size_per_view": {
+        "side": {
+          "w": 0.7,
+          "h": 0.06
+        }
+      }
+    },
+    {
+      "part_id": "tracer_3lamp",
+      "display_name": "3-Lamp Tracer",
+      "category": "warning_light",
+      "render_kind": "light",
+      "diagram": true,
+      "default_views": [
+        "side"
+      ],
+      "is_fixture": true,
+      "group_shapes": true,
+      "render_quantity_policy": "location_slots",
+      "quantity_rules": [
+        {
+          "qty": 1,
+          "slot_count": 3
+        },
+        {
+          "qty": 2,
+          "slot_count": 3
+        }
+      ],
+      "default_color_profile": "std_duo_rb_w",
+      "aliases": [
+        "3 Lamp Tracer",
+        "3-Lamp Tracer",
+        "TRACER 3 LAMP",
+        "TRACER 3-LAMP",
+        "Tracer 3 Lamp"
       ],
       "size_per_view": {
         "side": {

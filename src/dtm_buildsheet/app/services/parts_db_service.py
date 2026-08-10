@@ -13,7 +13,8 @@ manifest_editor dropdowns):
   2. workbook_rules.json (deepest fallback, gone in Phase 4)
 
 Singleton lifecycle: `get_parts_db_service(paths)`. Cache invalidates via
-`config_service.save_config_file("parts_db.json", ...)`.
+`config_service.save_config_file("parts_db.json", ...)` and also notices when
+another app process or the settings sync replaces the file on disk.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ import logging
 from dataclasses import asdict
 from typing import Optional
 
-from ...config.store import load_config
+from ...config.store import get_config_path, load_config
 from ...domain.parts_db_models import (
     BuildAttribute,
     Color,
@@ -145,10 +146,26 @@ class PartsDbService:
     def __init__(self, paths: AppPaths):
         self._paths = paths
         self._cache: dict | None = None
+        self._cache_file_marker: tuple[int, int] | None = None
         self._legacy_index = LegacyWorkbookIndex(paths)
         self._fallback = LegacyFallbackReader(paths)
 
+    def _file_marker(self) -> tuple[int, int] | None:
+        """Return a cheap change marker for the externally writable catalog."""
+        try:
+            stat = get_config_path("parts_db.json", self._paths).stat()
+        except OSError:
+            return None
+        return stat.st_mtime_ns, stat.st_size
+
     def _load(self) -> dict:
+        marker = self._file_marker()
+        if self._cache is not None and marker != self._cache_file_marker:
+            # The shared-settings pull and another app instance can replace
+            # parts_db.json without going through this service. Do not let a
+            # long-running estimate screen keep evaluating an older catalog.
+            logger.info("parts_db.json changed on disk; refreshing catalog cache")
+            self._cache = None
         if self._cache is None:
             try:
                 self._cache = load_config("parts_db.json", self._paths)
@@ -157,15 +174,57 @@ class PartsDbService:
             except Exception:
                 logger.exception("Could not load parts_db.json; using empty")
                 self._cache = _empty_parts_db_doc()
+            self._cache_file_marker = self._file_marker()
         return self._cache
 
     def invalidate(self) -> None:
         self._cache = None
+        self._cache_file_marker = None
         self._legacy_index.reload()
         self._fallback.reload()
 
     def raw_doc(self) -> dict:
         return self._load()
+
+    def find_sku(self, sku: str) -> dict | None:
+        """Return a compact catalog match for an exact, case-insensitive SKU.
+
+        This is intentionally a lookup only: callers use it to prevent a
+        one-off custom part from shadowing a genuine inventory SKU.
+        """
+        target = str(sku or "").strip().casefold()
+        if not target:
+            return None
+        doc = self._load()
+        manufacturers = doc.get("manufacturers") or {}
+        for product_id, product in (doc.get("products") or {}).items():
+            if not isinstance(product, dict):
+                continue
+            for part_number in product.get("part_numbers") or []:
+                if not isinstance(part_number, dict):
+                    continue
+                number = str(part_number.get("part_number", "")).strip()
+                if number.casefold() != target:
+                    continue
+                manufacturer_id = str(product.get("manufacturer_id", "")).strip()
+                manufacturer = (manufacturers.get(manufacturer_id) or {}).get(
+                    "label", manufacturer_id,
+                )
+                return {
+                    "product_id": str(product_id),
+                    "part_number": number,
+                    "model": str(product.get("model", "")).strip(),
+                    "description": str(product.get("description", "")).strip(),
+                    "manufacturer_label": str(manufacturer or "").strip(),
+                    "price": (
+                        part_number.get("qb_unit_price")
+                        if part_number.get("qb_unit_price") is not None
+                        else part_number.get("price_usd")
+                    ),
+                    "qb": bool(part_number.get("qb_item_id")),
+                    "qb_pending": bool(part_number.get("qb_pending")),
+                }
+        return None
 
     # ── Top-level taxonomies ──────────────────────────────────────────────
 

@@ -282,7 +282,8 @@
       const ok = confirm(
         `QuickBooks has ${pre.total} customer${pre.total === 1 ? "" : "s"}.\n\n` +
         `${pre.would_create} new agenc${pre.would_create === 1 ? "y" : "ies"} will be created, ` +
-        `${pre.would_update} will be updated/linked.\n\nImport now?`
+        `${pre.would_update} will be updated/linked.\n\n` +
+        `This only pulls customer profiles into the app; it does not create estimates, invoices, or customer messages.\n\nImport now?`
       );
       if (!ok) return;
       if (label) label.textContent = "Importing…";

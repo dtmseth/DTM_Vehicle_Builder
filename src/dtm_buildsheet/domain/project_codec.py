@@ -85,6 +85,8 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         last_exported_at=str(d.get("last_exported_at", "")),
         last_exported_by=str(d.get("last_exported_by", "")),
         qb_job_id=str(d.get("qb_job_id", "")),
+        qb_project_id=str(d.get("qb_project_id", "")),
+        qb_project_name=str(d.get("qb_project_name", "")),
         qb_estimate_id=str(d.get("qb_estimate_id", "")),
         qb_invoice_id=str(d.get("qb_invoice_id", "")),
     )
@@ -125,4 +127,5 @@ def project_from_dict(d: dict) -> ProjectRecord:
         customer=customer_from_dict(d.get("customer", {})),
         preferences=preferences_from_dict(d.get("preferences", {})),
         build_units=[build_unit_from_dict(u) for u in d.get("build_units", [])],
+        project_notes=str(d.get("project_notes", "") or "").strip(),
     )

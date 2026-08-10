@@ -13,7 +13,14 @@ from ..rules.engine import run_rules
 from .asset_resolver import resolve_asset_path, size_class_for_part
 from .color_resolver import resolve_color_token, resolve_profile
 from .fixture_resolver import resolve_fixture_entry
-from .location_resolver import apply_co_part_rules, resolve_normal_location
+from .layer_policy import enforced_render_layer
+from .location_resolver import (
+    apply_co_part_rules,
+    custom_location_has_no_render_placement,
+    custom_location_points,
+    resolve_normal_location,
+    resolved_location_key,
+)
 from .quantity_resolver import apply_quantity_rules, apply_quantity_rules_list
 
 _log = logging.getLogger(__name__)
@@ -42,6 +49,7 @@ _CATEGORY_RENDER_KIND: dict[str, str] = {
 # spec with no model_remaps, so map the parts_db housing SKUs here too.
 _TRACER_RENDER_BY_SKU: dict[str, str] = {
     "TCRWX2": "tracer_2lamp",
+    "TCRWX3": "tracer_3lamp",
     "TCRWX5": "tracer_5lamp",
     "TCRWX6": "tracer_6lamp",
 }
@@ -53,6 +61,42 @@ _BAR_ASSET_KEY: dict[str, str] = {
     "front_interior_light_bar": "interior-front",
     "rear_interior_light_bar": "interior-rear",
 }
+
+# Interior bars are shown only in their windshield-facing vehicle view.  The
+# top view is reserved for exterior equipment and makes windshield bars look
+# like they are mounted on the roof.
+_INTERIOR_LIGHT_BAR_PART_TYPES = frozenset({
+    "front_interior_light_bar",
+    "rear_interior_light_bar",
+})
+_INTERIOR_LIGHT_BAR_ASSET_KEYS = frozenset({"interior-front", "interior-rear"})
+
+# The parts_db uses readable physical type ids while the vehicle fixture map
+# retains two legacy catalog ids.  Picker-created Inner Edges must use the
+# fixture locations, but render as individual ION-size lights rather than the
+# generic bar image.
+_INNER_EDGE_FIXTURE_BY_TYPE: dict[str, str] = {
+    "front_interior_light_bar": "interior_light_bar_front",
+    "rear_interior_light_bar": "rear_interior_light_bar",
+}
+
+# Inner Edge modules use the same artwork as ION heads, but a normal ION is
+# too wide when a full FST/RST row is rendered.  Keep the normal head height
+# while narrowing the artwork so each module remains distinct and inside the
+# windshield/vehicle bounds.
+_INNER_EDGE_SIZE_PER_VIEW: dict[str, dict[str, float]] = {
+    "front": {"w": 0.31, "h": 0.114},
+    "rear": {"w": 0.31, "h": 0.114},
+    "top": {"w": 0.17, "h": 0.045},
+}
+
+# Outer Edge is a fixed rear-pillar assembly, not six independently placed
+# warning heads.  Its two three-head columns use the normal PILLARS anchors
+# and mirror their inward angle around the vehicle centerline.
+_OUTER_EDGE_PILLAR_PRODUCT_ID = "whelen_ion_rear_pillar"
+_OUTER_EDGE_HEAD_COUNT = 6
+_OUTER_EDGE_VERTICAL_SPACING = 0.045
+_OUTER_EDGE_PILLAR_ROTATION = -55.0
 
 
 _WARNING_BASE_NAMES = {
@@ -138,15 +182,22 @@ def _synthesize_spec(pt, location_key: str) -> dict:
         "display_name":             pt.label,
         "category":                 pt.category or cat,
         "render_kind":              render_kind,
-        "default_views":            [],   # resolved from location — see _views_for_location
+        # Most picker-built parts resolve their views from a chosen location.
+        # Physical fixtures instead own their coordinates in vehicle_layouts;
+        # preserve that distinction when the part type provides it.
+        "default_views":            list(render.get("default_views") or []),
         "asset_key":                asset_key,
-        "is_fixture":               False,
-        "render_quantity_policy":   "location_slots",
+        "is_fixture":               bool(render.get("is_fixture", False)),
+        "render_quantity_policy":   render.get("render_quantity_policy", "location_slots"),
+        "default_color_profile":    render.get("default_color_profile", ""),
+        # A parts-db-owned profile is the canonical size source. Product/SKU
+        # assignments are resolved below and override this part-type default.
+        "size_rule_id":             render.get("size_rule_id", ""),
         "accessory_of":             getattr(pt, "accessory_of", None),
         "group_shapes":             False,
         # Empty containers for code paths that iterate these unconditionally.
         "model_remaps":             {},
-        "co_part_rules":            [],
+        "co_part_rules":            list(render.get("co_part_rules") or []),
         "location_asset_rules":     {},
         "size_per_view":            dict(render.get("size_per_view") or {}),
         "quantity_rules":           list(render.get("quantity_rules") or []),
@@ -242,19 +293,89 @@ def _lighted_bumper_virtual_parts(part: PartInput, svc) -> list[PartInput]:
     return virtual
 
 
-def _parts_db_render_for_part(part_number: str, svc) -> dict:
-    if not part_number:
+def _parts_db_render_for_part(
+    part_number: str, svc, candidates: list[str] | None = None
+) -> dict:
+    candidates = candidates or [part_number]
+    candidates = [
+        str(candidate).strip().upper()
+        for candidate in candidates
+        if str(candidate).strip()
+    ]
+    if not candidates:
         return {}
-    wanted = part_number.strip().upper()
     try:
         products = (svc.raw_doc().get("products") or {}).values()
     except Exception:
         return {}
+
+    def render_for(product: dict, sku: dict | None = None) -> dict:
+        render = dict(product.get("render") or {})
+        # Keep the optional override on the concrete SKU, without requiring
+        # every SKU to carry duplicated render dimensions.
+        if sku and sku.get("size_rule_id"):
+            render["size_rule_id"] = sku["size_rule_id"]
+        return render
+
+    # A concrete SKU is the strongest product identity. This also makes a
+    # SKU-level size assignment win over its parent model as documented.
     for product in products:
         for pn in product.get("part_numbers") or []:
-            if str(pn.get("part_number", "")).strip().upper() == wanted:
-                return dict(product.get("render") or {})
+            if str(pn.get("part_number", "")).strip().upper() in candidates:
+                return render_for(product, pn)
+
+    # Older workbook rows can carry a product model instead of an orderable
+    # SKU. Resolve those through the product's stable model identity and any
+    # curated aliases; this is identity translation, not a size text rule.
+    def normalized_identity(value: object) -> str:
+        return _re.sub(r"[^A-Z0-9]+", "", str(value or "").upper())
+
+    wanted = {normalized_identity(candidate) for candidate in candidates}
+    wanted.discard("")
+    if not wanted:
+        return {}
+    for product in products:
+        identities = [product.get("model", ""), *(product.get("model_aliases") or [])]
+        if wanted.intersection(normalized_identity(identity) for identity in identities):
+            return render_for(product)
     return {}
+
+
+def _inner_edge_render_config(part: PartInput) -> dict:
+    """Return a sanitized Inner Edge render directive saved by the picker."""
+    raw = getattr(part, "picker_config", {}) or {}
+    config = raw.get("inner_edge") if isinstance(raw, dict) else None
+    if not isinstance(config, dict):
+        return {}
+    product_id = str(config.get("product_id", "")).strip()
+    lamp_count = config.get("lamp_count")
+    try:
+        lamp_count = int(lamp_count)
+    except (TypeError, ValueError):
+        lamp_count = 0
+    if product_id not in {"whelen_fst", "whelen_rst"} or lamp_count < 1:
+        return {}
+    coverage = str(config.get("coverage", "both")).strip().lower()
+    if coverage not in {"both", "driver", "passenger"}:
+        coverage = "both"
+    return {"product_id": product_id, "lamp_count": lamp_count, "coverage": coverage}
+
+
+def _outer_edge_render_config(part: PartInput) -> dict:
+    """Return the fixed six-head rear-pillar directive saved by the picker."""
+    raw = getattr(part, "picker_config", {}) or {}
+    config = raw.get("outer_edge_pillar") if isinstance(raw, dict) else None
+    if not isinstance(config, dict):
+        return {}
+    if str(config.get("product_id", "")).strip() != _OUTER_EDGE_PILLAR_PRODUCT_ID:
+        return {}
+    try:
+        head_count = int(config.get("head_count", 0))
+    except (TypeError, ValueError):
+        return {}
+    if head_count != _OUTER_EDGE_HEAD_COUNT:
+        return {}
+    return {"head_count": head_count}
 
 
 def _views_for_location(location_key: str, view_map: dict[str, dict]) -> list[str]:
@@ -269,6 +390,37 @@ def _views_for_location(location_key: str, view_map: dict[str, dict]) -> list[st
         if location_key in locations:
             views.append(view_name)
     return views
+
+
+def _renderable_system_components(part: PartInput) -> list[PartInput]:
+    """Return system sub-components that need their own physical artwork.
+
+    Guided systems intentionally keep most of their setup as an expandable
+    component list on one purchase line.  A roof antenna is different: it is
+    visible on the build drawing, so synthesize a planning-only part from the
+    saved component.  This also repairs already-saved guided radio builds
+    without rewriting their drafts.
+    """
+    rendered: list[PartInput] = []
+    for component in getattr(part, "components", []) or []:
+        if not isinstance(component, dict) or component.get("part_type") != "radio_antenna_top":
+            continue
+        detail = str(component.get("detail", "") or "")
+        is_whip = "whip" in detail.casefold()
+        rendered.append(PartInput(
+            name="Radio Antenna",
+            include=True,
+            new_or_used=part.new_or_used,
+            source=part.source,
+            manufacturer="Laird" if is_whip else "",
+            part_number="QWB800" if is_whip else "",
+            location=str(component.get("location", "") or ""),
+            quantity=max(1, int(component.get("quantity", 1) or 1)),
+            notes=detail,
+            line_id=part.line_id,
+            part_type="radio_antenna_top",
+        ))
+    return rendered
 
 
 def build_plan(project, config: ConfigBundle) -> BuildPlan:
@@ -313,9 +465,27 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         parts_to_plan.append(part)
         if part.include:
             parts_to_plan.extend(_lighted_bumper_virtual_parts(part, _get_svc()))
+            parts_to_plan.extend(_renderable_system_components(part))
 
     for part in parts_to_plan:
         if not part.include:
+            continue
+
+        # One-off custom parts are billable manifest lines, deliberately not
+        # inventory/catalog products. They belong in generated documentation
+        # but have no vehicle artwork or placement requirement.
+        custom = (getattr(part, "picker_config", {}) or {}).get("custom_part")
+        if isinstance(custom, dict):
+            planned_parts.append(
+                PlannedPart(
+                    part_id="custom_part",
+                    part_name=part.name,
+                    category="custom",
+                    render_kind="none",
+                    on_diagram=False,
+                    raw=part,
+                )
+            )
             continue
 
         spec = config.parts_by_name.get(part.name.upper())
@@ -370,6 +540,44 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             if tracer_id and tracer_id in config.parts_by_id:
                 spec = config.parts_by_id[tracer_id]
 
+        inner_edge = _inner_edge_render_config(part)
+        if inner_edge:
+            fixture_id = _INNER_EDGE_FIXTURE_BY_TYPE.get(part.part_type)
+            if fixture_id:
+                # The housing remains a one-unit QB line, while its lamp count
+                # drives render slots below. Rendering as `light` deliberately
+                # bypasses the existing full-width interior-bar bitmap.
+                spec = {
+                    **spec,
+                    "part_id": fixture_id,
+                    "render_kind": "light",
+                    "asset_key": "",
+                    "is_fixture": True,
+                    "default_views": (
+                        ["front", "top"] if inner_edge["product_id"] == "whelen_fst" else ["rear", "top"]
+                    ),
+                    "render_quantity_policy": "single_per_line",
+                    "group_shapes": False,
+                    "images": {},
+                }
+
+        outer_edge = _outer_edge_render_config(part)
+        if outer_edge:
+            # The one billable housing line renders the six included IONs as
+            # two rear-pillar stacks.  The separately saved ION child lines
+            # remain manifest/estimate detail and intentionally do not render.
+            spec = {
+                **spec,
+                "part_id": "outer_edge_pillar",
+                "render_kind": "light",
+                "asset_key": "",
+                "is_fixture": False,
+                "default_views": ["rear"],
+                "render_quantity_policy": "single_per_line",
+                "group_shapes": False,
+                "images": {},
+            }
+
         accessory_parents = spec.get("accessory_of")
         planned = PlannedPart(
             part_id=spec["part_id"],
@@ -391,17 +599,25 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             planned_parts.append(planned)
             continue
 
+        # A custom shop reference is allowed to be manifest-only.  It carries
+        # no vehicle anchor unless the picker user explicitly chose a dot or
+        # free point, so it must not become a render warning.
+        if custom_location_has_no_render_placement(part):
+            planned_parts.append(planned)
+            continue
+
         # Determine which views to render in: default_views from the catalog
         # spec, OR resolved from the location's coordinates when the spec
         # was synthesised (category-level parts).
+        free_points = custom_location_points(part)
         catalog_views = spec.get("default_views", [])
-        if catalog_views:
+        if free_points:
+            render_views = list(free_points)
+        elif catalog_views:
             render_views = catalog_views[:]
         else:
             # Synthesised spec — resolve views from location coordinates.
-            location_key = canonical_name(
-                part.location or spec.get("default_location_key", "")
-            ).strip().upper()
+            location_key = resolved_location_key(part, spec)
             if location_key:
                 render_views = _views_for_location(location_key, view_map)
                 if not render_views:
@@ -415,13 +631,36 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 planned_parts.append(planned)
                 continue
 
+        # Apply the same no-top-view rule to picker-created (parts_db) lines
+        # and legacy spreadsheet lines resolved from part_catalog.json.
+        if (
+            part.part_type in _INTERIOR_LIGHT_BAR_PART_TYPES
+            or spec.get("part_id") in _INTERIOR_LIGHT_BAR_PART_TYPES
+            or spec.get("asset_key") in _INTERIOR_LIGHT_BAR_ASSET_KEYS
+        ):
+            render_views = [view for view in render_views if view.lower() != "top"]
+
         if not render_views:
             planned.warnings.append(f"No views configured for '{part.name}'")
             planned_parts.append(planned)
             continue
 
         profile_id, raw_color_token = resolve_profile(part, spec, manifest)
-        size_class = size_class_for_part(part.part_number, manifest)
+        product_render = _parts_db_render_for_part(
+            part.part_number,
+            _get_svc(),
+            candidates=_part_number_candidates(part),
+        )
+        explicit_size_rule = (
+            product_render.get("size_rule_id")
+            or spec.get("size_rule_id")
+            or ""
+        )
+        size_class = size_class_for_part(
+            part.part_number,
+            manifest,
+            explicit_size_class=str(explicit_size_rule),
+        )
         lib_entry = next(
             (
                 config.parts_lib_by_model[key]
@@ -433,9 +672,6 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         lib_size_per_view: dict = lib_entry.get("size_per_view", {})
         lib_images: dict = lib_entry.get("images", {})
         catalog_size_per_view: dict = spec.get("size_per_view", {})
-        product_render: dict = {}
-        if spec.get("_parts_db_render"):
-            product_render = _parts_db_render_for_part(part.part_number, _get_svc())
         product_size_per_view: dict = product_render.get("size_per_view", {})
         merged_size_per_view = {**lib_size_per_view, **catalog_size_per_view, **product_size_per_view}
         spec_images: dict = spec.get("images", {})
@@ -447,15 +683,34 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
         if co_overrides.get("skip"):
             continue
+        # Some combined fixture artwork includes a separately listed sibling
+        # component.  Keep that component on the manifest while deliberately
+        # omitting its redundant vehicle drawing.
+        if co_overrides.get("suppress_render"):
+            planned_parts.append(planned)
+            continue
 
         effective_asset_key = co_overrides.get(
             "asset_key", spec.get("asset_key") or spec.get("part_id", "")
         )
 
-        for view in render_views:
+        render_targets = (
+            [(view, point, index + 1)
+             for view in render_views
+             for index, point in enumerate(free_points.get(view.lower(), []))]
+            if free_points else [(view, None, 0) for view in render_views]
+        )
+        for view, custom_point, custom_point_index in render_targets:
             view_config = view_map.get(view.lower(), {})
 
-            if is_fixture:
+            if custom_point is not None:
+                location = {
+                    "x": custom_point["x"], "y": custom_point["y"],
+                    "units": view_config.get("coord_space", "relative_image"),
+                    "orientation": "h", "slot_count": 1, "pattern": "single",
+                }
+                location_key = f"CUSTOM:{view.upper()}:{custom_point_index}"
+            elif is_fixture:
                 location, location_key = resolve_fixture_entry(
                     spec, view, fixtures_map, view_config
                 )
@@ -479,9 +734,15 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             slot_count = int(location.get("slot_count", 1))
 
             if quantity_policy == "single_per_line":
-                slot_count = 1
+                # A single billable fixture line normally renders once.  Some
+                # artwork, such as front wing wraps, is a physical left/right
+                # pair and declares its visual instance count per view.
+                slot_count = int(location.get("render_slot_count", 1))
             elif quantity_policy == "quantity_as_slots":
                 slot_count = max(1, part.quantity or 1)
+
+            if inner_edge:
+                slot_count = inner_edge["lamp_count"]
 
             qty_overrides = apply_quantity_rules(spec, part.quantity)
             if not qty_overrides:
@@ -503,11 +764,37 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 }
             if qty_overrides.get("slot_count"):
                 slot_count = int(qty_overrides["slot_count"])
+            if outer_edge:
+                slot_count = outer_edge["head_count"]
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
 
             effective_pattern = co_overrides.get(
                 "pattern", qty_overrides.get("pattern", location.get("pattern", "single"))
             )
+            # Scene heads are selected as an explicit count in the picker.  A
+            # single-coordinate scene location is an anchor, not a one-head
+            # cap: one stays at that anchor while two or more need a visible
+            # row.  Preserve authored mirror/horizontal/vertical patterns,
+            # and only supply the natural horizontal fallback for a legacy
+            # single-dot location.
+            if (
+                spec.get("_parts_db_render")
+                and spec.get("category") == "scene"
+                and quantity_policy == "quantity_as_slots"
+                and slot_count > 1
+                and effective_pattern == "single"
+            ):
+                effective_pattern = "horizontal"
+            if inner_edge:
+                if inner_edge["product_id"] == "whelen_rst":
+                    effective_pattern = "inner_edge_rear"
+                else:
+                    effective_pattern = {
+                        "driver": "inner_edge_front_driver",
+                        "passenger": "inner_edge_front_passenger",
+                    }.get(inner_edge["coverage"], "inner_edge_front")
+            if outer_edge:
+                effective_pattern = "outer_edge_pillars"
             forced_side = co_overrides.get("side", "")
             if forced_side:
                 slot_count = 1
@@ -533,10 +820,17 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             original_location_pattern = location.get("pattern", "single")
             anchor_x = (
                 0.5
-                if effective_pattern == "single"
-                and original_location_pattern == "mirror"
+                if original_location_pattern == "mirror"
                 and not forced_side
+                and (slot_count == 1 or location.get("render_slot_count"))
                 else location["x"]
+            )
+            anchor_y = (
+                0.5
+                if original_location_pattern == "vertical_mirror"
+                and slot_count == 1
+                and not forced_side
+                else location["y"]
             )
 
             placement = PlannedPlacement(
@@ -553,20 +847,35 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 location_slot_count=int(location.get("slot_count", 1)),
                 anchor={
                     "x": anchor_x,
-                    "y": location["y"],
+                    "y": anchor_y,
                     "units": location.get("units", view_config.get("coord_space", "relative_image")),
                 },
                 pattern=effective_pattern,
-                h_spacing=location.get("h_spacing") or None,
-                v_spacing=location.get("v_spacing") or None,
-                h_spacing_units=location.get("h_spacing_units", "relative_image"),
-                size_override=merged_size_per_view.get(view) or None,
-                rotation=float(location.get("rotation", 0)),
+                # Inner Edge uses narrowed ION artwork with a small gap between
+                # heads. FST's special geometry supplies its own center gap;
+                # RST stays connected without overlapping the vehicle.
+                h_spacing=(1.05 if inner_edge else location.get("h_spacing") or None),
+                v_spacing=(
+                    _OUTER_EDGE_VERTICAL_SPACING
+                    if outer_edge else location.get("v_spacing") or None
+                ),
+                h_spacing_units=("icon_width" if inner_edge else location.get("h_spacing_units", "relative_image")),
+                size_override=(
+                    dict(_INNER_EDGE_SIZE_PER_VIEW[view])
+                    if inner_edge and view in _INNER_EDGE_SIZE_PER_VIEW
+                    else merged_size_per_view.get(view) or None
+                ),
+                rotation=(
+                    _OUTER_EDGE_PILLAR_ROTATION
+                    if outer_edge else float(location.get("rotation", 0))
+                ),
                 flip_h=bool(location.get("flip_h", False)),
                 flip_v=bool(location.get("flip_v", False)),
                 flip_mirrored_h=bool(location.get("flip_mirrored_h", False)),
                 behind_vehicle=bool(location.get("behind_vehicle", False)),
-                layer=int(location.get("layer", 0)),
+                layer=enforced_render_layer(
+                    spec["part_id"], int(location.get("layer", 0))
+                ),
                 group_shapes=(
                     quantity_policy == "quantity_as_slots"
                     or bool(spec.get("group_shapes", False))
@@ -578,7 +887,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             )
 
             if quantity_policy == "location_slots":
-                if part.quantity and part.quantity != placement.location_slot_count and not slot_indices:
+                if custom_point is None and part.quantity and part.quantity != placement.location_slot_count and not slot_indices:
                     is_side_light = view == "side" and spec["render_kind"] in ("light", "bar")
                     if not is_side_light and location_key not in _SUPPRESS_QTY_MISMATCH_LOCATIONS:
                         placement.warnings.append(

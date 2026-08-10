@@ -80,6 +80,8 @@ class BuildPlan:
             raw = part.get("raw")
             if isinstance(raw, dict) and raw.get("components") == []:
                 raw.pop("components")
+            if isinstance(raw, dict) and raw.get("picker_config") == {}:
+                raw.pop("picker_config")
             for placement in part.get("placements", []):
                 if placement.get("translate_dx") == 0.0:
                     placement.pop("translate_dx")

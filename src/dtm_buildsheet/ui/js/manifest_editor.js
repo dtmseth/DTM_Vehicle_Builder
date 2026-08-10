@@ -5,6 +5,7 @@
 let _meDraftId    = null;
 let _meDraft      = null;
 let _meEditLineId = null;   // null = add mode
+let _meCatalog     = null;
 
 // ── public API ───────────────────────────────────────────
 
@@ -14,7 +15,7 @@ async function loadDraftManifest(draftId) {
   const res = await api("/api/draft/" + encodeURIComponent(draftId));
   if (!res.ok) return;
   _meDraft = res.draft;
-  await _meBuildGroupMap();
+  await Promise.all([_meBuildGroupMap(), _meEnsureCatalog()]);
   _meRender();
   show("card-manifest");
 }
@@ -182,10 +183,86 @@ function _meStatusRowStyle(status) {
 }
 
 function _meDisplayName(part) {
-  return part?.picker_config?.system_label || part?.name || "";
+  const name = part?.picker_config?.system_label || part?.name || "";
+  const type = String(part?.part_type || "").toLowerCase();
+  // Placement sequence numbers are useful in the editor and preview but not
+  // in the customer-facing manifest. A speaker row's quantity says what the
+  // customer needs to know.
+  if (type === "siren_speaker" || /^siren speaker\s+\d+$/i.test(name)) return "Siren Speaker(s)";
+  return name;
 }
 
-function _meMakeRows(parts) {
+function _meIncludedControlHeadComponent(part, component) {
+  const type = String(part?.part_type || "").toLowerCase();
+  const label = String(component?.label || component?.name || "").trim().toLowerCase();
+  return type === "control_head" && (label === "pa mic" || label === "pa microphone");
+}
+
+function _meCommentMarkup(part) {
+  const comment = String(part?.comment || "").trim();
+  return comment ? `<div class="me-manifest-comment"><strong>Note:</strong> ${esc(comment)}</div>` : "";
+}
+
+function _meSortParts(parts) {
+  return [...(parts || [])].sort((a, b) => {
+    const aName = _meDisplayName(a).split(" · ", 1)[0];
+    const bName = _meDisplayName(b).split(" · ", 1)[0];
+    return aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" })
+      || Boolean(a.parent_line_id) - Boolean(b.parent_line_id)
+      || _meDisplayName(a).localeCompare(_meDisplayName(b), undefined, { numeric: true })
+      || String(a.part_number || "").localeCompare(String(b.part_number || ""), undefined, { numeric: true });
+  });
+}
+
+async function _meEnsureCatalog() {
+  if (_meCatalog?.parts) return;
+  try {
+    const res = await api("/api/catalog");
+    if (res?.parts) _meCatalog = res;
+  } catch (_) {
+    // The manifest remains usable with its parts-db grouping when the legacy
+    // catalog is unavailable; only the optional display columns fall back.
+  }
+}
+
+function _meCatalogPart(part) {
+  const name = (part?.name || "").trim().toLowerCase();
+  const stripped = name.replace(/\s+\d+$/, "");
+  const all = _meCatalog?.parts || [];
+  const matches = target => all.find(candidate =>
+    (candidate.display_name || candidate.part_id || "").trim().toLowerCase() === target
+  );
+  return matches(name) || matches(stripped);
+}
+
+function _meIsFixture(part) {
+  return !!_meCatalogPart(part)?.is_fixture;
+}
+
+function _meIsLight(part) {
+  const partType = part?.part_type;
+  if (partType && _meGroupMap?.has(partType)) {
+    if (_meGroupMap.get(partType).type_id === "lights") return true;
+  }
+  return _meCatalogPart(part)?.render_kind === "light";
+}
+
+function _meColumnsFor(parts) {
+  const topLevel = _meTopLevelParts(parts);
+  return {
+    showLocation: !topLevel.length || !topLevel.every(_meIsFixture),
+    showColor: topLevel.some(_meIsLight),
+  };
+}
+
+function _meThead(columns) {
+  return `<thead><tr>
+    <th>Part</th>${columns.showLocation ? "<th>Location</th>" : ""}${columns.showColor ? "<th>Color</th>" : ""}<th style="text-align:center">Qty</th>
+    <th>Mfg / Part #</th><th>Status</th><th></th>
+  </tr></thead>`;
+}
+
+function _meMakeRows(parts, columns) {
   // Accessory lines (parent_line_id set) nest under their parent's caret rather
   // than appearing as their own top-level rows.
   const childrenByParent = {};
@@ -200,7 +277,7 @@ function _meMakeRows(parts) {
     const statusLabel = p.new_or_used
       ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used))
       : "—";
-    const comps = p.components || [];
+    const comps = (p.components || []).filter(cm => !_meIncludedControlHeadComponent(p, cm));
     const kids = childrenByParent[p.line_id] || [];
     // Guided systems expand into their concrete shop components, not a second
     // transcript of every question already captured in picker_config.
@@ -211,14 +288,14 @@ function _meMakeRows(parts) {
       : `<span class="me-expand-spacer"></span>`;
     const rowAttrs = expandable ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
     let html = `<tr${rowAttrs}${_meStatusRowStyle(p.new_or_used)}>
-      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(_meDisplayName(p))}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}</td>
-      <td style="color:var(--muted)">${esc(p.location || "—")}</td>
-      <td>${esc(p.raw_color || "—")}</td>
+      <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(_meDisplayName(p))}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}${_meCommentMarkup(p)}</td>
+      ${columns.showLocation ? `<td style="color:var(--muted)">${esc(_meIsFixture(p) ? "" : (p.location || "—"))}</td>` : ""}
+      ${columns.showColor ? `<td>${esc(_meIsLight(p) ? (p.raw_color || "—") : "")}</td>` : ""}
       <td style="text-align:center">${p.quantity || "—"}</td>
       <td style="color:var(--muted);font-size:11px">${esc(mfgModel)}</td>
       <td style="font-size:11px;color:var(--muted)">${statusLabel}</td>
-      <td><span class="badge ${p.include ? "badge-on" : "badge-off"}">${p.include ? "Yes" : "No"}</span></td>
       <td class="me-row-actions">
+        <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(p.line_id)}" title="${p.comment ? "Edit comment" : "Add comment"}">💬</button>
         <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(p.line_id)}" title="Edit">≡</button>
         <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(p.line_id)}" title="Remove">✕</button>
       </td>
@@ -230,29 +307,29 @@ function _meMakeRows(parts) {
       const detail = cm.detail || cm.value || "";
       html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
         <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(label)}</td>
-        <td style="font-size:12px;color:var(--muted)">${esc(cm.location || "—")}</td>
-        <td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>
+        ${columns.showLocation ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.location || "—")}</td>` : ""}
+        ${columns.showColor ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>` : ""}
         <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
-        <td colspan="4" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${price}</td>
+        <td colspan="3" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${price}</td>
       </tr>`;
     }
     // Accessory child lines — real parts, individually editable/removable.
     for (const c of kids) {
       const cMfgModel = [c.manufacturer, c.part_number].filter(Boolean).join(" / ") || "—";
-      const kitIncluded = !!c.picker_config?.console_kit_included;
       const childTag = c.accessory_category === "console_faceplate"
         ? "face plate"
         : ["console_component", "console_wings"].includes(c.accessory_category) ? "console"
-          : c.accessory_category === "system_cable_refresh" ? "cable refresh" : "accessory";
+          : ["printer_power_cable", "printer_usb_cable"].includes(c.accessory_category) ? "printer cable"
+            : c.accessory_category === "system_cable_refresh" ? "cable refresh" : "accessory";
       html += `<tr class="me-comp-row me-acc-row" data-parent="${esc(p.line_id)}" hidden>
-        <td style="padding-left:24px;font-size:12px"><span class="me-acc-tag">${esc(childTag)}</span> ${esc(c.name)}</td>
-        <td style="color:var(--muted);font-size:12px">${esc(c.location || "—")}</td>
-        <td></td>
+        <td style="padding-left:24px;font-size:12px"><span class="me-acc-tag">${esc(childTag)}</span> ${esc(c.name)}${_meCommentMarkup(c)}</td>
+        ${columns.showLocation ? `<td style="color:var(--muted);font-size:12px">${esc(_meIsFixture(c) ? "" : (c.location || "—"))}</td>` : ""}
+        ${columns.showColor ? "<td></td>" : ""}
         <td style="text-align:center;font-size:12px">${c.quantity || "—"}</td>
         <td style="font-size:11px;color:var(--muted)">${esc(cMfgModel)}</td>
         <td></td>
-        <td><span class="badge ${kitIncluded || c.include ? "badge-on" : "badge-off"}">${kitIncluded ? "Kit" : c.include ? "Yes" : "No"}</span></td>
         <td class="me-row-actions">
+          <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(c.line_id)}" title="${c.comment ? "Edit comment" : "Add comment"}">💬</button>
           <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(c.line_id)}" title="Edit">≡</button>
           <button class="btn btn-danger btn-sm me-del-btn"  data-lid="${esc(c.line_id)}" title="Remove">✕</button>
         </td>
@@ -261,11 +338,6 @@ function _meMakeRows(parts) {
     return html;
   }).join("");
 }
-
-const _meThead = `<thead><tr>
-  <th>Part</th><th>Location</th><th>Color</th><th style="text-align:center">Qty</th>
-  <th>Mfg / Part #</th><th>Status</th><th>Incl.</th><th></th>
-</tr></thead>`;
 
 function _meRender() {
   const parts = _meDraft?.parts || [];
@@ -294,7 +366,7 @@ function _meRender() {
   let html = "";
   let lastTypeId = null;
   for (const key of orderedKeys) {
-    const secParts = grouped.get(key);
+    const secParts = _meSortParts(grouped.get(key));
     if (!secParts?.length) continue;
     const meta = _meSectionMeta.get(key);
     if (meta.type_id !== lastTypeId) {
@@ -302,6 +374,7 @@ function _meRender() {
       lastTypeId = meta.type_id;
     }
     const topLevel = _meTopLevelParts(secParts);
+    const columns = _meColumnsFor(secParts);
     const sectionHeader = `<div class="me-cat-header">
         <span class="me-cat-label">${esc(meta.label)}</span>
         <span class="me-cat-count">(${topLevel.length})</span>
@@ -309,12 +382,14 @@ function _meRender() {
       </div>`;
     html += `<div class="me-cat-section">
       ${sectionHeader}
-      <table class="parts-tbl">${_meThead}<tbody>${_meMakeRows(secParts)}</tbody></table>
+      <table class="parts-tbl">${_meThead(columns)}<tbody>${_meMakeRows(secParts, columns)}</tbody></table>
     </div>`;
   }
   const otherParts = grouped.get("_other");
   if (otherParts?.length) {
-    const otherTopLevel = _meTopLevelParts(otherParts);
+    const sortedOtherParts = _meSortParts(otherParts);
+    const otherTopLevel = _meTopLevelParts(sortedOtherParts);
+    const columns = _meColumnsFor(sortedOtherParts);
     const otherHeader = `<div class="me-cat-header">
         <span class="me-cat-label">Other</span>
         <span class="me-cat-count">(${otherTopLevel.length})</span>
@@ -322,17 +397,19 @@ function _meRender() {
       </div>`;
     html += `<div class="me-cat-section">
       ${otherHeader}
-      <table class="parts-tbl">${_meThead}<tbody>${_meMakeRows(otherParts)}</tbody></table>
+      <table class="parts-tbl">${_meThead(columns)}<tbody>${_meMakeRows(sortedOtherParts, columns)}</tbody></table>
     </div>`;
   }
   html += `<div class="me-add-bottom">
     <button class="btn btn-primary btn-sm" onclick="addPart()">+ Add Part</button>
-    <a href="#" onclick="addPartManual();return false" style="font-size:11px;color:var(--muted);margin-left:10px">add manually...</a>
   </div>`;
 
   container.innerHTML = html;
 
-  // Wire edit/delete buttons
+  // Wire comment/edit/delete buttons
+  container.querySelectorAll(".me-comment-btn").forEach(b =>
+    b.addEventListener("click", () => meEditPartComment(b.dataset.lid))
+  );
   container.querySelectorAll(".me-edit-btn").forEach(b =>
     b.addEventListener("click", () => openPartEditModal(b.dataset.lid))
   );
@@ -410,6 +487,7 @@ async function addPart() {
   $("me-prod").value      = "";
   $("me-pn").value        = "";
   $("me-notes").value     = "";
+  $("me-comment").value   = "";
   await _mePopulateDataLists();
   _meUpdateLocations("");
   _meModalSetColorVisibility("");
@@ -509,8 +587,7 @@ async function openPartEditModal(lineId) {
   }
   // Preferred: edit in the new picker panel.
   if (typeof _pickerOpenEdit === "function") {
-    _pickerOpenEdit(part);
-    return;
+    return _pickerOpenEdit(part);
   }
   // Fallback: old flat modal.
   _meEditLineId = lineId;
@@ -527,6 +604,7 @@ async function openPartEditModal(lineId) {
   $("me-prod").value      = "";
   $("me-pn").value        = part.part_number     || "";
   $("me-notes").value     = part.notes           || "";
+  $("me-comment").value   = part.comment         || "";
   await _mePopulateDataLists();
   _meUpdateLocations(part.name || "");
   _meModalSetColorVisibility(part.name || "");
@@ -555,6 +633,7 @@ async function savePartEdit() {
     manufacturer: $("me-mfg").value.trim(),
     part_number:  $("me-pn").value.trim(),
     notes:        $("me-notes").value.trim(),
+    comment:      $("me-comment").value.trim(),
   };
 
   const saveBtn = $("me-btn-save");
@@ -571,6 +650,17 @@ async function savePartEdit() {
   if (typeof _pbeMarkDirty === "function") _pbeMarkDirty();
   await loadDraftManifest(_meDraftId);
   if ($("card-preview") && !$("card-preview").hidden) pvLoad(_meDraftId);
+}
+
+async function meEditPartComment(lineId) {
+  const part = (_meDraft?.parts || []).find(item => item.line_id === lineId);
+  if (!part) return;
+  await openPartEditModal(lineId);
+  if (typeof pickerOpenCommentStep === "function") {
+    pickerOpenCommentStep();
+  } else {
+    requestAnimationFrame(() => $("me-comment")?.focus());
+  }
 }
 
 async function deletePart(lineId) {
@@ -613,10 +703,7 @@ async function _meFetchManifestData(partName) {
 
 async function _mePopulateDataLists() {
   // Still load catalog for render_kind lookup (name-based fallback modal)
-  if (!_catalog?.parts) {
-    const res = await api("/api/catalog");
-    if (res?.parts) _catalog = res;
-  }
+  await _meEnsureCatalog();
   if (!_workbookRules?.part_rules) {
     const res = await api("/api/workbook-rules");
     if (res?.part_rules) _workbookRules = res;
@@ -625,8 +712,8 @@ async function _mePopulateDataLists() {
 
   // Populate part type dropdown from catalog (planner requires catalog names)
   const nameList = $("me-name-list");
-  if (nameList && _catalog?.parts) {
-    nameList.innerHTML = (_catalog.parts)
+  if (nameList && _meCatalog?.parts) {
+    nameList.innerHTML = (_meCatalog.parts)
       .map(p => p.display_name || p.part_id)
       .map(n => `<option value="${esc(n)}">`)
       .join("");
@@ -702,7 +789,7 @@ if (md?.part_numbers?.length) {
   pnList.innerHTML = pns.map(p => {
     const price = p.qb_unit_price || p.price_usd;
     const priceStr = price ? `  $${price}` : "";
-    const qb = p.qb_item_id ? " 🅀" : "";
+    const qb = window.DTM_QUICKBOOKS_UI_ENABLED === true && p.qb_item_id ? " 🅀" : "";
     return `<option value="${esc(p.part_number)}">${esc(p.part_number)}${priceStr}${qb}</option>`;
   }).join("");
 } else {
@@ -723,7 +810,7 @@ function _meUpdateLocations(partName) {
     const rule = (_workbookRules?.part_rules || {})[partName];
     locs = (rule?.locations || []).filter(l => !/^specify\s+loc/i.test(l));
   }
-  const catalogPart = (_catalog?.parts || []).find(
+  const catalogPart = (_meCatalog?.parts || []).find(
     p => (p.display_name || "").toLowerCase() === (partName || "").toLowerCase()
   );
   if (!locs.length && catalogPart?.is_fixture) locs = ["Default"];
@@ -736,7 +823,7 @@ function _meUpdateLocations(partName) {
 }
 
 function _meModalSetColorVisibility(partName) {
-  const catalogPart = (_catalog?.parts || []).find(
+  const catalogPart = (_meCatalog?.parts || []).find(
     p => (p.display_name || "").toLowerCase() === (partName || "").toLowerCase()
   );
   const rk = catalogPart?.render_kind;
@@ -764,7 +851,7 @@ async function addPartInSection(sectionId) {
   }
   await addPart();
   if (!meta) return;
-  const all = _catalog?.parts || [];
+  const all = _meCatalog?.parts || [];
   const inSec  = all.filter(p => _meSectionKeyForName(p.display_name || "") === sectionId);
   const outSec = all.filter(p => _meSectionKeyForName(p.display_name || "") !== sectionId);
   const nameList = $("me-name-list");

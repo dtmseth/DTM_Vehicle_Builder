@@ -75,6 +75,32 @@ def test_build_customer_payload_omits_empty_and_single_name():
     assert p == {"DisplayName": "Solo", "CompanyName": "Solo", "GivenName": "Cher"}
 
 
+def test_build_customer_payload_maps_full_customer_profile():
+    p = _build_customer_payload({
+        "contact_title": "Fleet Manager",
+        "mobile_phone": "555-0111",
+        "fax": "555-0112",
+        "website": "https://alpha.example",
+        "notes": "Use PO number",
+        "taxable": False,
+        "bill_address_line1": "1 Main",
+        "bill_city": "Alpha",
+        "bill_state": "MN",
+        "bill_postal_code": "55001",
+        "ship_address_line1": "2 Depot",
+    })
+    assert p["Title"] == "Fleet Manager"
+    assert p["Mobile"] == {"FreeFormNumber": "555-0111"}
+    assert p["Fax"] == {"FreeFormNumber": "555-0112"}
+    assert p["WebAddr"] == {"URI": "https://alpha.example"}
+    assert p["Notes"] == "Use PO number"
+    assert p["Taxable"] is False
+    assert p["BillAddr"] == {
+        "Line1": "1 Main", "City": "Alpha", "CountrySubDivisionCode": "MN", "PostalCode": "55001",
+    }
+    assert p["ShipAddr"] == {"Line1": "2 Depot"}
+
+
 def test_customer_result_extracts_id_and_token():
     r = _customer_result({"Customer": {"Id": 42, "SyncToken": 3}})
     assert r == {"qb_customer_id": "42", "sync_token": "3"}

@@ -10,7 +10,13 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ...domain.agency_models import AgencyRecord
+from ...domain.agency_models import (
+    CUSTOMER_FIELD_LABELS,
+    CUSTOMER_PROFILE_FIELDS,
+    REQUIRED_ESTIMATE_CUSTOMER_FIELDS,
+    AgencyRecord,
+)
+from ...domain.project_codec import preferences_from_dict
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
@@ -29,6 +35,11 @@ _ABBREV: list[tuple[str, str]] = [
     (r"\bcnty\b", "county"),
     (r"\bcty\b", "county"),
 ]
+
+_AGENCY_EDITABLE_FIELDS = tuple(field for field in CUSTOMER_PROFILE_FIELDS if field != "name") + (
+    "customer_since",
+    "default_preferences",
+)
 
 
 # ── paths ──────────────────────────────────────────────────────────────────────
@@ -71,13 +82,42 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
             contact_email = old_info
         else:
             contact_phone = old_info
+
+    taxable = rec.get("taxable")
+    if isinstance(taxable, str):
+        normalized_taxable = taxable.strip().lower()
+        taxable = normalized_taxable in {"true", "yes", "1"} if normalized_taxable else None
+    elif not isinstance(taxable, bool):
+        taxable = None
+
     return AgencyRecord(
         agency_id=str(rec.get("agency_id", "")),
         name=str(rec.get("name", "")),
         contact_name=str(rec.get("contact_name", "")),
+        contact_title=str(rec.get("contact_title", "")),
         contact_phone=contact_phone,
         contact_email=contact_email,
+        mobile_phone=str(rec.get("mobile_phone", "")),
+        fax=str(rec.get("fax", "")),
+        website=str(rec.get("website", "")),
+        bill_address_line1=str(rec.get("bill_address_line1", "")),
+        bill_address_line2=str(rec.get("bill_address_line2", "")),
+        bill_address_line3=str(rec.get("bill_address_line3", "")),
+        bill_city=str(rec.get("bill_city", "")),
+        bill_state=str(rec.get("bill_state", "")),
+        bill_postal_code=str(rec.get("bill_postal_code", "")),
+        bill_country=str(rec.get("bill_country", "")),
+        ship_address_line1=str(rec.get("ship_address_line1", "")),
+        ship_address_line2=str(rec.get("ship_address_line2", "")),
+        ship_address_line3=str(rec.get("ship_address_line3", "")),
+        ship_city=str(rec.get("ship_city", "")),
+        ship_state=str(rec.get("ship_state", "")),
+        ship_postal_code=str(rec.get("ship_postal_code", "")),
+        ship_country=str(rec.get("ship_country", "")),
+        notes=str(rec.get("notes", "")),
+        taxable=taxable,
         customer_since=str(rec.get("customer_since", "")),
+        default_preferences=preferences_from_dict(rec.get("default_preferences", {})),
         qb_customer_id=str(rec.get("qb_customer_id", "")),
         created_at=str(rec.get("created_at", "")),
         updated_at=str(rec.get("updated_at", "")),
@@ -173,6 +213,61 @@ def _normalize(text: str) -> str:
     return text
 
 
+def _clean_agency_field(field: str, value: object) -> object:
+    """Normalize a UI/API field without treating a missing value as an erase."""
+    if field == "default_preferences":
+        return preferences_from_dict(value)
+    if field == "taxable":
+        if value is None or value == "":
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "yes", "1"}
+        return bool(value)
+    return str(value or "").strip()
+
+
+def customer_profile_fields(record: AgencyRecord) -> dict:
+    """Return the customer fields that can be synced to/from QuickBooks."""
+    return {field: getattr(record, field) for field in CUSTOMER_PROFILE_FIELDS}
+
+
+def missing_estimate_customer_fields(record_or_fields: AgencyRecord | dict) -> list[str]:
+    """Return friendly labels for profile fields required before an estimate."""
+    if isinstance(record_or_fields, AgencyRecord):
+        fields = customer_profile_fields(record_or_fields)
+    else:
+        fields = record_or_fields
+    missing: list[str] = []
+    for field in REQUIRED_ESTIMATE_CUSTOMER_FIELDS:
+        value = fields.get(field)
+        if value is None or not str(value).strip():
+            missing.append(CUSTOMER_FIELD_LABELS[field])
+    return missing
+
+
+def merge_missing_customer_profile(record: AgencyRecord, customer: dict) -> list[str]:
+    """Fill only blank local profile fields from a QBO customer.
+
+    Down-sync must be additive: an omitted value in QBO can never erase a
+    locally-entered value, and a populated local value remains the user's
+    explicit choice. Agency names are likewise left alone after creation.
+    """
+    changed: list[str] = []
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if field == "name":
+            continue
+        current = getattr(record, field)
+        incoming = customer.get(field)
+        current_missing = current is None or not str(current).strip()
+        incoming_present = incoming is not None and bool(str(incoming).strip())
+        if current_missing and incoming_present:
+            setattr(record, field, _clean_agency_field(field, incoming))
+            changed.append(field)
+    return changed
+
+
 def _write_record(record: AgencyRecord, paths: AppPaths) -> None:
     validate_safe_id(record.agency_id, label="agency_id")
     LocalStorageProvider().write_text(
@@ -233,6 +328,81 @@ def set_qb_customer_id(paths: AppPaths, agency_id: str, qb_customer_id: str) -> 
     return True
 
 
+def update_agency_customer_profile(
+    paths: AppPaths,
+    agency_id: str,
+    fields: dict,
+) -> AgencyRecord | None:
+    """Persist explicitly confirmed customer-profile values without up-syncing.
+
+    Estimate confirmation may collect missing fields immediately before the
+    Customer/Estimate API calls.  It must save those fields locally, but it
+    must not call ``handle_save_agency`` because that would schedule a second,
+    racing customer write in the background.
+    """
+    rec = _records(paths).get(agency_id)
+    if rec is None:
+        return None
+
+    changed = False
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if field not in fields:
+            continue
+        value = _clean_agency_field(field, fields[field])
+        if getattr(rec, field) != value:
+            setattr(rec, field, value)
+            changed = True
+    if not changed:
+        return rec
+
+    rec.updated_at = _utcnow()
+    _write_record(rec, paths)
+    serialized = json.dumps(asdict(rec), indent=2) + "\n"
+    from .shared_work_service import save_setting_to_cloud_in_background
+    save_setting_to_cloud_in_background(f"agencies/{rec.agency_id}.json", serialized)
+    return rec
+
+
+def handle_save_agency_default_preferences(body: dict, paths: AppPaths) -> dict:
+    """Save an agency's standard equipment choices without touching QuickBooks.
+
+    Project users can promote an outlier project's current selections to the
+    agency standard.  These preferences are app-only defaults for future
+    projects, so this intentionally mirrors to shared storage but does not
+    schedule a QuickBooks Customer update.
+    """
+    try:
+        agency_id = str(body.get("agency_id", "")).strip()
+        if not agency_id:
+            return {"ok": False, "error": "Select a saved agency first"}
+        validate_safe_id(agency_id, label="agency_id")
+        if "default_preferences" not in body:
+            return {"ok": False, "error": "Default preferences are required"}
+
+        record = _records(paths).get(agency_id)
+        if record is None:
+            return {"ok": False, "error": "Agency not found"}
+
+        record.default_preferences = preferences_from_dict(body["default_preferences"])
+        record.updated_at = _utcnow()
+        _write_record(record, paths)
+        serialized = json.dumps(asdict(record), indent=2) + "\n"
+        proposal_result = save_via_proposal(
+            target_file=f"agencies/{record.agency_id}.json",
+            serialized_content=serialized,
+            summary=f"Update agency equipment defaults: {record.name}",
+            category="general",
+        )
+        from .shared_work_service import save_setting_to_cloud_in_background
+        save_setting_to_cloud_in_background(f"agencies/{record.agency_id}.json", serialized)
+        return {"ok": True, "agency": asdict(record), **proposal_result}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        _log.exception("Failed to save agency default preferences")
+        return {"ok": False, "error": str(exc)}
+
+
 def handle_search_agencies(query: str, paths: AppPaths) -> dict:
     query = query.strip()
     if not query:
@@ -271,32 +441,32 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             return {"ok": False, "error": "Agency name is required"}
 
         agency_id = str(body.get("agency_id", "")).strip() or str(uuid.uuid4())
-        contact_name = str(body.get("contact_name", "")).strip()
-        contact_phone = str(body.get("contact_phone", "")).strip()
-        contact_email = str(body.get("contact_email", "")).strip()
-        customer_since = str(body.get("customer_since", "")).strip()
         now = _utcnow()
 
         records = _records(paths)
         existing = records.get(agency_id)
         if existing:
             existing.name = name
-            existing.contact_name = contact_name
-            existing.contact_phone = contact_phone
-            existing.contact_email = contact_email
-            existing.customer_since = customer_since
+            # Only fields explicitly present in the request are changed. This
+            # keeps older callers from accidentally blanking the expanded
+            # customer profile when they edit just one field.
+            for field in _AGENCY_EDITABLE_FIELDS:
+                if field in body:
+                    setattr(existing, field, _clean_agency_field(field, body[field]))
             existing.updated_at = now
             record = existing
         else:
+            new_fields = {
+                field: _clean_agency_field(field, body.get(field))
+                for field in _AGENCY_EDITABLE_FIELDS
+                if field in body
+            }
             record = AgencyRecord(
                 agency_id=agency_id,
                 name=name,
-                contact_name=contact_name,
-                contact_phone=contact_phone,
-                contact_email=contact_email,
-                customer_since=customer_since,
                 created_at=now,
                 updated_at=now,
+                **new_fields,
             )
             records[agency_id] = record
 
@@ -332,7 +502,7 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
 #
 # Pulls QB Customers into agencies. Match precedence: existing qb_customer_id,
 # then normalized-name. New customers create agencies; matched ones are linked
-# (qb_customer_id stamped) and have empty contact fields filled from QB —
+# (qb_customer_id stamped) and have empty profile fields filled from QB —
 # existing non-empty values and the agency name are never clobbered.
 
 
@@ -399,26 +569,23 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
         existing = _match_existing_for_qb(cust, by_qb, by_name)
         if existing:
             existing.qb_customer_id = qb_id or existing.qb_customer_id
-            # Fill only empty contact fields; never clobber the user's data.
-            if not existing.contact_email and cust.get("contact_email"):
-                existing.contact_email = str(cust["contact_email"]).strip()
-            if not existing.contact_phone and cust.get("contact_phone"):
-                existing.contact_phone = str(cust["contact_phone"]).strip()
-            if not existing.contact_name and cust.get("contact_name"):
-                existing.contact_name = str(cust["contact_name"]).strip()
+            merge_missing_customer_profile(existing, cust)
             existing.updated_at = now
             record = existing
             updated += 1
         else:
+            imported_fields = {
+                field: _clean_agency_field(field, cust.get(field))
+                for field in CUSTOMER_PROFILE_FIELDS
+                if field != "name" and field in cust
+            }
             record = AgencyRecord(
                 agency_id=str(uuid.uuid4()),
                 name=name,
-                contact_name=str(cust.get("contact_name", "")).strip(),
-                contact_phone=str(cust.get("contact_phone", "")).strip(),
-                contact_email=str(cust.get("contact_email", "")).strip(),
                 qb_customer_id=qb_id,
                 created_at=now,
                 updated_at=now,
+                **imported_fields,
             )
             records[record.agency_id] = record
             created += 1

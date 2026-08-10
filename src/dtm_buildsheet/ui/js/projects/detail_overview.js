@@ -7,7 +7,6 @@ function _ptRenderOverview(project) {
   const custPairs = [
     ["Agency",     c.agency],
     ["Build Year", c.build_year],
-    ["Quote #",    c.quote_number],
     ["Sales Rep",  c.sales_rep],
   ].filter(([, v]) => v);
 
@@ -29,9 +28,12 @@ function _ptRenderOverview(project) {
     ? prefPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
     : `<p class="proj-empty-msg proj-empty-msg-padded">No preferences set.</p>`;
 
-  const fleetHtml = _ptUnitFleetSummaryCards(project.build_units || []);
+  const buildsHtml = typeof _ptBuildCardsMarkup === "function"
+    ? _ptBuildCardsMarkup(project)
+    : `<p class="proj-empty-msg">Builds are loading…</p>`;
 
-  $("proj-ptab-overview").innerHTML = `
+  const panel = $("proj-ptab-overview");
+  panel.innerHTML = `
     <div class="proj-overview-top">
       <div class="proj-overview-card">
         <div class="proj-overview-card-title">Customer Info</div>
@@ -42,5 +44,11 @@ function _ptRenderOverview(project) {
         <div class="proj-overview-card-body">${prefHtml}</div>
       </div>
     </div>
-    ${fleetHtml}`;
+    <section class="proj-overview-builds" aria-label="Builds">
+      <div class="proj-overview-builds-title">Builds</div>
+      ${buildsHtml}
+    </section>`;
+
+  if (typeof _ptBindBuildCardOpeners === "function") _ptBindBuildCardOpeners(panel);
+  if (typeof _ptLoadBuildsStats === "function") _ptLoadBuildsStats(project);
 }

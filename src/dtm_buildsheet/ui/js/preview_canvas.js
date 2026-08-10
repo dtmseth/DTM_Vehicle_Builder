@@ -18,14 +18,27 @@ let _pvInspKey          = null;   // override_key currently open in inspector
 let _pvInspPl           = null;   // placement object open in inspector
 let _pvInspPp           = null;   // part object open in inspector
 let _pvDrag             = null;   // active drag state (see pvDragStart)
-let _pvPendingOverrides = {};     // {override_key: overrideDict} — not yet sent to server
+let _pvPendingOverrides = {};     // {override_key: overrideDict} — short-lived autosave queue
+let _pvInFlightOverrides = {};    // batch currently on its way to the server
+let _pvConfirmedOverrides = {};   // saved locally until the next full plan reload
+let _pvAutosaveTimer    = null;
+let _pvAutosaveInFlight = false;
+let _pvAutosavePromise  = null;
 
 // ── public API ───────────────────────────────────────────
 
 async function pvLoad(draftId) {
+  if (_pvDraftId && pvHasPendingChanges()) {
+    const saved = await pvApplyChanges();
+    if (!saved) return;
+  }
+  if (_pvAutosaveTimer) clearTimeout(_pvAutosaveTimer);
+  _pvAutosaveTimer = null;
   _pvDraftId          = draftId;
   _pvPlan             = null;
   _pvPendingOverrides = {};
+  _pvInFlightOverrides = {};
+  _pvConfirmedOverrides = {};
   _pvInspKey          = null;
   _pvInspPl           = null;
   _pvInspPp           = null;
@@ -99,14 +112,9 @@ function pvRenderView(viewName) {
   for (const pp of partsForView) {
     for (const pl of pp.placements) {
       if (pl.view !== viewName) continue;
-
-      const pendingOv = _pvPendingOverrides[pl.override_key];
-      if (pendingOv) {
-        if (pendingOv.visible === false) continue;
-        pvRenderPlacement(frame, pp, pvMergeOverride(pl, pendingOv));
-      } else {
-        pvRenderPlacement(frame, pp, pl);
-      }
+      const effectiveOv = pvEffectiveOverride(pl);
+      if (effectiveOv.visible === false) continue;
+      pvRenderPlacement(frame, pp, pvMergeOverride(pl, effectiveOv), pl);
     }
   }
 
@@ -115,7 +123,38 @@ function pvRenderView(viewName) {
 
 // ── placement rendering ───────────────────────────────────
 
-function pvRenderPlacement(frame, pp, pl) {
+function pvCombineOverrideMaps(...maps) {
+  const combined = {};
+  for (const map of maps) {
+    for (const [key, value] of Object.entries(map || {})) {
+      if (!value) continue;
+      combined[key] = { ...(combined[key] || {}), ...value };
+    }
+  }
+  return combined;
+}
+
+function pvEffectiveOverride(pl) {
+  const key = pl.override_key;
+  return {
+    ...(pl.override || {}),
+    ...(_pvConfirmedOverrides[key] || {}),
+    ...(_pvInFlightOverrides[key] || {}),
+    ...(_pvPendingOverrides[key] || {}),
+  };
+}
+
+function pvVerticalMirrorSlotIsReflected(pl, slotIdx) {
+  if (pl.pattern !== "vertical_mirror" || (pl.instances || []).length <= 1) return false;
+  const anchorY = pl.anchor?.y ?? 0.5;
+  const isTopSlot = slotIdx % 2 === 0;
+  // The anchor-side icon keeps its configured rotation. Its vertically mirrored
+  // counterpart gets the reflected rotation. Centered pairs use top as the base.
+  if (Math.abs(anchorY - 0.5) < 0.001) return !isTopSlot;
+  return isTopSlot !== (anchorY < 0.5);
+}
+
+function pvRenderPlacement(frame, pp, pl, basePl = pl) {
   (pl.instances || []).forEach((inst, slotIdx) => {
     const xPct     = (inst.x_pct ?? 0) * 100;
     const yPct     = (inst.y_pct ?? 0) * 100;
@@ -128,15 +167,20 @@ function pvRenderPlacement(frame, pp, pl) {
     // skip the dot placeholder so they don't pollute the preview canvas.
     if (!assetUrl && (pp.render_kind === "equipment" || pp.render_kind === "bar")) return;
 
-    // Rotation/flip mirroring applies to the right-side slot of both "mirror" and
-    // "horizontal" symmetric placements — matching render_ppt.py exactly.
-    const isSymPattern   = pl.pattern === "mirror" || pl.pattern === "horizontal";
-    const isMirroredSlot = isSymPattern && (slotRole === "driver" || slotRole === "positive_x");
+    // Rotation/flip mirroring normally follows the semantic right-side role.
+    // Outer Edge is a rear-view pillar layout, whose physical right column is
+    // positional because rear driver/passenger roles are not screen direction.
+    const isOuterEdge = pl.pattern === "outer_edge_pillars";
+    const isSymPattern = pl.pattern === "mirror" || pl.pattern === "horizontal" || isOuterEdge;
+    const isMirroredSlot = isOuterEdge
+      ? slotIdx >= Math.floor((pl.instances || []).length / 2)
+      : isSymPattern && (slotRole === "driver" || slotRole === "positive_x");
     const instFlipH = (pl.flip_h || false) !== (isMirroredSlot && (pl.flip_mirrored_h || false));
     const instFlipV = pl.flip_v || false;
 
     const baseRot = pl.rotation || 0;
-    const instRot = (isMirroredSlot && baseRot !== 0) ? (360 - baseRot) % 360 : baseRot;
+    const rotationMirrored = isMirroredSlot || pvVerticalMirrorSlotIsReflected(pl, slotIdx);
+    const instRot = (rotationMirrored && baseRot !== 0) ? (360 - baseRot) % 360 : baseRot;
 
     const transformParts = ["translate(-50%, -50%)"];
     if (instRot) transformParts.push(`rotate(${instRot}deg)`);
@@ -157,7 +201,9 @@ function pvRenderPlacement(frame, pp, pl) {
       `height:${hPct.toFixed(3)}%`,
       `transform:${transformParts.join(" ")}`,
     ];
-    if (layerVal !== 0) cssParts.push(`z-index:${layerVal + 10}`);
+    // Every icon gets an explicit z-index so a dragged element being appended
+    // back into the frame cannot accidentally leap above a higher layer.
+    cssParts.push(`z-index:${layerVal + 100}`);
     icon.style.cssText = cssParts.join(";");
 
     if (assetUrl) {
@@ -175,7 +221,7 @@ function pvRenderPlacement(frame, pp, pl) {
 
     icon.addEventListener("mousedown", e => {
       if (e.button !== 0) return;
-      pvDragStart(e, pl, pp, xPct, yPct);
+      pvDragStart(e, basePl, pp, slotIdx);
     });
 
     frame.appendChild(icon);
@@ -216,8 +262,11 @@ function pvMergeOverride(pl, ov) {
   // moves the anchor-side icon by +dxDelta and the opposite-side icon by -dxDelta.
   // Strip the baked-in savedDx to find the raw anchor side.
   const isMirror   = pl.pattern === "mirror";
+  const isVerticalMirror = pl.pattern === "vertical_mirror";
   const rawAnchorX = (pl.anchor?.x || 0) - savedDx;
+  const rawAnchorY = (pl.anchor?.y || 0) - savedDy;
   const anchorLeft = rawAnchorX <= 0.5;
+  const anchorTop = rawAnchorY <= 0.5;
 
   // hDeltaFrac: change in effective h_spacing in fraction units, for the horizontal path.
   // slot_coeff is baked by the server as (x - anchor) / eff_h_spacing — no client derivation needed.
@@ -234,11 +283,15 @@ function pvMergeOverride(pl, ov) {
     layer:    liveLayer,
     instances: (pl.instances || []).map(inst => {
       const instLeft = (inst.x_pct ?? 0) < 0.5;
+      const instTop = (inst.y_pct ?? 0) < 0.5;
       // Mirror: anchor-side icon moves +dxDelta, opposite side moves -dxDelta.
       // Non-mirror (inspector dx slider): all icons translate uniformly.
       const xDelta = isMirror
         ? (instLeft === anchorLeft ? dxDelta : -dxDelta)
         : dxDelta;
+      const yDelta = isVerticalMirror
+        ? (instTop === anchorTop ? dyDelta : -dyDelta)
+        : dyDelta;
       // Symmetric-horizontal: each slot moves by its server-baked coefficient × Δeff.
       const hSpacingXDelta = (hDeltaDelta !== 0 && pl.pattern === "horizontal")
         ? (inst.slot_coeff ?? 0) * hDeltaFrac
@@ -246,7 +299,7 @@ function pvMergeOverride(pl, ov) {
       return {
         ...inst,
         x_pct: (inst.x_pct ?? 0) + xDelta + txDelta + hSpacingXDelta,
-        y_pct: (inst.y_pct ?? 0) + dyDelta + tyDelta,
+        y_pct: (inst.y_pct ?? 0) + yDelta + tyDelta,
         w_pct: (inst.w_pct ?? pl.icon_w_pct ?? 0.04) * scaleFactor,
         h_pct: (inst.h_pct ?? pl.icon_h_pct ?? 0.02) * scaleFactor,
       };
@@ -260,7 +313,7 @@ function pvLivePreview() {
   if (!_pvInspPl || !_pvInspPp || !_pvInspKey) return;
 
   // Preserve fields (e.g. h_spacing_delta) that the inspector panel doesn't expose.
-  const existing = _pvPendingOverrides[_pvInspKey] || {};
+  const existing = pvEffectiveOverride(_pvInspPl);
   _pvPendingOverrides[_pvInspKey] = {
     ...existing,
     visible:    $("pv-insp-visible").checked,
@@ -276,6 +329,7 @@ function pvLivePreview() {
   pvUpdateInspTitle();
   pvUpdateBadge();
   pvRenderView(_pvView);
+  pvScheduleAutosave();
 }
 
 // ── drag and drop ─────────────────────────────────────────
@@ -291,10 +345,8 @@ function pvLivePreview() {
 //   horizontal symmetric→ h_spacing_delta + anchor_dy  (changes spread, not group offset)
 //   everything else     → anchor_dx + anchor_dy  (simple translation)
 
-function pvCurrentPlacement(pl, pendingOv = null) {
-  const ov = pendingOv || _pvPendingOverrides[pl.override_key];
-  if (ov) return pvMergeOverride(pl, ov);
-  return pl;
+function pvCurrentPlacement(pl) {
+  return pvMergeOverride(pl, pvEffectiveOverride(pl));
 }
 
 function pvOverrideState(pl) {
@@ -303,19 +355,19 @@ function pvOverrideState(pl) {
   const serverTx     = pl.override?.translate_dx    || 0;
   const serverTy     = pl.override?.translate_dy    || 0;
   const serverHDelta = pl.override?.h_spacing_delta || 0;
-  const pendingOv    = _pvPendingOverrides[pl.override_key] || {};
+  const effectiveOv  = pvEffectiveOverride(pl);
   return {
     serverDx,
     serverDy,
     serverTx,
     serverTy,
     serverHDelta,
-    pendingOv,
-    savedDx:     pendingOv.anchor_dx       != null ? pendingOv.anchor_dx       : serverDx,
-    savedDy:     pendingOv.anchor_dy       != null ? pendingOv.anchor_dy       : serverDy,
-    savedTx:     pendingOv.translate_dx    != null ? pendingOv.translate_dx    : serverTx,
-    savedTy:     pendingOv.translate_dy    != null ? pendingOv.translate_dy    : serverTy,
-    savedHDelta: pendingOv.h_spacing_delta != null ? pendingOv.h_spacing_delta : serverHDelta,
+    effectiveOv,
+    savedDx:     effectiveOv.anchor_dx       != null ? effectiveOv.anchor_dx       : serverDx,
+    savedDy:     effectiveOv.anchor_dy       != null ? effectiveOv.anchor_dy       : serverDy,
+    savedTx:     effectiveOv.translate_dx    != null ? effectiveOv.translate_dx    : serverTx,
+    savedTy:     effectiveOv.translate_dy    != null ? effectiveOv.translate_dy    : serverTy,
+    savedHDelta: effectiveOv.h_spacing_delta != null ? effectiveOv.h_spacing_delta : serverHDelta,
   };
 }
 
@@ -328,21 +380,10 @@ function pvGroupItemsFor(pl) {
     for (const basePl of (pp.placements || [])) {
       if (basePl.view !== _pvView || basePl.group_key !== groupKey) continue;
       const state = pvOverrideState(basePl);
-      items.push({ pp, basePl, pl: pvCurrentPlacement(basePl, state.pendingOv), state });
+      items.push({ pp, basePl, pl: pvCurrentPlacement(basePl), state });
     }
   }
   return items;
-}
-
-function pvTranslatePlacement(pl, dxFrac, dyFrac) {
-  return {
-    ...pl,
-    instances: (pl.instances || []).map(inst => ({
-      ...inst,
-      x_pct: (inst.x_pct ?? 0) + dxFrac,
-      y_pct: (inst.y_pct ?? 0) + dyFrac,
-    })),
-  };
 }
 
 function pvDataSelector(attr, value) {
@@ -350,49 +391,119 @@ function pvDataSelector(attr, value) {
   return `[data-${attr}="${safe}"]`;
 }
 
-function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
+function pvGroupDragOverride(item, rawDxFrac, rawDyFrac) {
+  return {
+    ...pvEffectiveOverride(item.basePl),
+    translate_dx: +(item.state.savedTx + rawDxFrac).toFixed(6),
+    translate_dy: +(item.state.savedTy + rawDyFrac).toFixed(6),
+  };
+}
+
+function pvDragOverride(drag, rawDxFrac, rawDyFrac) {
+  const existing = pvEffectiveOverride(drag.basePl);
+  const newDy = +(drag.savedDy + rawDyFrac).toFixed(6);
+
+  if (drag.isSymmetric) {
+    // A horizontal symmetric pattern changes its spread around the current
+    // center. The same calculation is used during the drag and on drop, so the
+    // rendered result cannot jump to a different layout after release.
+    const grabbedInst = (drag.displayPl.instances || [])[drag.grabbedInstIndex] || {};
+    const rawCenterXPct = ((drag.basePl.anchor?.x || 0) - drag.state.serverDx) * 100;
+    const centerXPct = rawCenterXPct + drag.savedDx * 100;
+    const newGrabbedXPct = (grabbedInst.x_pct ?? 0) * 100 + rawDxFrac * 100;
+    const absCoeff = Math.max(Math.abs(drag.grabbedCoeff), 0.1);
+    const newSpacingPct = Math.max(
+      Math.abs(newGrabbedXPct - centerXPct) / absCoeff,
+      0.5,
+    );
+
+    let newHSpacing;
+    if (drag.basePl.h_spacing_units === "icon_width") {
+      newHSpacing = newSpacingPct / ((drag.basePl.icon_w_pct || 0.04) * 100);
+    } else {
+      newHSpacing = newSpacingPct / 100;
+    }
+    newHSpacing = Math.max(newHSpacing, 0.001);
+
+    return {
+      ...existing,
+      h_spacing_delta: +(newHSpacing - drag.baseHSpacing).toFixed(6),
+      anchor_dy: newDy,
+    };
+  }
+
+  if (drag.basePl.pattern === "mirror") {
+    const grabbedInst = (drag.displayPl.instances || [])[drag.grabbedInstIndex] || {};
+    const rawAnchorX = (drag.basePl.anchor?.x || 0) - drag.state.serverDx;
+    const anchorLeft = rawAnchorX + drag.savedDx <= 0.5;
+    const grabbedLeft = (grabbedInst.x_pct ?? 0) < 0.5;
+    const anchorDelta = grabbedLeft === anchorLeft ? rawDxFrac : -rawDxFrac;
+    return {
+      ...existing,
+      anchor_dx: +(drag.savedDx + anchorDelta).toFixed(6),
+      anchor_dy: newDy,
+    };
+  }
+
+  if (drag.basePl.pattern === "vertical_mirror") {
+    const grabbedInst = (drag.displayPl.instances || [])[drag.grabbedInstIndex] || {};
+    const rawAnchorY = (drag.basePl.anchor?.y || 0) - drag.state.serverDy;
+    const anchorTop = rawAnchorY + drag.savedDy <= 0.5;
+    const grabbedTop = (grabbedInst.y_pct ?? 0) < 0.5;
+    const anchorDelta = grabbedTop === anchorTop ? rawDyFrac : -rawDyFrac;
+    return {
+      ...existing,
+      anchor_dx: +(drag.savedDx + rawDxFrac).toFixed(6),
+      anchor_dy: +(drag.savedDy + anchorDelta).toFixed(6),
+    };
+  }
+
+  return {
+    ...existing,
+    anchor_dx: +(drag.savedDx + rawDxFrac).toFixed(6),
+    anchor_dy: newDy,
+  };
+}
+
+function pvDragStart(e, basePl, pp, grabbedInstIndex) {
   e.preventDefault();
+  e.stopPropagation();
 
   const frame = e.currentTarget.closest(".pv-frame");
   if (!frame) return;
 
-  const state = pvOverrideState(pl);
+  const state = pvOverrideState(basePl);
+  const displayPl = pvCurrentPlacement(basePl);
   const serverHDelta = state.serverHDelta;
   const savedDx      = state.savedDx;
   const savedDy      = state.savedDy;
   const savedHDelta  = state.savedHDelta;
 
-  // Identify grabbed instance by closest x_pct to the click position.
-  const instances = pl.instances || [];
-  const grabbedInstIndex = instances.reduce((best, inst, i) => {
-    const dist = Math.abs((inst.x_pct ?? 0) * 100 - grabbedXPct);
-    return dist < best.dist ? { i, dist } : best;
-  }, { i: 0, dist: Infinity }).i;
-
   // Detect symmetric-horizontal: driver/passenger pairs that change spread, not offset.
-  const effectiveSlotCount = pl.slot_count || instances.length || 1;
+  const instances = displayPl.instances || [];
+  const effectiveSlotCount = basePl.slot_count || instances.length || 1;
   const hasDriverPassenger  = instances.some(
     inst => inst.slot_role === "driver" || inst.slot_role === "passenger"
   );
   const isSymmetric = (
-    pl.pattern === "horizontal" &&
+    basePl.pattern === "horizontal" &&
     effectiveSlotCount >= 2 &&
     hasDriverPassenger
   );
 
   // baseHSpacing = config base (strips server delta so h_spacing_delta is always relative to config).
-  const baseHSpacing  = (pl.h_spacing != null ? pl.h_spacing : 0) - serverHDelta;
-  // Unmodified anchor center (strip already-saved override).
-  const rawAnchorXPct = ((pl.anchor?.x || 0) - savedDx) * 100;
+  const baseHSpacing  = (basePl.h_spacing != null ? basePl.h_spacing : 0) - serverHDelta;
+  // Unmodified anchor center (strip the server-baked override).
+  const rawAnchorXPct = ((basePl.anchor?.x || 0) - state.serverDx) * 100;
   // grabbedCoeff comes directly from the server-baked slot_coeff — no client spacing math needed.
   const grabbedCoeff  = instances[grabbedInstIndex]?.slot_coeff
-    ?? (grabbedXPct >= rawAnchorXPct ? 0.5 : -0.5);
+    ?? ((instances[grabbedInstIndex]?.x_pct ?? 0) * 100 >= rawAnchorXPct ? 0.5 : -0.5);
 
-  const groupItems = pvGroupItemsFor(pl);
+  const groupItems = pvGroupItemsFor(basePl);
   const isGroupDrag = groupItems.length > 1;
 
   _pvDrag = {
-    pl, pp, frame,
+    basePl, displayPl, pp, frame, state,
     frameRect: frame.getBoundingClientRect(),
     startX:    e.clientX,
     startY:    e.clientY,
@@ -407,8 +518,8 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
   };
 
   const dragSelector = isGroupDrag
-    ? pvDataSelector("group-key", pl.group_key || "")
-    : pvDataSelector("override-key", pl.override_key);
+    ? pvDataSelector("group-key", basePl.group_key || "")
+    : pvDataSelector("override-key", basePl.override_key);
   frame.querySelectorAll(dragSelector).forEach(el => el.classList.add("pv-icon-dragging"));
 
   document.addEventListener("mousemove", pvDragMove);
@@ -417,7 +528,7 @@ function pvDragStart(e, pl, pp, grabbedXPct, _grabbedYPct) {
 
 function pvDragMove(e) {
   if (!_pvDrag) return;
-  const { frameRect, startX, startY, pl, pp, frame, grabbedInstIndex } = _pvDrag;
+  const { frameRect, startX, startY, basePl, pp, frame } = _pvDrag;
 
   const rawDxPct = (e.clientX - startX) / frameRect.width  * 100;
   const rawDyPct = (e.clientY - startY) / frameRect.height * 100;
@@ -429,35 +540,29 @@ function pvDragMove(e) {
   const rawDyFrac = rawDyPct / 100;
 
   if (_pvDrag.isGroupDrag) {
-    const groupKey = pl.group_key || "";
+    const groupKey = basePl.group_key || "";
     frame.querySelectorAll(pvDataSelector("group-key", groupKey)).forEach(el => el.remove());
     for (const item of _pvDrag.groupItems) {
-      pvRenderPlacement(frame, item.pp, pvTranslatePlacement(item.pl, rawDxFrac, rawDyFrac));
+      pvRenderPlacement(
+        frame,
+        item.pp,
+        pvMergeOverride(item.basePl, pvGroupDragOverride(item, rawDxFrac, rawDyFrac)),
+        item.basePl,
+      );
     }
     frame.querySelectorAll(pvDataSelector("group-key", groupKey))
       .forEach(el => el.classList.add("pv-icon-dragging"));
     return;
   }
 
-  // Grabbed icon's side moves with the mouse; the opposite side mirrors in X.
-  const grabbedInst  = (pl.instances || [])[grabbedInstIndex];
-  const grabbedLeft  = (grabbedInst?.x_pct ?? 0.5) < 0.5;
-
-  const livePl = {
-    ...pl,
-    instances: (pl.instances || []).map(inst => {
-      const instLeft = (inst.x_pct ?? 0) < 0.5;
-      return {
-        ...inst,
-        x_pct: (inst.x_pct ?? 0) + (instLeft === grabbedLeft ? +rawDxFrac : -rawDxFrac),
-        y_pct: (inst.y_pct ?? 0) + rawDyFrac,
-      };
-    }),
-  };
-
-  frame.querySelectorAll(pvDataSelector("override-key", pl.override_key)).forEach(el => el.remove());
-  pvRenderPlacement(frame, pp, livePl);
-  frame.querySelectorAll(pvDataSelector("override-key", pl.override_key)).forEach(el => el.classList.add("pv-icon-dragging"));
+  // Render the exact override that will be saved on release. This keeps both
+  // sides of every mirrored pair visible and makes the drop position identical
+  // to the last drag frame.
+  const liveOverride = pvDragOverride(_pvDrag, rawDxFrac, rawDyFrac);
+  frame.querySelectorAll(pvDataSelector("override-key", basePl.override_key)).forEach(el => el.remove());
+  pvRenderPlacement(frame, pp, pvMergeOverride(basePl, liveOverride), basePl);
+  frame.querySelectorAll(pvDataSelector("override-key", basePl.override_key))
+    .forEach(el => el.classList.add("pv-icon-dragging"));
 }
 
 function pvDragEnd(e) {
@@ -470,8 +575,8 @@ function pvDragEnd(e) {
   _pvDrag = null;
 
   const dragSelector = drag.isGroupDrag
-    ? pvDataSelector("group-key", drag.pl.group_key || "")
-    : pvDataSelector("override-key", drag.pl.override_key);
+    ? pvDataSelector("group-key", drag.basePl.group_key || "")
+    : pvDataSelector("override-key", drag.basePl.override_key);
   drag.frame.querySelectorAll(dragSelector).forEach(el => el.classList.remove("pv-icon-dragging"));
 
   const dxPct = drag.dxPct || 0;
@@ -479,7 +584,7 @@ function pvDragEnd(e) {
 
   // < 0.5% movement in both axes → treat as click, open inspector.
   if (Math.abs(dxPct) < 0.5 && Math.abs(dyPct) < 0.5) {
-    pvOpenInspector(drag.pl.override_key, drag.pl, drag.pp);
+    pvOpenInspector(drag.basePl.override_key, drag.basePl, drag.pp);
     return;
   }
 
@@ -488,70 +593,23 @@ function pvDragEnd(e) {
 
   if (drag.isGroupDrag) {
     for (const item of drag.groupItems) {
-      _pvPendingOverrides[item.basePl.override_key] = {
-        ...item.state.pendingOv,
-        translate_dx: +(item.state.savedTx + rawDxFrac).toFixed(6),
-        translate_dy: +(item.state.savedTy + rawDyFrac).toFixed(6),
-      };
+      _pvPendingOverrides[item.basePl.override_key] = pvGroupDragOverride(
+        item, rawDxFrac, rawDyFrac,
+      );
     }
     pvUpdateBadge();
     pvRenderView(_pvView);
+    pvScheduleAutosave();
     return;
   }
 
-  const existingPending = _pvPendingOverrides[drag.pl.override_key] || {};
-  const newDy = +(drag.savedDy + rawDyFrac).toFixed(6);
-
-  if (drag.isSymmetric) {
-    // Symmetric horizontal: the spread (h_spacing) changes, not the group offset.
-    // Use grabbedCoeff so outer slots of a 4-slot grid compute the same h_spacing
-    // as inner slots would — coeff ≈ 0.5 for inner, ≈ 1.5 for outer.
-    const grabbedInst    = (drag.pl.instances || [])[drag.grabbedInstIndex] || {};
-    const centerPct      = ((drag.pl.anchor?.x || 0) - drag.savedDx) * 100;
-    const newGrabbedXPct = (grabbedInst.x_pct ?? 0) * 100 + dxPct;
-    const absCoeff       = Math.max(Math.abs(drag.grabbedCoeff), 0.1);
-    const newSpacingPct  = Math.max(Math.abs(newGrabbedXPct - centerPct) / absCoeff, 0.5);
-
-    let newHSpacing;
-    if (drag.pl.h_spacing_units === "icon_width") {
-      newHSpacing = newSpacingPct / ((drag.pl.icon_w_pct || 0.04) * 100);
-    } else {
-      newHSpacing = newSpacingPct / 100;
-    }
-    newHSpacing = Math.max(newHSpacing, 0.001);
-
-    _pvPendingOverrides[drag.pl.override_key] = {
-      ...existingPending,
-      h_spacing_delta: +(newHSpacing - drag.baseHSpacing).toFixed(6),
-      anchor_dy:       newDy,
-    };
-
-  } else if (drag.pl.pattern === "mirror") {
-    // Mirror: anchor tracks the icon on its same side of center.
-    // If the grabbed icon is on the anchor's side, anchor moves with it (+).
-    // If on the opposite side, the anchor icon mirrored the drag, so anchor moves opposite (−).
-    const grabbedInst  = (drag.pl.instances || [])[drag.grabbedInstIndex] || {};
-    const anchorLeft   = (drag.pl.anchor?.x || 0) - drag.savedDx <= 0.5;
-    const grabbedLeft  = (grabbedInst.x_pct ?? 0) < 0.5;
-    const anchorDelta  = (grabbedLeft === anchorLeft) ? +rawDxFrac : -rawDxFrac;
-
-    _pvPendingOverrides[drag.pl.override_key] = {
-      ...existingPending,
-      anchor_dx: +(drag.savedDx + anchorDelta).toFixed(6),
-      anchor_dy: newDy,
-    };
-
-  } else {
-    // Single icon or non-symmetric: anchor translates directly with the drag.
-    _pvPendingOverrides[drag.pl.override_key] = {
-      ...existingPending,
-      anchor_dx: +(drag.savedDx + rawDxFrac).toFixed(6),
-      anchor_dy: newDy,
-    };
-  }
+  _pvPendingOverrides[drag.basePl.override_key] = pvDragOverride(
+    drag, rawDxFrac, rawDyFrac,
+  );
 
   pvUpdateBadge();
   pvRenderView(_pvView);
+  pvScheduleAutosave();
 }
 
 // ── inspector ────────────────────────────────────────────
@@ -561,9 +619,7 @@ function pvOpenInspector(overrideKey, pl, pp) {
   _pvInspPl  = pl;
   _pvInspPp  = pp;
 
-  // Prefer pending override values, fall back to server-saved override.
-  const pendingOv = _pvPendingOverrides[overrideKey];
-  const ov = pendingOv || pl.override || {};
+  const ov = pvEffectiveOverride(pl);
 
   pvUpdateInspTitle();
 
@@ -595,7 +651,9 @@ function pvOpenInspector(overrideKey, pl, pp) {
 
 function pvUpdateInspTitle() {
   if (!_pvInspKey || !_pvInspPl || !_pvInspPp) return;
-  const hasPending = !!_pvPendingOverrides[_pvInspKey];
+  const hasPending = !!(
+    _pvPendingOverrides[_pvInspKey] || _pvInFlightOverrides[_pvInspKey]
+  );
   $("pv-insp-title").textContent =
     `${_pvInspPp.part_name} — ${_pvInspPl.view}${hasPending ? " ●" : ""}`;
 }
@@ -613,12 +671,11 @@ async function pvResetThisPart() {
   const pl  = _pvInspPl;
   const pp  = _pvInspPp;
 
-  delete _pvPendingOverrides[key];
-  pvUpdateBadge();
+  if (pvHasPendingChanges() && !(await pvApplyChanges())) return;
 
   // If the server has a saved override for this key, wipe it so we return
   // to the original load state (not just the last-applied state).
-  const hasServerOverride = pl?.override && Object.keys(pl.override).length > 0;
+  const hasServerOverride = Object.keys(pvEffectiveOverride(pl)).length > 0;
   if (_pvDraftId && hasServerOverride) {
     const res = await api(`/api/draft/${_pvDraftId}/overrides/batch`, { overrides: { [key]: {} } });
     if (res.ok) {
@@ -633,24 +690,114 @@ async function pvResetThisPart() {
   }
 }
 
-// ── toolbar actions ──────────────────────────────────────
+async function pvEditCurrentPart() {
+  const key = _pvInspKey || "";
+  const separator = key.lastIndexOf(":");
+  const lineId = separator > 0 ? key.slice(0, separator) : "";
+  if (!lineId || typeof openPartEditModal !== "function") {
+    toast("This part is not available to edit", "error");
+    return;
+  }
+  pvHideInspector();
+  await openPartEditModal(lineId);
+}
+
+async function pvCommentCurrentPart() {
+  const key = _pvInspKey || "";
+  const separator = key.lastIndexOf(":");
+  const lineId = separator > 0 ? key.slice(0, separator) : "";
+  if (!lineId || typeof openPartEditModal !== "function") {
+    toast("This part is not available to comment on", "error");
+    return;
+  }
+  pvHideInspector();
+  await openPartEditModal(lineId);
+  if (typeof pickerOpenCommentStep === "function") {
+    pickerOpenCommentStep();
+  } else {
+    requestAnimationFrame(() => $("me-comment")?.focus());
+  }
+}
+
+async function pvDeleteCurrentPart() {
+  const key = _pvInspKey || "";
+  const separator = key.lastIndexOf(":");
+  const lineId = separator > 0 ? key.slice(0, separator) : "";
+  if (!lineId || typeof deletePart !== "function") {
+    toast("This part is not available to delete", "error");
+    return;
+  }
+  pvHideInspector();
+  await deletePart(lineId);
+}
+
+// ── automatic placement saves ───────────────────────────
 
 function pvHasPendingChanges() {
-  return Object.keys(_pvPendingOverrides).length > 0;
+  return Object.keys(_pvPendingOverrides).length > 0
+    || Object.keys(_pvInFlightOverrides).length > 0
+    || _pvAutosaveInFlight;
+}
+
+function pvScheduleAutosave() {
+  if (_pvAutosaveTimer) clearTimeout(_pvAutosaveTimer);
+  _pvAutosaveTimer = setTimeout(() => {
+    _pvAutosaveTimer = null;
+    pvApplyChanges().catch(error => {
+      console.error("Preview autosave failed", error);
+    });
+  }, 300);
 }
 
 async function pvApplyChanges() {
-  if (!_pvDraftId || Object.keys(_pvPendingOverrides).length === 0) return;
-
-  const res = await api(`/api/draft/${_pvDraftId}/overrides/batch`, {
-    overrides: _pvPendingOverrides,
-  });
-
-  if (res.ok) {
-    await pvLoad(_pvDraftId);
-  } else {
-    alert("Failed to apply changes: " + (res.error || "unknown error"));
+  if (_pvAutosaveTimer) clearTimeout(_pvAutosaveTimer);
+  _pvAutosaveTimer = null;
+  if (!_pvDraftId) return true;
+  if (_pvAutosaveInFlight) {
+    await _pvAutosavePromise;
+    return pvApplyChanges();
   }
+  if (Object.keys(_pvPendingOverrides).length === 0) return true;
+
+  const draftId = _pvDraftId;
+  const overrides = _pvPendingOverrides;
+  _pvPendingOverrides = {};
+  _pvInFlightOverrides = pvCombineOverrideMaps(_pvInFlightOverrides, overrides);
+  _pvAutosaveInFlight = true;
+  _pvAutosavePromise = api(`/api/draft/${draftId}/overrides/batch`, { overrides });
+
+  let res;
+  try {
+    res = await _pvAutosavePromise;
+  } catch (error) {
+    for (const key of Object.keys(overrides)) delete _pvInFlightOverrides[key];
+    _pvPendingOverrides = pvCombineOverrideMaps(overrides, _pvPendingOverrides);
+    pvUpdateBadge();
+    toast("Could not save the placement change. Please try again.", "error");
+    console.error("Preview autosave request failed", error);
+    return false;
+  } finally {
+    _pvAutosaveInFlight = false;
+    _pvAutosavePromise = null;
+  }
+
+  if (!res?.ok) {
+    for (const key of Object.keys(overrides)) delete _pvInFlightOverrides[key];
+    _pvPendingOverrides = pvCombineOverrideMaps(overrides, _pvPendingOverrides);
+    pvUpdateBadge();
+    toast("Could not save the placement change. Please try again.", "error");
+    return false;
+  }
+
+  // Keep the original plan immutable until the next full reload. The server
+  // response was rendered from geometry with its saved override already baked
+  // in; changing only pl.override here used to make that metadata disagree with
+  // its coordinates, which is what caused quick consecutive drags to jump.
+  _pvConfirmedOverrides = pvCombineOverrideMaps(_pvConfirmedOverrides, overrides);
+  for (const key of Object.keys(overrides)) delete _pvInFlightOverrides[key];
+  if (_pvDraftId === draftId) pvRenderView(_pvView);
+  pvUpdateBadge();
+  return true;
 }
 
 async function pvResetThisView() {
@@ -720,18 +867,10 @@ async function pvResetAllViews() {
   }
 }
 
-// ── badge / indicator ────────────────────────────────────
+// ── dirty-state bridge ───────────────────────────────────
 
 function pvUpdateBadge() {
-  const count    = Object.keys(_pvPendingOverrides).length;
-  const applyBtn = $("btn-pv-apply");
-  const badge    = $("pv-pending-count");
-  if (applyBtn) applyBtn.disabled = count === 0;
-  if (badge) {
-    badge.textContent = count;
-    badge.style.display = count > 0 ? "inline" : "none";
-  }
-  if (count > 0 && typeof _pbeMarkDirty === "function") _pbeMarkDirty();
+  if (pvHasPendingChanges() && typeof _pbeMarkDirty === "function") _pbeMarkDirty();
 }
 
 // ── spinner / error helpers ──────────────────────────────
@@ -759,16 +898,16 @@ function pvSyncSlider(sliderId, numId) {
 
 (function pvInit() {
   const btnClose     = $("pv-insp-close");
+  const btnEditPart  = $("pv-insp-edit-part");
+  const btnComment   = $("pv-insp-comment-part");
   const btnResetPart = $("pv-insp-reset-part");
-  const btnApply     = $("btn-pv-apply");
-  const btnResetView = $("btn-pv-reset-view");
-  const btnResetAll  = $("btn-pv-reset-all");
+  const btnDeletePart = $("pv-insp-delete-part");
 
   if (btnClose)     btnClose.addEventListener("click",     pvHideInspector);
+  if (btnEditPart)  btnEditPart.addEventListener("click",  pvEditCurrentPart);
+  if (btnComment)   btnComment.addEventListener("click",   pvCommentCurrentPart);
   if (btnResetPart) btnResetPart.addEventListener("click", pvResetThisPart);
-  if (btnApply)     btnApply.addEventListener("click",     pvApplyChanges);
-  if (btnResetView) btnResetView.addEventListener("click", pvResetThisView);
-  if (btnResetAll)  btnResetAll.addEventListener("click",  pvResetAllViews);
+  if (btnDeletePart) btnDeletePart.addEventListener("click", pvDeleteCurrentPart);
 
   // Only hide inspector when clicking the canvas background, not on an icon.
   const wrap = $("pv-canvas-wrap");

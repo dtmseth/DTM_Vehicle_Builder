@@ -15,9 +15,9 @@ window.addEventListener("DOMContentLoaded", async()=>{
     const settings=await api("/api/app-settings");
     if(settings && !_appSettings) _appSettings=settings;
   }catch(e){}
-  // If we just returned from a QuickBooks OAuth round-trip, land on that tab
-  // instead of the default Projects view.
-  if (typeof qbConsumeReturnTab === "function" && qbConsumeReturnTab()) return;
+  // Keep a future internal QuickBooks OAuth round-trip out of the public UI.
+  if (window.DTM_QUICKBOOKS_UI_ENABLED === true
+      && typeof qbConsumeReturnTab === "function" && qbConsumeReturnTab()) return;
   // All tab-specific scripts are now loaded — open Projects tab as default
   switchTab("projects");
 });

@@ -141,7 +141,10 @@
       {
         "accessories": [],
         "accessory_of": "",
-        "allowed_placements": [],
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "CENTER PLATE OF PB"
+        ],
         "allowed_products": [],
         "category": "scene",
         "label": "Front Scene",
@@ -166,8 +169,7 @@
           "TOP OF PUSH BUMPER",
           "UNDER PUSH BUMPER",
           "BEHIND GRILL (CENTER)",
-          "BEHIND OEM BUMPER",
-          "VEHICLE SPECIFIC BRACKET"
+          "BEHIND OEM BUMPER"
         ],
         "allowed_products": [],
         "category": "",
@@ -703,7 +705,28 @@
           }
         ],
         "type_id": "equipment",
-        "workbook_label_pattern": "Control Head"
+        "workbook_label_pattern": "Control Head {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Secondary Control Head Harness",
+        "max_count": null,
+        "part_type_id": "secondary_control_head_harness",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Secondary Control Head Harness"
       },
       {
         "accessories": [],

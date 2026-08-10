@@ -1,5 +1,7 @@
 // ── Projects module: detail Builds tab ───────────────────────────────────────
 
+const _PT_QUICKBOOKS_UI_ENABLED = window.DTM_QUICKBOOKS_UI_ENABLED === true;
+
 function _ptFirstName(s) {
   s = (s || "").trim();
   if (!s) return "";
@@ -45,17 +47,14 @@ function _ptRenderTimelineRow(holder) {
   return `<div class="proj-build-card-timeline">${lines.join(" ")}</div>`;
 }
 
-function _ptRenderBuildsTab(p) {
-  const buildsPanel = $("proj-ptab-builds");
-  if (!buildsPanel) return;
+function _ptBuildCardsMarkup(p) {
   const units = p.build_units || [];
   const pid   = esc(p.project_id);
 
   if (!units.length) {
-    buildsPanel.innerHTML = `
-      <p class="proj-empty-msg">No units defined yet. Add fleet units on the Edit tab.</p>
+    return `
+      <p class="proj-empty-msg">No builds yet. Add fleet units in Project Details.</p>
       <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
-    return;
   }
 
   const groups = units.map((u, uIdx) => {
@@ -71,15 +70,16 @@ function _ptRenderBuildsTab(p) {
         const label     = _ptUnitLabel(u, ind, j);
         const iid       = esc(ind.individual_id);
         const hasDraft  = !!ind.draft_id;
-        const hasOutput = !!(ind.output_path || "").trim();
         const confirmed = !!ind.confirmed;
 
         const hasPdf    = !!(ind.pdf_path || "").trim();
-        const setupLbl  = hasDraft ? "Edit Build" : "Setup Build";
         const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
-        return `<div class="proj-build-card" id="build-card-${iid}">
+        return `<div class="proj-build-card proj-build-card--openable" id="build-card-${iid}" tabindex="0"
+          role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(label)}"
+          data-build-kind="ind" data-project-id="${pid}" data-unit-id="${uid}"
+          data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}">
           <div class="proj-build-card-top">
             <div class="proj-build-card-label">${esc(label)}</div>
             <button class="btn btn-secondary btn-sm proj-build-details-btn"
@@ -88,18 +88,15 @@ function _ptRenderBuildsTab(p) {
           <div class="proj-ind-card-badges">
             ${hasDraft  ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
-            ${(ind.qb_estimate_id || "").trim() ? `<span class="proj-confirmed-badge">📋 estimate</span>` : ""}
+            ${_PT_QUICKBOOKS_UI_ENABLED ? ((ind.qb_project_id || "").trim() ? `<span class="proj-confirmed-badge">◆ QB project</span>` : `<span class="proj-ind-not-setup">QB project needed</span>`) : ""}
+            ${_PT_QUICKBOOKS_UI_ENABLED && (ind.qb_estimate_id || "").trim() ? `<span class="proj-confirmed-badge">📋 estimate</span>` : ""}
           </div>
           ${_ptRenderTimelineRow(ind)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
             ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
           </div>
           <div class="proj-build-actions">
-            <button class="btn btn-secondary btn-sm proj-start-btn"
-              onclick="PT_setupOrEditBuildInd('${pid}','${uid}','${iid}','${draftIdEsc}',${uIdx})">
-              ${esc(setupLbl)}
-            </button>
-            <button class="btn btn-primary btn-sm"${buildDis}
+            <button class="btn btn-secondary btn-sm"${buildDis}
               onclick="PT_buildOpenPptx('${pid}','${uid}','${iid}','ind')">
               📊 Preview / Edit in PowerPoint
             </button>
@@ -109,10 +106,10 @@ function _ptRenderBuildsTab(p) {
             </button>
             ${hasPdf ? `<button class="btn btn-secondary btn-sm"
               onclick="PT_buildOpenPdf('${pid}','${uid}','${iid}','ind')">📑 View PDF</button>` : ""}
-            <button class="btn btn-secondary btn-sm"${buildDis}
+            ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm"${buildDis}
               onclick="PT_buildCreateEstimate('${pid}','${uid}','${iid}')">
               📋 ${(ind.qb_estimate_id || "").trim() ? "Re-estimate" : "QB Estimate"}
-            </button>
+            </button>` : ""}
             <button class="btn btn-secondary btn-sm"
               onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Show in folder</button>
           </div>
@@ -121,11 +118,12 @@ function _ptRenderBuildsTab(p) {
     } else {
       const hasDraft  = !!u.draft_id;
       const hasPdf    = !!(u.pdf_path || "").trim();
-      const setupLbl  = hasDraft ? "Edit Build" : "Setup Build";
       const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
 
-      cards = `<div class="proj-build-card" id="build-card-unit-${uid}">
+      cards = `<div class="proj-build-card proj-build-card--openable" id="build-card-unit-${uid}" tabindex="0"
+        role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(u.build_type || "Unit")}" data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
+        data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}">
         <div class="proj-build-card-label">${esc(u.build_type || "Unit")} ×${u.quantity}</div>
         <div class="proj-ind-card-badges">
           ${hasDraft ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
@@ -135,11 +133,7 @@ function _ptRenderBuildsTab(p) {
           ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
         </div>
         <div class="proj-build-actions">
-          <button class="btn btn-secondary btn-sm proj-start-btn"
-            onclick="PT_setupOrEditBuildUnit('${pid}','${uid}','${draftIdEsc}',${uIdx})">
-            ${esc(setupLbl)}
-          </button>
-          <button class="btn btn-primary btn-sm"${buildDis}
+          <button class="btn btn-secondary btn-sm"${buildDis}
             onclick="PT_buildOpenPptx('${pid}','${uid}','','unit')">
             📊 Preview / Edit in PowerPoint
           </button>
@@ -164,16 +158,46 @@ function _ptRenderBuildsTab(p) {
     </div>`;
   }).join("");
 
-  buildsPanel.innerHTML = `
+  return `
     ${groups}
     <div class="proj-builds-footer">
       <button class="btn btn-primary btn-sm" onclick="PT_generateAll()">⚡ Generate All</button>
       <button class="btn btn-secondary btn-sm" onclick="PT_exportAllPdf()">📄 Export All PDFs</button>
-      <button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">📋 Create QB Estimates</button>
+      ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">📋 Prepare QB Estimates</button>` : ""}
     </div>
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
+}
 
-  _ptLoadBuildsStats(p);
+function _ptOpenBuildCard(card) {
+  const projectId = card.dataset.projectId;
+  const unitId = card.dataset.unitId;
+  const draftId = card.dataset.draftId || "";
+  const unitIndex = Number(card.dataset.unitIndex);
+  if (card.dataset.buildKind === "ind") {
+    PT_setupOrEditBuildInd(projectId, unitId, card.dataset.individualId, draftId, unitIndex);
+  } else {
+    PT_setupOrEditBuildUnit(projectId, unitId, draftId, unitIndex);
+  }
+}
+
+function _ptBindBuildCardOpeners(container) {
+  container.querySelectorAll(".proj-build-card--openable").forEach(card => {
+    card.addEventListener("click", event => {
+      if (event.target.closest("button, a, input, select, textarea")) return;
+      _ptOpenBuildCard(card);
+    });
+    card.addEventListener("keydown", event => {
+      if (event.target !== card || !["Enter", " "].includes(event.key)) return;
+      event.preventDefault();
+      _ptOpenBuildCard(card);
+    });
+  });
+}
+
+function _ptRenderBuildsTab(p) {
+  // Kept as a compatibility entry point for project actions that refresh the
+  // former Builds tab. Build cards now live on Overview.
+  _ptRenderOverview(p);
 }
 
 async function _ptLoadBuildsStats(p) {
@@ -247,7 +271,7 @@ window.PT_setupOrEditBuildUnit = async function (projectId, unitId, existingDraf
   if (!unit) return;
 
   if (existingDraftId) {
-    await _ptShowBuildEditor(existingDraftId, unit, project, "builds");
+    await _ptShowBuildEditor(existingDraftId, unit, project, "overview");
   } else {
     const statusEl = $("proj-action-status");
     if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "ok");
@@ -260,7 +284,7 @@ window.PT_setupOrEditBuildUnit = async function (projectId, unitId, existingDraf
       await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === projectId) || project;
       _PT.viewProject = updated;
-      await _ptShowBuildEditor(res.draft_id, unit, updated, "builds");
+      await _ptShowBuildEditor(res.draft_id, unit, updated, "overview");
     } catch (e) {
       if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Error"), "err");
     }
@@ -275,7 +299,7 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
   const individual = (unit.individuals || []).find(i => i.individual_id === individualId);
 
   if (existingDraftId) {
-    await _ptShowBuildEditor(existingDraftId, unit, project, "builds", individual);
+    await _ptShowBuildEditor(existingDraftId, unit, project, "overview", individual);
   } else {
     const statusEl = $("proj-action-status");
     if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "ok");
@@ -292,7 +316,7 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
       _PT.viewProject = updated;
       const updatedUnit = updated.build_units.find(u => u.unit_id === unitId) || unit;
       const updatedInd  = (updatedUnit.individuals || []).find(i => i.individual_id === individualId) || individual;
-      await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "builds", updatedInd);
+      await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "overview", updatedInd);
     } catch (e) {
       if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Error"), "err");
     }
@@ -660,7 +684,7 @@ window.PT_startBuild = async function (projectId, unitIndex) {
     await _ptLoadAll();
     const updated = _PT.projects.find(p => p.project_id === projectId) || project;
     _PT.viewProject = updated;
-    await _ptShowBuildEditor(res.draft_id, unit, updated, "builds");
+    await _ptShowBuildEditor(res.draft_id, unit, updated, "overview");
   } catch (e) {
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Unexpected error"), "err");
   }
@@ -683,7 +707,7 @@ window.PT_startBuildIndividual = async function (projectId, unitIndex, individua
     _PT.viewProject = updated;
     const updatedUnit = updated.build_units.find(u => u.unit_id === unit.unit_id) || unit;
     const updatedInd  = (updatedUnit.individuals || []).find(i => i.individual_id === individualId);
-    await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "builds", updatedInd);
+    await _ptShowBuildEditor(res.draft_id, updatedUnit, updated, "overview", updatedInd);
   } catch (e) {
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Unexpected error"), "err");
   }
@@ -712,7 +736,16 @@ function _ptEstError(code) {
     no_billable_parts: "No billable parts in this build",
     no_agency: "Assign an agency to this project first",
     agency_not_in_qb: "The agency isn't in QuickBooks yet",
+    customer_required: "Confirm the customer information before creating the estimate",
+    customer_incomplete: "Complete the required customer and billing information before creating the estimate",
+    customer_is_sub: "The linked QuickBooks customer is a sub-customer; relink the agency to a top-level customer",
+    customer_create_failed: "QuickBooks did not return the new customer id",
+    project_not_linked: "Set up this vehicle's QuickBooks Project before creating the estimate",
+    project_identity_required: "Add a unit number before setting up the QuickBooks Project",
+    invalid_project_id: "Paste the QuickBooks Project web address or project number",
+    invalid_qb_project_ref: "QuickBooks rejected the saved Project link — set it up again below",
     validation_failed: "Some parts aren't linked to QuickBooks",
+    validation_unavailable: "Could not check this vehicle right now",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }
@@ -749,7 +782,10 @@ function _ptOpenEstModal(title, bodyHtml, createLabel) {
   }
   const e = _ptEstModalEls();
   if (e.title) e.title.textContent = title;
-  if (e.body)  e.body.innerHTML = bodyHtml;
+  if (e.body) {
+    e.body.innerHTML = bodyHtml;
+    e.body.onclick = null;
+  }
   if (e.create) {
     e.create.style.display = createLabel ? "" : "none";
     e.create.disabled = false;
@@ -768,6 +804,199 @@ function _ptLabelForInd(project, individualId) {
   return individualId;
 }
 
+function _ptCustomerEditor(customer, linked, missingFields = []) {
+  const c = customer || {};
+  if (linked && !missingFields.length) {
+    return `<div style="padding:10px 12px;background:var(--surface-2);border-radius:6px;margin-top:8px;font-size:12px">
+      <strong>${esc(c.name || "Customer")}</strong><br>
+      <span style="color:var(--muted)">${esc(c.contact_name || "No contact name")}${c.contact_phone ? " · " + esc(c.contact_phone) : ""}${c.contact_email ? " · " + esc(c.contact_email) : ""}</span>
+      <div style="color:var(--green);margin-top:4px">✓ Uses the existing top-level QuickBooks customer</div>
+    </div>`;
+  }
+  const missing = missingFields.length
+    ? `<div style="font-size:12px;color:var(--red);margin-bottom:8px">Required before this estimate: ${esc(missingFields.join(", "))}</div>`
+    : "";
+  const editorMessage = linked
+    ? "This existing QuickBooks customer needs the information below before an estimate can be created. Confirming only updates the customer profile; it does not send an invoice or customer message."
+    : "This agency is not linked to a top-level QuickBooks customer yet. Confirm these details before the app creates or links one. This does not send an invoice or customer message.";
+  return `<div style="margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:6px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${editorMessage}</div>
+    ${missing}
+    <label style="font-size:12px;font-weight:600;color:var(--navy)">Customer name</label>
+    <input type="text" id="qb-est-customer-name" value="${esc(c.name || "")}" autocomplete="organization" style="width:100%;box-sizing:border-box;margin:4px 0 7px" />
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Contact name</label><input type="text" id="qb-est-customer-contact" value="${esc(c.contact_name || "")}" autocomplete="name" style="width:100%;box-sizing:border-box;margin:4px 0 7px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Title</label><input type="text" id="qb-est-customer-title" value="${esc(c.contact_title || "")}" style="width:100%;box-sizing:border-box;margin:4px 0 7px" /></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Phone</label><input type="text" id="qb-est-customer-phone" value="${esc(c.contact_phone || "")}" autocomplete="tel" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Email</label><input type="email" id="qb-est-customer-email" value="${esc(c.contact_email || "")}" autocomplete="email" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Mobile</label><input type="text" id="qb-est-customer-mobile" value="${esc(c.mobile_phone || "")}" autocomplete="tel" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Fax</label><input type="text" id="qb-est-customer-fax" value="${esc(c.fax || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Website</label><input type="url" id="qb-est-customer-website" value="${esc(c.website || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-top:12px">Billing address</div>
+    <label style="font-size:12px;font-weight:600;color:var(--navy)">Street address</label>
+    <input type="text" id="qb-est-customer-bill-line1" value="${esc(c.bill_address_line1 || "")}" autocomplete="address-line1" style="width:100%;box-sizing:border-box;margin:4px 0 7px" />
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Address line 2</label><input type="text" id="qb-est-customer-bill-line2" value="${esc(c.bill_address_line2 || "")}" autocomplete="address-line2" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Address line 3</label><input type="text" id="qb-est-customer-bill-line3" value="${esc(c.bill_address_line3 || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">City</label><input type="text" id="qb-est-customer-bill-city" value="${esc(c.bill_city || "")}" autocomplete="address-level2" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">State / Province</label><input type="text" id="qb-est-customer-bill-state" value="${esc(c.bill_state || "")}" autocomplete="address-level1" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Postal code</label><input type="text" id="qb-est-customer-bill-postal" value="${esc(c.bill_postal_code || "")}" autocomplete="postal-code" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Country</label><input type="text" id="qb-est-customer-bill-country" value="${esc(c.bill_country || "")}" autocomplete="country-name" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-top:12px">Shipping address <span style="font-weight:400;color:var(--muted)">(optional)</span></div>
+    <label style="display:flex;gap:7px;align-items:center;margin:5px 0;font-size:12px;color:var(--navy)"><input type="checkbox" id="qb-est-customer-ship-same" /> Same as billing address</label>
+    <label style="font-size:12px;font-weight:600;color:var(--navy)">Street address</label>
+    <input type="text" id="qb-est-customer-ship-line1" value="${esc(c.ship_address_line1 || "")}" autocomplete="shipping address-line1" style="width:100%;box-sizing:border-box;margin:4px 0 7px" />
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Address line 2</label><input type="text" id="qb-est-customer-ship-line2" value="${esc(c.ship_address_line2 || "")}" autocomplete="shipping address-line2" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Address line 3</label><input type="text" id="qb-est-customer-ship-line3" value="${esc(c.ship_address_line3 || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">City</label><input type="text" id="qb-est-customer-ship-city" value="${esc(c.ship_city || "")}" autocomplete="shipping address-level2" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">State / Province</label><input type="text" id="qb-est-customer-ship-state" value="${esc(c.ship_state || "")}" autocomplete="shipping address-level1" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Postal code</label><input type="text" id="qb-est-customer-ship-postal" value="${esc(c.ship_postal_code || "")}" autocomplete="shipping postal-code" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Country</label><input type="text" id="qb-est-customer-ship-country" value="${esc(c.ship_country || "")}" autocomplete="shipping country-name" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks taxable</label><select id="qb-est-customer-taxable" style="width:100%;box-sizing:border-box;margin-top:4px"><option value="" ${c.taxable == null ? "selected" : ""}>Not set</option><option value="true" ${c.taxable === true ? "selected" : ""}>Taxable</option><option value="false" ${c.taxable === false ? "selected" : ""}>Not taxable</option></select></div>
+      <div style="flex:2"><label style="font-size:12px;font-weight:600;color:var(--navy)">Customer notes</label><input type="text" id="qb-est-customer-notes" value="${esc(c.notes || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
+    </div>
+    <label style="display:flex;gap:7px;align-items:center;margin-top:10px;font-size:12px;color:var(--navy)"><input type="checkbox" id="qb-est-customer-confirm" /> Confirm customer details and allow customer creation or profile update</label>
+  </div>`;
+}
+
+function _ptCustomerFieldsFromEditor() {
+  const customerName = $("qb-est-customer-name");
+  if (!customerName) return null;
+  const value = id => $(id)?.value || "";
+  const fields = {
+    name: customerName.value || "",
+    contact_name: value("qb-est-customer-contact"),
+    contact_title: value("qb-est-customer-title"),
+    contact_phone: value("qb-est-customer-phone"),
+    contact_email: value("qb-est-customer-email"),
+    mobile_phone: value("qb-est-customer-mobile"),
+    fax: value("qb-est-customer-fax"),
+    website: value("qb-est-customer-website"),
+    bill_address_line1: value("qb-est-customer-bill-line1"),
+    bill_address_line2: value("qb-est-customer-bill-line2"),
+    bill_address_line3: value("qb-est-customer-bill-line3"),
+    bill_city: value("qb-est-customer-bill-city"),
+    bill_state: value("qb-est-customer-bill-state"),
+    bill_postal_code: value("qb-est-customer-bill-postal"),
+    bill_country: value("qb-est-customer-bill-country"),
+    ship_address_line1: value("qb-est-customer-ship-line1"),
+    ship_address_line2: value("qb-est-customer-ship-line2"),
+    ship_address_line3: value("qb-est-customer-ship-line3"),
+    ship_city: value("qb-est-customer-ship-city"),
+    ship_state: value("qb-est-customer-ship-state"),
+    ship_postal_code: value("qb-est-customer-ship-postal"),
+    ship_country: value("qb-est-customer-ship-country"),
+    notes: value("qb-est-customer-notes"),
+  };
+  if ($("qb-est-customer-ship-same")?.checked) {
+    for (const suffix of ["line1", "line2", "line3", "city", "state", "postal_code", "country"]) {
+      const billKey = `bill_address_${suffix}`;
+      const shipKey = `ship_address_${suffix}`;
+      fields[shipKey] = fields[billKey];
+    }
+  }
+  const taxable = value("qb-est-customer-taxable");
+  fields.taxable = taxable === "" ? null : taxable === "true";
+  return fields;
+}
+
+async function _ptCopyProjectName(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (_) {
+    // pywebview/older browser fallback: select an off-screen temporary field.
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    return copied;
+  }
+}
+
+function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked = null) {
+  const b = binding || {};
+  const projectName = b.project_name || "Vehicle project";
+  const customerName = b.customer_name || "the correct customer";
+  const identityReady = !!b.identity_ready;
+  const projectRefInvalid = !!b.project_ref_invalid;
+  const identityHint = (b.identity_labels || []).length
+    ? `This project is for ${esc((b.identity_labels || []).join(" · "))}.`
+    : "Add a unit number in the vehicle details first, then come back here.";
+  const rejectedRefNotice = projectRefInvalid
+    ? `<div style="margin:10px 0;padding:9px 11px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>QuickBooks rejected the saved Project link.</strong> The Project may have been deleted, or it may belong to a different customer. Re-open or create the Project under <strong>${esc(customerName)}</strong>, then paste its Project page address here.</div>`
+    : "";
+  const instructions = identityReady
+    ? `<ol style="padding-left:20px;margin:10px 0 14px;font-size:13px;line-height:1.55">
+         <li>In QuickBooks, open <strong>Projects</strong> and find this Project. If it does not exist, choose <strong>New project</strong>.</li>
+         <li>Make sure it belongs to <strong>${esc(customerName)}</strong>.</li>
+         <li>Use this exact project name:<button type="button" id="qb-project-name-copy" title="Click to copy this name" style="display:block;width:100%;text-align:left;overflow-wrap:anywhere;margin:5px 0;padding:7px 8px;border:1px solid var(--border);border-radius:4px;background:#f7f7f7;color:var(--navy);cursor:pointer;font-family:inherit"><span>${esc(projectName)}</span><span id="qb-project-name-copy-label" style="float:right;color:var(--muted);font-size:11px">📋 Click to copy</span></button></li>
+         <li>Open that Project, copy the web address from your browser's address bar, and paste it below. Do not use a customer page address or customer number.</li>
+       </ol>
+       <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks project link</label>
+       <input id="qb-project-id" autocomplete="off" placeholder="Paste the web address here" style="width:100%;box-sizing:border-box;margin-top:5px" />
+       <p style="font-size:11px;color:var(--muted);margin:5px 0 0">If you have the project number instead, you can paste that too.</p>`
+    : `<p style="font-size:13px;line-height:1.5">${identityHint}</p>`;
+
+  _ptOpenEstModal("Set up the QuickBooks Project",
+    `<p style="font-size:13px;margin:0">Do this once for this vehicle. It only connects the vehicle to the Project you create in QuickBooks; it does not create an estimate or send anything to the customer.</p>
+     <p style="font-size:12px;color:var(--muted);margin:8px 0 0">${identityHint}</p>${rejectedRefNotice}${instructions}`,
+    identityReady ? "Save project link" : "");
+  const e = _ptEstModalEls();
+  $("qb-project-name-copy")?.addEventListener("click", async () => {
+    const copied = await _ptCopyProjectName(projectName);
+    const label = $("qb-project-name-copy-label");
+    if (label) label.textContent = copied ? "✓ Copied" : "Copy failed";
+    if (copied) toast("Project name copied", "success");
+  });
+  if (identityReady && e.create) {
+    e.create.onclick = async () => {
+      const qbProjectId = $("qb-project-id")?.value.trim() || "";
+      e.create.disabled = true;
+      e.create.textContent = "Saving…";
+      try {
+        const res = await api("/api/quickbooks/projects/bind", {
+          project_id: projectId,
+          individual_id: individualId,
+          qb_project_id: qbProjectId,
+        });
+        if (!res?.ok) {
+          toast(_ptEstError(res?.error), "error");
+          e.create.disabled = false;
+          e.create.textContent = "Save project link";
+          return;
+        }
+        e.modal?.classList.remove("open");
+        toast("QuickBooks Project saved", "success");
+        if (onLinked) await onLinked();
+        else await window.PT_buildCreateEstimate(projectId, "", individualId);
+      } catch (_) {
+        toast("Could not link the QuickBooks Project", "error");
+        e.create.disabled = false;
+        e.create.textContent = "Save project link";
+      }
+    };
+  }
+}
+
 window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {
   if (!individualId) { toast("Estimates are created per individual unit", "error"); return; }
   if (!(await _ptQbConnected())) {
@@ -784,6 +1013,11 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   if (statusEl) statusEl.style.display = "none";
   if (!v?.ok) { toast(_ptEstError(v?.error), "error"); return; }
 
+  if (!v.project?.ready) {
+    _ptOpenProjectBindingModal(projectId, individualId, v.project);
+    return;
+  }
+
   if (!v.can_create) {
     const probs = v.problems || [];
     if (!probs.length) { toast("No billable parts in this build", "error"); return; }
@@ -798,15 +1032,36 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
     return;
   }
 
+  let pricing = null;
+  let customer = v.customer;
+  let customerLinked = !!v.customer_linked;
+  let customerMissing = [];
+  try {
+    [pricing, customer] = await Promise.all([
+      api("/api/quickbooks/pricing-status"),
+      api("/api/quickbooks/estimates/customer-preview", { project_id: projectId }),
+    ]);
+    if (customer?.ok) {
+      customerLinked = !!customer.customer_linked;
+      customerMissing = customer.missing_fields || [];
+      customer = customer.customer;
+    }
+  } catch (_) {}
+  const pricingWarning = pricing?.using_price_levels
+    ? `<div style="padding:9px 11px;background:#fff7e6;border:1px solid #f0c36d;border-radius:6px;font-size:12px;line-height:1.4;margin-bottom:12px"><strong>Pricing note:</strong> ${esc(pricing.warning || "QuickBooks customer price levels are enabled; review rates in QuickBooks before sending.")}</div>`
+    : "";
+
   _ptOpenEstModal("Create QuickBooks estimate",
-    `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> in QuickBooks. It won't touch your books — turning it into an invoice is a separate step you take in QuickBooks.</p>
+    `${pricingWarning}<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
      <div style="display:flex;gap:24px;font-size:13px;margin-bottom:14px">
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
      </div>
+     <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
+     ${_ptCustomerEditor(customer, customerLinked, customerMissing)}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
      <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
-    "Create estimate");
+    customerLinked && !customerMissing.length ? "Create estimate" : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
   const e = _ptEstModalEls();
   if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
 };
@@ -814,10 +1069,13 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
 async function _ptDoCreateEstimate(projectId, individualId) {
   const e = _ptEstModalEls();
   const memo = $("qb-est-memo")?.value || "";
+  const customerFields = _ptCustomerFieldsFromEditor();
+  const customerConfirmed = !!$("qb-est-customer-confirm")?.checked;
   if (e.create) { e.create.disabled = true; e.create.textContent = "Creating…"; }
   try {
     const res = await api("/api/quickbooks/estimates/create",
-      { project_id: projectId, individual_id: individualId, memo });
+      { project_id: projectId, individual_id: individualId, memo,
+        customer_confirmed: customerConfirmed, customer_fields: customerFields });
     if (res?.ok) {
       e.modal?.classList.remove("open");
       toast(`Estimate created${res.doc_number ? " #" + res.doc_number : ""} · ${_ptMoney2(res.total)}`, "success");
@@ -825,8 +1083,22 @@ async function _ptDoCreateEstimate(projectId, individualId) {
       const updated = _PT.projects.find(p => p.project_id === projectId);
       if (updated) { _PT.viewProject = updated; _ptRenderBuildsTab(updated); }
     } else {
-      toast(_ptEstError(res?.error), "error");
-      if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+      if (res?.error === "customer_required" || res?.error === "customer_incomplete") {
+        const missing = res?.missing_fields || [];
+        e.body.innerHTML = `<p style="font-size:13px;margin:0 0 10px">Before this estimate is created, confirm the customer information below. The app will reuse an exact top-level QB customer when one exists, or create a new top-level customer.</p>
+          <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
+          ${_ptCustomerEditor(res.customer, false, missing)}
+          <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
+          <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`;
+        e.create.disabled = false;
+        e.create.textContent = "Create customer & estimate";
+        e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+      } else if (res?.error === "invalid_qb_project_ref") {
+        _ptOpenProjectBindingModal(projectId, individualId, res.project);
+      } else {
+        toast(_ptEstError(res?.error), "error");
+        if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+      }
     }
   } catch (err) {
     toast("Estimate creation failed", "error");
@@ -834,63 +1106,147 @@ async function _ptDoCreateEstimate(projectId, individualId) {
   }
 }
 
-window.PT_createEstimatesBatch = async function () {
-  if (!_PT.viewProject) return;
-  const project = _PT.viewProject;
-  if (!(await _ptQbConnected())) {
-    toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
+function _ptBatchEstimateTargets(project) {
+  const targets = [];
+  for (const unit of (project.build_units || [])) {
+    for (const individual of (unit.individuals || [])) {
+      if (!individual.draft_id) continue;
+      targets.push({ individualId: individual.individual_id, label: _ptLabelForInd(project, individual.individual_id) });
+    }
+  }
+  return targets;
+}
+
+function _ptBatchIssue(check) {
+  const v = check.validation || {};
+  if (!v.ok) return _ptEstError(v.error);
+  if (!v.project?.ready) return "QuickBooks Project still needs to be set up";
+  if (!v.can_create) {
+    const count = (v.problems || []).length;
+    return count ? `${count} part${count === 1 ? "" : "s"} need attention` : "Build needs attention";
+  }
+  return "Needs attention";
+}
+
+async function _ptOpenBatchEstimateSetup(project) {
+  const targets = _ptBatchEstimateTargets(project);
+  if (!targets.length) { toast("No configured individual vehicles to estimate", "error"); return; }
+
+  _ptOpenEstModal("Prepare batch QuickBooks estimates",
+    `<p style="font-size:13px;margin:0">Checking ${targets.length} vehicle${targets.length === 1 ? "" : "s"} before anything is created…</p>`);
+  let checks, customer;
+  try {
+    [checks, customer] = await Promise.all([
+      Promise.all(targets.map(async (target) => {
+        try {
+          const validation = await api("/api/quickbooks/estimates/validate", {
+            project_id: project.project_id, individual_id: target.individualId,
+          });
+          return { ...target, validation };
+        } catch (_) {
+          return { ...target, validation: { ok: false, error: "validation_unavailable" } };
+        }
+      })),
+      api("/api/quickbooks/estimates/customer-preview", { project_id: project.project_id }),
+    ]);
+  } catch (_) {
+    toast("Could not check the batch", "error");
     return;
   }
-  const inds = [];
-  for (const u of (project.build_units || []))
-    for (const ind of (u.individuals || []))
-      if (ind.draft_id) inds.push(ind);
-  if (!inds.length) { toast("No configured individual units to estimate", "error"); return; }
-  if (!confirm(
-    `Create QuickBooks estimates for ${inds.length} unit${inds.length === 1 ? "" : "s"}?\n\n` +
-    `Each becomes a non-posting draft estimate. Units with unlinked parts are skipped and reported.`
-  )) return;
 
+  const customerReady = !!(customer?.ok && customer.customer_linked && customer.customer_complete);
+  const ready = checks.filter((check) => {
+    const v = check.validation || {};
+    return v.ok && v.can_create && v.project?.ready;
+  });
+  const attention = checks.filter((check) => !ready.includes(check));
+  const readyRows = ready.length
+    ? ready.map((check) => `<div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px"><strong style="color:var(--navy)">${esc(check.label)}</strong><span style="color:var(--green);margin-left:7px">✓ Ready</span></div>`).join("")
+    : `<div style="padding:10px;font-size:12px;color:var(--muted)">No vehicles are ready yet.</div>`;
+  const attentionRows = attention.length
+    ? attention.map((check, index) => {
+      const needsProject = check.validation?.ok && !check.validation?.project?.ready;
+      const action = needsProject ? `<button class="btn btn-secondary btn-sm" data-qb-batch-link="${index}">Set up Project</button>` : "";
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px"><div><strong style="color:var(--navy)">${esc(check.label)}</strong><br><span style="color:var(--red)">${esc(_ptBatchIssue(check))}</span></div>${action}</div>`;
+    }).join("")
+    : `<div style="padding:10px;font-size:12px;color:var(--green)">Every configured vehicle is ready.</div>`;
+  const customerStatus = customerReady
+    ? `<div style="padding:8px 10px;margin-bottom:12px;border:1px solid #86c99a;border-radius:6px;background:#f0fbf3;font-size:12px;color:var(--green)">✓ Customer is ready in QuickBooks.</div>`
+    : `<div style="padding:9px 11px;margin-bottom:12px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>Customer setup needed first.</strong> Create an estimate for one vehicle first to review and confirm the customer details. Then return here to create the rest as a batch.</div>`;
+
+  _ptOpenEstModal("Prepare batch QuickBooks estimates",
+    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}
+     <div style="display:flex;gap:12px;margin-bottom:12px"><div style="flex:1;padding:10px;border:1px solid #86c99a;border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Ready to create</div><strong style="font-size:20px;color:var(--green)">${ready.length}</strong></div><div style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Still needs setup</div><strong style="font-size:20px;color:var(--navy)">${attention.length}</strong></div></div>
+     <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Ready vehicles</div><div style="max-height:140px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px">${readyRows}</div>
+     <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Vehicles needing attention</div><div style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px">${attentionRows}</div>`,
+    customerReady && ready.length ? `Create ${ready.length} estimate${ready.length === 1 ? "" : "s"}` : "");
+  const e = _ptEstModalEls();
+  if (e.body) {
+    e.body.onclick = (event) => {
+      const button = event.target.closest("[data-qb-batch-link]");
+      if (!button) return;
+      const check = attention[Number(button.getAttribute("data-qb-batch-link"))];
+      if (!check?.validation?.project) return;
+      _ptOpenProjectBindingModal(project.project_id, check.individualId, check.validation.project, async () => {
+        await _ptLoadAll();
+        const updated = _PT.projects.find((p) => p.project_id === project.project_id) || project;
+        _PT.viewProject = updated;
+        await _ptOpenBatchEstimateSetup(updated);
+      });
+    };
+  }
+  if (e.create && customerReady && ready.length) {
+    e.create.onclick = () => _ptRunBatchEstimates(project, ready.map((check) => check.individualId));
+  }
+}
+
+async function _ptRunBatchEstimates(project, individualIds) {
+  const e = _ptEstModalEls();
+  e.modal?.classList.remove("open");
   const statusEl = $("proj-action-status");
   const footerBtns = document.querySelectorAll(".proj-builds-footer .btn");
-  footerBtns.forEach(b => b.disabled = true);
+  footerBtns.forEach((button) => { button.disabled = true; });
   if (statusEl) _ptSetStatus(statusEl, "Creating estimates…", "ok");
   let res;
   try {
-    res = await api("/api/quickbooks/estimates/create-batch", { project_id: project.project_id });
-  } catch (e) {
+    res = await api("/api/quickbooks/estimates/create-batch", {
+      project_id: project.project_id, individual_ids: individualIds,
+    });
+  } catch (_) {
     toast("Batch estimate failed", "error");
-    footerBtns.forEach(b => b.disabled = false);
+    footerBtns.forEach((button) => { button.disabled = false; });
     if (statusEl) statusEl.style.display = "none";
     return;
   }
-  footerBtns.forEach(b => b.disabled = false);
+  footerBtns.forEach((button) => { button.disabled = false; });
   if (!res?.ok) {
     toast(_ptEstError(res?.error), "error");
     if (statusEl) statusEl.style.display = "none";
     return;
   }
-
   await _ptLoadAll();
-  const updated = _PT.projects.find(p => p.project_id === project.project_id);
+  const updated = _PT.projects.find((p) => p.project_id === project.project_id);
   if (updated) { _PT.viewProject = updated; _ptRenderBuildsTab(updated); }
-  if (statusEl) _ptSetStatus(statusEl,
-    `✅ ${res.created} created · ${res.blocked} blocked`, res.blocked ? "err" : "good");
-
-  const blocked = (res.results || []).filter(r => !r.ok);
-  if (blocked.length) {
-    const rows = blocked.map(r => {
-      const probCount = (r.problems || []).length;
-      const lbl = _ptLabelForInd(updated || project, r.individual_id);
-      return `<div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
-        <span style="font-weight:600;color:var(--navy)">${esc(lbl)}</span>
-        <span style="color:var(--red);margin-left:8px">${esc(_ptEstError(r.error))}${probCount ? ` (${probCount} part${probCount === 1 ? "" : "s"})` : ""}</span>
-      </div>`;
-    }).join("");
-    _ptOpenEstModal("Estimate results",
-      `<p style="font-size:13px;margin:0 0 12px"><strong>${res.created}</strong> estimate${res.created === 1 ? "" : "s"} created. <strong>${res.blocked}</strong> blocked — these units have parts not yet linked to QuickBooks:</p>
-       <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
-  } else {
+  if (statusEl) _ptSetStatus(statusEl, `✅ ${res.created} created · ${res.blocked} blocked`, res.blocked ? "err" : "good");
+  const blocked = (res.results || []).filter((result) => !result.ok);
+  if (!blocked.length) {
     toast(`${res.created} estimate${res.created === 1 ? "" : "s"} created`, "success");
+    return;
   }
+  const rows = blocked.map((result) => {
+    const count = (result.problems || []).length;
+    const label = _ptLabelForInd(updated || project, result.individual_id);
+    return `<div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:600;color:var(--navy)">${esc(label)}</span><span style="color:var(--red);margin-left:8px">${esc(_ptEstError(result.error))}${count ? ` (${count} part${count === 1 ? "" : "s"})` : ""}</span></div>`;
+  }).join("");
+  _ptOpenEstModal("Estimate results",
+    `<p style="font-size:13px;margin:0 0 12px"><strong>${res.created}</strong> estimate${res.created === 1 ? "" : "s"} created. <strong>${res.blocked}</strong> still need attention:</p><div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
+}
+
+window.PT_createEstimatesBatch = async function () {
+  if (!_PT.viewProject) return;
+  if (!(await _ptQbConnected())) {
+    toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
+    return;
+  }
+  await _ptOpenBatchEstimateSetup(_PT.viewProject);
 };

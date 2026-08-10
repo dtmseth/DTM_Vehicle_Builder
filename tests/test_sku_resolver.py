@@ -99,6 +99,14 @@ def test_no_match_for_absent_color():
     assert not res["combos"][0]["matched"]
 
 
+def test_duplicate_head_colors_never_match_a_lower_color_count_sku():
+    """A bad Red/Red request must not silently resolve to the single-red SKU."""
+    res = sku_resolver.match_heads(SKUS, [["red", "red"]])
+    assert not res["combos"][0]["matched"]
+    assert res["combos"][0]["default_sku"] == ""
+    assert not res["all_matched"]
+
+
 def test_build_rows_emits_one_parent_with_components():
     choices = [
         {"colors": ["red", "white"], "part_number": "IOND", "quantity": 2, "price": 178.0},

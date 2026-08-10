@@ -3,12 +3,15 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler
 
 from ..services.draft_service import (
+    handle_add_custom_part_to_draft,
     handle_add_part_to_draft,
     handle_delete_draft,
     handle_generate_from_draft,
     handle_get_draft,
     handle_list_drafts,
+    handle_list_custom_parts,
     handle_remove_part_from_draft,
+    handle_replace_console_setup_parts,
     handle_save_draft,
     handle_save_override,
     handle_save_overrides_batch,
@@ -24,6 +27,11 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
     # GET /api/draft/list
     if method == "GET" and path == "/api/draft/list":
         send_json(handler, handle_list_drafts(paths))
+        return True
+
+    # GET /api/draft/custom-parts
+    if method == "GET" and path == "/api/draft/custom-parts":
+        send_json(handler, handle_list_custom_parts(paths))
         return True
 
     # POST /api/draft/save
@@ -53,6 +61,21 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
             if draft_id and line_id and "/" not in draft_id and "/" not in line_id:
                 send_json(handler, handle_remove_part_from_draft(draft_id, line_id, paths))
                 return True
+
+    # POST /api/draft/{id}/console-setup
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/console-setup"):
+        draft_id = path[len("/api/draft/"):-len("/console-setup")]
+        parent_line_id = body.get("parent_line_id", "")
+        if draft_id and "/" not in draft_id:
+            send_json(handler, handle_replace_console_setup_parts(draft_id, parent_line_id, body, paths))
+            return True
+
+    # POST /api/draft/{id}/custom-part
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/custom-part"):
+        draft_id = path[len("/api/draft/"):-len("/custom-part")]
+        if draft_id and "/" not in draft_id:
+            send_json(handler, handle_add_custom_part_to_draft(draft_id, body, paths))
+            return True
 
     # POST /api/draft/{id}/part
     if method == "POST" and path.startswith("/api/draft/") and path.endswith("/part"):

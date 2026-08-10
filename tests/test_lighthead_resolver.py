@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from dtm_buildsheet.app.services.lighthead_resolver import resolve_tracer
+from dtm_buildsheet.app.services.lighthead_resolver import resolve_inner_edge, resolve_tracer
 
 _PARTS_DB = (Path(__file__).resolve().parents[1]
              / "src/dtm_buildsheet/resources/config/parts_db.json")
@@ -66,15 +66,48 @@ def test_5lamp_duo_amber_passenger_primary_is_pending(db):
     assert _line(res, "TCRWXSM")["qty"] == 4         # passenger secondary B/A
 
 
-def test_smoked_trio_missing_secondary_reports_problem(db):
-    # Smoked primary trio (TCRXXPJC) exists, but the smoked secondary trio doesn't.
+def test_smoked_trio_uses_pending_secondary(db):
+    # The smoked secondary trio is a real SKU that is pending QB inventory.
     res = resolve_tracer(db, "whelen_tracer_5_lamp", mode="trio",
                          secondary_color="white", lens="smoked")
-    assert res["ok"] is False
-    assert any(p.get("reason") == "missing_head_sku" and p.get("role") == "secondary"
-               for p in res["problems"])
+    assert res["ok"], res["problems"]
+    assert _line(res, "TCRXXPJC")["qty"] == 2
+    assert _line(res, "TCRXXSJC")["qty"] == 8
+    assert _line(res, "TCRXXSJC")["pending"] is True
 
 
 def test_bad_inputs(db):
     assert resolve_tracer(db, "whelen_tracer_5_lamp", mode="solo")["error"] == "bad_mode"
     assert resolve_tracer(db, "nope", mode="duo")["error"] == "unknown_housing"
+
+
+def test_fst_uses_its_selected_qb_sku_count_for_duo_heads(db):
+    res = resolve_inner_edge(
+        db, "whelen_fst", housing_part_number="BSFW50Z", mode="duo", secondary_color="white",
+    )
+    assert res["ok"], res["problems"]
+    assert res["lamp_count"] == 10
+    assert _line(res, "BSFW50Z")["qty"] == 1
+    assert _line(res, "ISDD")["qty"] == 5  # driver-side red/white heads
+    assert _line(res, "ISDE")["qty"] == 5  # passenger-side blue/white heads
+
+
+def test_rst_uses_selected_sku_count_for_trio_heads(db):
+    res = resolve_inner_edge(
+        db, "whelen_rst", housing_part_number="BSRW12", mode="trio", secondary_color="amber",
+    )
+    assert res["ok"], res["problems"]
+    assert res["lamp_count"] == 12
+    assert _line(res, "BSRW12")["qty"] == 1
+    assert _line(res, "ISTRBA")["qty"] == 12
+
+
+def test_inner_edge_trio_white_uses_istrbc(db):
+    # ISTRBC is the exact R/B/W trio SKU (not the R/B/A ISTRBA variant).
+    res = resolve_inner_edge(
+        db, "whelen_rst", housing_part_number="BSRW10", mode="trio", secondary_color="white",
+    )
+    assert res["ok"], res["problems"]
+    assert res["lamp_count"] == 10
+    assert _line(res, "BSRW10")["qty"] == 1
+    assert _line(res, "ISTRBC")["qty"] == 10

@@ -1,0 +1,55 @@
+{
+  "body": {
+    "housings": [
+      {
+        "heads": [
+          {
+            "colors": [
+              "amber",
+              "blue",
+              "red"
+            ],
+            "lens": "clear",
+            "pending": false,
+            "product_id": "whelen_outer_edge_lightheads",
+            "qty": 6,
+            "side": "all",
+            "sku": "OEI3RBA"
+          }
+        ],
+        "product_id": "whelen_ion_rear_pillar",
+        "qty": 1,
+        "sku": "RPWT50"
+      }
+    ],
+    "lamp_count": 6,
+    "lines": [
+      {
+        "kind": "housing",
+        "product_id": "whelen_ion_rear_pillar",
+        "qty": 1,
+        "sku": "RPWT50"
+      },
+      {
+        "colors": [
+          "amber",
+          "blue",
+          "red"
+        ],
+        "kind": "head",
+        "lens": "clear",
+        "pending": false,
+        "product_id": "whelen_outer_edge_lightheads",
+        "qty": 6,
+        "side": "all",
+        "sku": "OEI3RBA"
+      }
+    ],
+    "mode": "trio",
+    "ok": true,
+    "problems": [],
+    "secondary_color": "amber"
+  },
+  "handled": true,
+  "status": 200
+}

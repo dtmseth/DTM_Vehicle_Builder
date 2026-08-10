@@ -187,11 +187,18 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     eff_h_spacing = icon_w_pct * raw_h_spacing if raw_h_spacing > 0 else icon_w_pct
                 else:
                     eff_h_spacing = raw_h_spacing if raw_h_spacing > 0 else 0.06
+                if pl.v_spacing is None:
+                    eff_v_spacing = None
+                elif pl.h_spacing_units == "icon_width":
+                    eff_v_spacing = icon_h_pct * pl.v_spacing
+                else:
+                    eff_v_spacing = pl.v_spacing
 
                 if pl.position_slot_count and pl.slot_indices:
                     all_pos = slot_relative_positions(
                         pl.pattern, pl.position_slot_count,
                         anchor_x, anchor_y, eff_h_spacing,
+                        v_spacing=eff_v_spacing,
                     )
                     positions = [
                         all_pos[i] if i < len(all_pos) else (anchor_x, anchor_y)
@@ -200,6 +207,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 else:
                     positions = slot_relative_positions(
                         pl.pattern, slot_count, anchor_x, anchor_y, eff_h_spacing,
+                        v_spacing=eff_v_spacing,
                     )
 
                 instances_out = []

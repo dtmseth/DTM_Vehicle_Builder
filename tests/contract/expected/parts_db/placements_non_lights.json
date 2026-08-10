@@ -56,7 +56,7 @@
         "label": "Push Bumper",
         "name_pattern": "Push Bumper",
         "part_type_id": "push_bumper",
-        "product_count": 23
+        "product_count": 11
       },
       {
         "base_label": "Rear Partition",
@@ -119,7 +119,7 @@
         "label": "Wire Covers",
         "name_pattern": "Wire Covers",
         "part_type_id": "wire_covers",
-        "product_count": 1
+        "product_count": 0
       }
     ]
   },

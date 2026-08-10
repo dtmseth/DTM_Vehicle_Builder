@@ -384,6 +384,18 @@ class TestCaching:
         svc.invalidate()
         assert svc._cache is None
 
+    def test_external_parts_db_write_refreshes_cached_catalog(self, tmp_path):
+        paths = _paths_with_db(tmp_path)
+        svc = PartsDbService(paths)
+        assert svc.get_product("whelen_ion_t").model == "ION T-Series"
+
+        db_path = paths.workspace_config_dir / "parts_db.json"
+        doc = json.loads(db_path.read_text("utf-8"))
+        doc["products"]["whelen_ion_t"]["model"] = "ION T-Series refreshed"
+        db_path.write_text(json.dumps(doc), "utf-8")
+
+        assert svc.get_product("whelen_ion_t").model == "ION T-Series refreshed"
+
 
 class TestMissingFile:
     def test_empty_doc_when_missing(self, tmp_path):

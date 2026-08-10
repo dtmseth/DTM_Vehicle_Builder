@@ -214,6 +214,7 @@
               "expansion_module",
               "external_amp",
               "light_controller",
+              "secondary_control_head_harness",
               "v2v_sync"
             ],
             "section_key": "electronics_communications:light_control_system",
@@ -413,6 +414,7 @@
       "replacement seat": "prisoner_area:cage_prisoner_containment",
       "running boards / nerf bars": "front_exterior:front_exterior",
       "seat covers": "extras_appearance:extras_appearance",
+      "secondary control head harness": "electronics_communications:light_control_system",
       "side scene": "lighting_systems:scene_lights",
       "siren speaker": "front_exterior:siren_speaker",
       "special face plate": "driver_area_console:driver_area_equipment",
@@ -1038,6 +1040,14 @@
         "section_key": "extras_appearance:extras_appearance",
         "section_label": "Extras / Appearance",
         "section_order": 1
+      },
+      "secondary_control_head_harness": {
+        "group_id": "electronics_communications",
+        "group_label": "Electronics / Communications",
+        "group_order": 4,
+        "section_key": "electronics_communications:light_control_system",
+        "section_label": "Light Control System",
+        "section_order": 4
       },
       "side_scene": {
         "group_id": "lighting_systems",

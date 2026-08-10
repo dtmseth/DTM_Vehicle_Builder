@@ -1,0 +1,78 @@
+{
+  "body": {
+    "housings": [
+      {
+        "heads": [
+          {
+            "colors": [
+              "red",
+              "white"
+            ],
+            "lens": "clear",
+            "pending": false,
+            "product_id": "whelen_outer_edge_lightheads",
+            "qty": 3,
+            "side": "driver",
+            "sku": "OEI2D"
+          },
+          {
+            "colors": [
+              "blue",
+              "white"
+            ],
+            "lens": "clear",
+            "pending": false,
+            "product_id": "whelen_outer_edge_lightheads",
+            "qty": 3,
+            "side": "passenger",
+            "sku": "OEI2E"
+          }
+        ],
+        "product_id": "whelen_ion_rear_pillar",
+        "qty": 1,
+        "sku": "RPWD50"
+      }
+    ],
+    "lamp_count": 6,
+    "lines": [
+      {
+        "kind": "housing",
+        "product_id": "whelen_ion_rear_pillar",
+        "qty": 1,
+        "sku": "RPWD50"
+      },
+      {
+        "colors": [
+          "red",
+          "white"
+        ],
+        "kind": "head",
+        "lens": "clear",
+        "pending": false,
+        "product_id": "whelen_outer_edge_lightheads",
+        "qty": 3,
+        "side": "driver",
+        "sku": "OEI2D"
+      },
+      {
+        "colors": [
+          "blue",
+          "white"
+        ],
+        "kind": "head",
+        "lens": "clear",
+        "pending": false,
+        "product_id": "whelen_outer_edge_lightheads",
+        "qty": 3,
+        "side": "passenger",
+        "sku": "OEI2E"
+      }
+    ],
+    "mode": "duo",
+    "ok": true,
+    "problems": [],
+    "secondary_color": "white"
+  },
+  "handled": true,
+  "status": 200
+}

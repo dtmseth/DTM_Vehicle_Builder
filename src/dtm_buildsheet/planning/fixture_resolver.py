@@ -14,6 +14,12 @@ def resolve_fixture_entry(
     part_id = spec["part_id"]
     location_key = f"FIXTURE:{part_id.upper()}"
     raw_entry = fixtures_map.get(part_id, {}).get(view)
+    # Three-lamp Tracers use the same vehicle mounting point as the existing
+    # five-lamp fixture, but render only their SKU's three individual heads.
+    # Keeping this fallback in code avoids duplicating identical vehicle
+    # fixture coordinates across every supported vehicle layout.
+    if raw_entry is None and part_id == "tracer_3lamp":
+        raw_entry = fixtures_map.get("tracer_5lamp", {}).get(view)
     if raw_entry is None:
         return None, location_key
     return normalize_location(raw_entry, view_config), location_key

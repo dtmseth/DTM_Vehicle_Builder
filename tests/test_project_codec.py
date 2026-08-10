@@ -86,13 +86,14 @@ class TestIndividualUnitFromDict:
         d = {
             "individual_id": "i1", "unit_number": "U001",
             "year": "2024", "make": "Ford", "model": "Interceptor",
-            "color": "White", "vin": "VIN123",
+            "color": "White", "vin": "VIN123", "qb_project_id": "447322633",
         }
         ind = individual_unit_from_dict(d)
         assert isinstance(ind, IndividualUnit)
         assert ind.individual_id == "i1"
         assert ind.unit_number == "U001"
         assert ind.make == "Ford"
+        assert ind.qb_project_id == "447322633"
 
     def test_missing_individual_id_auto_generated(self):
         ind = individual_unit_from_dict({"unit_number": "U1"})

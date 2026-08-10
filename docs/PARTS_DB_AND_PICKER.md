@@ -33,7 +33,7 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 | `zones` / `sub_zones` | Where on the vehicle (drives role naming for lights) |
 | `part_types` | The "slot types" (Forward Warning, Radar, …). Carry `type_id`, `tree_positions[{section,zone,sub_zone}]`, `tag_ids`, `max_count`, `accessory_of`, `accessory_category`, `accessories[]`, `allowed_products[]`, `allowed_placements[]`, `workbook_label_pattern`, `sequence_scope`, `category` (warning/scene/interior/interior_bar/roof_bar) |
 | `products` | A catalog product (e.g. ION). Carry `model`, `manufacturer_id`, `description`, `fits_part_types[]`, `tag_ids[]`, `accessories[]`, `part_numbers[]` |
-| `part_numbers` | A concrete SKU under a product. Carry `part_number`, `friendly_name`, `color`/`secondary_color`/`tertiary_color`, `lens_type`, `vehicle_tags[]`, `price_usd`, QB fields (`qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`), `qb_pending`, `options{}` |
+| `part_numbers` | A concrete SKU under a product. Carry `part_number`, `friendly_name`, `color`/`secondary_color`/`tertiary_color`, `lens_type`, `vehicle_tags[]`, `price_usd`, QB fields (`qb_item_id`, `qb_sku`, `qb_sales_description`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`), `qb_pending`, `options{}` |
 | `manufacturers` | `label`, `website` |
 | `tags` | `label` (vehicle/attribute tags) |
 | `placements` | Physical location vocabulary |
@@ -111,6 +111,11 @@ add unlimited Forward Warnings, names auto-sequencing ("Forward Warning 1, 2, 3,
 any location in its category by default; restrictions (Under Mirror = specific models; light-bar /
 spotlight / thermal-camera placements) are **exception rules** added as needed. The picker stopped
 deriving placement from the legacy `part_catalog.json` `default_views` / fixed numbered slots.
+
+For **scene lights**, the selected quantity is the number of heads to draw and is never capped by a
+location's historical dot count: one head uses the centered location dot, while two or more use that
+location's authored pattern or spread horizontally from a single-dot anchor. The picker dots, live
+preview, and PowerPoint renderer use the same rule.
 
 ### Warning-light home model (locked w/ Seth 2026-07-01)
 **A warning light is NOT assigned a zone by its part_type.** Zone/location is decided by *where the
@@ -240,6 +245,10 @@ happens *through* this feature.
   picker and replaces that selected set on Save. Saved manifest children also remain selectable
   during an edit when an old SKU is no longer linked in the current catalog; saving normalizes their
   metadata without requiring the user to rebuild the choice by hand.
+- **Contextual recommendations:** a parent part type can declare `recommended_accessories` for an
+  optional item that applies only after an authored draft condition is met. The picker shows its
+  reason and preselects it, but **None needed** remains an explicit opt-out. For example, the
+  second Light Control Head recommends the pending-QB CCTLHARN secondary-control-head harness.
 - **Draft/build sheet:** each chosen accessory is its own priced `DraftPart` line carrying
   `parent_line_id`; nested under its parent in the manifest; **delete confirms first** ("This part
   has N accessories — remove them too?").
@@ -268,6 +277,15 @@ picker.
   - Whelen color key: `TCRWX`=clear, `TCRXX`=smoked · `P`=primary, `S`=secondary · Duo D=R/W E=B/W
     K=R/A M=B/A; Trio JC=R/B/W JA=R/B/A. Standard Duo = D/E (white) or K/M (amber); standard Trio =
     JC (white) or JA (amber).
+- **Outer Edge rear pillars:** the selected `whelen_ion_rear_pillar` housing opens a dedicated
+  included-ION setup backed by `resolve_outer_edge_pillar` →
+  `GET /api/parts-db/outer-edge-pillar-heads`. The housing SKU controls the construction: a Duo
+  asks for White or Amber and adds a typical split of **3 Red/secondary + 3 Blue/secondary** IONs;
+  a Trio is fixed to **6 Red/Blue/Amber** `OEI3RBA` IONs. The housing stays one parent QB line and
+  the six included IONs persist as nested QB child lines so manifest and estimate quantities agree.
+  It auto-locates as **Rear Warning** at `PILLARS`, suppresses the irrelevant generic
+  bracket/mount and location questions, and renders only on the rear diagram as two mirrored,
+  inward-angled vertical stacks of three IONs centered on the authored pillar anchors.
 - **Roof lightbars:** research finding — bars are ordered as **whole configured SKUs** (color baked
   into the part number, e.g. Legacy `EB2DEDE`), **not** a head builder. So the model is **pick the
   SKU + a config tag**: `#picker-lightbar` panel — Setup (Standard / Custom + required order-notes
@@ -288,16 +306,26 @@ location" rows.
 - **Fixtures auto-locate.** Part types/products marked as fixtures, such as push bumpers and roof
   lightbars, skip the manual location prompt and use their fixture render/location metadata.
 - **Render metadata lives in `parts_db`.** Part-type render data can carry `asset_key`,
-  `size_per_view`, `images`, and `quantity_rules`; planner hydration consumes it for picker-built
-  parts such as siren speakers and push bumpers. Do not re-add these rules to legacy per-SKU files.
+  `size_rule_id`, `size_per_view`, `images`, `quantity_rules`, and fixture behavior (`is_fixture`,
+  `default_views`, `render_quantity_policy`, `co_part_rules`); planner hydration consumes it for
+  picker-built parts such as siren speakers, push bumpers, Pit Bars, and Wing Wraps. Do not re-add
+  these rules to legacy per-SKU files.
+  A product may override the part-type profile through `render.size_rule_id` or exact
+  dimensions, and a concrete SKU may carry a rare `size_rule_id` override. Older product-name
+  rows can resolve through a curated product `model_aliases` identity. Resolution is SKU →
+  product → part type → Small default; it never uses a substring or product-name size rule.
 - **Setina PB450L lighted push bumpers.** Recognized 2/4/6-light PB450L SKUs inject render-only
   included Whelen tri-color lights. They are not manifest or quote lines. They share a preview group
   with the push bumper so moving the bumper moves the included lights.
 - **Westin push bumpers.** Base Westin bumpers can add wire-cover and light-channel accessory rows.
   Westin does not sell pre-lighted bumpers; the later billed-light choice for a selected channel is
   still a product/workflow follow-up.
-- **Guided systems.** Radio, radar, and camera families first select the system brand/model on the
-  SKU tab. **Set up [system]** then moves to the Details tab for one clear question at a time, and
+- **Guided systems.** Radio, radar, and camera families first select the system on the
+  SKU tab. Radio uses the selected radio-unit SKU as that identity and opens its setup details
+  immediately; radar and camera select a platform before their Details tab. The guided workflow
+  then asks one clear question at a time. The family sidebar deliberately hides individual
+  system-piece leaves; **Choose SKUs manually** is the explicit escape hatch for adding a
+  standalone antenna, mount, cable, or other component. The guided workflow
   writes one expandable kit line. Its child rows are the concrete shop components with their
   selected mounting data; the manifest deliberately does not repeat the full questionnaire.
   Purchase text is retained in the kit’s saved choices/notes for Sales. Location choices are
@@ -307,6 +335,12 @@ location" rows.
   - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
     `radio_speaker`, and `radio_mic_clip` component rows. Split-head is the default; the center
     console setup owns the control-head position, so radio setup does not ask for it again.
+    The selected radio-unit SKU determines whether it is an all-in-one or split system, so the
+    setup never repeats that decision; only a split system asks for the radio-brick location.
+    When a center-console radio mic clip is already present, radio setup asks whether it is the
+    same physical clip or an additional radio clip; console setup asks the inverse when radio was
+    configured first. Reusing the console clip leaves one physical clip/Mag Mic line while the
+    radio component retains its install note.
     cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
     plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked
     Mag Mic SKU as a billable child line under the radio kit. Any selected cable refresh creates a
@@ -320,12 +354,16 @@ location" rows.
     are added as billable child lines.
   - **Light Control System.** Every leaf follows the project’s preferred lighting brand. Its
     non-rendered shop-reference locations use selection cards plus Custom text rather than a native
-    dropdown. Light Control Head offers In Center Console or Custom, then records the PA-mic
-    location as Driver's door or Custom, along with a Magnetic mic or Manufacturer clip. The
-    selected PA-mic setup is retained in the control head picker data/notes and shown as a
-    display-only **PA Mic** child row in the manifest. A Magnetic mic additionally creates its
-    real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains shop detail
-    only.
+    dropdown. Light Control Head offers In Center Console or Custom. PA-capable control heads then
+    record the PA-mic location as Driver's door or Custom, along with a Magnetic mic or Manufacturer
+    clip. The selected PA-mic setup is retained in the control-head picker data/notes and is shown
+    in the control-head detail rather than as its own manifest line. A Magnetic mic additionally
+    creates its real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains
+    shop detail only.
+    CCTL5 declares `pa_mic_required: false`, so it skips that setup entirely. A single control head
+    is named **Control Head**; adding a second renames the pair **Control Head 1** and
+    **Control Head 2** (and child-row prefixes track that change). Removing back to one drops the
+    numeric suffix again.
   - **Center Console.** It has one fixed physical location (In Center Console). **Set up Center
     Console** starts with the console style and required features, then selects the best compatible
     QuickBooks kit. Core and radio faceplates are always placed in the lineup; vehicle-specific
@@ -336,7 +374,20 @@ location" rows.
     hardware remain independent billed lines. Faceplates and related hardware are filtered to the
     preferred console manufacturer. Vehicle-specific console wings remain an optional detail
     rather than a numbered faceplate; the current catalog offers Gamber Johnson 2015+ Tahoe wings
-    only on Tahoe builds.
+    only on Tahoe builds. A pedestal-mounted motion attachment requires a compatible
+    `pedestal_mount` selection; that base is saved as its own related build line. The setup also
+    offers an optional manufacturer-matched radio-mic clip — for Havis consoles this includes the
+    live-QB Havis C-MCB Mic Clip Bracket. Setup and the fixed console location are selected from
+    the product's `fits_part_types`/primary part type, not the browse leaf, so every path that
+    selects a main console product goes directly to setup rather than placement. Selecting a
+    radio-mic clip then asks whether to add its live-QB Magnetic Mic `MMSU-1`; this defaults to
+    Yes and is saved as a nested console component, with an explicit No option. Console faceplates,
+    armrests, pedestals, motion attachments, docking stations, and mic hardware all nest under the
+    Center Console manifest row. Selecting a printer armrest likewise asks whether to add a printer
+    (default Yes); the printer remains a separate manifest parent and its explicitly-linked power
+    and USB cable SKUs nest directly below it. The Havis faceplate
+    chooser exposes only exact Havis products with a live, vehicle-compatible QuickBooks SKU;
+    generic migration placeholders and other manufacturers' equipment brackets are not options.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
     wireless-mic charger. Front and rear cameras use fixed upper-window locations. Camera refresh
@@ -370,7 +421,30 @@ Tracer Trio / passenger-Amber heads.
 
 ---
 
-## 6. Enduring lessons & gotchas (from the schema-translation audit)
+## 6. One-off custom parts (shipped)
+
+Use **Add custom part** at the bottom of the Part Picker sidebar for a billable, one-time item that
+must not become a `parts_db.json` product or a QuickBooks inventory item. SKU, description, unit
+price, and quantity are required and are saved in the draft row's
+`picker_config.custom_part` snapshot. The row stays in the manifest but intentionally has no
+vehicle placement or render asset.
+
+- An exact SKU match in `parts_db.json` is detected case-insensitively. The picker offers to open
+  the catalog SKU's normal setup/placement flow; the operator can explicitly keep a distinct custom
+  line only when that is intentional.
+- Recent custom entries are retained locally in `workspace/custom_parts.json` for fast re-entry.
+  This convenience history is not inventory, is not a settings change, and is not cloud-synced;
+  the authoritative quote data remains with the shared draft.
+- Estimate resolution makes the saved unit price and quantity a `custom: true`, pending line. QBO
+  receives the SKU, description, unit price, quantity, and extended total in a clearly flagged
+  `DescriptionOnly` quote line: `⚠ CUSTOM PART — NOT IN QB INVENTORY …`. QBO does not add a
+  DescriptionOnly line to its document total; the builder's validation total includes it and the
+  reviewer sees it as pending. If it must increase the QBO total before a real item exists, the
+  business needs a pre-approved generic non-inventory QB ItemRef (not created by this flow).
+
+---
+
+## 7. Enduring lessons & gotchas (from the schema-translation audit)
 
 - **parts_db writes vs. SharePoint sync** is the #1 footgun — see §1 write invariant. Categories and
   colors silently reverted because a direct `json.dump` doesn't reach the cloud.
@@ -391,14 +465,13 @@ Tracer Trio / passenger-Amber heads.
 
 ---
 
-## 7. Open items & data backlog
+## 8. Open items & data backlog
 
 ### Open questions (need owner input — don't guess)
-- **Q2 — Light size:** size auto-derives from the part number via
-  `asset_manifest.json → part_number_size_rules`. **31 light models have no rule and fall back to
-  "sm"** (likely too small): M2/M6/M7, M9 Scene, Summit Flood, EZ Scene, 500 Series TIR, Century,
-  Outer Edge, Traffic Advisor, Avenger X1/X2, and lightbars. Decide: auto (fix missing rules) vs.
-  user-facing picker; and the size class per model (is M2/M6/M7 the same "md" as M4?).
+- **Q2 — Light size curation:** all old text rules are now explicit part-type/product/SKU
+  assignments. Products without a curated assignment inherit their part type's Small profile.
+  Review actual dimensions before assigning new profiles for M2/M6/M7, M9 Scene, Summit Flood,
+  EZ Scene, 500 Series TIR, Century, Outer Edge, Traffic Advisor, Avenger X1/X2, and lightbars.
 - **Q3 — Add-without-placement** path for non-rendering parts (flashers, etc.).
 - **Q5 — Naming** for unlimited instances: is "Forward Warning {n}" the pattern for all warnings, or
   does zone/sub-type set the base name when placement is category-level?
@@ -453,6 +526,28 @@ The interrelated cluster that had blocked build-flow testing is done:
 
 **Still open:** #7(a) auto-skip the location step for a part with *zero* options (currently shows the
 free-text field — acceptable, low priority).
+
+### Product-driven picker context and custom placement (2026-08-05)
+
+Some products have more than one valid physical part-type home. A product may set
+`picker_primary_part_type` to declare the semantic picker flow that always configures it; the value
+must be one of `fits_part_types`. For example, T-Series products are warning lights even when they
+were reached from the broad **Lights** leaf, so they use the normal warning-light color and SKU
+picker. The prior `global_search_part_type` key is accepted as a compatibility alias only.
+
+The custom-location flow retains its shop-facing label. Rendering is optional: without an anchor,
+the saved line is a valid manifest/shop-reference item with no diagram placement. When it should
+render, it can use either of two anchors:
+
+- **Vehicle dots** shows every saved placement and fixture dot on each exterior vehicle view and
+  saves the selected standard dot as `custom_location.render_location`.
+- **Set your own** hides the saved dots and lets the user add or remove exact points in one or more
+  exterior views. These persist as `custom_location.placements` (`{view: [{x, y}, ...]}`) and the
+  planner creates a separate placement for every point. This deliberately supports unusual custom
+  light installations without inventing a misleading standard location.
+
+Tracer configuration owns its own **Clear / Smoked** lens selection; the chosen lens is used for
+both the live SKU resolution and the saved tracer lighthead lines.
 
 ### Kit SKUs (after the picker cluster)
 Let a SKU be marked a **kit** that **includes other SKUs**. New per-SKU concept (e.g. `is_kit: true` +

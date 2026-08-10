@@ -114,7 +114,7 @@ function drawDots(ctx, box){
     const selected=(name===_selectedLocKey);
     const positions=getSlotPositions(loc, box);
     const baseRot=loc.rotation||0;
-    const isMirror=(loc.pattern||"single")==="mirror";
+    const isMirror=["mirror","vertical_mirror"].includes(loc.pattern||"single");
     positions.forEach(([cx,cy],idx)=>{
       const rot=isMirror&&idx%2===1?((360-baseRot)%360):baseRot;
       const r=selected?7:4;
@@ -257,7 +257,7 @@ $("loc-used-by-btn-add").addEventListener("click", async()=>{
 
 function updateSpacingRowVisibility(pattern, slots){
   const showH = pattern === "mirror" && slots > 2;
-  const showV=(pattern==="vertical"&&slots>1);
+  const showV=(["vertical","vertical_mirror"].includes(pattern)&&slots>1);
   $("loc-spacing-row").hidden=!showH;
   $("loc-vspacing-row").hidden=!showV;
 }

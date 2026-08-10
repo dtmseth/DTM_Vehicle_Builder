@@ -64,7 +64,7 @@ function renderFixtureList(){
 
 function updateFixtureSpacingRows(pattern, slots){
   const showH = pattern === "mirror" && slots > 2;
-  const showV=pattern==="vertical"&&slots>1;
+  const showV=["vertical","vertical_mirror"].includes(pattern)&&slots>1;
   $("fix-hspacing-row").hidden=!showH;
   $("fix-vspacing-row").hidden=!showV;
 }
@@ -186,7 +186,7 @@ function drawFixtureDots(ctx,box){
     const selected=p.part_id===_selectedFixtureId;
     const positions=getSlotPositions(entry,box);
     const baseRot=entry.rotation||0;
-    const isMirror=(entry.pattern||"single")==="mirror";
+    const isMirror=["mirror","vertical_mirror"].includes(entry.pattern||"single");
     positions.forEach(([cx,cy],idx)=>{
       const rot=isMirror&&idx%2===1?((360-baseRot)%360):baseRot;
       const rad=rot*Math.PI/180;

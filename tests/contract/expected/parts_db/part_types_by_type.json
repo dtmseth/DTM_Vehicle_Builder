@@ -55,7 +55,10 @@
       {
         "accessories": [],
         "accessory_of": "",
-        "allowed_placements": [],
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "CENTER PLATE OF PB"
+        ],
         "allowed_products": [],
         "category": "scene",
         "label": "Front Scene",

@@ -47,6 +47,11 @@ is shipped** (brand-sorted, every-field-inline-editable, QB-source read-only vie
 accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md)
 §2.5). The owner can now curate SKUs self-service.
 
+**Deferred catalog safety improvement:** before future recurring QBO catalog changes can create or
+materially alter Builder parts, add a reviewed change queue with durable history and Whelen reference
+catalog auto-enrichment. The approved behavior and data requirements live in
+[QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
+
 ### Near-term critical path (in order, updated 2026-06-30)
 1. ✅ **Parts Manager SKU Review grid** — *shipped* ("Phase 8 editing-UI brought forward"). Owner curates
    SKUs/tags/accessories/readiness without prompting Claude per item.

@@ -6,7 +6,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB400",
-        "price_min": 579.0,
+        "price_min": 579,
         "product_id": "setina_pb400",
         "qb_count": 10,
         "sku_count": 10
@@ -15,7 +15,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB450L",
-        "price_min": 949.0,
+        "price_min": 949,
         "product_id": "setina_pb450l",
         "qb_count": 12,
         "sku_count": 12
@@ -33,7 +33,7 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2020-2026 FORD POLCE INTERCEPTOR UTILITY",
-        "price_min": 598.0,
+        "price_min": 598,
         "product_id": "westin_36_2125",
         "qb_count": 1,
         "sku_count": 1
@@ -42,7 +42,7 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2021-2026 CHEVROLET TAHOE PPV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_4045",
         "qb_count": 1,
         "sku_count": 1
@@ -50,17 +50,8 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 CHEVROLET TAHOE PPV",
-        "price_min": 56.0,
-        "product_id": "westin_36_4045wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITE 2021-2026 DODGE DURANGO",
-        "price_min": 598.0,
+        "price_min": 598,
         "product_id": "westin_36_4075",
         "qb_count": 1,
         "sku_count": 1
@@ -68,26 +59,8 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE WIRE COVER 2021-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_4075wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITEXD WIRE COVER 2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
-        "price_min": 56.0,
-        "product_id": "westin_36_52065wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITEXD 2023-2026 CHEVROLET SILVERADO 1500 PPV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_52135",
         "qb_count": 1,
         "sku_count": 1
@@ -95,90 +68,9 @@
       {
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
-        "price_min": 56.0,
-        "product_id": "westin_36_52135wc",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
         "model": "PUSH BUMPER ELITEXD 2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
-        "price_min": 834.0,
+        "price_min": 834,
         "product_id": "westin_36_54085",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005s4",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005smp2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005w2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
-        "price_min": 56.0,
-        "product_id": "westin_36_6005w4",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL 2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015w2",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE 2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
-        "price_min": 56.0,
-        "product_id": "westin_36_6015w4",
         "qb_count": 1,
         "sku_count": 1
       },
@@ -195,7 +87,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB450L4 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 4 TOTAL LIGHTS: 2 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
-        "price_min": 1179.0,
+        "price_min": 1179,
         "product_id": "setina_c",
         "qb_count": 1,
         "sku_count": 1
@@ -213,16 +105,16 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "PIT BARS",
-        "price_min": 545.0,
+        "price_min": 545,
         "product_id": "westin_pit_bars",
         "qb_count": 5,
-        "sku_count": 6
+        "sku_count": 5
       },
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB5 Fender Wraps",
-        "price_min": 679.0,
+        "price_min": 679,
         "product_id": "setina_pb5",
         "qb_count": 1,
         "sku_count": 1
@@ -231,7 +123,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB9 Fender Wraps",
-        "price_min": 699.0,
+        "price_min": 699,
         "product_id": "setina_pb9",
         "qb_count": 5,
         "sku_count": 5
@@ -240,7 +132,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB10 Headlight Guard",
-        "price_min": 929.0,
+        "price_min": 929,
         "product_id": "setina_pb10",
         "qb_count": 8,
         "sku_count": 8
@@ -249,16 +141,16 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "WING WRAPS",
-        "price_min": 380.0,
+        "price_min": 380,
         "product_id": "westin_wing_wraps",
         "qb_count": 4,
-        "sku_count": 5
+        "sku_count": 4
       },
       {
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB6 Headlight Guard with PB5 Wrap",
-        "price_min": 739.0,
+        "price_min": 739,
         "product_id": "setina_pb6",
         "qb_count": 1,
         "sku_count": 1
@@ -267,7 +159,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PB8 Double-Loop Headlight Guard",
-        "price_min": 459.0,
+        "price_min": 459,
         "product_id": "setina_pb8",
         "qb_count": 3,
         "sku_count": 3
@@ -278,15 +170,6 @@
         "model": "HEAVY-DUTY STEEL TEXTURED WRAPS FOR 2020+ FORD POLICE INTERCEPTOR UTILITY",
         "price_min": 375.47,
         "product_id": "go_rhino_5344whdt",
-        "qb_count": 1,
-        "sku_count": 1
-      },
-      {
-        "manufacturer_id": "westin",
-        "manufacturer_label": "Westin",
-        "model": "ELITE UPRIGHT WIRE COVER 2020-2026 FORD POLICE INTERCEPTOR UTILITY",
-        "price_min": 56.0,
-        "product_id": "westin_36_2125wc",
         "qb_count": 1,
         "sku_count": 1
       },
@@ -303,7 +186,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
-        "price_min": 786.0,
+        "price_min": 786,
         "product_id": "gamber_johnson_7160_1460",
         "qb_count": 1,
         "sku_count": 1
@@ -312,7 +195,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
-        "price_min": 1138.0,
+        "price_min": 1138,
         "product_id": "gamber_johnson_7160_1626",
         "qb_count": 1,
         "sku_count": 1
@@ -321,7 +204,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
-        "price_min": 1010.0,
+        "price_min": 1010,
         "product_id": "gamber_johnson_7160_2022",
         "qb_count": 1,
         "sku_count": 1
@@ -330,7 +213,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
-        "price_min": 956.0,
+        "price_min": 956,
         "product_id": "gamber_johnson_7170_0567_00",
         "qb_count": 1,
         "sku_count": 1
@@ -339,7 +222,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
-        "price_min": 645.0,
+        "price_min": 645,
         "product_id": "gamber_johnson_7170_0734_00",
         "qb_count": 1,
         "sku_count": 1
@@ -348,7 +231,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
-        "price_min": 1232.0,
+        "price_min": 1232,
         "product_id": "gamber_johnson_7170_0734_02",
         "qb_count": 1,
         "sku_count": 1
@@ -357,7 +240,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
-        "price_min": 1379.0,
+        "price_min": 1379,
         "product_id": "gamber_johnson_7170_0734_04",
         "qb_count": 1,
         "sku_count": 1
@@ -366,7 +249,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
-        "price_min": 1690.0,
+        "price_min": 1690,
         "product_id": "gamber_johnson_7170_0734_09",
         "qb_count": 1,
         "sku_count": 1
@@ -375,7 +258,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
-        "price_min": 787.0,
+        "price_min": 787,
         "product_id": "gamber_johnson_7170_0784_07",
         "qb_count": 1,
         "sku_count": 1
@@ -384,7 +267,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
-        "price_min": 1869.0,
+        "price_min": 1869,
         "product_id": "gamber_johnson_7170_0882_02",
         "qb_count": 1,
         "sku_count": 1
@@ -393,7 +276,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
-        "price_min": 1478.0,
+        "price_min": 1478,
         "product_id": "gamber_johnson_7170_0882_03",
         "qb_count": 1,
         "sku_count": 1
@@ -402,7 +285,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
-        "price_min": 913.0,
+        "price_min": 913,
         "product_id": "gamber_johnson_7170_0884_00",
         "qb_count": 1,
         "sku_count": 1
@@ -411,7 +294,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
-        "price_min": 946.0,
+        "price_min": 946,
         "product_id": "gamber_johnson_7170_0884_03",
         "qb_count": 1,
         "sku_count": 1
@@ -420,7 +303,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
-        "price_min": 691.0,
+        "price_min": 691,
         "product_id": "gamber_johnson_7170_0886_00",
         "qb_count": 1,
         "sku_count": 1
@@ -429,7 +312,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
-        "price_min": 1134.0,
+        "price_min": 1134,
         "product_id": "gamber_johnson_7170_1062_00",
         "qb_count": 1,
         "sku_count": 1
@@ -438,7 +321,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
-        "price_min": 1180.0,
+        "price_min": 1180,
         "product_id": "gamber_johnson_7170_1164_01",
         "qb_count": 1,
         "sku_count": 1
@@ -447,7 +330,7 @@
         "manufacturer_id": "gamber_johnson",
         "manufacturer_label": "Gamber Johnson",
         "model": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
-        "price_min": 1104.0,
+        "price_min": 1104,
         "product_id": "gamber_johnson_7170_1179_00",
         "qb_count": 1,
         "sku_count": 1
@@ -456,7 +339,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "18\" ENCLOSED CONSOLE",
-        "price_min": 452.0,
+        "price_min": 452,
         "product_id": "havis_c_1800",
         "qb_count": 1,
         "sku_count": 1
@@ -465,7 +348,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "18\" ENCLOSED 10\" HIGH CONSOLE",
-        "price_min": 500.0,
+        "price_min": 500,
         "product_id": "havis_c_1810",
         "qb_count": 1,
         "sku_count": 1
@@ -474,7 +357,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "30\" ENCLOSED 10\" HIGH CONSOLE",
-        "price_min": 627.0,
+        "price_min": 627,
         "product_id": "havis_c_3010",
         "qb_count": 1,
         "sku_count": 1
@@ -483,7 +366,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "OVERHEAD CONSOLE FOR 2020-2026 FORD F-SERIES PICKUP",
-        "price_min": 160.0,
+        "price_min": 160,
         "product_id": "havis_c_ohc_inut_1",
         "qb_count": 1,
         "sku_count": 1
@@ -492,7 +375,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 28″ ANGLED CONSOLE FOR 2024 CHEVROLET BLAZER EV",
-        "price_min": 933.0,
+        "price_min": 933,
         "product_id": "havis_c_vs_0820_blzr_ev",
         "qb_count": 1,
         "sku_count": 1
@@ -501,7 +384,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY (C-VS-1012-INUT DISCONTINUED)",
-        "price_min": 697.0,
+        "price_min": 697,
         "product_id": "havis_c_vs_1012_inut_2",
         "qb_count": 1,
         "sku_count": 1
@@ -510,7 +393,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ ANGLED CONSOLE FOR 2021-2024 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-        "price_min": 845.0,
+        "price_min": 845,
         "product_id": "havis_c_vs_1012_tah_1",
         "qb_count": 1,
         "sku_count": 1
@@ -519,7 +402,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 11″ UNDER DASH CONSOLE FOR 2017-2022 FORD F-250, 350, 450 XL & XLT PICKUP, F-450 & 550 CAB CHASSIS, 2015-2020 FORD F-150 XL & XLT PICKUP, 2015-2020 F-150 SSV, 2018-2020 F-150 RESPONDER, & 2018-2021 FORD EXPEDITION",
-        "price_min": 468.0,
+        "price_min": 468,
         "product_id": "havis_c_vs_1100_f150_2",
         "qb_count": 1,
         "sku_count": 1
@@ -528,7 +411,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22\" ANGLED CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-        "price_min": 544.0,
+        "price_min": 544,
         "product_id": "havis_c_vs_1210_inut",
         "qb_count": 1,
         "sku_count": 1
@@ -537,7 +420,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 13″ FLAT CONSOLE FOR 2021-2026 FORD MUSTANG MACH-E",
-        "price_min": 417.0,
+        "price_min": 417,
         "product_id": "havis_c_vs_1300_mstg",
         "qb_count": 1,
         "sku_count": 1
@@ -546,7 +429,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC LOW-PROFILE FLAT CONSOLE FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-        "price_min": 458.0,
+        "price_min": 458,
         "product_id": "havis_c_vs_1400_inut_1",
         "qb_count": 1,
         "sku_count": 1
@@ -555,7 +438,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 20″ FLAT CONSOLE FOR 2018-2020 DODGE DURANGO",
-        "price_min": 1311.0,
+        "price_min": 1311,
         "product_id": "havis_c_vs_2000_dur_1",
         "qb_count": 1,
         "sku_count": 1
@@ -564,7 +447,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 23″ FLAT CONSOLE FOR 2021-2026 DODGE DURANGO PURSUIT",
-        "price_min": 640.0,
+        "price_min": 640,
         "product_id": "havis_c_vs_2300_dur",
         "qb_count": 1,
         "sku_count": 1
@@ -573,7 +456,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 22″ WIDE ANGLED CONSOLE FOR 2025-2026 CHEVROLET TAHOE POLICE PURSUIT VEHICLE",
-        "price_min": 924.0,
+        "price_min": 924,
         "product_id": "havis_c_vsw_1012_tah_1",
         "qb_count": 1,
         "sku_count": 1
@@ -582,7 +465,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VEHICLE-SPECIFIC 26″ WIDE FLAT CONSOLE FOR 2019-2025 CHEVROLET SILVERADO AND GMC SIERRA",
-        "price_min": 970.0,
+        "price_min": 970,
         "product_id": "havis_c_vsw_2600_silv",
         "qb_count": 1,
         "sku_count": 1
@@ -591,7 +474,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "VSX CONSOLE WITH FRONT BIN FOR 2020-2026 FORD INTERCEPTOR UTILITY",
-        "price_min": 848.0,
+        "price_min": 848,
         "product_id": "havis_c_vsx_1800_inut",
         "qb_count": 1,
         "sku_count": 1
@@ -600,7 +483,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "WIDE VSX CONSOLE WITH FRONT PRINTER MOUNT FOR LAPTOP DOCKING STATIONS FOR 2025-2026 CHEVROLET TAHOE PPV & SSV",
-        "price_min": 2375.0,
+        "price_min": 2375,
         "product_id": "havis_pkg_vsx_1800_tah_pm_5",
         "qb_count": 1,
         "sku_count": 1
@@ -609,7 +492,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "FULL PARTITION",
-        "price_min": 999.0,
+        "price_min": 999,
         "product_id": "setina_full_partition",
         "qb_count": 16,
         "sku_count": 16
@@ -618,7 +501,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "SINGLE PRISIONER",
-        "price_min": 1279.0,
+        "price_min": 1279,
         "product_id": "setina_single_prisioner",
         "qb_count": 10,
         "sku_count": 10
@@ -627,7 +510,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "FULL XL PARTITION",
-        "price_min": 1139.0,
+        "price_min": 1139,
         "product_id": "setina_full_xl_partition",
         "qb_count": 3,
         "sku_count": 3
@@ -645,7 +528,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "DUAL PRISONER PARTITION",
-        "price_min": 599.0,
+        "price_min": 599,
         "product_id": "setina_dual_prisoner",
         "qb_count": 4,
         "sku_count": 4
@@ -663,7 +546,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "Polycarbonate Window Barrier",
-        "price_min": 299.0,
+        "price_min": 299,
         "product_id": "setina_poly",
         "qb_count": 5,
         "sku_count": 5
@@ -672,7 +555,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "PARTITION TRANSFER KIT",
-        "price_min": 399.0,
+        "price_min": 399,
         "product_id": "setina_partition_transfer_kit",
         "qb_count": 4,
         "sku_count": 4
@@ -690,7 +573,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "LOWER EXTENSION PANEL",
-        "price_min": 109.0,
+        "price_min": 109,
         "product_id": "setina_lower_extension_panel",
         "qb_count": 1,
         "sku_count": 1
@@ -753,7 +636,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "Window Barrier",
-        "price_min": 279.0,
+        "price_min": 279,
         "product_id": "setina_steel_vertical",
         "qb_count": 18,
         "sku_count": 18
@@ -780,7 +663,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "FULL REPLACEMENT SEAT",
-        "price_min": 1099.0,
+        "price_min": 1099,
         "product_id": "setina_full_replacement_seat",
         "qb_count": 13,
         "sku_count": 13
@@ -789,7 +672,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "FULL COVER SEAT",
-        "price_min": 1759.0,
+        "price_min": 1759,
         "product_id": "setina_full_cover_seat",
         "qb_count": 3,
         "sku_count": 3
@@ -798,7 +681,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "SINGLE REPLACEMENT SEAT",
-        "price_min": 899.0,
+        "price_min": 899,
         "product_id": "setina_single_replacement_seat",
         "qb_count": 1,
         "sku_count": 1
@@ -816,7 +699,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "STEEL WINDOW",
-        "price_min": 659.0,
+        "price_min": 659,
         "product_id": "setina_steel_window",
         "qb_count": 1,
         "sku_count": 1
@@ -825,7 +708,7 @@
         "manufacturer_id": "setina",
         "manufacturer_label": "Setina",
         "model": "POLY WINDOW",
-        "price_min": 689.0,
+        "price_min": 689,
         "product_id": "setina_poly_window",
         "qb_count": 4,
         "sku_count": 4
@@ -888,7 +771,7 @@
         "manufacturer_id": "american_aluminum",
         "manufacturer_label": "American Aluminum",
         "model": "ACCESSORIES SINGLE DRAWER VAULT MATTE BLACK POWDER COAT",
-        "price_min": 1309.0,
+        "price_min": 1309,
         "product_id": "american_aluminum_ameralu_vault",
         "qb_count": 1,
         "sku_count": 1
@@ -906,7 +789,7 @@
         "manufacturer_id": "5_0_fab_dtm",
         "manufacturer_label": "5-0 Fab (Dtm)",
         "model": "EQUIPMENT BOX 4IN DEEP 36IN WIDE",
-        "price_min": 350.0,
+        "price_min": 350,
         "product_id": "5_0_fab_dtm_eb1u",
         "qb_count": 1,
         "sku_count": 1
@@ -924,7 +807,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "HINGED LID DRAWER TOPPER WITH MEDIUM-DUTY SLAM LATCH",
-        "price_min": 829.0,
+        "price_min": 829,
         "product_id": "havis_sbx_3001",
         "qb_count": 1,
         "sku_count": 1
@@ -933,7 +816,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "2020-2024 FORD INTERCEPTOR UTILITY STORAGE DRAWER MOUNT WITH HAVIS K9",
-        "price_min": 662.0,
+        "price_min": 662,
         "product_id": "havis_sbx_5001",
         "qb_count": 1,
         "sku_count": 1
@@ -951,7 +834,7 @@
         "manufacturer_id": "rockland_cabinets",
         "manufacturer_label": "Rockland Cabinets",
         "model": "STEEL WEAPONS DRAWER WITH READY LOCK COMES WITH FOAM INSERT",
-        "price_min": 1016.0,
+        "price_min": 1016,
         "product_id": "rockland_cabinets_wpdr_rkd_st1_4324_pcst_univay",
         "qb_count": 1,
         "sku_count": 1
@@ -969,7 +852,7 @@
         "manufacturer_id": "american_aluminum",
         "manufacturer_label": "American Aluminum",
         "model": "E/Z Vault",
-        "price_min": 1223.0,
+        "price_min": 1223,
         "product_id": "american_aluminum_ez_vault",
         "qb_count": 1,
         "sku_count": 1
@@ -978,7 +861,7 @@
         "manufacturer_id": "westin",
         "manufacturer_label": "Westin",
         "model": "R5 NERF STEP BARS - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-2025",
-        "price_min": 704.0,
+        "price_min": 704,
         "product_id": "westin_28_51270",
         "qb_count": 1,
         "sku_count": 1
@@ -987,7 +870,7 @@
         "manufacturer_id": "havis",
         "manufacturer_label": "Havis",
         "model": "120\" 2 COMPARTMENT(S) PRISONER TRANSPORT INSERT",
-        "price_min": 23413.0,
+        "price_min": 23413,
         "product_id": "havis_pt_c02_120_2",
         "qb_count": 1,
         "sku_count": 1

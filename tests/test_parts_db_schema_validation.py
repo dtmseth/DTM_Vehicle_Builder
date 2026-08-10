@@ -73,6 +73,20 @@ class TestPartsDbValidator:
                                     "fits_part_types": "not a list"}},
             })
 
+    def test_rejects_invalid_product_model_aliases(self):
+        with pytest.raises(ValueError, match="model_aliases"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "model_aliases": ["PIONEER", ""]}},
+            })
+
+    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required"])
+    def test_rejects_invalid_product_location_and_pa_metadata(self, field):
+        with pytest.raises(ValueError, match=field):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y", field: "false"}},
+            })
+
     def test_rejects_product_non_list_location_options(self):
         with pytest.raises(ValueError, match="location_options"):
             validate_config_payload("parts_db.json", {
@@ -123,6 +137,21 @@ class TestPartsDbValidator:
                 "part_types": {"x": {
                     "label": "X", "type_id": "lights",
                     "tree_positions": [{"section": "exterior"}],
+                }},
+            })
+
+    @pytest.mark.parametrize("recommendation", [
+        "not a list",
+        [{"category": "harness"}],
+        [{"category": "harness", "product_id": "h", "when_existing_part_type": "control_head",
+          "message": "Recommended", "minimum_existing_count": 0}],
+    ])
+    def test_rejects_invalid_part_type_recommended_accessories(self, recommendation):
+        with pytest.raises(ValueError, match="recommended_accessories"):
+            validate_config_payload("parts_db.json", {
+                "part_types": {"control_head": {
+                    "label": "Control Head", "type_id": "equipment",
+                    "recommended_accessories": recommendation,
                 }},
             })
 

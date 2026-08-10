@@ -147,6 +147,15 @@ class TestTopLevelEndpoints:
         ids = {m["manufacturer_id"] for m in h.body_json()["manufacturers"]}
         assert ids == {"whelen", "setina"}
 
+    def test_exact_sku_lookup_finds_catalog_part_case_insensitively(self, tmp_path):
+        h = FakeHandler("/api/parts-db/sku-lookup?sku=ion-t-rw")
+        route_parts_db(h, "GET", "/api/parts-db/sku-lookup", {}, _paths(tmp_path))
+        body = h.body_json()
+        assert h.status == 200
+        assert body["found"] is True
+        assert body["part"]["product_id"] == "whelen_ion_t"
+        assert body["part"]["manufacturer_label"] == "Whelen"
+
 
 # ── Part types ──────────────────────────────────────────────────────────────
 
@@ -405,6 +414,52 @@ def test_resolve_accessories_can_keep_generic_choices_with_product_specific_one(
     assert [option["product_id"] for option in out[0]["options"]] == ["psbkt90", "generic_mount"]
 
 
+def test_child_side_specific_bracket_does_not_hide_explicit_generic_choices():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = {
+        "accessory_categories": {"bracket_mount": {"label": "Bracket / Mount"}},
+        "manufacturers": {"whelen": {"label": "Whelen"}},
+        "part_types": {
+            "warning_light": {"label": "Warning Light", "type_id": "lights"},
+            "warning_bracket": {
+                "label": "Warning Bracket", "type_id": "lights",
+                "accessory_of": "warning_light", "accessory_category": "bracket_mount",
+            },
+        },
+        "products": {
+            "ion": {
+                "manufacturer_id": "whelen", "model": "ION",
+                "fits_part_types": ["warning_light"],
+                "accessories": [{
+                    "category": "bracket_mount", "product_id": "ion_mount",
+                    "include_generic": True,
+                }],
+            },
+            "ion_mount": {
+                "manufacturer_id": "whelen", "model": "ION Mount",
+                "part_numbers": [{"part_number": "ION-MOUNT"}],
+            },
+            "generic_mount": {
+                "manufacturer_id": "whelen", "model": "Universal Mount",
+                "fits_part_types": ["warning_bracket"],
+                "part_numbers": [{"part_number": "GEN-MOUNT"}],
+            },
+            "legacy_specific_mount": {
+                "manufacturer_id": "whelen", "model": "Legacy ION Mount",
+                "accessory_category": "bracket_mount",
+                "accessory_of_products": ["ion"],
+                "part_numbers": [{"part_number": "LEGACY-MOUNT"}],
+            },
+        },
+    }
+
+    out = _resolve_accessories(_FakeAccSvc(doc), "ion")
+    assert [option["product_id"] for option in out[0]["options"]] == [
+        "ion_mount", "generic_mount", "legacy_specific_mount",
+    ]
+
+
 def test_warning_bracket_options_are_scoped_to_their_light_family():
     from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
 
@@ -431,6 +486,56 @@ def test_warning_bracket_options_are_scoped_to_their_light_family():
     assert "whelen_fender_mount" in bracket_ids("whelen_pro_focus")
     assert "dtm_twist_lock_adaptor" in bracket_ids("whelen_vxe")
     assert "dtm_twist_lock_adaptor" in bracket_ids("whelen_vertex")
+
+
+def test_warning_light_brackets_have_part_numbers_and_correct_ion_scope():
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    doc = json.loads(
+        (Path(__file__).parents[1] / "src/dtm_buildsheet/resources/config/parts_db.json").read_text("utf-8")
+    )
+
+    def bracket_options(product_id: str) -> list[dict]:
+        groups = _resolve_accessories(_FakeAccSvc(doc), product_id)
+        return next(group for group in groups if group["category"] == "bracket_mount")["options"]
+
+    generic = {
+        "dtm_universal_grill_bracket",
+        "dtm_l_bracket",
+        "dtm_angle_bracket",
+        "dtm_dtm_extended_cargo_window_bracket",
+        "dtm_grommet_mount",
+    }
+    option_sets = {
+        product_id: bracket_options(product_id)
+        for product_id in (
+            "whelen_mega_t_series",
+            "whelen_t_series",
+            "whelen_ion",
+            "whelen_surface_mount_ion",
+        )
+    }
+    for options in option_sets.values():
+        assert generic <= {option["product_id"] for option in options}
+        assert all(sku["part_number"] for option in options for sku in option["skus"])
+
+    ion_ids = {option["product_id"] for option in option_sets["whelen_ion"]}
+    surface_ion_ids = {option["product_id"] for option in option_sets["whelen_surface_mount_ion"]}
+    assert {"whelen_ion_lp_bracket", "whelen_ion_grille_mount", "5_0_fab_dtm_bm6wfpiu"} <= ion_ids
+    assert "whelen_ion_lp_bracket" not in surface_ion_ids
+    assert all("dtm_license_plate_bracket" not in {
+        option["product_id"] for option in options
+    } for options in option_sets.values())
+    assert doc["products"]["whelen_ion"]["model"] == "ION"
+
+    ion_lp = doc["products"]["whelen_ion_lp_bracket"]["part_numbers"][0]
+    assert ion_lp["part_number"] == "IONBKT1"
+    assert ion_lp["qb_item_id"] == "625"
+
+    pj = doc["products"]["brother_pj_822"]["part_numbers"][0]
+    assert pj["part_number"] == "PJ-822"
+    assert pj["qb_item_id"] == "835"
+    assert pj["qb_unit_price"] == 387.59
 
 
 def test_tiger_tough_seat_covers_offer_custom_patch_embroidery_only():
@@ -523,8 +628,98 @@ def test_siren_speaker_locations_use_curated_parts_db_allowed_placements():
         "UNDER PUSH BUMPER",
         "BEHIND GRILL (CENTER)",
         "BEHIND OEM BUMPER",
-        "VEHICLE SPECIFIC BRACKET",
     }
+
+
+def test_scene_products_offer_center_plate_of_pb_as_a_front_scene_location():
+    """Center Plate of PB is a shared Front Scene option, not a product exception."""
+    for product_id in (
+        "whelen_pioneer_slimline", "whelen_par46", "whelen_par32", "whelen_wing_plow_light",
+    ):
+        h = FakeHandler(
+            "/api/parts-db/category-locations?type=lights&category=scene"
+            f"&product={product_id}&vehicle=PIU"
+        )
+        route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, AppPaths())
+
+        locations = {row["location"]: row for row in h.body_json()["locations"]}
+        assert locations["CENTER PLATE OF PB"]["part_type_id"] == "front_scene"
+        assert locations["TOP OF PUSH BUMPER"]["part_type_id"] == "front_scene"
+
+
+def test_selected_scene_product_uses_only_its_scene_light_locations():
+    """The standard Scene step is product-scoped; custom mode owns all dots."""
+    h = FakeHandler(
+        "/api/parts-db/category-locations?type=lights&category=scene"
+        "&product=whelen_pioneer_slimline&vehicle=PIU"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-locations", {}, AppPaths())
+
+    rows = h.body_json()["locations"]
+    assert {row["location"] for row in rows} == {
+        "TOP OF PUSH BUMPER", "CENTER PLATE OF PB", "UNDER TAILGATE",
+    }
+    assert {row["part_type_id"] for row in rows} == {"front_scene", "rear_scene"}
+    assert "FRONT CORNER OF BUMPER" not in {row["location"] for row in rows}
+
+
+def test_westin_push_bumpers_expose_only_bases_and_their_exact_accessories():
+    """Westin channels/covers belong to a bumper; they are not alternate bumpers."""
+    h = FakeHandler(
+        "/api/parts-db/category-skus?type=structural&family=push_bumper_system"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    assert products["westin_36_2125"]["skus"][0]["vehicle_tags"] == ["PIU"]
+    assert products["westin_36_52135"]["skus"][0]["vehicle_tags"] == ["CHEVY-1500"]
+    assert {
+        "westin_36_2125wc", "westin_36_4045wc", "westin_36_4075wc",
+        "westin_36_52065wc", "westin_36_52135wc", "westin_36_6005",
+        "westin_36_6005s4", "westin_36_6005smp2", "westin_36_6005w2",
+        "westin_36_6005w4", "westin_36_6015", "westin_36_6015w2",
+        "westin_36_6015w4",
+    }.isdisjoint(products)
+    pit_skus = {sku["part_number"]: sku for sku in products["westin_pit_bars"]["skus"]}
+    assert pit_skus["36-4075PB"]["vehicle_tags"] == ["DURANGO"]
+
+    expected = {
+        "westin_36_2125": {
+            "westin_wire_cover": {"westin_36_2125wc"},
+            "westin_light_channel": {
+                "westin_36_6005", "westin_36_6005s4", "westin_36_6005smp2",
+                "westin_36_6005w2", "westin_36_6005w4",
+            },
+        },
+        "westin_36_4045": {
+            "westin_wire_cover": {"westin_36_4045wc"},
+            "westin_light_channel": {"westin_36_6015w2", "westin_36_6015w4"},
+        },
+        "westin_36_4075": {
+            "westin_wire_cover": {"westin_36_4075wc"},
+            "westin_light_channel": {
+                "westin_36_6005", "westin_36_6005s4", "westin_36_6005smp2",
+                "westin_36_6005w2", "westin_36_6005w4",
+            },
+        },
+        "westin_36_54085": {
+            "westin_wire_cover": {"westin_36_52065wc"},
+            "westin_light_channel": {"westin_36_6015", "westin_36_6015w2", "westin_36_6015w4"},
+        },
+        "westin_36_52135": {
+            "westin_wire_cover": {"westin_36_52135wc"},
+            "westin_light_channel": {"westin_36_6015", "westin_36_6015w2", "westin_36_6015w4"},
+        },
+    }
+    for bumper_id, groups_expected in expected.items():
+        h = FakeHandler(f"/api/parts-db/accessories?product_id={bumper_id}")
+        route_parts_db(h, "GET", "/api/parts-db/accessories", {}, AppPaths())
+        actual = {
+            group["category"]: {option["product_id"] for option in group["options"]}
+            for group in h.body_json()["accessories"]
+            if group["category"].startswith("westin_")
+        }
+        assert actual == groups_expected
 
 
 def test_gun_lock_locations_recover_the_legacy_workbook_choices():
@@ -559,6 +754,50 @@ def test_interior_lighting_is_one_collapsed_picker_leaf():
     }
 
 
+def test_light_bars_have_one_interior_leaf_with_front_and_rear_products():
+    paths = AppPaths()
+    h = FakeHandler("/api/parts-db/browse-tree")
+    route_parts_db(h, "GET", "/api/parts-db/browse-tree", {}, paths)
+
+    lights = next(category for category in h.body_json()["categories"] if category["type_id"] == "lights")
+    light_bars = next(child for child in lights["children"] if child.get("family_id") == "light_bars")
+    visible_interior_leaves = [
+        member for member in light_bars["members"]
+        if member["label"] == "Interior Light Bar" and not member["browse_hidden"]
+    ]
+    assert len(visible_interior_leaves) == 1
+    assert visible_interior_leaves[0]["browse_part_type_ids"] == [
+        "front_interior_light_bar", "rear_interior_light_bar",
+    ]
+
+    h = FakeHandler(
+        "/api/parts-db/category-skus?type=lights&category=interior_bar"
+        "&part_types=front_interior_light_bar,rear_interior_light_bar"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, paths)
+    products = {product["product_id"]: product for product in h.body_json()["products"]}
+
+    assert {"whelen_fst", "whelen_rst", "whelen_outer_edge", "whelen_xlp"} <= set(products)
+    assert "whelen_t_series" not in products
+    assert products["whelen_fst"]["fixture_catalog_id"] == "interior_light_bar_front"
+    assert products["whelen_rst"]["fixture_catalog_id"] == "rear_interior_light_bar"
+
+
+def test_inner_edge_shrouds_are_not_offered_but_t_series_shrouds_are():
+    """THSG shrouds fit stud-mount T-Series heads, not FST/RST bars."""
+    from dtm_buildsheet.app.routes.parts_db import _resolve_accessories
+
+    svc = parts_db_service.get_parts_db_service(AppPaths())
+    for product_id in ("whelen_fst", "whelen_rst"):
+        categories = {row["category"] for row in _resolve_accessories(svc, product_id)}
+        assert "shroud" not in categories
+
+    groups = {row["category"]: row for row in _resolve_accessories(svc, "whelen_t_series")}
+    assert {option["product_id"] for option in groups["shroud"]["options"]} == {
+        "whelen_ie_shroud"
+    }
+
+
 @pytest.mark.parametrize(("product_id", "expected_locations"), [
     ("whelen_round_lighthead", {"LOWER KICK PANELS", "PRISONER HEADLINER", "LIFTGATE MOUNTED"}),
     ("soundoff_soundoff_dome_light_2", {"CARGO AREA HEADLINER", "DRIVER AREA HEADLINER"}),
@@ -579,6 +818,26 @@ def test_50_fab_equipment_tray_declares_its_fixed_rear_partition_location():
 
     products = {row["product_id"]: row for row in h.body_json()["products"]}
     assert products["5_0_fab_dtm_ets20fpiu"]["fixed_location"] == "ON REAR PARTITION"
+
+
+def test_printer_catalog_exposes_only_explicit_cable_parent_links():
+    """The console printer flow must use authored, product-specific cables."""
+    def products_for(part_type: str, *, include_accessory_links: bool = False) -> dict[str, dict]:
+        suffix = "&include_accessory_links=1" if include_accessory_links else ""
+        h = FakeHandler(f"/api/parts-db/category-skus?type=equipment&part_type={part_type}{suffix}")
+        route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+        assert h.status == 200
+        return {row["product_id"]: row for row in h.body_json()["products"]}
+
+    printer = products_for("printer")["brother_pj_822"]
+    plain_power = products_for("printer_power")["brother_pocketjet_power_cable"]
+    power = products_for("printer_power", include_accessory_links=True)["brother_pocketjet_power_cable"]
+    usb = products_for("printer_usb", include_accessory_links=True)["brother_pocketjet_usb_cable"]
+
+    assert printer["skus"][0]["part_number"] == "PJ-822"
+    assert "accessory_of_products" not in plain_power
+    assert power["accessory_of_products"] == ["brother_pj_822"]
+    assert usb["accessory_of_products"] == ["brother_pj_822"]
 
 
 def test_round_lighthead_has_no_accessories_and_defaults_to_red_white():
@@ -738,6 +997,77 @@ def test_category_skus_all_searches_all_categories_with_metadata():
     assert "preemption" in search_text
 
 
+def test_cctl5_skips_pa_mic_and_keeps_custom_location_alongside_console():
+    h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=control_head")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    product = next(row for row in h.body_json()["products"] if row["product_id"] == "whelen_cctl5")
+    assert product["pa_mic_required"] is False
+    assert product["allow_custom_location"] is True
+
+
+def test_cctlharn_is_selectable_as_a_pending_secondary_control_head_harness():
+    h = FakeHandler(
+        "/api/parts-db/category-skus?type=equipment&part_type=secondary_control_head_harness"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    assert h.status == 200
+    product = next(
+        row for row in h.body_json()["products"] if row["product_id"] == "whelen_cctlharn"
+    )
+    assert product["model"] == "CenCom Core Secondary Control Head Harness"
+    assert product["primary_part_type_id"] == "secondary_control_head_harness"
+    assert "Non-Primary Control Head" in product["description"]
+    assert product["skus"] == [{
+        "part_number": "CCTLHARN",
+        "friendly_name": "WHELEN CENCOM CORE SECONDARY CONTROL HEAD HARNESS",
+        "color": "",
+        "secondary_color": "",
+        "tertiary_color": "",
+        "lens_type": "",
+        "price": 10,
+        "qb": False,
+        "qb_pending": True,
+        "vehicle_tags": ["any"],
+    }]
+
+
+def test_second_control_head_recommends_the_pending_harness_accessory():
+    h = FakeHandler("/api/parts-db/accessories?product_id=whelen_cctl5")
+    route_parts_db(h, "GET", "/api/parts-db/accessories", {}, AppPaths())
+
+    assert h.status == 200
+    group = next(row for row in h.body_json()["accessories"] if row["category"] == "control_head_harness")
+    assert group["required"] is False
+    assert group["recommendations"] == [{
+        "product_id": "whelen_cctlharn",
+        "when_existing_part_type": "control_head",
+        "minimum_existing_count": 1,
+        "message": "Recommended for a secondary control head",
+    }]
+    assert group["options"][0]["product_id"] == "whelen_cctlharn"
+    assert group["options"][0]["skus"][0]["part_number"] == "CCTLHARN"
+    assert group["options"][0]["skus"][0]["qb_pending"] is True
+
+
+@pytest.mark.parametrize("product_id", ["whelen_t_series", "whelen_mega_t_series"])
+@pytest.mark.parametrize("route", [
+    "/api/parts-db/category-skus?all=1",
+    "/api/parts-db/category-skus?type=lights",
+])
+def test_t_series_uses_declared_warning_light_picker_flow_from_every_lights_entry(route, product_id):
+    """T-Series is a warning light even when the user opens the broad Lights leaf."""
+    h = FakeHandler(route)
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    products = {row["product_id"]: row for row in h.body_json()["products"]}
+    product = products[product_id]
+    assert product["primary_part_type_id"] == "warning_light"
+    assert product["primary_category_id"] == "warning"
+
+
 def test_setina_rear_window_barriers_are_one_product_with_all_variants():
     h = FakeHandler("/api/parts-db/category-skus?type=structural&part_type=rear_window_bars")
     route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
@@ -892,3 +1222,83 @@ def test_tracer_heads_endpoint_missing_product_id(tmp_path):
     h = FakeHandler("/api/parts-db/tracer-heads")
     route_parts_db(h, "GET", "/api/parts-db/tracer-heads", {}, _paths(tmp_path))
     assert h.status == 400
+
+
+def test_inner_edge_heads_endpoint_uses_selected_housing_sku(tmp_path):
+    db = json.loads(json.dumps(_SYNTHETIC_DB))
+    db["products"].update({
+        "fst": {
+            "manufacturer_id": "whelen", "model": "Inner Edge FST",
+            "fits_part_types": [],
+            "part_numbers": [{"part_number": "FST10", "qb_sales_description": "FST 10-LT"}],
+            "accessories": [{"category": "lighthead", "product_id": "ie_head"}],
+        },
+        "ie_head": {
+            "manufacturer_id": "whelen", "model": "Inner Edge Lighthead", "fits_part_types": [],
+            "part_numbers": [
+                {"part_number": "IE-RW", "color": "red", "secondary_color": "white"},
+                {"part_number": "IE-BW", "color": "blue", "secondary_color": "white"},
+            ],
+        },
+    })
+    # The route is deliberately restricted to production FST/RST identifiers;
+    # use the real name here to verify its public API, not a looser heuristic.
+    db["products"]["whelen_fst"] = db["products"].pop("fst")
+    h = FakeHandler(
+        "/api/parts-db/inner-edge-heads?product_id=whelen_fst&part_number=FST10&mode=duo&secondary=white"
+    )
+    route_parts_db(h, "GET", "/api/parts-db/inner-edge-heads", {}, _paths(tmp_path, db))
+    body = h.body_json()
+    assert body["ok"] is True
+    assert {line["sku"]: line["qty"] for line in body["lines"]} == {
+        "FST10": 1, "IE-RW": 5, "IE-BW": 5,
+    }
+
+
+def test_outer_edge_pillar_heads_endpoint_creates_the_six_required_ions(tmp_path):
+    db = json.loads(json.dumps(_SYNTHETIC_DB))
+    db["products"].update({
+        "whelen_ion_rear_pillar": {
+            "manufacturer_id": "whelen", "model": "Outer Edge Rear Pillar",
+            "fits_part_types": [],
+            "part_numbers": [
+                {"part_number": "RPWD50", "friendly_name": "Outer Edge Rear Pillar Duo"},
+                {"part_number": "RPWT50", "friendly_name": "Outer Edge Rear Pillar Trio"},
+            ],
+            "accessories": [{"category": "lighthead", "product_id": "outer_ion"}],
+        },
+        "outer_ion": {
+            "manufacturer_id": "whelen", "model": "Outer Edge ION", "fits_part_types": [],
+            "part_numbers": [
+                {"part_number": "OEI2RW", "color": "red", "secondary_color": "white", "lens_type": "clear"},
+                {"part_number": "OEI2BW", "color": "blue", "secondary_color": "white", "lens_type": "clear"},
+                {"part_number": "OEI2RA", "color": "red", "secondary_color": "amber", "lens_type": "clear"},
+                {"part_number": "OEI2BA", "color": "blue", "secondary_color": "amber", "lens_type": "clear"},
+                {"part_number": "OEI3RBA", "color": "red", "secondary_color": "blue", "tertiary_color": "amber", "lens_type": "clear"},
+            ],
+        },
+    })
+
+    duo = FakeHandler(
+        "/api/parts-db/outer-edge-pillar-heads?product_id=whelen_ion_rear_pillar&part_number=RPWD50&secondary=amber"
+    )
+    route_parts_db(duo, "GET", "/api/parts-db/outer-edge-pillar-heads", {}, _paths(tmp_path, db))
+    duo_body = duo.body_json()
+    assert duo_body["ok"] is True
+    assert duo_body["mode"] == "duo"
+    assert duo_body["lamp_count"] == 6
+    assert {line["sku"]: line["qty"] for line in duo_body["lines"]} == {
+        "RPWD50": 1, "OEI2RA": 3, "OEI2BA": 3,
+    }
+
+    trio = FakeHandler(
+        "/api/parts-db/outer-edge-pillar-heads?product_id=whelen_ion_rear_pillar&part_number=RPWT50&secondary=white"
+    )
+    route_parts_db(trio, "GET", "/api/parts-db/outer-edge-pillar-heads", {}, _paths(tmp_path, db))
+    trio_body = trio.body_json()
+    assert trio_body["ok"] is True
+    assert trio_body["mode"] == "trio"
+    assert trio_body["secondary_color"] == "amber"
+    assert {line["sku"]: line["qty"] for line in trio_body["lines"]} == {
+        "RPWT50": 1, "OEI3RBA": 6,
+    }

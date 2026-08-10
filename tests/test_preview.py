@@ -159,6 +159,29 @@ def test_apply_overrides_anchor_preserves_units():
     assert result.planned_parts[0].placements[0].anchor["units"] == "relative_image"
 
 
+def test_apply_overrides_vertical_mirror_ignores_off_canvas_y_delta():
+    plan = _make_plan(_make_placement(
+        anchor={"x": 0.845, "y": 0.83, "units": "relative_image"},
+        pattern="vertical_mirror",
+    ))
+
+    result = apply_overrides(plan, {
+        "led_bar:front": {"anchor_dx": -0.06102, "anchor_dy": 0.321985}
+    })
+
+    placement = result.planned_parts[0].placements[0]
+    assert placement.anchor["x"] == pytest.approx(0.78398)
+    assert placement.anchor["y"] == pytest.approx(0.83)
+
+
+def test_apply_overrides_keeps_push_bumper_below_lights():
+    plan = _make_plan(_make_placement(part_id="push_bumper", layer=-20))
+
+    result = apply_overrides(plan, {"push_bumper:front": {"layer": 10}})
+
+    assert result.planned_parts[0].placements[0].layer == -20
+
+
 def test_apply_overrides_translate_preserves_anchor():
     plan = _make_plan(_make_placement(anchor={"x": 0.5, "y": 0.1, "units": "relative_image"}))
     result = apply_overrides(plan, {"led_bar:front": {"translate_dx": 0.1, "translate_dy": -0.05}})
@@ -275,6 +298,78 @@ def test_preview_service_full_plan(app_paths, stearns_input):
     assert "planned_parts" in res
     assert len(res["views"]) > 0
     assert len(res["planned_parts"]) > 0
+
+
+@pytest.mark.parametrize(("quantity", "sku"), [(1, "PSL1BB"), (2, "PSL2BB")])
+def test_preview_service_renders_pioneer_slimline_qty_and_center(app_paths, quantity, sku):
+    from dtm_buildsheet.app.services.preview_service import handle_preview_plan
+    from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft
+
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "PIONEER-PREVIEW"},
+        parts=[PartInput(
+            name="Front Scene 1", manufacturer="Whelen",
+            part_number="Pioneer SlimLine", quantity=quantity,
+            location="CENTER PLATE OF PB", line_id="pioneer-preview",
+            part_type="front_scene",
+            components=[{"part_number": sku, "quantity": quantity}],
+            picker_config={"count": quantity, "_noColor": True},
+        )],
+        notes={},
+    )
+    draft = draft_from_project_input(project)
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    res = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    assert res["ok"], res.get("error")
+    scene = next(part for part in res["planned_parts"] if part["part_name"] == "Front Scene 1")
+    placement = scene["placements"][0]
+
+    assert len(placement["instances"]) == quantity
+    assert all(instance["asset_url"].endswith("/assets/lights/sm_white_h.png")
+               for instance in placement["instances"])
+    if quantity == 1:
+        assert placement["instances"][0]["x_pct"] == pytest.approx(0.5)
+    else:
+        assert placement["pattern"] == "horizontal"
+        xs = [instance["x_pct"] for instance in placement["instances"]]
+        assert xs[0] < 0.5 < xs[1]
+
+
+def test_preview_service_renders_outer_edge_as_two_rear_pillar_stacks(app_paths):
+    from dtm_buildsheet.app.services.preview_service import handle_preview_plan
+    from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft
+
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "OUTER-EDGE-PREVIEW"},
+        parts=[PartInput(
+            name="Rear Warning 1", manufacturer="Whelen", part_number="RPWD50",
+            quantity=1, location="PILLARS", line_id="outer-edge-preview",
+            part_type="warning_light", raw_color="Red/White Blue/White",
+            picker_config={"outer_edge_pillar": {
+                "product_id": "whelen_ion_rear_pillar", "housing_part_number": "RPWD50",
+                "mode": "duo", "secondary": "white", "head_count": 6,
+            }},
+        )],
+        notes={},
+    )
+    draft = draft_from_project_input(project)
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    res = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+    assert res["ok"], res.get("error")
+    outer = next(part for part in res["planned_parts"] if part["part_name"] == "Rear Warning 1")
+    placement = outer["placements"][0]
+
+    assert placement["view"] == "rear"
+    assert placement["pattern"] == "outer_edge_pillars"
+    assert placement["rotation"] == pytest.approx(-55)
+    assert [item["x_pct"] for item in placement["instances"]] == pytest.approx([
+        0.205, 0.205, 0.205, 0.795, 0.795, 0.795,
+    ])
+    assert [item["y_pct"] for item in placement["instances"]] == pytest.approx([
+        0.155, 0.2, 0.245, 0.155, 0.2, 0.245,
+    ])
 
 
 def test_preview_service_includes_render_only_setina_pb450l6_lights(app_paths):

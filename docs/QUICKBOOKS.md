@@ -18,21 +18,22 @@
 
 An **internal, single-company** integration for the DTM Vehicle Builder desktop app. It does:
 (1) one-time OAuth connect, (2) sync the parts catalog from QBO Items, (3) sync QBO Customers
-into the app's Agencies **and** mirror agencies back up, (4) a per-vehicle sub-customer/job
-bridge, and (5) draft **non-posting Estimates** per vehicle from the chosen parts.
+into the app's Agencies **and** mirror agencies back up, and (4) draft **non-posting Estimates**
+per vehicle from the chosen parts under the agency's top-level Customer and its linked true QBO
+Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 
 | Phase | What | Status |
 |-------|------|--------|
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
 | **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox**. B/C built + unit-tested. |
-| **3 — Customers ↔ Agencies + vehicle bridge** | Down-sync (Slice 1), agency→QB up-sync (Slice 2), per-vehicle job bridge (Slice 3) | ✅ All three built. Slice 1 sandbox-tested; Slices 2 & 3 built + unit-tested, not yet exercised live. |
+| **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Customer sync and estimate flow built + unit-tested. New estimates do not create jobs. |
 | **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ⛔ Not done. Requires sandbox test cycle confirmation + relay deploy (§5–6). |
 
 **Currently runs against the SANDBOX company using Development keys.** No Production keys, no
 relay deployed, questionnaire not submitted. Nothing is live against a real QBO company yet.
 
-**Write boundary**: the app writes **Customers, sub-customers/jobs, and non-posting Estimates** —
+**Write boundary**: the app writes **Customers and non-posting Estimates** —
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
 hard-gated to `environment == "sandbox"`.)
 
@@ -78,7 +79,7 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
     root). **Reads** parts_db only to flag linked items; never writes it (Slice A).
   - `link_item()` / `unlink_item()` — attach/detach a QB item to a VB product via
     `save_config_file("parts_db.json", …)` (proper mirror path). Additive, one-to-one (Slice B).
-  - `reconcile_linked_parts()` — push QBO `sku`/`unit_price`/active status onto **linked** parts
+- `reconcile_linked_parts()` — push QBO `sku`/`unit_price`/sales description/active status onto **linked** parts
     only; flag missing items `qb_inactive` (never delete); writes only on change. Also reconciles
     **pending-QB** parts (see [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md)) (Slice C).
   - `run_full_sync()` = pull + reconcile. `start_background_sync()` = daemon, app-start + every
@@ -86,42 +87,78 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
 
-### Phase 3 — Customers ↔ Agencies + vehicle bridge
+### Phase 3 — Customers ↔ Agencies + estimate customer flow
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
-  Linking fills only EMPTY contact fields; never overwrites the agency name. Routes
-  `GET /customers/preview`, `POST /customers/import`. Tests: `tests/test_qb_customer_sync.py` (12).
+  The pull stores the full operational customer profile (contact/title, phones, email, website,
+  notes, taxable flag, and billing/shipping addresses). Linking fills only EMPTY local fields;
+  it never overwrites the agency name or a populated app field. Routes
+  `GET /customers/preview`, `POST /customers/import`. Tests: `tests/test_qb_customer_sync.py` (14).
 - **Slice 2 (up-sync):** `api_client.create_customer()` / `update_customer()` (sparse) /
   `read_customer()` / `find_customer_by_display_name()`. `agency_service.set_qb_customer_id()`
-  writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push).
-  `qb_sync_service.push_agency()` + `push_agency_in_background()`. Tests: `tests/test_qb_agency_push.py` (12).
-- **Slice 3 (per-vehicle job bridge):** `IndividualUnit` gains `qb_job_id` / `qb_estimate_id` /
-  `qb_invoice_id`. `api_client.create_job(parent_id, display_name)` (Customer with `Job=true` +
-  `ParentRef`). `qb_sync_service.push_vehicle_job(project_id, individual_id)` — ensures the agency
-  Customer exists, creates/reuses a uniquely-named job, writes `qb_job_id` back. Idempotent.
+  writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push). A new app agency
+  first reuses an exact top-level QB Customer name match to avoid a duplicate; otherwise it creates
+  only a Customer record. No Customer save can create a financial transaction.
+  `qb_sync_service.push_agency()` + `push_agency_in_background()`. Tests: `tests/test_qb_agency_push.py` (13).
+- **Legacy Slice 3 (per-vehicle job bridge):** `IndividualUnit.qb_job_id` and
+  `push_vehicle_job()` remain only so older records can be read and older estimates are not
+  orphaned. New estimate creation does not call this path.
 
-**Critical QBO fact:** the v3 API cannot create Projects (`Customer.IsProject` is read-only).
-We use **sub-customers/jobs** as the durable per-vehicle container. (Intuit has heavily restricted
-job→Project conversion; treat the sub-customer as durable, not a stepping stone.)
+**Current estimate customer rule:** an estimate always uses the agency's top-level `CustomerRef`
+and the vehicle's true QBO `ProjectRef`. The free-tier workflow creates the Project manually in
+QuickBooks, then stores its Project ID (or a Project page URL) on the individual vehicle through `POST /projects/bind`;
+the app does not create a sub-customer. Project names are stable and self-identifying:
+`Agency | Build {build year} | Unit {number}`. A unit number is required before binding a Project.
+The app requires agency name, contact name/email/phone, and billing street/city/state/postal code
+before it can create an estimate. If the agency is not linked, it first reuses an exact top-level
+Customer name match; otherwise it asks the user to confirm the complete customer profile before
+creating one. A confirmed profile update is a sparse Customer-only write. The vehicle's
+stable project name is written into `CustomerMemo` and `PrivateNote`, and persisted with
+`IndividualUnit.qb_project_id`; no new sub-customer is created.
+
+**True QBO Projects are a separate capability:** Intuit documents a Project API, but it requires
+the company's Projects feature plus a premium/restricted Project Management scope. The current
+desktop OAuth scope is the regular accounting scope, so the app does not create or list Projects
+programmatically. The standard Estimate REST request does accept a known `ProjectRef`, which is
+why manually created Projects can be linked at no additional API-tier cost. The premium API is
+only needed to automate Project creation/listing. See Intuit's
+[Project API getting started](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/get-started)
+and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/use-cases).
 
 ### Estimates
 - `api_client.create_estimate()` + `fetch_income_accounts()` + `create_item()` (last two
   sandbox-seeder only).
 - `qb_estimate_service.py`: `resolve_build_lines()` (part→QB-item by part number),
-  `validate_estimate()` (offline dry-run), `create_estimate()` (BLOCKS unless every part is
-  linked/active/priced; ensures the job; writes `qb_estimate_id` back), `create_estimates_batch()`.
+  `validate_estimate()` (offline dry-run), `bind_project()` (local link to a manually created QBO
+  Project), `create_estimate()` (BLOCKS unless every part is
+  linked/active/priced; uses QB sales descriptions, consolidates duplicate SKUs, sorts by brand,
+  resolves the top-level customer, requires a true QBO Project, writes `ProjectRef`, and writes
+  `qb_estimate_id` back), `create_estimates_batch()`.
+  The standard Accounting-only connection deliberately does not write
+  sales-form custom fields: modern QuickBooks fields require their paid Custom
+  Fields API to resolve the company-specific field IDs. This keeps a custom
+  form mismatch from blocking the non-posting estimate create. The optional
+  phone, vehicle, sales-ID, and unit header fields therefore remain managed in
+  QuickBooks unless that paid scope is enabled later.
+  The create dialog reports when QB customer price levels are enabled. The accounting API does
+  not expose custom price-level rates, so the estimate uses the synced sandbox item rates until
+  the user reviews/adjusts them in QuickBooks. See Intuit's
+  [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
-- UI: per-vehicle **📋 QB Estimate** + footer **Create QB Estimates** on the Builds tab
-  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (13).
+- UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
+  The batch screen first checks every configured vehicle, lets the user set up missing Projects,
+  and creates only the ready estimates after an explicit confirmation.
+  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (25).
 
 ### Full route list (`/api/quickbooks/*`)
-`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET customers/preview` ·
+`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customers/preview` ·
 `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` ·
-`POST customers/import` · `POST push-vehicle-job` · `POST estimates/validate` ·
-`POST estimates/create` · `POST estimates/create-batch`
+`POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
+`POST projects/bind` ·
+`POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
 
 **Test totals**: full suite ~1593 pass, 1 skipped. QB-specific: service (13), sync (22),
-customer-sync (12), agency-push (12), estimate (13), seed-sandbox (5).
+customer-sync (14), agency-push (13), estimate (25), seed-sandbox (5).
 
 ---
 
@@ -171,10 +208,46 @@ entry gains `qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_syn
 items are flagged, never deleted (old builds may reference discontinued parts). Triggers: app start
 (background), 30-min poll, manual "Sync Now".
 
+### Future: reviewed QBO catalog-change queue (owner decision)
+
+The recurring catalog sync must become **reviewed-first** before it automatically creates or
+materially changes Vehicle Builder catalog records. This is intentionally documented now, but is
+not part of the current go-live scope.
+
+**Current behavior, until this is built:** reconciliation automatically updates the QB-owned fields
+(`sku`, price, sales description, active flag) of an already linked SKU. A QBO item that is added
+later is only present in the local item cache; it is not automatically made into a new Builder
+product. A QBO item that disappears from the active-item pull is retained in Builder and marked
+inactive; it is never physically deleted. A pre-added `qb_pending` SKU is the one exception: it can
+link itself automatically when its matching QBO item becomes available.
+
+**Required future behavior:** every sync detects, records, and presents these event types: **new
+item**, **changed linked item**, **newly inactive/missing item**, and **pending item matched**. A
+durable, team-visible `quickbooks_catalog_changes.json` record (not the disposable item cache and
+not an application log) must retain the QBO item ID/SKU, detection time, before/after field diff,
+raw QBO snapshot, proposal source, review status, reviewer, decision time, and any edited metadata.
+The QuickBooks settings area should show a count and a review screen with **Approve**, **Approve with
+edits**, and **Dismiss/keep current metadata** actions. Resolved rows remain in the history so the
+team has an audit trail.
+
+Approval is the only path that applies a proposal to `parts_db.json`; it must use the normal
+`save_config_file(...)`/shared-settings proposal path. The sync remains read-only toward QuickBooks:
+the app must never create, edit, or delete a production QBO Item. A missing/inactive item should
+offer **mark inactive** only — never delete an app SKU that historical builds may reference.
+
+**Whelen auto-enrichment for a new QBO item:** when the item can be matched exactly by normalized
+SKU against `docs/reference/WHELEN_PRICE_LIST_PL26.md`, create a *proposed* Builder record and
+pre-fill only high-confidence metadata: manufacturer, model/friendly sales description, known light
+classification, color fields, and lens where the reference data supports them. Leave a part-type
+home, placement, render asset, and any uncertain field for the reviewer. The log must identify the
+reference source and each inferred field; reviewer edits always win. An unmatched or low-confidence
+Whelen SKU still becomes a review proposal, but with no guessed metadata.
+
 ### Customer/estimate bridge (VB → QBO)
-Agency = QBO Customer; per-vehicle build = sub-customer/job (Customer `Job=true` + `ParentRef`);
-estimate = non-posting Estimate attached to the job. Estimate→Invoice conversion is intentionally
-an explicit user step in the QBO UI (a guarded in-app convert is a future extension).
+Agency = QBO Customer; per-vehicle build = a true QBO Project under that Customer (manually
+created and locally bound until premium Project API access is enabled); estimate = non-posting
+Estimate attached to both the agency Customer and Project. Estimate→Invoice conversion is
+intentionally an explicit user step in the QBO UI (a guarded in-app convert is a future extension).
 
 ### `quickbooks_config.json` (non-secret metadata only)
 Plain JSON in workspace root, git-ignored, never written to the config-store or SharePoint mirror.
@@ -199,15 +272,17 @@ GOTCHAS):
 - **QB data is read-only for the catalog except linked parts**: `sync_items` never writes parts_db;
   only explicit `link_item`/`unlink_item`/`reconcile_linked_parts` touch it, and reconcile only
   writes QB-owned fields on already-linked products.
-- **Customer import never clobbers user data**: fills only empty contact fields; never overwrites
-  agency names.
+- **Customer import never clobbers user data**: fills only empty local customer-profile fields;
+  never overwrites agency names or populated app values.
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert
   `save_settings_to_cloud_batch_in_background` to uploading a captured snapshot, or deletions resurrect.
 - **List action buttons use data-attributes + delegation, never inline `onclick` with interpolated
   names**: `esc()` does not escape quotes; apostrophes in names break inline handlers.
 - **`.gitignore`** covers `quickbooks_config.json` and `quickbooks_items_cache.json`.
-- **Estimates are non-posting; never create posting transactions.** The app may write Customers,
-  sub-customer jobs, and Estimates only — never Invoices/Payments/journal entries.
+- **Estimates are non-posting; never create posting transactions.** The app may write Customers
+  and Estimates; a project bind is a local-only link to a Project created in QBO's UI. The legacy
+  job endpoint remains available for old/manual compatibility but is not used by new estimate
+  creation — never write Invoices/Payments/journal entries.
 - **Item creation is sandbox-only.** `tools/qb_seed_sandbox.py` HARD-REFUSES unless
   `get_status().environment == "sandbox"`. Never create Items in a production realm.
 - **Estimate write-back can't re-trigger pushes.** `agency_service.set_qb_customer_id` and the unit
@@ -284,7 +359,7 @@ US (runs locally on user machines); no fixed IP (desktop app).
 
 **§1 How your app operates:** internal desktop app generating vehicle build sheets for law
 enforcement / emergency-vehicle upfits; QB integration syncs the parts catalog (Items) and creates
-Customer/sub-customer/Estimate records; **internal use only**; **1 company**; not public/app-store.
+Customer/Estimate records; **internal use only**; **1 company**; not public/app-store.
 *(If the live form asks "integrate with other platforms," answer YES — Microsoft SharePoint + GitHub.
 The merged-doc text above said "No"; the owner corrected this to YES.)*
 
@@ -292,7 +367,7 @@ The merged-doc text above said "No"; the owner corrected this to YES.)*
 workstation); never transmitted to any server other than Intuit's API; not shared with third
 parties; used only to operate the app; retained locally; user can disconnect (clears tokens).
 
-**§3 API usage:** reads **Items + Customers**; writes **Customers, sub-customer jobs, and
+**§3 API usage:** reads **Items + Customers + Preferences**; writes **Customers and
 non-posting Estimates**; **never** writes Invoices/Payments/journal entries or any posting
 transaction; minimum scope `com.intuit.quickbooks.accounting`; handles HTTP errors with
 user-visible messages; logs `intuit_tid` only.

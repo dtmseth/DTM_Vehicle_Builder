@@ -74,6 +74,18 @@ CASES: list[tuple[str, str, str, dict]] = [
         "/api/parts-db/tracer-heads?product_id=whelen_2_lamp_tracer&mode=duo&secondary=white&lens=clear",
         {},
     ),
+    (
+        "outer_edge_pillar_heads_duo",
+        "GET",
+        "/api/parts-db/outer-edge-pillar-heads?product_id=whelen_ion_rear_pillar&part_number=RPWD50&secondary=white",
+        {},
+    ),
+    (
+        "outer_edge_pillar_heads_trio",
+        "GET",
+        "/api/parts-db/outer-edge-pillar-heads?product_id=whelen_ion_rear_pillar&part_number=RPWT50&secondary=white",
+        {},
+    ),
     ("category_skus", "GET", "/api/parts-db/category-skus?type=lights&category=scene", {}),
     ("category_skus_all", "GET", "/api/parts-db/category-skus?all=1", {}),
     (
