@@ -46,12 +46,13 @@ Update this document as release decisions are made; it is the single short recor
 
 | Item | Current result | Release disposition |
 | --- | --- | --- |
-| Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the dedicated integration branch to `main` | Wait for automated checks, then merge normally |
+| Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the dedicated integration branch to `main`; the latest local verification fixes are ready to push | Await the refreshed hosted checks, then merge normally |
 | Working tree | Source and reference changes are committed; local `.hermes/` scratch notes remain intentionally untracked and excluded | Ready |
 | Contract suite | 54/54 passed after reviewing and recording the intended pit-bar/wing-wrap and rendered-antenna data changes | Ready |
 | Golden masters | 6/6 passed after visual review and deliberate post-integration re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, build-card quantities, and the current image-sizing behavior |
 | UI smoke suite | 15/15 passed after integration with no browser errors, external requests, or cloud access | Ready |
-| Full cloud-off test suite | 1,924 passed, 1 skipped after integration | Ready |
+| Full cloud-off test suite | 1,924 passed, 1 skipped after the final v3.0.0 release-check fixes | Ready |
+| Production dependency audit | Fresh Python 3.13 environment resolves cleanly with no known vulnerabilities | Ready; hosted audit also updates its installer before scanning |
 
 ### Open release gates
 
@@ -74,6 +75,9 @@ Update this document as release decisions are made; it is the single short recor
    Part Picker manifest initialization, and reran every gate above.
 6. **Complete:** public QuickBooks controls are hidden behind the release flag. Do not enable them
    until the separate QuickBooks production gate is complete.
+7. **Complete locally:** raised the release dependencies past the current audit advisories, corrected
+   the case-sensitive push-bumper asset reference caught by Linux CI, and updated the audit job's
+   installer before scanning. The refreshed hosted PR checks remain the final merge gate.
 
 ## Release sequence
 
@@ -110,7 +114,7 @@ Update this document as release decisions are made; it is the single short recor
 ### 5. Review and merge to `main`
 
 - **Complete:** [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is open from the tested integration branch to `main`.
-- Review the final diff and CI results, then merge normally.
+- Review the final diff and refreshed CI results, then merge normally.
 - Confirm the ordinary `main` build artifacts complete on both macOS and Windows.
 
 ### 6. Publish and validate
