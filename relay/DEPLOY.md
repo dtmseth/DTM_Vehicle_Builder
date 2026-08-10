@@ -33,7 +33,7 @@ The live URL will look like `https://magical-name-12345.netlify.app`.
 3. Connect to your repo
 4. Set **Base directory** to `relay`
 5. Leave Build command empty
-6. Set **Publish directory** to `relay/public`
+6. Set **Publish directory** to `public`
 7. Click **Deploy site**
 
 ### Redirect URI to register in Intuit
@@ -69,14 +69,36 @@ https://<your-vercel-project>.vercel.app/api/qb-callback
 
 ## After Deploying
 
-1. Copy the live HTTPS redirect URI (from Netlify or Vercel)
-2. In your Intuit Developer Dashboard → **Production tab** → **Redirect URIs** → add the URL
-3. In DTM Vehicle Builder → Settings → General → QuickBooks → App Registration:
-   - Paste your **Production Client ID** and **Client Secret**
-   - Set Environment to **production**
-   - Paste the relay URI as **Redirect URI**
-   - Click **Save Settings**
-4. Click **Connect to QuickBooks** — the browser will open to Intuit's consent page
+1. Copy the deployed origin exactly, without a trailing slash (for example,
+   `https://dtm-qb-relay.netlify.app`). Do not invent or pre-enter a hostname before the provider
+   has assigned it.
+2. Verify all public assessment routes and the callback response:
+
+   ```bash
+   bash verify_deployment.sh https://<deployed-origin> netlify
+   ```
+
+   Use `vercel` as the second argument for a Vercel deployment. The explicit provider argument also
+   handles custom domains correctly.
+
+3. Enter the following values in Intuit, substituting only the verified deployed origin:
+
+   | Intuit field | Netlify value | Vercel value |
+   |---|---|---|
+   | App host domain | `<deployed-origin-hostname>` | `<deployed-origin-hostname>` |
+   | Launch URL | `<deployed-origin>/` | `<deployed-origin>/` |
+   | Connect URL | `<deployed-origin>/connect/` | `<deployed-origin>/connect/` |
+   | Reconnect URL | `<deployed-origin>/reconnect/` | `<deployed-origin>/reconnect/` |
+   | Disconnect URL | `<deployed-origin>/disconnect/` | `<deployed-origin>/disconnect/` |
+   | Production redirect URI | `<deployed-origin>/.netlify/functions/qb-callback` | `<deployed-origin>/api/qb-callback` |
+
+4. In the Intuit Developer Dashboard → **Production** → **Redirect URIs**, add the verified
+   Production redirect URI.
+5. After Intuit approves the app and issues Production credentials, enter them only in DTM Vehicle
+   Builder → Advanced Settings → **QB Catalog Preview**. Paste the same Production redirect URI.
+   Do not switch the standard QuickBooks profile to Production.
+6. Stop before selecting **Connect production preview** until the owner is ready to authorize and
+   review the production mapping workflow.
 
 ---
 

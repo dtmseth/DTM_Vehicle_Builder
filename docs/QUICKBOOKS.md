@@ -445,10 +445,28 @@ Reference when completing the questionnaire in the Intuit Developer Dashboard (o
 order). Complete the §5 sandbox test cycle first — Intuit rejects submissions where testing isn't done.
 
 **Info to have ready:** App name `DTM Vehicle Builder`; category Accounting/Internal business tool;
-country US; **1 realm** (our company only); Launch/Disconnect URL `https://<domain>`; Production
-redirect `https://<domain>/.netlify/functions/qb-callback`; dev redirect
-`http://localhost:7655/api/quickbooks/callback`; scope `com.intuit.quickbooks.accounting`; hosting
-US (runs locally on user machines); no fixed IP (desktop app).
+country US; **1 realm** (our company only); Intuit Single Sign-on **No**; scope
+`com.intuit.quickbooks.accounting`; hosting US (runs locally on user machines); no fixed IP
+(desktop app). Deploy the relay before entering any Production URL. Use the provider-assigned HTTPS
+origin exactly; do not invent a host domain.
+
+For a verified deployed origin such as `https://dtm-qb-relay.netlify.app`, enter:
+
+| Intuit field | Value |
+|---|---|
+| App host domain | `dtm-qb-relay.netlify.app` (hostname only) |
+| Launch URL | `https://dtm-qb-relay.netlify.app/` |
+| Connect URL | `https://dtm-qb-relay.netlify.app/connect/` |
+| Reconnect URL | `https://dtm-qb-relay.netlify.app/reconnect/` |
+| Disconnect URL | `https://dtm-qb-relay.netlify.app/disconnect/` |
+| Production redirect URI (Netlify) | `https://dtm-qb-relay.netlify.app/.netlify/functions/qb-callback` |
+| Production redirect URI (Vercel alternative) | `https://<verified-vercel-host>/api/qb-callback` |
+| Development redirect URI | `http://localhost:7655/api/quickbooks/callback` |
+
+The hostname above is an example shape, not a reserved or deployed DTM hostname. Substitute the
+actual origin only after `relay/verify_deployment.sh <origin> netlify` (or `vercel`) passes. The public connect/reconnect pages are
+instructions for this non-SSO internal desktop app; OAuth itself starts only from the isolated
+**QB Catalog Preview** profile on the authorized workstation.
 
 **§1 How your app operates:** internal desktop app generating vehicle build sheets for law
 enforcement / emergency-vehicle upfits; QB integration syncs the parts catalog (Items) and creates
