@@ -8,6 +8,33 @@
 
 ---
 
+## Post-v3.0.0 release checkpoint — 2026-08-10
+
+**Public release status: complete.** Version
+[v3.0.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.0.0) is published from
+`main` after the Part Picker rebuild, two targeted legacy-project rebuilds, project/build UI
+cleanup, PowerPoint-manifest overhaul, and preview/placement fixes. Public QuickBooks controls are
+hidden by design.
+
+Installer testing also produced a permanent cloud-safety rule: startup and periodic sync load
+project records, not the full historical Drafts archive. The app retrieves a draft when its build
+is opened and protects a newer local edit. This correction shipped in the final release build.
+
+**Next direction:** finish the automatic-update rollout check, then choose one deliberate stream:
+
+1. **QuickBooks production safety** — implement the isolated catalog preview / mapping-report step
+   before connecting the real company. This is the recommended next QB work because the production
+   inventory layout differs from sandbox; it is not authorization to enable routine production
+   sync.
+2. **Catalog and picker data** — scope Kit SKUs and continue product-name / placement curation.
+3. **Architecture** — extract the `parts_db` repository seam, then continue the Phase 4 legacy
+   consumer migration. This remains important, but is not the immediate user-facing priority.
+
+The phase snapshots below are retained as historical design context. Where an older status conflicts
+with this checkpoint or the current handoff, this checkpoint wins.
+
+---
+
 ## 1. Vision
 
 Two ideas drive everything below:
