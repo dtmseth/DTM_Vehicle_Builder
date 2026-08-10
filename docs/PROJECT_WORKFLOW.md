@@ -32,6 +32,18 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 ---
 
+## Cloud sync behavior
+
+At startup and during periodic sync, the app retrieves **project records only**. It does not
+download the full historical drafts archive: that caused SharePoint throttling and delayed the
+project list on first launch. When a user opens a build, the app fetches only that requested draft
+if it is absent or needs refresh. A locally newer unsynced draft must be kept rather than replaced
+by that cloud refresh.
+
+This project-first behavior is intentional release safety, not a cache optimization to remove.
+
+---
+
 ## API ownership
 
 | Operation | Route | Service |

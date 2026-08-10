@@ -1,5 +1,48 @@
 # Session Handoff — Picker flaw-fix pass (2026-07-13/14)
 
+## 2026-08-10 v3.0.0 public-release checkpoint — CURRENT
+
+The historical entries below explain how the picker was rebuilt. This section supersedes their
+"next" instructions.
+
+### Released baseline
+
+- **v3.0.0 is published** at
+  [the public GitHub release](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.0.0).
+  It is a stable Mac + Windows release from `main` commit
+  `4e271b4636ee33fdc844ec8241103971aacc470f`.
+- The two targeted legacy projects were rebuilt through the new Part Picker. The release also
+  includes the project/build UI and PowerPoint-manifest overhaul, per-part comments, project-wide
+  notes, visual part editing, and the finalized preview placement/render fixes.
+- Public QuickBooks controls are deliberately hidden. The catalog and estimate foundation remains,
+  but production QuickBooks is a separately approved effort.
+- The installer-discovered SharePoint startup issue is fixed: startup/periodic sync loads projects
+  first; a build draft is downloaded only when that build is opened. A locally newer draft is not
+  replaced, and Graph failures are sanitized before reaching logs or the UI.
+
+### Release evidence and current watch
+
+- Verification before publish: full cloud-off suite **1,928 passed, 1 skipped**; UI smoke
+  **15/15**; contract, golden, packaging, and hosted post-merge checks passed.
+- Corrected installers are now being received by devices with the previous version. The owner has
+  confirmed the corrected app works; finish the ordinary over-install check (version 3.0.0,
+  projects visible, and one build opens) before closing out rollout monitoring.
+- Keep normal development cloud-off (`DTM_CLOUD=0`). Do not restore full historical-draft hydration
+  at app startup; see `docs/GOTCHAS.md`.
+
+### Recommended next work
+
+1. **Do not connect production QuickBooks yet.** First build an isolated, read-only production
+   catalog preview and exact-SKU mapping report. The production company has a different inventory
+   layout, so no routine reconciliation or background polling may start before owner review.
+   `docs/QUICKBOOKS.md` §§6–7 are the governing checklist.
+2. Once that safety plan is either underway or intentionally parked, choose the next parts-data
+   investment: scope Kit SKUs (the next explicit picker feature) and continue sales-readable
+   catalog curation. The larger parts-db repository/legacy-consumer migration is valuable but not
+   an urgent release follow-up.
+3. Use any real user reports from v3.0.0 to prioritize small picker/render fixes; do not reopen
+   historic flaw items solely because this handoff mentions them.
+
 ## 2026-08-06 continuation update
 
 This continuation preserved the already-dirty tree, did not stage/commit/reset anything, and ran

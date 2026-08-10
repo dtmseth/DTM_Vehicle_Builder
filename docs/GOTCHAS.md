@@ -121,3 +121,15 @@ you're touching. New gotchas get appended to the bottom with a date.
     or 12/12;
     the current command is still `.venv/bin/python tools/ui_smoke/run_smoke.py`, but expected
     success is 15/15.
+
+---
+
+## 2026-08-10 release follow-up
+
+25. **Cloud startup is project-first.** Startup and periodic SharePoint sync must use the
+    project-only path (`include_drafts=False`); loading every historical draft at boot causes
+    throttling and an apparently frozen app. Retrieve only the requested draft when its build opens,
+    and preserve a locally newer unsynced draft during that refresh.
+26. **Do not expose Graph transport details.** SharePoint failures must become sanitized,
+    status-only errors before reaching logs or API responses. Redirect URLs can carry temporary
+    authorization query parameters, so do not retain or chain the raw HTTP exception.
