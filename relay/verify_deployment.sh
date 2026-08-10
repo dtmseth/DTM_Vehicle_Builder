@@ -44,7 +44,8 @@ if [[ "$location" != "http://localhost:7655/api/quickbooks/callback" ]]; then
   echo "FAIL callback Location header was not the local DTM callback"
   exit 1
 fi
-if [[ "${cache_control,,}" != *"no-store"* ]]; then
+cache_control_lower="$(printf '%s' "$cache_control" | tr '[:upper:]' '[:lower:]')"
+if [[ "$cache_control_lower" != *"no-store"* ]]; then
   echo "FAIL callback did not return Cache-Control: no-store"
   exit 1
 fi
