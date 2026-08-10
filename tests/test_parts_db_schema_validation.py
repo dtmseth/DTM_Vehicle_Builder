@@ -80,6 +80,16 @@ class TestPartsDbValidator:
                                     "model_aliases": ["PIONEER", ""]}},
             })
 
+    def test_rejects_non_boolean_center_single_mirror_render_metadata(self):
+        with pytest.raises(ValueError, match="center_single_at_mirror_location"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {
+                    "manufacturer_id": "whelen",
+                    "model": "Pioneer",
+                    "render": {"center_single_at_mirror_location": "true"},
+                }},
+            })
+
     @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required"])
     def test_rejects_invalid_product_location_and_pa_metadata(self, field):
         with pytest.raises(ValueError, match=field):

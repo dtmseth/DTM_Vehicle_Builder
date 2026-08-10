@@ -310,8 +310,9 @@ location" rows.
   `default_views`, `render_quantity_policy`, `co_part_rules`); planner hydration consumes it for
   picker-built parts such as siren speakers, push bumpers, Pit Bars, and Wing Wraps. Do not re-add
   these rules to legacy per-SKU files.
-  A product may override the part-type profile through `render.size_rule_id` or exact
-  dimensions, and a concrete SKU may carry a rare `size_rule_id` override. Older product-name
+  A product may override the part-type profile through `render.size_rule_id`, exact dimensions,
+  or `center_single_at_mirror_location` for a one-head mirrored mount, and a concrete SKU may
+  carry a rare `size_rule_id` override. Older product-name
   rows can resolve through a curated product `model_aliases` identity. Resolution is SKU →
   product → part type → Small default; it never uses a substring or product-name size rule.
 - **Setina PB450L lighted push bumpers.** Recognized 2/4/6-light PB450L SKUs inject render-only

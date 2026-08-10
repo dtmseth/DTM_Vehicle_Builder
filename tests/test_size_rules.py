@@ -224,6 +224,4 @@ def test_every_retired_light_identity_has_an_explicit_parts_db_profile(config):
     }
 
     for identity, profile_id in expected.items():
-        assert _parts_db_render_for_part(identity, RawPartsDb()) == {
-            "size_rule_id": profile_id
-        }
+        assert _parts_db_render_for_part(identity, RawPartsDb())["size_rule_id"] == profile_id

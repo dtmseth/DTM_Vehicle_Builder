@@ -611,7 +611,9 @@ corresponding `part_catalog.json` fields. `size_rule_id` is an explicit referenc
 `vehicle_layouts.json`'s `fixtures` map rather than a picker-selected location.
 
 Products may carry the same optional `render.size_rule_id` and `render.size_per_view` fields
-when one product needs a more specific setting than its part type. A concrete
+when one product needs a more specific setting than its part type. A product may also set
+`render.center_single_at_mirror_location: true` when a one-head selection should occupy the
+center of a mirrored mount while multi-head selections retain the mount's normal pattern. A concrete
 `products.<product_id>.part_numbers[]` entry may additionally carry `size_rule_id` as a
 last-resort SKU override. Older rows whose `part_number` contains a model name can resolve through
 the product's explicit `model_aliases`. The planner resolves size in the order SKU → product →

@@ -730,7 +730,14 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                         planned.warnings.append(f"{view}: no location supplied for {part.name}")
                     continue
 
-            quantity_policy = spec.get("render_quantity_policy", "location_slots")
+            # Library entries (per-product) may override the part_type's policy.
+            # A spec like "front_scene" defaults to location_slots, but a Pioneer
+            # placed in that row is a single-head fixture-style product and
+            # should render as one centered icon, not a mirror pair.
+            quantity_policy = (
+                lib_entry.get("render_quantity_policy")
+                or spec.get("render_quantity_policy", "location_slots")
+            )
             slot_count = int(location.get("slot_count", 1))
 
             if quantity_policy == "single_per_line":
@@ -768,9 +775,33 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 slot_count = outer_edge["head_count"]
             slot_indices: list[int] | None = qty_overrides.get("slot_indices")
 
-            effective_pattern = co_overrides.get(
-                "pattern", qty_overrides.get("pattern", location.get("pattern", "single"))
+            # A normal single-per-line product is one centered icon even at a
+            # mirror location (for example a Pioneer on top of a bumper).
+            # Front Wing Wraps are one billable fixture but deliberately draw
+            # two physical halves, so retain their authored mirror pattern.
+            is_wing_wrap_pair = (
+                spec.get("part_id") == "wing_wraps"
+                and int(location.get("render_slot_count", 1)) > 1
             )
+            default_pattern = (
+                "single"
+                if quantity_policy == "single_per_line"
+                and not is_wing_wrap_pair
+                else location.get("pattern", "single")
+            )
+            effective_pattern = co_overrides.get(
+                "pattern", qty_overrides.get("pattern", default_pattern)
+            )
+            # A one-head Pioneer at a mirrored mount (such as the top of a
+            # push bumper) occupies the center. Multi-head Pioneer selections
+            # still use the location's authored pattern and head count.
+            if (
+                product_render.get("center_single_at_mirror_location")
+                and quantity_policy == "quantity_as_slots"
+                and max(1, part.quantity or 1) == 1
+                and location.get("pattern") == "mirror"
+            ):
+                effective_pattern = "single"
             # Scene heads are selected as an explicit count in the picker.  A
             # single-coordinate scene location is an anchor, not a one-head
             # cap: one stays at that anchor while two or more need a visible
@@ -833,6 +864,12 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 else location["y"]
             )
 
+            effective_size_override = (
+                dict(_INNER_EDGE_SIZE_PER_VIEW[view])
+                if inner_edge and view in _INNER_EDGE_SIZE_PER_VIEW
+                else merged_size_per_view.get(view) or None
+            )
+
             placement = PlannedPlacement(
                 part_id=spec["part_id"],
                 part_name=part.name,
@@ -860,14 +897,12 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                     if outer_edge else location.get("v_spacing") or None
                 ),
                 h_spacing_units=("icon_width" if inner_edge else location.get("h_spacing_units", "relative_image")),
-                size_override=(
-                    dict(_INNER_EDGE_SIZE_PER_VIEW[view])
-                    if inner_edge and view in _INNER_EDGE_SIZE_PER_VIEW
-                    else merged_size_per_view.get(view) or None
-                ),
+                size_override=effective_size_override,
                 rotation=(
-                    _OUTER_EDGE_PILLAR_ROTATION
-                    if outer_edge else float(location.get("rotation", 0))
+                    _OUTER_EDGE_PILLAR_ROTATION if outer_edge else (
+                        float(location.get("rotation", 0))
+                        + float((effective_size_override or {}).get("rotation", 0))
+                    ) % 360
                 ),
                 flip_h=bool(location.get("flip_h", False)),
                 flip_v=bool(location.get("flip_v", False)),

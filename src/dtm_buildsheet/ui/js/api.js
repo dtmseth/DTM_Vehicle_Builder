@@ -102,6 +102,30 @@ async function _copyToastMessage(message){
   }
 }
 
+// Once a part image's aspect ratio is known, sync the size-input W/H fields.
+// If both are blank, seed them with a sensible default (~1.5" on the longer
+// axis) so the user is editing from a visible baseline rather than zero. If
+// one side already has a value and the lock is engaged, derive the other.
+function applyArToSizeInputs(view, ratio, wId, hId, lockId, defaultLongDim){
+  if(!ratio || ratio <= 0) return;
+  const wEl = $(wId), hEl = $(hId);
+  if(!wEl || !hEl) return;
+  const wVal = parseFloat(wEl.value) || 0;
+  const hVal = parseFloat(hEl.value) || 0;
+  const lockBtn = lockId ? $(lockId) : null;
+  const locked = !lockBtn || lockBtn.dataset.locked === "true";
+  if(wVal <= 0 && hVal <= 0){
+    const longDim = defaultLongDim || 1.5;
+    const w = ratio >= 1 ? longDim : longDim * ratio;
+    const h = ratio >= 1 ? longDim / ratio : longDim;
+    wEl.value = w.toFixed(2);
+    hEl.value = h.toFixed(2);
+    return;
+  }
+  if(!locked) return;
+  if(wVal > 0 && hVal <= 0)      hEl.value = (wVal / ratio).toFixed(2);
+  else if(hVal > 0 && wVal <= 0) wEl.value = (hVal * ratio).toFixed(2);
+}
 function toast(msg, type=""){
   const t=$("toast");
   const message = String(msg || "");
@@ -323,6 +347,11 @@ function _renderUpdateStateRow(state){
     case "platform_unsupported":
       txt = `✅ v${cur} (auto-update unavailable on this platform)`;
       title = "Auto-update isn't supported on this OS — download new releases manually when notified.";
+      break;
+    case "dev_build":
+      txt = `🛠 Dev build · v${cur} (auto-update disabled)`;
+      color = "var(--muted)";
+      title = "You're running from a source checkout — dev IS the most-current copy, so auto-update is intentionally disabled.";
       break;
     case "up_to_date":
     default:

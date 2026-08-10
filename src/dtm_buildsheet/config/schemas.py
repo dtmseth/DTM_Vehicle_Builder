@@ -344,6 +344,13 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(f"parts_db.json product '{product_id}' render must be an object")
             if "size_rule_id" in render and not isinstance(render["size_rule_id"], str):
                 raise ValueError(f"parts_db.json product '{product_id}' render.size_rule_id must be a string")
+            if (
+                "center_single_at_mirror_location" in render
+                and not isinstance(render["center_single_at_mirror_location"], bool)
+            ):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' render.center_single_at_mirror_location must be a boolean"
+                )
         aliases = spec.get("model_aliases")
         if aliases is not None and not (
             isinstance(aliases, list) and all(isinstance(alias, str) and alias.strip() for alias in aliases)

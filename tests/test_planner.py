@@ -193,6 +193,32 @@ def test_picker_pioneer_slimline_renders_selected_scene_head_count(config, quant
         assert placement.pattern == "horizontal"
 
 
+def test_pioneer_on_top_of_push_bumper_renders_one_centered_head(config):
+    """A single Pioneer must not inherit the bumper location's mirror pair."""
+    part = PartInput(
+        name="Front Scene 1",
+        line_id="pioneer-top-of-bumper",
+        part_type="front_scene",
+        manufacturer="Whelen",
+        part_number="Pioneer SlimLine",
+        quantity=1,
+        location="TOP OF PUSH BUMPER",
+        components=[{"part_number": "PSL1BB", "quantity": 1}],
+        picker_config={"count": 1, "_noColor": True},
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "PIONEER-TOP-OF-BUMPER"},
+        parts=[part],
+        notes={},
+    )
+
+    placement = build_plan(project, config).planned_parts[0].placements[0]
+
+    assert placement.pattern == "single"
+    assert placement.anchor["x"] == pytest.approx(0.5)
+    assert len(placement.instances) == 1
+
+
 def test_inner_edge_fst_renders_ion_size_head_groups_not_bar_bitmap(config):
     part = PartInput(
         name="Interior Light Bar", line_id="fst-1", part_type="front_interior_light_bar",

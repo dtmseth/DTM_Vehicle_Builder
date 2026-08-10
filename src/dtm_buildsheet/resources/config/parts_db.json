@@ -11346,7 +11346,8 @@
         }
       ],
       "render": {
-        "size_rule_id": "PN"
+        "size_rule_id": "PN",
+        "center_single_at_mirror_location": true
       }
     },
     "whelen_pioneer_nano": {
@@ -11384,7 +11385,8 @@
         }
       ],
       "render": {
-        "size_rule_id": "PN"
+        "size_rule_id": "PN",
+        "center_single_at_mirror_location": true
       }
     },
     "whelen_pioneer_plus": {
@@ -11439,7 +11441,8 @@
         }
       ],
       "render": {
-        "size_rule_id": "PN"
+        "size_rule_id": "PN",
+        "center_single_at_mirror_location": true
       }
     },
     "whelen_pioneer_slimline": {
@@ -11494,7 +11497,8 @@
         }
       ],
       "render": {
-        "size_rule_id": "PN"
+        "size_rule_id": "PN",
+        "center_single_at_mirror_location": true
       }
     },
     "whelen_micron": {

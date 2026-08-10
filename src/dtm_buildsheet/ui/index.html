@@ -1342,9 +1342,13 @@
             </div>
 
             <div class="pv-insp-row">
-              <span class="pv-insp-lbl">Size ×</span>
-              <input type="range"  id="pv-insp-scale"     min="0.25" max="4" step="0.05" value="1" class="pv-insp-range">
-              <input type="number" id="pv-insp-scale-num" min="0.25" max="4" step="0.05" value="1" class="pv-insp-num">
+              <span class="pv-insp-lbl">Width <small style="color:var(--muted);font-weight:400">in.</small></span>
+              <input type="number" id="pv-insp-size-w" min="0.05" max="12" step="0.01" value="" class="pv-insp-num" placeholder="—">
+              <button type="button" id="pv-insp-ar-lock" class="pv-insp-ar-lock" data-locked="true" title="Lock aspect ratio">🔒</button>
+            </div>
+            <div class="pv-insp-row">
+              <span class="pv-insp-lbl">Height <small style="color:var(--muted);font-weight:400">in.</small></span>
+              <input type="number" id="pv-insp-size-h" min="0.05" max="12" step="0.01" value="" class="pv-insp-num" placeholder="—">
             </div>
 
             <div class="pv-insp-row">

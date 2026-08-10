@@ -17,6 +17,7 @@ let _pvView             = "front";// active view tab
 let _pvInspKey          = null;   // override_key currently open in inspector
 let _pvInspPl           = null;   // placement object open in inspector
 let _pvInspPp           = null;   // part object open in inspector
+let _pvInspAr           = 0;      // W/H aspect ratio captured when the inspector opened
 let _pvDrag             = null;   // active drag state (see pvDragStart)
 let _pvPendingOverrides = {};     // {override_key: overrideDict} — short-lived autosave queue
 let _pvInFlightOverrides = {};    // batch currently on its way to the server
@@ -237,7 +238,6 @@ function pvMergeOverride(pl, ov) {
   const savedTx     = savedOv.translate_dx   || 0;
   const savedTy     = savedOv.translate_dy   || 0;
   const savedHDelta = savedOv.h_spacing_delta || 0;  // server-saved delta (== serverHDelta)
-  const savedScale  = savedOv.size_scale || 1;
 
   const liveDx     = ov.anchor_dx       ?? 0;
   const liveDy     = ov.anchor_dy       ?? 0;
@@ -247,8 +247,23 @@ function pvMergeOverride(pl, ov) {
   const liveRot    = ov.rotation   != null ? ov.rotation  : (pl.rotation ?? 0);
   const liveFlipH  = ov.flip_h     != null ? ov.flip_h    : (pl.flip_h   ?? false);
   const liveFlipV  = ov.flip_v     != null ? ov.flip_v    : (pl.flip_v   ?? false);
-  const liveScale  = ov.size_scale ?? 1;
   const liveLayer  = ov.layer      != null ? ov.layer     : (pl.layer    ?? 0);
+
+  // Width/height factors vs the saved baseline (icon_w_in/icon_h_in already
+  // reflects any server-saved size override). Two paths:
+  //   • New per-axis: ov.size_w / ov.size_h are absolute inches.
+  //   • Legacy size_scale: multiply both axes by liveScale / savedScale.
+  let wFactor = 1, hFactor = 1;
+  if (ov.size_w != null || ov.size_h != null) {
+    if (ov.size_w != null && pl.icon_w_in) wFactor = ov.size_w / pl.icon_w_in;
+    if (ov.size_h != null && pl.icon_h_in) hFactor = ov.size_h / pl.icon_h_in;
+  } else if (ov.size_scale != null || savedOv.size_scale != null) {
+    const savedScale = savedOv.size_scale || 1;
+    const liveScale  = ov.size_scale ?? savedScale;
+    const scaleFactor = savedScale !== 0 ? liveScale / savedScale : liveScale;
+    wFactor = scaleFactor;
+    hFactor = scaleFactor;
+  }
 
   const dxDelta     = liveDx - savedDx;
   const dyDelta     = liveDy - savedDy;
@@ -256,7 +271,6 @@ function pvMergeOverride(pl, ov) {
   const tyDelta     = liveTy - savedTy;
   // Change in effective h_spacing vs what the server baked (server used pl.h_spacing).
   const hDeltaDelta = liveHDelta - savedHDelta;
-  const scaleFactor = savedScale !== 0 ? liveScale / savedScale : liveScale;
 
   // For mirror patterns the anchor tracks one side of center. A positive dxDelta
   // moves the anchor-side icon by +dxDelta and the opposite-side icon by -dxDelta.
@@ -300,8 +314,8 @@ function pvMergeOverride(pl, ov) {
         ...inst,
         x_pct: (inst.x_pct ?? 0) + xDelta + txDelta + hSpacingXDelta,
         y_pct: (inst.y_pct ?? 0) + yDelta + tyDelta,
-        w_pct: (inst.w_pct ?? pl.icon_w_pct ?? 0.04) * scaleFactor,
-        h_pct: (inst.h_pct ?? pl.icon_h_pct ?? 0.02) * scaleFactor,
+        w_pct: (inst.w_pct ?? pl.icon_w_pct ?? 0.04) * wFactor,
+        h_pct: (inst.h_pct ?? pl.icon_h_pct ?? 0.02) * hFactor,
       };
     }),
   };
@@ -313,8 +327,13 @@ function pvLivePreview() {
   if (!_pvInspPl || !_pvInspPp || !_pvInspKey) return;
 
   // Preserve fields (e.g. h_spacing_delta) that the inspector panel doesn't expose.
-  const existing = pvEffectiveOverride(_pvInspPl);
-  _pvPendingOverrides[_pvInspKey] = {
+  const existing = {
+    ...pvEffectiveOverride(_pvInspPl),
+    ...(_pvPendingOverrides[_pvInspKey] || {}),
+  };
+  const sizeW = parseFloat($("pv-insp-size-w").value);
+  const sizeH = parseFloat($("pv-insp-size-h").value);
+  const merged = {
     ...existing,
     visible:    $("pv-insp-visible").checked,
     rotation:   parseFloat($("pv-insp-rot-num").value)   || 0,
@@ -322,9 +341,14 @@ function pvLivePreview() {
     flip_v:     $("pv-insp-flip-v").checked,
     anchor_dx:  parseFloat($("pv-insp-dx-num").value)    || 0,
     anchor_dy:  parseFloat($("pv-insp-dy-num").value)    || 0,
-    size_scale: parseFloat($("pv-insp-scale-num").value) || 1,
     layer:      parseInt($("pv-insp-layer").value)       || 0,
   };
+  if (sizeW > 0) merged.size_w = sizeW;
+  if (sizeH > 0) merged.size_h = sizeH;
+  // Once the user has set per-axis sizes, drop the legacy scale field so the
+  // server doesn't double-apply it.
+  delete merged.size_scale;
+  _pvPendingOverrides[_pvInspKey] = merged;
 
   pvUpdateInspTitle();
   pvUpdateBadge();
@@ -642,8 +666,24 @@ function pvOpenInspector(overrideKey, pl, pp) {
   $("pv-insp-dx-num").value     = ov.anchor_dx ?? 0;
   $("pv-insp-dy").value         = ov.anchor_dy ?? 0;
   $("pv-insp-dy-num").value     = ov.anchor_dy ?? 0;
-  $("pv-insp-scale").value      = ov.size_scale ?? 1;
-  $("pv-insp-scale-num").value  = ov.size_scale ?? 1;
+  // Width / height in inches. Prefer explicit per-axis override; fall back to
+  // legacy size_scale × catalog baseline so older drafts still display sensibly.
+  const baseW = pl.icon_w_in || 0;
+  const baseH = pl.icon_h_in || 0;
+  const legacyScale = ov.size_scale ?? 1;
+  const effW = ov.size_w != null ? ov.size_w : (baseW ? baseW * legacyScale : 0);
+  const effH = ov.size_h != null ? ov.size_h : (baseH ? baseH * legacyScale : 0);
+  $("pv-insp-size-w").value = effW > 0 ? effW.toFixed(2) : "";
+  $("pv-insp-size-h").value = effH > 0 ? effH.toFixed(2) : "";
+  // Lock starts engaged each time the inspector opens — matches user request
+  // ("locked by default, but can be unlocked"). Capture current ratio so
+  // AR-linked typing has something to work with even before they edit.
+  const lockBtn = $("pv-insp-ar-lock");
+  if (lockBtn) {
+    lockBtn.dataset.locked = "true";
+    lockBtn.textContent = "🔒";
+  }
+  _pvInspAr = (effW > 0 && effH > 0) ? effW / effH : (baseW > 0 && baseH > 0 ? baseW / baseH : 0);
   $("pv-insp-layer").value      = ov.layer ?? pl.layer ?? 0;
 
   show("pv-inspector");
@@ -918,16 +958,47 @@ function pvSyncSlider(sliderId, numId) {
   pvSyncSlider("pv-insp-rotation", "pv-insp-rot-num");
   pvSyncSlider("pv-insp-dx",       "pv-insp-dx-num");
   pvSyncSlider("pv-insp-dy",       "pv-insp-dy-num");
-  pvSyncSlider("pv-insp-scale",    "pv-insp-scale-num");
 
-  // Wire every inspector control to trigger a real-time canvas re-render.
+  // AR lock — when engaged, editing one of W/H drives the other to preserve ratio.
+  const arBtn = $("pv-insp-ar-lock");
+  if (arBtn) {
+    arBtn.addEventListener("click", () => {
+      const wasLocked = arBtn.dataset.locked === "true";
+      arBtn.dataset.locked = (!wasLocked).toString();
+      arBtn.textContent = wasLocked ? "🔓" : "🔒";
+      // Capture the current ratio when re-locking so the new ratio is the one
+      // the user just settled on, not the one from when the inspector opened.
+      if (!wasLocked) {
+        const w = parseFloat($("pv-insp-size-w").value) || 0;
+        const h = parseFloat($("pv-insp-size-h").value) || 0;
+        if (w > 0 && h > 0) _pvInspAr = w / h;
+      }
+    });
+  }
+  const sizeW = $("pv-insp-size-w");
+  const sizeH = $("pv-insp-size-h");
+  if (sizeW) sizeW.addEventListener("input", () => {
+    if (arBtn?.dataset.locked === "true" && _pvInspAr > 0) {
+      const w = parseFloat(sizeW.value);
+      if (w > 0) sizeH.value = (w / _pvInspAr).toFixed(2);
+    }
+    pvLivePreview();
+  });
+  if (sizeH) sizeH.addEventListener("input", () => {
+    if (arBtn?.dataset.locked === "true" && _pvInspAr > 0) {
+      const h = parseFloat(sizeH.value);
+      if (h > 0) sizeW.value = (h * _pvInspAr).toFixed(2);
+    }
+    pvLivePreview();
+  });
+
+  // Wire every other inspector control to trigger a real-time canvas re-render.
   [
     "pv-insp-visible",
     "pv-insp-rotation", "pv-insp-rot-num",
     "pv-insp-flip-h",   "pv-insp-flip-v",
     "pv-insp-dx",       "pv-insp-dx-num",
     "pv-insp-dy",       "pv-insp-dy-num",
-    "pv-insp-scale",    "pv-insp-scale-num",
     "pv-insp-layer",
   ].forEach(id => {
     const el = $(id);

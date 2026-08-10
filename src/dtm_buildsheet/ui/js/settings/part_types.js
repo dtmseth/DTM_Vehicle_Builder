@@ -256,7 +256,7 @@ function buildModalImageSection(){
       <div class="pm-view-thumb ${hasImg?"has-file":""}" id="muz-${view}" title="Click to upload ${view} image">
         <input type="file" accept="image/*" data-view="${view}" class="muz-input" />
         <img id="muz-prev-${view}"
-          ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+          ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.removeAttribute('src')"`:""} />
         ${!hasImg?'<span>🖼️</span>':""}
         <div class="pm-view-label">${view}</div>
       </div>
@@ -272,6 +272,12 @@ function buildModalImageSection(){
             value="${sz.h||""}" step="0.01" min="0.01" max="6" placeholder="—" />
           <button type="button" class="ar-lock-btn" id="ar-lock-${view}" data-view="${view}" data-locked="true" title="Lock aspect ratio" style="background:none;border:1px solid var(--border);border-radius:4px;padding:1px 5px;cursor:pointer;font-size:13px;line-height:1.4;margin-left:2px">🔒</button>
         </div>
+        <div class="pm-size-row" style="margin-top:4px">
+          <span title="Rotate the source image before any placement rotation. Use for photos uploaded sideways.">↻ Rotate</span>
+          <select id="modal-vr-${view}" class="modal-vr" data-view="${view}" style="font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:4px">
+            ${[0,90,180,270].map(d=>`<option value="${d}" ${(sz.rotation||0)==d?"selected":""}>${d}°</option>`).join("")}
+          </select>
+        </div>
         <button class="btn btn-danger btn-sm modal-del-view" data-view="${view}" style="margin-top:6px;width:fit-content">🗑 Remove image</button>
       </div>
       <div class="pm-car-preview ${hasImg&&sz.w&&sz.h?"visible":""}" id="modal-preview-${view}">
@@ -282,17 +288,22 @@ function buildModalImageSection(){
     </div>`;
   }).join("");
 
-  // For equipment/bar: detect aspect ratio from existing manifest images
+  // For equipment/bar: detect aspect ratio from existing manifest images and
+  // seed W/H so the user adjusts from the visible baseline (not from zero).
   const isEquip=["equipment","bar"].includes($("m-render-kind").value);
   if(isEquip){
     const assetKeyNow=$("m-asset-key").value.trim()||$("m-part-id").value.trim();
     allViews.forEach(view=>{
       const mPath=assetKeyNow&&assetMap?.[assetKeyNow]?.[view]?"/assets/"+assetMap[assetKeyNow][view]:null;
-      if(mPath&&!_viewAspectRatios[view]){
+      if(mPath){
         const probe=new Image();
         probe.onload=()=>{
-          if(probe.naturalWidth&&probe.naturalHeight)
+          if(probe.naturalWidth&&probe.naturalHeight){
             _viewAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
+            applyArToSizeInputs(view, _viewAspectRatios[view],
+              `modal-vw-${view}`, `modal-vh-${view}`, `ar-lock-${view}`);
+            updateModalCarPreview(view);
+          }
         };
         probe.src=mPath;
       }
@@ -313,18 +324,14 @@ function buildModalImageSection(){
         $(`muz-prev-${view}`).src=ev.target.result;
         $(`muz-${view}`).classList.add("has-file");
         $(`modal-vs-${view}`).style.display="";
-        // Detect and store aspect ratio from uploaded image
+        // Detect aspect ratio from uploaded image and seed W/H if blank
         if(["equipment","bar"].includes($("m-render-kind").value)){
           const probe=new Image();
           probe.onload=()=>{
             if(probe.naturalWidth&&probe.naturalHeight){
               _viewAspectRatios[view]=probe.naturalWidth/probe.naturalHeight;
-              // Auto-fill H from existing W (or vice versa) once ratio is known
-              const wEl=$(`modal-vw-${view}`); const hEl=$(`modal-vh-${view}`);
-              if(wEl&&hEl){
-                const w=parseFloat(wEl.value);
-                if(w>0) hEl.value=(w/_viewAspectRatios[view]).toFixed(2);
-              }
+              applyArToSizeInputs(view, _viewAspectRatios[view],
+                `modal-vw-${view}`, `modal-vh-${view}`, `ar-lock-${view}`);
               updateModalCarPreview(view);
             }
           };
@@ -378,7 +385,9 @@ function buildModalImageSection(){
       delete _modalUploadedImages[view];
       const thumb=$(`muz-${view}`);
       thumb.classList.remove("has-file");
-      const img=$(`muz-prev-${view}`); if(img){img.src="";img.style.display="none";}
+      // Clear src + remove .has-file; don't set inline display:none
+      // (it would persist and hide a re-uploaded image — see CSS specificity).
+      const img=$(`muz-prev-${view}`); if(img) img.removeAttribute("src");
       const sp=$(`modal-vs-${view}`); if(sp) sp.style.display="none";
       const pv=$(`modal-preview-${view}`); if(pv) pv.classList.remove("visible");
     });
@@ -644,7 +653,7 @@ function buildAltImageSection(){
             <div class="pm-view-thumb ${hasImg?"has-file":""}" id="alt-muz-${akId}-${view}" title="Upload ${view} image for ${esc(ak)}" style="width:72px;height:72px">
               <input type="file" accept="image/*" class="alt-muz-input" data-alt-key="${esc(ak)}" data-view="${view}" />
               <img id="alt-muz-prev-${akId}-${view}"
-                ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.style.display='none'"`:""} />
+                ${upld?`src="${upld.dataUrl}"`:manifestPath&&!deleted?`src="${manifestPath}" onerror="this.removeAttribute('src')"`:""} />
               ${!hasImg?'<span style="font-size:18px">🖼️</span>':""}
             </div>
             <div style="font-size:10px;color:var(--muted)">${view}</div>
@@ -775,12 +784,16 @@ $("btn-modal-save").addEventListener("click", async()=>{
       }
       await apiSave("/api/manifest/save",_manifest);
     }
-    // Collect per-view render sizes
+    // Collect per-view render sizes (with optional default image rotation)
     const size_per_view={};
     ["front","side","top","rear"].forEach(v=>{
       const w=parseFloat($(`modal-vw-${v}`)?.value)||0;
       const h=parseFloat($(`modal-vh-${v}`)?.value)||0;
-      if(w&&h) size_per_view[v]={w,h};
+      const rot=parseInt($(`modal-vr-${v}`)?.value)||0;
+      if(w&&h){
+        size_per_view[v]={w,h};
+        if(rot) size_per_view[v].rotation=rot;
+      }
     });
     const views=rk==="none"?[]:$("m-views").value.split(",").map(s=>s.trim()).filter(Boolean);
     const aliases=$("m-aliases").value.split("\n").map(s=>s.trim()).filter(Boolean);

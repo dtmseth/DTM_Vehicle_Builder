@@ -1767,14 +1767,34 @@ def get_icon_size(part, icon_type, orient, view, icon_path_str="", paths: AppPat
         return (max_dim, max_dim / ratio) if ratio > 1 else (max_dim * ratio, max_dim)
 
     if icon_type == "bar":
-        if view == "top":
-            for key, size in BAR_TOP_SIZES.items():
-                if key.replace("_", "-") in icon_path_str.replace("_", "-"):
-                    return size
-            return (0.40, 2.20)
-        if view in BAR_SIZES:
-            return BAR_SIZES[view]
-        return (2.80, 0.25)
+        # The roof light bar is a generic graphic — keep the legacy fixed
+        # envelopes so it renders consistently across all builds. Every other
+        # bar (interior front/rear and anything added later) uses a real
+        # product photo, so we preserve the image's uploaded aspect ratio.
+        is_roof_bar = "roof" in icon_path_str.lower()
+        if is_roof_bar:
+            if view == "top":
+                for key, size in BAR_TOP_SIZES.items():
+                    if key.replace("_", "-") in icon_path_str.replace("_", "-"):
+                        return size
+                return (0.40, 2.20)
+            if view in BAR_SIZES:
+                return BAR_SIZES[view]
+            return (2.80, 0.25)
+
+        max_dim = 2.5 if view == "top" else 1.0
+        if not icon_path_str:
+            return (max_dim, max_dim)
+        try:
+            from PIL import Image as PILImage
+            with PILImage.open(
+                (paths or ensure_workspace()).workspace_assets_dir / icon_path_str
+            ) as img:
+                image_w, image_h = img.size
+        except Exception:
+            return (max_dim, max_dim)
+        ratio = image_w / image_h
+        return (max_dim, max_dim / ratio) if ratio > 1 else (max_dim * ratio, max_dim)
 
     size_class = getattr(part, "size_class", "sm")
     defs       = _load_manifest(paths).get("size_rule_definitions", {})

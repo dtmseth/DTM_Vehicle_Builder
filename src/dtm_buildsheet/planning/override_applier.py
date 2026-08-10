@@ -20,6 +20,8 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
         translate_dx (float)— uniform x translation applied after slot/mirror layout
         translate_dy (float)— uniform y translation applied after slot/mirror layout
         size_scale (float)  — multiplier applied to size_override w/h values
+        size_w (float)      — absolute width  in inches (replaces size_scale)
+        size_h (float)      — absolute height in inches (replaces size_scale)
         layer (int)         — Z-order layer (0 = default, positive = on top, negative = behind)
 
     The original plan is never mutated.
@@ -69,7 +71,17 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
             if "translate_dy" in ov:
                 pl.translate_dy = float(ov["translate_dy"])
 
-            if "size_scale" in ov:
+            if "size_w" in ov or "size_h" in ov:
+                # Explicit per-axis sizing from the inspector. Inputs are
+                # absolute inches; preserve aspect ratio is the inspector's
+                # responsibility — we just record what the user typed.
+                cur = pl.size_override or {}
+                new_w = float(ov.get("size_w", cur.get("w", 0))) or cur.get("w", 0)
+                new_h = float(ov.get("size_h", cur.get("h", 0))) or cur.get("h", 0)
+                if new_w > 0 and new_h > 0:
+                    pl.size_override = {"w": round(new_w, 6), "h": round(new_h, 6)}
+                    pl.size_scale = 1.0
+            elif "size_scale" in ov:
                 scale = float(ov["size_scale"])
                 if scale > 0:
                     if pl.size_override:
