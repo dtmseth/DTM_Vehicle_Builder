@@ -7878,6 +7878,17 @@
           "width_emu": 3039589
         },
         {
+          "height_emu": 2588458,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2708915,
+          "name": "Picture",
+          "rotation": 270.0,
+          "top_emu": 958814,
+          "width_emu": 251450
+        },
+        {
           "height_emu": 103538,
           "image_ext": "png",
           "image_sha256": "fac8c4720820f0868e6bc30663e0c72a9ad4bc4ea12fc881ff103b4bc96ad64d",
@@ -7903,12 +7914,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  12 INSTALLED COMPONENTS"
+                  "text": "  13 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  12 INSTALLED COMPONENTS",
+          "text": "  13 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -8916,10 +8927,85 @@
         },
         {
           "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 4279392,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 4279392,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Front Interior Light Bar"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "SOUNDOFF  ·  NFTVI2B  ·  Red/Blue  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Front Interior Light Bar  ■ NEW\nSOUNDOFF  ·  NFTVI2B  ·  Red/Blue  ·  QTY: 1",
+          "top_emu": 4334256,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
             "color": "#FFF3F0",
             "type": "SOLID (1)"
           },
-          "height_emu": 603504,
+          "height_emu": 420624,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "line_color": "#B83A3A",
@@ -8943,19 +9029,10 @@
                   "text": "  Pit Bar  @  FIXTURE:PIT_BAR"
                 }
               ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
-                  "text": "  Front Interior Light Bar  @  FIXTURE:INTERIOR_LIGHT_BAR_FRONT"
-                }
-              ]
             }
           ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Pit Bar  @  FIXTURE:PIT_BAR\n  Front Interior Light Bar  @  FIXTURE:INTERIOR_LIGHT_BAR_FRONT",
-          "top_emu": 4786884,
+          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Pit Bar  @  FIXTURE:PIT_BAR",
+          "top_emu": 4791456,
           "width_emu": 6796735
         }
       ]

@@ -35650,6 +35650,39 @@
           "width_emu": 332801
         },
         {
+          "height_emu": 2588458,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2708915,
+          "name": "Picture",
+          "rotation": 270.0,
+          "top_emu": 958814,
+          "width_emu": 251450
+        },
+        {
+          "height_emu": 2588458,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2708915,
+          "name": "Picture",
+          "rotation": 270.0,
+          "top_emu": 958814,
+          "width_emu": 251450
+        },
+        {
+          "height_emu": 2588458,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2708915,
+          "name": "Picture",
+          "rotation": 270.0,
+          "top_emu": 958814,
+          "width_emu": 251450
+        },
+        {
           "height_emu": 739559,
           "image_ext": "png",
           "image_sha256": "72bacdb64db4bb54e5c97ffea7f20b7f32d826fc785d5e935d15675044a922bd",
@@ -35755,12 +35788,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  43 INSTALLED COMPONENTS"
+                  "text": "  44 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  43 INSTALLED COMPONENTS",
+          "text": "  44 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -38139,12 +38172,12 @@
                   "bold": true,
                   "color": "#B83A3A",
                   "size_pt": 8.0,
-                  "text": "9 COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — FRONT"
+                  "text": "6 COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — FRONT"
                 }
               ]
             }
           ],
-          "text": "9 COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — FRONT",
+          "text": "6 COMPONENTS NOT SHOWN — SEE RENDERING EXCEPTIONS — FRONT",
           "top_emu": 5943600,
           "width_emu": 6796735
         }
@@ -44363,7 +44396,7 @@
           "width_emu": 11274552
         },
         {
-          "height_emu": 3236976,
+          "height_emu": 2249424,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -44592,165 +44625,6 @@
                           "color": "#1E2761",
                           "italic": false,
                           "size_pt": 9.0,
-                          "text": "Front Interior Light Bar"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Front Interior Light Bar"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "UPPER DRIVER AND PASSENGER"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "UPPER DRIVER AND PASSENGER"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#B83A3A",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "Missing asset (front): lights/interior-front_front.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Missing asset (front): lights/interior-front_front.png"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "Front Interior Light Bar"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Front Interior Light Bar"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PASSENGER SIDE ONLY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PASSENGER SIDE ONLY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#B83A3A",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "Missing asset (front): lights/interior-front_front.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Missing asset (front): lights/interior-front_front.png"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "Front Interior Light Bar"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Front Interior Light Bar"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SPECIFY LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SPECIFY LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#B83A3A",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "Missing asset (front): lights/interior-front_front.png"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Missing asset (front): lights/interior-front_front.png"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "italic": false,
-                          "size_pt": 9.0,
                           "text": "Thermal Imager"
                         }
                       ]
@@ -44913,12 +44787,9 @@
               329184,
               329184,
               329184,
-              329184,
-              329184,
-              329184,
               329184
             ],
-            "rows": 10
+            "rows": 7
           },
           "top_emu": 1207008,
           "width_emu": 11274552

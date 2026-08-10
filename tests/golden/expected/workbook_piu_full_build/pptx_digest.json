@@ -15189,6 +15189,17 @@
           "width_emu": 3039589
         },
         {
+          "height_emu": 2588458,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2708915,
+          "name": "Picture",
+          "rotation": 270.0,
+          "top_emu": 958814,
+          "width_emu": 251450
+        },
+        {
           "height_emu": 739559,
           "image_ext": "png",
           "image_sha256": "72bacdb64db4bb54e5c97ffea7f20b7f32d826fc785d5e935d15675044a922bd",
@@ -15234,12 +15245,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  14 INSTALLED COMPONENTS"
+                  "text": "  15 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  14 INSTALLED COMPONENTS",
+          "text": "  15 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -15248,7 +15259,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 835849,
+          "height_emu": 845820,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -15266,7 +15277,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 835849,
+          "height_emu": 845820,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -15283,7 +15294,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 799273,
+          "height_emu": 809244,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -15353,7 +15364,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -15371,7 +15382,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -15388,7 +15399,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 351868,
+          "height_emu": 356616,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -15428,7 +15439,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 695752,
+          "height_emu": 704088,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -15438,7 +15449,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1348564,
+          "top_emu": 1353312,
           "width_emu": 45720
         },
         {
@@ -15446,7 +15457,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 695752,
+          "height_emu": 704088,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -15456,14 +15467,14 @@
             }
           ],
           "text": "",
-          "top_emu": 1348564,
+          "top_emu": 1353312,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 659176,
+          "height_emu": 667512,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -15514,7 +15525,7 @@
             }
           ],
           "text": "TOP TUBE  ■ NEW\nWHELEN  ·  ION  ·  Red  ·  QTY: 1\nSTANDARD LENS\n+ FW 1 Bracket  ·  WESTIN 2 LIGHT TUBE",
-          "top_emu": 1403428,
+          "top_emu": 1408176,
           "width_emu": 3242919
         },
         {
@@ -15522,7 +15533,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 695752,
+          "height_emu": 704088,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -15532,7 +15543,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1795969,
+          "top_emu": 1805940,
           "width_emu": 45720
         },
         {
@@ -15540,7 +15551,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 695752,
+          "height_emu": 704088,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -15550,14 +15561,14 @@
             }
           ],
           "text": "",
-          "top_emu": 1795969,
+          "top_emu": 1805940,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 659176,
+          "height_emu": 667512,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -15608,7 +15619,7 @@
             }
           ],
           "text": "TOP TUBE  ■ NEW\nWHELEN  ·  ION  ·  Red  ·  QTY: 2\nSTANDARD LENS\n+ FW 2 Bracket  ·  WESTIN 2 LIGHT TUBE",
-          "top_emu": 1850833,
+          "top_emu": 1860804,
           "width_emu": 3242919
         },
         {
@@ -15616,7 +15627,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 704791,
+          "height_emu": 713232,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -15626,7 +15637,7 @@
             }
           ],
           "text": "",
-          "top_emu": 2108325,
+          "top_emu": 2121408,
           "width_emu": 45720
         },
         {
@@ -15634,7 +15645,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 704791,
+          "height_emu": 713232,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -15644,14 +15655,14 @@
             }
           ],
           "text": "",
-          "top_emu": 2108325,
+          "top_emu": 2121408,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 668215,
+          "height_emu": 676656,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -15692,7 +15703,7 @@
             }
           ],
           "text": "SIDE OF PUSH BUMPER  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red  ·  QTY: 2\nSTANDARD LENS",
-          "top_emu": 2163189,
+          "top_emu": 2176272,
           "width_emu": 3242919
         },
         {
@@ -15700,7 +15711,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 704791,
+          "height_emu": 713232,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -15710,7 +15721,7 @@
             }
           ],
           "text": "",
-          "top_emu": 2555730,
+          "top_emu": 2574036,
           "width_emu": 45720
         },
         {
@@ -15718,7 +15729,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 704791,
+          "height_emu": 713232,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -15728,14 +15739,14 @@
             }
           ],
           "text": "",
-          "top_emu": 2555730,
+          "top_emu": 2574036,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 668215,
+          "height_emu": 676656,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -15776,7 +15787,7 @@
             }
           ],
           "text": "PIT BARS  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red  ·  QTY: 2\nSTANDARD LENS",
-          "top_emu": 2610594,
+          "top_emu": 2628900,
           "width_emu": 3242919
         },
         {
@@ -15784,7 +15795,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -15794,7 +15805,7 @@
             }
           ],
           "text": "",
-          "top_emu": 2877124,
+          "top_emu": 2898648,
           "width_emu": 45720
         },
         {
@@ -15802,7 +15813,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -15812,14 +15823,14 @@
             }
           ],
           "text": "",
-          "top_emu": 2877124,
+          "top_emu": 2898648,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 510041,
+          "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -15860,7 +15871,7 @@
             }
           ],
           "text": "SPECIFY LOCATION  ■ NEW\nWHELEN  ·  FIELD SERIES  ·  WHITE  ·  QTY: 1\nSTANDARD LENS",
-          "top_emu": 2931988,
+          "top_emu": 2953512,
           "width_emu": 3242919
         },
         {
@@ -15868,7 +15879,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 537579,
+          "height_emu": 544068,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -15878,7 +15889,7 @@
             }
           ],
           "text": "",
-          "top_emu": 3324529,
+          "top_emu": 3351276,
           "width_emu": 45720
         },
         {
@@ -15886,7 +15897,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 537579,
+          "height_emu": 544068,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -15896,14 +15907,14 @@
             }
           ],
           "text": "",
-          "top_emu": 3324529,
+          "top_emu": 3351276,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 501003,
+          "height_emu": 507492,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -15945,7 +15956,7 @@
             }
           ],
           "text": "TOP OF PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1\n+ Siren Speaker Bracket  ·  SAK1",
-          "top_emu": 3379393,
+          "top_emu": 3406140,
           "width_emu": 3242919
         },
         {
@@ -15953,7 +15964,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -15963,7 +15974,7 @@
             }
           ],
           "text": "",
-          "top_emu": 3487750,
+          "top_emu": 3515868,
           "width_emu": 45720
         },
         {
@@ -15971,7 +15982,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -15981,14 +15992,14 @@
             }
           ],
           "text": "",
-          "top_emu": 3487750,
+          "top_emu": 3515868,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 510041,
+          "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -16029,7 +16040,7 @@
             }
           ],
           "text": "IN LIGHT BAR  ■ NEW\nNOVA  ·  QTY: 1\nSTANDARD LENS",
-          "top_emu": 3542614,
+          "top_emu": 3570732,
           "width_emu": 3242919
         },
         {
@@ -16037,7 +16048,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -16047,7 +16058,7 @@
             }
           ],
           "text": "",
-          "top_emu": 3926117,
+          "top_emu": 3959352,
           "width_emu": 45720
         },
         {
@@ -16055,7 +16066,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -16065,14 +16076,14 @@
             }
           ],
           "text": "",
-          "top_emu": 3926117,
+          "top_emu": 3959352,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 510041,
+          "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -16113,7 +16124,7 @@
             }
           ],
           "text": "UNDER MIRROR  ■ NEW\nWHELEN  ·  U-SERIES  ·  Red  ·  QTY: 1\nSTANDARD LENS",
-          "top_emu": 3980981,
+          "top_emu": 4014216,
           "width_emu": 3242919
         },
         {
@@ -16121,7 +16132,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -16131,7 +16142,7 @@
             }
           ],
           "text": "",
-          "top_emu": 4098375,
+          "top_emu": 4133088,
           "width_emu": 45720
         },
         {
@@ -16139,7 +16150,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -16149,14 +16160,14 @@
             }
           ],
           "text": "",
-          "top_emu": 4098375,
+          "top_emu": 4133088,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 510041,
+          "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -16197,7 +16208,7 @@
             }
           ],
           "text": "UNDER MIRROR  ■ NEW\nWHELEN  ·  U-SERIES  ·  Red  ·  QTY: 1\nSTANDARD LENS",
-          "top_emu": 4153239,
+          "top_emu": 4187952,
           "width_emu": 3242919
         },
         {
@@ -16205,7 +16216,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -16215,7 +16226,7 @@
             }
           ],
           "text": "",
-          "top_emu": 4536742,
+          "top_emu": 4576572,
           "width_emu": 45720
         },
         {
@@ -16223,7 +16234,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 546617,
+          "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -16233,14 +16244,14 @@
             }
           ],
           "text": "",
-          "top_emu": 4536742,
+          "top_emu": 4576572,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 510041,
+          "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
           "name": "TextBox",
@@ -16281,7 +16292,7 @@
             }
           ],
           "text": "Roof Light Bar  ■ NEW\nWHELEN  ·  LEGACY  ·  Red  ·  QTY: 1\nSTANDARD LENS",
-          "top_emu": 4591606,
+          "top_emu": 4631436,
           "width_emu": 3242919
         },
         {
@@ -16289,7 +16300,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -16299,7 +16310,7 @@
             }
           ],
           "text": "",
-          "top_emu": 4709001,
+          "top_emu": 4750308,
           "width_emu": 45720
         },
         {
@@ -16307,7 +16318,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -16317,16 +16328,91 @@
             }
           ],
           "text": "",
-          "top_emu": 4709001,
+          "top_emu": 4750308,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 351868,
+          "height_emu": 356616,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Front Interior Light Bar"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  FST  ·  Red  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Front Interior Light Bar  ■ NEW\nWHELEN  ·  FST  ·  Red  ·  QTY: 1",
+          "top_emu": 4805172,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 5193792,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 5193792,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -16356,7 +16442,7 @@
             }
           ],
           "text": "SPOT LIGHT MOUNT  ■ NEW\nNIGHT RIDE  ·  SPECIFY MODEL  ·  QTY: 1",
-          "top_emu": 4763865,
+          "top_emu": 5248656,
           "width_emu": 3242919
         },
         {
@@ -16364,9 +16450,9 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
+          "left_emu": 8738463,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -16374,7 +16460,7 @@
             }
           ],
           "text": "",
-          "top_emu": 5147368,
+          "top_emu": 5207508,
           "width_emu": 45720
         },
         {
@@ -16382,9 +16468,9 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 388444,
+          "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
+          "left_emu": 8784183,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -16392,16 +16478,16 @@
             }
           ],
           "text": "",
-          "top_emu": 5147368,
+          "top_emu": 5207508,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 351868,
+          "height_emu": 356616,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
+          "left_emu": 8829903,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -16431,7 +16517,7 @@
             }
           ],
           "text": "LEFT FRONT FENDER  ■ NEW\nWHELEN  ·  PRO-FOCUS  ·  QTY: 1",
-          "top_emu": 5202232,
+          "top_emu": 5262372,
           "width_emu": 3242919
         },
         {
@@ -16439,7 +16525,7 @@
             "color": "#FFF3F0",
             "type": "SOLID (1)"
           },
-          "height_emu": 727827,
+          "height_emu": 603504,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "line_color": "#B83A3A",
@@ -16472,19 +16558,10 @@
                   "text": "  Howler  @  VEHICLE SPECIFIC BRACKET(S)"
                 }
               ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
-                  "text": "  Front Interior Light Bar  @  UPPER DRIVER AND PASSENGER"
-                }
-              ]
             }
           ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Pit Bar  @  FIXTURE:PIT_BAR\n  Howler  @  VEHICLE SPECIFIC BRACKET(S)\n  Front Interior Light Bar  @  UPPER DRIVER AND PASSENGER",
-          "top_emu": 5654684,
+          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Pit Bar  @  FIXTURE:PIT_BAR\n  Howler  @  VEHICLE SPECIFIC BRACKET(S)",
+          "top_emu": 5719572,
           "width_emu": 6796735
         }
       ]
@@ -18249,6 +18326,16 @@
           "width_emu": 3150519
         },
         {
+          "height_emu": 766549,
+          "image_ext": "png",
+          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
+          "kind": "PICTURE (13)",
+          "left_emu": 2787635,
+          "name": "Picture",
+          "top_emu": 1816841,
+          "width_emu": 94010
+        },
+        {
           "height_emu": 87386,
           "image_ext": "png",
           "image_sha256": "026b8745f28f7ab67f3aa1757820ea7df776b8520fb5226aca263ce9e4760cc9",
@@ -18344,12 +18431,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  7 INSTALLED COMPONENTS"
+                  "text": "  8 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  7 INSTALLED COMPONENTS",
+          "text": "  8 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -18656,7 +18743,7 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "UPPER REAR WINDOW"
+                  "text": "Rear Interior Light Bar"
                 },
                 {
                   "bold": true,
@@ -18671,7 +18758,7 @@
                 {
                   "color": "#555555",
                   "size_pt": 11.0,
-                  "text": "WHELEN  ·  ION  ·  Red  ·  QTY: 2"
+                  "text": "WHELEN  ·  RST  ·  Red  ·  QTY: 1"
                 }
               ]
             },
@@ -18685,7 +18772,7 @@
               ]
             }
           ],
-          "text": "UPPER REAR WINDOW  ■ NEW\nWHELEN  ·  ION  ·  Red  ·  QTY: 2\nSTANDARD LENS",
+          "text": "Rear Interior Light Bar  ■ NEW\nWHELEN  ·  RST  ·  Red  ·  QTY: 1\nSTANDARD LENS",
           "top_emu": 1568196,
           "width_emu": 3242919
         },
@@ -18943,10 +19030,94 @@
         },
         {
           "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 553212,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2747772,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 553212,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2747772,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 516636,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "UPPER REAR WINDOW"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  ION  ·  Red  ·  QTY: 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENS"
+                }
+              ]
+            }
+          ],
+          "text": "UPPER REAR WINDOW  ■ NEW\nWHELEN  ·  ION  ·  Red  ·  QTY: 2\nSTANDARD LENS",
+          "top_emu": 2802636,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
             "color": "#FFF3F0",
             "type": "SOLID (1)"
           },
-          "height_emu": 786384,
+          "height_emu": 603504,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "line_color": "#B83A3A",
@@ -18959,15 +19130,6 @@
                   "color": "#B83A3A",
                   "size_pt": 10.0,
                   "text": "ADDITIONAL COMPONENTS NOT SHOWN"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
-                  "text": "  Rear Interior Light Bar  @  FIXTURE:REAR_INTERIOR_LIGHT_BAR"
                 }
               ]
             },
@@ -18990,7 +19152,7 @@
               ]
             }
           ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Rear Interior Light Bar  @  FIXTURE:REAR_INTERIOR_LIGHT_BAR\n  Rear Scene  @  ON BACK RACK\n  Thermal Imager  @  SPOT LIGHT MOUNT",
+          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Rear Scene  @  ON BACK RACK\n  Thermal Imager  @  SPOT LIGHT MOUNT",
           "top_emu": 3419856,
           "width_emu": 6796735
         }

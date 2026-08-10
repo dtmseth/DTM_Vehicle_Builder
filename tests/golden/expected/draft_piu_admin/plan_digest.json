@@ -900,9 +900,7 @@
               "orientation": "bar",
               "slot_index": 1,
               "slot_role": "center",
-              "warnings": [
-                "Missing asset (front): lights/interior-front_front.png"
-              ]
+              "warnings": []
             }
           ],
           "is_fixture": false,
@@ -983,9 +981,7 @@
               "orientation": "h",
               "slot_index": 1,
               "slot_role": "driver",
-              "warnings": [
-                "Missing asset (rear): lights/interior-rear_rear.png"
-              ]
+              "warnings": []
             },
             {
               "asset_path": "lights/interior-rear_rear.png",
@@ -993,9 +989,7 @@
               "orientation": "h",
               "slot_index": 2,
               "slot_role": "passenger",
-              "warnings": [
-                "Missing asset (rear): lights/interior-rear_rear.png"
-              ]
+              "warnings": []
             }
           ],
           "is_fixture": false,
@@ -2477,7 +2471,7 @@
           "flip_h": false,
           "flip_mirrored_h": false,
           "flip_v": true,
-          "group_shapes": true,
+          "group_shapes": false,
           "h_spacing": 0.12,
           "h_spacing_units": "relative_image",
           "instances": [
@@ -2498,9 +2492,9 @@
           "ordered_quantity": 1,
           "part_id": "front_scene",
           "part_name": "Front Scene",
-          "pattern": "mirror",
+          "pattern": "single",
           "position_slot_count": null,
-          "quantity_policy": "quantity_as_slots",
+          "quantity_policy": "single_per_line",
           "render_kind": "light",
           "rotation": 0.0,
           "size_class": "PN",

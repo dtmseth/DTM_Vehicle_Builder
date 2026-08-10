@@ -6817,9 +6817,7 @@
               "orientation": "h",
               "slot_index": 1,
               "slot_role": "center",
-              "warnings": [
-                "Missing asset (front): lights/interior-front_front.png"
-              ]
+              "warnings": []
             }
           ],
           "is_fixture": true,
@@ -6834,9 +6832,13 @@
           "position_slot_count": null,
           "quantity_policy": "single_per_line",
           "render_kind": "bar",
-          "rotation": 0.0,
+          "rotation": 270.0,
           "size_class": "sm",
-          "size_override": null,
+          "size_override": {
+            "h": 3.5,
+            "rotation": 270,
+            "w": 0.34
+          },
           "size_scale": 1.0,
           "slot_indices": null,
           "v_spacing": null,
@@ -6900,9 +6902,7 @@
               "orientation": "h",
               "slot_index": 1,
               "slot_role": "center",
-              "warnings": [
-                "Missing asset (front): lights/interior-front_front.png"
-              ]
+              "warnings": []
             }
           ],
           "is_fixture": true,
@@ -6917,9 +6917,13 @@
           "position_slot_count": null,
           "quantity_policy": "single_per_line",
           "render_kind": "bar",
-          "rotation": 0.0,
+          "rotation": 270.0,
           "size_class": "sm",
-          "size_override": null,
+          "size_override": {
+            "h": 3.5,
+            "rotation": 270,
+            "w": 0.34
+          },
           "size_scale": 1.0,
           "slot_indices": null,
           "v_spacing": null,
@@ -6983,9 +6987,7 @@
               "orientation": "h",
               "slot_index": 1,
               "slot_role": "center",
-              "warnings": [
-                "Missing asset (front): lights/interior-front_front.png"
-              ]
+              "warnings": []
             }
           ],
           "is_fixture": true,
@@ -7000,9 +7002,13 @@
           "position_slot_count": null,
           "quantity_policy": "single_per_line",
           "render_kind": "bar",
-          "rotation": 0.0,
+          "rotation": 270.0,
           "size_class": "sm",
-          "size_override": null,
+          "size_override": {
+            "h": 3.5,
+            "rotation": 270,
+            "w": 0.34
+          },
           "size_scale": 1.0,
           "slot_indices": null,
           "v_spacing": null,

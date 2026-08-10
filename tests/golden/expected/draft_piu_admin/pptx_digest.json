@@ -6838,6 +6838,16 @@
           "width_emu": 420809
         },
         {
+          "height_emu": 739559,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2791284,
+          "name": "Picture",
+          "top_emu": 1844067,
+          "width_emu": 86713
+        },
+        {
           "flip_v": true,
           "height_emu": 162703,
           "image_ext": "png",
@@ -6864,12 +6874,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  6 INSTALLED COMPONENTS"
+                  "text": "  7 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  6 INSTALLED COMPONENTS",
+          "text": "  7 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -7317,6 +7327,81 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
+                  "text": "Front Interior Light Bar"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Front Interior Light Bar  ■ NEW\nWHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1",
+          "top_emu": 2185416,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2427732,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2427732,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
                   "text": "TOP OF PUSH BUMPER"
                 },
                 {
@@ -7338,7 +7423,7 @@
             }
           ],
           "text": "TOP OF PUSH BUMPER  ■ NEW\nWHELEN  ·  PIONEER  ·  White  ·  QTY: 1",
-          "top_emu": 2185416,
+          "top_emu": 2482596,
           "width_emu": 3242919
         },
         {
@@ -7346,7 +7431,7 @@
             "color": "#FFF3F0",
             "type": "SOLID (1)"
           },
-          "height_emu": 603504,
+          "height_emu": 420624,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "line_color": "#B83A3A",
@@ -7367,22 +7452,13 @@
                 {
                   "color": "#B83A3A",
                   "size_pt": 11.0,
-                  "text": "  Front Interior Light Bar  @  UPPER DRIVER AND PASSENGER"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
                   "text": "  Radar  @  ON DASH"
                 }
               ]
             }
           ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Front Interior Light Bar  @  UPPER DRIVER AND PASSENGER\n  Radar  @  ON DASH",
-          "top_emu": 2642616,
+          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Radar  @  ON DASH",
+          "top_emu": 2939796,
           "width_emu": 6796735
         }
       ]
@@ -8293,6 +8369,26 @@
           "width_emu": 4937760
         },
         {
+          "height_emu": 766549,
+          "image_ext": "png",
+          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
+          "kind": "PICTURE (13)",
+          "left_emu": 2145726,
+          "name": "Picture",
+          "top_emu": 1857468,
+          "width_emu": 94010
+        },
+        {
+          "height_emu": 766549,
+          "image_ext": "png",
+          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
+          "kind": "PICTURE (13)",
+          "left_emu": 3429543,
+          "name": "Picture",
+          "top_emu": 1857468,
+          "width_emu": 94010
+        },
+        {
           "height_emu": 87386,
           "image_ext": "png",
           "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
@@ -8358,12 +8454,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 10.0,
-                  "text": "  3 INSTALLED COMPONENTS"
+                  "text": "  4 INSTALLED COMPONENTS"
                 }
               ]
             }
           ],
-          "text": "  3 INSTALLED COMPONENTS",
+          "text": "  4 INSTALLED COMPONENTS",
           "top_emu": 603504,
           "width_emu": 6796735
         },
@@ -8418,7 +8514,7 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "ABOVE LICENSE PLATE"
+                  "text": "Rear Interior Light Bar"
                 },
                 {
                   "bold": true,
@@ -8433,12 +8529,12 @@
                 {
                   "color": "#555555",
                   "size_pt": 11.0,
-                  "text": "WHELEN  ·  Red/Blue/White  ·  QTY: 2"
+                  "text": "WHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1"
                 }
               ]
             }
           ],
-          "text": "ABOVE LICENSE PLATE  ■ NEW\nWHELEN  ·  Red/Blue/White  ·  QTY: 2",
+          "text": "Rear Interior Light Bar  ■ NEW\nWHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1",
           "top_emu": 950976,
           "width_emu": 3242919
         },
@@ -8493,7 +8589,7 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "REAR LEFT ROOF"
+                  "text": "ABOVE LICENSE PLATE"
                 },
                 {
                   "bold": true,
@@ -8508,12 +8604,12 @@
                 {
                   "color": "#555555",
                   "size_pt": 11.0,
-                  "text": "WHIP STYLE  ·  QTY: 1"
+                  "text": "WHELEN  ·  Red/Blue/White  ·  QTY: 2"
                 }
               ]
             }
           ],
-          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
+          "text": "ABOVE LICENSE PLATE  ■ NEW\nWHELEN  ·  Red/Blue/White  ·  QTY: 2",
           "top_emu": 950976,
           "width_emu": 3242919
         },
@@ -8568,6 +8664,81 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
+                  "text": "REAR LEFT ROOF"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHIP STYLE  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
+          "top_emu": 1408176,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
                   "text": "PILLARS"
                 },
                 {
@@ -8591,41 +8762,6 @@
           "text": "PILLARS  ■ NEW\nWHELEN  ·  ION  ·  Red/Blue/Amber  ·  QTY: 6",
           "top_emu": 1408176,
           "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#FFF3F0",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 420624,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "line_color": "#B83A3A",
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#B83A3A",
-                  "size_pt": 10.0,
-                  "text": "ADDITIONAL COMPONENTS NOT SHOWN"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
-                  "text": "  Rear Interior Light Bar  @  UPPER REAR WINDOW"
-                }
-              ]
-            }
-          ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Rear Interior Light Bar  @  UPPER REAR WINDOW",
-          "top_emu": 1865376,
-          "width_emu": 6796735
         }
       ]
     },
