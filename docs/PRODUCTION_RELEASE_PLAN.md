@@ -19,12 +19,11 @@ Update this document as release decisions are made; it is the single short recor
 ## Current starting point
 
 - The two targeted legacy projects have been rebuilt with the new Part Picker.
-- The working branch is ahead of `main` and also lacks a small set of newer `main` fixes, so this
-  is an integration/review release—not a direct push.
-- The working tree contains intentional, uncommitted Part Picker, placement, render, data, docs,
-  and QuickBooks work. Preserve it until it has been reviewed and committed in logical groups.
-- The cloud-off test, golden-master, and browser-smoke baselines have been refreshed after final
-  owner approval of the PPT output.
+- The release candidate, its PPT references, and the newer `main` fixes are committed on
+  `codex/main-integration-2026-08-10`.
+- A recoverable pre-integration backup branch exists at `codex/pre-main-integration-2026-08-10`.
+- The cloud-off test, contract, golden-master, visual-PPT, and browser-smoke gates have been
+  rerun after integration.
 
 ## Release audit — 2026-08-06
 
@@ -46,12 +45,12 @@ Update this document as release decisions are made; it is the single short recor
 
 | Item | Current result | Release disposition |
 | --- | --- | --- |
-| Branch position | 235 commits ahead of `main`; six newer `main` commits still need integrating | Integrate deliberately; do not push this branch directly to `main` |
-| Working tree | Large, intentional finalization set across picker/data/tests/docs, plus the UI updates | Split into reviewable commits before integration |
+| Branch position | `origin/main` was merged into the dedicated integration branch; the release candidate and reference updates are committed | Fetch once more immediately before opening the PR |
+| Working tree | Source and reference changes are committed; local `.hermes/` scratch notes remain intentionally untracked and excluded | Ready |
 | Contract suite | 54/54 passed after reviewing and recording the intended pit-bar/wing-wrap and rendered-antenna data changes | Ready |
-| Golden masters | 6/6 passed after final owner approval and deliberate re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, and build-card quantities |
-| UI smoke suite | 15/15 passed locally with no browser errors, external requests, or cloud access | Ready; re-run after the `main` integration |
-| Full cloud-off test suite | 1,922 passed, 1 skipped | Ready; re-run after the `main` integration |
+| Golden masters | 6/6 passed after visual review and deliberate post-integration re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, build-card quantities, and the current image-sizing behavior |
+| UI smoke suite | 15/15 passed after integration with no browser errors, external requests, or cloud access | Ready |
+| Full cloud-off test suite | 1,924 passed, 1 skipped after integration | Ready |
 
 ### Open release gates
 
@@ -69,8 +68,9 @@ Update this document as release decisions are made; it is the single short recor
    rendering, nested child parts, and build-card quantities.
 4. **Complete:** the current 15-flow UI smoke suite passes locally with no browser errors,
    external requests, or cloud access.
-5. Integrate the six `main` commits, preserving its current app-version, image-sizing, manifest,
-   rendering, and update-behavior fixes; then re-run the gates above.
+5. **Complete:** integrated the six newer `main` commits, preserved the current app-version,
+   image-sizing, manifest, rendering, and update-behavior fixes, resolved the overlap with the
+   Part Picker manifest initialization, and reran every gate above.
 6. **Complete:** public QuickBooks controls are hidden behind the release flag. Do not enable them
    until the separate QuickBooks production gate is complete.
 
@@ -138,7 +138,7 @@ disabled, or visibly labelled as internal/sandbox-only. Do not imply that produc
 
 ## Owner decisions still needed
 
-- Approve the final version bump and the merge/release.
+- Approve the pull request's final merge to `main` and the manual release workflow/version bump.
 
 ## Related references
 
