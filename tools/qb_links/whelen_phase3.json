@@ -1,0 +1,23 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 3: merge duplicate placeholders into canonical products (expanding their placements), rename 9X Edge, and delete non-products + wrong-manufacturer placeholders. Merged placements: standard_mount_ion + t_series_ion (front_side_warning, pit_bar_warning) -> ion / t_series; t_ion (forward_warning) -> t_series; t_ions_w_shorud (front_interior_light_bar) -> t_series. Legacy_workbook_index.json is repointed separately. core_control_head intentionally NOT deleted (ambiguous - flagged for review).",
+  "set_fits": {
+    "whelen_ion": ["forward_warning", "side_warning", "rear_warning", "lower_liftgate_warning", "front_side_warning", "pit_bar_warning"],
+    "whelen_t_series": ["side_warning", "rear_warning", "lower_liftgate_warning", "rear_seat_cargo_lights", "cargo_lighting", "forward_warning", "front_side_warning", "pit_bar_warning", "front_interior_light_bar"]
+  },
+  "rename": {
+    "whelen_9x_edge": "Edge 9X"
+  },
+  "delete_products": [
+    "whelen_am_900",
+    "whelen_blueprint",
+    "whelen_center_of_dash",
+    "whelen_flashed_with_core",
+    "whelen_vehicle_specific_mount",
+    "whelen_in_light_bar",
+    "whelen_standard_mount_ion",
+    "whelen_t_ion",
+    "whelen_t_series_ion",
+    "whelen_t_ions_w_shorud"
+  ]
+}

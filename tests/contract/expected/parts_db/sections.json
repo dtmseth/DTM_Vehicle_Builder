@@ -1,0 +1,16 @@
+{
+  "body": {
+    "sections": [
+      {
+        "label": "Exterior",
+        "section_id": "exterior"
+      },
+      {
+        "label": "Interior",
+        "section_id": "interior"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

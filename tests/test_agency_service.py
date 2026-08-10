@@ -16,6 +16,7 @@ from dtm_buildsheet.app.services.agency_service import (
     handle_delete_agency,
     handle_list_agencies,
     handle_save_agency,
+    handle_save_agency_default_preferences,
     handle_search_agencies,
     load_agencies,
 )
@@ -63,6 +64,47 @@ class TestPerRecordStorage:
         assert len(records) == 1
         assert records[0].agency_id == agency_id
         assert records[0].contact_email == "chief@alpha.gov"
+
+    def test_default_preferences_round_trip(self, tmp_path):
+        paths = _paths(tmp_path)
+        saved = handle_save_agency({
+            "name": "Alpha PD",
+            "default_preferences": {
+                "lighting_brands": ["Whelen"],
+                "camera_brand": "Axon",
+                "push_bumper_brand": "Setina",
+            },
+        }, paths)
+        agency_service._cache.clear()
+        agency = load_agencies(paths)[0]
+        assert agency.agency_id == saved["agency"]["agency_id"]
+        assert agency.default_preferences.lighting_brands == ["Whelen"]
+        assert agency.default_preferences.camera_brand == "Axon"
+        assert agency.default_preferences.push_bumper_brand == "Setina"
+
+    def test_project_choices_can_update_only_agency_default_preferences(self, tmp_path):
+        paths = _paths(tmp_path)
+        saved = handle_save_agency({
+            "name": "Alpha PD",
+            "contact_email": "chief@alpha.gov",
+            "default_preferences": {"lighting_brands": ["Whelen"]},
+        }, paths)
+
+        result = handle_save_agency_default_preferences({
+            "agency_id": saved["agency"]["agency_id"],
+            "default_preferences": {
+                "lighting_brands": ["Code 3"],
+                "camera_brand": "Axon",
+                "console_brand": "Havis",
+            },
+        }, paths)
+
+        assert result["ok"] is True
+        agency = load_agencies(paths)[0]
+        assert agency.contact_email == "chief@alpha.gov"
+        assert agency.default_preferences.lighting_brands == ["Code 3"]
+        assert agency.default_preferences.camera_brand == "Axon"
+        assert agency.default_preferences.console_brand == "Havis"
 
     def test_delete_removes_file_and_cache_entry(self, tmp_path):
         paths = _paths(tmp_path)

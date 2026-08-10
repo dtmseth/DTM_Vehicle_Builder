@@ -1,0 +1,32 @@
+{
+  "manufacturer_id": "whelen",
+  "new_products": [
+    {"product_id": "whelen_ion_rear_pillar", "model": "ION REAR PILLAR", "fits_part_types": ["rear_warning"]}
+  ],
+  "links": [
+    {"sku":"MBCT21","product":"whelen_mirror_beams","vehicle_tags":["TAHOE"]},
+    {"sku":"MBDC11","product":"whelen_mirror_beams","vehicle_tags":["CHARGER"]},
+    {"sku":"MBFX25","product":"whelen_mirror_beams","vehicle_tags":["PIU"]},
+    {"sku":"VX2D","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX2DX","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX2E","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX2EX","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX3BACX","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX3RACX","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VX3RBC","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VXTD","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"VXTE","product":"whelen_vxe","vehicle_tags":["any"]},
+    {"sku":"TMS0A","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"TMS0B","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"TMS0D","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"TMS0F","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"TMS0R","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"TMSOE","product":"whelen_mini_t_series","vehicle_tags":["any"]},
+    {"sku":"RPWD50","product":"whelen_ion_rear_pillar","vehicle_tags":["PIU"]},
+    {"sku":"RPWD54","product":"whelen_ion_rear_pillar","vehicle_tags":["TAHOE"]},
+    {"sku":"RPWT50","product":"whelen_ion_rear_pillar","vehicle_tags":["PIU"]},
+    {"sku":"CEM8","product":"whelen_cem8","vehicle_tags":["any"]},
+    {"sku":"CEM16","product":"whelen_cem16","vehicle_tags":["any"]},
+    {"sku":"CEM24","product":"whelen_cem24","vehicle_tags":["any"]}
+  ]
+}

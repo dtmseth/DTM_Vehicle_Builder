@@ -7,45 +7,11 @@ function _ptLoadForm(project) {
   $("proj-agency").value      = c.agency       || "";
   $("proj-agency-id").value   = c.agency_id    || "";
   $("proj-build-year").value  = c.build_year   || new Date().getFullYear().toString();
-  $("proj-quote").value       = c.quote_number || "";
   $("proj-salesrep").value    = c.sales_rep    || "";
   $("proj-salesrep-id").value = c.sales_rep_id || "";
 
-  // Populate camera select from config (single source of truth)
-  const cameraEl = $("proj-camera");
-  if (cameraEl) {
-    const cameraBrands = _PT.projectOptions?.camera_brands || [];
-    cameraEl.innerHTML = `<option value="">— Not specified —</option>` +
-      cameraBrands.map(b => `<option value="${esc(b)}"${pr.camera_brand === b ? " selected" : ""}>${esc(b)}</option>`).join("");
-    if (pr.camera_brand) cameraEl.value = pr.camera_brand;
-  }
-
-  // Populate bumper and cage datalists from config
-  const bumperList = $("proj-bumper-list");
-  if (bumperList) {
-    const bumperBrands = _PT.projectOptions?.bumper_brands || [];
-    bumperList.innerHTML = bumperBrands.map(m => `<option value="${esc(m)}">`).join("");
-  }
-  const cageList = $("proj-cage-list");
-  if (cageList) {
-    const cageBrands = _PT.projectOptions?.cage_brands || [];
-    cageList.innerHTML = cageBrands.map(m => `<option value="${esc(m)}">`).join("");
-  }
-
-  $("proj-bumper-brand").value = pr.push_bumper_brand || "";
-  $("proj-cage-brand").value   = pr.cage_brand        || "";
-  $("proj-pref-notes").value   = pr.notes             || "";
-
-  const lightingContainer = $("proj-lighting-checkboxes");
-  if (lightingContainer) {
-    const lightOptions  = _ptLightingBrandsFromConfig();
-    const selectedBrands = new Set(pr.lighting_brands || []);
-    lightingContainer.innerHTML = lightOptions.map(m =>
-      `<label class="proj-brand-check-label">
-        <input type="checkbox" class="proj-lighting-brand-cb" value="${esc(m)}"${selectedBrands.has(m) ? " checked" : ""}> ${esc(m)}
-      </label>`
-    ).join("");
-  }
+  _ptSetPreferenceForm("proj", pr);
+  _ptUpdateProjectPreferenceSource(c.agency_id);
 
   _PT.units = (project?.build_units || []).map(u => ({
     uid:           u.unit_id       || _ptUuid(),
@@ -56,8 +22,27 @@ function _ptLoadForm(project) {
     draft_id:      u.draft_id      || null,
     individuals:   (u.individuals  || []).map(ind => ({ ...ind })),
     _indOpen:      false,
+    _customBuildTypeOpen: _ptIsCustomBuildType(u.build_type || ""),
   }));
   if (!_PT.units.length) _ptAddUnit();
+  _ptRenderUnits();
+}
+
+function _ptUpdateProjectPreferenceSource(agencyId, agency = null) {
+  const message = $("proj-preferences-source");
+  if (!message) return;
+  const selected = agency || _PT.agencies.find(item => item.agency_id === agencyId);
+  message.textContent = selected
+    ? `Starting with ${selected.name}'s saved equipment defaults. Change any choice below only when this project is an exception.`
+    : "Select a saved agency to load its normal equipment choices. Changes here apply only to this project.";
+}
+
+function _ptApplyAgencyDefaults(agency) {
+  const agencyId = agency?.agency_id || $("proj-agency-id")?.value?.trim() || "";
+  const selected = _PT.agencies.find(item => item.agency_id === agencyId) || agency;
+  _ptUpdateProjectPreferenceSource(agencyId, selected);
+  if (!selected) return;
+  _ptSetPreferenceForm("proj", selected.default_preferences || {});
   _ptRenderUnits();
 }
 
@@ -71,6 +56,7 @@ function _ptAddUnit() {
     draft_id:      null,
     individuals:   [],
     _indOpen:      false,
+    _customBuildTypeOpen: false,
   });
 }
 
@@ -79,7 +65,14 @@ function _ptCollectUnits() {
     const row = document.querySelector(`.proj-unit-row[data-uid="${u.uid}"]`);
     if (!row) return;
     u.vehicle_model = row.querySelector(".proj-u-vehicle").value;
-    u.build_type    = row.querySelector(".proj-u-buildtype").value;
+    const buildType = row.querySelector(".proj-u-buildtype");
+    if (buildType?.value === _PT_CUSTOM_BUILD_TYPE) {
+      u._customBuildTypeOpen = true;
+      u.build_type = row.querySelector(".proj-u-buildtype-custom")?.value.trim() || u.build_type || "";
+    } else {
+      u._customBuildTypeOpen = false;
+      u.build_type = buildType?.value || "";
+    }
     u.quantity      = Math.max(1, parseInt(row.querySelector(".proj-u-qty").value, 10) || 1);
 
     const indRows = row.querySelectorAll(".proj-ind-row");
@@ -113,11 +106,7 @@ function _ptRenderUnits() {
   const currentAgency = $("proj-agency")?.value?.trim() || "Agency";
 
   $("proj-units-list").innerHTML = _PT.units.map((u, i) => {
-    const localBtVals = [...btVals];
-    if (u.build_type && !localBtVals.includes(u.build_type)) localBtVals.push(u.build_type);
-    const btOpts = localBtVals.map(t =>
-      `<option${t === u.build_type ? " selected" : ""}>${esc(t)}</option>`
-    ).join("");
+    const btOpts = _ptBuildTypeOptions(u.build_type, u._customBuildTypeOpen);
 
     const selPreset = _ptVisiblePresets().find(p => p.preset_id === u.preset_id);
     const presetChip = selPreset
@@ -159,6 +148,7 @@ function _ptRenderUnits() {
           <input type="number" class="proj-u-qty" min="1" value="${u.quantity}">
         </div>
       </div>
+      ${_ptCustomBuildTypeInput(u.build_type, "proj-u-buildtype-custom", u._customBuildTypeOpen)}
       <div class="proj-preset-row">
         <label class="proj-preset-label">Preset</label>
         <div class="proj-preset-selected">${presetChip}</div>
@@ -195,6 +185,22 @@ function _ptRenderUnits() {
     row.querySelector(".proj-u-vehicle").value = u.vehicle_model;
     const qtyInput = row.querySelector(".proj-u-qty");
     const indBtn   = row.querySelector(".proj-ind-toggle-btn");
+    const btSelect = row.querySelector(".proj-u-buildtype");
+    btSelect?.addEventListener("change", () => {
+      _ptCollectUnits();
+      const live = _PT.units.find(item => item.uid === u.uid);
+      if (live && btSelect.value === _PT_CUSTOM_BUILD_TYPE) {
+        live._customBuildTypeOpen = true;
+        if (!_ptIsCustomBuildType(live.build_type)) live.build_type = "";
+      }
+      if (live?.preset_id && !_ptCompatiblePresets(live).some(p => p.preset_id === live.preset_id)) {
+        live.preset_id = "";
+      }
+      _ptRenderUnits();
+      if (btSelect.value === _PT_CUSTOM_BUILD_TYPE) {
+        document.querySelector(`.proj-unit-row[data-uid="${u.uid}"] .proj-u-buildtype-custom`)?.focus();
+      }
+    });
     qtyInput?.addEventListener("input", () => {
       const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
       if (indBtn) indBtn.textContent = `Add Individual Unit Details (×${qty})`;
@@ -297,10 +303,9 @@ function _ptRenderReview() {
   _ptCollectUnits();
   const agency  = $("proj-agency").value.trim()     || "—";
   const year    = $("proj-build-year").value.trim()  || "";
-  const quote   = $("proj-quote").value.trim();
   const rep     = $("proj-salesrep").value.trim();
   const nameStr = year ? `${agency} — ${year}` : agency;
-  const cLine   = [nameStr, quote, rep].filter(Boolean).join(" · ");
+  const cLine   = [nameStr, rep].filter(Boolean).join(" · ");
 
   const unitRows = _PT.units.map((u, i) => {
     const preset  = _PT.presets.find(p => p.preset_id === u.preset_id);
@@ -344,26 +349,16 @@ function _ptRenderReview() {
 
 function _ptBuildPayload() {
   _ptCollectUnits();
-  const lightingBrands = Array.from(
-    document.querySelectorAll(".proj-lighting-brand-cb:checked")
-  ).map(cb => cb.value);
 
   const p = {
     customer: {
       agency:       $("proj-agency").value.trim(),
       agency_id:    $("proj-agency-id")?.value?.trim()    || "",
       build_year:   $("proj-build-year")?.value?.trim()   || "",
-      quote_number: $("proj-quote").value.trim(),
       sales_rep:    $("proj-salesrep").value.trim(),
       sales_rep_id: $("proj-salesrep-id")?.value?.trim()  || "",
     },
-    preferences: {
-      camera_brand:      $("proj-camera")?.value            || "",
-      push_bumper_brand: $("proj-bumper-brand")?.value.trim() || "",
-      cage_brand:        $("proj-cage-brand")?.value.trim()   || "",
-      lighting_brands:   lightingBrands,
-      notes:             $("proj-pref-notes")?.value.trim()   || "",
-    },
+    preferences: _ptPreferencePayload("proj"),
     build_units: _PT.units.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,

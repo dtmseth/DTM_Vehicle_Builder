@@ -1,0 +1,323 @@
+{
+  "body": {
+    "manufacturers": [
+      {
+        "label": "10-8",
+        "manufacturer_id": "10_8",
+        "website": ""
+      },
+      {
+        "label": "1St In Emergency",
+        "manufacturer_id": "1st_in_emergency",
+        "website": ""
+      },
+      {
+        "label": "3M",
+        "manufacturer_id": "3m",
+        "website": ""
+      },
+      {
+        "label": "5-0 Fab (Dtm)",
+        "manufacturer_id": "5_0_fab_dtm",
+        "website": ""
+      },
+      {
+        "label": "Ace K-9",
+        "manufacturer_id": "ace_k_9",
+        "website": ""
+      },
+      {
+        "label": "Advanced Graphics",
+        "manufacturer_id": "advanced_graphics",
+        "website": ""
+      },
+      {
+        "label": "American Aluminum",
+        "manufacturer_id": "american_aluminum",
+        "website": ""
+      },
+      {
+        "label": "Angel Armor",
+        "manufacturer_id": "angel_armor",
+        "website": ""
+      },
+      {
+        "label": "Arctic Start",
+        "manufacturer_id": "arcti_start",
+        "website": ""
+      },
+      {
+        "label": "Axon",
+        "manufacturer_id": "axon",
+        "website": ""
+      },
+      {
+        "label": "Battery Tender",
+        "manufacturer_id": "battery_tender",
+        "website": ""
+      },
+      {
+        "label": "Bearded 3D",
+        "manufacturer_id": "bearded_3d",
+        "website": ""
+      },
+      {
+        "label": "Blac-Rac",
+        "manufacturer_id": "blac_rac",
+        "website": ""
+      },
+      {
+        "label": "Brother",
+        "manufacturer_id": "brother",
+        "website": ""
+      },
+      {
+        "label": "Clear Armor",
+        "manufacturer_id": "clear_armor",
+        "website": ""
+      },
+      {
+        "label": "Cradle Point",
+        "manufacturer_id": "cradle_point",
+        "website": ""
+      },
+      {
+        "label": "Decked",
+        "manufacturer_id": "decked",
+        "website": ""
+      },
+      {
+        "label": "Feniex",
+        "manufacturer_id": "feniex",
+        "website": ""
+      },
+      {
+        "label": "Gamber Johnson",
+        "manufacturer_id": "gamber_johnson",
+        "website": ""
+      },
+      {
+        "label": "Globesat",
+        "manufacturer_id": "globesat",
+        "website": ""
+      },
+      {
+        "label": "Gtt",
+        "manufacturer_id": "gtt",
+        "website": ""
+      },
+      {
+        "label": "Havis",
+        "manufacturer_id": "havis",
+        "website": ""
+      },
+      {
+        "label": "Husky",
+        "manufacturer_id": "husky",
+        "website": ""
+      },
+      {
+        "label": "Kenwood",
+        "manufacturer_id": "kenwood",
+        "website": ""
+      },
+      {
+        "label": "Kussmaul",
+        "manufacturer_id": "kussmaul",
+        "website": ""
+      },
+      {
+        "label": "Magnetic Mic",
+        "manufacturer_id": "magnetic_mic",
+        "website": ""
+      },
+      {
+        "label": "Motorola",
+        "manufacturer_id": "motorola",
+        "website": ""
+      },
+      {
+        "label": "Night Ride",
+        "manufacturer_id": "night_ride",
+        "website": ""
+      },
+      {
+        "label": "Nova",
+        "manufacturer_id": "nova",
+        "website": ""
+      },
+      {
+        "label": "Patrol Pc",
+        "manufacturer_id": "patrol_pc",
+        "website": ""
+      },
+      {
+        "label": "Preimer K-9",
+        "manufacturer_id": "preimer_k_9",
+        "website": ""
+      },
+      {
+        "label": "Pro-Gard",
+        "manufacturer_id": "pro_gard",
+        "website": ""
+      },
+      {
+        "label": "Ray Allen",
+        "manufacturer_id": "ray_allen",
+        "website": ""
+      },
+      {
+        "label": "Rockland Cabinets",
+        "manufacturer_id": "rockland_cabinets",
+        "website": ""
+      },
+      {
+        "label": "Santa Cruz",
+        "manufacturer_id": "santa_cruz",
+        "website": ""
+      },
+      {
+        "label": "Schumacher",
+        "manufacturer_id": "schumacher",
+        "website": ""
+      },
+      {
+        "label": "Setina",
+        "manufacturer_id": "setina",
+        "website": ""
+      },
+      {
+        "label": "Sho-Me",
+        "manufacturer_id": "sho_me",
+        "website": ""
+      },
+      {
+        "label": "Shop Detail",
+        "manufacturer_id": "shop_detail",
+        "website": ""
+      },
+      {
+        "label": "Sierra Wireless",
+        "manufacturer_id": "sierra_wireless",
+        "website": ""
+      },
+      {
+        "label": "Soundoff",
+        "manufacturer_id": "soundoff",
+        "website": ""
+      },
+      {
+        "label": "Stalker",
+        "manufacturer_id": "stalker",
+        "website": ""
+      },
+      {
+        "label": "Tiger Tough",
+        "manufacturer_id": "tiger_tough",
+        "website": ""
+      },
+      {
+        "label": "Troy",
+        "manufacturer_id": "troy",
+        "website": ""
+      },
+      {
+        "label": "Truck Vault",
+        "manufacturer_id": "truck_vault",
+        "website": ""
+      },
+      {
+        "label": "Watchguard",
+        "manufacturer_id": "watchguard",
+        "website": ""
+      },
+      {
+        "label": "Weather Tech",
+        "manufacturer_id": "weather_tech",
+        "website": ""
+      },
+      {
+        "label": "Westin",
+        "manufacturer_id": "westin",
+        "website": ""
+      },
+      {
+        "label": "Whelen",
+        "manufacturer_id": "whelen",
+        "website": ""
+      },
+      {
+        "label": "JB Lund Dock",
+        "manufacturer_id": "jb_lund_dock",
+        "website": ""
+      },
+      {
+        "label": "Pac Tool",
+        "manufacturer_id": "pac_tool",
+        "website": ""
+      },
+      {
+        "label": "Unity",
+        "manufacturer_id": "unity",
+        "website": ""
+      },
+      {
+        "label": "Federal Signal",
+        "manufacturer_id": "federal_signal",
+        "website": ""
+      },
+      {
+        "label": "RAM",
+        "manufacturer_id": "ram",
+        "website": ""
+      },
+      {
+        "label": "Go Rhino",
+        "manufacturer_id": "go_rhino",
+        "website": ""
+      },
+      {
+        "label": "InterMotive",
+        "manufacturer_id": "intermotive",
+        "website": ""
+      },
+      {
+        "label": "FireNinja Safety Equipment",
+        "manufacturer_id": "fireninja_safety_equipment",
+        "website": ""
+      },
+      {
+        "label": "Air One Equipment",
+        "manufacturer_id": "air_one_equipment",
+        "website": ""
+      },
+      {
+        "label": "SnowEx",
+        "manufacturer_id": "snowex",
+        "website": ""
+      },
+      {
+        "label": "Noptic",
+        "manufacturer_id": "noptic",
+        "website": ""
+      },
+      {
+        "label": "Lind",
+        "manufacturer_id": "lind",
+        "website": ""
+      },
+      {
+        "label": "Laird",
+        "manufacturer_id": "laird",
+        "website": ""
+      },
+      {
+        "label": "Unassigned (QB Import)",
+        "manufacturer_id": "qb_unassigned",
+        "website": ""
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

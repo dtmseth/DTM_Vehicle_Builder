@@ -30,8 +30,25 @@ class TestPartsDbValidator:
         # All top-level keys get filled
         for key in ("types", "sections", "zones", "sub_zones", "build_attributes",
                     "tags", "manufacturers", "placements", "placement_zones",
-                    "services", "preference_filters", "color_palette", "naming_rules"):
+                    "services", "system_cable_refreshes", "preference_filters", "color_palette", "naming_rules"):
             assert key in result
+
+    def test_rejects_system_cable_refresh_without_live_qb_sku(self):
+        with pytest.raises(ValueError, match="must be live and QB-linked"):
+            validate_config_payload("parts_db.json", {
+                "products": {
+                    "cable": {
+                        "manufacturer_id": "m", "model": "Cable",
+                        "part_numbers": [{"part_number": "CABLE-1"}],
+                    },
+                },
+                "system_cable_refreshes": {
+                    "radio": [{
+                        "id": "power", "label": "Power cable", "part_type": "radio_cable",
+                        "billing_options": [{"product_id": "cable", "part_number": "CABLE-1"}],
+                    }],
+                },
+            })
 
     def test_rejects_non_dict_products(self):
         with pytest.raises(ValueError, match="'products' must be an object"):
@@ -56,10 +73,72 @@ class TestPartsDbValidator:
                                     "fits_part_types": "not a list"}},
             })
 
+    def test_rejects_invalid_product_model_aliases(self):
+        with pytest.raises(ValueError, match="model_aliases"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "model_aliases": ["PIONEER", ""]}},
+            })
+
+    def test_rejects_non_boolean_center_single_mirror_render_metadata(self):
+        with pytest.raises(ValueError, match="center_single_at_mirror_location"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {
+                    "manufacturer_id": "whelen",
+                    "model": "Pioneer",
+                    "render": {"center_single_at_mirror_location": "true"},
+                }},
+            })
+
+    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required"])
+    def test_rejects_invalid_product_location_and_pa_metadata(self, field):
+        with pytest.raises(ValueError, match=field):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y", field: "false"}},
+            })
+
+    def test_rejects_product_non_list_location_options(self):
+        with pytest.raises(ValueError, match="location_options"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "location_options": "not a list"}},
+            })
+
+    def test_rejects_product_non_string_fixed_location(self):
+        with pytest.raises(ValueError, match="fixed_location"):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y",
+                                    "fixed_location": ["ON REAR PARTITION"]}},
+            })
+
+    @pytest.mark.parametrize(("field", "value"), [
+        ("default_colors", "red"),
+        ("accessories_disabled", "true"),
+    ])
+    def test_rejects_invalid_product_picker_metadata(self, field, value):
+        with pytest.raises(ValueError, match=field):
+            validate_config_payload("parts_db.json", {
+                "products": {"x": {"manufacturer_id": "whelen", "model": "Y", field: value}},
+            })
+
     def test_rejects_part_type_missing_label(self):
         with pytest.raises(ValueError, match="label"):
             validate_config_payload("parts_db.json", {
                 "part_types": {"x": {"type_id": "lights"}},
+            })
+
+    def test_rejects_non_string_family_picker_part_label(self):
+        with pytest.raises(ValueError, match="picker_part_label"):
+            validate_config_payload("parts_db.json", {
+                "families": {"x": {"label": "X", "category": "lights", "members": [],
+                                   "picker_part_label": ["Interior Lights"]}},
+            })
+
+    def test_rejects_non_string_family_fixed_location(self):
+        with pytest.raises(ValueError, match="fixed_location"):
+            validate_config_payload("parts_db.json", {
+                "families": {"x": {"label": "X", "category": "structural", "members": [],
+                                   "fixed_location": ["PRISONER AREA"]}},
             })
 
     def test_rejects_part_type_tree_position_missing_zone(self):
@@ -68,6 +147,21 @@ class TestPartsDbValidator:
                 "part_types": {"x": {
                     "label": "X", "type_id": "lights",
                     "tree_positions": [{"section": "exterior"}],
+                }},
+            })
+
+    @pytest.mark.parametrize("recommendation", [
+        "not a list",
+        [{"category": "harness"}],
+        [{"category": "harness", "product_id": "h", "when_existing_part_type": "control_head",
+          "message": "Recommended", "minimum_existing_count": 0}],
+    ])
+    def test_rejects_invalid_part_type_recommended_accessories(self, recommendation):
+        with pytest.raises(ValueError, match="recommended_accessories"):
+            validate_config_payload("parts_db.json", {
+                "part_types": {"control_head": {
+                    "label": "Control Head", "type_id": "equipment",
+                    "recommended_accessories": recommendation,
                 }},
             })
 

@@ -1,0 +1,5 @@
+{
+  "adapter": "draft",
+  "case_name": "draft_piu_admin",
+  "input_path": "tests/golden/inputs/draft_piu_admin.json"
+}

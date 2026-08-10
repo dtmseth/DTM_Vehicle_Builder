@@ -1,0 +1,14 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 4: fold Mini Century 11\"/16\" size variants into whelen_century (which already holds the 23\" MC23PA). Same product, different lengths/mounts/colors.",
+  "links": [
+    {"sku": "MC11MA",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC11PA",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC11SA",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC16MA",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC16MCG", "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC16MF",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC16PA",  "product": "whelen_century", "vehicle_tags": ["any"]},
+    {"sku": "MC16PCA", "product": "whelen_century", "vehicle_tags": ["any"]}
+  ]
+}

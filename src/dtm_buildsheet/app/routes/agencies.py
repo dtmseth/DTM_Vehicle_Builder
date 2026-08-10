@@ -8,6 +8,7 @@ from ..services.agency_service import (
     handle_delete_agency,
     handle_list_agencies,
     handle_save_agency,
+    handle_save_agency_default_preferences,
     handle_search_agencies,
 )
 from .http import send_json
@@ -25,6 +26,9 @@ def route_agencies(
         return True
     if method == "POST" and path == "/api/agency/save":
         send_json(handler, handle_save_agency(body, paths))
+        return True
+    if method == "POST" and path == "/api/agency/default-preferences":
+        send_json(handler, handle_save_agency_default_preferences(body, paths))
         return True
     if method == "DELETE" and path.startswith("/api/agency/"):
         agency_id = path[len("/api/agency/"):]

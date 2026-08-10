@@ -1,0 +1,18 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 9: cable accessories. (1) Three more OBD-II CANPORT vehicle kits + the ScanPort kit added to the EXISTING whelen_core_canport_cable product (created in the slice with C399K2/K4/K5, already wired as a cable accessory of whelen_core) — links only, no set_accessories needed. (2) Mic extension cable -> new product wired cable-category to whelen_ws321_mic. friendly_name + vehicle_tags per convention.",
+  "new_products": [
+    {"product_id": "whelen_mic_extension_cable", "model": "Mic Extension Cable", "fits_part_types": ["cable"]}
+  ],
+  "links": [
+    {"sku": "C399K3", "product": "whelen_core_canport_cable", "vehicle_tags": ["DURANGO"], "friendly_name": "OBD-II CANPORT: Durango '18-26"},
+    {"sku": "C399K6", "product": "whelen_core_canport_cable", "vehicle_tags": ["TAHOE", "SUBURBAN"], "friendly_name": "OBD-II CANPORT: Tahoe/Suburban '21-22"},
+    {"sku": "C399K7", "product": "whelen_core_canport_cable", "vehicle_tags": ["F-150", "F-150-LIGHTNING", "PIU"], "friendly_name": "OBD-II CANPORT: F-150 PPV '21-23 / Lightning '22-24 / PIU"},
+    {"sku": "C399SP", "product": "whelen_core_canport_cable", "vehicle_tags": ["any"], "friendly_name": "ScanPort kit for C399"},
+
+    {"sku": "46-0748144-00", "product": "whelen_mic_extension_cable", "vehicle_tags": ["any"], "friendly_name": "Mic extension cable"}
+  ],
+  "set_accessories": {
+    "whelen_ws321_mic": [{"category": "cable", "product_id": "whelen_mic_extension_cable", "required": false}]
+  }
+}

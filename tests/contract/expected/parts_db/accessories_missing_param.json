@@ -1,0 +1,7 @@
+{
+  "body": {
+    "error": "missing product_id"
+  },
+  "handled": true,
+  "status": 400
+}

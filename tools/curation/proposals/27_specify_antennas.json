@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "Owner ruling 2026-07-07 (in-chat, closing the last two review-sheet flags)",
+    "rulings": [
+      "specify_whip_style: 'whip style can be merged with the laird whip antenna (QWB800)' — laird_qwb800 is already homed radio_antenna_top with the QB-linked QWB800 SKU, so the placeholder carries nothing worth porting; deleting it IS the merge.",
+      "specify_cylinder_style: keep selectable for the build sheet, shop-side only, no QB link for now ('add the needed data for the shop side, and then leave it out of qb') — self-merge to a proper name; its SKU-less part_number leaves it in the Not-in-QB backing state, which is exactly the requested behavior.",
+      "manufacturer 'specify' stays for now as the intentional brandless/shop placeholder carrying only the cylinder antenna; optional later grid edit: rename its label to 'Unspecified (Shop)'."
+    ]
+  },
+  "delete_products": ["specify_whip_style"],
+  "merge": [
+    {
+      "target_id": "specify_cylinder_style",
+      "sources": ["specify_cylinder_style"],
+      "model": "CYLINDER STYLE ANTENNA (SHOP)",
+      "manufacturer_id": "specify",
+      "fits_part_types": ["radio_antenna_top"],
+      "_confidence": "high",
+      "_why": "owner ruling: shop-side selectable antenna style with no QB linkage yet; Not-in-QB state keeps it pickable and on the build sheet"
+    }
+  ],
+  "_per_item_notes": {
+    "specify_whip_style": "covered by laird_qwb800 (QWB800, QB-linked, same radio_antenna_top home) — owner-directed"
+  }
+}

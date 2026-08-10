@@ -1,0 +1,350 @@
+{
+  "manufacturer_id": "setina",
+  "new_products": [
+    {
+      "product_id": "setina_ultimate_k9",
+      "model": "ULTIMATE K9",
+      "fits_part_types": [
+        "k9_kennel"
+      ]
+    },
+    {
+      "product_id": "setina_k9_heat_alarm",
+      "model": "K-9 HEAT ALARM",
+      "fits_part_types": [
+        "k9_heat_alarm_popper"
+      ]
+    },
+    {
+      "product_id": "setina_k9_fan",
+      "model": "K-9 FAN",
+      "fits_part_types": [
+        "k9_add_ons"
+      ]
+    },
+    {
+      "product_id": "setina_k9_dog_bowl",
+      "model": "K-9 DOG BOWL",
+      "fits_part_types": [
+        "k9_add_ons"
+      ]
+    },
+    {
+      "product_id": "setina_t_rail_mount_kit",
+      "model": "T-RAIL MOUNT KIT",
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ]
+    },
+    {
+      "product_id": "setina_firearm_mount_transfer_kit",
+      "model": "FIREARM MOUNT TRANSFER KIT",
+      "fits_part_types": [
+        "gun_lock_bracket"
+      ]
+    },
+    {
+      "product_id": "setina_partition_transfer_kit",
+      "model": "PARTITION TRANSFER KIT",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ]
+    },
+    {
+      "product_id": "setina_module_relocation_plate",
+      "model": "MODULE RELOCATION PLATE",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ]
+    },
+    {
+      "product_id": "setina_lower_extension_panel",
+      "model": "LOWER EXTENSION PANEL",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ]
+    },
+    {
+      "product_id": "setina_upper_bracket_nut_plate",
+      "model": "UPPER BRACKET NUT PLATE",
+      "fits_part_types": [
+        "front_partition_transfer_kit"
+      ]
+    },
+    {
+      "product_id": "setina_cargo_bracket_kit",
+      "model": "CARGO BRACKET KIT",
+      "fits_part_types": [
+        "equipment_tray"
+      ]
+    },
+    {
+      "product_id": "setina_cargo_box_transfer_kit",
+      "model": "CARGO BOX TRANSFER KIT",
+      "fits_part_types": [
+        "equipment_tray"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "CK0406DUR11-10",
+      "product": "setina_ultimate_k9",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "CK2052TAH21-10",
+      "product": "setina_ultimate_k9",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "CK2386ITU20-10",
+      "product": "setina_ultimate_k9",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "CK2417TAH21-10",
+      "product": "setina_ultimate_k9",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "EK0683TAH00",
+      "product": "setina_k9_heat_alarm",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "EK0689DUR11",
+      "product": "setina_k9_fan",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "EK0689ITU12",
+      "product": "setina_k9_fan",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "EK0689TAH00",
+      "product": "setina_k9_fan",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "GF1092DUR11",
+      "product": "setina_t_rail_mount_kit",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "GF1092ITU20",
+      "product": "setina_t_rail_mount_kit",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "GF1092TAH21",
+      "product": "setina_t_rail_mount_kit",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "GF1382CHT191500",
+      "product": "setina_t_rail_mount_kit",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "GT0536ITU20",
+      "product": "setina_firearm_mount_transfer_kit",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "K9A13145",
+      "product": "setina_k9_dog_bowl",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "PP19159",
+      "product": "setina_module_relocation_plate",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PT0185ITU20TM",
+      "product": "setina_partition_transfer_kit",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PT2185DUR11",
+      "product": "setina_partition_transfer_kit",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "PT2185ITU20TM",
+      "product": "setina_partition_transfer_kit",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PT2185TAH21",
+      "product": "setina_partition_transfer_kit",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "ST0380CGR11",
+      "product": "setina_lower_extension_panel",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "TF0237TRV24",
+      "product": "setina_cargo_bracket_kit",
+      "vehicle_tags": [
+        "TRAVERSE"
+      ]
+    },
+    {
+      "sku": "TK0233DUR11",
+      "product": "setina_equimpent_box",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "TK0233ITU20",
+      "product": "setina_equimpent_box",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "TK0233TAH21",
+      "product": "setina_equimpent_box",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "TK0247TAH21",
+      "product": "setina_equipment_tray",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "TK0661BLE24",
+      "product": "setina_board",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "TK0841TRV18",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "TRAVERSE"
+      ]
+    },
+    {
+      "sku": "TK1261FDT15F150",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "TK1261FDT15F150RW",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "TK1338FDT15F150",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "TK1339CHT191500",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "TK1459CHT191500RW",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "TK1488TAH21",
+      "product": "setina_equipment_drawer",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "TPA9289",
+      "product": "setina_equipment_tray",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "TT0242TAH21",
+      "product": "setina_cargo_box_transfer_kit",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "TT0242TAH21K9",
+      "product": "setina_cargo_box_transfer_kit",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "WP14652",
+      "product": "setina_upper_bracket_nut_plate",
+      "vehicle_tags": [
+        "any"
+      ]
+    }
+  ]
+}

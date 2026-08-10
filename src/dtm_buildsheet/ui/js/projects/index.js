@@ -25,7 +25,6 @@ function _ptShowDetail(project) {
 
   _ptRenderOverview(project);
   _ptRenderEditTab(project, false);
-  _ptRenderBuildsTab(project);
   _ptSetDetailTab("overview");
 }
 
@@ -52,7 +51,7 @@ function _ptSetDetailTab(tab) {
   document.querySelectorAll(".proj-dtab").forEach(b =>
     b.classList.toggle("active", b.dataset.ptab === tab)
   );
-  ["overview", "edit", "builds"].forEach(t => {
+  ["overview", "edit"].forEach(t => {
     const el = $("proj-ptab-" + t);
     if (el) el.classList.toggle("active", t === tab);
   });
@@ -125,7 +124,7 @@ function _ptWizardNext() {
 function _ptBind() {
   $("btn-new-project").addEventListener("click", () => _ptShowEditor(null));
 
-  // Build editor wiring (Save & Return, Back)
+  // Build editor wiring (Return to Project)
   _ptBindBuildEditor();
 
   $("btn-proj-cancel").addEventListener("click", async () => {
@@ -208,7 +207,12 @@ function _ptBind() {
   // Wizard customer tab — agency and sales rep live search
   const agencyInput = $("proj-agency");
   if (agencyInput) {
-    _ptWireAgencySearch(agencyInput, $("proj-agency-id"), $("proj-agency-suggestions"));
+    _ptWireAgencySearch(
+      agencyInput,
+      $("proj-agency-id"),
+      $("proj-agency-suggestions"),
+      agency => _ptApplyAgencyDefaults(agency),
+    );
   }
   const repInput = $("proj-salesrep");
   if (repInput) {

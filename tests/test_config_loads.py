@@ -116,7 +116,13 @@ def test_asset_manifest_asset_files_exist(config):
     for part_id, views in config.asset_manifest.get("equipment_assets", {}).items():
         for view_name, rel_path in views.items():
             full_path = ASSETS_DIR / rel_path
-            if not full_path.exists():
+            # macOS's usual case-insensitive filesystem can make a typo look
+            # valid locally while the Linux release runner cannot find it.
+            exact_name_exists = (
+                full_path.parent.exists()
+                and Path(rel_path).name in {child.name for child in full_path.parent.iterdir()}
+            )
+            if not full_path.exists() or not exact_name_exists:
                 missing.append(f"{part_id}/{view_name}: {rel_path}")
     assert not missing, f"Missing asset files:\n" + "\n".join(missing)
 

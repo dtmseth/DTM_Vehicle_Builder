@@ -1,0 +1,40 @@
+{
+  "create_part_types": [
+    {"part_type_id": "radar_cable", "label": "Radar Cable", "type_id": "equipment", "accessory_category": "cable", "location_mode": "text"},
+    {"part_type_id": "radio_cable", "label": "Radio Cable", "type_id": "equipment", "accessory_category": "cable", "location_mode": "text"}
+  ],
+  "merge": [
+    {
+      "target_id": "stalker_antenna_cable",
+      "model": "Antenna Cable",
+      "manufacturer_id": "stalker",
+      "fits_part_types": ["radar_cable"],
+      "reviewed": true,
+      "accessory_category": "cable",
+      "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x", "stalker_806_0022_00", "stalker_806_0036_00", "stalker_vehicle_specific_bracket", "stalker_low_a_bracket", "stalker_high_a_bracket", "stalker_dual_swivel_bracket"],
+      "sources": ["stalker_155_2591_02", "stalker_155_2591_04", "stalker_155_2591_08", "stalker_155_2591_16", "stalker_155_2591_20", "stalker_155_2591_25"]
+    },
+    {
+      "target_id": "stalker_remote_display_cable",
+      "model": "Remote Display Cable",
+      "manufacturer_id": "stalker",
+      "fits_part_types": ["radar_cable"],
+      "reviewed": true,
+      "accessory_category": "cable",
+      "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x", "stalker_806_0022_00", "stalker_806_0036_00"],
+      "sources": ["stalker_155_2211_00", "stalker_155_2211_25"]
+    }
+  ],
+  "set_home": [
+    {"product_id": "soundoff_etsa461hpp_ext", "fits_part_types": ["control_head"]},
+    {"product_id": "motorola_pmkn4033a", "fits_part_types": ["radio_cable"]},
+    {"product_id": "qb_unassigned_radio_antenna", "fits_part_types": ["radio_cable"]},
+    {"product_id": "motorola_radio_refresh_kit", "fits_part_types": ["radio_cable"]}
+  ],
+  "set_accessory": [
+    {"product_id": "motorola_pmkn4033a", "accessory_category": "cable", "accessory_of_products": ["motorola_all_in_one_unit", "motorola_split_unit"]},
+    {"product_id": "qb_unassigned_radio_antenna", "accessory_category": "cable", "accessory_of_products": ["motorola_all_in_one_unit", "motorola_split_unit"]},
+    {"product_id": "motorola_radio_refresh_kit", "accessory_category": "cable", "accessory_of_products": ["motorola_all_in_one_unit", "motorola_split_unit"]}
+  ],
+  "delete_part_types": ["radar_interface_cable"]
+}

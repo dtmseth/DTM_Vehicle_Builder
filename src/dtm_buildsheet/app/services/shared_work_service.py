@@ -28,10 +28,13 @@ next pass tries again.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import shutil
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ...paths import AppPaths
@@ -51,15 +54,27 @@ DRAFTS_REMOTE_FOLDER = "Drafts"
 # upload them). Without this, a missing-from-cloud file is ambiguous —
 # could be deleted from cloud OR never made it to cloud.
 #
-# Schema v2 (current) additionally stores per-file eTags so we can skip the
-# content fetch when the cloud copy is provably unchanged. The eTag is
-# whatever Graph returned at the last sync; if it matches what Graph
-# returns now, the file hasn't changed and we can leave local alone.
+# Schema v3 (current) stores per-file eTags plus local content hashes. The
+# eTag identifies a cloud change; the hash tells us whether this device saved
+# a newer local version while the remote eTag stayed the same.
 # Schema v1 (just lists of IDs) auto-upgrades on first sync — every file
 # is considered "missing eTag" and falls through to the slow-path
 # content-fetch, populating eTags as it goes.
 _STATE_FILENAME = ".cloud_state.json"
-_STATE_SCHEMA_VERSION = 2
+_STATE_SCHEMA_VERSION = 3
+# A local write succeeded, but the next Graph listing has not yet supplied the
+# replacement eTag. This must be distinct from an empty eTag, which some
+# StorageProvider implementations legitimately use for every remote record.
+_PENDING_UPLOAD_ETAG = "__dtm_pending_upload_confirmation__"
+
+# A console setup (and a few other guided flows) can change a draft several
+# times in quick succession.  Serialize and coalesce background mirrors so an
+# earlier snapshot cannot finish after the final one and become the cloud copy
+# that a later app launch pulls down.
+_work_data_io_lock = threading.RLock()
+_background_mirror_lock = threading.Lock()
+_background_mirror_versions: dict[tuple[str, str], int] = {}
+_background_mirror_running: set[tuple[str, str]] = set()
 
 
 def _cloud_storage():
@@ -126,26 +141,79 @@ def mirror_draft_to_cloud(draft_id: str, local_path: Path) -> bool:
 # background; teammates see the change on their next sync regardless.
 
 def mirror_project_to_cloud_in_background(project_id: str, local_path: Path) -> None:
-    import threading
-    threading.Thread(
-        target=mirror_project_to_cloud,
-        args=(project_id, local_path),
-        daemon=True,
-        name=f"mirror-project-{project_id}",
-    ).start()
+    _queue_background_mirror(
+        kind="project", record_id=project_id, local_path=local_path,
+        remote_folder=PROJECTS_REMOTE_FOLDER,
+    )
 
 
 def mirror_draft_to_cloud_in_background(draft_id: str, local_path: Path) -> None:
-    import threading
+    _queue_background_mirror(
+        kind="draft", record_id=draft_id, local_path=local_path,
+        remote_folder=DRAFTS_REMOTE_FOLDER,
+    )
+
+
+def _queue_background_mirror(*, kind: str, record_id: str, local_path: Path, remote_folder: str) -> None:
+    """Ensure one worker pushes the newest saved version for a record.
+
+    The worker deliberately reads *local_path* only after it owns the work
+    lock.  If another save happens while an upload is in flight, it loops and
+    sends the new file before allowing inbound sync to run.
+    """
+    key = (kind, record_id)
+    with _background_mirror_lock:
+        _background_mirror_versions[key] = _background_mirror_versions.get(key, 0) + 1
+        if key in _background_mirror_running:
+            return
+        _background_mirror_running.add(key)
     threading.Thread(
-        target=mirror_draft_to_cloud,
-        args=(draft_id, local_path),
+        target=_drain_background_mirror,
+        kwargs={
+            "key": key, "record_id": record_id, "local_path": local_path,
+            "remote_folder": remote_folder,
+        },
         daemon=True,
-        name=f"mirror-draft-{draft_id}",
+        name=f"mirror-{kind}-{record_id}",
     ).start()
 
 
+def _drain_background_mirror(
+    *, key: tuple[str, str], record_id: str, local_path: Path, remote_folder: str,
+) -> None:
+    try:
+        # Hold the same lock as inbound reconciliation across the full drain.
+        # That prevents sync from seeing an intermediate remote snapshot after
+        # a new local save has already queued its replacement.
+        with _work_data_io_lock:
+            while True:
+                with _background_mirror_lock:
+                    version = _background_mirror_versions.get(key, 0)
+                _mirror_to_cloud_unlocked(
+                    kind=key[0], record_id=record_id, local_path=local_path,
+                    remote_folder=remote_folder,
+                )
+                with _background_mirror_lock:
+                    if _background_mirror_versions.get(key) == version:
+                        _background_mirror_versions.pop(key, None)
+                        _background_mirror_running.discard(key)
+                        return
+    finally:
+        # _mirror_to_cloud_unlocked handles ordinary I/O errors itself, but
+        # never leave a record permanently marked as running if an unexpected
+        # programmer/runtime error escapes the worker.
+        with _background_mirror_lock:
+            _background_mirror_running.discard(key)
+
+
 def _mirror_to_cloud(*, kind: str, record_id: str, local_path: Path, remote_folder: str) -> bool:
+    with _work_data_io_lock:
+        return _mirror_to_cloud_unlocked(
+            kind=kind, record_id=record_id, local_path=local_path, remote_folder=remote_folder,
+        )
+
+
+def _mirror_to_cloud_unlocked(*, kind: str, record_id: str, local_path: Path, remote_folder: str) -> bool:
     storage = _cloud_storage()
     if storage is None:
         return False
@@ -236,6 +304,40 @@ def save_setting_to_cloud_in_background(target_file: str, serialized_content: st
     ).start()
 
 
+def save_settings_to_cloud_batch_in_background(items: list[tuple[str, str]]) -> None:
+    """Mirror many settings files in ONE background thread (sequential).
+
+    ``items`` are ``(remote_target_file, local_file_path)`` pairs. Each file is
+    re-read from disk at upload time, and any that no longer exist are skipped —
+    so a record the user deletes mid-import is never (re-)uploaded, which would
+    otherwise resurrect it on the next sync. Bulk operations (e.g. importing
+    hundreds of QB customers as agencies) must not spawn a thread per record;
+    this walks the list on one daemon thread. No-op outside cloud mode."""
+    import threading
+
+    threading.Thread(
+        target=_mirror_settings_batch, args=(items,), daemon=True, name="mirror-settings-batch"
+    ).start()
+
+
+def _mirror_settings_batch(items: list[tuple[str, str]]) -> int:
+    """Synchronous body of the batch mirror. Returns the count uploaded.
+
+    Skips items whose local file no longer exists so a deletion that races the
+    import is not resurrected. Separated out for testability."""
+    uploaded = 0
+    for target_file, local_path in items:
+        try:
+            p = Path(local_path)
+            if not p.exists():
+                continue  # deleted since the import was queued — don't resurrect
+            if save_setting_to_cloud(target_file, p.read_text(encoding="utf-8")):
+                uploaded += 1
+        except Exception:
+            logger.exception("Batch settings mirror failed for %s", target_file)
+    return uploaded
+
+
 def cleanup_processed_proposals() -> dict:
     """Delete old /PendingChanges/ entries to keep the folder from growing.
 
@@ -306,7 +408,7 @@ def cleanup_processed_proposals() -> dict:
     return {"checked": checked, "deleted": deleted}
 
 
-def delete_setting_from_cloud(target_file: str) -> bool:
+def delete_setting_from_cloud(target_file: str, *, attempts: int = 3) -> bool:
     """Directly delete a /Settings/<subdir>/<id>.json (and its .meta.json
     sidecar) from SharePoint right away.
 
@@ -319,22 +421,38 @@ def delete_setting_from_cloud(target_file: str) -> bool:
     workflow round-trip. The proposal still fires so the repo record
     stays in sync.
 
-    No-op outside cloud mode. ``target_file`` is the same shape used
-    by save_via_proposal — e.g. ``"agencies/abc-123.json"``.
+    No-op outside cloud mode (returns True — nothing to delete is success).
+    ``target_file`` is the same shape used by save_via_proposal — e.g.
+    ``"agencies/abc-123.json"``. Transient Graph failures (e.g. 429 throttling
+    during a bulk delete) are retried with backoff so a delete actually sticks
+    instead of silently leaving the cloud copy to resurrect on the next sync.
     """
+    import time
+
     storage = _cloud_storage()
     if storage is None:
-        return False
+        return True  # no cloud copy to remove
     remote = f"{SETTINGS_REMOTE_FOLDER}/{target_file}"
     ok = True
     for path in (remote, remote + ".meta.json"):
-        try:
-            storage.delete(path)
-        except FileNotFoundError:
-            pass  # already gone
-        except Exception:
-            logger.exception("Failed to direct-delete %s from SharePoint", path)
-            ok = False
+        deleted = False
+        for attempt in range(attempts):
+            try:
+                storage.delete(path)
+                deleted = True
+                break
+            except FileNotFoundError:
+                deleted = True  # already gone
+                break
+            except Exception:
+                if attempt == attempts - 1:
+                    logger.exception(
+                        "Failed to direct-delete %s from SharePoint after %d attempts",
+                        path, attempts,
+                    )
+                else:
+                    time.sleep(2 ** attempt)  # 1s, 2s backoff
+        ok = ok and deleted
     return ok
 
 
@@ -344,8 +462,9 @@ def delete_setting_from_cloud(target_file: str) -> bool:
 def sync_work_data(paths: AppPaths) -> dict:
     """Reconcile local project + draft workspaces with SharePoint.
 
-    Cloud is the source of truth. On each sync:
-      1. Pull every cloud file to local (content-equality skips no-ops).
+    Cloud is the source of truth for remote changes. On each sync:
+      1. Pull every cloud file to local (content-equality skips no-ops),
+         except a local save made after the same remote eTag was recorded.
       2. Files in the last-known cloud set but absent from cloud now → DELETE
          locally (some other device deleted them and we need to follow).
       3. Files in local but in neither cloud nor the last-known set → UPLOAD
@@ -356,6 +475,12 @@ def sync_work_data(paths: AppPaths) -> dict:
     every subsequent sync converges. Returns a counts dict the periodic
     loop logs. Never raises.
     """
+    with _work_data_io_lock:
+        return _sync_work_data_unlocked(paths)
+
+
+def _sync_work_data_unlocked(paths: AppPaths) -> dict:
+    """Reconcile work data while no background upload can interleave."""
     storage = _cloud_storage()
     if storage is None:
         return {
@@ -365,12 +490,20 @@ def sync_work_data(paths: AppPaths) -> dict:
         }
 
     state = _load_state(paths)
-    proj = _reconcile_projects(storage, paths, _state_as_etag_map(state.get("projects")))
-    draf = _reconcile_drafts(storage, paths, _state_as_etag_map(state.get("drafts")))
+    proj = _reconcile_projects(
+        storage, paths, _state_as_etag_map(state.get("projects")),
+        _state_as_hash_map(state.get("project_hashes")),
+    )
+    draf = _reconcile_drafts(
+        storage, paths, _state_as_etag_map(state.get("drafts")),
+        _state_as_hash_map(state.get("draft_hashes")),
+    )
     _save_state(paths, {
         "schema_version": _STATE_SCHEMA_VERSION,
         "projects": proj["current_etags"],
         "drafts":   draf["current_etags"],
+        "project_hashes": proj["current_hashes"],
+        "draft_hashes": draf["current_hashes"],
     })
 
     if proj["updated"] or proj["deleted"] or proj["uploaded"] or draf["updated"] or draf["deleted"] or draf["uploaded"]:
@@ -436,14 +569,59 @@ def _state_as_etag_map(raw) -> dict[str, str]:
     return {}
 
 
+def _state_as_hash_map(raw) -> dict[str, str]:
+    """Normalize stored local-content hashes; pre-v3 state has none."""
+    if isinstance(raw, dict):
+        return {str(key): str(value) for key, value in raw.items()}
+    return {}
+
+
+def _content_hash(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _record_updated_at(payload: bytes) -> datetime | None:
+    """Read a record's UTC update marker without trusting filesystem clocks.
+
+    Both shared draft and project records carry ``updated_at``.  It is used
+    only while migrating pre-v3 cloud state, where there is no saved local
+    content hash to distinguish an unsynced local edit from a remote update.
+    """
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+        value = raw.get("updated_at") if isinstance(raw, dict) else None
+        if not isinstance(value, str) or not value.strip():
+            return None
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except (UnicodeDecodeError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+
+
+def _local_record_is_newer(local_payload: bytes, remote_payload: bytes) -> bool:
+    """Whether migration safety should preserve the local record.
+
+    A missing/invalid timestamp deliberately falls back to the documented
+    cloud-authoritative behavior rather than making an uncertain overwrite.
+    """
+    local_updated = _record_updated_at(local_payload)
+    remote_updated = _record_updated_at(remote_payload)
+    return bool(local_updated and remote_updated and local_updated > remote_updated)
+
+
 # ── Reconciliation: projects ─────────────────────────────────────────────────
 
 
-def _reconcile_projects(storage, paths: AppPaths, last_known: dict[str, str]) -> dict:
+def _reconcile_projects(
+    storage, paths: AppPaths, last_known: dict[str, str], last_hashes: dict[str, str],
+) -> dict:
     return _reconcile_records(
         storage,
         paths,
         last_known,
+        last_hashes,
         remote_folder=PROJECTS_REMOTE_FOLDER,
         id_label="project_id",
         local_record_path=lambda paths_, rid: paths_.workspace_projects_dir / rid / "project.json",
@@ -457,11 +635,14 @@ def _reconcile_projects(storage, paths: AppPaths, last_known: dict[str, str]) ->
 # ── Reconciliation: drafts ───────────────────────────────────────────────────
 
 
-def _reconcile_drafts(storage, paths: AppPaths, last_known: dict[str, str]) -> dict:
+def _reconcile_drafts(
+    storage, paths: AppPaths, last_known: dict[str, str], last_hashes: dict[str, str],
+) -> dict:
     return _reconcile_records(
         storage,
         paths,
         last_known,
+        last_hashes,
         remote_folder=DRAFTS_REMOTE_FOLDER,
         id_label="draft_id",
         local_record_path=lambda paths_, rid: paths_.workspace_drafts_dir / f"{rid}.json",
@@ -479,6 +660,7 @@ def _reconcile_records(
     storage,
     paths: AppPaths,
     last_known: dict[str, str],
+    last_hashes: dict[str, str],
     *,
     remote_folder: str,
     id_label: str,
@@ -501,7 +683,10 @@ def _reconcile_records(
         remote_entries = []
     except Exception:
         logger.exception("Could not list remote %s; keeping last-known state", remote_folder)
-        return {"current_etags": last_known, "updated": 0, "deleted": 0, "uploaded": 0}
+        return {
+            "current_etags": last_known, "current_hashes": last_hashes,
+            "updated": 0, "deleted": 0, "uploaded": 0,
+        }
 
     # Step 1: walk the cloud listing. eTag match against state means we
     # know the cloud copy is unchanged AND we know local should also be
@@ -509,7 +694,9 @@ def _reconcile_records(
     # fetch entirely — this is the fast path for typical 60s cycles where
     # nothing has changed.
     remote_etags: dict[str, str] = {}
+    current_hashes: dict[str, str] = {}
     updated = 0
+    uploaded = 0
     for entry in remote_entries:
         remote_path = entry.path
         if not remote_path.endswith(".json") or remote_path.endswith(".meta.json"):
@@ -524,8 +711,27 @@ def _reconcile_records(
         remote_etags[record_id] = entry.etag
         prior_etag = last_known.get(record_id)
         local_path = local_record_path(paths, record_id)
-        if entry.etag and prior_etag == entry.etag and local_path.exists():
-            # Fast path: cloud unchanged since last sync, local present.
+        if (entry.etag and prior_etag == entry.etag and local_path.exists()
+                and record_id in last_hashes):
+            # The remote copy has not changed since our last sync.  If the
+            # local checksum did change, it is an unsynced local save, not a
+            # collaborator update; upload it rather than erasing it with the
+            # known-old cloud content on the next app launch.
+            local_payload = local_path.read_bytes()
+            local_hash = _content_hash(local_payload)
+            if last_hashes.get(record_id) == local_hash:
+                current_hashes[record_id] = local_hash
+                continue
+            if mirror_to_cloud(record_id, local_path):
+                remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                current_hashes[record_id] = local_hash
+                uploaded += 1
+            else:
+                # Keep the previous cloud version + local hash state so this
+                # same local change is retried on the next sync.
+                remote_etags[record_id] = prior_etag
+                if record_id in last_hashes:
+                    current_hashes[record_id] = last_hashes[record_id]
             continue
         try:
             payload = storage.read_bytes(remote_path)
@@ -534,12 +740,57 @@ def _reconcile_records(
             # Preserve the prior etag so we try again next iteration.
             if prior_etag:
                 remote_etags[record_id] = prior_etag
+            if record_id in last_hashes:
+                current_hashes[record_id] = last_hashes[record_id]
             continue
         local_path.parent.mkdir(parents=True, exist_ok=True)
-        if local_path.exists() and local_path.read_bytes() == payload:
-            continue
+        if local_path.exists():
+            local_payload = local_path.read_bytes()
+            local_hash = _content_hash(local_payload)
+            if local_payload == payload:
+                current_hashes[record_id] = local_hash
+                continue
+            if prior_etag == _PENDING_UPLOAD_ETAG and record_id in last_hashes:
+                # We successfully wrote this record on the previous pass, but
+                # Graph has not yet returned its replacement eTag.  A read of
+                # the prior payload during that short propagation window must
+                # never undo the local save. Re-send it until a listing
+                # confirms the new cloud version.
+                logger.warning(
+                    "Awaiting cloud confirmation for local %s %s; preserving local save",
+                    id_label, record_id,
+                )
+                if mirror_to_cloud(record_id, local_path):
+                    uploaded += 1
+                remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                current_hashes[record_id] = local_hash
+                continue
+            # v1/v2 state has no local checksum.  Do not make the first v3
+            # sync after an upgrade silently replace a newer local save with
+            # a stale cloud file when a background upload just failed.  The
+            # timestamp lives inside the record, so this remains meaningful
+            # across devices unlike filesystem mtimes.
+            if record_id not in last_hashes and _local_record_is_newer(local_payload, payload):
+                logger.warning(
+                    "Preserving newer local %s %s while migrating cloud sync state",
+                    id_label, record_id,
+                )
+                if mirror_to_cloud(record_id, local_path):
+                    # The next listing will confirm the new eTag. Until then
+                    # retain the local checksum so the stale remote cannot
+                    # be treated as authoritative in this process.
+                    remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                    current_hashes[record_id] = local_hash
+                    uploaded += 1
+                else:
+                    # Do not write a local hash on a failed migration upload:
+                    # the next sync must compare the timestamps again instead
+                    # of assuming this copy already reached SharePoint.
+                    remote_etags[record_id] = entry.etag
+                continue
         try:
             local_path.write_bytes(payload)
+            current_hashes[record_id] = _content_hash(payload)
             updated += 1
         except OSError:
             logger.exception("Could not write local %s file %s", id_label, local_path)
@@ -555,23 +806,26 @@ def _reconcile_records(
         try:
             delete_local(paths, record_id)
             local_ids.discard(record_id)
+            current_hashes.pop(record_id, None)
             deleted += 1
         except OSError:
             logger.exception("Could not delete local %s %s", id_label, record_id)
 
     # Step 3: local-only files → upload them so cloud becomes the union.
-    uploaded = 0
     for record_id in local_ids - remote_ids - set(last_known):
         local_path = local_record_path(paths, record_id)
         if mirror_to_cloud(record_id, local_path):
             # First sync after upload: we don't know the eTag yet (Graph
-            # returns it but write_text doesn't surface it). Mark with
-            # empty string so the NEXT sync's listing fills in the eTag.
-            remote_etags[record_id] = ""
+            # returns it but write_text doesn't surface it). Mark it as
+            # pending so an immediately stale read cannot overwrite local;
+            # the NEXT sync's listing replaces this with Graph's real eTag.
+            remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+            current_hashes[record_id] = _content_hash(local_path.read_bytes())
             uploaded += 1
 
     return {
         "current_etags": remote_etags,
+        "current_hashes": current_hashes,
         "updated": updated,
         "deleted": deleted,
         "uploaded": uploaded,

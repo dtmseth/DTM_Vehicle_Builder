@@ -9,6 +9,88 @@ const _PBE_COMPARE_FIELDS = [
   "explicit_color_profile", "driver_color", "passenger_color", "center_color",
 ];
 
+const _PBE_NOTE_CATEGORIES = [
+  "INSTALLATION NOTES",
+  "CUSTOMER REQUESTS",
+  "SPECIAL FABRICATION NOTES",
+  "DELIVERY REQUIREMENTS",
+  "FINAL APPROVALS",
+];
+let _pbeNotesSaveTimer = null;
+let _pbeNotesDraftId = "";
+
+function _pbeNotesMarkup(notes, projectNotes) {
+  const shared = (projectNotes || "").trim();
+  const fields = _PBE_NOTE_CATEGORIES.map(category => {
+    const value = Array.isArray(notes?.[category]) ? notes[category].join("\n") : "";
+    return `<div class="form-group" style="margin:0 0 10px">
+      <label for="pbe-note-${category}">${esc(category.replace(/\b\w/g, c => c.toUpperCase()).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))}</label>
+      <textarea id="pbe-note-${category}" data-pbe-note-category="${esc(category)}" rows="2" class="proj-textarea-full" placeholder="One note per line">${esc(value)}</textarea>
+    </div>`;
+  }).join("");
+  return `${shared ? `<div class="proj-form-hint" style="margin:0 0 12px"><strong>Project-wide note:</strong> ${esc(shared)}</div>` : ""}${fields}`;
+}
+
+function _pbeNotesPayload() {
+  const notes = {};
+  document.querySelectorAll("[data-pbe-note-category]").forEach(field => {
+    const rows = field.value.split("\n").map(value => value.trim()).filter(Boolean);
+    if (rows.length) notes[field.dataset.pbeNoteCategory] = rows;
+  });
+  return notes;
+}
+
+function _pbeSetNotesStatus(text, isError = false) {
+  const status = $("pbe-final-notes-status");
+  if (!status) return;
+  status.style.display = text ? "block" : "none";
+  status.style.background = isError ? "#fdecea" : "#f0f4ff";
+  status.style.color = isError ? "var(--red)" : "var(--navy)";
+  status.textContent = text;
+}
+
+async function _pbeSaveNotes(flush = false) {
+  if (_pbeNotesSaveTimer) {
+    clearTimeout(_pbeNotesSaveTimer);
+    _pbeNotesSaveTimer = null;
+  }
+  const draftId = _pbeNotesDraftId;
+  if (!draftId) return true;
+  _pbeSetNotesStatus("Saving notes…");
+  try {
+    const result = await api("/api/draft/save", { draft_id: draftId, notes: _pbeNotesPayload() });
+    if (!result?.ok) throw new Error(result?.error || "Could not save notes");
+    _pbeSetNotesStatus("Notes saved");
+    if (!flush) setTimeout(() => _pbeSetNotesStatus(""), 1600);
+    return true;
+  } catch (error) {
+    _pbeSetNotesStatus(error.message || "Could not save notes", true);
+    toast("Could not save final-page notes", "error");
+    return false;
+  }
+}
+
+async function _pbeLoadNotes(draftId) {
+  _pbeNotesDraftId = draftId || "";
+  const content = $("pbe-final-notes-content");
+  if (!content || !draftId) return;
+  content.innerHTML = `<p class="proj-empty-msg">Loading notes…</p>`;
+  _pbeSetNotesStatus("");
+  try {
+    const result = await api(`/api/draft/${encodeURIComponent(draftId)}`);
+    if (!result?.ok) throw new Error(result?.error || "Could not load notes");
+    if (_pbeNotesDraftId !== draftId) return;
+    content.innerHTML = _pbeNotesMarkup(result.draft?.notes || {}, result.draft?.project_notes || "");
+    content.querySelectorAll("[data-pbe-note-category]").forEach(field => field.addEventListener("input", () => {
+      if (_pbeNotesSaveTimer) clearTimeout(_pbeNotesSaveTimer);
+      _pbeSetNotesStatus("Saving notes…");
+      _pbeNotesSaveTimer = setTimeout(() => _pbeSaveNotes(), 450);
+    }));
+  } catch (error) {
+    content.innerHTML = `<p class="proj-empty-msg">Could not load notes for this build.</p>`;
+  }
+}
+
 function _pbePartsMatchPreset(draftParts, presetParts) {
   const norm = parts => [...parts]
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
@@ -67,7 +149,7 @@ async function _pbeCheckPresetButton(draftId, unit) {
 
 async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual) {
   _PT.pbeReturnProject = project;
-  _PT.pbeReturnTab     = returnTab || "builds";
+  _PT.pbeReturnTab     = returnTab || "overview";
   _PT.pbeUnit          = unit;
   _PT.pbeProject       = project;
   _PT.pbeDraftId       = draftId;
@@ -88,6 +170,7 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   show("card-preview");
   pvLoad(draftId);
   loadDraftManifest(draftId);
+  _pbeLoadNotes(draftId);
   _pbeCheckPresetButton(draftId, unit);  // async; updates button visibility after load
 }
 
@@ -185,7 +268,7 @@ async function _ptHideBuildEditor() {
   pvHideInspector();
 
   const project = _PT.pbeReturnProject;
-  const tab     = _PT.pbeReturnTab || "builds";
+  const tab     = _PT.pbeReturnTab === "edit" ? "edit" : "overview";
   _PT.pbeReturnProject = null;
 
   if (project) {
@@ -199,55 +282,39 @@ async function _ptHideBuildEditor() {
     $("proj-detail-meta").textContent = n + " unit" + (n !== 1 ? "s" : "");
     _ptRenderOverview(updated);
     _ptRenderEditTab(updated, false);
-    _ptRenderBuildsTab(updated);
     _ptSetDetailTab(tab);
   } else {
     _ptShowList();
   }
 }
 
-// Wire the Save & Return and Create Preset buttons.
+// Wire the Return to Project and Create Preset buttons.
 // Called once from index.js _ptBind().
 function _ptBindBuildEditor() {
-  $("pbe-back-btn").addEventListener("click", async () => {
-    const hasPending = typeof pvHasPendingChanges === "function" && pvHasPendingChanges();
-    if (hasPending) {
-      const choice = confirm(
-        "You have unsaved position overrides.\n\nOK = Save changes and return\nCancel = Discard changes and return"
-      );
-      if (choice) {
-        try {
-          if (typeof pvApplyChanges === "function") await pvApplyChanges();
-        } catch (e) {
-          console.warn("pbe-back-btn: pvApplyChanges failed", e);
-        }
-      }
-    }
-    _ptHideBuildEditor();
-  });
-
-  async function _pbeSaveAndReturn(btnEl) {
+  async function _pbeReturnToProject(btnEl) {
     if (btnEl) btnEl.disabled = true;
+    let placementSaveSucceeded = true;
     try {
-      if (typeof pvApplyChanges === "function") await pvApplyChanges();
+      const notesSaved = await _pbeSaveNotes(true);
+      if (!notesSaved) return;
+      if (typeof pvApplyChanges === "function") placementSaveSucceeded = await pvApplyChanges() !== false;
     } catch (e) {
-      console.warn("pbe save-return: pvApplyChanges failed", e);
+      console.warn("pbe return: pvApplyChanges failed", e);
+      placementSaveSucceeded = false;
     } finally {
       if (btnEl) btnEl.disabled = false;
     }
+    if (!placementSaveSucceeded) return;
     _ptHideBuildEditor();
   }
 
-  $("pbe-save-return").addEventListener("click", () =>
-    _pbeSaveAndReturn($("pbe-save-return"))
+  $("pbe-back-btn").addEventListener("click", () =>
+    _pbeReturnToProject($("pbe-back-btn"))
   );
 
-  const previewSaveReturn = $("pbe-save-return-preview");
-  if (previewSaveReturn) {
-    previewSaveReturn.addEventListener("click", () =>
-      _pbeSaveAndReturn(previewSaveReturn)
-    );
-  }
+  $("pbe-save-return").addEventListener("click", () =>
+    _pbeReturnToProject($("pbe-save-return"))
+  );
 
   const createPresetBtn = $("pbe-create-preset-btn");
   if (createPresetBtn) {

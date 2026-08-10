@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 
-def size_class_for_part(part_number: str, asset_manifest: dict) -> str:
-    """Return the size class ('sm', 'md', 'lg', etc.) for a part number."""
-    rules = asset_manifest.get("part_number_size_rules", {})
-    part_number_upper = part_number.strip().upper()
-    if not part_number_upper:
-        return "sm"
-    if part_number_upper in rules:
-        return rules[part_number_upper]
-    for key, size_class in rules.items():
-        if key.upper() in part_number_upper:
-            return size_class
+def size_class_for_part(
+    part_number: str,
+    asset_manifest: dict,
+    *,
+    explicit_size_class: str = "",
+) -> str:
+    """Return the size class for a part.
+
+    ``explicit_size_class`` is the parts-db bridge used by both picker-created
+    and legacy-imported lines. It deliberately accepts only a profile that
+    actually exists; unassigned parts use the Small profile.
+    """
+    definitions = asset_manifest.get("size_rule_definitions", {})
+    if explicit_size_class and explicit_size_class in definitions:
+        return explicit_size_class
     return "sm"
 
 

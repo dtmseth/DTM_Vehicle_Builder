@@ -18,7 +18,8 @@ Last updated: 2026-05-18 (Phases 1–5)
 8. [agencies.json](#agenciesjson)
 9. [sales_reps.json](#sales_repsjson)
 10. [Preset Files](#preset-files)
-11. [Common Conventions](#common-conventions)
+11. [parts_db.json](#parts_dbjson)
+12. [Common Conventions](#common-conventions)
 
 ---
 
@@ -82,7 +83,7 @@ Defines every known part type: how it is named, categorized, and rendered. This 
 | Value | Behavior |
 |---|---|
 | `"location_slots"` | slot_count from location definition; mismatch → warning |
-| `"single_per_line"` | Always 1 slot; qty > 1 → warning |
+| `"single_per_line"` | One billable line; normally one visual slot, or `render_slot_count` from the view's location when supplied; qty > 1 → warning |
 | `"quantity_as_slots"` | slot_count = max(1, ordered_quantity); sets group_shapes |
 
 ### QuantityRule Object
@@ -171,7 +172,8 @@ Defines, per vehicle type, the fixture coordinates and named location points use
   "units":           <string, required — "relative_image">,
   "orientation":     <string, required — "h" | "v" | "bar">,
   "slot_count":      <int, optional — number of positions; default 1>,
-  "pattern":         <string, optional — "single" | "horizontal" | "vertical" | "mirror">,
+  "render_slot_count": <int, optional — visual instances for a `single_per_line` fixture; default 1>,
+  "pattern":         <string, optional — "single" | "horizontal" | "vertical" | "mirror" | "vertical_mirror">,
   "h_spacing":       <float, optional — gap between icons>,
   "v_spacing":       <float, optional — gap between icons>,
   "h_spacing_units": <string, optional — "relative_image" | "icon_width">,
@@ -236,8 +238,8 @@ Maps asset keys to image files and defines color profile rules for light icons.
     ...
   },
 
-  "part_number_size_rules": {
-    "<substring_or_exact>": <string — size class prefix, e.g. "sm" | "lg">,
+  "size_rule_definitions": {
+    "<profile_id>": <SizeProfile>,
     ...
   }
 }
@@ -283,8 +285,22 @@ An exhaustive list of valid color token strings used in light icon filenames. If
 ### legacy_color_aliases
 Maps non-standard color strings (as typed by users) to canonical color tokens. Example: `{"red blue": "red-blue"}`.
 
-### part_number_size_rules
-Maps part number substrings (or exact values) to size class prefixes used in light icon filenames. Lookup tries exact match first, then substring (uppercase). Default size class is `"sm"`.
+### SizeProfile Object
+```
+{
+  "label": <string — human-readable profile label>,
+  "maintain_aspect_ratio": <boolean>,
+  "views": {
+    "<view>": {"w": <number — inches>, "h": <number — inches>},
+    ...
+  }
+}
+```
+
+`size_rule_definitions` contains the named icon-size profiles used by `parts_db.json`.
+The retired `part_number_size_rules` field is retained as an empty compatibility field in
+existing manifests; the render path does not read it. An unassigned light uses the `"sm"`
+profile until its part type or product is explicitly assigned.
 
 ---
 
@@ -482,6 +498,127 @@ Example: `"St. Cloud PD Patrol PIU/Tahoe"`, `"General Patrol PIU/Tahoe — Fleet
 
 ### v1 Compatibility
 Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `build_types`, or `tag` fields). They behave as universal presets.
+
+---
+
+## parts_db.json
+
+The canonical Part Picker catalog. The full picker behavior and data-routing notes live in
+[`PARTS_DB_AND_PICKER.md`](PARTS_DB_AND_PICKER.md). Product records may include a structured
+console-kit definition when one QuickBooks console SKU includes multiple shop components.
+Guided-system cable refresh choices live in `system_cable_refreshes`; each listed billing option
+must refer to a live QB-linked SKU.
+
+```json
+{
+  "products": {
+    "<product_id>": {
+      "manufacturer_id": "<string>",
+      "model": "<string>",
+      "fits_part_types": ["console"],
+      "picker_primary_part_type": "<part type in fits_part_types>",
+      "part_numbers": ["<PartNumber>"],
+      "location_options": ["<shop-reference location>"],
+      "fixed_location": "<single shop-reference location>",
+      "allow_custom_location": true,
+      "pa_mic_required": false,
+      "default_colors": ["red", "white"],
+      "accessories_disabled": true,
+      "console_kit": {
+        "style": "<non-empty string>",
+        "included": {
+          "cup_holder": true,
+          "oem_relocation_plate": true,
+          "armrest": "printer",
+          "motion_attachment": "mongoose"
+        }
+      }
+    }
+  },
+  "part_types": {
+    "control_head": {
+      "label": "Light Control Head",
+      "type_id": "equipment",
+      "recommended_accessories": [
+        {
+          "category": "control_head_harness",
+          "product_id": "whelen_cctlharn",
+          "when_existing_part_type": "control_head",
+          "minimum_existing_count": 1,
+          "message": "Recommended for a secondary control head"
+        }
+      ]
+    }
+  },
+  "system_cable_refreshes": {
+    "radar": [
+      {
+        "id": "front_antenna_cable",
+        "label": "Front antenna cable",
+        "part_type": "radar_cable",
+        "billing_options": [
+          {"product_id": "stalker_antenna_cable", "part_number": "155-2591-08"}
+        ]
+      }
+    ]
+  }
+}
+```
+
+`location_options` is optional and belongs on the product when a model has more precise
+shop-reference choices than its part type. `fixed_location` skips the location step entirely for
+a product that can only be installed in one place. `default_colors` optionally preselects a
+light's colors for a new picker selection; it never overwrites an existing line's saved colors.
+`allow_custom_location` lets a product retain the Custom choice even when it has exactly one
+curated location. `pa_mic_required` applies to `control_head` products and defaults to `true`;
+set it to `false` for a control head that does not include a PA microphone.
+`picker_primary_part_type` is optional and chooses the product's semantic part-picker context;
+it must also be listed in that product's `fits_part_types`. It applies no matter how the product
+was reached, so a product with multiple physical homes consistently opens the right configurator.
+`global_search_part_type` remains accepted only for backward compatibility with existing config.
+`accessories_disabled` suppresses both explicit and inferred accessory options for a product.
+`console_kit` is optional and belongs on the
+product (not the individual SKU): it identifies the kit's selectable style and the physical
+components already covered by its QuickBooks price.
+`included` is a free-form object so it can describe the precise armrest or motion variant when
+needed. Included components remain on the shop manifest and are intentionally skipped by estimate
+resolution.
+
+`system_cable_refreshes` is an optional per-system catalog for guided radio, radar, and camera
+workflows. A user first selects the cable run, then selects the exact SKU if that run has several
+lengths. Every `billing_options[]` reference must resolve to an active `part_numbers[]` entry with
+`qb_item_id`; selected refreshes become nested, billable draft lines rather than manifest-only text.
+
+`families.<family_id>.picker_part_label` is optional. It gives every part selected through that
+family one shared Part-column label without changing the individual part types used for manifest
+grouping, editing, or catalog compatibility.
+
+`families.<family_id>.fixed_location` is optional. It skips the location step for every member of
+that family and saves the supplied shop-reference location; a product-level `fixed_location` takes
+precedence when that product has a more specific location.
+
+`part_types.<part_type_id>.recommended_accessories` declares optional, contextual accessories for
+every product in that part type. The picker shows and preselects the referenced product when the
+draft already contains at least `minimum_existing_count` top-level lines with
+`when_existing_part_type`; the user can still choose **None needed**. The condition is not applied
+when editing an existing line, except that an already-saved accessory remains editable.
+
+`part_types.<part_type_id>.render` owns picker-built render metadata. In addition to `asset_key`,
+`images`, `size_per_view`, and `quantity_rules`, it may set `size_rule_id`, `is_fixture`,
+`default_views`, `render_quantity_policy`, and `co_part_rules` with the same meaning as the
+corresponding `part_catalog.json` fields. `size_rule_id` is an explicit reference to an
+`asset_manifest.json` `size_rule_definitions` profile. A fixture uses the matching key in
+`vehicle_layouts.json`'s `fixtures` map rather than a picker-selected location.
+
+Products may carry the same optional `render.size_rule_id` and `render.size_per_view` fields
+when one product needs a more specific setting than its part type. A product may also set
+`render.center_single_at_mirror_location: true` when a one-head selection should occupy the
+center of a mirrored mount while multi-head selections retain the mount's normal pattern. A concrete
+`products.<product_id>.part_numbers[]` entry may additionally carry `size_rule_id` as a
+last-resort SKU override. Older rows whose `part_number` contains a model name can resolve through
+the product's explicit `model_aliases`. The planner resolves size in the order SKU → product →
+part type → `"sm"` default. This keeps the Size Rules page tied to real canonical identities
+rather than free-text matching.
 
 ---
 

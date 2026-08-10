@@ -1,0 +1,320 @@
+{
+  "body": {
+    "locations": [
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "ABOVE LICENSE PLATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "BEHIND GRILL (CENTER)",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "BEHIND OEM BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "CENTER PLATE OF PB",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "FOG LIGHT AREA",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "FRONT CORNER OF BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_corner"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "FRONT OF MIRROR",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_side"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "GRILL",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "HEADLIGHT CUT OUTS",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "IN GRILL",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "LEFT AND RIGHT FENDER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_side"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "LEFT FRONT FENDER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_side"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "LICENSE PLATE BRACKET",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "LOWER CARGO WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "LOWER GRILL",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "LOWER LIFTGATE LIP",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "ON RUNNING BOARD",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "side"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "ON TAILGATE/LIFTGATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "PILLARS",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_corner"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "PIT BARS",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "PUSH BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "PUSH BUMPER MOUNT",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "REAR BUMPER",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "REAR DOOR WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_side"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "REAR INTERIOR LIGHT BAR",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "REAR LEFT ROOF",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "RIGHT FRONT FENDER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_side"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "ROCKER PANEL",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "side"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "SIDE OF PUSH BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "TAIL LIGHTS",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "TOP OF PUSH BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "TOP TUBE",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "UNDER MIRROR",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "front_side"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "UNDER PUSH BUMPER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Rear Scene",
+        "has_coords": true,
+        "location": "UNDER TAILGATE",
+        "name_pattern": "Rear Scene {n}",
+        "part_type_id": "rear_scene",
+        "placement_zone": "rear"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "UPPER CARGO WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "UPPER DRIVER AND PASSENGER",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      },
+      {
+        "base_label": "Side Scene",
+        "has_coords": true,
+        "location": "UPPER REAR WINDOW",
+        "name_pattern": "Side Scene {n}",
+        "part_type_id": "side_scene",
+        "placement_zone": "rear_interior"
+      },
+      {
+        "base_label": "Front Scene",
+        "has_coords": true,
+        "location": "UPPER WINDSHIELD",
+        "name_pattern": "Front Scene {n}",
+        "part_type_id": "front_scene",
+        "placement_zone": "primary_front"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

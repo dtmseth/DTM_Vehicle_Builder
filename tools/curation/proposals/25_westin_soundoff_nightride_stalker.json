@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "phase": "3 — Westin (12) · SoundOff (10) · NightRide (11) · Stalker (7)",
+    "apply": "python tools/curate.py tools/curation/proposals/25_westin_soundoff_nightride_stalker.json"
+  },
+  "merge": [
+    {"target_id": "westin_pit_bars", "sources": ["westin_pit_bars", "westin_36_2125pb", "westin_36_4045pb", "westin_36_4075pb", "westin_36_52135pb", "westin_36_54085pb"],
+     "_confidence": "high", "_why": "Pit Bar Elite/EliteXD per-vehicle SKUs fold into the existing westin_pit_bars product (pit_bar home; `pit_bar` type is SHARED with Setina — don't relabel, per memory)"},
+    {"target_id": "westin_wing_wraps", "sources": ["westin_wing_wraps", "westin_36_2125w", "westin_36_4075w", "westin_36_52065w", "westin_36_52135w"],
+     "_confidence": "high", "_why": "Wing Wrap Elite/EliteXD per-vehicle SKUs fold into the existing westin_wing_wraps (wing_wraps = headlight guards, per memory)"},
+    {"target_id": "soundoff_intersector", "sources": ["soundoff_intersector", "soundoff_ent2b3b", "soundoff_ent2b3d", "soundoff_ent2b3e", "soundoff_ent2b3f", "soundoff_ent2b3r"],
+     "_confidence": "high", "_why": "Intersector under-mirror SKUs (color letters B=B/W? D/E/F/R = color codes) join the existing Intersector product — mount style + color are SKU variants, one product per model"},
+    {"target_id": "night_ride_nrr0010", "sources": ["night_ride_nrr0010", "night_ride_nrr0010_e", "night_ride_nrr0010_ge"],
+     "_confidence": "high", "_why": "Trailblazer 384 ethernet / grille-mount variants → SKUs of the existing product (thermal_imager)"},
+    {"target_id": "night_ride_nrr640_13e", "sources": ["night_ride_nrr640_13e", "night_ride_nrr640_13ge"],
+     "_confidence": "high", "_why": "Trailblazer 640 grille-mount ethernet variant"},
+    {"target_id": "night_ride_nrr2ndck", "sources": ["night_ride_nrr2ndck", "night_ride_nrr2ndck_e"],
+     "_confidence": "high", "_why": "Trailblazer 2nd-car kit ethernet variant"},
+    {"target_id": "night_ride_nrp_sl", "sources": ["night_ride_nrp_sl", "night_ride_nrp_si_e", "night_ride_nrp_sl_e"],
+     "_confidence": "high", "_why": "PRO-SL S04 ring w/ ethernet variants → SKUs of existing PRO-SL. NightRide's full camera catalog (getnightride.com/collections/nightride-cameras) lists every Trailblazer/Pro-SL SKU and has NO SI model — NRP-SL-E ('Pro-SL S04 (Ring) 384 w/ Ethernet') is the real part; NRP-SI-E (same $2,394, near-identical description) is a QB typo twin. Merge upheld (EVIDENCE.md F23)"},
+    {"target_id": "night_ride_nrp_slc", "sources": ["night_ride_nrp_slc", "night_ride_nrp_slc_e"],
+     "_confidence": "medium", "_why": "PRO-SL cableless 384 ethernet variant"}
+  ],
+  "set_home": [
+    {"product_id": "westin_28_51270", "fits_part_types": ["running_boards_nerf_bars"], "_confidence": "high", "_why": "owner ruling C2.6: type renamed `running_boards_nerf_bars` (not step_bars). R5 nerf step bars (Silverado/Sierra)"},
+    {"product_id": "westin_36_2125wc", "fits_part_types": ["wire_covers"], "_confidence": "high", "_why": "Elite upright wire cover — the exact wire_covers slot (accessory_of push_bumper already on the part_type)"},
+    {"product_id": "westin_500_0238", "fits_part_types": ["printer_mount"], "_confidence": "medium", "_why": "under-laptop printer tray"},
+    {"product_id": "soundoff_enftcdxs1208", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "high", "_why": "owner ruling C1.6: traffic advisors stay `warning_light`. 8-head exterior weatherproof traffic controller, dual color — traffic-advisor family; whelen_traffic_advisor precedent is warning_light. FUTURE FEATURE (recorded, not in scope here): TA configurator — DTM custom-builds them per lighthead; needs real setup work when the time comes"},
+    {"product_id": "soundoff_etfbssn_p", "fits_part_types": ["tail_light_flasher"], "_confidence": "high", "_why": "FlashBack alternating taillight flasher — the exact tail_light_flasher slot"},
+    {"product_id": "soundoff_ettffut_16", "fits_part_types": ["tail_light_flasher"], "_confidence": "high", "_why": "FlashBack plug-in taillight flasher (Ford PI)"},
+    {"product_id": "soundoff_ethfss_sp_iso", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "Select-A-Pattern headlight flasher"},
+    {"product_id": "soundoff_pmp2wdg15b", "fits_part_types": ["bracket"], "_confidence": "high", "_why": "15° wedge for 4\" quick-mount light — same family as the pmp2 brackets in warning_fascia.json"},
+    {"product_id": "stalker_200_0622_00", "fits_part_types": ["radar_cable"], "_confidence": "medium", "_why": "VSS installation kit — speed-signal wiring (radar_cable per your cables.json)"},
+    {"product_id": "stalker_200_0622_01", "fits_part_types": ["radar_cable"], "_confidence": "high", "_why": "Tahoe VSS cable kit"},
+    {"product_id": "stalker_200_0243_00", "fits_part_types": ["front_radar_antenna_mount", "rear_radar_antenna_mount"], "_confidence": "high", "_why": "stalkerradar.com/product/counting-unit-mount-tall/: mounts the counting (display) unit to the DASHBOARD, velcro + 2 thumbscrews, compatible DSR/DSR 2X/DUAL/PATROL — a generic counting-unit/display bracket, so the multi-home front+rear treatment (stalker_vehicle_specific_bracket precedent), not antenna hardware (EVIDENCE.md F15)"},
+    {"product_id": "stalker_200_1089_00", "fits_part_types": ["front_radar_antenna_mount", "rear_radar_antenna_mount"], "_confidence": "medium", "_why": "Tahoe display mount — following the stalker bracket multi-home precedent"},
+    {"product_id": "night_ride_nightride_dsp_kit", "fits_part_types": ["thermal_imager_monitor"], "_confidence": "high", "_why": "8\" monitor + RAM mount display kit — same shape as the NV3 kit"}
+  ],
+  "set_accessory": [
+    {"product_id": "soundoff_pmp2wdg15b", "accessory_category": "bracket_mount", "accessory_of_products": ["soundoff_mpower_4_fascia", "soundoff_mpower_3_fascia"], "_confidence": "medium", "_why": "wedge for the mpower quick-mount fascia lights"},
+    {"product_id": "night_ride_nr_hdmi", "accessory_category": "cable", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e", "night_ride_nrp_sl"], "_confidence": "high", "_why": "HDMI adaptor for the thermal displays — accessory-only, no home"},
+    {"product_id": "night_ride_nrr_auxc", "accessory_category": "cable", "accessory_of_products": ["night_ride_nrr0010"], "_confidence": "high", "_why": "Trailblazer 384 aux battery cable"},
+    {"product_id": "night_ride_nrr_auxc_640", "accessory_category": "cable", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e"], "_confidence": "high", "_why": "Trailblazer 384/640 aux battery cable"},
+    {"product_id": "night_ride_nightride_dsp_kit", "accessory_category": "other", "accessory_of_products": ["night_ride_nrr0010", "night_ride_nrr640_13e", "night_ride_nrp_sl"], "_confidence": "medium", "_why": "display kit pairs with the thermal units (homed thermal_imager_monitor above)"},
+    {"product_id": "stalker_200_0648_00", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "medium", "_why": "display sun shield — accessory-only"},
+    {"product_id": "stalker_200_1503_00", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "high", "_why": "stalkerradar.com/product/speed-module-with-internal-gps-ka-band/: GPS+inertial patrol-speed source for Stalker DSR/DSR 2X moving radar — replaces the VSS/OBD-II speed feed on vehicles without accessible ports. A per-radar system component (Stalker sells it under radar accessories), not a display → accessory role is right, no standalone home (EVIDENCE.md F16)"},
+    {"product_id": "stalker_200_1503_11", "accessory_category": "other", "accessory_of_products": ["stalker_dsr", "stalker_dsr_2x"], "_confidence": "high", "_why": "external-GPS variant of the same speed module — see stalker_200_1503_00 (EVIDENCE.md F16)"}
+  ]
+}

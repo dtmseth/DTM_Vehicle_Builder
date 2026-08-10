@@ -1,0 +1,62 @@
+{
+  "create_part_types": [
+    {"part_type_id": "warning_light", "label": "Warning Light", "type_id": "lights", "category": "warning", "location_mode": "placement", "tree_positions": []}
+  ],
+  "merge": [
+    {
+      "target_id": "soundoff_mpower_3_fascia",
+      "model": "MPOWER 3\" Fascia Light",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "reviewed": true,
+      "sources": ["soundoff_emps1qms3f", "soundoff_emps1sls3d", "soundoff_emps1sls3e", "soundoff_emps1sms3b", "soundoff_emps1sms3r"]
+    },
+    {
+      "target_id": "soundoff_mpower_4_fascia",
+      "model": "MPOWER 4\" Fascia Light",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "reviewed": true,
+      "sources": ["soundoff_emps2qms4d", "soundoff_emps2qms4e", "soundoff_emps2sms4d", "soundoff_emps2sms4e", "soundoff_emps2sts3a_mpower_4_fascia_light_w_stud_mount_18_hard_wire_w_sync_option_sae_class_1_ca_tit", "qb_unassigned_emps2sts3b", "soundoff_emps2sts4d", "soundoff_emps2sts4e", "soundoff_emps2sts4k", "soundoff_emps2sts4m"]
+    },
+    {
+      "target_id": "soundoff_nforce_deck_grille",
+      "model": "NForce Deck/Grille Light",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "reviewed": true,
+      "sources": ["soundoff_enfsgs3d", "soundoff_enfsgs3e"]
+    },
+    {
+      "target_id": "soundoff_intersector",
+      "model": "Intersector Surface-Mount",
+      "manufacturer_id": "soundoff",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "reviewed": true,
+      "sources": ["qb_unassigned_ent3b3d"]
+    },
+    {
+      "target_id": "feniex_fusion_surface_mount",
+      "model": "Fusion Surface Mount",
+      "manufacturer_id": "feniex",
+      "fits_part_types": ["warning_light"],
+      "tag_ids": ["light"],
+      "reviewed": true,
+      "sources": ["feniex_fsm", "feniex_fsmb", "feniex_fsmr"]
+    }
+  ],
+  "set_home": [
+    {"product_id": "soundoff_pmp2bkdgaj", "fits_part_types": ["bracket"]},
+    {"product_id": "soundoff_pmp2brk2lpv", "fits_part_types": ["bracket"]},
+    {"product_id": "qb_unassigned_pmpsabk005", "fits_part_types": ["bracket"]}
+  ],
+  "set_accessory": [
+    {"product_id": "soundoff_pmp2bkdgaj", "accessory_category": "bracket_mount", "accessory_of_products": ["soundoff_mpower_3_fascia", "soundoff_mpower_4_fascia", "soundoff_nforce_deck_grille"]},
+    {"product_id": "soundoff_pmp2brk2lpv", "accessory_category": "bracket_mount", "accessory_of_products": ["soundoff_mpower_4_fascia"]},
+    {"product_id": "qb_unassigned_pmpsabk005", "accessory_category": "bracket_mount", "accessory_of_products": ["soundoff_mpower_4_fascia"]}
+  ]
+}

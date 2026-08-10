@@ -23,7 +23,7 @@
     ],
     "Forward Warning 1": [
       "whelen_ion",
-      "whelen_t_ion",
+      "whelen_t_series",
       "whelen_2_lamp_tracer",
       "soundoff_nforce",
       "soundoff_mpower",
@@ -38,7 +38,7 @@
     ],
     "Forward Warning 2": [
       "whelen_ion",
-      "whelen_t_ion",
+      "whelen_t_series",
       "whelen_2_lamp_tracer",
       "soundoff_nforce",
       "soundoff_mpower",
@@ -52,8 +52,8 @@
     ],
     "Front Side Warning": [
       "whelen_surface_mount_ion",
-      "whelen_standard_mount_ion",
-      "whelen_t_series_ion",
+      "whelen_ion",
+      "whelen_t_series",
       "soundoff_mpower",
       "soundoff_n_force",
       "whelen_vertex",
@@ -66,8 +66,8 @@
     ],
     "Pit Bar Warning": [
       "whelen_surface_mount_ion",
-      "whelen_standard_mount_ion",
-      "whelen_t_series_ion",
+      "whelen_ion",
+      "whelen_t_series",
       "soundoff_mpower",
       "soundoff_n_force",
       "whelen_vertex",
@@ -79,7 +79,10 @@
     ],
     "Front Scene": [
       "whelen_field_series",
-      "whelen_pioneer",
+      "whelen_pioneer_micro",
+      "whelen_pioneer_nano",
+      "whelen_pioneer_plus",
+      "whelen_pioneer_slimline",
       "stalker_specify_model"
     ],
     "Siren Speaker 1": [
@@ -136,7 +139,7 @@
       "whelen_xlp",
       "federal_signal_avenger_x1",
       "federal_signal_avenger_x2",
-      "whelen_t_ions_w_shorud",
+      "whelen_t_series",
       "stalker_specify_model"
     ],
     "Side Warning 1": [
@@ -249,8 +252,10 @@
       "dtm_twist_lock_adaptor"
     ],
     "Rear Scene": [
-      "whelen_am_900",
-      "whelen_pioneer",
+      "whelen_pioneer_micro",
+      "whelen_pioneer_nano",
+      "whelen_pioneer_plus",
+      "whelen_pioneer_slimline",
       "whelen_field_series",
       "stalker_specify_model"
     ],
@@ -270,7 +275,6 @@
       "stalker_specify_model"
     ],
     "Tail Light Flasher": [
-      "whelen_flashed_with_core",
       "stalker_specify_model"
     ],
     "Radar": [
@@ -303,7 +307,6 @@
     ],
     "Light Controller": [
       "whelen_core",
-      "whelen_blueprint",
       "stalker_specify_model"
     ],
     "Control Head": [
@@ -481,9 +484,6 @@
     ],
     "Rear Window Bars": [
       "setina_steel_vertical",
-      "setina_steel_horizontal",
-      "setina_poly",
-      "setina_poly_tinted",
       "stalker_specify_model"
     ],
     "Replacement Rear Seat": [
@@ -614,18 +614,14 @@
       "stalker_specify_model"
     ],
     "Arges Mount": [
-      "whelen_vehicle_specific_mount",
       "whelen_light_bar_mount",
       "stalker_specify_model"
     ],
     "Photo Eye": [
-      "whelen_center_of_dash",
       "whelen_rear_view_mirror_plastic",
-      "whelen_in_light_bar",
       "whelen_specify_location"
     ],
     "GPD W/ Extension": [
-      "whelen_center_of_dash",
       "globesat_front_right_of_dash",
       "globesat_roof_mounted",
       "globesat_specify_loaction"
@@ -663,7 +659,7 @@
     "PB6": "setina_pb6",
     "PB8": "setina_pb8",
     "ION": "whelen_ion",
-    "T-ION": "whelen_t_ion",
+    "T-ION": "whelen_t_series",
     "2 LAMP TRACER": "whelen_2_lamp_tracer",
     "NFORCE": "soundoff_nforce",
     "MPOWER": "soundoff_mpower",
@@ -673,13 +669,13 @@
     "TRACER L BRACKETS X2 PER": "whelen_tracer_l_brackets_x2_per",
     "UNIVERSAL GRILL BRACKET": "dtm_universal_grill_bracket",
     "SURFACE MOUNT ION": "whelen_surface_mount_ion",
-    "STANDARD MOUNT ION": "whelen_standard_mount_ion",
-    "T-SERIES ION": "whelen_t_series_ion",
+    "STANDARD MOUNT ION": "whelen_ion",
+    "T-SERIES ION": "whelen_t_series",
     "N-FORCE": "soundoff_n_force",
     "VERTEX": "whelen_vertex",
     "M4": "soundoff_m4",
     "FIELD SERIES": "whelen_field_series",
-    "PIONEER": "whelen_pioneer",
+    "PIONEER": "whelen_pioneer_plus",
     "SA315P": "whelen_sa315p",
     "SA315U": "whelen_sa315u",
     "SAK1": "whelen_sak1",
@@ -699,7 +695,7 @@
     "XLP": "whelen_xlp",
     "AVENGER X1": "federal_signal_avenger_x1",
     "AVENGER X2": "federal_signal_avenger_x2",
-    "T-IONS W/SHORUD": "whelen_t_ions_w_shorud",
+    "T-IONS W/SHORUD": "whelen_t_series",
     "T-SERIES": "whelen_t_series",
     "MEGA T-SERIES": "whelen_mega_t_series",
     "MINI T-SERIES": "whelen_mini_t_series",
@@ -718,8 +714,6 @@
     "LICENSE PLATE BRACKET": "dtm_license_plate_bracket",
     "GROMMET MOUNT": "dtm_grommet_mount",
     "TWIST LOCK ADAPTOR": "dtm_twist_lock_adaptor",
-    "AM-900": "whelen_am_900",
-    "FLASHED WITH CORE": "whelen_flashed_with_core",
     "DSR": "stalker_dsr",
     "DSR 2X": "stalker_dsr_2x",
     "LOW A BRACKET": "stalker_low_a_bracket",
@@ -729,7 +723,6 @@
     "8\"\" SCREEN": "havis_8_screen",
     "9\"\" SCREEN": "havis_9_screen",
     "CORE": "whelen_core",
-    "BLUEPRINT": "whelen_blueprint",
     "CCTL5": "whelen_cctl5",
     "CCTL6": "whelen_cctl6",
     "CCTL7": "whelen_cctl7",
@@ -777,8 +770,8 @@
     "POLY DIVIDER": "setina_poly_divider",
     "CARGO MAXX": "setina_cargo_maxx",
     "STEEL VERTICAL": "setina_steel_vertical",
-    "STEEL HORIZONTAL": "setina_steel_horizontal",
-    "POLY TINTED": "setina_poly_tinted",
+    "STEEL HORIZONTAL": "setina_steel_vertical",
+    "POLY TINTED": "setina_steel_vertical",
     "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS": "pro_gard_full_replacment_seat_w_center_pull_seat_belts",
     "POLY SEAT COVER": "pro_gard_poly_seat_cover",
     "STEEL WINDOW": "setina_steel_window",
@@ -824,11 +817,8 @@
     "ARGES W/ BAIL BRACKET": "whelen_arges_w_bail_bracket",
     "ARGES W/ SWIVEL BRACKET": "whelen_arges_w_swivel_bracket",
     "ARGES W/ VERSATILE BAIL BRACKET": "whelen_arges_w_versatile_bail_bracket",
-    "VEHICLE SPECIFIC MOUNT": "whelen_vehicle_specific_mount",
     "LIGHT BAR MOUNT": "whelen_light_bar_mount",
-    "CENTER OF DASH": "whelen_center_of_dash",
     "REAR VIEW MIRROR PLASTIC": "whelen_rear_view_mirror_plastic",
-    "IN LIGHT BAR": "whelen_in_light_bar",
     "SPECIFY LOCATION": "whelen_specify_location",
     "FRONT RIGHT OF DASH": "globesat_front_right_of_dash",
     "ROOF MOUNTED": "globesat_roof_mounted",

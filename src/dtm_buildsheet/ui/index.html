@@ -89,6 +89,7 @@
     <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
     <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
     <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
+    <button class="stab" data-stab="quickbooks" data-stab-group="general" hidden>💵 QuickBooks</button>
   </div>
   <!-- Advanced Settings stab-bar — review-gated config changes -->
   <div class="stab-bar" id="stab-bar-advanced" hidden>
@@ -107,9 +108,10 @@
     <button class="inner-stab" data-inner-stab="fixtures" data-inner-group="placements">Fixtures</button>
   </div>
   <div class="inner-stab-bar" id="inner-stab-bar-part-manager" hidden>
-    <button class="inner-stab active" data-inner-stab="catalog" data-inner-group="part-manager">Part Types</button>
-    <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library</button>
-    <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Database (v2)</button>
+    <button class="inner-stab active" data-inner-stab="sku-grid" data-inner-group="part-manager">Review (SKUs)</button>
+    <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Hierarchy</button>
+    <button class="inner-stab" data-inner-stab="catalog" data-inner-group="part-manager">Part Types (legacy)</button>
+    <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library (legacy)</button>
   </div>
 
   <!-- ── PROJECTS (General Settings) ── -->
@@ -201,6 +203,8 @@
                   <select id="loc-pattern">
                     <option value="single">Single</option>
                     <option value="mirror">Mirror</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="vertical_mirror">Mirror Vertically</option>
                   </select>
                 </div>
                 <div class="form-group" style="max-width:80px">
@@ -367,6 +371,7 @@
                     <option value="single">Single</option>
                     <option value="mirror">Mirror</option>
                     <option value="vertical">Vertical</option>
+                    <option value="vertical_mirror">Mirror Vertically</option>
                   </select>
                 </div>
                 <div class="form-group" style="max-width:80px">
@@ -440,28 +445,57 @@
 
   <!-- ── SIZE RULES ── -->
   <div id="stab-sizes" hidden>
-    <div class="card">
-      <div class="card-title">Size Class Definitions
-        <button class="btn btn-primary btn-sm" id="btn-save-sizes">Save Changes</button>
+    <div class="sr-page-head">
+      <div>
+        <div class="sr-eyebrow">Advanced settings / rendering</div>
+        <h2>Light size rules</h2>
+        <p>Set reusable light profiles and assign them to real parts in the parts database.</p>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Named size profiles used by the light renderer — one set of dimensions per view. Click <strong>▼ Views</strong> to edit per-view W×H. Vertical-orientation sizes are swapped automatically.</p>
-      <table class="size-tbl">
-        <thead><tr><th style="width:12%">ID</th><th style="width:22%">Label</th><th style="width:18%">Views</th><th style="width:20%">Aspect Ratio</th><th style="width:12%">Front Preview</th><th style="width:10%"></th></tr></thead>
-        <tbody id="size-defs-tbody"></tbody>
-      </table>
-      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-def">+ Add Size Class</button></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Part Number → Size Class Rules
-        <span style="font-size:11px;font-weight:400;color:var(--muted)">first match wins</span>
+      <div class="sr-head-actions">
+        <span id="sr-db-status" class="sr-save-state">Loading parts database…</span>
+        <button class="btn btn-secondary btn-sm" id="btn-reload-sizes" type="button">↻ Reload</button>
+        <button class="btn btn-primary" id="btn-save-sizes" type="button">Save Changes</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Maps part number substrings (case-insensitive) to a size class ID.</p>
-      <table class="size-tbl">
-        <thead><tr><th style="width:42%">Part Number Contains</th><th style="width:28%">Size Class</th><th style="width:20%">Preview</th><th style="width:10%"></th></tr></thead>
-        <tbody id="size-rules-tbody"></tbody>
-      </table>
-      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" id="btn-add-size-rule">+ Add Rule</button></div>
     </div>
+
+    <div class="sr-callout">
+      <span class="sr-callout-icon">ⓘ</span>
+      <div><strong>How sizing is resolved</strong><br>
+        Every build uses an explicit SKU override, then product, then part-type assignment, and finally the Small default profile. Exact W × H dimensions on a part take precedence over its profile.</div>
+    </div>
+
+    <div class="sr-columns">
+      <section class="sr-panel sr-profiles-panel">
+        <div class="sr-panel-head">
+          <div><h3>Size profiles</h3><p>Reusable dimensions in inches. Changes here update every assigned part.</p></div>
+          <button class="btn btn-secondary btn-sm" id="btn-add-size-def" type="button">+ New profile</button>
+        </div>
+        <div id="size-defs-tbody" class="sr-profile-list"></div>
+      </section>
+
+      <section class="sr-panel sr-assignments-panel">
+        <div class="sr-panel-head">
+          <div><h3>Parts database assignments</h3><p>Choose a real part instead of relying on a text query.</p></div>
+        </div>
+        <div class="sr-toolbar">
+          <input id="size-target-search" type="search" placeholder="Search part type, product, or SKU…" autocomplete="off">
+          <select id="size-target-filter" aria-label="Target type">
+            <option value="all">All targets</option>
+            <option value="part_type">Part types</option>
+            <option value="product">Products</option>
+            <option value="sku">SKUs</option>
+          </select>
+        </div>
+        <div id="size-assignments-list" class="sr-assignment-list"></div>
+      </section>
+    </div>
+
+    <section class="sr-panel sr-legacy-panel">
+      <div class="sr-panel-head">
+        <div><h3>Text-rule migration complete</h3><p>The former name and substring rules have been assigned to their actual products or superseded by explicit part-type dimensions.</p></div>
+      </div>
+      <div class="sr-legacy-warning">Sizing no longer depends on product-name text. The old numeric <code>3</code> and <code>6</code> rules are now specific Round Lighthead assignments, so they cannot resize unrelated parts.</div>
+    </section>
   </div>
 
 <!-- ── ADD PART TYPE MODAL ── -->
@@ -638,6 +672,54 @@
   </div>
 
   <!-- ── PARTS DB (v2 tree editor) ── -->
+  <!-- ── SKU REVIEW GRID (parts_db spreadsheet editor) ── -->
+  <div id="stab-sku-grid" hidden>
+    <div class="card">
+      <div class="card-title">SKU Review
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="skg-meta" style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0"></span>
+          <button class="btn btn-secondary btn-sm" id="skg-reload">↺ Reload</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        Brand-sorted catalog. Expand a product to edit every SKU inline. Edits save immediately to
+        <code>parts_db.json</code> (cloud-mirrored). Use the filters to target what still needs attention.
+      </p>
+      <div class="skg-toolbar">
+        <select id="skg-brand" class="skg-tb-sel" title="Filter by brand"></select>
+        <select id="skg-type" class="skg-tb-sel" title="Filter by part-type tree: Type"></select>
+        <select id="skg-section" class="skg-tb-sel" title="Filter by part-type tree: Section"></select>
+        <select id="skg-zone" class="skg-tb-sel" title="Filter by part-type tree: Zone"></select>
+        <select id="skg-pt" class="skg-tb-sel" title="Filter by part-type"></select>
+        <input id="skg-search" class="skg-tb-input" type="text" placeholder="Search SKU, name, or model…" />
+        <select id="skg-qb" class="skg-tb-sel" title="Filter by QuickBooks backing" hidden>
+          <option value="">QB: all</option>
+          <option value="in_qb">QB: in QB</option>
+          <option value="pending">QB: pending</option>
+          <option value="none">QB: not in QB</option>
+        </select>
+        <select id="skg-readiness" class="skg-tb-sel" title="Filter by app-readiness (home + description + lights:color)">
+          <option value="">Readiness: any</option>
+          <option value="ready">Ready</option>
+          <option value="needs">Needs data</option>
+        </select>
+        <select id="skg-review" class="skg-tb-sel" title="Filter by manual review status">
+          <option value="">Review: any</option>
+          <option value="complete">Complete</option>
+          <option value="incomplete">Incomplete</option>
+        </select>
+        <span id="skg-count" style="font-size:12px;color:var(--muted)"></span>
+        <span style="flex:1"></span>
+        <button class="btn btn-secondary btn-sm" id="skg-seed-lights" title="Tag products as Light where a SKU has a color or fits a light part type">⚡ Seed light tags</button>
+        <button class="btn btn-secondary btn-sm" id="skg-backfill" title="Fill empty Sales Descriptions from the QuickBooks cache" hidden>⤵ Descriptions from QB</button>
+        <button class="btn btn-secondary btn-sm" id="skg-add-product">+ Product</button>
+      </div>
+      <div id="skg-bulk" class="skg-bulk" hidden></div>
+      <div id="skg-empty" hidden style="padding:20px;color:var(--muted);font-size:13px">No products match the current filters.</div>
+      <div id="skg-body" class="skg-body"></div>
+    </div>
+  </div>
+
   <div id="stab-parts-db" hidden>
     <div class="card">
       <div class="card-title">Parts Database
@@ -678,6 +760,21 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" id="pdb-modal-cancel">Cancel</button>
         <button class="btn btn-primary" id="pdb-modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SKU GRID modal (create-new entities + move SKU) ── -->
+  <div class="modal-overlay" id="skg-modal">
+    <div class="modal" style="width:460px">
+      <div class="modal-title">
+        <span id="skg-modal-title">Create</span>
+        <button class="modal-close" id="skg-modal-close">×</button>
+      </div>
+      <div id="skg-modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="skg-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="skg-modal-save">Create</button>
       </div>
     </div>
   </div>
@@ -779,6 +876,129 @@
       <input type="text" id="pm-search" placeholder="Search presets…" style="margin-bottom:10px;width:100%;box-sizing:border-box" />
       <div id="pm-list-container">
         <p style="font-size:13px;color:var(--muted)">Loading…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── QUICKBOOKS ── -->
+  <div id="stab-quickbooks" hidden>
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>QuickBooks Online</span>
+        <span id="qb-status-badge" style="font-size:13px;font-weight:600;color:var(--muted)">● Not configured</span>
+      </div>
+
+      <!-- Connected state -->
+      <div id="qb-connected-panel" hidden>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">
+          Environment: <span id="qb-environment-label" style="color:var(--navy);font-weight:600">—</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">
+          Token renews: <span id="qb-token-renews" style="color:var(--navy);font-weight:600">—</span>
+          · Hard expiry: <span id="qb-hard-expiry" style="color:var(--navy);font-weight:600">—</span>
+        </div>
+        <button class="btn btn-secondary" id="qb-disconnect-btn" style="color:var(--red)">Disconnect</button>
+      </div>
+
+      <!-- Parts sync (read-only pull). Visible only when connected. -->
+      <div id="qb-sync-panel" hidden style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <span style="font-weight:700;color:var(--navy)">Parts Sync</span>
+          <button class="btn btn-secondary btn-sm" id="qb-sync-btn">
+            <span class="spinner" id="qb-sync-spinner" style="display:none"></span>
+            <span id="qb-sync-label">🔄 Pull items from QuickBooks</span>
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+          Pulls active Items from your QuickBooks company for review. This does not change any of
+          your existing part data — linking items to parts is a separate step.
+        </p>
+        <div id="qb-sync-summary" style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          Last sync: <span id="qb-last-sync" style="color:var(--navy);font-weight:600">never</span>
+          · <span id="qb-item-count" style="color:var(--navy);font-weight:600">0</span> items
+          (<span id="qb-linked-count">0</span> linked, <span id="qb-unlinked-count">0</span> unlinked)
+        </div>
+        <div id="qb-items-list" style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+      </div>
+
+      <!-- Customer → Agency import. Visible only when connected. -->
+      <div id="qb-customers-panel" hidden style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <span style="font-weight:700;color:var(--navy)">Customers → Agencies</span>
+          <button class="btn btn-secondary btn-sm" id="qb-customers-btn">
+            <span class="spinner" id="qb-customers-spinner" style="display:none"></span>
+            <span id="qb-customers-label">⬇️ Pull customers from QuickBooks</span>
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0">
+          Imports your QuickBooks customers into the app's agencies. New customers create agencies;
+          matches (by QuickBooks ID, then name) are linked and have any missing profile fields filled in
+          (contacts, addresses, website, notes, and tax status). Existing agency data is never overwritten.
+        </p>
+      </div>
+
+      <!-- Disconnected state -->
+      <div id="qb-connect-row">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">
+          Authorize the app to connect to your QuickBooks company. You'll be taken to Intuit
+          to sign in, then returned here automatically.
+        </p>
+        <button class="btn btn-primary" id="qb-connect-btn">🔗 Connect to QuickBooks</button>
+        <p id="qb-connect-hint" style="font-size:12px;color:var(--orange,#b45309);margin:8px 0 0" hidden>
+          Enter your Client ID, Client Secret, and Redirect URI below first.
+        </p>
+      </div>
+    </div>
+
+    <details class="card" id="qb-creds-card" style="margin-top:14px">
+      <summary style="font-weight:700;color:var(--navy);cursor:pointer">⚙️ App registration (Client ID &amp; Secret)</summary>
+      <p style="font-size:12px;color:var(--muted);margin:10px 0 14px">
+        From your Intuit Developer dashboard (Production keys). The Client Secret is stored in
+        your operating system keychain — never on disk or in the cloud. See
+        docs/QUICKBOOKS_INTEGRATION.md.
+      </p>
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Client ID</label>
+      <input type="text" id="qb-client-id" placeholder="ABxxxxxxxxxxxxxxxx" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:12px" />
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Client Secret</label>
+      <input type="password" id="qb-client-secret" placeholder="Paste client secret" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:12px" />
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Environment</label>
+      <select id="qb-environment" style="width:100%;box-sizing:border-box;margin-bottom:12px">
+        <option value="production">Production (live company)</option>
+        <option value="sandbox">Sandbox (testing)</option>
+      </select>
+
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px">Redirect URI</label>
+      <input type="text" id="qb-redirect-uri" placeholder="https://your-domain.com/qb-callback" style="width:100%;box-sizing:border-box;margin-bottom:4px" />
+      <p style="font-size:11px;color:var(--muted);margin:0 0 14px">
+        Must exactly match a Redirect URI registered in your Intuit app. Production requires HTTPS;
+        sandbox may use http://localhost:7655/api/quickbooks/callback.
+      </p>
+
+      <button class="btn btn-primary" id="qb-save-settings">💾 Save Settings</button>
+    </details>
+  </div>
+
+  <!-- QB link picker: choose an existing VB product to attach a QB item to. -->
+  <div class="modal-overlay" id="qb-link-modal" role="dialog" aria-modal="true" hidden>
+    <div class="modal" style="width:560px">
+      <div class="modal-title">
+        <span>Link to part</span>
+        <button class="modal-close" id="qb-link-close">×</button>
+      </div>
+      <div id="qb-link-modal-body">
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">
+          Linking <strong id="qb-link-item-name">—</strong> to an existing Vehicle Builder part.
+          This adds the QuickBooks item ID to that part; nothing else changes.
+        </p>
+        <input type="text" id="qb-link-search" placeholder="Search parts…" autocomplete="off"
+               style="width:100%;box-sizing:border-box;margin-bottom:10px" />
+        <div id="qb-link-results" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="qb-link-cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -925,7 +1145,7 @@
     </div>
   </div>
 
-  <!-- Detail view — Overview | Edit | Builds -->
+  <!-- Detail view — Overview | Project Details -->
   <div id="proj-detail-view" hidden>
     <div class="card">
       <div class="card-title">
@@ -937,14 +1157,10 @@
       </div>
       <div class="proj-tab-bar">
         <button class="proj-tab proj-dtab active" data-ptab="overview">Overview</button>
-        <button class="proj-tab proj-dtab" data-ptab="edit">Edit</button>
-        <button class="proj-tab proj-dtab" data-ptab="builds">Builds</button>
+        <button class="proj-tab proj-dtab" data-ptab="edit">Project Details</button>
       </div>
       <div id="proj-ptab-overview" class="proj-panel active"></div>
       <div id="proj-ptab-edit"     class="proj-panel"></div>
-      <div id="proj-ptab-builds"   class="proj-panel">
-        <div id="proj-action-status" style="display:none;padding:8px 12px;border-radius:6px;font-size:13px;margin-top:12px"></div>
-      </div>
     </div>
   </div>
 
@@ -963,7 +1179,7 @@
       </div>
       <div class="proj-tab-bar" id="proj-editor-tabbar">
         <button class="proj-tab proj-etab active" data-etab="customer">1 · Customer</button>
-        <button class="proj-tab proj-etab" data-etab="preferences">2 · Preferences</button>
+        <button class="proj-tab proj-etab" data-etab="preferences">2 · Project Overrides</button>
         <button class="proj-tab proj-etab" data-etab="fleet">3 · Fleet Units</button>
         <button class="proj-tab proj-etab" data-etab="review">4 · Review</button>
       </div>
@@ -982,10 +1198,6 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Quote # <span style="font-size:11px;font-weight:400;color:var(--muted)">(optional, add later)</span></label>
-            <input type="text" id="proj-quote" placeholder="Q-1234" />
-          </div>
           <div class="form-group" style="position:relative">
             <label>Sales Rep <span style="color:var(--red)">*</span></label>
             <input type="text" id="proj-salesrep" placeholder="Name" autocomplete="off" />
@@ -996,31 +1208,42 @@
       </div>
       <!-- Step 2: Preferences -->
       <div id="proj-etab-preferences" class="proj-panel">
+        <div class="proj-preferences-intro">
+          <div class="proj-preferences-intro-title">Agency equipment defaults</div>
+          <p id="proj-preferences-source">Select an agency to load its normal equipment choices. Changes here apply only to this project.</p>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Camera System</label>
-            <select id="proj-camera">
-              <option value="">— Not specified —</option>
-            </select>
+            <select id="proj-camera-brand"></select>
           </div>
           <div class="form-group">
             <label>Push Bumper Brand</label>
-            <input type="text" id="proj-bumper-brand" list="proj-bumper-list" placeholder="e.g. Setina" autocomplete="off">
-            <datalist id="proj-bumper-list"></datalist>
+            <select id="proj-push-bumper-brand"></select>
           </div>
           <div class="form-group">
             <label>Cage / Partition Brand</label>
-            <input type="text" id="proj-cage-brand" list="proj-cage-list" placeholder="e.g. Pro-Gard" autocomplete="off">
-            <datalist id="proj-cage-list"></datalist>
+            <select id="proj-cage-brand"></select>
+          </div>
+          <div class="form-group">
+            <label>Console Brand</label>
+            <select id="proj-console-brand"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Lighting Brand</label>
+            <select id="proj-lighting"></select>
           </div>
         </div>
         <div class="form-group">
-          <label>Lighting Brand(s)</label>
-          <div id="proj-lighting-checkboxes" class="proj-brand-checks"></div>
-        </div>
-        <div class="form-group">
-          <label>Preferences Notes</label>
+          <label>Project-specific preference notes</label>
           <textarea id="proj-pref-notes" rows="2" placeholder="Any other preferences or notes…" style="resize:vertical;width:100%;box-sizing:border-box"></textarea>
+        </div>
+        <div class="proj-preferences-default-action">
+          <button class="btn btn-secondary btn-sm" type="button"
+            onclick="PT_setPreferencesAsAgencyDefault('proj', 'proj-agency-id', this)">Set selected choices as agency defaults</button>
+          <p>Use this when these choices should be the normal starting point for future projects. Save this project separately to keep its choices here.</p>
         </div>
       </div>
       <!-- Step 3: Fleet Units -->
@@ -1054,7 +1277,7 @@
   <div id="proj-build-editor" hidden>
     <div id="pbe-header">
       <div id="pbe-unit-info"></div>
-      <button class="btn btn-secondary btn-sm" id="pbe-back-btn">← Back to Project</button>
+      <button class="btn btn-secondary btn-sm" id="pbe-back-btn">← Return to Project</button>
     </div>
 
     <!-- Preview card (used by preview_canvas.js) -->
@@ -1069,16 +1292,7 @@
             <button class="btn btn-secondary btn-sm" id="btn-reload-preview" title="Reload preview">↺ Refresh</button>
           </div>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Drag icons to reposition. Click to open the inspector. Changes are pending until you click Apply.</p>
-
-        <!-- toolbar -->
-        <div class="pv-toolbar" id="pv-toolbar">
-          <button class="btn btn-primary btn-sm" id="btn-pv-apply" disabled>
-            Apply Changes <span id="pv-pending-count" class="pv-badge" style="display:none"></span>
-          </button>
-          <button class="btn btn-secondary btn-sm" id="btn-pv-reset-view">Reset This View</button>
-          <button class="btn btn-secondary btn-sm" id="btn-pv-reset-all">Reset All Views</button>
-        </div>
+        <p class="pv-build-hint">Drag icons to reposition. Click a part to adjust its render or edit its details. Changes save automatically.</p>
 
         <!-- view tabs -->
         <div class="pv-view-tab-bar" id="pv-view-tabs"></div>
@@ -1143,15 +1357,14 @@
             </div>
 
             <div class="pv-insp-actions">
+              <button class="btn btn-primary btn-sm" id="pv-insp-edit-part">Edit Part</button>
+              <button class="btn btn-secondary btn-sm" id="pv-insp-comment-part">Add Comment</button>
               <button class="btn btn-secondary btn-sm" id="pv-insp-reset-part">↩ Reset This Part</button>
+              <button class="btn btn-danger btn-sm" id="pv-insp-delete-part">Delete Part</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <div id="pbe-save-return-preview-row">
-      <button class="btn btn-gold btn-block" id="pbe-save-return-preview">💾 Save &amp; Return to Project</button>
     </div>
 
     <!-- Build manifest editor (used by manifest_editor.js) -->
@@ -1167,12 +1380,19 @@
       </div>
     </div>
 
+    <div class="card" id="pbe-final-notes-card">
+      <div class="card-title">Final-page Notes</div>
+      <p class="field-hint" style="margin-top:0">Add notes for this build only. They save automatically and appear in the matching sections on the final PowerPoint page.</p>
+      <div id="pbe-final-notes-content"></div>
+      <div id="pbe-final-notes-status" class="proj-form-status" style="display:none"></div>
+    </div>
+
     <div id="pbe-footer">
       <div id="pbe-action-row" style="display:none;gap:8px;margin-bottom:8px">
         <button class="btn btn-secondary" id="pbe-create-preset-btn" style="flex:1">Save as New Preset?</button>
         <button class="btn btn-secondary" id="pbe-apply-group-btn" style="flex:1">Apply to Entire Unit Group</button>
       </div>
-      <button class="btn btn-gold btn-block" id="pbe-save-return">💾 Save &amp; Return to Project</button>
+      <button class="btn btn-primary btn-block" id="pbe-save-return">← Return to Project</button>
     </div>
   </div><!-- end proj-build-editor -->
 
@@ -1180,17 +1400,75 @@
 
 <!-- ══ AGENCY CREATE MODAL ══ -->
 <div class="modal-overlay" id="agency-create-modal" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:680px">
     <div class="modal-title">New Agency
       <button class="modal-close" id="agency-create-close">✕</button>
     </div>
+    <p class="field-hint">Agency name is required. Contact and address details are optional, but helpful for project coordination.</p>
     <div class="form-group"><label>Agency Name <span style="color:var(--red)">*</span></label><input id="ac-name" type="text" placeholder="e.g. Springfield PD" /></div>
-    <div class="form-group"><label>Contact Name <span style="color:var(--red)">*</span></label><input id="ac-contact-name" type="text" placeholder="Full name" /></div>
     <div class="form-row">
-      <div class="form-group"><label>Phone</label><input id="ac-contact-phone" type="tel" placeholder="e.g. 320-555-0100" /></div>
+      <div class="form-group"><label>Contact Name</label><input id="ac-contact-name" type="text" placeholder="Full name" /></div>
+      <div class="form-group"><label>Title</label><input id="ac-contact-title" type="text" placeholder="e.g. Fleet Manager" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Primary Phone</label><input id="ac-contact-phone" type="tel" placeholder="e.g. 320-555-0100" /></div>
       <div class="form-group"><label>Email</label><input id="ac-contact-email" type="email" placeholder="e.g. fleet@agency.gov" /></div>
     </div>
-    <div class="form-group"><label>Customer Since</label><input id="ac-since" type="text" placeholder="e.g. 2019" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Mobile Phone</label><input id="ac-mobile-phone" type="tel" placeholder="Optional" /></div>
+      <div class="form-group"><label>Fax</label><input id="ac-fax" type="tel" placeholder="Optional" /></div>
+      <div class="form-group"><label>Website</label><input id="ac-website" type="url" placeholder="https://agency.gov" /></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Billing address</div>
+      <div class="form-group"><label>Street address</label><input id="ac-bill-address-line1" type="text" autocomplete="address-line1" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>Address line 2</label><input id="ac-bill-address-line2" type="text" autocomplete="address-line2" /></div>
+        <div class="form-group"><label>Address line 3</label><input id="ac-bill-address-line3" type="text" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input id="ac-bill-city" type="text" autocomplete="address-level2" /></div>
+        <div class="form-group"><label>State / Province</label><input id="ac-bill-state" type="text" autocomplete="address-level1" /></div>
+        <div class="form-group"><label>Postal Code</label><input id="ac-bill-postal-code" type="text" autocomplete="postal-code" /></div>
+        <div class="form-group"><label>Country</label><input id="ac-bill-country" type="text" autocomplete="country-name" /></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Shipping address <span class="field-hint">(optional)</span></div>
+      <label class="field-hint"><input id="ac-ship-same" type="checkbox" /> Same as billing address</label>
+      <div class="form-group"><label>Street address</label><input id="ac-ship-address-line1" type="text" autocomplete="shipping address-line1" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>Address line 2</label><input id="ac-ship-address-line2" type="text" autocomplete="shipping address-line2" /></div>
+        <div class="form-group"><label>Address line 3</label><input id="ac-ship-address-line3" type="text" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input id="ac-ship-city" type="text" autocomplete="shipping address-level2" /></div>
+        <div class="form-group"><label>State / Province</label><input id="ac-ship-state" type="text" autocomplete="shipping address-level1" /></div>
+        <div class="form-group"><label>Postal Code</label><input id="ac-ship-postal-code" type="text" autocomplete="shipping postal-code" /></div>
+        <div class="form-group"><label>Country</label><input id="ac-ship-country" type="text" autocomplete="shipping country-name" /></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="form-row">
+        <div class="form-group"><label>Taxable</label><select id="ac-taxable"><option value="">Not set</option><option value="true">Taxable</option><option value="false">Not taxable</option></select></div>
+        <div class="form-group"><label>Customer Since</label><input id="ac-since" type="text" placeholder="e.g. 2019" /></div>
+      </div>
+      <div class="form-group"><label>Customer Notes</label><textarea id="ac-notes" rows="2" placeholder="Internal customer notes"></textarea></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Equipment defaults for new projects</div>
+      <p class="field-hint">These are the agency's normal choices. Each new project starts with them, and its project owner can change an outlier without changing this agency.</p>
+      <div class="form-row">
+        <div class="form-group"><label>Camera System</label><select id="ac-camera-brand"></select></div>
+        <div class="form-group"><label>Lighting Brand</label><select id="ac-lighting"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Push Bumper Brand</label><select id="ac-push-bumper-brand"></select></div>
+        <div class="form-group"><label>Cage / Partition Brand</label><select id="ac-cage-brand"></select></div>
+        <div class="form-group"><label>Console Brand</label><select id="ac-console-brand"></select></div>
+      </div>
+      <div class="form-group"><label>Default preference notes</label><textarea id="ac-pref-notes" rows="2" placeholder="Optional guidance for the agency's normal build"></textarea></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="ac-cancel">Cancel</button>
       <button class="btn btn-primary" id="ac-save">Create Agency</button>
@@ -1207,6 +1485,25 @@
       <button class="btn btn-danger" id="del-with-files-btn" style="width:100%">Delete Project + Output Files</button>
       <button class="btn btn-secondary" id="del-proj-only-btn" style="width:100%">Delete Project Only</button>
       <button class="btn btn-secondary" id="del-cancel-btn" style="width:100%">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QUICKBOOKS ESTIMATE MODAL ══
+     Drives the per-vehicle "Create QuickBooks Estimate" flow from the Builds
+     tab. Body content is rendered from JS (detail_builds.js): either a list of
+     blocking parts, a create-confirmation with line count + total, or a batch
+     result summary. -->
+<div class="modal-overlay" id="qb-est-modal" role="dialog" aria-modal="true" hidden>
+  <div class="modal" style="width:720px">
+    <div class="modal-title">
+      <span id="qb-est-title">QuickBooks Estimate</span>
+      <button class="modal-close" id="qb-est-close">×</button>
+    </div>
+    <div id="qb-est-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="qb-est-cancel">Close</button>
+      <button class="btn btn-primary" id="qb-est-create" style="display:none">Create estimate</button>
     </div>
   </div>
 </div>
@@ -1241,7 +1538,7 @@
         <input type="text" id="ind-edit-unit-number" placeholder="e.g. 101">
       </div>
       <div class="form-group">
-        <label>Year</label>
+        <label>Vehicle Year</label>
         <input type="text" id="ind-edit-year" placeholder="2026">
       </div>
     </div>
@@ -1545,6 +1842,122 @@
   </div>
 </div>
 
+<!-- ── PART PICKER PANEL ── -->
+<div id="picker-panel" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="picker-container picker-container--wide">
+    <div class="picker-header">
+      <span id="picker-title">Add Part</span>
+      <button class="modal-close" onclick="pickerClose()" title="Close">✕</button>
+    </div>
+    <div class="picker-tabs">
+      <button class="picker-tab active" id="picker-tab-btn-part" data-tab="part">1 · Part</button>
+      <button class="picker-tab" id="picker-tab-btn-location" data-tab="location">2 · Details</button>
+    </div>
+    <!-- PART TAB: two-pane (filters | live product list) -->
+    <div class="picker-tabpane" id="picker-pane-part">
+      <div class="picker-twopane">
+        <div class="picker-filters" id="picker-filters"></div>
+        <div class="picker-products" id="picker-products"></div>
+      </div>
+    </div>
+    <!-- DETAILS TAB: normal parts use the vehicle/location detail view; guided
+         systems use the same second tab for their sequential shop setup. -->
+    <div class="picker-tabpane" id="picker-pane-location" hidden>
+      <div id="picker-location-content">
+        <div class="picker-loc-views" id="picker-loc-views"></div>
+        <div class="picker-loc-stage" id="picker-loc-stage">
+          <img id="picker-loc-img" alt="vehicle view">
+          <div class="picker-loc-dots" id="picker-loc-dots"></div>
+          <div class="picker-loc-btns" id="picker-loc-btns" hidden></div>
+        </div>
+        <div id="picker-part-details" hidden></div>
+      </div>
+      <div id="picker-system-details" hidden></div>
+    </div>
+    <!-- Tracer/head-parent config: Standard Duo/Trio + secondary color, with a
+         live preview of the resolved housings + head SKUs. Replaces the color
+         matrix for tracers (which have child lightheads). -->
+    <div class="picker-tracer" id="picker-tracer" hidden></div>
+    <!-- Inner Edge FST/RST uses the same concise Duo/Trio selection, but its
+         exact selected QB SKU supplies the head count and its front/rear
+         physical layout is rendered independently. -->
+    <div class="picker-tracer" id="picker-inner-edge" hidden></div>
+    <!-- Outer Edge rear pillars require their included six IONs to be selected
+         from the real QB SKUs; their housing determines Duo versus Trio. -->
+    <div class="picker-tracer" id="picker-outer-edge" hidden></div>
+    <!-- Roof lightbar config: Standard/Custom setup tag, lens/edition, and a
+         "notes for ordering" box for custom builds. Shown for roof-bar products
+         (which are ordered as whole configured SKUs). -->
+    <div class="picker-lightbar" id="picker-lightbar" hidden></div>
+    <!-- Radio Communications guided system flow. Adds the normal radio detail
+         part types together so common builds do not miss required radio fields. -->
+    <div class="picker-radio" id="picker-radio" hidden></div>
+    <!-- Accessories: appears (above the footer, on both tabs) when the selected
+         product has accessories. Add is gated until each row is addressed. -->
+    <div class="picker-accessories" id="picker-accessories" hidden></div>
+    <div class="picker-footer" id="picker-footer">
+      <span id="picker-footer-text" class="picker-footer-text">Select a part type to begin</span>
+      <div class="picker-part-status" id="picker-part-status" aria-label="Part condition">
+        <span class="picker-part-status-label">Condition</span>
+        <div class="picker-part-status-buttons" role="group" aria-label="Part condition">
+          <button type="button" class="picker-part-status-btn picker-part-status-btn--active" data-picker-part-status="New" aria-pressed="true">New</button>
+          <button type="button" class="picker-part-status-btn" data-picker-part-status="Used" aria-pressed="false">Used</button>
+          <button type="button" class="picker-part-status-btn" data-picker-part-status="Reused" aria-pressed="false">Reused</button>
+        </div>
+      </div>
+      <div class="picker-comment-step" id="picker-comment-step" hidden>
+        <button type="button" class="btn btn-secondary btn-sm" id="picker-comment-toggle" aria-expanded="false">+ Add part notes</button>
+        <label class="picker-comment-entry" id="picker-comment-entry" hidden>
+          <span>Part notes <em>(optional — shown in the manifest)</em></span>
+          <input id="picker-part-comment" type="text" maxlength="500" placeholder="Optional note for this part">
+        </label>
+      </div>
+      <div class="picker-footer-btns">
+        <button class="btn btn-secondary btn-sm" id="picker-add-another-btn" hidden>Add another part</button>
+        <button class="btn btn-primary btn-sm" id="picker-add-btn" disabled>Add Part</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- One-off billable parts stay out of the managed catalog. -->
+<div id="picker-custom-part-modal" class="modal-overlay picker-custom-part-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-custom-part-title">
+  <form class="modal picker-custom-part-modal" id="picker-custom-part-form">
+    <div class="modal-title">
+      <span id="picker-custom-part-title">Add Custom Part</span>
+      <button class="modal-close" type="button" id="picker-custom-part-close" title="Close">✕</button>
+    </div>
+    <p class="picker-custom-part-help">For a one-off billable item that is not worth adding to the managed catalog. Its SKU, description, quantity, and price are saved with this build as a clearly flagged custom line.</p>
+    <div class="picker-custom-part-grid">
+      <label class="picker-custom-part-field">
+        <span>SKU <b>*</b></span>
+        <input id="picker-custom-part-sku" type="text" maxlength="160" autocomplete="off" required placeholder="Vendor or manufacturer SKU">
+      </label>
+      <label class="picker-custom-part-field">
+        <span>Quantity <b>*</b></span>
+        <input id="picker-custom-part-qty" type="number" min="1" max="999" step="1" value="1" required>
+      </label>
+      <label class="picker-custom-part-field picker-custom-part-field--wide">
+        <span>Part description <b>*</b></span>
+        <input id="picker-custom-part-description" type="text" maxlength="500" required placeholder="Description used in the manifest and quote">
+      </label>
+      <label class="picker-custom-part-field">
+        <span>Unit price <b>*</b></span>
+        <input id="picker-custom-part-price" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
+      </label>
+    </div>
+    <div id="picker-custom-part-conflict" class="picker-custom-part-conflict" hidden></div>
+    <div id="picker-custom-part-recent-wrap" class="picker-custom-part-recent" hidden>
+      <div class="picker-custom-part-recent-title">Recent custom parts</div>
+      <div id="picker-custom-part-recent-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" id="picker-custom-part-cancel">Cancel</button>
+      <button class="btn btn-primary" type="submit" id="picker-custom-part-save">Add billable custom part</button>
+    </div>
+  </form>
+</div>
+
 <!-- ── BUILD MANIFEST EDIT MODAL ── -->
 <div id="me-modal" class="modal-overlay" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:500px">
@@ -1574,6 +1987,10 @@
         <input id="me-location" type="text" placeholder="e.g. Dash" list="me-loc-list" autocomplete="off">
         <datalist id="me-loc-list"></datalist>
       </div>
+      <div class="form-group">
+        <label>Color</label>
+        <input id="me-color" type="text" placeholder="e.g. Red/Blue">
+      </div>
       <div class="form-group" style="max-width:90px;flex:none">
         <label>Qty</label>
         <input id="me-qty" type="number" min="0" max="99" value="1">
@@ -1582,26 +1999,31 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label>Color</label>
-        <input id="me-color" type="text" placeholder="e.g. Red/Blue">
-      </div>
-      <div class="form-group">
         <label>Manufacturer</label>
         <input id="me-mfg" type="text" placeholder="e.g. Whelen" list="me-mfg-list" autocomplete="off">
         <datalist id="me-mfg-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Product</label>
+        <input id="me-prod" type="text" placeholder="e.g. ION" list="me-prod-list" autocomplete="off">
+        <datalist id="me-prod-list"></datalist>
       </div>
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label>Part Number</label>
-        <input id="me-pn" type="text" placeholder="Search or enter model #" list="me-pn-list" autocomplete="off">
+        <input id="me-pn" type="text" placeholder="Search or enter part #" list="me-pn-list" autocomplete="off">
         <datalist id="me-pn-list"></datalist>
       </div>
       <div class="form-group">
         <label>Notes</label>
         <input id="me-notes" type="text" placeholder="Optional">
       </div>
+    </div>
+    <div class="form-group">
+      <label>Comment for manifest</label>
+      <input id="me-comment" type="text" maxlength="500" placeholder="Optional shop or customer comment">
     </div>
 
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:13px;font-weight:600">
@@ -1686,13 +2108,16 @@
 <script src="/ui/js/settings/part_types.js"></script>
 <script src="/ui/js/settings/parts_library.js"></script>
 <script src="/ui/js/settings/part_manager.js"></script>
+<script src="/ui/js/settings/sku_grid.js"></script>
 <script src="/ui/js/settings/vehicles.js"></script>
 <script src="/ui/js/settings/tools.js"></script>
 <script src="/ui/js/settings/agencies.js"></script>
 <script src="/ui/js/settings/sales_reps.js"></script>
 <script src="/ui/js/settings/presets_mgr.js"></script>
+<script src="/ui/js/settings/quickbooks.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>
 <script src="/ui/js/manifest_editor.js"></script>
+<script src="/ui/js/part_picker.js"></script>
 
 <script src="/ui/js/projects/state.js"></script>
 <script src="/ui/js/projects/api.js"></script>

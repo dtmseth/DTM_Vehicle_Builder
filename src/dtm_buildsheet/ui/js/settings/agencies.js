@@ -4,10 +4,76 @@
   let _agencies = [];
   let _editingId = null;
   let _pendingOnSuccess = null;
+  let _listWired = false;
+  let _preferenceLoadToken = 0;
+
+  const _profileFields = [
+    "contact_name", "contact_title", "contact_phone", "contact_email",
+    "mobile_phone", "fax", "website",
+    "bill_address_line1", "bill_address_line2", "bill_address_line3",
+    "bill_city", "bill_state", "bill_postal_code", "bill_country",
+    "ship_address_line1", "ship_address_line2", "ship_address_line3",
+    "ship_city", "ship_state", "ship_postal_code", "ship_country",
+    "notes",
+  ];
+  const _addressFields = ["address_line1", "address_line2", "address_line3", "city", "state", "postal_code", "country"];
+
+  function _inputFor(field) {
+    return $(`ac-${field.replaceAll("_", "-")}`);
+  }
+
+  function _shippingMatchesBilling(agency) {
+    return _addressFields.some(field => agency?.[`bill_${field}`]) &&
+      _addressFields.every(field => (agency?.[`bill_${field}`] || "") === (agency?.[`ship_${field}`] || ""));
+  }
+
+  function _copyBillingToShipping() {
+    for (const field of _addressFields) {
+      const bill = _inputFor(`bill_${field}`);
+      const ship = _inputFor(`ship_${field}`);
+      if (bill && ship) ship.value = bill.value;
+    }
+  }
+
+  async function _populateDefaultPreferences(agency) {
+    const token = ++_preferenceLoadToken;
+    const options = await api("/api/project-options").catch(() => null);
+    if (options && !options.error && window._PT) _PT.projectOptions = options;
+    if (token !== _preferenceLoadToken || typeof _ptSetPreferenceForm !== "function") return;
+    _ptSetPreferenceForm("ac", agency?.default_preferences || {});
+  }
+
+  // Attribute-safe escape (also handles quotes, which the shared esc() does
+  // not). Used for data-* attribute values rendered into HTML.
+  const escAttr = s => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function _wireList() {
+    if (_listWired) return;
+    const container = $("agency-list-container");
+    if (!container) return;
+    _listWired = true;
+    // Delegated so it survives innerHTML re-renders, and so agency names with
+    // apostrophes/quotes can never break a handler (the old inline-onclick
+    // string interpolation did — Sheriff's Office etc. became undeletable).
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      if (btn.dataset.act === "edit") {
+        agencyEdit(id);
+      } else if (btn.dataset.act === "del") {
+        const ag = _agencies.find(a => a.agency_id === id);
+        agencyDelete(id, ag ? ag.name : "");
+      }
+    });
+  }
 
   function _renderTable(list) {
     const container = $("agency-list-container");
     if (!container) return;
+    _wireList();
     if (!list.length) {
       container.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:0">No agencies yet. Add your first agency above.</p>`;
       return;
@@ -33,8 +99,8 @@
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_email)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.customer_since)}</td>
               <td style="padding:7px 8px;white-space:nowrap;text-align:right">
-                <button class="btn btn-secondary btn-sm" onclick="agencyEdit('${esc(a.agency_id)}')">Edit</button>
-                <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" onclick="agencyDelete('${esc(a.agency_id)}','${esc(a.name)}')">Delete</button>
+                <button class="btn btn-secondary btn-sm" data-act="edit" data-id="${escAttr(a.agency_id)}">Edit</button>
+                <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>
               </td>
             </tr>`).join("")}
         </tbody>
@@ -67,7 +133,14 @@
     $("ac-contact-name").value  = agency?.contact_name   || "";
     $("ac-contact-phone").value = agency?.contact_phone  || "";
     $("ac-contact-email").value = agency?.contact_email  || "";
+    for (const field of _profileFields) {
+      const input = _inputFor(field);
+      if (input) input.value = agency?.[field] || "";
+    }
+    $("ac-taxable").value       = agency?.taxable === true ? "true" : agency?.taxable === false ? "false" : "";
+    $("ac-ship-same").checked   = _shippingMatchesBilling(agency);
     $("ac-since").value         = agency?.customer_since || "";
+    _populateDefaultPreferences(agency);
     $("agency-create-modal").classList.add("open");
     setTimeout(() => $("ac-name").focus(), 50);
   };
@@ -81,7 +154,8 @@
     const res = await fetch(`/api/agency/${encodeURIComponent(agencyId)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     if (data?.ok) {
-      toast(`Agency "${name}" deleted`, "success");
+      if (data.cloud_warning) toast(data.cloud_warning, "error");
+      else toast(`Agency "${name}" deleted`, "success");
       await _load();
     } else {
       toast(data?.error || "Delete failed", "error");
@@ -106,6 +180,9 @@
 
   $("agency-create-close")?.addEventListener("click", _closeModal);
   $("ac-cancel")?.addEventListener("click", _closeModal);
+  $("ac-ship-same")?.addEventListener("change", (event) => {
+    if (event.target.checked) _copyBillingToShipping();
+  });
 
   $("ac-save")?.addEventListener("click", async () => {
     const name        = $("ac-name").value.trim();
@@ -113,13 +190,20 @@
     if (!name) { toast("Agency name is required", "error"); return; }
     if (!contactName) { toast("Contact name is required", "error"); return; }
 
+    if ($("ac-ship-same")?.checked) _copyBillingToShipping();
     const payload = {
       name,
       contact_name:  contactName,
       contact_phone: $("ac-contact-phone").value.trim(),
       contact_email: $("ac-contact-email").value.trim(),
       customer_since: $("ac-since").value.trim(),
+      taxable: $("ac-taxable").value === "" ? null : $("ac-taxable").value === "true",
+      default_preferences: _ptPreferencePayload("ac"),
     };
+    for (const field of _profileFields) {
+      const input = _inputFor(field);
+      if (input) payload[field] = input.value.trim();
+    }
     if (_editingId) payload.agency_id = _editingId;
 
     // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.

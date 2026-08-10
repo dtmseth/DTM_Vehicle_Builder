@@ -1,0 +1,25 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 2 splits: un-fuse whelen_legacy (Legacy DUO+ vs Mini Legacy) and whelen_pioneer (Micro/Nano/Plus/SlimLine). Re-runnable: new_products are idempotent, move relocates existing linked entries, delete only fires once whelen_pioneer is empty.",
+  "rename": {
+    "whelen_legacy": "Legacy"
+  },
+  "new_products": [
+    {"product_id": "whelen_mini_legacy",       "model": "Mini Legacy",      "fits_part_types": ["roof_light_bar"]},
+    {"product_id": "whelen_pioneer_micro",      "model": "Pioneer Micro",    "fits_part_types": ["front_scene", "rear_scene"]},
+    {"product_id": "whelen_pioneer_nano",       "model": "Pioneer Nano",     "fits_part_types": ["front_scene", "rear_scene"]},
+    {"product_id": "whelen_pioneer_plus",       "model": "Pioneer Plus",     "fits_part_types": ["front_scene", "rear_scene"]},
+    {"product_id": "whelen_pioneer_slimline",   "model": "Pioneer SlimLine", "fits_part_types": ["front_scene", "rear_scene"]}
+  ],
+  "move": [
+    {"sku": "ET9DEDEP", "from": "whelen_legacy",  "to": "whelen_mini_legacy"},
+    {"sku": "MPBB",     "from": "whelen_pioneer", "to": "whelen_pioneer_micro"},
+    {"sku": "MPPBBS",   "from": "whelen_pioneer", "to": "whelen_pioneer_micro"},
+    {"sku": "NP6BB",    "from": "whelen_pioneer", "to": "whelen_pioneer_nano"},
+    {"sku": "PBH203",   "from": "whelen_pioneer", "to": "whelen_pioneer_plus"},
+    {"sku": "PFH2",     "from": "whelen_pioneer", "to": "whelen_pioneer_plus"},
+    {"sku": "PSL1BB",   "from": "whelen_pioneer", "to": "whelen_pioneer_slimline"},
+    {"sku": "PSL2BB",   "from": "whelen_pioneer", "to": "whelen_pioneer_slimline"}
+  ],
+  "delete_products": ["whelen_pioneer"]
+}

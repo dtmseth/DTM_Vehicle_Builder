@@ -47,6 +47,12 @@
         "default": "red-blue-white"
       }
     },
+    "std_tri_rba": {
+      "label": "Std Tri RBA",
+      "slot_tokens": {
+        "default": "red-blue-amber"
+      }
+    },
     "single_red": {
       "slot_tokens": {
         "default": "red"
@@ -108,6 +114,9 @@
     },
     "red-blue-white": {
       "profile": "std_tri_rbw"
+    },
+    "red-blue-amber": {
+      "profile": "std_tri_rba"
     },
     "red-white": {
       "profile": "duo_red_white"
@@ -184,40 +193,14 @@
       "side": "equipment/Push Bumper alone_side.png"
     },
     "Push Bumper Alone": {
-      "side": "equipment/Push Bumper Alone_side.png"
+      "side": "equipment/Push Bumper alone_side.png"
     },
     "opticom": {
       "front": "equipment/opticom_front.png"
     },
     "radio_speaker": {}
   },
-  "part_number_size_rules": {
-    "3": "rd",
-    "6": "rd",
-    "ION": "sm",
-    "T-ION": "sm",
-    "SURFACE MOUNT ION": "sm",
-    "STANDARD MOUNT ION": "sm",
-    "VXE": "sq",
-    "VERTEX": "rd",
-    "M4": "md",
-    "MPOWER": "sm",
-    "M-POWER": "sm",
-    "N-FORCE": "sm",
-    "NFORCE": "sm",
-    "U-SERIES": "sm",
-    "MIRROR BEAMS": "sm",
-    "INTERSECTORS": "sm",
-    "2 LAMP TRACER": "tracer",
-    "MINI T-SERIES": "sq",
-    "T-SERIES": "sm",
-    "FIELD SERIES": "tracer",
-    "PIONEER": "long",
-    "AM-900": "md",
-    "MEGA T-SERIES": "long",
-    "TRACER 5 LAMP": "tracer",
-    "TRACER 6 LAMP": "tracer"
-  },
+  "part_number_size_rules": {},
   "size_rule_definitions": {
     "sm": {
       "label": "Small",
@@ -370,6 +353,28 @@
         "top": {
           "w": 0.37,
           "h": 0.085
+        }
+      }
+    },
+    "PN": {
+      "label": "Pioneer",
+      "maintain_aspect_ratio": false,
+      "views": {
+        "front": {
+          "w": 1,
+          "h": 0.22
+        },
+        "rear": {
+          "w": 0.7,
+          "h": 0.2
+        },
+        "side": {
+          "w": 0.2,
+          "h": 0.1
+        },
+        "top": {
+          "w": 0.2,
+          "h": 0.1
         }
       }
     }

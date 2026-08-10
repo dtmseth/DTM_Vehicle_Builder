@@ -24,9 +24,11 @@ class EquipmentPreferences:
     camera_brand: str = ""
     push_bumper_brand: str = ""
     cage_brand: str = ""
+    console_brand: str = ""
     slick_top: bool = False
     mixed_brands: bool = False
     notes: str = ""
+    lens: str = ""              # agency default lens type: "clear", "colored", "smoked"
 
 
 @dataclass
@@ -53,6 +55,15 @@ class IndividualUnit:
     pdf_path: str = ""
     last_exported_at: str = ""
     last_exported_by: str = ""
+    # QuickBooks document links. Each individual vehicle can be linked to a
+    # true QBO Project (created in QBO's UI while the app remains on the free
+    # Accounting API tier). New estimates use both the agency Customer and
+    # this ProjectRef; qb_job_id is retained only for older sub-customer work.
+    qb_job_id: str = ""
+    qb_project_id: str = ""
+    qb_project_name: str = ""
+    qb_estimate_id: str = ""
+    qb_invoice_id: str = ""
 
 
 @dataclass
@@ -80,3 +91,7 @@ class ProjectRecord:
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
+    # A short instruction that belongs on every build sheet generated for this
+    # project (and therefore this project build year).  Unit-specific final
+    # page notes remain on the BuildDraft instead of being duplicated here.
+    project_notes: str = ""

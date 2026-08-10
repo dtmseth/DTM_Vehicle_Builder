@@ -118,6 +118,20 @@ class TestSlotRoles:
         roles = slot_roles("diagonal", 2, VIEW_CFG)
         assert roles == ["slot_1", "slot_2"]
 
+    def test_inner_edge_front_keeps_duo_split_without_a_center_head(self):
+        assert slot_roles("inner_edge_front", 5, VIEW_CFG) == [
+            "passenger", "passenger", "driver", "driver", "driver",
+        ]
+
+    def test_inner_edge_single_module_uses_one_side_color(self):
+        assert slot_roles("inner_edge_front_driver", 4, VIEW_CFG) == ["driver"] * 4
+        assert slot_roles("inner_edge_front_passenger", 4, VIEW_CFG) == ["passenger"] * 4
+
+    def test_outer_edge_pillars_keep_one_color_role_per_stack(self):
+        assert slot_roles("outer_edge_pillars", 6, VIEW_CFG) == [
+            "driver", "driver", "driver", "passenger", "passenger", "passenger",
+        ]
+
 
 # ── slot_relative_positions ───────────────────────────────────────────────────
 
@@ -199,6 +213,18 @@ class TestSlotRelativePositions:
         y0, y1 = pos[0][1], pos[1][1]
         assert y1 - y0 == pytest.approx(0.15)
 
+    # vertical mirror
+    def test_vertical_mirror_two_slots_reflect_across_image_center(self):
+        pos = slot_relative_positions("vertical_mirror", 2, 0.72, 0.3, h_spacing=0.05)
+        assert pos == pytest.approx([(0.72, 0.3), (0.72, 0.7)])
+
+    def test_vertical_mirror_uses_v_spacing_when_anchor_is_centered(self):
+        pos = slot_relative_positions(
+            "vertical_mirror", 2, 0.5, 0.5, h_spacing=0.05, v_spacing=0.18,
+        )
+        assert pos[0] == pytest.approx((0.5, 0.41))
+        assert pos[1] == pytest.approx((0.5, 0.59))
+
     # mirror
     def test_mirror_two_slots_symmetric_around_center(self):
         pos = slot_relative_positions("mirror", 2, 0.3, 0.5, 0.05)
@@ -225,3 +251,23 @@ class TestSlotRelativePositions:
     def test_unknown_pattern_returns_anchor(self):
         pos = slot_relative_positions("diagonal", 3, 0.4, 0.4, 0.1)
         assert pos == [(0.4, 0.4)]
+
+    def test_inner_edge_front_creates_two_visor_groups_with_center_gap(self):
+        positions = slot_relative_positions("inner_edge_front", 10, 0.5, 0.2, 0.02)
+        xs = [x for x, _ in positions]
+        ordinary_gap = xs[1] - xs[0]
+        center_gap = xs[5] - xs[4]
+        assert ordinary_gap == pytest.approx(0.02)
+        assert center_gap == pytest.approx(0.05)  # 2.5 × regular head spacing
+        assert xs[4] < 0.5 < xs[5]
+
+    def test_inner_edge_rear_is_one_contiguous_row(self):
+        positions = slot_relative_positions("inner_edge_rear", 4, 0.5, 0.2, 0.02)
+        assert [x for x, _ in positions] == pytest.approx([0.47, 0.49, 0.51, 0.53])
+
+    def test_outer_edge_pillars_are_two_centered_vertical_stacks(self):
+        positions = slot_relative_positions(
+            "outer_edge_pillars", 6, 0.5, 0.22, h_spacing=0.59, v_spacing=0.045,
+        )
+        assert [x for x, _ in positions] == pytest.approx([0.205, 0.205, 0.205, 0.795, 0.795, 0.795])
+        assert [y for _, y in positions] == pytest.approx([0.175, 0.22, 0.265, 0.175, 0.22, 0.265])

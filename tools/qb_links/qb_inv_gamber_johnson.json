@@ -1,0 +1,1016 @@
+{
+  "manufacturer_id": "gamber_johnson",
+  "_note": "QB inventory import Pass 2 (proposed) for Gamber Johnson. 72 new products (one per SKU, fits_part_types empty = catalog-only until a part type is assigned in the Part Manager), 72 pending-QB part_numbers (CSV price; reconcile to Item Id on sync). REVIEW before --write; edit/merge products + assign fits as needed.",
+  "new_products": [
+    {
+      "product_id": "gamber_johnson_oem_filler_panel_usd_mp3_sd_card_jack_and_12vdc",
+      "model": "OEM FILLER PANEL (USD/MP3/SD CARD JACK AND 12VDC POWER PORT)",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_pocket_4_5_x_2_deep_knockout",
+      "model": "POCKET, 4.5\" X 2\" DEEP KNOCKOUT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_heads_up_smartphone_dock_bracket",
+      "model": "HEADS UP SMARTPHONE DOCK BRACKET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_1_1_2_filler_panel_w_2_12v_knockouts_2_rocker_sw",
+      "model": "1-1/2\" FILLER PANEL W/ (2) 12V KNOCKOUTS + 2 ROCKER SWITCH K",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_ace_k9_hot_n_pop_faceplate",
+      "model": "ACE K9 HOT'N POP FACEPLATE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_1_2_blank_filler_panel",
+      "model": "1/2\" BLANK FILLER PANEL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2_blank_filler_panel",
+      "model": "2\" BLANK FILLER PANEL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_4_blank_filler_panel",
+      "model": "4\" BLANK FILLER PANEL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_side_armrest_vehicle_specific_console",
+      "model": "SIDE ARMREST - VEHICLE SPECIFIC CONSOLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2015_tahoe_wings",
+      "model": "2015+ TAHOE WINGS",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_dell_latitude_rugged_laptop_docking_station_scre",
+      "model": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_retrofit_hook_kit_for_the_dell_latitude_rugged_l",
+      "model": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKIN",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_brother_arm_rest_printer_mount",
+      "model": "BROTHER ARM REST PRINTER MOUNT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_29_long_base_plate",
+      "model": "29\" LONG BASE PLATE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_pedestal_printer_mount",
+      "model": "PEDESTAL PRINTER MOUNT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_7_upper_pole",
+      "model": "7\" UPPER POLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_mongoose_9_locking_skide_arm_with_360_degree_cle",
+      "model": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_adjustable_support_brace_short",
+      "model": "ADJUSTABLE SUPPORT BRACE SHORT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_notepad_v_universal_computer_cradle",
+      "model": "NOTEPAD V UNIVERSAL COMPUTER CRADLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_full_size_faceplate_for_motorola_xtl_2500_5000",
+      "model": "FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_short_interior_pocket",
+      "model": "SHORT INTERIOR POCKET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_full_size_faceplate_for_federal_signal_smart_sir",
+      "model": "FULL SIZE FACEPLATE FOR FEDERAL SIGNAL SMART SIREN",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_full_size_faceplate_for_whelen_cencom_carbide",
+      "model": "FULL SIZE FACEPLATE FOR WHELEN CENCOM/CARBIDE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_canon_and_hp_printer_mount",
+      "model": "CANON AND HP PRINTER MOUNT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_rear_vehicle_specific_armrest",
+      "model": "REAR VEHICLE SPECIFIC ARMREST",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_external_printer_mount_armrest_vehicle_specific",
+      "model": "EXTERNAL PRINTER MOUNT ARMREST - VEHICLE SPECIFIC CONSOLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2015_2019_chevrolet_gmc_truck_adn_full_size_suv",
+      "model": "2015-2019 CHEVROLET/GMC TRUCK ADN FULL-SIZE SUV CONSOLE LEG",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_universal_console_leg_kit_for_2015_ford_f_150_al",
+      "model": "UNIVERSAL CONSOLE LEG KIT FOR 2015+ FORD F-150 ALUMINUM BODY",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_6_inch_short_interior_pocket",
+      "model": "6 INCH SHORT INTERIOR POCKET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_adjustable_mag_clip",
+      "model": "ADJUSTABLE MAG CLIP",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_internal_cup_holder",
+      "model": "INTERNAL CUP HOLDER",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2_wide_x_1_5_deep_pocket",
+      "model": "2\" WIDE X 1.5\" DEEP POCKET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_leg_kit_ram_1500_with_center_seat",
+      "model": "LEG KIT RAM 1500 WITH CENTER SEAT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_universal_storage_box_for_electrical_equipment",
+      "model": "UNIVERSAL STORAGE BOX FOR ELECTRICAL EQUIPMENT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_notepad_touch_universal_tablet_cradle",
+      "model": "NOTEPAD TOUCH UNIVERSAL TABLET CRADLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_notepad_touch_xl_universal_tablet_craddle",
+      "model": "NOTEPAD TOUCH XL UNIVERSAL TABLET CRADDLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2019_chevrolet_silverado_gmc_sierra_leg_kit_new",
+      "model": "2019+ CHEVROLET SILVERADO/GMC SIERRA LEG KIT (NEW BODY STYLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_ford_police_interceptor_utility_and_2020_fo",
+      "model": "2020+ FORD POLICE INTERCEPTOR UTILITY AND 2020+ FORD EXPLORE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2019_current_new_body_style_ram_1500_leg_kit",
+      "model": "2019-CURRENT (NEW BODY STYLE) RAM 1500 LEG KIT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2018_2026_chevy_traverse_2014_2024_gmc_acadia_ve",
+      "model": "2018-2026 CHEVY TRAVERSE/ 2014-2024 GMC ACADIA VEHICLE BASE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_uniersal_wide_body_extended_console_box",
+      "model": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_whelen_arges_spotlight_faceplate",
+      "model": "WHELEN ARGES SPOTLIGHT FACEPLATE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_ford_f_150_2023_ford_f_250_550_wide_body_co",
+      "model": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BO",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_chevrolet_tahoe_leg_kit",
+      "model": "2021+ CHEVROLET TAHOE LEG KIT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_dell_ruged_laptop_vehicle_docking_station_full_p",
+      "model": "DELL RUGED LAPTOP VEHICLE DOCKING STATION, FULL PORT, NO RF",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2025_2026_chevrolet_tahoe_wide_body_console_box",
+      "model": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2000_2012_ford_escape_pedestal_system_kit",
+      "model": "2000-2012 FORD ESCAPE PEDESTAL SYSTEM KIT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_panasonic_toughbook_54_55_docking_station_with_l",
+      "model": "PANASONIC TOUGHBOOK 54/55 DOCKING STATION WITH LIND 120W AUT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_getac_s410_docking_station_with_getac_120w_auto",
+      "model": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_getac_s410_docking_station_with_getac_120w_auto_2",
+      "model": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_wide_body_universal_console_with_cup_holder_and",
+      "model": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr",
+      "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr_2",
+      "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr_3",
+      "model": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_2029_ford_police_interceptor_utility_low_pr",
+      "model": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2019_2025_chevrolet_silverado_gmc_sierra_1500_co",
+      "model": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH I",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2020_2025_ford_police_interceptor_utility_pedest",
+      "model": "2020-2025 FORD POLICE INTERCEPTOR UTILITY PEDESTAL KIT WITH",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_ford_f150_2023_f250_550_wide_body_console_b",
+      "model": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT W",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_2026_ford_f_150_2023_2026_ford_f_250_550_wi",
+      "model": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CO",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_2026_dodge_durango_standard_console_box_kit",
+      "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_2026_dodge_durango_standard_console_box_kit_2",
+      "model": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNET",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2021_2024_dodge_charger_console_box_short_10_5_k",
+      "model": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH C",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_kit_2020_2025_chevrolet_silverado_1500_2500_3500",
+      "model": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_dell_rugged_laptop_docking_station_no_rf_full_po",
+      "model": "DELL RUGGED LAPTOP DOCKING STATION, NO RF, FULL PORT REPLICA",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2025_2026_chevrolet_tahoe_standard_width_console",
+      "model": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CU",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2025_2026_chevrolet_tahoe_widebody_console_with",
+      "model": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_2025_chevrolet_silverado_gmc_sierra_and_chevrole",
+      "model": "2025+ CHEVROLET SILVERADO/GMC SIERRA AND CHEVROLET TAHOE PED",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_kussmaul_aux_usb_pass_through_6_extension_module",
+      "model": "KUSSMAUL AUX / USB PASS-THROUGH 6' EXTENSION MODULE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_lind_11_16v_auotomobile_power_supply_for_dell_la",
+      "model": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DEL",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_9_lower_pole",
+      "model": "9\" LOWER POLE",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_offset_universal_mount_step",
+      "model": "OFFSET UNIVERSAL MOUNT STEP",
+      "fits_part_types": []
+    },
+    {
+      "product_id": "gamber_johnson_heavy_duty_pedestal_armrest",
+      "model": "HEAVY DUTY PEDESTAL ARMREST",
+      "fits_part_types": []
+    }
+  ],
+  "pending_parts": [
+    {
+      "product": "gamber_johnson_oem_filler_panel_usd_mp3_sd_card_jack_and_12vdc",
+      "part_number": "15250",
+      "price": 21.0,
+      "friendly_name": "OEM FILLER PANEL (USD/MP3/SD CARD JACK AND 12VDC POWER PORT)",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_pocket_4_5_x_2_deep_knockout",
+      "part_number": "16298",
+      "price": 76.0,
+      "friendly_name": "POCKET, 4.5\" X 2\" DEEP KNOCKOUT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_heads_up_smartphone_dock_bracket",
+      "part_number": "18540",
+      "price": 50.0,
+      "friendly_name": "HEADS UP SMARTPHONE DOCK BRACKET",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_1_1_2_filler_panel_w_2_12v_knockouts_2_rocker_sw",
+      "part_number": "19740",
+      "price": 13.0,
+      "friendly_name": "1-1/2\" FILLER PANEL W/ (2) 12V KNOCKOUTS + 2 ROCKER SWITCH KNOCKOUTS",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_ace_k9_hot_n_pop_faceplate",
+      "part_number": "19865",
+      "price": 66.0,
+      "friendly_name": "ACE K9 HOT'N POP FACEPLATE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_1_2_blank_filler_panel",
+      "part_number": "3130-0152",
+      "price": 11.0,
+      "friendly_name": "1/2\" BLANK FILLER PANEL",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2_blank_filler_panel",
+      "part_number": "3130-0154",
+      "price": 11.0,
+      "friendly_name": "2\" BLANK FILLER PANEL",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_4_blank_filler_panel",
+      "part_number": "3130-0156",
+      "price": 13.0,
+      "friendly_name": "4\" BLANK FILLER PANEL",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_side_armrest_vehicle_specific_console",
+      "part_number": "7110-1013",
+      "price": 196.0,
+      "friendly_name": "SIDE ARMREST - VEHICLE SPECIFIC CONSOLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2015_tahoe_wings",
+      "part_number": "7110-1201",
+      "price": 139.0,
+      "friendly_name": "2015+ TAHOE WINGS",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_dell_latitude_rugged_laptop_docking_station_scre",
+      "part_number": "7110-1213",
+      "price": 76.0,
+      "friendly_name": "DELL LATITUDE RUGGED LAPTOP DOCKING STATION SCREEN SUPPORT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_retrofit_hook_kit_for_the_dell_latitude_rugged_l",
+      "part_number": "7110-1385",
+      "price": 97.0,
+      "friendly_name": "RETROFIT HOOK KIT FOR THE DELL LATITUDE RUGGED LAPTOP DOCKING STATION",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_brother_arm_rest_printer_mount",
+      "part_number": "7160-0006",
+      "price": 585.0,
+      "friendly_name": "BROTHER ARM REST PRINTER MOUNT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_29_long_base_plate",
+      "part_number": "7160-0085",
+      "price": 145.0,
+      "friendly_name": "29\" LONG BASE PLATE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_pedestal_printer_mount",
+      "part_number": "7160-0126",
+      "price": 223.0,
+      "friendly_name": "PEDESTAL PRINTER MOUNT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_7_upper_pole",
+      "part_number": "7160-0178",
+      "price": 134.0,
+      "friendly_name": "7\" UPPER POLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_mongoose_9_locking_skide_arm_with_360_degree_cle",
+      "part_number": "7160-0220",
+      "price": 458.0,
+      "friendly_name": "MONGOOSE 9\" LOCKING SKIDE ARM WITH 360 DEGREE CLEVIS",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_adjustable_support_brace_short",
+      "part_number": "7160-0230",
+      "price": 116.0,
+      "friendly_name": "ADJUSTABLE SUPPORT BRACE SHORT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_notepad_v_universal_computer_cradle",
+      "part_number": "7160-0250",
+      "price": 557.0,
+      "friendly_name": "NOTEPAD V UNIVERSAL COMPUTER CRADLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_full_size_faceplate_for_motorola_xtl_2500_5000",
+      "part_number": "7160-0321",
+      "price": 28.8,
+      "friendly_name": "FULL SIZE FACEPLATE FOR MOTOROLA XTL 2500/5000",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_short_interior_pocket",
+      "part_number": "7160-0332",
+      "price": 70.0,
+      "friendly_name": "SHORT INTERIOR POCKET",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_full_size_faceplate_for_federal_signal_smart_sir",
+      "part_number": "7160-0338",
+      "price": 48.0,
+      "friendly_name": "FULL SIZE FACEPLATE FOR FEDERAL SIGNAL SMART SIREN",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_full_size_faceplate_for_whelen_cencom_carbide",
+      "part_number": "7160-0339",
+      "price": 21.6,
+      "friendly_name": "FULL SIZE FACEPLATE FOR WHELEN CENCOM/CARBIDE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_canon_and_hp_printer_mount",
+      "part_number": "7160-0392",
+      "price": 215.0,
+      "friendly_name": "CANON AND HP PRINTER MOUNT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_rear_vehicle_specific_armrest",
+      "part_number": "7160-0429",
+      "price": 276.0,
+      "friendly_name": "REAR VEHICLE SPECIFIC ARMREST",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_external_printer_mount_armrest_vehicle_specific",
+      "part_number": "7160-0430",
+      "price": 587.0,
+      "friendly_name": "EXTERNAL PRINTER MOUNT ARMREST - VEHICLE SPECIFIC CONSOLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2015_2019_chevrolet_gmc_truck_adn_full_size_suv",
+      "part_number": "7160-0509",
+      "price": 177.0,
+      "friendly_name": "2015-2019 CHEVROLET/GMC TRUCK ADN FULL-SIZE SUV CONSOLE LEG KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_universal_console_leg_kit_for_2015_ford_f_150_al",
+      "part_number": "7160-0555",
+      "price": 276.0,
+      "friendly_name": "UNIVERSAL CONSOLE LEG KIT FOR 2015+ FORD F-150 ALUMINUM BODY 2017+ SUPERDUTY 2018+ EXPEDITION SSV",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_6_inch_short_interior_pocket",
+      "part_number": "7160-0597",
+      "price": 81.0,
+      "friendly_name": "6 INCH SHORT INTERIOR POCKET",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_adjustable_mag_clip",
+      "part_number": "7160-0826",
+      "price": 57.0,
+      "friendly_name": "ADJUSTABLE MAG CLIP",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_internal_cup_holder",
+      "part_number": "7160-0846",
+      "price": 94.0,
+      "friendly_name": "INTERNAL CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2_wide_x_1_5_deep_pocket",
+      "part_number": "7160-0924",
+      "price": 70.0,
+      "friendly_name": "2\" WIDE X 1.5\" DEEP POCKET",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_leg_kit_ram_1500_with_center_seat",
+      "part_number": "7160-0985",
+      "price": 163.0,
+      "friendly_name": "LEG KIT RAM 1500 WITH CENTER SEAT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_universal_storage_box_for_electrical_equipment",
+      "part_number": "7160-1048",
+      "price": 729.0,
+      "friendly_name": "UNIVERSAL STORAGE BOX FOR ELECTRICAL EQUIPMENT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_notepad_touch_universal_tablet_cradle",
+      "part_number": "7160-1299-00",
+      "price": 245.0,
+      "friendly_name": "NOTEPAD TOUCH UNIVERSAL TABLET CRADLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_notepad_touch_xl_universal_tablet_craddle",
+      "part_number": "7160-1299-10",
+      "price": 263.0,
+      "friendly_name": "NOTEPAD TOUCH XL UNIVERSAL TABLET CRADDLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2019_chevrolet_silverado_gmc_sierra_leg_kit_new",
+      "part_number": "7160-1325",
+      "price": 153.0,
+      "friendly_name": "2019+ CHEVROLET SILVERADO/GMC SIERRA LEG KIT (NEW BODY STYLE)",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_ford_police_interceptor_utility_and_2020_fo",
+      "part_number": "7160-1336",
+      "price": 248.0,
+      "friendly_name": "2020+ FORD POLICE INTERCEPTOR UTILITY AND 2020+ FORD EXPLORER VEHICLE BASE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2019_current_new_body_style_ram_1500_leg_kit",
+      "part_number": "7160-1383",
+      "price": 194.0,
+      "friendly_name": "2019-CURRENT (NEW BODY STYLE) RAM 1500 LEG KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2018_2026_chevy_traverse_2014_2024_gmc_acadia_ve",
+      "part_number": "7160-1397",
+      "price": 205.0,
+      "friendly_name": "2018-2026 CHEVY TRAVERSE/ 2014-2024 GMC ACADIA VEHICLE BASE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_uniersal_wide_body_extended_console_box",
+      "part_number": "7160-1460",
+      "price": 786.0,
+      "friendly_name": "UNIERSAL WIDE BODY EXTENDED CONSOLE BOX",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_whelen_arges_spotlight_faceplate",
+      "part_number": "7160-1491",
+      "price": 30.0,
+      "friendly_name": "WHELEN ARGES SPOTLIGHT FACEPLATE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_ford_f_150_2023_ford_f_250_550_wide_body_co",
+      "part_number": "7160-1626",
+      "price": 1138.0,
+      "friendly_name": "2021+ FORD F-150 & 2023+ FORD F-250/550 WIDE BODY CONSOLE BOX",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_chevrolet_tahoe_leg_kit",
+      "part_number": "7160-1634",
+      "price": 188.0,
+      "friendly_name": "2021+ CHEVROLET TAHOE LEG KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_dell_ruged_laptop_vehicle_docking_station_full_p",
+      "part_number": "7160-1982-10",
+      "price": 1088.0,
+      "friendly_name": "DELL RUGED LAPTOP VEHICLE DOCKING STATION, FULL PORT, NO RF 14 RUGGED LAPTOP (5404/5414/5420/5424/5430)",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2025_2026_chevrolet_tahoe_wide_body_console_box",
+      "part_number": "7160-2022",
+      "price": 1010.0,
+      "friendly_name": "2025-2026 CHEVROLET TAHOE WIDE BODY CONSOLE BOX",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2000_2012_ford_escape_pedestal_system_kit",
+      "part_number": "7170-0232",
+      "price": 885.0,
+      "friendly_name": "2000-2012 FORD ESCAPE PEDESTAL SYSTEM KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_panasonic_toughbook_54_55_docking_station_with_l",
+      "part_number": "7170-0250",
+      "price": 1603.0,
+      "friendly_name": "PANASONIC TOUGHBOOK 54/55 DOCKING STATION WITH LIND 120W AUTO BARE WIRE LEADS POWER SUPPLY, NO RF",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_getac_s410_docking_station_with_getac_120w_auto",
+      "part_number": "7170-0536",
+      "price": 1318.0,
+      "friendly_name": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY, NO RF",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_getac_s410_docking_station_with_getac_120w_auto_2",
+      "part_number": "7170-0537",
+      "price": 1617.0,
+      "friendly_name": "GETAC S410 DOCKING STATION WITH GETAC 120W AUTO POWER SUPPLY TRI RF",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_wide_body_universal_console_with_cup_holder_and",
+      "part_number": "7170-0567-00",
+      "price": 956.0,
+      "friendly_name": "WIDE BODY UNIVERSAL CONSOLE WITH CUP HOLDER AND POCKET KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr",
+      "part_number": "7170-0734-00",
+      "price": 645.0,
+      "friendly_name": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr_2",
+      "part_number": "7170-0734-02",
+      "price": 1232.0,
+      "friendly_name": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE BOX WITH CUP HOLDER AND PRINTER ARMREST KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_2026_ford_police_interceptor_utility_low_pr_3",
+      "part_number": "7170-0734-04",
+      "price": 1379.0,
+      "friendly_name": "2020-2026 FORD POLICE INTERCEPTOR UTILITY LOW PROFILE CONSOLE BOX WITH CUP HOLER, REAR ARMREST, AND MONGOOSE KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_2029_ford_police_interceptor_utility_low_pr",
+      "part_number": "7170-0734-09",
+      "price": 1690.0,
+      "friendly_name": "2020-2029 FORD POLICE INTERCEPTOR UTILITY LOW-PROFILE CONSOLE KIT WITH CUP HOLDER, PRINTER ARMREST, AND 9\" LOCKING SLIDE ARM KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2019_2025_chevrolet_silverado_gmc_sierra_1500_co",
+      "part_number": "7170-0784-07",
+      "price": 787.0,
+      "friendly_name": "2019-2025 CHEVROLET SILVERADO/GMC SIERRA 1500 CONSOLE WITH INTERNAL CUP HOLDER AND VERTICAL SURFACE MOUNT KIT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2020_2025_ford_police_interceptor_utility_pedest",
+      "part_number": "7170-0814-01",
+      "price": 1049.0,
+      "friendly_name": "2020-2025 FORD POLICE INTERCEPTOR UTILITY PEDESTAL KIT WITH MONGOOSE SLIDE ARM",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_ford_f150_2023_f250_550_wide_body_console_b",
+      "part_number": "7170-0882-02",
+      "price": 1869.0,
+      "friendly_name": "2021+ FORD F150 & 2023+ F250-550 WIDE BODY CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND PRINTER ARMREST",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_2026_ford_f_150_2023_2026_ford_f_250_550_wi",
+      "part_number": "7170-0882-03",
+      "price": 1478.0,
+      "friendly_name": "2021-2026 FORD F-150 & 2023-2026 FORD F-250/550 WIDE BODY CONSOLE BOX WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND SIDE ARM REST",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_2026_dodge_durango_standard_console_box_kit",
+      "part_number": "7170-0884-00",
+      "price": 913.0,
+      "friendly_name": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER AND CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_2026_dodge_durango_standard_console_box_kit_2",
+      "part_number": "7170-0884-03",
+      "price": 946.0,
+      "friendly_name": "2021-2026 DODGE DURANGO STANDARD CONSOLE BOX KIT WITH MAGNETIC PHONE HOLDER, CUP HOLDER AND VERTICAL MOUNT",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2021_2024_dodge_charger_console_box_short_10_5_k",
+      "part_number": "7170-0886-00",
+      "price": 691.0,
+      "friendly_name": "2021-2024 DODGE CHARGER CONSOLE BOX (SHORT 10.5\") KIT WITH CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_kit_2020_2025_chevrolet_silverado_1500_2500_3500",
+      "part_number": "7170-1062-00",
+      "price": 1134.0,
+      "friendly_name": "KIT - 2020-2025 CHEVROLET SILVERADO 1500/2500/3500 WIDE BODY CONSOLE BOX WITH CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_dell_rugged_laptop_docking_station_no_rf_full_po",
+      "part_number": "7170-1090-10",
+      "price": 1256.0,
+      "friendly_name": "DELL RUGGED LAPTOP DOCKING STATION, NO RF, FULL PORT REPLICATION WITH LIND 120W AUTO POWER ADAPTER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2025_2026_chevrolet_tahoe_standard_width_console",
+      "part_number": "7170-1164-01",
+      "price": 1180.0,
+      "friendly_name": "2025-2026 CHEVROLET TAHOE STANDARD WIDTH CONSOLE KIT WITH CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2025_2026_chevrolet_tahoe_widebody_console_with",
+      "part_number": "7170-1179-00",
+      "price": 1104.0,
+      "friendly_name": "2025-2026 CHEVROLET TAHOE WIDEBODY CONSOLE WITH CUP HOLDER",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_2025_chevrolet_silverado_gmc_sierra_and_chevrole",
+      "part_number": "7170-1238",
+      "price": 735.0,
+      "friendly_name": "2025+ CHEVROLET SILVERADO/GMC SIERRA AND CHEVROLET TAHOE PEDESTAL KIT WITH MONGOOSE\u00ae XLE 9",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_kussmaul_aux_usb_pass_through_6_extension_module",
+      "part_number": "7300-0426",
+      "price": 62.0,
+      "friendly_name": "KUSSMAUL AUX / USB PASS-THROUGH 6' EXTENSION MODULE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_lind_11_16v_auotomobile_power_supply_for_dell_la",
+      "part_number": "7300-0468",
+      "price": 170.0,
+      "friendly_name": "LIND 11-16V AUOTOMOBILE POWER SUPPLY FOR DELL LAPTOP AND DELL TABLET DOCKING STATIONS",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_9_lower_pole",
+      "part_number": "DS-LOWER-9",
+      "price": 93.0,
+      "friendly_name": "9\" LOWER POLE",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_offset_universal_mount_step",
+      "part_number": "DS-STEP",
+      "price": 103.0,
+      "friendly_name": "OFFSET UNIVERSAL MOUNT STEP",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "product": "gamber_johnson_heavy_duty_pedestal_armrest",
+      "part_number": "MCS-ARMREST",
+      "price": 276.0,
+      "friendly_name": "HEAVY DUTY PEDESTAL ARMREST",
+      "vehicle_tags": [
+        "any"
+      ]
+    }
+  ]
+}

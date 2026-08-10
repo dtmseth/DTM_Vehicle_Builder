@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from ..naming import canonical_name
 
 
@@ -26,6 +28,71 @@ def apply_co_part_rules(spec: dict, present_part_names: set[str]) -> dict:
     return overrides
 
 
+def resolved_location_key(part, spec: dict) -> str:
+    """Return the renderable location key for a part.
+
+    A picker custom location keeps the shop-facing name on ``part.location``
+    while optionally recording a chosen vehicle dot separately. This preserves
+    the custom manifest wording without asking the renderer to invent a
+    coordinate when no render placement was selected.
+    """
+    picker_config = getattr(part, "picker_config", {}) or {}
+    custom = picker_config.get("custom_location") if isinstance(picker_config, dict) else None
+    render_location = custom.get("render_location", "") if isinstance(custom, dict) else ""
+    # A named custom location is valid without a diagram anchor.  In that
+    # case, do not mistake the shop-facing text for a layout location and
+    # invent a render placement from it.
+    if isinstance(custom, dict):
+        return canonical_name(render_location).strip().upper()
+    return canonical_name(
+        part.location or spec.get("default_location_key", "")
+    ).strip().upper()
+
+
+def custom_location_points(part) -> dict[str, list[dict[str, float]]]:
+    """Return validated free-placement points saved by the picker, by view."""
+    picker_config = getattr(part, "picker_config", {}) or {}
+    custom = picker_config.get("custom_location") if isinstance(picker_config, dict) else None
+    raw = custom.get("placements") if isinstance(custom, dict) else None
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, list[dict[str, float]]] = {}
+    for view, points in raw.items():
+        if not isinstance(view, str) or not isinstance(points, list):
+            continue
+        cleaned: list[dict[str, float]] = []
+        for point in points:
+            if not isinstance(point, dict):
+                continue
+            try:
+                x, y = float(point.get("x")), float(point.get("y"))
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(x) and math.isfinite(y) and 0 <= x <= 1 and 0 <= y <= 1:
+                cleaned.append({"x": x, "y": y})
+        if cleaned:
+            out[view.lower()] = cleaned
+    return out
+
+
+def custom_location_has_no_render_placement(part) -> bool:
+    """Whether a named custom location is intentionally manifest-only.
+
+    The picker may save a shop-specific location without selecting a saved
+    vehicle dot or free point. That is a valid part line, not an unplaceable
+    render request.
+    """
+    picker_config = getattr(part, "picker_config", {}) or {}
+    custom = picker_config.get("custom_location") if isinstance(picker_config, dict) else None
+    if not isinstance(custom, dict):
+        return False
+    return (
+        bool(str(custom.get("label") or getattr(part, "location", "")).strip())
+        and not str(custom.get("render_location") or "").strip()
+        and not custom_location_points(part)
+    )
+
+
 def resolve_normal_location(
     part, spec: dict, view: str, view_config: dict
 ) -> tuple[dict | None, str]:
@@ -34,9 +101,7 @@ def resolve_normal_location(
     Returns (location_dict, location_key).  location_dict is None when the
     location is missing or not found in the view.
     """
-    location_key = canonical_name(
-        part.location or spec.get("default_location_key", "")
-    ).strip().upper()
+    location_key = resolved_location_key(part, spec)
     if not location_key:
         return None, location_key
     raw_loc = view_config.get("locations", {}).get(location_key)

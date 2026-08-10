@@ -1,0 +1,200 @@
+{
+  "_meta": {
+    "artifact": "Machine-applyable plan for PART_TYPE_TAXONOMY_PROPOSAL.md (Tasks 1-3).",
+    "status": "FINAL — all 8 owner questions answered 2026-07-07 (see proposal doc 'Owner answers' section). Ready to apply via tools/apply_family_taxonomy.py.",
+    "apply_path": "A one-shot tool tools/apply_family_taxonomy.py reads this file, mutates the in-memory parts_db doc, and persists via save_config_file (cloud-safe). Neither the Hierarchy editor (no families/family_id UI) nor tools/curate.py (no family op) can apply this today — see proposal doc section 'Apply path'. Additive schema support (families top-level + part_type.family_id) must land first; both are optional keys so existing validation stays green.",
+    "invariants": [
+      "Additive only: no part_type is deleted, no home/fits_part_types changes, no product touched.",
+      "part_type.category is PRESERVED during migration (the picker still reads it) until the picker is switched to read family_id + picker_flow; see proposal 'Migration safety'.",
+      "Families are orthogonal to the three axes (category=type_id / zone / build-section). A family may span type_ids; membership is single (a part_type sits under at most one family).",
+      "Accessory part_types (accessory_of set, or the generic bracket/cable/flange/lighthead/shroud homes) are NOT browse leaves and are NOT given a family_id — they surface via the accessory mechanism."
+    ]
+  },
+
+  "task1_type_id_corrections": [
+    {
+      "part_type": "console",
+      "from": "equipment",
+      "to": "structural",
+      "confidence": "high",
+      "why": "Owner rule: a center console is stationary metal furniture bolted into the vehicle = structural. Things that MOUNT to the console (armrest, faceplate, pedestal, dock, swing arm, 12v ports) stay equipment. 31 products homed here; type flip is metadata-only (no home/product change)."
+    },
+    {
+      "part_type": "preemption",
+      "from": "lights",
+      "to": "equipment",
+      "confidence": "medium",
+      "why": "OQ-7, owner answer 2026-07-07: GTT/Opticom signal-preemption emitter is an electronic transmitter, not an emergency light. Audit sec 3.5 already flagged it. Owner approved the flip to equipment."
+    }
+  ],
+
+  "task1_owner_questions_no_change_applied": [
+    {"part_types": ["bracket", "cable", "flange"], "current": "lights", "candidate": "cross-cutting accessory (no light-specific type)", "confidence": "low", "why": "OQ-8, owner answer 2026-07-07: defer. Generic accessory homes nominally typed 'lights' but they hold camera/tool/equipment/structural accessories too. Leave type_id untouched until the accessory-browse surface is designed; do not treat as lights-only."},
+    {"part_type": "motorcycle_box", "current": "equipment", "candidate": "structural", "confidence": "low", "why": "A mount/storage box (furniture-like) vs a gear-mounting system. Leave equipment pending owner call."},
+    {"part_type": "harness", "current": "extras", "candidate": "equipment", "confidence": "low", "why": "Fuse modules / breakers / install wiring are electrical, closer to equipment than 'extras'. Cosmetic; leave pending owner call."},
+    {"part_types": ["headlight_flasher", "tail_light_flasher"], "current": "lights (category=warning)", "candidate": "keep, but flasher-in-warning is an oddity", "confidence": "n/a", "why": "Flasher modules are electronics with no color, yet carry category=warning. Kept as-is to preserve today's behavior; flagged for a later revisit. No change applied."}
+  ],
+
+  "task2_families": {
+    "warning_lights": {
+      "label": "Warning",
+      "category": "lights",
+      "kind": "lighting_group",
+      "picker_flow": "warning",
+      "members": ["warning_light", "headlight_flasher", "tail_light_flasher"],
+      "confidence": "high",
+      "why": "Migrated verbatim from today's part_type.category=='warning' so the picker's warning color flow is unchanged. Kind-group (by lighting kind), grandfathered into the one families mechanism."
+    },
+    "scene_lights": {
+      "label": "Scene",
+      "category": "lights",
+      "kind": "lighting_group",
+      "picker_flow": "scene",
+      "members": ["front_scene", "rear_scene", "side_scene", "spotlight"],
+      "confidence": "high",
+      "why": "Migrated from category=='scene' (spotlight also carries category=scene). Preserves the scene no-color-filter flow."
+    },
+    "interior_lighting": {
+      "label": "Interior Lighting",
+      "category": "lights",
+      "kind": "lighting_group",
+      "picker_flow": "interior",
+      "members": ["cargo_lighting", "front_dome_light", "rear_seat_cargo_lights", "rear_seat_lights"],
+      "confidence": "high",
+      "why": "Migrated from category=='interior'."
+    },
+    "interior_bars": {
+      "label": "Interior Bars",
+      "category": "lights",
+      "kind": "lighting_group",
+      "picker_flow": "interior_bar",
+      "members": ["front_interior_light_bar", "rear_interior_light_bar"],
+      "confidence": "high",
+      "why": "Migrated from category=='interior_bar'."
+    },
+    "roof_bars": {
+      "label": "Roof Bars",
+      "category": "lights",
+      "kind": "lighting_group",
+      "picker_flow": "roof_bar",
+      "members": ["roof_light_bar"],
+      "confidence": "high",
+      "why": "Migrated from category=='roof_bar'. Single member; keeps the lightbar Setup/Edition panel entry."
+    },
+
+    "radar": {
+      "label": "Radar",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["radar_display_unit", "front_radar_antenna_mount", "rear_radar_antenna_mount", "radar_cable"],
+      "confidence": "high",
+      "why": "Owner example. A radar install is always specified as one system: display unit + 1-2 antennas + their mounts + cabling. The antenna mounts are already accessory_of radar_display_unit — strong corroboration they belong together."
+    },
+    "radio_comms": {
+      "label": "Radio Communications",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["radio_head", "radio_speaker", "radio_cable", "radio_mic_clip", "radio_antenna_cable"],
+      "confidence": "high",
+      "why": "Owner example ('radio'). A two-way radio install = head + speaker + cable + mic clip + antenna cable, specified together. radio_antenna_top deliberately EXCLUDED (shared roof antenna; 'don't group all antennas'). pa_mic / pa_mic_clip deliberately EXCLUDED pending the PA-belongs-to-radio-or-siren ruling (owner question OQ-3)."
+    },
+    "camera_system": {
+      "label": "Camera System",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["camera_dvr", "front_camera", "rear_camera", "rear_seat_camera"],
+      "confidence": "high",
+      "why": "Owner example ('camera equipment'). In-car video = DVR + front/rear/seat cameras, one system. (Cameras are often unbilled/agency-supplied but still browse together.)"
+    },
+    "light_control_system": {
+      "label": "Light Control System",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["control_head", "external_amp", "expansion_module", "cloud_system_tray", "cloud_antenna", "v2v_sync", "light_controller"],
+      "confidence": "high",
+      "why": "Owner example verbatim: 'core, external amp, expansion modules, cloud, vehicle-sync'. Map: core->control_head, external amp->external_amp, expansion modules->expansion_module, cloud->cloud_system_tray + cloud_antenna, vehicle-sync->v2v_sync. Label kept brand-neutral (control heads may be Whelen/Feniex/SoundOff) per OQ-4 owner answer. OQ-5 owner answer 2026-07-07: light_controller (trunk module) ADDED as a 7th member. photo_eye stays a product-level accessory of the Core (not a family member). power_timer (ChargeGuard) stays bare — it's the alternative to a Core, not a co-installed member."
+    },
+    "computer_workstation": {
+      "label": "Computer Workstation",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["computer", "docking_station"],
+      "confidence": "high",
+      "why": "Owner example ('computer + docking station'). Explicitly does NOT include console (owner: computer goes IN the console = location, not belonging). pedestal_mount left bare (shared console/computer base) — see OQ-6."
+    },
+    "thermal_imaging": {
+      "label": "Thermal Imaging",
+      "category": "equipment",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["thermal_imager", "thermal_imager_monitor"],
+      "confidence": "high",
+      "why": "Thermal camera + its dedicated monitor are specified together (same spirit as 'camera equipment')."
+    },
+
+    "push_bumper_system": {
+      "label": "Push Bumper System",
+      "category": "structural",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["push_bumper", "pit_bar", "wing_wraps", "wire_covers"],
+      "confidence": "high",
+      "why": "Owner example verbatim: 'push bumper + pit bar + wing wraps + wire covers + Westin light bracket'. The Westin light bracket is NOT a part_type — per ruling C1.2 it is a PRODUCT-level accessory of push_bumper (Westin light tubes = push-bumper accessories). It stays discoverable through this family. FUTURE (captured, not built): the in-product-box 'add other bumper parts?' flow reads this family's members + push_bumper's product-level accessories.",
+      "linked_product_accessories": ["Westin light bracket / light tubes (accessory_of push_bumper product, per C1.2)"]
+    },
+    "console_system": {
+      "label": "Console System",
+      "category": "structural",
+      "kind": "system",
+      "picker_flow": null,
+      "members": ["console", "motion_attachment"],
+      "confidence": "high",
+      "why": "OQ-2 owner answer 2026-07-07: console + motion_attachment (swing arm) ONLY. arm_rest, special_face_plate, pedestal_mount, and aux_12v_ports mount TO the console (location), so they are left bare rather than included as members — see task2_deliberately_ungrouped."
+    }
+  },
+
+  "task2_deliberately_ungrouped": [
+    {"part_types": ["printer", "printer_mount", "printer_power", "printer_usb"], "why": "printer_mount/power/usb are already accessory_of printer — pure accessories, surfaced when you add a printer. A Printer family would duplicate the accessory mechanism. Left as accessory-only (demonstrates family selectivity). Revisit only if printers need independent browse."},
+    {"part_types": ["siren_speaker", "siren_speaker_bracket"], "why": "siren_speaker_bracket is accessory_of siren_speaker. Siren is driven by the control head but is not always co-specified as one unit; leave siren_speaker bare."},
+    {"part_types": ["pa_mic", "pa_mic_clip"], "why": "OQ-3 owner answer 2026-07-07: bare. Not radio_comms, no PA family for now. radio_comms stays as-is (5 members, PA excluded)."},
+    {"part_type": "radio_antenna_top", "why": "Shared roof antenna (radio + GPS + modem). 'Don't group all antennas.' Bare under Equipment."},
+    {"part_types": ["gun_lock", "gun_lock_bracket"], "why": "gun_lock_bracket is accessory_of gun_lock. One primary + accessory; no sibling system. Bare (gun_lock) + accessory."},
+    {"part_types": ["arm_rest", "special_face_plate", "aux_12v_ports"], "why": "OQ-2 owner answer 2026-07-07: these mount TO the console (location), not belong to it as a system. Left bare rather than added to Console System."},
+    {"part_type": "pedestal_mount", "why": "OQ-6 owner answer 2026-07-07: bare. Shared base for console AND computer; belongs cleanly to neither Console System nor Computer Workstation."},
+    {"part_types": ["remote_start", "battery_tender", "vehicle_interface", "gpd", "auto_eject", "howler", "flashlight", "tool_mount", "photo_eye", "power_timer", "arges_face", "arges_controller"], "why": "Standalone equipment part_types with no belong-together sibling system. Bare under their category. photo_eye and power_timer resolved via OQ-5 (see light_control_system)."}
+  ],
+
+  "task3_browse": {
+    "removed_from_browse_path": ["section (exterior/interior)", "zone (front/rear/side/roof/prisoner_area/side_storage/...)", "sub_zone"],
+    "note": "tree_positions is NO LONGER read by the sidebar. It remains on part_types as data (sku_grid filters + schema validation still use it) and location survives as placement metadata (location_mode / location_options / placements / zones) for the preview drawing + build-sheet location text.",
+    "hierarchy": "category (type_id) -> family (optional) -> part_type. See proposal doc section 3 for the full before/after tree."
+  },
+
+  "owner_questions": [
+    {"id": "OQ-1", "q": "Console type_id flip equipment->structural — approve? (high confidence, the known one)"},
+    {"id": "OQ-2", "q": "Console System family: include the console-furniture part_types (arm_rest, special_face_plate, pedestal_mount, aux_12v_ports) as members, or keep the family to console + swing arm only?"},
+    {"id": "OQ-3", "q": "Where does PA (pa_mic, pa_mic_clip) belong — Radio Communications, a Siren/PA family, or bare? Currently left bare."},
+    {"id": "OQ-4", "q": "Light Control System family label — keep brand-neutral 'Light Control System', or your 'Whelen Control System'?"},
+    {"id": "OQ-5", "q": "Light Control System members — add light_controller / photo_eye? Treat power_timer (ChargeGuard) as a member or a bare alternative-to-Core?"},
+    {"id": "OQ-6", "q": "pedestal_mount is a shared base (console AND computer). Leave bare, or assign to Console System / Computer Workstation?"},
+    {"id": "OQ-7", "q": "preemption type_id lights->equipment? (medium — it's a signal-preemption emitter, not a light)"},
+    {"id": "OQ-8", "q": "Generic accessory homes bracket/cable/flange are typed 'lights' but hold cross-category accessories — leave until accessory-browse is designed? (recommended)"}
+  ],
+
+  "owner_answers_2026_07_07": {
+    "status": "All 8 questions resolved. Plan is final — see PART_TYPE_TAXONOMY_PROPOSAL.md 'Owner answers (2026-07-07)' section.",
+    "OQ-1": "APPROVED — console flips equipment->structural (metadata-only, no product cascade).",
+    "OQ-2": "console + motion_attachment (swing arm) ONLY. arm_rest/special_face_plate/pedestal_mount/aux_12v_ports left bare.",
+    "OQ-3": "bare. Not radio_comms, no PA family for now.",
+    "OQ-4": "keep brand-neutral 'Light Control System' (control heads may be Whelen/Feniex/SoundOff).",
+    "OQ-5": "add light_controller (7 members). photo_eye stays a product-level accessory of the Core. power_timer stays bare.",
+    "OQ-6": "bare (shared base for console AND computer; belongs cleanly to neither).",
+    "OQ-7": "FLIP to equipment (Opticom belongs in equipment) — added as a second task1_type_id_corrections entry.",
+    "OQ-8": "defer — leave until the accessory-browse UX is designed. No change now."
+  }
+}

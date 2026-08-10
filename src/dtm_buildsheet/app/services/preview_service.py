@@ -22,6 +22,13 @@ _SLOT_FRONT_REAR = (9.5,   5.3)
 _SLOT_SIDE_TOP   = (13.333, 3.58)   # 7.5 - 3.5 - 0.42 footer
 
 
+def _placement_group_key(line_id: str, part_id: str) -> str:
+    marker = ":included-"
+    if marker in (line_id or ""):
+        return line_id.split(marker, 1)[0]
+    return line_id or part_id
+
+
 def _view_metadata(vehicle_config: dict) -> tuple[list[str], dict[str, dict]]:
     """Return (ordered view IDs, {view_id: {label, category, ...}}) from vehicle config."""
     view_order = vehicle_config.get("view_order", _FALLBACK_VIEW_ORDER)
@@ -137,6 +144,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
             }
 
         parts_out: list[dict] = []
+        seen_keys: set[str] = set()
         for pp in plan.planned_parts:
             if not pp.on_diagram or not pp.placements:
                 continue
@@ -166,7 +174,10 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     icon_h_pct = 0.02
 
                 slot_count = len(pl.instances) or 1
-                override_key = f"{pl.part_id}:{pl.view}"
+                override_key = f"{pl.line_id or pl.part_id}:{pl.view}"
+                if override_key in seen_keys:
+                    pl.warnings.append(f"Duplicate placement key: {override_key}")
+                seen_keys.add(override_key)
 
                 # Compute per-instance slot positions using the same logic as render_ppt.py.
                 anchor_x = (pl.anchor or {}).get("x", 0.0)
@@ -176,11 +187,18 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     eff_h_spacing = icon_w_pct * raw_h_spacing if raw_h_spacing > 0 else icon_w_pct
                 else:
                     eff_h_spacing = raw_h_spacing if raw_h_spacing > 0 else 0.06
+                if pl.v_spacing is None:
+                    eff_v_spacing = None
+                elif pl.h_spacing_units == "icon_width":
+                    eff_v_spacing = icon_h_pct * pl.v_spacing
+                else:
+                    eff_v_spacing = pl.v_spacing
 
                 if pl.position_slot_count and pl.slot_indices:
                     all_pos = slot_relative_positions(
                         pl.pattern, pl.position_slot_count,
                         anchor_x, anchor_y, eff_h_spacing,
+                        v_spacing=eff_v_spacing,
                     )
                     positions = [
                         all_pos[i] if i < len(all_pos) else (anchor_x, anchor_y)
@@ -189,15 +207,19 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 else:
                     positions = slot_relative_positions(
                         pl.pattern, slot_count, anchor_x, anchor_y, eff_h_spacing,
+                        v_spacing=eff_v_spacing,
                     )
 
                 instances_out = []
                 for idx, inst in enumerate(pl.instances):
-                    ix, iy = positions[idx] if idx < len(positions) else (anchor_x, anchor_y)
+                    base_ix, base_iy = positions[idx] if idx < len(positions) else (anchor_x, anchor_y)
+                    ix, iy = base_ix, base_iy
+                    ix += getattr(pl, "translate_dx", 0.0) or 0.0
+                    iy += getattr(pl, "translate_dy", 0.0) or 0.0
                     # slot_coeff = (x - anchor) / eff_h_spacing — dimensionless slot position
                     # relative to the anchor. The canvas uses this to apply h_spacing_delta
                     # without re-deriving spacing geometry client-side.
-                    slot_coeff = round((ix - anchor_x) / eff_h_spacing, 6) if eff_h_spacing > 1e-9 else 0.0
+                    slot_coeff = round((base_ix - anchor_x) / eff_h_spacing, 6) if eff_h_spacing > 1e-9 else 0.0
                     instances_out.append({
                         "slot_index":  inst.slot_index,
                         "slot_role":   inst.slot_role,
@@ -214,6 +236,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 placements_out.append({
                     "view":               pl.view,
                     "override_key":       override_key,
+                    "group_key":          _placement_group_key(pl.line_id, pl.part_id),
                     "location_key":       pl.location_key,
                     "anchor":             pl.anchor,
                     "pattern":            pl.pattern,
@@ -244,6 +267,7 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "manufacturer": getattr(pp.raw, "manufacturer", "") or "",
                     "part_number":  getattr(pp.raw, "part_number", "") or "",
                     "placements":   placements_out,
+                    "warnings":     pp.warnings,
                 })
 
         return {

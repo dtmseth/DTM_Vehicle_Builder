@@ -15,14 +15,19 @@ from pptx.util import Inches
 from .domain.geometry import slot_relative_positions
 from .paths import AppPaths, ensure_workspace
 from .ppt_helpers import (
+    INLINE_RENDER_FAILURE_LIMIT,
     VIEWS as _LEGACY_VIEWS,
     _is_reused,
+    _build_unit_label,
+    _project_vehicle_fields,
     _source_label,
     add_parts_manifest_slides,
+    add_render_exception_slides,
     add_slide_footer_bar,
     fill_notes,
     fill_overview,
     icon_size_in_inches,
+    is_render_only_part,
     place_legend,
     place_legend_grid,
     place_logo,
@@ -38,7 +43,7 @@ _log = logging.getLogger(__name__)
 def _project_shim(plan) -> SimpleNamespace:
     parts = []
     for pp in plan.planned_parts:
-        if not pp.raw.include:
+        if not pp.raw.include or is_render_only_part(pp):
             continue
         raw = pp.raw
         parts.append(SimpleNamespace(
@@ -62,7 +67,8 @@ def _legend_item(part_name: str, location: str = "", notes: str = "",
                  manufacturer: str = "", part_number: str = "",
                  color: str = "", lens: str = "",
                  new_or_used: str = "", source: str = "",
-                 is_reused: bool = False) -> SimpleNamespace:
+                 is_reused: bool = False, line_id: str = "",
+                 quantity: object = "") -> SimpleNamespace:
     return SimpleNamespace(
         name         = part_name,
         location     = location,
@@ -75,26 +81,76 @@ def _legend_item(part_name: str, location: str = "", notes: str = "",
         new_or_used  = new_or_used,
         source       = source,
         is_reused    = is_reused,
+        line_id      = line_id,
+        quantity     = quantity,
     )
 
 
-def _unplaced_for_view(plan, view: str):
-    unplaced = []
-    seen     = set()
-    prefix   = f"{view}:"
-    for pp in plan.planned_parts:
-        matching = [w for w in pp.warnings if w.startswith(prefix)]
-        if not matching:
+def _placement_key(part, placement) -> tuple[str, str, str, str]:
+    """Return a stable identity for one planned placement on one view."""
+    line_id = getattr(placement, "line_id", "") or getattr(part.raw, "line_id", "")
+    return (
+        line_id or part.part_name,
+        part.part_name,
+        placement.view,
+        placement.location_key,
+    )
+
+
+def _record_render_failure(
+    failures: dict[tuple[str, str, str, str], list[str]],
+    key: tuple[str, str, str, str],
+    messages: list[str],
+) -> None:
+    """Record one placement failure, preserving distinct messages in order."""
+    bucket = failures.setdefault(key, [])
+    for message in messages:
+        if message and message not in bucket:
+            bucket.append(message)
+
+
+def _render_failures_for_view(plan, view: str, render_failures: dict):
+    """Return only components expected on *view* that did not render.
+
+    Manifest-only lines and parts meant for other vehicle views are intentionally
+    absent here.  The red callout is a rendering diagnostic, not a duplicate
+    manifest: it is reserved for a missing view placement or a failed asset.
+    """
+    issue_map: dict[tuple[str, str, str], SimpleNamespace] = {}
+    prefix = f"{view}:"
+
+    def add_issue(part, location: str, messages: list[str]) -> None:
+        raw = part.raw
+        key = (getattr(raw, "line_id", "") or part.part_name, part.part_name, location)
+        issue = issue_map.get(key)
+        if issue is None:
+            issue = _legend_item(part.part_name, location, "")
+            issue_map[key] = issue
+        existing = [text for text in issue.notes.split("; ") if text]
+        for message in messages:
+            if message and message not in existing:
+                existing.append(message)
+        issue.notes = "; ".join(existing)
+
+    for part in plan.planned_parts:
+        if is_render_only_part(part):
             continue
-        key = (pp.part_name, pp.raw.location)
-        if key in seen:
-            continue
-        seen.add(key)
-        unplaced.append(_legend_item(
-            pp.part_name, pp.raw.location or "?",
-            "; ".join(matching),
-        ))
-    return unplaced
+
+        # A planner warning names this exact view only when a part should have
+        # received a placement there but could not (for example, missing
+        # coordinates). Generic warnings intentionally stay out of diagram pages.
+        view_warnings = [warning for warning in part.warnings if warning.startswith(prefix)]
+        if view_warnings:
+            add_issue(part, part.raw.location or "?", view_warnings)
+
+        for placement in part.placements:
+            if placement.view != view or placement.color_profile == "specify_palette":
+                continue
+            messages = render_failures.get(_placement_key(part, placement), [])
+            if messages:
+                add_issue(part, part.raw.location or placement.location_key or "?", messages)
+
+    return list(issue_map.values())
 
 
 def _position_from_anchor(anchor: dict, img_box):
@@ -138,21 +194,59 @@ def _apply_shape_transforms(shape, rotation: float, flip_h: bool, flip_v: bool) 
         xfrm.set("flipV", "1")
 
 
-def _move_shape_behind(slide, shape, vehicle_pic_element) -> None:
-    sp_tree   = slide.shapes._spTree
-    shape_elem = shape._element
-    sp_tree.remove(shape_elem)
-    children = list(sp_tree)
-    try:
-        vehicle_idx = children.index(vehicle_pic_element)
-    except ValueError:
-        vehicle_idx = 2
-    sp_tree.insert(vehicle_idx, shape_elem)
+def _vertical_mirror_slot_is_reflected(placement, instance_index: int) -> bool:
+    """Whether a vertical-mirror slot is the reflected (non-anchor) counterpart.
+
+    Geometry emits vertical pairs top then bottom. The physical anchor side keeps
+    the configured rotation, while the paired counterpart receives its reflected
+    rotation. A centered pair is deterministic: top is the base and bottom is
+    reflected.
+    """
+    if placement.pattern != "vertical_mirror" or len(placement.instances) <= 1:
+        return False
+    anchor_y = float((placement.anchor or {}).get("y", 0.5))
+    is_top_slot = instance_index % 2 == 0
+    if abs(anchor_y - 0.5) < 0.001:
+        return not is_top_slot
+    return is_top_slot != (anchor_y < 0.5)
 
 
-def _group_shapes(slide, shapes: list) -> None:
-    if len(shapes) < 2:
+def _stack_parts_above_vehicle(slide, vehicle_pic_element, part_elements: list[tuple]) -> None:
+    """Keep the vehicle artwork below every rendered part in layer order.
+
+    The vehicle image is the fixed base of every diagram.  Negative placement
+    layers (for example, bumper hardware) mean "below other parts", never
+    "behind the vehicle".  Grouped placements are supplied as their group
+    element so the whole physical assembly keeps its relative stacking.
+    """
+    if vehicle_pic_element is None or not part_elements:
         return
+    sp_tree = slide.shapes._spTree
+    if vehicle_pic_element.getparent() is not sp_tree:
+        return
+
+    present = [
+        (element, layer, index)
+        for index, (element, layer) in enumerate(part_elements)
+        if element.getparent() is sp_tree
+    ]
+    if not present:
+        return
+    for element, _, _ in present:
+        sp_tree.remove(element)
+
+    try:
+        insert_at = list(sp_tree).index(vehicle_pic_element) + 1
+    except ValueError:
+        return
+    for element, _, _ in sorted(present, key=lambda item: (item[1], item[2])):
+        sp_tree.insert(insert_at, element)
+        insert_at += 1
+
+
+def _group_shapes(slide, shapes: list):
+    if len(shapes) < 2:
+        return None
     sp_tree = slide.shapes._spTree
 
     lefts  = [s.left              for s in shapes]
@@ -185,6 +279,7 @@ def _group_shapes(slide, shapes: list) -> None:
         elem = shape._element
         sp_tree.remove(elem)
         grp_sp.append(elem)
+    return grp_sp
 
 
 def _instance_icon_size(placement, part_size, instance, view: str,
@@ -220,12 +315,51 @@ def _instance_icon_size(placement, part_size, instance, view: str,
 
 
 def _build_accessory_map(plan) -> dict[str, list[tuple[str, str]]]:
-    """Returns {parent_name: [(acc_name, part_number), ...]}."""
+    """Return child purchase lines grouped by their exact parent legend card.
+
+    Picker-created accessories use ``parent_line_id``.  That is the concrete
+    parent selected in a build, unlike ``accessory_of`` which is a part-type
+    relationship and may apply to more than one product.  Prefer the concrete
+    relationship so each build-page card carries only its own children.  Keep
+    the older name-keyed mapping as a fallback for legacy workbook builds.
+    """
     acc_map: dict[str, list[tuple[str, str]]] = {}
-    for pp in plan.planned_parts:
-        if pp.accessory_of:
-            pnum = (pp.raw.part_number or "").strip()
-            acc_map.setdefault(pp.accessory_of, []).append((pp.part_name, pnum))
+    visible_parts = [
+        pp for pp in plan.planned_parts
+        if not is_render_only_part(pp)
+    ]
+    by_line_id = {
+        str(getattr(pp.raw, "line_id", "") or ""): pp
+        for pp in visible_parts
+        if getattr(pp.raw, "line_id", "")
+    }
+
+    for pp in visible_parts:
+        if is_render_only_part(pp):
+            continue
+
+        raw = pp.raw
+        parent_id = str(getattr(raw, "parent_line_id", "") or "")
+        parent = by_line_id.get(parent_id)
+        parent_key = ""
+        child_name = pp.part_name
+
+        if parent is not None and parent is not pp:
+            parent_key = parent_id
+            parent_name = parent.part_name
+            prefix = f"{parent_name} · "
+            if child_name.casefold().startswith(prefix.casefold()):
+                child_name = child_name[len(prefix):].strip()
+        elif pp.accessory_of:
+            # Legacy plans used the parent display name in accessory_of.
+            parent_key = pp.accessory_of
+
+        if parent_key:
+            pnum = (getattr(raw, "part_number", "") or "").strip()
+            entry = (child_name, pnum)
+            entries = acc_map.setdefault(parent_key, [])
+            if entry not in entries:
+                entries.append(entry)
     return acc_map
 
 
@@ -281,7 +415,7 @@ def build_output_filename(project: dict) -> str:
     new_v      = project.get("NewVehicle") or {}
     old_v      = project.get("ExistingVehicle") or {}
     unit       = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
-    year       = _safe_part(str(new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
+    year       = _safe_part(str(project.get("BuildYear", "") or new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
     now        = datetime.now()
     hour       = now.hour % 12 or 12
     ampm       = "AM" if now.hour < 12 else "PM"
@@ -314,14 +448,11 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     exist_v    = plan.project.get("ExistingVehicle", {})
     agency     = plan.project.get("Agency", "")
     build_type = plan.project.get("BuildType", "")
-    year     = new_v.get("YEAR",  "") or exist_v.get("YEAR",  "")
-    make     = new_v.get("MAKE",  "") or exist_v.get("MAKE",  "")
-    model    = (new_v.get("MODEL","") or exist_v.get("MODEL","")
-                or plan.project.get("VehicleType",""))
-    veh_line = " ".join(filter(None, [year, make, model]))
+    year, make, model, sub_model = _project_vehicle_fields(plan.project)
+    veh_line = " ".join(filter(None, [year, make, model, sub_model]))
     unit_id  = (new_v.get("UNIT ID", new_v.get("UNIT",""))
                 or exist_v.get("UNIT ID", exist_v.get("UNIT","")))
-    unit_str = f"Unit#{unit_id}" if unit_id else ""
+    unit_str = _build_unit_label(build_type, unit_id)
     footer   = "   •   ".join(filter(None, [agency, veh_line, unit_str, "DTM Fleet Service"]))
 
     # ── Cover slide ───────────────────────────────────────────────────────────
@@ -330,6 +461,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
 
     # ── View slides ───────────────────────────────────────────────────────────
     accessory_map = _build_accessory_map(plan)
+    detailed_render_failures: list[tuple[str, list]] = []
 
     for view in external_views:
         slide = view_slides.get(view)
@@ -366,13 +498,20 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
 
         used_centers: list   = []
         collision            = Inches(0.18)
-        layer_shapes: list   = []   # (shape, layer) for post-render Z-sort
+        rendered_part_elements: list[tuple] = []  # (shape XML, layer)
         specify_palettes: list[str] = []
-        rendered_part_names: set[str] = set()
+        rendered_placement_keys: set[tuple[str, str, str, str]] = set()
+        render_failures: dict[tuple[str, str, str, str], list[str]] = {}
 
         for pp in plan.planned_parts:
             for placement in pp.placements:
                 if placement.view != view or not placement.instances:
+                    if placement.view == view and not placement.instances:
+                        _record_render_failure(
+                            render_failures,
+                            _placement_key(pp, placement),
+                            ["No render instances planned"],
+                        )
                     continue
 
                 if placement.color_profile == "specify_palette":
@@ -386,6 +525,13 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                                                    size_class=placement.size_class)
                 first_inst       = placement.instances[0]
                 if placement.render_kind in ("equipment", "bar") and not first_inst.asset_path:
+                    _record_render_failure(
+                        render_failures,
+                        _placement_key(pp, placement),
+                        first_inst.warnings or [
+                            f"No asset resolved for '{placement.part_name}' ({view})"
+                        ],
+                    )
                     continue
 
                 size_w, _ = _instance_icon_size(placement, part_size, first_inst, view,
@@ -424,14 +570,37 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         h_spacing_emu, v_spacing_emu,
                         slot_roles=[inst.slot_role for inst in placement.instances],
                     )
+                translate_dx = int(img_box[2] * (getattr(placement, "translate_dx", 0.0) or 0.0))
+                translate_dy = int(img_box[3] * (getattr(placement, "translate_dy", 0.0) or 0.0))
+                if translate_dx or translate_dy:
+                    positions = [
+                        (px + translate_dx, py + translate_dy)
+                        for px, py in positions
+                    ]
 
                 placement_shapes: list = []
 
-                for instance, (px, py) in zip(placement.instances, positions):
+                for instance_index, (instance, (px, py)) in enumerate(
+                    zip(placement.instances, positions)
+                ):
                     if not instance.asset_path:
+                        _record_render_failure(
+                            render_failures,
+                            _placement_key(pp, placement),
+                            instance.warnings or [
+                                f"No asset resolved for '{placement.part_name}' ({view})"
+                            ],
+                        )
                         continue
                     icon_path = active_paths.workspace_assets_dir / instance.asset_path
                     if not icon_path.exists():
+                        _record_render_failure(
+                            render_failures,
+                            _placement_key(pp, placement),
+                            instance.warnings or [
+                                f"Missing asset ({view}): {instance.asset_path}"
+                            ],
+                        )
                         if "wing_wrap_elitexd" in instance.asset_path.lower():
                             _log.warning(
                                 "Wing Wrap EliteXD render skipped; asset missing: %s",
@@ -471,53 +640,52 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         )
 
                     is_right_slot = instance.slot_role in ("driver", "positive_x")
-                    is_sym_pattern = placement.pattern in ("mirror", "horizontal")
+                    is_outer_edge = placement.pattern == "outer_edge_pillars"
+                    is_sym_pattern = placement.pattern in ("mirror", "horizontal") or is_outer_edge
+                    # Rear-view side roles are semantic (driver/passenger),
+                    # not screen direction. Outer Edge's right column is
+                    # therefore derived from the fixed three-head geometry.
+                    is_right = (
+                        instance_index >= len(placement.instances) // 2
+                        if is_outer_edge else is_sym_pattern and is_right_slot
+                    )
                     is_mirrored = (
                         placement.flip_mirrored_h
-                        and is_sym_pattern
-                        and is_right_slot
+                        and is_right
                     )
                     inst_flip_h = placement.flip_h ^ is_mirrored
-                    is_right    = is_sym_pattern and is_right_slot
+                    rotation_mirrored = (
+                        is_right
+                        or _vertical_mirror_slot_is_reflected(placement, instance_index)
+                    )
                     inst_rot = (
                         (360 - placement.rotation) % 360
-                        if is_right and placement.rotation != 0 else placement.rotation
+                        if rotation_mirrored and placement.rotation != 0 else placement.rotation
                     )
                     _apply_shape_transforms(pic, inst_rot, inst_flip_h, placement.flip_v)
 
-                    if placement.behind_vehicle and vehicle_pic_element is not None:
-                        _move_shape_behind(slide, pic, vehicle_pic_element)
-
                     layer = getattr(placement, "layer", 0)
-                    if layer != 0:
-                        layer_shapes.append((pic, layer))
-
                     placement_shapes.append(pic)
-                    rendered_part_names.add(pp.part_name)
+                    rendered_placement_keys.add(_placement_key(pp, placement))
 
                 if placement.group_shapes and len(placement_shapes) >= 2:
-                    _group_shapes(slide, placement_shapes)
+                    group_element = _group_shapes(slide, placement_shapes)
+                    if group_element is not None:
+                        rendered_part_elements.append((group_element, layer))
+                else:
+                    rendered_part_elements.extend(
+                        (shape._element, layer) for shape in placement_shapes
+                    )
 
-        # ── Layer Z-sort: re-order shapes by layer value ─────────────────────
-        if layer_shapes:
-            sp_tree = slide.shapes._spTree
-            for shape, _ in sorted(
-                [(s, l) for s, l in layer_shapes if l > 0], key=lambda x: x[1]
-            ):
-                sp_tree.remove(shape._element)
-                sp_tree.append(shape._element)
-            for shape, _ in sorted(
-                [(s, l) for s, l in layer_shapes if l < 0], key=lambda x: -x[1]
-            ):
-                _move_shape_behind(slide, shape, vehicle_pic_element)
+        # ── Layer Z-sort: vehicle first, then all parts back-to-front ────────
+        _stack_parts_above_vehicle(slide, vehicle_pic_element, rendered_part_elements)
 
         # ── Build legend items ────────────────────────────────────────────────
         placed_legend: list   = []
         seen_placed: set[tuple] = set()
-        extra_unrendered: list  = []
-        seen_unrendered: set[tuple] = set()
-
         for pp in plan.planned_parts:
+            if is_render_only_part(pp):
+                continue
             for pl in pp.placements:
                 if pl.view != view:
                     continue
@@ -525,13 +693,14 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     continue
                 key = (pp.part_name, pl.location_key)
 
-                if pp.part_name in rendered_part_names:
+                if _placement_key(pp, pl) in rendered_placement_keys:
                     if key in seen_placed:
                         continue
                     seen_placed.add(key)
                     raw         = pp.raw
                     reused      = _is_reused(raw)
-                    accessories = accessory_map.get(pp.part_name, [])
+                    line_id = str(getattr(raw, "line_id", "") or "")
+                    accessories = accessory_map.get(line_id) or accessory_map.get(pp.part_name, [])
                     placed_legend.append(_legend_item(
                         pp.part_name, raw.location or pl.location_key, raw.notes, accessories,
                         manufacturer = raw.manufacturer,
@@ -541,35 +710,18 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         new_or_used  = raw.new_or_used,
                         source       = raw.source or "",
                         is_reused    = reused,
-                    ))
-                else:
-                    if key in seen_unrendered:
-                        continue
-                    seen_unrendered.add(key)
-                    extra_unrendered.append(_legend_item(
-                        pp.part_name,
-                        pp.raw.location or pl.location_key or "?",
-                        "Not shown on diagram",
-                        manufacturer = pp.raw.manufacturer,
-                        part_number  = pp.raw.part_number,
+                        line_id      = line_id,
+                        quantity     = raw.quantity,
                     ))
 
-        # Bumper sub-items (pit_bar, wing_wraps) already show under Push Bumper via
-        # the accessory_map; remove their standalone cards to save legend space.
-        _BUMPER_SUB_KWS = {"pit bar", "wing wrap", "wire cover"}
-        placed_legend = [
-            it for it in placed_legend
-            if not any(kw in it.name.lower() for kw in _BUMPER_SUB_KWS)
-        ]
+        # Keep bumper accessories in the legend as individual cards.  They are
+        # small in the rendered vehicle view and otherwise easy to miss, even
+        # when they are also summarized under the push bumper.
 
-        # Merge warnings from planner + unrendered placements (deduplicate by name)
-        warn_items    = _unplaced_for_view(plan, view)
-        placed_names  = {item.name for item in placed_legend}
-        warn_names    = {item.name for item in warn_items}
-        unplaced_legend = warn_items + [
-            e for e in extra_unrendered
-            if e.name not in placed_names and e.name not in warn_names
-        ]
+        unplaced_legend = _render_failures_for_view(plan, view, render_failures)
+        detail_unplaced = len(unplaced_legend) > INLINE_RENDER_FAILURE_LIMIT
+        if detail_unplaced:
+            detailed_render_failures.append((view, unplaced_legend))
         palette_offset  = 0
         for cat in specify_palettes:
             consumed = place_specify_palette(slide, cat, img_box,
@@ -578,10 +730,24 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 palette_offset += consumed
 
         if legend_layout == "grid":
-            place_legend_grid(slide, placed_legend, unplaced_legend, accessory_map, view=view)
+            place_legend_grid(
+                slide, placed_legend, unplaced_legend, accessory_map,
+                view=view, detail_unplaced=detail_unplaced,
+            )
         else:
-            place_legend(slide, placed_legend, unplaced_legend, accessory_map,
-                         view=view, panel_left_emu=_LEGEND_LEFT)
+            place_legend(
+                slide, placed_legend, unplaced_legend, accessory_map,
+                view=view, panel_left_emu=_LEGEND_LEFT,
+                detail_unplaced=detail_unplaced,
+            )
+
+    # Dense or incomplete builds can have too many genuine failures to fit in a
+    # diagram sidebar. Keep the full, view-specific list in paginated report
+    # pages instead of clipping it or mixing it with the main manifest.
+    if detailed_render_failures:
+        add_render_exception_slides(
+            prs, detailed_render_failures, active_paths, footer_text=footer
+        )
 
     # ── Notes slide ───────────────────────────────────────────────────────────
     update_slide_header_footer(

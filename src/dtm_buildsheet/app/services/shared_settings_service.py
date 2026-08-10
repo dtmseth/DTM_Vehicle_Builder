@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -201,6 +202,14 @@ def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
     .updated for the data_version bump; the subdir reports are merged in
     by aggregating their .updated lists.
     """
+    # Dev escape hatch: when DTM_DEV_NO_SETTINGS_PULL is set, never pull
+    # /Settings/ from the cloud, so local config edits (parts_db.json, etc.)
+    # made by the offline tools aren't clobbered mid-development. Outbound
+    # mirror still fires on save, so changes continue to propagate up.
+    if os.environ.get("DTM_DEV_NO_SETTINGS_PULL"):
+        logger.info("DTM_DEV_NO_SETTINGS_PULL set — skipping inbound shared-settings pull")
+        return None
+
     # Deferred import — wiring imports nothing from app.services and we want
     # to keep the dependency direction services → adapters.
     from ..adapters import wiring

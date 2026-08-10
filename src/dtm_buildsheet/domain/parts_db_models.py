@@ -107,12 +107,32 @@ class Manufacturer:
 
 @dataclass
 class PartNumber:
-    """One concrete SKU under a product. Sparse during transition."""
+    """One concrete SKU under a product. Sparse during transition.
+
+    QB-linked fields (qb_item_id, qb_sku, qb_unit_price, qb_inactive, vehicle_tags)
+    are populated by the QB Pass 2 linking workflow. Color fields are parsed from
+    QB Sales Description first, then SKU letter patterns as fallback.
+    """
     part_number: str
     friendly_name: str = ""
     options: dict[str, Any] = field(default_factory=dict)
     qty_on_hand: int | None = None
     price_usd: float | None = None
+    # ── Color / lens (populated from QB data) ──
+    color: str = ""            # primary: "red", "blue", "amber", "white", "green", "purple"
+    secondary_color: str = ""  # 2nd color (duo heads): "white", "amber", "blue"
+    tertiary_color: str = ""   # 3rd color (trio heads, e.g. R/B/W → red,blue,white)
+    lens_type: str = ""        # "clear", "colored", "smoked"
+    # ── QB linkage (populated by qb_apply_links.py) ──
+    qb_item_id: str = ""
+    qb_sku: str = ""
+    qb_unit_price: float | None = None
+    qb_inactive: bool = False
+    # Pre-added before it exists in QuickBooks: usable in builds and billable
+    # (via price_usd), but flagged on the estimate as "create item" and
+    # auto-reconciled when the SKU later appears in QB. See docs/PARTS_DB_AND_PICKER.md.
+    qb_pending: bool = False
+    vehicle_tags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -125,6 +145,9 @@ class Product:
     description: str = ""
     images: dict[str, str] = field(default_factory=dict)
     part_numbers: list[PartNumber] = field(default_factory=list)
+    # Optional console-kit composition. This is intentionally product-level:
+    # each QB kit SKU includes a different set of shop components.
+    console_kit: dict[str, Any] = field(default_factory=dict)
 
 
 # ── Part types ───────────────────────────────────────────────────────────────
@@ -145,6 +168,9 @@ class PartType:
     part_type_id: str
     label: str
     type_id: str                                            # top-level type (lights, equipment, ...)
+    category: str = ""                                      # usage category within the type
+                                                            # (lights: warning/scene/interior/
+                                                            #  interior_bar/roof_bar/spotlight)
     tree_positions: list[TreePosition] = field(default_factory=list)
     tag_ids: list[str] = field(default_factory=list)
     max_count: int | None = None                            # None = unlimited
@@ -154,6 +180,7 @@ class PartType:
     allowed_placements: list[str] = field(default_factory=list)
     workbook_label_pattern: str = "{label}"                 # legacy workbook export label
     sequence_scope: str = "global"                          # per_part_type counter scope
+    render: dict[str, Any] = field(default_factory=dict)     # parts_db-owned render metadata
 
 
 # ── Color palette ────────────────────────────────────────────────────────────

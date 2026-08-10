@@ -1,0 +1,12 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Black-strap mount kits for roof lightbars (needed for Midnight Edition, which requires black straps). The Whelen Legacy SKU descriptions state the bar includes a 'CHOICE OF STPKT# OR STPBK#' — STPBK<n> is the black-strap version of each STPKT<n> standard strap kit. None are in DTM's QuickBooks yet, so added as PENDING-QB parts on whelen_lightbar_mount_kit, mirroring the vehicle tags of their STPKT counterparts. $0 placeholder prices (set in part manager or auto-reconcile from QB).",
+  "pending_parts": [
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK85",  "price": 0.0, "vehicle_tags": ["DURANGO"],                  "friendly_name": "Black straps: Durango '18-21, 48\" Legacy"},
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK93",  "price": 0.0, "vehicle_tags": ["TAHOE", "SUBURBAN", "YUKON"], "friendly_name": "Black straps: GM SUVs '15+ (Tahoe/Suburban/Yukon)"},
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK94",  "price": 0.0, "vehicle_tags": ["F-150"],                    "friendly_name": "Black straps: F-150 (adjustable)"},
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK98",  "price": 0.0, "vehicle_tags": ["EXPEDITION"],               "friendly_name": "Black straps: Expedition SSV '22, 54\" Legacy"},
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK101", "price": 0.0, "vehicle_tags": ["TAHOE"],                    "friendly_name": "Black straps: Tahoe, 54\" Legacy WCX Duo"},
+    {"product": "whelen_lightbar_mount_kit", "part_number": "STPBK105", "price": 0.0, "vehicle_tags": ["PIU"],                      "friendly_name": "Black straps: PIU '20-21, 54\" Legacy WCX Duo"}
+  ]
+}

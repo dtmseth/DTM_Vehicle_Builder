@@ -1,0 +1,7 @@
+{
+  "body": {
+    "error": "unknown part_type_id: does_not_exist"
+  },
+  "handled": true,
+  "status": 404
+}

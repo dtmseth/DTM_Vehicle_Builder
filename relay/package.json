@@ -1,0 +1,9 @@
+{
+  "name": "dtm-qb-relay",
+  "version": "1.0.0",
+  "description": "QuickBooks OAuth redirect relay for DTM Vehicle Builder",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}

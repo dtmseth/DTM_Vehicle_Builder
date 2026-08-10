@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import traceback
+from decimal import Decimal, InvalidOperation
 
 _log = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ from ...inputs.project_drafts import (
     draft_summary,
     draft_to_project_input,
     find_part_by_line_id,
+    renumber_parts,
     list_drafts,
     load_draft,
     new_draft,
@@ -40,11 +42,164 @@ from ...inputs.project_drafts import (
 )
 from ...naming import safe_id
 from ...paths import AppPaths
+from .custom_part_service import list_custom_parts, remember_custom_part
+from .parts_db_service import get_parts_db_service
+
+
+def _matching_single_speaker(draft: BuildDraft, part: DraftPart) -> DraftPart | None:
+    """Find the one compatible speaker line that can become a pair.
+
+    A pair is one rendered, numbered speaker line with quantity two.  Only
+    merge two otherwise-identical single speakers; different SKUs, locations,
+    or conditions remain independently editable lines.
+    """
+    if (
+        part.parent_line_id
+        or part.part_type != "siren_speaker"
+        or part.quantity != 1
+    ):
+        return None
+    for existing in draft.parts:
+        if (
+            existing.parent_line_id
+            or existing.part_type != "siren_speaker"
+            or existing.quantity != 1
+        ):
+            continue
+        if (
+            existing.part_number.strip().upper() == part.part_number.strip().upper()
+            and existing.location.strip().upper() == part.location.strip().upper()
+            and existing.manufacturer.strip().upper() == part.manufacturer.strip().upper()
+            and existing.new_or_used.strip().upper() == part.new_or_used.strip().upper()
+        ):
+            return existing
+    return None
 
 
 def handle_list_drafts(paths: AppPaths) -> dict:
     drafts = list_drafts(paths.workspace_drafts_dir)
     return {"ok": True, "drafts": [draft_summary(d) for d in drafts]}
+
+
+def handle_list_custom_parts(paths: AppPaths) -> dict:
+    """Recently used custom parts, kept outside inventory and settings sync."""
+    return {"ok": True, "parts": list_custom_parts(paths)}
+
+
+def _custom_part_fields(body: dict) -> tuple[dict | None, str]:
+    """Validate the billable fields for a one-off part before any write."""
+    if not isinstance(body, dict):
+        return None, "custom part must be an object"
+    sku = str(body.get("sku", "")).strip()
+    description = str(body.get("description", "")).strip()
+    if not sku:
+        return None, "SKU is required"
+    if not description:
+        return None, "part description is required"
+    if len(sku) > 160:
+        return None, "SKU must be 160 characters or fewer"
+    if len(description) > 500:
+        return None, "part description must be 500 characters or fewer"
+    raw_price = body.get("unit_price", "")
+    if raw_price is None or str(raw_price).strip() == "":
+        return None, "price is required"
+    try:
+        price = Decimal(str(raw_price))
+    except (InvalidOperation, ValueError):
+        return None, "price must be a number"
+    if not price.is_finite() or price < 0:
+        return None, "price must be zero or greater"
+    try:
+        cents = price.quantize(Decimal("0.01"))
+    except InvalidOperation:
+        return None, "price must be a valid currency amount"
+    if price != cents:
+        return None, "price must use no more than two decimal places"
+    try:
+        quantity = int(str(body.get("quantity", "")).strip())
+    except (TypeError, ValueError):
+        return None, "quantity must be a whole number"
+    if quantity < 1 or quantity > 999:
+        return None, "quantity must be between 1 and 999"
+    return {
+        "sku": sku,
+        "description": description,
+        "unit_price": float(cents),
+        "quantity": quantity,
+    }, ""
+
+
+def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
+    """Append a billable non-inventory part to a draft.
+
+    The complete pricing snapshot lives on the draft row.  The local history
+    is a convenience only, never a QuickBooks inventory item or parts-db edit.
+    """
+    try:
+        clean_id = safe_id(draft_id)
+        if not clean_id or clean_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        fields, error = _custom_part_fields(body)
+        if error:
+            return {"ok": False, "error": error}
+        assert fields is not None
+        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"])
+        if catalog_match and not bool(body.get("allow_existing_duplicate")):
+            return {
+                "ok": False,
+                "error": "catalog_sku_exists",
+                "catalog_part": catalog_match,
+            }
+        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        part = draft_part_from_payload({
+            "name": fields["description"],
+            "new_or_used": "New",
+            "manufacturer": "Custom",
+            "part_number": fields["sku"],
+            "quantity": fields["quantity"],
+            "part_type": "custom_part",
+            "picker_config": {
+                "custom_part": {
+                    "sku": fields["sku"],
+                    "description": fields["description"],
+                    "unit_price": fields["unit_price"],
+                },
+            },
+        }, paths)
+        draft.parts.append(part)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "custom_part_added",
+            "line_id": part.line_id,
+            "name": part.name,
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        history_saved = True
+        try:
+            remember_custom_part(
+                paths,
+                sku=fields["sku"],
+                description=fields["description"],
+                unit_price=fields["unit_price"],
+            )
+        except Exception:
+            # The actual billable draft line is already durable.  A local
+            # convenience history must never make its creation look failed.
+            _log.exception("Could not remember custom part %s", fields["sku"])
+            history_saved = False
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "line_id": part.line_id,
+            "name": part.name,
+            "history_saved": history_saved,
+            "draft_summary": draft_summary(draft),
+        }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 def handle_get_draft(draft_id: str, paths: AppPaths) -> dict:
@@ -151,6 +306,236 @@ def handle_save_overrides_batch(draft_id: str, body: dict, paths: AppPaths) -> d
         return {"ok": False, "error": str(exc)}
 
 
+_CONSOLE_SETUP_CHILD_CATEGORIES = {
+    "console_faceplate",
+    "console_component",
+    "console_wings",
+}
+
+
+def _console_setup_owned_part(part: DraftPart, parent_line_id: str) -> bool:
+    """Whether a manifest row is generated by one console setup.
+
+    Printers are top-level manifest parents so their power/USB cables can sit
+    beneath them.  The owner marker ties that small second tree back to the
+    console and lets one atomic save replace the whole generated set.
+    """
+    return (
+        (
+            part.parent_line_id == parent_line_id
+            and part.accessory_category in _CONSOLE_SETUP_CHILD_CATEGORIES
+        )
+        or part.picker_config.get("console_setup_owner_line_id") == parent_line_id
+    )
+
+
+def _remove_parts_and_descendants(draft: BuildDraft, line_ids: set[str]) -> int:
+    """Remove rows identified by *line_ids*, including every nested child."""
+    removed_ids = set(line_ids)
+    while True:
+        descendants = {
+            part.line_id
+            for part in draft.parts
+            if (
+                part.parent_line_id in removed_ids
+                or part.linked_parent_line_id in removed_ids
+            )
+        }
+        new_ids = descendants - removed_ids
+        if not new_ids:
+            break
+        removed_ids.update(new_ids)
+    if not removed_ids:
+        return 0
+    before = len(draft.parts)
+    draft.parts[:] = [part for part in draft.parts if part.line_id not in removed_ids]
+    return before - len(draft.parts)
+
+
+def _reuse_console_mic_clip_for_radio(radio: DraftPart) -> None:
+    """Point a guided radio at the console-owned radio mic clip.
+
+    The console owns the physical C-MCB/Mag Mic hardware when the operator
+    confirms it is the same clip.  The radio kit retains its install component
+    so the shop still sees a microphone instruction, but it must no longer
+    describe or bill a second mount of its own.
+    """
+    picker_config = dict(radio.picker_config or {})
+    choices = dict(picker_config.get("choices") or {})
+    choices.update({
+        "micClipRelation": "use_console_clip",
+        "micMount": "",
+        "micLoc": "",
+    })
+    choices.pop("micLocCustom", None)
+    picker_config["choices"] = choices
+
+    components = list(radio.components or [])
+    console_component = {
+        "label": "Radio microphone",
+        "part_type": "radio_mic_clip",
+        "location": "ON CENTER CONSOLE",
+        "detail": "Uses the selected center-console mic clip",
+        "quantity": 1,
+    }
+    replaced = False
+    for index, component in enumerate(components):
+        if component.get("part_type") == "radio_mic_clip":
+            components[index] = console_component
+            replaced = True
+            break
+    if not replaced:
+        components.append(console_component)
+    radio.components = components
+
+    details = [
+        detail for detail in (picker_config.get("details") or [])
+        if isinstance(detail, dict) and detail.get("key") not in {
+            "micMount", "micLoc", "micLocCustom", "micClipRelation",
+        }
+    ]
+    details.append({
+        "label": "Radio microphone mount",
+        "value": "Uses the selected center-console mic clip",
+        "key": "micClipRelation",
+    })
+    picker_config["details"] = details
+    radio.picker_config = picker_config
+
+
+def handle_replace_console_setup_parts(
+    draft_id: str, parent_line_id: str, body: dict, paths: AppPaths,
+) -> dict:
+    """Atomically replace the generated manifest rows for one console setup.
+
+    A console can yield a dozen related rows (faceplates, pedestal stack,
+    dock, mic equipment, printer, and printer cables).  Saving them one HTTP
+    request at a time left durable partial drafts if the app closed or cloud
+    sync ran between requests.  This route makes the draft transition a
+    single local write and a single cloud-mirror event.
+    """
+    try:
+        clean_draft_id = safe_id(draft_id)
+        clean_parent_line_id = safe_id(parent_line_id)
+        if not clean_draft_id or clean_draft_id != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        if not clean_parent_line_id or clean_parent_line_id != parent_line_id:
+            return {"ok": False, "error": "invalid parent_line_id"}
+        if not isinstance(body, dict):
+            return {"ok": False, "error": "console setup must be an object"}
+
+        rows = body.get("rows", [])
+        printer_payload = body.get("printer")
+        printer_cable_payloads = body.get("printer_cables", [])
+        radio_reconciliation = body.get("radio_reconciliation")
+        if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+            return {"ok": False, "error": "console rows must be a list of objects"}
+        if printer_payload is not None and not isinstance(printer_payload, dict):
+            return {"ok": False, "error": "console printer must be an object"}
+        if not isinstance(printer_cable_payloads, list) or not all(
+            isinstance(row, dict) for row in printer_cable_payloads
+        ):
+            return {"ok": False, "error": "printer cables must be a list of objects"}
+        if radio_reconciliation is not None and not isinstance(radio_reconciliation, dict):
+            return {"ok": False, "error": "radio reconciliation must be an object"}
+        if radio_reconciliation and not any(
+            row.get("part_type") == "radio_mic_clip"
+            and row.get("accessory_category") == "console_component"
+            for row in rows
+        ):
+            return {"ok": False, "error": "radio reconciliation requires a console radio mic clip"}
+
+        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        owner = find_part_by_line_id(draft, parent_line_id)
+        if owner is None:
+            return {"ok": False, "error": f"Console not found: {parent_line_id}"}
+
+        radio_to_reconcile: DraftPart | None = None
+        if radio_reconciliation:
+            radio_line_id = str(radio_reconciliation.get("radio_line_id", ""))
+            clean_radio_line_id = safe_id(radio_line_id)
+            if not clean_radio_line_id or clean_radio_line_id != radio_line_id:
+                return {"ok": False, "error": "invalid radio_line_id"}
+            if radio_reconciliation.get("use_console_clip") is not True:
+                return {"ok": False, "error": "radio reconciliation must use the console clip"}
+            found_radio = find_part_by_line_id(draft, radio_line_id)
+            if found_radio is None or found_radio[1].picker_config.get("system_type") != "radio":
+                return {"ok": False, "error": f"Radio system not found: {radio_line_id}"}
+            radio_to_reconcile = found_radio[1]
+
+        generated_rows: list[DraftPart] = []
+        for row in rows:
+            if not row.get("name", "").strip():
+                return {"ok": False, "error": "console row name is required"}
+            payload = {
+                **row,
+                "line_id": "",
+                "parent_line_id": parent_line_id,
+            }
+            generated_rows.append(draft_part_from_payload(payload, paths))
+
+        printer: DraftPart | None = None
+        if printer_payload is not None:
+            if not printer_payload.get("name", "").strip():
+                return {"ok": False, "error": "printer name is required"}
+            printer = draft_part_from_payload(
+                {**printer_payload, "line_id": "", "parent_line_id": ""}, paths,
+            )
+            generated_rows.append(printer)
+            for cable in printer_cable_payloads:
+                if not cable.get("name", "").strip():
+                    return {"ok": False, "error": "printer cable name is required"}
+                generated_rows.append(draft_part_from_payload(
+                    {**cable, "line_id": "", "parent_line_id": printer.line_id}, paths,
+                ))
+        elif printer_cable_payloads:
+            return {"ok": False, "error": "printer cables require a printer"}
+
+        old_owner_ids = {
+            part.line_id
+            for part in draft.parts
+            if _console_setup_owned_part(part, parent_line_id)
+        }
+        removed_count = _remove_parts_and_descendants(draft, old_owner_ids)
+        if radio_to_reconcile is not None:
+            _reuse_console_mic_clip_for_radio(radio_to_reconcile)
+            removed_count += _remove_parts_and_descendants(
+                draft,
+                {
+                    part.line_id
+                    for part in draft.parts
+                    if (
+                        part.parent_line_id == radio_to_reconcile.line_id
+                        and part.accessory_category == "magnetic_mic"
+                    )
+                },
+            )
+        draft.parts.extend(generated_rows)
+        renumber_parts(draft)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "console_setup_replaced",
+            "line_id": parent_line_id,
+            "name": owner[1].name,
+            "removed_count": removed_count,
+            "added_count": len(generated_rows),
+            "radio_mic_clip_reconciled": radio_to_reconcile is not None,
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "parent_line_id": parent_line_id,
+            "count": len(generated_rows),
+            "printer_line_id": printer.line_id if printer is not None else "",
+        }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
     """Append a new part to the draft's parts list."""
     try:
@@ -161,7 +546,29 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
             return {"ok": False, "error": "name is required"}
         draft = load_draft(draft_id, paths.workspace_drafts_dir)
         part = draft_part_from_payload(body, paths)
+        matching_speaker = _matching_single_speaker(draft, part)
+        if matching_speaker is not None:
+            matching_speaker.quantity = 2
+            draft.user_modified = True
+            draft.audit_trail.append({
+                "action": "part_merged",
+                "line_id": matching_speaker.line_id,
+                "name": matching_speaker.name,
+                "at": draft.updated_at,
+            })
+            save_draft(draft, paths.workspace_drafts_dir)
+            return {
+                "ok": True,
+                "draft_id": draft_id,
+                "line_id": matching_speaker.line_id,
+                "name": matching_speaker.name,
+                "quantity": matching_speaker.quantity,
+                "merged": True,
+                "draft_summary": draft_summary(draft),
+            }
         draft.parts.append(part)
+        if not part.parent_line_id:   # accessory lines keep their parent-derived name
+            renumber_parts(draft)
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_added",
@@ -170,7 +577,13 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
             "at": draft.updated_at,
         })
         save_draft(draft, paths.workspace_drafts_dir)
-        return {"ok": True, "draft_id": draft_id, "line_id": part.line_id, "draft_summary": draft_summary(draft)}
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "line_id": part.line_id,
+            "name": part.name,
+            "draft_summary": draft_summary(draft),
+        }
     except FileNotFoundError:
         return {"ok": False, "error": f"Draft not found: {draft_id}"}
     except Exception as exc:
@@ -226,15 +639,38 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
             return {"ok": False, "error": f"Part not found: {line_id}"}
         idx, removed = result
         draft.parts.pop(idx)
+        # Cascade both visual accessory children and normal manifest lines
+        # whose lifecycle is tied to this part.  Walk the relationship tree so
+        # deleting a bumper also clears an old channel child and any lights
+        # previously nested beneath that channel.
+        removed_line_ids = {line_id}
+        cascaded_parts = []
+        while True:
+            dependents = [
+                part for part in draft.parts
+                if (
+                    getattr(part, "parent_line_id", "") in removed_line_ids
+                    or getattr(part, "linked_parent_line_id", "") in removed_line_ids
+                )
+            ]
+            if not dependents:
+                break
+            for dependent in dependents:
+                draft.parts.remove(dependent)
+                cascaded_parts.append(dependent)
+                removed_line_ids.add(dependent.line_id)
+        renumber_parts(draft)   # close gaps left in numbered sequences
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_removed",
             "line_id": line_id,
             "name": removed.name,
+            "cascaded_accessories": len(cascaded_parts),
             "at": draft.updated_at,
         })
         save_draft(draft, paths.workspace_drafts_dir)
-        return {"ok": True, "draft_id": draft_id, "line_id": line_id, "draft_summary": draft_summary(draft)}
+        return {"ok": True, "draft_id": draft_id, "line_id": line_id,
+                "cascaded_accessories": len(cascaded_parts), "draft_summary": draft_summary(draft)}
     except FileNotFoundError:
         return {"ok": False, "error": f"Draft not found: {draft_id}"}
     except Exception as exc:
@@ -274,20 +710,44 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                 _proj_rec = load_project(_proj_id_param, paths)
                 _agency = (_proj_rec.customer.agency or "").strip() or _agency
                 _year = (_proj_rec.customer.build_year or "").strip() or _year
+                if _year:
+                    project.info["BuildYear"] = _year
 
-                # Freshen UNIT ID, YEAR, and BuildType from the current project
-                # data so values set after draft creation are reflected in output.
+                # Freshen project-owned build metadata from the current project
+                # so values set after draft creation are reflected in output.
+                _matched_project_unit = False
                 for _bu in _proj_rec.build_units:
                     for _idx, _ind in enumerate(_bu.individuals):
                         if _ind.draft_id == draft_id:
+                            _matched_project_unit = True
                             _nv = dict(project.info.get("NewVehicle") or {})
                             _nv["UNIT ID"] = _ind.unit_number or f"Unit-{_idx + 1}"
-                            _ind_year = _ind.year or _proj_rec.customer.build_year or ""
+                            _year = (_proj_rec.customer.build_year or "").strip() or _year
+                            project.info["BuildYear"] = _year
+                            _ind_year = _year or _ind.year or ""
                             if _ind_year:
                                 _nv["YEAR"] = _ind_year
+                                vehicle_model = _ind.make or _bu.vehicle_model or ""
+                                if _ind.model:
+                                    vehicle_model = f"{vehicle_model} {_ind.model}".strip()
+                                if vehicle_model:
+                                    _nv["MODEL"] = f"{_ind_year} {vehicle_model}".strip()
                             project.info["NewVehicle"] = _nv
                             project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
                             break
+                    if _matched_project_unit:
+                        break
+                    if not _bu.individuals and _bu.draft_id == draft_id:
+                        _matched_project_unit = True
+                        _nv = dict(project.info.get("NewVehicle") or {})
+                        if _year:
+                            _nv["YEAR"] = _year
+                            if _bu.vehicle_model:
+                                _nv["MODEL"] = f"{_year} {_bu.vehicle_model}".strip()
+                        _nv["UNIT ID"] = _nv.get("UNIT ID") or "Group Build"
+                        project.info["NewVehicle"] = _nv
+                        project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
+                        break
             except Exception:
                 _log.exception("Could not resolve project metadata for draft %s", draft_id)
 

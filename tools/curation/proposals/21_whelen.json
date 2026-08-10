@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "phase": "3 — Whelen (35 unhomed; resolves most of PARTS_DB_AND_PICKER §7 'Whelen catalog decisions still open')",
+    "apply": "python tools/curate.py tools/curation/proposals/21_whelen.json",
+    "note": "Lightheads/lens kits/endcaps are proposed as accessory-role products (child-side, no part-type home) — that IS their home per the accessory model. Motorcycle-box family intentionally has NO ops — open ruling below. 2026-07-07 evidence session: PL26 decoder resolved SYS109, PFP2AP1, SP123BMC, M62T, QuickFit suffixes/parents, 2250 endcaps, LCPHOTO, H35SN12, LINZ6 family, BW54UFX (delete reversed) — see tools/curation/EVIDENCE.md."
+  },
+  "merge": [
+    {"target_id": "whelen_ion", "sources": ["whelen_ion", "whelen_fork_mt_ion_v_hd_electra_glide"], "_confidence": "medium", "_why": "IONHD3FM fork-mount ION (Harley) folds into the ION product as a mount-variant SKU — phase4b already folded its sibling M08DT this way"},
+    {"target_id": "whelen_linz_v_series", "sources": ["whelen_linz_v_series", "whelen_linz6r"], "_confidence": "high", "_why": "PL26 section 'LINZ6 & LINV2 V-Series Linear Super-LED Lightheads' — LINZ6 IS the V-Series linear lighthead family, so the red horiz-sync head is a SKU under the LINZ product (EVIDENCE.md)"},
+    {"target_id": "whelen_headlight_flasher_ssf", "model": "Solid State Headlight Flasher", "manufacturer_id": "whelen", "fits_part_types": ["headlight_flasher"],
+     "sources": ["whelen_ssfpos", "whelen_ssfposi6"],
+     "_confidence": "high", "_why": "SSFPOS / SSFPOSI6 are variants of the same solid-state headlight flasher (§7 named these as new-product candidates)"},
+    {"target_id": "whelen_xlp", "sources": ["whelen_xlp", "whelen_bw54ufx"], "_confidence": "high", "_why": "BW54UFX is a real PL26 line item, not a BOM artifact: Inner Edge XLP DUO+ Extra Low-Profile Upper Front two-piece unit, twelve 6-LED DUO lamps, Chevy Tahoe PPV/SSV 2021-2026 / Suburban 2024-2026, $2,254 (exact QB price match) — a vehicle-fitment SKU of the existing Inner Edge XLP product. Former delete proposal reversed (EVIDENCE.md)"},
+    {"target_id": "whelen_m6", "sources": ["whelen_m6", "whelen_m62t"], "_confidence": "high", "_why": "PL26: M62T sits in the M6-series surface-mount family (siblings M62BTT brake/tail/turn, M62BU back-up) — a standalone M6-size amber turn light with arrow patterns, NOT a Traffic Advisor element. One product per model line → SKU of whelen_m6 (EVIDENCE.md)"},
+    {"target_id": "whelen_2250_buildabar", "model": "WeCanX 2250 Series Build-A-Bar", "manufacturer_id": "whelen", "fits_part_types": ["roof_light_bar"], "tag_ids": ["light"],
+     "sources": [],
+     "_confidence": "medium",
+     "_why": "owner ruling C5.1: owner-directed exception to the no-speculative-products rule — CREATE the WeCanX 2250 Build-A-Bar parent product so the 22LECA/22RECA endcaps have a determinable parent (owner: endcaps belong to their determinable parent bar; F7 determined it's the 2250). PL26: WeCanX 2250 Series is a surface-mount Build-A-Bar, 30\"-50\", angled endcaps for aerial-recognition light. No QB line item backs this product yet — it carries no SKUs/part_numbers until DTM actually stocks/bills one; revisit at that point"}
+  ],
+  "set_home": [
+    {"product_id": "whelen_ulf44", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "universal LED flasher 4-outlet (§7 flasher family)"},
+    {"product_id": "whelen_plf46", "fits_part_types": ["headlight_flasher"], "_confidence": "high", "_why": "programmable light flasher"},
+    {"product_id": "whelen_70rc6fcr", "fits_part_types": ["headlight_flasher"], "_confidence": "medium", "_why": "700-series linear Super-LED flasher module R/C — flasher electronics, not a light"},
+    {"product_id": "whelen_hwlfe29", "fits_part_types": ["siren_speaker"], "_confidence": "high", "_why": "siren amplifier + speaker + bracket for 2020-25 FPIU (resolves the §7 HWLFE29 flagged singleton)"},
+    {"product_id": "whelen_pcc6w", "fits_part_types": ["light_controller"], "_confidence": "medium", "_why": "PCC6W switch control center — light/equipment switching"},
+    {"product_id": "whelen_outer_edge_lightheads", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "DUO lighthead for RPWD/Outer Edge — child head; R/W here means the head's fixed color pair"},
+    {"product_id": "whelen_mirror_beam_lightheads", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Mirror-Beam MT ION DUO R/W head"},
+    {"product_id": "whelen_gbawd", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Legacy warn/alley module R/W (§7 'alley modules — wire as Legacy accessories')"},
+    {"product_id": "whelen_gbawe", "fits_part_types": ["lighthead"], "add_tags": ["light"], "_confidence": "high", "_why": "Legacy warn/alley module B/W"},
+    {"product_id": "whelen_fsbps", "fits_part_types": ["bracket"], "_confidence": "high", "_why": "Field Series power supply — support electronics for the Field Series scene lights (accessory role below is the real home)"},
+    {"product_id": "whelen_sp123bmc", "fits_part_types": ["siren_speaker"], "_confidence": "high", "_why": "PL26: SP123BM Series = 100W bumper-mount siren SPEAKER (SA314/SA315 Projector section), chrome, $497 exact match — it doesn't mount something else, it IS the speaker. Re-homed bracket → siren_speaker (EVIDENCE.md)"},
+    {"product_id": "whelen_sys109", "fits_part_types": ["warning_light"], "add_tags": ["light"], "_confidence": "medium", "_why": "PL26: Super-LED System #109 — two stainless-steel Micro 400 hideaway lightheads with 60' TPR cable, LED flasher/junction box and install kit, $3,460 exact match. A hideaway warning system sold as one QB item → one product, warning_light home (hideaway convention); color lives per-SKU (EVIDENCE.md)"},
+    {"product_id": "whelen_m1batt", "fits_part_types": ["motorcycle_box"], "_confidence": "medium", "_why": "owner ruling C2.5: DTM does motorcycle builds — motorcycle no-spill battery kept and homed under the new `motorcycle_box` part_type"},
+    {"product_id": "whelen_m1ground", "fits_part_types": ["motorcycle_box"], "_confidence": "medium", "_why": "owner ruling C2.5: motorcycle ground kit — see whelen_m1batt"},
+    {"product_id": "whelen_m4b6lr", "fits_part_types": ["motorcycle_box"], "_confidence": "medium", "_why": "owner ruling C2.5: motorcycle box (long/right variant) — see whelen_m1batt"},
+    {"product_id": "whelen_m4bsep", "fits_part_types": ["motorcycle_box"], "_confidence": "medium", "_why": "owner ruling C2.5: motorcycle box separator — see whelen_m1batt"},
+    {"product_id": "whelen_mbadpt14", "fits_part_types": ["motorcycle_box"], "_confidence": "medium", "_why": "owner ruling C2.5: motorcycle box mount adapter — see whelen_m1batt"}
+  ],
+  "set_accessory": [
+    {"product_id": "whelen_22leca", "accessory_category": "other", "accessory_of_products": ["whelen_2250_buildabar"], "_confidence": "high", "_why": "owner ruling C5.1: PL26 'One Angled Left End Cap for use with One Aerial Recognition Light, for Bars 30\" to 50\"' — an option for the WeCanX 2250 Series Build-A-Bar, $144 exact match. Parented to the newly created whelen_2250_buildabar (EVIDENCE.md F7)"},
+    {"product_id": "whelen_22reca", "accessory_category": "other", "accessory_of_products": ["whelen_2250_buildabar"], "_confidence": "high", "_why": "owner ruling C5.1: right-side twin of whelen_22leca — same 2250 Series option, same parent (EVIDENCE.md F7)"},
+    {"product_id": "whelen_outer_edge_lightheads", "accessory_category": "lighthead", "accessory_of_products": ["whelen_outer_edge"], "_confidence": "high"},
+    {"product_id": "whelen_mirror_beam_lightheads", "accessory_category": "lighthead", "accessory_of_products": ["whelen_mirror_beams"], "_confidence": "high"},
+    {"product_id": "whelen_gbawd", "accessory_category": "lighthead", "accessory_of_products": ["whelen_legacy"], "_confidence": "high"},
+    {"product_id": "whelen_gbawe", "accessory_category": "lighthead", "accessory_of_products": ["whelen_legacy"], "_confidence": "high"},
+    {"product_id": "whelen_lcphoto", "accessory_category": "other", "accessory_of_products": ["whelen_core"], "_confidence": "high", "_why": "PL26: 'Logic Level Photocell for use with SLFLASH, CenCom Core, CenCom Sapphire, CenCom Carbide and CanTrol' — a control-system photocell, not a lightbar option. Re-parented whelen_legacy → whelen_core (CenCom Core, the only compatible product in the catalog) (EVIDENCE.md)"},
+    {"product_id": "whelen_fsbps", "accessory_category": "flasher_power", "accessory_of_products": ["whelen_field_series"], "_confidence": "high", "_why": "Field Series power supply"},
+    {"product_id": "whelen_qfford1", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_r416_beacon", "whelen_responder_lp", "whelen_century", "whelen_mini_legacy"], "_confidence": "high", "_why": "PL26 QuickFit Bolt-On Mounting Platform Series: 'For use with Whelen Beacons, Responder LP/HD's, Mini Century, Mini Liberty II and Mini Legacy (Mini Liberty II and Mini Legacy require MK9S mounting)' — mini bars/beacons, NOT the full-size Legacy/Liberty/Freedom (former parents replaced). Suffix decode: blank = black powder-coated ALUMINUM housing (not for magnetic-mount lights), S = black STEEL (works with magnetic-mount lights), W = white aluminum, SW = white steel. QFFORD1* fits Ford F-150 PPV/Lightning/F-250–F-600 2015-2025; all $488 (EVIDENCE.md)"},
+    {"product_id": "whelen_qfford1s", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_r416_beacon", "whelen_responder_lp", "whelen_century", "whelen_mini_legacy"], "_confidence": "high", "_why": "black steel housing variant (magnet-OK) — see whelen_qfford1"},
+    {"product_id": "whelen_qfford1w", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_r416_beacon", "whelen_responder_lp", "whelen_century", "whelen_mini_legacy"], "_confidence": "high", "_why": "white aluminum housing variant — see whelen_qfford1"},
+    {"product_id": "whelen_qfram2", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_r416_beacon", "whelen_responder_lp", "whelen_century", "whelen_mini_legacy"], "_confidence": "high", "_why": "Ram 1500 Classic 2019-2025 / RAM 2500-3500 2022-2025, black aluminum — see whelen_qfford1"},
+    {"product_id": "whelen_qfram2s", "accessory_category": "bracket_mount", "accessory_of_products": ["whelen_r416_beacon", "whelen_responder_lp", "whelen_century", "whelen_mini_legacy"], "_confidence": "high", "_why": "Ram, black steel housing variant (magnet-OK) — see whelen_qfford1"}
+  ],
+  "delete_products": ["whelen_cc5k2", "whelen_h35sn12", "whelen_pfp2ap1", "whelen_68_1183491a16"],
+  "_delete_notes": {
+    "whelen_cc5k2": "HIGH — owner ruling C5.2: delete CenCom Carbide parts. Install kit for the CCSRN-5 (CenCom Carbide siren & light controller) — not used on new builds",
+    "whelen_h35sn12": "HIGH — owner ruling C4: delete. 35W snap-in halogen bulb — legacy-halogen service stock, none of the parent products are catalog products",
+    "whelen_pfp2ap1": "HIGH — owner ruling C4: delete. Dual Panel Pioneer Plus floodlight, 115 VAC pole/pedestal flood — not a vehicle-build part",
+    "whelen_68_1183491a16": "HIGH — owner ruling C4: delete. 9M/Edge-9000-series legacy replacement lens — legacy Micro Edge service part"
+  },
+  "_open_questions": [
+    "Note: QuickFit merge opportunity — the 5 QuickFit SKUs could fold into one 'QuickFit Roof Platform' product with per-vehicle/finish SKUs (one-product-per-model convention); left as-is because each is a separate QB item today. Owner call at apply time.",
+    "See tools/curation/OPEN_QUESTIONS.md for the full FACT/PREFERENCE triage."
+  ]
+}

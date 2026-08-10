@@ -1,0 +1,290 @@
+{
+  "manufacturer_id": "setina",
+  "set_fits": {
+    "setina_pb10": [
+      "wing_wraps"
+    ]
+  },
+  "links": [
+    {
+      "sku": "BK0534BLE24",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "BK0534DRT191500CL",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "RAM-1500"
+      ]
+    },
+    {
+      "sku": "BK0534DUR21",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BK0534EPD18",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "BK0534FDT21F150",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "BK0534ITU20",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK0534TAH25",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BK0535DUR21",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BK0535ITU20",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK0608ITU20",
+      "product": "setina_pb400",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK1001BLE24",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "BK1001DUR21",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BK1001ITU20",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK2017ITU20",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK2019BLE24",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "BK2019CHT221500",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "BK2019DRT191500CL",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "RAM-1500"
+      ]
+    },
+    {
+      "sku": "BK2019EPD18",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "BK2019FDT21F150",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "BK2019ITU20",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BK2019TAH25",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BK2168TAH25",
+      "product": "setina_pb450l",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "FK0400EPD18",
+      "product": "setina_pb5",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "FK0402DUR21",
+      "product": "setina_pb9",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "FK0402TAH21",
+      "product": "setina_pb9",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "FK2271DUR21",
+      "product": "setina_pb9",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "FK2271ITU25",
+      "product": "setina_pb9",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "FK2271TAH21",
+      "product": "setina_pb9",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "HK0807CGR15",
+      "product": "setina_pb6",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "HK0809CHT221500",
+      "product": "setina_pb8",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "HK0809DRT191500",
+      "product": "setina_pb8",
+      "vehicle_tags": [
+        "RAM-1500"
+      ]
+    },
+    {
+      "sku": "HK0809TAH21",
+      "product": "setina_pb8",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "HK2272DUR21",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "HK2272EPD22",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "HK2272FDT21F150",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "HK2272ITU25",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "HK2272TAH21",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "HK2273DUR21",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "HK2273ITU25",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "HK2273TAH21",
+      "product": "setina_pb10",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    }
+  ]
+}

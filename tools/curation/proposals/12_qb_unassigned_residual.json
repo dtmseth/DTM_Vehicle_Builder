@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "phase": "3 — qb_unassigned: homed but staying in the holding bucket (brand unknown or generic)",
+    "apply": "python tools/curate.py tools/curation/proposals/12_qb_unassigned_residual.json  (AFTER 01_new_part_types)"
+  },
+  "merge": [
+    {"target_id": "soundoff_eluc_undercover_insert", "model": "Universal UnderCover LED Insert", "manufacturer_id": "soundoff", "fits_part_types": ["warning_light"], "tag_ids": ["light"],
+     "sources": ["qb_unassigned_eluc3h010e"],
+     "_confidence": "high",
+     "_why": "ELUC3H010E is SoundOff Signal's Universal UnderCover LED Insert (soundoffsignal.com product page; vendor listings label it 'SOI UNIV UNDERCOVER LED INSERT, 5 WIRE BLUE/WHITE') — a standalone screw-in hideaway kit (insert + extreme-angle lens + inline flasher, dual blue/white, 10' 5-wire) that retrofits 1\" strobe-tube cutouts in headlight/taillight housings. Not a Whelen part and not a bar child → re-brand soundoff + warning_light home (hideaway convention). Replaces the former low-confidence lighthead guess (EVIDENCE.md F13)"},
+    {"target_id": "globesat_bu_353n", "model": "BU-353N USB GPS Receiver", "manufacturer_id": "globesat", "fits_part_types": ["cloud_antenna"],
+     "sources": ["qb_unassigned_bu_353n"],
+     "_confidence": "high",
+     "_why": "GlobalSat BU-353N = USB GNSS receiver (75-channel GPS/GLONASS/Galileo/BeiDou, built-in patch antenna, 5' USB cable) that presents a virtual COM port for NMEA mapping software on a LAPTOP/PC — laptop AVL/mapping gear, not a radar speed source (Stalker radars use their own Speed Modules). → cloud_antenna home + re-brand to the existing globesat manufacturer (EVIDENCE.md F32). Sources: globalsat.com.tw BU-353N pages, gpscity.com"},
+    {"target_id": "whelen_pel2", "model": "Perimeter Enhancement Light", "manufacturer_id": "whelen", "fits_part_types": ["front_scene", "rear_scene", "side_scene"], "tag_ids": ["light"],
+     "sources": ["qb_unassigned_pel2b"],
+     "_confidence": "medium",
+     "_why": "PEL2B is Whelen's Perimeter Enhancement Light, black flange: WHITE steady LED projected downward at 40° for ground illumination around the vehicle, NFPA 1901 rear-ground-lighting certified, 10-30 VDC (whelen.com/scene-lighting/perimeter-enhancement-light; sirennet/zips listings). White-only ground lighting → SCENE per the color rule, not warning_light (former guess corrected); multi-homed to all three scene types like whelen_ez_scene since it mounts any side (zone from placement; scene-collapse ruling B1.1 pending — hence medium) (EVIDENCE.md F14)"},
+    {"target_id": "qb_unassigned_ethernet_cable", "model": "Ethernet Cable", "fits_part_types": ["cable"],
+     "sources": ["qb_unassigned_ethernet_cable", "qb_unassigned_ethernet_cable_2"],
+     "_confidence": "high",
+     "_why": "owner ruling C6: APPROVED — merge the 10ft/25ft ethernet cables as SKUs of one 'Ethernet Cable' product, per the merge-variants convention (length is a SKU attribute, not a separate product)"}
+  ],
+  "set_home": [
+    {"product_id": "qb_unassigned_11019", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "dual-port USB power charger — the 12v/USB power slot"},
+    {"product_id": "qb_unassigned_clpsm", "fits_part_types": ["aux_12v_ports"], "_confidence": "medium", "_why": "cigarette-lighter adapter w/ switch — 12v power accessory"},
+    {"product_id": "qb_unassigned_25_ft_cat_6_cable", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic Cat6 — the generic cable home (NightRide/monitor runs use ethernet)"},
+    {"product_id": "qb_unassigned_usb_extention", "fits_part_types": ["cable"], "_confidence": "medium", "_why": "generic USB extension"},
+    {"product_id": "qb_unassigned_36_010_key", "fits_part_types": ["rear_storage_box"], "_confidence": "high", "_why": "brand identified: **Tufloc** TufBox 36-010 welded-steel SUV security cargo drawer — 12\"H × 38\"W × 32\"D (exact QB dimension match), key/combination or T-handle lock, 12-ga steel, 200-lb slides (tufloc.com/product/security-drawers-for-suvs/; Dana Safety listings). rear_storage_box home confirmed. Owner ruling C3 approved creating Tufloc in the manufacturers grid; still stays qb_unassigned until created (EVIDENCE.md F26)", "_question": "Tufloc manufacturer still doesn't exist — create in the grid, then re-brand"},
+    {"product_id": "qb_unassigned_46096", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "J-case fuse module — wiring/power distribution goes with harness"},
+    {"product_id": "qb_unassigned_48913", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "80A circuit breaker — same"},
+    {"product_id": "qb_unassigned_install_supplies", "fits_part_types": ["harness"], "_confidence": "medium", "_why": "billed installation-supplies line explicitly described as custom wiring harness + breakers/relays"},
+    {"product_id": "qb_unassigned_cage_light", "fits_part_types": ["rear_seat_lights"], "add_tags": ["light"], "_confidence": "medium", "_why": "LED cage light = prisoner-area dome light; white only, so not warning"},
+    {"product_id": "qb_unassigned_md_6200", "fits_part_types": ["camera_dvr"], "_confidence": "medium", "_why": "Momento M-6 dash camera w/ front+rear cams and GPS. Owner ruling C3 approved creating Momento in the manufacturers grid", "_question": "Momento manufacturer still doesn't exist — create + re-brand"},
+    {"product_id": "qb_unassigned_getac_s410", "fits_part_types": ["computer"], "_confidence": "high", "_why": "owner ruling C2.4: KEEP the capability — the laptop itself (not the dock). Getac manufacturer creation approved by owner ruling C3", "_question": "Getac manufacturer still doesn't exist in the grid — create + re-brand"},
+    {"product_id": "qb_unassigned_fire_extinguisher_brackets", "fits_part_types": ["tool_mount"], "_confidence": "medium", "_why": "extinguisher mounting = tool-mount family (pac_tool_k5046 precedent)"},
+    {"product_id": "qb_unassigned_226130", "fits_part_types": ["tonneau_cover"], "_confidence": "high", "_why": "owner ruling C2.3: tonneau covers KEEP. BAK G2 hard folding tonneau for 2022 Silverado. BAK Industries manufacturer creation approved by owner ruling C3", "_question": "BAK Industries manufacturer still doesn't exist — create + re-brand"},
+    {"product_id": "qb_unassigned_rtm_101_lp_ford_r", "fits_part_types": ["bracket"], "_confidence": "high", "_why": "ACARI RTM-101-LP series = drill-free 22\" low-profile roof mounting platform (clamps through the third-brake-light opening, ~1.15\" profile, 210 sq-in surface, 30-lb capacity) for warning lights, antennas AND work lights — generic-fit, carries no single bar family, so home-only bracket with no accessory parent (acariproducts.com/products/; magnumelectronics RTM-101-LP-FORD listings; -R = Ranger fitment per Acari's 2019-Ranger install guide) (EVIDENCE.md F27). Owner ruling C3 approved creating Acari in the manufacturers grid", "_question": "Acari manufacturer still doesn't exist — create in grid, then re-brand"}
+  ],
+  "delete_products": [
+    "qb_unassigned_light_kit_led",
+    "qb_unassigned_w709980_s439",
+    "qb_unassigned_rbe13421",
+    "qb_unassigned_2190_3340_0",
+    "qb_unassigned_cctv8",
+    "qb_unassigned_rv_regular",
+    "qb_unassigned_rv_oversize",
+    "qb_unassigned_rv_3xl_red_fire"
+  ],
+  "_delete_notes": {
+    "qb_unassigned_light_kit_led": "HIGH — owner ruling C4: delete all consumables/artifacts. 'LIGHT KIT-LED (RED & WHITE)' $0, no brand or context — one of the two $0 configurator artifacts (F34: unresearchable)",
+    "qb_unassigned_w709980_s439": "HIGH — owner ruling C4: delete. Ford OEM front-seat bolts, $5 — install-hardware noise, not a catalog part",
+    "qb_unassigned_rbe13421": "HIGH — owner ruling C7.3: delete. 'AIR PRESURE SWITCH' $36 — not used to build cars (owner knowledge; F28 research lead was inconclusive)",
+    "qb_unassigned_2190_3340_0": "HIGH — owner ruling C4: delete. Air One / National Foam 5-gal foam concentrate — consumable, not an upfit part",
+    "qb_unassigned_cctv8": "HIGH — owner ruling C5.5: delete. Generic 8\" CCTV monitor not needed (Trailblazer thermal parents stay, untouched)",
+    "qb_unassigned_rv_regular": "HIGH — owner ruling C4: delete Fire Ninja UltraBright Red FIRE safety vests (apparel, all 3 size SKUs) — F31 identity resolved, but owner ruled OUT of the catalog",
+    "qb_unassigned_rv_oversize": "HIGH — owner ruling C4: delete (see qb_unassigned_rv_regular)",
+    "qb_unassigned_rv_3xl_red_fire": "HIGH — owner ruling C4: delete (see qb_unassigned_rv_regular)"
+  }
+}

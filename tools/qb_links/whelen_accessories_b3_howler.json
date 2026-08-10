@@ -1,0 +1,16 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 3: Howler mounting brackets. Howler has no accessory_of part_type, so wire product-level: one 'Howler Mounting Bracket' product (fits the generic `bracket` part_type added in batch 2) holds the two vehicle-specific brackets, wired bracket_mount onto all three Howler units (LC/WC/WCX). required:false. HWLFE29 deliberately excluded — it's a siren amplifier+speaker assembly that merely includes a bracket, not an accessory bracket. Each link carries friendly_name + vehicle_tags per the standing convention.",
+  "new_products": [
+    {"product_id": "whelen_howler_mount_bracket", "model": "Howler Mounting Bracket", "fits_part_types": ["bracket"]}
+  ],
+  "links": [
+    {"sku": "HWLRB32", "product": "whelen_howler_mount_bracket", "vehicle_tags": ["TAHOE", "SUBURBAN"], "friendly_name": "Tahoe PPV/SSV '21-24 / Suburban '24"},
+    {"sku": "HWLRB35", "product": "whelen_howler_mount_bracket", "vehicle_tags": ["F-150", "F-150-LIGHTNING", "SUPER-DUTY", "EXPEDITION"], "friendly_name": "F-150 '15-25 / Lightning '22-24 / Super-Duty '17-25 / Expedition '18-24"}
+  ],
+  "set_accessories": {
+    "whelen_lc_howler":  [{"category": "bracket_mount", "product_id": "whelen_howler_mount_bracket", "required": false}],
+    "whelen_wc_howler":  [{"category": "bracket_mount", "product_id": "whelen_howler_mount_bracket", "required": false}],
+    "whelen_wcx_howler": [{"category": "bracket_mount", "product_id": "whelen_howler_mount_bracket", "required": false}]
+  }
+}

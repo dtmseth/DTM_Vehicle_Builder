@@ -1,0 +1,7 @@
+{
+  "body": {
+    "error": "missing part_type query param"
+  },
+  "handled": true,
+  "status": 400
+}

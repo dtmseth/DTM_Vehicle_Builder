@@ -11,7 +11,7 @@ ProjectRecord                        workspace/projects/{project_id}/project.jso
   └── BuildUnit[]                    vehicle model + build type + preset + quantity
         └── IndividualUnit[]         one unit per vehicle (VIN, year, color, unit #)
               └── draft_id ──────►  BuildDraft    workspace/drafts/{draft_id}.json
-                                    (parts list + vehicle info + notes + overrides)
+                                    (parts list + vehicle info + unit notes + shared project note + overrides)
               └── output_path ───►  generated .pptx / exported .pdf
 ```
 
@@ -58,7 +58,8 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    This creates a `BuildDraft` seeded from the unit's preset (if any) and stores the `draft_id` on the `IndividualUnit`.
 
 4. **Edit draft** — the embedded build editor (`#proj-build-editor`) loads the draft into the preview canvas
-   and manifest editor. Changes are persisted on "Save & Return".
+   and manifest editor. Part and placement changes persist immediately; final-page notes save as they are typed.
+   Project Details owns one shared note that is carried into every build draft without replacing unit-specific notes.
 
 5. **Preview / Edit in PowerPoint** — the per-build action is "📊 Preview / Edit in PowerPoint", not a separate Generate step. Behind the scenes:
    - `POST /api/build/render-status` decides whether the existing PPTX is fresh, stale (source changed), or manually edited in PowerPoint since the last render.

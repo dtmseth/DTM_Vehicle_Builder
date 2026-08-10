@@ -25,6 +25,65 @@ Around those two ideas, five thematic pillars:
 
 ---
 
+## Current Direction & Critical Path (set 2026-06-29)
+
+Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
+[PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
+
+**QuickBooks is the *foundation* of the parts system, not a side integration.** `parts_db.json` now
+references parts at **SKU granularity** — real vendor part numbers + QB pricing — a fundamentally
+different basis than the old "product name / part type" model. The Part Picker and every downstream
+consumer depend on real QB data being in the DB, so the QB Item import sits *under* Phase 3 (it feeds
+the canonical DB), not beside it. Finalizing the picker against pre-QB data means building against
+data that's being deprecated. *Food on the shelves before the doors open.*
+
+**The Part Picker is actively usable and under owner rebuild testing.** The original Chunks 1-8 are
+built, including global search. Current work is Chunk 9 polish, guided-system coverage
+(push-bumper/radio), data quality, and retiring fallback surfaces once the real project rebuilds
+prove the picker path.
+
+**The real bottleneck was data-review throughput** — now addressed: the **Parts Manager SKU Review grid
+is shipped** (brand-sorted, every-field-inline-editable, QB-source read-only view, light/unbilled tags,
+accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md)
+§2.5). The owner can now curate SKUs self-service.
+
+**Deferred catalog safety improvement:** before future recurring QBO catalog changes can create or
+materially alter Builder parts, add a reviewed change queue with durable history and Whelen reference
+catalog auto-enrichment. The approved behavior and data requirements live in
+[QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
+
+### Near-term critical path (in order, updated 2026-06-30)
+1. ✅ **Parts Manager SKU Review grid** — *shipped* ("Phase 8 editing-UI brought forward"). Owner curates
+   SKUs/tags/accessories/readiness without prompting Claude per item.
+2. ✅ **Picker + placement cluster** — *shipped 2026-07-01* (this list lagged; reconciled 2026-07-07).
+   Location model rebuilt at the part_type level (`location_mode` placement/text + `location_options`),
+   scene no-color filter fixed server-side, SKU descriptions rendering. Detail:
+   [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §"Picker + placement cluster — SHIPPED".
+   Only #7(a) (auto-skip empty location step) remains, low priority.
+3. ⭐ **Kit SKUs** *(NEXT — scope before building)* — mark a SKU as a kit that includes other SKUs (data + UI +
+   estimate behavior). Gated on the parts-DB repository extraction (Stage A of
+   [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 Step 4) so composability lands on the
+   repository seam, not on route-layer logic; owner decisions logged in
+   `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` §5.
+4. **QB Pass-2 import** *(parallel/feeding)* — reviewed through the Parts Manager grid. Fills the shelves.
+5. **Finish the Part Picker** *(then)* — Chunk 9 polish, guided-system hardening, and continued
+   non-light data-quality coverage against final SKU data.
+6. **Phase 4 consumer migration** *(then)* — strip domain fields from `workbook_rules.json`.
+
+**QB go-live** (deploy relay + submit the Intuit questionnaire — see [QUICKBOOKS.md](QUICKBOOKS.md))
+is a discrete, externally-gated track. Run it when the owner chooses; it is *not* advanced by the
+import grind and must not block it.
+
+**Audit & refactor track (adopted 2026-07-06)**: a codebase-wide audit/refactor runs *interleaved*
+with the critical path above — see [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 for
+the ordered steps. In short: regression pins + import guardrails land *before* the picker cluster;
+a parts-DB repository extraction gates kit SKUs (the one place refactor precedes feature); legacy
+shim cutover/retirement and the breadth audit are interstitial work between feature turns. It never
+reorders this critical path — if the two documents disagree, this file wins and the audit roadmap
+gets revised.
+
+---
+
 ## 2. Guiding Principles
 
 These are constraints on **how** we move toward the vision. Override them only with stated reason.
@@ -35,7 +94,7 @@ These are constraints on **how** we move toward the vision. Override them only w
 - **Schemas evolve with explicit migrations.** Every schema change carries a version bump and a migration step that runs on read. We do not silently mutate data when a user opens a file.
 - **Refactor in small, testable passes.** Each change makes two-similar-things-that-aren't-quite-the-same become one shared concept, and only when the conceptual identity is real. "Similar but different" stays separate.
 - **Behavior changes are flagged, never sneaked.** If a UI changes what a user sees or how a build is named, call it out in the commit and the release notes.
-- **The workbook input path keeps working through every phase.** We are deprecating the workbook as a *data source*, not as an *input format*. Existing customers may still ship us workbooks for years.
+- **The workbook is an edge adapter, not the spine** *(revised 2026-07-06, superseding "the workbook input path keeps working through every phase")*. Canonical data is domain/parts_db-shaped end to end; no core consumer (planner, preview, build sheet) may assume workbook-era data shape — the owner has hit real bugs where better parts_db data broke consumers still expecting workbook shape, and each such assumption is a defect, not a compatibility feature. The workbook *import* path is demoted to a best-effort backup adapter confined to `inputs/`: it converts to domain shape at the boundary, is expected to see near-zero use, is kept only while it costs little, and full retirement is on the table. Workbook *export* (workbook-as-renderer) is unaffected. Domain logic authored in the workbook era — rules, naming, placement handling — is ported into domain/planning code via parity proofs: the logic survives, the format dependency doesn't.
 
 ---
 
@@ -63,20 +122,15 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
-**Status snapshot** (2026-06-12):
+**Status snapshot** (2026-06-17):
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
-- 🟡 **Phase 3** — schema + service + migration + Part Manager UI all landed; dual-read consumer swap (PR-3) is the only remaining gate to "Phase 3 done."
-  - PR-1 (parts_db.json service + dual-read scaffolding): commit `cbc18d4`.
-  - PR-2a (schema revision — manufacturer-centric hierarchy): commit `5f4189b`.
-  - PR-2b (1–3/4): migration script + tests; hand-tables iteration; schema v2 redesign — commits `befb52d`, `368c040`, `6b68847`.
-  - PR-2b (4/4): Part Manager UI + migration seed — commits `7157c13`, `01ada6d`.
-    - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 48 manufacturers · 186 products · 106 part_types · 59 placements.
-    - legacy_workbook_index.json populated: 102 part_type→products · 186 model→product.
-    - Migration ran with `--push-to-cloud`, so SharePoint direct-mirror fired and the sync won't clobber.
-  - **Next**: PR-3 (manifest_editor dual-read swap), then Phase 4 consumer migrations.
-- 🟢 **Phase 8 MVP brought forward** (out of order) so the owner can review the migration output through a UI instead of by hand. The Part Manager UI is the read-only tree + edit-modal MVP described in §Phase 8; inventory/pricing/separate-app questions still deferred to the full Phase 8.
+- 🟡 **Phase 3** — schema + service + migration landed; **Intelligent Part Picker actively usable** (original Chunks 1-8 built; Chunk 9 polish, guided systems, and data-quality hardening remain). The QB Item import is the *foundation* feeding this (see Current Direction above). Full status: `docs/PARTS_DB_AND_PICKER.md`.
+  - PR-1/2a/2b (service + schema + migration + Part Manager seed): commits `cbc18d4`, `5f4189b`, `befb52d`, `368c040`, `6b68847`, `7157c13`, `01ada6d`.
+  - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements; 417+ QB-linked SKUs (Setina, Whelen, Arctic Start; Gamber pilot pending).
+  - **Next** (critical path): **Parts Manager revamp** for self-service data review → continue QB Pass-2 import → finish picker polish/guided-system hardening → Phase 4 consumer migration.
+- 🟢 **Phase 8 MVP brought forward** (out of order): the read-only tree + edit-modal Part Manager (Settings → Advanced → Part Manager → Database v2). **Being revamped now** into a two-view editor (SKU grid + hierarchy) — see §Phase 8. Inventory/pricing/separate-app questions still deferred to the full Phase 8.
 
 ### Phase 0 — Foundation Refactor
 
@@ -367,24 +421,22 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ---
 
-### Phase 3 — `parts_db.json` (Schema, Migration, Dual-Read)
+### Phase 3 — `parts_db.json` (Schema, Migration, Intelligent Part Picker)
 
-**Current status (2026-06-12)** — read this first if you're picking up Phase 3 work:
+**Current status (2026-06-17)** — read this first if you're picking up Phase 3 work:
 
-- ✅ `domain/parts_db_models.py` — 13 dataclasses (Type, Section, Zone, SubZone, BuildAttribute, Tag, Manufacturer, Product, PartNumber, PartType, TreePosition, Placement, PlacementZone, PreferenceFilter, Color, Service).
-- ✅ `app/services/parts_db_service.py` — 23 typed queries + `validate_placement(part_type_id, product_id, location_id)`. Three-tier fallback (parts_db → legacy_workbook_index → workbook_rules).
-- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`. Full doc GET + POST.
-- ✅ `config/schemas.py::_validate_parts_db` — top-level shape + per-product/per-part-type required-key validation. Deep validation deferred to Phase 4.
-- ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot script, owner-editable hand-tables, refuses `--write` while orphans remain. `--push-to-cloud` flag re-saves through `save_config_file` so SharePoint direct-mirror fires (added 2026-06-12).
-- ✅ `parts_db.json` seeded (5/106/186/48), `legacy_workbook_index.json` seeded (102/186). Both cloud-pushed.
-- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) at Settings → Advanced → Part Manager → Database (v2) — read-only tree + edit modals for part_type/product/manufacturer/tag.
-- ⏳ **PR-3 (the only remaining Phase 3 work)** — `manifest_editor.js` dual-read swap. Until this lands, no production reader of build-sheet output touches `parts_db.json` — it's edit-only via the Part Manager.
+- ✅ `domain/parts_db_models.py` — 13 dataclasses.
+- ✅ `app/services/parts_db_service.py` — 23 typed queries + 3-tier fallback.
+- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`.
+- ✅ `config/schemas.py::_validate_parts_db` — top-level validation.
+- ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
+- ✅ `parts_db.json` seeded (5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements). 417 QB-linked SKUs.
+- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) — admin read-only tree browser.
+- 🟢 **Intelligent Part Picker — actively usable.** Original Chunks 1-8 are built, including global search; Chunk 9 polish, guided-system hardening, and non-light data-quality work remain. Full design + current status: `docs/PARTS_DB_AND_PICKER.md`. (The old "Chunk 5 JS bug" was a server-side `AttributeError`, fixed.)
 
-**What "PR-3 dual-read" means concretely**: in `manifest_editor.js::_mePopulateDataLists` (and the equivalent dropdown-population paths), call `/api/parts-db/manufacturers`, `/api/parts-db/products`, `/api/parts-db/part-types?…` instead of (or in addition to) the existing workbook_rules / parts_library fetches. Compatibility-filter products by the selected part_type using `pt.allowed_products` + `product.fits_part_types`. Keep workbook_rules fallback paths intact — they're the third tier in `parts_db_service` already.
+**Goal**: `parts_db.json` is the authoritative data source for the build flow. The QB-linked part catalog is visible and usable when adding parts to builds.
 
-**Goal**: stand up the canonical parts database. Existing config files still work as fallback during transition; new code reads from `parts_db.json`.
-
-**Exit condition**: `parts_db.json` exists in the settings repo with the full set of parts/manufacturers/models/colors/locations currently spread across `workbook_rules.json`, `parts_library.json`, and `vehicle_layouts.json`, plus the new fields lights need (power outputs, color asset map). A backend service exposes typed queries. At least one consumer (likely `manifest_editor.js`) reads from it.
+**Exit condition**: A user clicks "Add Part" and gets an intelligent picker — not a flat form. They can browse by hierarchy, search by SKU/name, see prices and QB linkage, configure colors for multi-lighthead placements, and have their selection resolved into correct PartInput records.
 
 **Why this comes after the cloud go-live**: the schema migration is large enough to warrant team-wide review and visibility before it lands. With the cloud already live, the parts_db.json bootstrap goes through a normal PR — everyone sees it land, the owner reviews it carefully, and any subsequent additions take the same review path.
 
@@ -402,15 +454,17 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 - Add a thin REST endpoint set (`/api/parts-db/*`) for the frontend, or extend manifest-editor bootstrap to include the merged data.
 - **Do not** delete anything from `workbook_rules.json` yet. Consumers keep reading the old structure as fallback until Phase 4 swaps them over.
 
-### Phase 4 — Migrate Consumers; Workbook Template Becomes a Consumer
+### Phase 4 — Migrate Remaining Consumers; Workbook Template Becomes a Consumer
 
 **Goal**: every consumer of domain data reads from `parts_db.json`. `workbook_rules.json` is stripped to layout-only (`template_sections` + `_row`).
+
+**Note**: Consumer #1 (`manifest_editor.js`) is being replaced by the Intelligent Part Picker (Phase 3, Chunks 2-9). The Part Picker reads from `parts_db.json` natively. The flat modal is removed in the final chunk. The remaining 5 consumers follow the original plan.
 
 **Exit condition**: removing `manufacturer`/`models`/`locations`/`colors`/`quantities`/`lens` fields from `workbook_rules.json.part_rules` does not break the app or the regenerated template. The workbook export still produces a fully-populated blank template with all current dropdowns, but pulling from `parts_db.json`.
 
 **Work**:
-- One PR per consumer. Order matters — start with the leaves, end with `template_builder.py`:
-  1. `manifest_editor.js` — switch dropdowns to query `parts_db_service`.
+- One PR per consumer. Order matters — start with the leaves, end with `template_builder.py`. Consumer #1 is handled by the Part Picker (Phase 3):
+  1. ~~`manifest_editor.js`~~ — replaced by Intelligent Part Picker (Phase 3). Already reads from parts_db.
   2. `projects/api.js` — switch lighting-brand derivation to query `parts_db_service`.
   3. `state.js` — drop the workbook-rules fetch for domain data; keep it only for `template_sections`.
   4. `part_types.js` — when adding a new part type, propose a PR adding it to `parts_db.json`. The new part appears in both the manifest editor and the regenerated workbook template automatically once merged.
@@ -475,6 +529,28 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 - Make `render_ppt.py` iterate the vehicle's view collection rather than hardcoded names. Per-view slide layout is config-driven — a slide template keyed by view name with a default fallback.
 - Add `view_kind: "exterior" | "interior" | "top_down" | "console"` to each view in `vehicle_layouts.json`. Some part categories may filter by view_kind (e.g., interior-only equipment).
 
+### Phase 6.5 — Interior Light Bar Enhancements
+
+Captured from owner feedback during the Whelen catalog + accessories work (2026-06).
+
+**Two-piece front interior light bar.** Front interior light bars are physically two
+pieces (driver + passenger). The builder should let the user choose **one, the other,
+or both** — and when only one, **which side** it mounts on. Today a front interior bar
+is a single placement; this needs the placement/picker to model the left/right split and
+the preview/PPT to render only the chosen side(s).
+
+**Auto-populated lighthead rendering for interior bars.** Replace the static front/rear
+interior-light-bar image assets with an **auto-generated group of small lightheads** —
+the same mechanism used for Tracers, just much smaller. This makes the bar's **colors
+visible** in the preview and lets the renderer draw **one side or the other** (ties into
+the two-piece capability above). Driven by the bar's selected color config rather than a
+fixed image.
+
+*Related fix already shipped:* the `front_interior_light_bar` / `rear_interior_light_bar`
+part_types had the ambiguous shared label "Interior Light Bar", which broke catalog +
+location-rule matching (interior bars couldn't be placed). Labels are now
+"Front Interior Light Bar" / "Rear Interior Light Bar".
+
 ### Phase 7 — Free-Form Vehicle Wizard
 
 **Goal**: a guided multi-step wizard for building a vehicle from scratch with no preset. Replaces "fit parts into named slots" with "add part to location, app figures out the rest."
@@ -500,6 +576,22 @@ The new wizard (Phase 7) populates all of these when adding a part; the workbook
 ### Phase 8 — Parts Manager (Same DB, Separate App or Tab)
 
 **MVP slice shipped early (2026-06-12)**: the read-only tree + edit-modal slice was brought forward as part of Phase 3 PR-2b (4/4) so the owner could review the migration output (~165 model→manufacturer mappings, ~106 part_type tree positions) through a UI instead of by hand. Lives at Settings → Advanced → Part Manager → Database (v2); see `src/dtm_buildsheet/ui/js/settings/part_manager.js`. The remaining Phase 8 work below — inventory, pricing, low-stock indicators, the storage-split decision — is still open and depends on Phases 4–7.
+
+**Editing-UI revamp brought forward (2026-06-29, on the critical path)**: the read-only MVP can't do
+fast self-service review of the ~1,200-item QB import — and that review throughput is the current
+bottleneck (see Current Direction). The revamp replaces today's three-tab Part Manager with **two
+complementary views**:
+- **SKU Review Grid** — brand-sorted, spreadsheet-style; expand a product to see all its SKUs inline;
+  every field editable (each value-set field is a selector populated from `parts_db.json` with a
+  "+ Create new…" option + a validating modal when more than a name is needed — never type-and-guess);
+  move SKUs between products; add/delete; bulk actions; filters to target "what still needs attention."
+- **Hierarchy editor** — the editable tree that controls how products sort/place in the Part Picker
+  (`tree_positions`, `fits_part_types`, ordering).
+
+Backend: granular PATCH-style endpoints (replacing today's whole-document POST), all routed through
+`save_config_file` (SharePoint-mirror invariant). The two legacy tabs (Part Types, Parts Library)
+stay until the Phase 4 consumer cutover. This is the *editing* slice of Phase 8; inventory/pricing/
+low-stock remain the later full-Phase-8 work.
 
 **Goal**: a UI for managing the parts database itself — friendly names, model numbers, sub-models, inventory quantities, prices. May be its own app; will share the same `parts_db.json`.
 
@@ -665,7 +757,12 @@ Over-engineering for variants we haven't planned is a real risk. Guardrails:
 
 ## 7. Domain Schema: `parts_db.json`
 
-Sketched schema. Lock it in Phase 3 before writing the migration script.
+> **This is the original sketch (kept for design rationale). The schema as actually built has
+> diverged — the live shape (Type → Section → Zone → Part Type → Product → Part Number, plus
+> manufacturers/tags/placements/accessory_categories) is documented in
+> [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §1, which is the single source of truth.**
+
+Sketched schema (early draft):
 
 **Three orthogonal axes** (this was the schema's biggest mistake in the first draft — they were conflated):
 
@@ -948,6 +1045,13 @@ Decisions that are locked in. Don't relitigate without an explicit reason.
 | 2026-05-20 | Light naming is two-tier: part name (model + colors) and role name (zone + color pattern) | Different UI surfaces need different names. Part name for picker/inventory; role name for build sheet. Both derived by default. |
 | 2026-05-20 | Three orthogonal axes for parts: category / location zone / build section | First schema draft conflated category and location-zone, which created confusion. They answer different questions and must stay separate. |
 | 2026-05-20 | Brackets are parts in the `brackets` category, not a separate top-level collection | Brackets get tracked, priced, inventoried like any other part. Relationships are expressed via `compatible_part_ids`. |
+| 2026-07-06 | Workbook import demoted from guaranteed input format to optional backup adapter; retirement on the table | Spreadsheets will see near-zero real use, and workbook-shape assumptions in core consumers are causing live bugs when parts_db supplies better data. Canonical pipeline is domain/parts_db-shaped; the workbook converts at the `inputs/` boundary or not at all. Workbook-era domain logic is ported into domain/planning via parity proofs, not lost. Workbook-as-renderer (export) unaffected. |
+| 2026-07-07 | Kit estimate behavior mirrors QuickBooks | One QB item → one line; QB bundle/group → component lines. Kit support exists only to represent kits present in QB inventory — no app-invented kit semantics. Right-sizes the kit-SKU phase. |
+| 2026-07-07 | Sibling parts-manager app deferred; starts read-only if/when built | The parts_db repository seam (importable without the GUI) is the only prerequisite and lands anyway, so deferral costs nothing. No speculative Graph-capable writer adapter for a second app. |
+| 2026-07-07 | SKU-grid save path frozen until curation queue (~673 unhomed products) is complete | Owner declares curation done before Stage C2 touches the save path; full backup checkpoint precedes it. Non-save-path stages proceed independently. |
+| 2026-07-10 | Picker redesign COMPLETE (Steps 0–7) — `docs/audit/PICKER_REDESIGN.md` | Accordion + families, options-in-box, per-head filtered SKUs, in-box viz, scene qty-only, real editor (F-005 resolved), multi-add. 8 ui_smoke flows, golden masters held. Next parked threads: cloud push (remake 2 legacy builds first), scene-collapse migration, refactor track (parts-DB repository extraction → kit SKUs). |
+| 2026-07-07 | Part-type taxonomy resolved (8 OQs) + picker redesign scoped — `docs/audit/PART_TYPE_TAXONOMY_PROPOSAL.md`, `PICKER_REDESIGN.md` | Families = belong-together systems (13: 5 lighting_group + 8 system), orthogonal to the 3 axes, additive to schema (legacy `.category` preserved → migration-safe). console→structural, preemption→equipment; console-furniture/PA/photo_eye/power_timer left bare; light_controller added to Light Control System. Picker redesign = 7 shippable increments (accordion → options-in-box → SKU rework → viz → scene special-case → editor pre-fill/type-lock → multi-add) + manifest-state green highlight. |
+| 2026-07-07 | Curation §B owner rulings recorded — `tools/curation/OPEN_QUESTIONS.md` §C | Majors: scene collapse YES (gated on picker location-pool fix per LEDGER); zone-brackets fold into `bracket` with per-product compatibility; ChargeGuard gets own `power_timer` type; dtm ≡ 5-0 Fab; motorcycle builds in scope, trailers/plows out; consumables all deleted. Future-feature flags logged there: build-level "computer used" field, per-build power-timeout record, app-level services (decals/strip), traffic-advisor configurator. |
 
 ---
 

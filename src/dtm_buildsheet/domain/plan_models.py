@@ -40,6 +40,8 @@ class PlannedPlacement:
     flip_h: bool = False
     flip_v: bool = False
     flip_mirrored_h: bool = False
+    translate_dx: float = 0.0
+    translate_dy: float = 0.0
     behind_vehicle: bool = False
     layer: int = 0
     group_shapes: bool = False
@@ -48,6 +50,7 @@ class PlannedPlacement:
     position_slot_count: int | None = None
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    line_id: str = ""
 
 
 @dataclass
@@ -72,4 +75,16 @@ class BuildPlan:
     notes: dict[str, list[str]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        for part in data.get("planned_parts", []):
+            raw = part.get("raw")
+            if isinstance(raw, dict) and raw.get("components") == []:
+                raw.pop("components")
+            if isinstance(raw, dict) and raw.get("picker_config") == {}:
+                raw.pop("picker_config")
+            for placement in part.get("placements", []):
+                if placement.get("translate_dx") == 0.0:
+                    placement.pop("translate_dx")
+                if placement.get("translate_dy") == 0.0:
+                    placement.pop("translate_dy")
+        return data

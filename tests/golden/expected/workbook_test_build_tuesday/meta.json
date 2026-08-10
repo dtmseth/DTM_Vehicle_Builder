@@ -1,0 +1,5 @@
+{
+  "adapter": "workbook",
+  "case_name": "workbook_test_build_tuesday",
+  "input_path": "samples/input/Test_Build_Tuesday.xlsx"
+}

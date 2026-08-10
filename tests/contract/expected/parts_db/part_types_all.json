@@ -1,0 +1,2468 @@
+{
+  "body": {
+    "part_types": [
+      {
+        "accessories": [
+          "wire_covers"
+        ],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Push Bumper",
+        "max_count": null,
+        "part_type_id": "push_bumper",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Push Bumper"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Pit Bar",
+        "max_count": null,
+        "part_type_id": "pit_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Pit Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Wing Wraps",
+        "max_count": null,
+        "part_type_id": "wing_wraps",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Wing Wraps"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "push_bumper",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Wire Covers",
+        "max_count": null,
+        "part_type_id": "wire_covers",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Wire Covers"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "FW Bracket",
+        "max_count": null,
+        "part_type_id": "fw_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "FW {n} Bracket"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Side Bracket",
+        "max_count": null,
+        "part_type_id": "front_side_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Side Brackets"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Headlight Flasher",
+        "max_count": null,
+        "part_type_id": "headlight_flasher",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Headlight Flasher"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "CENTER PLATE OF PB"
+        ],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Front Scene",
+        "max_count": null,
+        "part_type_id": "front_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [
+          "TOP OF PUSH BUMPER",
+          "UNDER PUSH BUMPER",
+          "BEHIND GRILL (CENTER)",
+          "BEHIND OEM BUMPER"
+        ],
+        "allowed_products": [],
+        "category": "",
+        "label": "Siren Speaker",
+        "max_count": null,
+        "part_type_id": "siren_speaker",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "siren"
+        ],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Siren Speaker {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "siren_speaker",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Siren Speaker Bracket",
+        "max_count": null,
+        "part_type_id": "siren_speaker_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Siren Speaker Bracket"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "External Amp",
+        "max_count": null,
+        "part_type_id": "external_amp",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "siren"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "External Amp"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Howler",
+        "max_count": null,
+        "part_type_id": "howler",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "siren"
+        ],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Howler"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "PA Mic",
+        "max_count": null,
+        "part_type_id": "pa_mic",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Pa Mic"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "pa_mic",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "PA Mic Clip",
+        "max_count": null,
+        "part_type_id": "pa_mic_clip",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Pa Mic Clip"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [
+          "IN LIGHT BAR",
+          "UPPER WINDSHIELD",
+          "CENTER OF DASH"
+        ],
+        "allowed_products": [],
+        "category": "",
+        "label": "Preemption",
+        "max_count": 1,
+        "part_type_id": "preemption",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "roof"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Opticom"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Dome Light",
+        "max_count": null,
+        "part_type_id": "front_dome_light",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Dome Light"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Cloud System",
+        "max_count": null,
+        "part_type_id": "cradle_point",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Cradle Point"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Cloud Antenna",
+        "max_count": null,
+        "part_type_id": "cloud_antenna",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Cradle Point Antenna"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Mirror Warning Bracket",
+        "max_count": null,
+        "part_type_id": "mirror_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Mirror Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior_bar",
+        "label": "Interior Light Bar",
+        "max_count": null,
+        "part_type_id": "front_interior_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Front Interior Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Side Warning Bracket",
+        "max_count": null,
+        "part_type_id": "side_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Side Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Side Scene",
+        "max_count": null,
+        "part_type_id": "side_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Side Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "roof_bar",
+        "label": "Light Bar",
+        "max_count": null,
+        "part_type_id": "roof_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "roof"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Roof Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior_bar",
+        "label": "Interior Light Bar",
+        "max_count": null,
+        "part_type_id": "rear_interior_light_bar",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Interior Light Bar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Warning Bracket",
+        "max_count": null,
+        "part_type_id": "rear_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Warning Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "scene",
+        "label": "Rear Scene",
+        "max_count": null,
+        "part_type_id": "rear_scene",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Scene"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "warning_light",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Lower Lift Gate Warning Bracket",
+        "max_count": null,
+        "part_type_id": "lower_liftgate_warning_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "Lower Lift Gate Warning Bracket"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Tail Light Flasher",
+        "max_count": null,
+        "part_type_id": "tail_light_flasher",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Tail Light Flasher"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radar Display Unit",
+        "max_count": null,
+        "part_type_id": "radar_display_unit",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "radar"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radar"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "radar_display_unit",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Radar Antenna Mount",
+        "max_count": null,
+        "part_type_id": "front_radar_antenna_mount",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "radar"
+        ],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Front Radar Antenna Mount"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "radar_display_unit",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Radar Antenna Mount",
+        "max_count": null,
+        "part_type_id": "rear_radar_antenna_mount",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "radar"
+        ],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Rear Radar Antenna Mount"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Thermal Imager",
+        "max_count": null,
+        "part_type_id": "thermal_imager",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Thermal Imager"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Thermal Imager Monitor",
+        "max_count": null,
+        "part_type_id": "thermal_imager_monitor",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Thermal Imager Monitor"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Light Controller",
+        "max_count": null,
+        "part_type_id": "light_controller",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Light Controller"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Light Control Head",
+        "max_count": null,
+        "part_type_id": "control_head",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Control Head {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Secondary Control Head Harness",
+        "max_count": null,
+        "part_type_id": "secondary_control_head_harness",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Secondary Control Head Harness"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Vehicle Interface",
+        "max_count": null,
+        "part_type_id": "vehicle_interface",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Vehicle interface"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Expansion Module",
+        "max_count": null,
+        "part_type_id": "expansion_module",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Expansion Module"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Control Head",
+        "max_count": null,
+        "part_type_id": "radio_head",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Control Head {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Brick",
+        "max_count": null,
+        "part_type_id": "radio_brick",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms",
+          "unbilled"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Brick {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Mic Clip",
+        "max_count": null,
+        "part_type_id": "radio_mic_clip",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Mic Clip {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Communication Cable",
+        "max_count": null,
+        "part_type_id": "radio_antenna_cable",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Antenna Cable"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Antenna Top",
+        "max_count": null,
+        "part_type_id": "radio_antenna_top",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "roof"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Antenna Top"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Console",
+        "max_count": 1,
+        "part_type_id": "console",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Center Console"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Special Face Plate",
+        "max_count": null,
+        "part_type_id": "special_face_plate",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Special Face Plate {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Armrest",
+        "max_count": null,
+        "part_type_id": "arm_rest",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Arm Rest"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Motion Attachment",
+        "max_count": null,
+        "part_type_id": "motion_attachment",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Motion Attachment"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Docking Station",
+        "max_count": null,
+        "part_type_id": "docking_station",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Docking Station"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Printer",
+        "max_count": null,
+        "part_type_id": "printer",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Printer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "printer",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Printer Mount",
+        "max_count": null,
+        "part_type_id": "printer_mount",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Printer Mount"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "printer",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Printer Power",
+        "max_count": null,
+        "part_type_id": "printer_power",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Printer Power"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "printer",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Printer USB",
+        "max_count": null,
+        "part_type_id": "printer_usb",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Printer USB"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "12v Aux Ports",
+        "max_count": null,
+        "part_type_id": "aux_12v_ports",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "12v Aux Ports"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Camera DVR",
+        "max_count": null,
+        "part_type_id": "camera_dvr",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Camera DVR"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Camera",
+        "max_count": null,
+        "part_type_id": "front_camera",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Front Camera"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Body Camera Dock",
+        "max_count": null,
+        "part_type_id": "body_camera_dock",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Body Camera Dock"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Seat Camera",
+        "max_count": null,
+        "part_type_id": "rear_seat_camera",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Rear Seat Camera"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Camera",
+        "max_count": null,
+        "part_type_id": "rear_camera",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Rear Camera"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Wireless Mic Charger",
+        "max_count": null,
+        "part_type_id": "wireless_mic_charger",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "camera"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Wireless Mic Charger"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Partition",
+        "max_count": null,
+        "part_type_id": "front_partition",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Front Partition"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Chicago Barrier",
+        "max_count": null,
+        "part_type_id": "chicago_barrier",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Chicago Barrier"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "front_partition",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Front Partition Transfer Kit",
+        "max_count": null,
+        "part_type_id": "front_partition_transfer_kit",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Front Partition Transfer Kit"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Rear Seat Lights",
+        "max_count": null,
+        "part_type_id": "rear_seat_lights",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Seat Lights {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Rear Seat Cargo Lights",
+        "max_count": null,
+        "part_type_id": "rear_seat_cargo_lights",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Rear Seat Cargo Lights"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Seat Divider",
+        "max_count": null,
+        "part_type_id": "rear_seat_divider",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Rear Seat Divider"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Window Bars",
+        "max_count": null,
+        "part_type_id": "rear_window_bars",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Rear Window Bars"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Replacement Seat",
+        "max_count": null,
+        "part_type_id": "replacement_rear_seat",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Replacement Rear Seat"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Rear Partition",
+        "max_count": null,
+        "part_type_id": "rear_partition",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Rear Partition"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Floor Pan",
+        "max_count": null,
+        "part_type_id": "floor_pan",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Floor Pan"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Bullet Proof Door Panel",
+        "max_count": null,
+        "part_type_id": "bullet_proof_door_panel",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Bullet Proof Door Panel"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Bullet Proof Door Window",
+        "max_count": null,
+        "part_type_id": "bullet_proof_door_window",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Bullet Proof Door Window"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Storage Box",
+        "max_count": null,
+        "part_type_id": "rear_storage_box",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "Storage Compartment"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "interior",
+        "label": "Cargo Lighting",
+        "max_count": null,
+        "part_type_id": "cargo_lighting",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "Cargo Lighting"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Door Lock Button",
+        "max_count": null,
+        "part_type_id": "door_lock_button",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Door Lock Button"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Equipment Tray",
+        "max_count": 1,
+        "part_type_id": "equipment_tray",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Equipment Tray"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Gun Lock",
+        "max_count": null,
+        "part_type_id": "gun_lock",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "side_storage"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          },
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Gunlock {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "gun_lock",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Gun Lock Bracket",
+        "max_count": null,
+        "part_type_id": "gun_lock_bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Gunlock Bracket {n}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "K-9 Kennel",
+        "max_count": null,
+        "part_type_id": "k9_kennel",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "k9",
+        "workbook_label_pattern": "K-9 Kennel"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "K-9 Heat Alarm / Door Popper",
+        "max_count": null,
+        "part_type_id": "k9_heat_alarm_popper",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "k9",
+        "workbook_label_pattern": "K-9 Heat Alarm/Popper"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "K-9 Control Head",
+        "max_count": null,
+        "part_type_id": "k9_control_head",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "k9",
+        "workbook_label_pattern": "K-9 Control Head"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "K-9 Add-Ons",
+        "max_count": null,
+        "part_type_id": "k9_add_ons",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "k9",
+        "workbook_label_pattern": "K-9 Add-Ons"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Battery Tender",
+        "max_count": null,
+        "part_type_id": "battery_tender",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Battery Tender"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Auto Eject",
+        "max_count": null,
+        "part_type_id": "auto_eject",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Auto Eject"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Vehicle to Vehicle Sync",
+        "max_count": null,
+        "part_type_id": "v2v_sync",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Vehicle to Vehicle Sync"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Cloud System",
+        "max_count": null,
+        "part_type_id": "cloud_system_tray",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "equipment_tray",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Cloud System"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Remote Start",
+        "max_count": null,
+        "part_type_id": "remote_start",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Remote Start"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Arges",
+        "max_count": null,
+        "part_type_id": "arges_face",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "console",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Arges"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Arges Controller",
+        "max_count": null,
+        "part_type_id": "arges_controller",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Arges Controller"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "arges_controller",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Arges Mount",
+        "max_count": null,
+        "part_type_id": "arges_mount",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Arges Mount"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Photo Eye",
+        "max_count": null,
+        "part_type_id": "photo_eye",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Photo Eye"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "GPS",
+        "max_count": null,
+        "part_type_id": "gpd",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "GPD W/ Extension"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Floor Mats",
+        "max_count": null,
+        "part_type_id": "floor_mats",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Floor Mats"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Seat Covers",
+        "max_count": null,
+        "part_type_id": "seat_covers",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Seat Covers"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Window Tint",
+        "max_count": null,
+        "part_type_id": "window_tint",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Window Tint"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Decals",
+        "max_count": null,
+        "part_type_id": "decals",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Decals"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Harness",
+        "max_count": null,
+        "part_type_id": "harness",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "extras",
+        "workbook_label_pattern": "Harness"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "2-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_2_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "2-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "5-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_5_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "5-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "6-Lamp Tracer",
+        "max_count": null,
+        "part_type_id": "tracer_6_lamp",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "6-Lamp Tracer"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Speaker",
+        "max_count": null,
+        "part_type_id": "radio_speaker",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Speaker"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Lighthead",
+        "max_count": null,
+        "part_type_id": "lighthead",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Cable",
+        "max_count": null,
+        "part_type_id": "cable",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Flange",
+        "max_count": null,
+        "part_type_id": "flange",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Shroud",
+        "max_count": null,
+        "part_type_id": "shroud",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Flasher / Power",
+        "max_count": null,
+        "part_type_id": "flasher_power",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Bracket / Mount",
+        "max_count": null,
+        "part_type_id": "bracket",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Take-Down / Alley",
+        "max_count": null,
+        "part_type_id": "bar_takedown",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radar Cable",
+        "max_count": null,
+        "part_type_id": "radar_cable",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Radio Cables",
+        "max_count": null,
+        "part_type_id": "radio_cable",
+        "sequence_scope": "global",
+        "tag_ids": [
+          "comms"
+        ],
+        "tree_positions": [],
+        "type_id": "equipment",
+        "workbook_label_pattern": "Radio Cables"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "warning",
+        "label": "Warning Light",
+        "max_count": null,
+        "part_type_id": "warning_light",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Tool Mount",
+        "max_count": null,
+        "part_type_id": "tool_mount",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "rear_storage_area"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Computer Pedestal / Mount Base",
+        "max_count": null,
+        "part_type_id": "pedestal_mount",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "spotlight",
+        "label": "Spotlight (pillar/post)",
+        "max_count": null,
+        "part_type_id": "spotlight",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "front"
+          }
+        ],
+        "type_id": "lights",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Flashlight & Charger",
+        "max_count": null,
+        "part_type_id": "flashlight",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Computer / Laptop",
+        "max_count": null,
+        "part_type_id": "computer",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Running Boards / Nerf Bars",
+        "max_count": null,
+        "part_type_id": "running_boards_nerf_bars",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "side"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Prisoner Transport Insert",
+        "max_count": null,
+        "part_type_id": "prisoner_transport_insert",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "prisoner_area"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Tonneau / Bed Cover",
+        "max_count": null,
+        "part_type_id": "tonneau_cover",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "structural",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Motorcycle Box / Mount",
+        "max_count": null,
+        "part_type_id": "motorcycle_box",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "exterior",
+            "sub_zone": "",
+            "zone": "rear"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      },
+      {
+        "accessories": [],
+        "accessory_of": "",
+        "allowed_placements": [],
+        "allowed_products": [],
+        "category": "",
+        "label": "Power Timer / ChargeGuard",
+        "max_count": null,
+        "part_type_id": "power_timer",
+        "sequence_scope": "global",
+        "tag_ids": [],
+        "tree_positions": [
+          {
+            "section": "interior",
+            "sub_zone": "",
+            "zone": "forward_of_cage"
+          }
+        ],
+        "type_id": "equipment",
+        "workbook_label_pattern": "{label}"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

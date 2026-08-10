@@ -1,0 +1,10 @@
+{
+  "manufacturer_id": "whelen",
+  "links": [
+    {"sku": "CCTL5",  "product": "whelen_cctl5",  "vehicle_tags": ["any"]},
+    {"sku": "CCTL6",  "product": "whelen_cctl6",  "vehicle_tags": ["any"]},
+    {"sku": "SA315P", "product": "whelen_sa315p", "vehicle_tags": ["any"]},
+    {"sku": "SA315U", "product": "whelen_sa315u", "vehicle_tags": ["any"]},
+    {"sku": "C399",   "product": "whelen_core",   "vehicle_tags": ["any"]}
+  ]
+}

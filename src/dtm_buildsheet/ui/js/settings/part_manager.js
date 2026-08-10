@@ -296,6 +296,12 @@ function _pdbRenderPartTypeDetail(id){
       ${_pdbField("Workbook label", pt.workbook_label_pattern)}
       ${_pdbField("Sequence scope", pt.sequence_scope)}
     </div>
+    <div class="pdb-section-title">Location</div>
+    <div>${(pt.location_mode || "text") === "placement"
+      ? '<span class="chip">Placement — drawn on the build preview</span>'
+      : '<span class="chip">Text — pick-list</span> ' + ((pt.location_options||[]).length
+          ? _pdbChips(pt.location_options)
+          : '<span style="color:var(--muted)">no options yet</span>')}</div>
     <div class="pdb-section-title">Tree positions</div>
     <div>${treePos.length ? treePos.map(t=>`<span class="chip">${esc(t)}</span>`).join(" ") : '<span style="color:var(--muted)">none</span>'}</div>
     <div class="pdb-section-title">Tags</div>
@@ -336,7 +342,22 @@ function _pdbRenderProductDetail(id){
     <div>${_pdbChips((p.tag_ids||[]).map(t=>tags[t]?.label||t))}</div>
     <div class="pdb-section-title">Part numbers (${pns.length})</div>
     <div class="pdb-compat-list">
-      ${pns.length ? pns.map(pn => `<div class="pdb-compat-row"><strong>${esc(pn.part_number)}</strong>${pn.friendly_name?` · ${esc(pn.friendly_name)}`:""}${pn.price_usd?` · $${esc(pn.price_usd)}`:""}</div>`).join("") : '<span style="color:var(--muted)">none</span>'}
+      ${pns.length ? pns.map(pn => {
+        const parts = [`<strong>${esc(pn.part_number)}</strong>`];
+        if(pn.color) {
+          let colorStr = pn.color;
+          if(pn.secondary_color) colorStr += `/${pn.secondary_color}`;
+          parts.push(`<span style="color:var(--muted)">${colorStr}</span>`);
+        }
+        if(pn.lens_type) parts.push(`<span class="chip">${esc(pn.lens_type)}</span>`);
+        const price = pn.qb_unit_price || pn.price_usd;
+        if(price) parts.push(`<span style="color:var(--accent);font-weight:500">$${esc(price)}</span>`);
+        if(pn.qb_item_id) parts.push('<span class="chip" style="background:var(--green);color:#fff">QB</span>');
+        if(pn.vehicle_tags?.length && !(pn.vehicle_tags.length===1&&pn.vehicle_tags[0]==="any")) {
+          parts.push(`<span class="chip">${esc(pn.vehicle_tags.join(", "))}</span>`);
+        }
+        return `<div class="pdb-compat-row">${parts.join(" · ")}</div>`;
+      }).join("") : '<span style="color:var(--muted)">none</span>'}
     </div>
   `;
 }
@@ -442,6 +463,21 @@ function _pdbPartTypeForm(pt){
       <input type="text" id="pdbf-wbpat" value="${esc(pt.workbook_label_pattern||"")}" placeholder="e.g. Forward Warning {n}" />
     </div>
     <div class="modal-section">
+      <div class="modal-section-title">Location</div>
+      <div class="form-group" style="max-width:340px">
+        <label>Location mode</label>
+        <select id="pdbf-locmode">
+          <option value="placement"${(pt.location_mode||"")==="placement"?" selected":""}>Placement — visual, drawn on the build preview</option>
+          <option value="text"${(pt.location_mode||"")!=="placement"?" selected":""}>Text — pick-list printed on the sheet</option>
+        </select>
+      </div>
+      <div id="pdbf-locopts-wrap">
+        <label>Location options <span style="font-weight:400;color:var(--muted)">(text mode — the mount options a builder can pick)</span></label>
+        <div id="pdbf-locopts">${(pt.location_options||[]).map(_pdbLocOptRow).join("")}</div>
+        <button type="button" class="btn btn-secondary btn-sm" id="pdbf-add-locopt">+ Add location</button>
+      </div>
+    </div>
+    <div class="modal-section">
       <div class="modal-section-title">Tree positions</div>
       <div id="pdbf-tree-positions">${treePositionsHtml}</div>
       <button type="button" class="btn btn-secondary btn-sm" id="pdbf-add-pos">+ Add position</button>
@@ -463,6 +499,13 @@ function _pdbPartTypeForm(pt){
       <div class="compat-chips" id="pdbf-accessories">${_pdbCheckboxList("acc", _pdb.part_types, pt.accessories)}</div>
     </div>
   `;
+}
+
+function _pdbLocOptRow(val){
+  return `<div class="pdb-locopt-row" style="display:flex;gap:6px;margin-bottom:5px">
+    <input type="text" data-locopt value="${esc(val||"")}" placeholder="e.g. IN CENTER CONSOLE" style="flex:1" />
+    <button type="button" class="btn btn-danger btn-sm pdbf-locopt-del">✕</button>
+  </div>`;
 }
 
 function _pdbTreePosRow(pos, idx){
@@ -503,10 +546,22 @@ function _pdbProductForm(p){
 }
 
 function _pdbPartNumberRow(pn, idx){
-  return `<div class="pdb-pn-row" data-idx="${idx}">
+  pn = pn || {};
+  const linked = !!pn.qb_item_id;
+  // Stash the full original SKU so save preserves fields the form doesn't expose
+  // (qb_item_id, color, vehicle_tags, lens, …). encodeURIComponent keeps it
+  // attribute-safe (friendly names contain quotes/apostrophes).
+  const preserve = encodeURIComponent(JSON.stringify(pn));
+  return `<div class="pdb-pn-row" data-idx="${idx}" data-pn-preserve="${preserve}">
     <input type="text" data-pn-field="part_number" placeholder="Part #" value="${esc(pn.part_number||"")}" />
     <input type="text" data-pn-field="friendly_name" placeholder="Friendly name" value="${esc(pn.friendly_name||"")}" />
-    <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01" value="${pn.price_usd ?? ""}" style="max-width:90px" />
+    <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01"
+      value="${(pn.qb_unit_price ?? pn.price_usd) ?? ""}" style="max-width:90px"
+      ${linked?'readonly title="Price synced from QuickBooks (qb_unit_price)"':''} />
+    <label class="pdb-pn-pending" title="Pre-added before it exists in QuickBooks — usable now, flagged on the estimate until the QB item is created">
+      <input type="checkbox" data-pn-field="qb_pending" ${pn.qb_pending?"checked":""} ${linked?"disabled":""} /> Pending QB
+    </label>
+    ${linked?'<span class="chip" style="background:var(--green);color:#fff">QB</span>':""}
     <button type="button" class="btn btn-danger btn-sm pdbf-pn-del">✕</button>
   </div>`;
 }
@@ -544,6 +599,18 @@ function _pdbWireModalBody(kind){
       _pdbWirePosRow(container.lastElementChild);
     });
     $("pdbf-tree-positions").querySelectorAll(".pdb-tree-pos-row").forEach(_pdbWirePosRow);
+
+    // Location options: show only in text mode; add/remove rows.
+    const locWrap = $("pdbf-locopts-wrap"), locMode = $("pdbf-locmode");
+    const syncLocMode = () => { if(locWrap) locWrap.style.display = locMode.value === "text" ? "" : "none"; };
+    locMode?.addEventListener("change", syncLocMode);
+    syncLocMode();
+    $("pdbf-add-locopt")?.addEventListener("click", () => {
+      const c = $("pdbf-locopts");
+      c.insertAdjacentHTML("beforeend", _pdbLocOptRow(""));
+      _pdbWireLocOptRow(c.lastElementChild);
+    });
+    $("pdbf-locopts").querySelectorAll(".pdb-locopt-row").forEach(_pdbWireLocOptRow);
   }
 
   if(kind === "product"){
@@ -559,6 +626,10 @@ function _pdbWireModalBody(kind){
 
 function _pdbWirePosRow(row){
   row.querySelector(".pdbf-pos-del").addEventListener("click", () => row.remove());
+}
+
+function _pdbWireLocOptRow(row){
+  row.querySelector(".pdbf-locopt-del").addEventListener("click", () => row.remove());
 }
 
 function _pdbWirePnRow(row){
@@ -599,16 +670,30 @@ function _pdbCollectFormData(kind){
       allowed_placements: _pdbCollectChecked("pdbf-allowed-placements", "apl"),
       workbook_label_pattern: $("pdbf-wbpat").value.trim(),
       sequence_scope: $("pdbf-seq").value.trim() || "global",
+      location_mode: $("pdbf-locmode").value || "text",
+      location_options: $("pdbf-locmode").value === "text"
+        ? [...$("pdbf-locopts").querySelectorAll("[data-locopt]")].map(i => i.value.trim()).filter(Boolean)
+        : [],
     };
   }
   if(kind === "product"){
     const pns = [...$("pdbf-part-numbers").querySelectorAll(".pdb-pn-row")].map(row => {
+      let orig = {};
+      try { orig = JSON.parse(decodeURIComponent(row.dataset.pnPreserve || "")) || {}; } catch {}
       const pn = row.querySelector('[data-pn-field="part_number"]').value.trim();
       const fn = row.querySelector('[data-pn-field="friendly_name"]').value.trim();
       const price = row.querySelector('[data-pn-field="price_usd"]').value.trim();
-      const out = { part_number: pn };
-      if(fn) out.friendly_name = fn;
-      if(price) out.price_usd = Number(price);
+      const pending = row.querySelector('[data-pn-field="qb_pending"]').checked;
+      // Preserve all original fields; override only what the form edits.
+      const linked = !!orig.qb_item_id;
+      const out = { ...orig, part_number: pn };
+      if(fn) out.friendly_name = fn; else delete out.friendly_name;
+      // Price is hand-set only for non-QB parts; QB-linked prices are owned by
+      // qb_unit_price (synced) and the field is read-only, so leave it untouched.
+      if(!linked){
+        if(price !== "") out.price_usd = Number(price); else delete out.price_usd;
+      }
+      if(pending) out.qb_pending = true; else delete out.qb_pending;
       return out;
     }).filter(pn => pn.part_number);
     return {

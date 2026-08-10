@@ -1,11 +1,22 @@
 // ═══════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════
+// Returns parsed JSON. Non-2xx responses that still carry a JSON body
+// (e.g. {"error": ...} on a 400/404) resolve normally so callers can read
+// res.error — many do. Only a body that isn't JSON at all (a 500 HTML error
+// page) rejects, and it does so with the status + path so the failure is
+// diagnosable instead of surfacing as a generic "Error loading X."
 const api = (path, body) =>
   fetch(path, body !== undefined
     ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}
     : undefined
-  ).then(r => r.json());
+  ).then(async r => {
+    try {
+      return await r.json();
+    } catch (_) {
+      throw new Error(`${path} → ${r.status} ${r.statusText} (non-JSON response)`);
+    }
+  });
 
 async function apiSave(endpoint, data){
   const res = await api(endpoint, data);
@@ -70,6 +81,26 @@ const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$
 
 function show(id){$(id).removeAttribute("hidden")}
 function hide(id){$(id).setAttribute("hidden","")}
+let _toastTimer;
+
+async function _copyToastMessage(message){
+  try {
+    await navigator.clipboard.writeText(message);
+    return true;
+  } catch (_) {
+    // pywebview and older embedded browsers may not expose Clipboard API.
+    const field = document.createElement("textarea");
+    field.value = message;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    return copied;
+  }
+}
 
 // Once a part image's aspect ratio is known, sync the size-input W/H fields.
 // If both are blank, seed them with a sensible default (~1.5" on the longer
@@ -96,9 +127,38 @@ function applyArToSizeInputs(view, ratio, wId, hId, lockId, defaultLongDim){
   else if(hVal > 0 && wVal <= 0) wEl.value = (hVal * ratio).toFixed(2);
 }
 function toast(msg, type=""){
-  const t=$("toast"); t.textContent=msg;
+  const t=$("toast");
+  const message = String(msg || "");
+  const copyable = type === "error";
+  t.textContent=message;
   t.className="toast show"+(type?" "+type:"");
-  setTimeout(()=>t.className="toast",2800);
+  t.onclick = null;
+  t.onkeydown = null;
+  t.removeAttribute("role");
+  t.removeAttribute("tabindex");
+  t.removeAttribute("title");
+  if (copyable) {
+    t.classList.add("copyable");
+    t.setAttribute("role", "button");
+    t.setAttribute("tabindex", "0");
+    t.title = "Click to copy this error";
+    const copy = async () => {
+      const copied = await _copyToastMessage(message);
+      if (copied) {
+        t.textContent = "✓ Error copied to clipboard";
+        t.className = "toast show success";
+      }
+    };
+    t.onclick = copy;
+    t.onkeydown = event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        copy();
+      }
+    };
+  }
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.className="toast",copyable ? 7000 : 2800);
 }
 
 // ─── Cloud connection indicator ─────────────────────────────────────────────

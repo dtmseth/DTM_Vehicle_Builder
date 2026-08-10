@@ -1,0 +1,42 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 8: flange kits. Each flange is product-specific (an M4 flange doesn't fit an M2), so one flange product per parent light, fitting the generic `flange` type, wired flange-category via set_accessories. Black/chrome finish variants live as SKUs under one product. friendly_name = finish (the picker already groups by category). All vehicle-agnostic -> ['any']. NOTE: whelen_m2 and whelen_ion_t_hd_array already carry a bracket_mount accessory from earlier batches — their set_accessories lists below preserve it (set_accessories REPLACES the list).",
+  "new_products": [
+    {"product_id": "whelen_500_flange",        "model": "500 Series Flange", "fits_part_types": ["flange"]},
+    {"product_id": "whelen_m2_flange",         "model": "M2 Series Flange",  "fits_part_types": ["flange"]},
+    {"product_id": "whelen_m4_flange",         "model": "M4 Series Flange",  "fits_part_types": ["flange"]},
+    {"product_id": "whelen_m6_flange",         "model": "M6 Series Flange",  "fits_part_types": ["flange"]},
+    {"product_id": "whelen_m7_flange",         "model": "M7 Series Flange",  "fits_part_types": ["flange"]},
+    {"product_id": "whelen_m9_flange",         "model": "M9 Series Flange",  "fits_part_types": ["flange"]},
+    {"product_id": "whelen_strip_lite_flange", "model": "Strip-Lite+ Flange","fits_part_types": ["flange"]},
+    {"product_id": "whelen_ion_t_flange",      "model": "ION-T Flange",      "fits_part_types": ["flange"]},
+    {"product_id": "whelen_vertex_flange",     "model": "Vertex Flange",     "fits_part_types": ["flange"]}
+  ],
+  "links": [
+    {"sku": "5FLANGEB", "product": "whelen_500_flange",        "vehicle_tags": ["any"], "friendly_name": "Black"},
+    {"sku": "5FLANGEC", "product": "whelen_500_flange",        "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "M2FC",     "product": "whelen_m2_flange",         "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "M4FB",     "product": "whelen_m4_flange",         "vehicle_tags": ["any"], "friendly_name": "Black"},
+    {"sku": "M4FC",     "product": "whelen_m4_flange",         "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "M6FC",     "product": "whelen_m6_flange",         "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "M6P15C",   "product": "whelen_m6_flange",         "vehicle_tags": ["any"], "friendly_name": "Chrome, 15° scene"},
+    {"sku": "M7FB",     "product": "whelen_m7_flange",         "vehicle_tags": ["any"], "friendly_name": "Black"},
+    {"sku": "M9FC",     "product": "whelen_m9_flange",         "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "PSFC",     "product": "whelen_strip_lite_flange", "vehicle_tags": ["any"], "friendly_name": "Chrome"},
+    {"sku": "TIONF2B",  "product": "whelen_ion_t_flange",      "vehicle_tags": ["any"], "friendly_name": "Dual-head, black"},
+    {"sku": "VTXFC",    "product": "whelen_vertex_flange",     "vehicle_tags": ["any"], "friendly_name": "Surface-mount, chrome"}
+  ],
+  "set_accessories": {
+    "whelen_500_series":     [{"category": "flange", "product_id": "whelen_500_flange",        "required": false}],
+    "whelen_m2":             [{"category": "bracket_mount", "product_id": "whelen_m2_lp_bracket", "required": false},
+                              {"category": "flange",        "product_id": "whelen_m2_flange",     "required": false}],
+    "whelen_m4":             [{"category": "flange", "product_id": "whelen_m4_flange",         "required": false}],
+    "whelen_m6":             [{"category": "flange", "product_id": "whelen_m6_flange",         "required": false}],
+    "whelen_m7":             [{"category": "flange", "product_id": "whelen_m7_flange",         "required": false}],
+    "whelen_m9_scene":       [{"category": "flange", "product_id": "whelen_m9_flange",         "required": false}],
+    "whelen_strip_lite_plus":[{"category": "flange", "product_id": "whelen_strip_lite_flange", "required": false}],
+    "whelen_ion_t_hd_array": [{"category": "bracket_mount", "product_id": "whelen_ion_t_mount_kit", "required": false},
+                              {"category": "flange",        "product_id": "whelen_ion_t_flange",    "required": false}],
+    "whelen_vertex":         [{"category": "flange", "product_id": "whelen_vertex_flange",     "required": false}]
+  }
+}

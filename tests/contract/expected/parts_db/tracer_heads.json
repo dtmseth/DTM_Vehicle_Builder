@@ -1,0 +1,80 @@
+{
+  "body": {
+    "housings": [
+      {
+        "heads": [
+          {
+            "colors": [
+              "red",
+              "white"
+            ],
+            "lens": "clear",
+            "pending": false,
+            "product_id": "whelen_tracer_wcx_primary",
+            "role": "primary",
+            "side": "driver",
+            "sku": "TCRWXPD"
+          },
+          {
+            "colors": [
+              "blue",
+              "white"
+            ],
+            "lens": "clear",
+            "pending": false,
+            "product_id": "whelen_tracer_wcx_secondary",
+            "role": "secondary",
+            "side": "passenger",
+            "sku": "TCRWXSE"
+          }
+        ],
+        "product_id": "whelen_2_lamp_tracer",
+        "qty": 1,
+        "side": "front",
+        "sku": "TCRWX2"
+      }
+    ],
+    "lamp_count": 2,
+    "lens": "clear",
+    "lines": [
+      {
+        "kind": "housing",
+        "product_id": "whelen_2_lamp_tracer",
+        "qty": 1,
+        "sku": "TCRWX2"
+      },
+      {
+        "colors": [
+          "red",
+          "white"
+        ],
+        "kind": "head",
+        "lens": "clear",
+        "pending": false,
+        "product_id": "whelen_tracer_wcx_primary",
+        "qty": 1,
+        "role": "primary",
+        "sku": "TCRWXPD"
+      },
+      {
+        "colors": [
+          "blue",
+          "white"
+        ],
+        "kind": "head",
+        "lens": "clear",
+        "pending": false,
+        "product_id": "whelen_tracer_wcx_secondary",
+        "qty": 1,
+        "role": "secondary",
+        "sku": "TCRWXSE"
+      }
+    ],
+    "mode": "duo",
+    "ok": true,
+    "problems": [],
+    "secondary_color": "white"
+  },
+  "handled": true,
+  "status": 200
+}

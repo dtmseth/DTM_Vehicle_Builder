@@ -1,0 +1,95 @@
+{
+  "_meta": {
+    "phase": "3 — qb_unassigned: real products, re-branded to their true manufacturer + homed",
+    "apply": "python tools/curate.py tools/curation/proposals/11_qb_unassigned_rebrand.json  (AFTER 01_new_part_types)",
+    "note": "merge with a single source = re-brand + re-home + rename in one op. Products whose brand is unknowable stay qb_unassigned (set_home only, in 12_qb_unassigned_residual.json)."
+  },
+  "merge": [
+    {"target_id": "pac_tool_hooklok", "model": "HookLok", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1001_b"], "_confidence": "high", "_why": "PAC Tool LOK-series fire-tool mount (sold in pairs); K/numbered-B SKUs are PAC Tool numbering"},
+    {"target_id": "pac_tool_handlelok", "model": "HandleLok", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1004_b"], "_confidence": "high", "_why": "PAC Tool LOK-series fire-tool mount"},
+    {"target_id": "pac_tool_jumbo_lok", "model": "Jumbo Lok", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1070_b"], "_confidence": "high", "_why": "PAC Tool LOK-series fire-tool mount"},
+    {"target_id": "pac_tool_flex_mount_short", "model": "Flex Mount Short HD", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1002s_hd_b"], "_confidence": "medium", "_why": "PAC Tool flex-mount bracket (same numbering family)"},
+    {"target_id": "pac_tool_tool_hanger_kit", "model": "Tool Hanger Kit", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_k5009_b"], "_confidence": "high", "_why": "PAC Tool K-series (matches pac_tool_k5003_b / k5046 already in catalog)"},
+    {"target_id": "pac_tool_axe_hanger", "model": "Flathead Axe Hanger / Pocket Kit", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_k5011"], "_confidence": "high", "_why": "PAC Tool K-series"},
+    {"target_id": "pac_tool_bolt_cutters_kit", "model": "Bolt Cutters Mounting Kit", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_k5029_1_b"], "_confidence": "high", "_why": "PAC Tool K-series"},
+    {"target_id": "pac_tool_halligan_kit", "model": "Halligan Tool Mounting Kit", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_k5032"], "_confidence": "high", "_why": "PAC Tool K-series"},
+    {"target_id": "pac_tool_universal_hanger", "model": "Universal Hanger", "manufacturer_id": "pac_tool", "fits_part_types": ["tool_mount"], "sources": ["qb_unassigned_1019_b"], "_confidence": "high", "_why": "1019-B = PAC Tool Universal Hanger model 1019, black variant (-B is PAC's color suffix, cf. 1004-B HandleLok) — weather/UV-resistant non-conductive hanger for cords/ropes/chains/tools, mounts flat or on PAC TRAC (pactoolmounts.com/products/universal-hanger-1019/; firepenny PAC-1019). Was wrongly queued for delete as an import artifact in plan 10 — moved here (EVIDENCE.md F30)"},
+
+    {"target_id": "whelen_295_siren", "model": "295 Series Siren Amp", "manufacturer_id": "whelen", "fits_part_types": ["siren_speaker"],
+     "sources": ["qb_unassigned_295sl100", "qb_unassigned_295slsa6"],
+     "_confidence": "high", "_why": "Whelen 295SL100 / 295SLSA6 are the classic Whelen 295-series siren amplifier/control — one product, two SKUs"},
+
+    {"target_id": "brother_pocketjet_power_cable", "model": "PocketJet Power Cable", "manufacturer_id": "brother", "fits_part_types": ["printer_power"], "sources": ["qb_unassigned_14331"], "_confidence": "high", "_why": "Brother PocketJet 7 power cable; printer_power is the workbook slot for exactly this"},
+    {"target_id": "brother_pocketjet_usb_cable", "model": "PocketJet USB Cable", "manufacturer_id": "brother", "fits_part_types": ["printer_usb"], "sources": ["qb_unassigned_14831", "qb_unassigned_printer_usb"], "_confidence": "high", "_why": "PocketJet USB cables (6ft + 10ft) as SKUs of one product; printer_usb slot"},
+
+    {"target_id": "lind_dell_power_adapter_2542", "model": "Dell Isolated Power Adapter", "manufacturer_id": "lind", "fits_part_types": ["docking_station"], "sources": ["qb_unassigned_de2045i_2542"], "_confidence": "high", "_why": "DE2045 is Lind numbering (lind_de2045_1342 already in catalog, homed docking_station — dock power supplies live there by convention)"},
+
+    {"target_id": "american_aluminum_ez_vault", "model": "E/Z Vault", "manufacturer_id": "american_aluminum", "fits_part_types": ["rear_storage_box"], "sources": ["qb_unassigned_e_z_vault"], "_confidence": "medium", "_why": "E/Z line is American Aluminum (E/Z-Rider, E/Z-Cool Guard); storage vault → rear_storage_box like ameralu_vault"},
+    {"target_id": "american_aluminum_cool_guard_pager", "model": "E/Z-Cool Guard Pager", "manufacturer_id": "american_aluminum", "fits_part_types": ["k9_heat_alarm_popper"], "sources": ["qb_unassigned_e_z_cool_guard_pager_system"], "_confidence": "medium", "_why": "Cool Guard = American Aluminum K9 heat-monitoring line"},
+    {"target_id": "american_aluminum_cool_guard_m910", "model": "E/Z-Cool Guard System Plus M910", "manufacturer_id": "american_aluminum", "fits_part_types": ["k9_heat_alarm_popper"], "sources": ["qb_unassigned_e_z_cool_guard_system_plus_m910"], "_confidence": "medium", "_why": "K9 heat alarm system (description explicitly: CoolGuard only, no door opener)"},
+    {"target_id": "american_aluminum_ez_rider_k9_platform", "model": "E/Z-Rider K9 Platform", "manufacturer_id": "american_aluminum", "fits_part_types": ["k9_kennel"], "sources": ["qb_unassigned_ezpf_interc_suv"], "_confidence": "high", "_why": "E/Z-Rider K9 containment platform for Interceptor SUV — a kennel system"},
+    {"target_id": "american_aluminum_hinged_water_dish", "model": "Hinged Universal Water Dish", "manufacturer_id": "american_aluminum", "fits_part_types": ["k9_add_ons"], "sources": ["qb_unassigned_new_hinged_universal_water_dish"], "_confidence": "high", "_why": "matches american_aluminum_aaadish (1-gal hinged water dish) — likely the same family"},
+    {"target_id": "american_aluminum_k9_rubber_mat", "model": "K9 Rubber Liner", "manufacturer_id": "american_aluminum", "fits_part_types": ["k9_add_ons"], "sources": ["qb_unassigned_rubber_mat_small"], "_confidence": "medium", "_why": "'FITS BELOW MODELS: ISUV' = American Aluminum K9 insert liner"},
+    {"target_id": "american_aluminum_vault_basket", "model": "SUV Vault Basket", "manufacturer_id": "american_aluminum", "fits_part_types": [], "sources": ["qb_unassigned_basket_add_on"], "_confidence": "medium", "_why": "4\" basket add-on for the SUV vault — accessory of the vault (role below), no home needed"},
+
+    {"target_id": "ace_k_9_acewatchdog", "model": "AceWatchDog", "manufacturer_id": "ace_k_9", "fits_part_types": ["k9_heat_alarm_popper"], "sources": ["qb_unassigned_awd_7040"], "_confidence": "medium", "_why": "AWD-7040 'for use with Pro Alarm systems' — Ace K9 heat-alarm ecosystem"},
+
+    {"target_id": "night_ride_nv3_display_kit", "model": "NV3 Display Kit", "manufacturer_id": "night_ride", "fits_part_types": ["thermal_imager_monitor"], "sources": ["qb_unassigned_nv3_dsp_kit"], "_confidence": "high", "_why": "8\" display + RAM mount kit for NightRide thermal — same shape as nightride_dsp_kit"},
+
+    {"target_id": "unity_spotlight_2016_fpiu", "model": "6\" Halogen Spotlight (2016 FPIU)", "manufacturer_id": "unity", "fits_part_types": ["spotlight"], "tag_ids": ["light"], "sources": ["qb_unassigned_211020_0002"], "_confidence": "high", "_why": "brand CONFIRMED Unity — unityusa.com lists 211020-0002 as 'Halogen 6\" Spotlight Black (325)(S04) LH': 325-series 6\" halogen post-mount spotlight, S04 shell, left-hand/driver side, 3000 lumens 12V (unityusa.com/211020-0002-Halogen-6-Spotlight-Black-325-S04-LH_p_1702.html) (EVIDENCE.md F25)"},
+    {"target_id": "unity_xled_spotlight", "model": "X-LED 6\" Spotlight", "manufacturer_id": "unity", "fits_part_types": ["spotlight"], "tag_ids": ["light"], "sources": ["qb_unassigned_x218016_0002"], "_confidence": "medium", "_why": "(X335)(S14) = Unity shell/series codes; LED pillar spotlight"},
+    {"target_id": "unity_shaft_headpost", "model": "Shaft & Headpost Assembly LH", "manufacturer_id": "unity", "fits_part_types": [], "sources": ["qb_unassigned_3615_dc_210"], "_confidence": "high", "_why": "description says UNITY; spotlight replacement assembly — accessory of the spotlights (role below)"},
+
+    {"target_id": "streamlight_sl20", "model": "SL-20 Flashlight", "manufacturer_id": "qb_unassigned", "fits_part_types": ["flashlight"],
+     "sources": ["qb_unassigned_sl_20l", "qb_unassigned_sl25302"],
+     "_confidence": "medium", "_why": "Streamlight SL-20 full-size rechargeable + 12V smart charger, two SKUs. Owner ruling C3 approved creating Streamlight in the manufacturers grid", "_question": "Streamlight manufacturer still doesn't exist in the grid — create it, then re-brand this product (kept qb_unassigned per the guide's Q2 rule: never write a manufacturer_id that isn't in the catalog)"},
+    {"target_id": "pelican_8060_flashlight", "model": "Pelican 8060 LED Flashlight", "manufacturer_id": "qb_unassigned", "fits_part_types": ["flashlight"], "sources": ["qb_unassigned_8060_led"], "_confidence": "medium", "_why": "rechargeable duty flashlight. Owner ruling C3 approved creating Pelican in the manufacturers grid", "_question": "Pelican manufacturer still doesn't exist in the grid — create + re-brand"},
+
+    {"target_id": "feniex_am900_work_light", "model": "AM900 Work Light", "manufacturer_id": "feniex", "fits_part_types": ["front_scene"], "tag_ids": ["light"],
+     "sources": ["qb_unassigned_wl_0118"],
+     "_confidence": "medium", "_why": "identical to feniex_am900 (same $39 AM900) — re-branded here; 24_feniex.json merges the pair into one product. White work light → scene, not warning"},
+
+    {"target_id": "tiger_tough_embroidery", "model": "Stock Embroidery", "manufacturer_id": "tiger_tough", "fits_part_types": [], "sources": ["qb_unassigned_tiger_tough_embroidery"], "_confidence": "medium", "_why": "Tiger Tough embroidery add-on for seat covers — accessory of the seat-cover products (role below), no home needed"},
+
+    {"target_id": "feniex_fusion_rotating_bracket", "model": "Fusion Rotating Bracket", "manufacturer_id": "feniex", "fits_part_types": ["bracket"], "sources": ["qb_unassigned_fn_4316"], "_confidence": "medium", "_why": "FN- numbering = Feniex; Fusion stick rotating mount"},
+
+    {"target_id": "soundoff_enfwbfs", "model": "NFORCE Interior Front Split Visor Bar", "manufacturer_id": "soundoff", "fits_part_types": ["front_interior_light_bar"], "tag_ids": ["light"],
+     "sources": ["soundoff_enfwbfs", "qb_unassigned_enfwbfs_dual_color"],
+     "_confidence": "high", "_why": "ENFWBFS dual-color is a SKU variant of the existing soundoff_enfwbfs visor bar"}
+  ],
+  "set_home": [
+    {"product_id": "pac_tool_k5003_b", "fits_part_types": ["tool_mount"], "_confidence": "high", "_why": "PAC Tool irons lock kit — already branded, just unhomed"},
+    {"product_id": "pac_tool_k5046", "fits_part_types": ["tool_mount"], "_confidence": "high", "_why": "10# fire extinguisher / SCBA mount"}
+  ],
+  "set_accessory": [
+    {"product_id": "american_aluminum_vault_basket", "accessory_category": "other", "accessory_of_products": ["american_aluminum_ameralu_vault", "american_aluminum_ez_vault"], "_confidence": "medium"},
+    {"product_id": "unity_shaft_headpost", "accessory_category": "other", "accessory_of_products": ["unity_spotlight_2016_fpiu", "unity_xled_spotlight"], "_confidence": "medium"},
+    {"product_id": "brother_pocketjet_power_cable", "accessory_category": "cable", "accessory_of_products": ["brother_pj_822"], "_confidence": "high"},
+    {"product_id": "brother_pocketjet_usb_cable", "accessory_category": "cable", "accessory_of_products": ["brother_pj_822"], "_confidence": "high"},
+    {"product_id": "lind_dell_power_adapter_2542", "accessory_category": "cable", "accessory_of_products": ["gamber_johnson_7110_1213"], "_confidence": "medium", "_why": "power adapter for the Dell dock family"},
+    {"product_id": "tiger_tough_embroidery", "accessory_category": "other", "accessory_of_products": ["tiger_tough_standard"], "_confidence": "medium", "_why": "embroidery option on the seat-cover line"},
+    {"product_id": "feniex_fusion_rotating_bracket", "accessory_category": "bracket_mount", "accessory_of_products": ["feniex_fusion_surface_mount"], "_confidence": "medium"}
+  ],
+  "delete_products": [
+    "qb_unassigned_1u78120a_1i", "qb_unassigned_1u78144a_1i", "qb_unassigned_1u78168a_1e1i",
+    "qb_unassigned_1u78168a_1i", "qb_unassigned_1u78168a_2e", "qb_unassigned_1u78192a_2e",
+    "qb_unassigned_1u78120rack_1", "qb_unassigned_1u78144rack_1", "qb_unassigned_1u78168rack_1",
+    "qb_unassigned_1utiedown", "qb_unassigned_2ut7866ramp", "qb_unassigned_cstc1000101",
+    "qb_unassigned_ctr1420575da"
+  ],
+  "_delete_notes": {
+    "qb_unassigned_1u78120a_1i": "HIGH — owner ruling C2.1: trailers OUT, QB-only, removed from the builder catalog. JB Lund utility trailer + rack/tie-down/ramp/spare-tire/spare-wheel family (13 QB items) never appears on a build sheet",
+    "qb_unassigned_1u78144a_1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_1e1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_1i": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78168a_2e": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78192a_2e": "HIGH — owner ruling C2.1: trailers OUT (see qb_unassigned_1u78120a_1i)",
+    "qb_unassigned_1u78120rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1u78144rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1u78168rack_1": "HIGH — owner ruling C2.1: trailer rail add-on, same removal",
+    "qb_unassigned_1utiedown": "HIGH — owner ruling C2.1: trailer tie-down accessory, same removal",
+    "qb_unassigned_2ut7866ramp": "HIGH — owner ruling C2.1: trailer bi-fold ramp accessory, same removal",
+    "qb_unassigned_cstc1000101": "HIGH — owner ruling C2.1: trailer spare-tire carrier, same removal",
+    "qb_unassigned_ctr1420575da": "HIGH — owner ruling C2.1: trailer spare wheel, same removal"
+  }
+}

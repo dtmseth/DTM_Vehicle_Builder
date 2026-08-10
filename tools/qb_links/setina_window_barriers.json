@@ -1,0 +1,131 @@
+{
+  "manufacturer_id": "setina",
+  "links": [
+    {
+      "sku": "WK0513CGR11",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "WK0514BLE24H",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "WK0514CHT191500",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "WK0514DRT191500CL",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "RAM-1500"
+      ]
+    },
+    {
+      "sku": "WK0514DUR11",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "WK0514ITU20",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "WK0514ITU20H",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "WK0514TAH21",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "WK0514TAH21H",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "WK0594CGR11",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "WK0595DUR11",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "WK0595FDT15F150P",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "WK0595ITU20",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "WK0595TAH21",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "WK1491DUR11T",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "WK1491FDT15F150T",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "WK1491ITU20T",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "WK1491TAH21T",
+      "product": "setina_steel_vertical",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    }
+  ]
+}

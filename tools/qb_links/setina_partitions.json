@@ -1,0 +1,280 @@
+{
+  "manufacturer_id": "setina",
+  "new_products": [
+    {
+      "product_id": "setina_dual_prisoner",
+      "model": "DUAL PRISONER PARTITION",
+      "fits_part_types": [
+        "front_partition"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "1K0574CHT191500",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "1K0574DUR11",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "1K0574DUR11FSR",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "1K0574FDT15F150PDR",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "1K0574FDT15F150WOD",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "1K0574ITU20FR",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "1K0574ITU20WD",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "1K0574TAH21FR",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "1K0574TAH21WD",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "1K0576TAH21WD",
+      "product": "setina_single_prisioner",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "2K0035CHT191500RPWDRW",
+      "product": "setina_dual_prisoner",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "2K0035ITU20RPFRTM",
+      "product": "setina_dual_prisoner",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "2K0035TAH21FPWD",
+      "product": "setina_dual_prisoner",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "2K0035TAH21RPFC",
+      "product": "setina_dual_prisoner",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0123TAH212ND",
+      "product": "setina_steel_window",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0228CHT191500",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "PK0228DUR11",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "PK0228ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK0228TAH21",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0316BLE242ND",
+      "product": "setina_poly_window",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "PK0316DUR112ND",
+      "product": "setina_poly_window",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "PK0316EPD182ND",
+      "product": "setina_poly_window",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "PK0316TAH212ND",
+      "product": "setina_poly_window",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0350TAH21",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0355ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK0369ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK0374CHT191500",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "PK0374ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK0419CHT191500",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "PK0419DUR11",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "PK0419EPD18",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "PK0419FDT15F150",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "PK0419ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK0419TAH21",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK0439ITU20TM",
+      "product": "setina_full_partition",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "PK1126BLE24",
+      "product": "setina_full_xl_partition",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "PK1152TAH21",
+      "product": "setina_full_xl_partition",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "PK1188CHT191500",
+      "product": "setina_full_xl_partition",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    }
+  ]
+}

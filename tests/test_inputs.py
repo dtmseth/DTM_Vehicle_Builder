@@ -259,6 +259,43 @@ class TestDraftToProjectInput:
         assert len(project.parts) == 1
         assert isinstance(project.parts[0], PartInput)
 
+    def test_linked_manifest_part_is_still_sent_to_the_planner(self):
+        draft = new_draft(
+            vehicle_info={"VehicleType": "TAHOE"},
+            parts=[
+                DraftPart(name="Push Bumper", line_id="BUMPER"),
+                DraftPart(
+                    name="Forward Warning 1", location="TOP TUBE", quantity=4,
+                    line_id="ION_LIGHTS", linked_parent_line_id="BUMPER",
+                    part_type="warning_light",
+                ),
+            ],
+        )
+
+        project = draft_to_project_input(draft)
+
+        assert [(part.name, part.location, part.quantity) for part in project.parts] == [
+            ("Push Bumper", "", 0),
+            ("Forward Warning 1", "TOP TUBE", 4),
+        ]
+
+    def test_accessory_parent_relationship_is_sent_to_the_planner(self):
+        draft = new_draft(
+            vehicle_info={"VehicleType": "TAHOE"},
+            parts=[
+                DraftPart(name="Push Bumper", line_id="BUMPER"),
+                DraftPart(
+                    name="Push Bumper · Bracket", line_id="BRACKET",
+                    parent_line_id="BUMPER", accessory_category="bracket_mount",
+                ),
+            ],
+        )
+
+        project = draft_to_project_input(draft)
+
+        assert project.parts[1].parent_line_id == "BUMPER"
+        assert project.parts[1].accessory_category == "bracket_mount"
+
     def test_location_forwarded(self):
         project = draft_to_project_input(self._make_draft())
         assert project.parts[0].location == "Roof"  # canonical_name preserves case unless aliased

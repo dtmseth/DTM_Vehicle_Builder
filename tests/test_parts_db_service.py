@@ -104,6 +104,11 @@ _SYNTHETIC_DB = {
             "tree_positions": [{"section": "exterior", "zone": "front"}],
             "workbook_label_pattern": "Forward Warning {n}",
             "sequence_scope": "global",
+            "render": {
+                "images": {"front": "equipment/test_warning.png"},
+                "size_per_view": {"front": {"w": 0.5, "h": 0.25}},
+                "quantity_rules": [{"qty": 1, "slot_count": 1}],
+            },
         },
         "side_warning": {
             "label": "Side Warning",
@@ -302,6 +307,8 @@ class TestPartTypeQueries:
         pt = svc.get_part_type("forward_warning")
         assert pt is not None
         assert pt.workbook_label_pattern == "Forward Warning {n}"
+        assert pt.render["images"]["front"] == "equipment/test_warning.png"
+        assert pt.render["size_per_view"]["front"] == {"w": 0.5, "h": 0.25}
 
 
 # ── Products ────────────────────────────────────────────────────────────────
@@ -376,6 +383,18 @@ class TestCaching:
         assert svc._cache is not None
         svc.invalidate()
         assert svc._cache is None
+
+    def test_external_parts_db_write_refreshes_cached_catalog(self, tmp_path):
+        paths = _paths_with_db(tmp_path)
+        svc = PartsDbService(paths)
+        assert svc.get_product("whelen_ion_t").model == "ION T-Series"
+
+        db_path = paths.workspace_config_dir / "parts_db.json"
+        doc = json.loads(db_path.read_text("utf-8"))
+        doc["products"]["whelen_ion_t"]["model"] = "ION T-Series refreshed"
+        db_path.write_text(json.dumps(doc), "utf-8")
+
+        assert svc.get_product("whelen_ion_t").model == "ION T-Series refreshed"
 
 
 class TestMissingFile:

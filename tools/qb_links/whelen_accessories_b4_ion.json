@@ -1,0 +1,20 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b batch 4: ION / ION-T mounting brackets. Two products (both fit the generic `bracket` type, wired product-level): (1) ION Grille Mount holds IONBKT9 (Tahoe/Suburban grille-mount pair) on the standard whelen_ion; (2) ION-T Mount Kit holds the four universal T-Series ION mounts (universal bracket, license-plate brackets, wedges) on whelen_ion_t_hd_array. Split by ION vs ION-T so a standard-ION build doesn't see ION-T license-plate mounts. required:false. friendly_name + vehicle_tags per convention; the T-Series mounts are vehicle-agnostic so ['any'].",
+  "new_products": [
+    {"product_id": "whelen_ion_grille_mount", "model": "ION Grille Mount", "fits_part_types": ["bracket"]},
+    {"product_id": "whelen_ion_t_mount_kit",  "model": "ION-T Mount Kit",  "fits_part_types": ["bracket"]}
+  ],
+  "links": [
+    {"sku": "IONBKT9",  "product": "whelen_ion_grille_mount", "vehicle_tags": ["TAHOE", "SUBURBAN"], "friendly_name": "Grille-mount pair: Tahoe '21-24 / Suburban '21-26"},
+
+    {"sku": "TIONBKT1", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "T-Series universal mount"},
+    {"sku": "TIONBKT2", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "T-Series license-plate bracket"},
+    {"sku": "TIONMBK2", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "Mini ION-T license-plate mount"},
+    {"sku": "TIONWEDG", "product": "whelen_ion_t_mount_kit", "vehicle_tags": ["any"], "friendly_name": "T-Series mounting wedges"}
+  ],
+  "set_accessories": {
+    "whelen_ion":            [{"category": "bracket_mount", "product_id": "whelen_ion_grille_mount", "required": false}],
+    "whelen_ion_t_hd_array": [{"category": "bracket_mount", "product_id": "whelen_ion_t_mount_kit",  "required": false}]
+  }
+}

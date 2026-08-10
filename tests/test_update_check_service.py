@@ -268,11 +268,11 @@ def test_get_pending_update_info_reports_version(tmp_path: Path, monkeypatch):
         queue_installer_for_next_launch,
     )
     paths = _paths_with_workspace(tmp_path)
-    src = tmp_path / "DTM_Vehicle_Builder_Setup-2.3.0.exe"
+    src = tmp_path / "DTM_Vehicle_Builder_Setup-3.0.1.exe"
     src.write_bytes(b"x")
     queue_installer_for_next_launch(src, paths)
     info = get_pending_update_info(paths)
-    assert info == {"version": "2.3.0", "filename": "DTM_Vehicle_Builder_Setup-2.3.0.exe"}
+    assert info == {"version": "3.0.1", "filename": "DTM_Vehicle_Builder_Setup-3.0.1.exe"}
 
 
 def test_get_pending_update_info_returns_none_when_empty(tmp_path: Path, monkeypatch):

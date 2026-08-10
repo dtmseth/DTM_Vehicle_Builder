@@ -1,0 +1,41 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Phase 5b SLICE: representative accessory data to drive the UI build. Creates 3 accessory products (Inner Edge lighthead/shroud, CenCom Core CANPORT cable) fitting accessory part_types, links their QB SKUs, and wires them as accessories of FST/RST/CenCom Core. The remaining ~123 accessory SKUs are bulk-curated after the picker UI is proven.",
+  "new_products": [
+    {"product_id": "whelen_ie_lighthead",      "model": "Inner Edge Lighthead",     "fits_part_types": ["lighthead"]},
+    {"product_id": "whelen_ie_shroud",         "model": "Inner Edge Shroud",        "fits_part_types": ["shroud"]},
+    {"product_id": "whelen_core_canport_cable","model": "CenCom Core CANPORT Cable", "fits_part_types": ["cable"]}
+  ],
+  "links": [
+    {"sku": "ISSB",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISSR",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISTRBA", "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISTRBC", "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISDD",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISDE",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISDJ",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISDK",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISDM",   "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+    {"sku": "ISTBCA", "product": "whelen_ie_lighthead", "vehicle_tags": ["any"]},
+
+    {"sku": "THSG1", "product": "whelen_ie_shroud", "vehicle_tags": ["any"]},
+    {"sku": "THSG2", "product": "whelen_ie_shroud", "vehicle_tags": ["any"]},
+
+    {"sku": "C399K2", "product": "whelen_core_canport_cable", "vehicle_tags": ["any"]},
+    {"sku": "C399K4", "product": "whelen_core_canport_cable", "vehicle_tags": ["any"]},
+    {"sku": "C399K5", "product": "whelen_core_canport_cable", "vehicle_tags": ["any"]}
+  ],
+  "set_accessories": {
+    "whelen_fst": [
+      {"category": "lighthead", "product_id": "whelen_ie_lighthead", "required": true},
+      {"category": "shroud",    "product_id": "whelen_ie_shroud",    "required": false}
+    ],
+    "whelen_rst": [
+      {"category": "lighthead", "product_id": "whelen_ie_lighthead", "required": true},
+      {"category": "shroud",    "product_id": "whelen_ie_shroud",    "required": false}
+    ],
+    "whelen_core": [
+      {"category": "cable", "product_id": "whelen_core_canport_cable", "required": false}
+    ]
+  }
+}

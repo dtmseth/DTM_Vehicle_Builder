@@ -8,6 +8,7 @@ window._PT = {
   vehicles:       [],
   vehicleMap:     {},
   projects:       [],
+  agencies:       [],
   projectOptions: {
     build_types:     ["Patrol", "Admin", "Unmarked", "K-9", "Fire"],
     camera_brands:   [],
@@ -40,7 +41,7 @@ window._PT = {
 
   // build editor return target + current context
   pbeReturnProject: null,
-  pbeReturnTab:     "builds",
+  pbeReturnTab:     "overview",
   pbeUnit:          null,   // unit object open in the build editor
   pbeProject:       null,   // project object open in the build editor
   pbeDraftId:       null,   // draft_id currently loaded
@@ -69,6 +70,39 @@ function _ptUnitLabel(unit, ind, idx) {
   const bt  = (unit.build_type || "Unit").trim();
   const num = ind?.unit_number?.trim();
   return num ? `${bt} #${num}` : `${bt} #${idx + 1}`;
+}
+
+const _PT_CUSTOM_BUILD_TYPE = "__custom__";
+
+function _ptIsCustomBuildType(buildType) {
+  const standard = _PT.projectOptions?.build_types || [];
+  return !!buildType && !standard.includes(buildType);
+}
+
+function _ptBuildTypeOptions(buildType, customOpen = false) {
+  const standard = _PT.projectOptions?.build_types || ["Patrol", "Admin", "Unmarked", "K-9", "Fire"];
+  const isCustom = customOpen || _ptIsCustomBuildType(buildType);
+  return [
+    ...standard.map(value => `<option value="${esc(value)}"${value === buildType ? " selected" : ""}>${esc(value)}</option>`),
+    `<option value="${_PT_CUSTOM_BUILD_TYPE}"${isCustom ? " selected" : ""}>Add custom build type…</option>`,
+  ].join("");
+}
+
+function _ptEscAttr(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function _ptCustomBuildTypeInput(buildType, className, customOpen = false) {
+  if (!customOpen && !_ptIsCustomBuildType(buildType)) return "";
+  return `<div class="form-group proj-custom-buildtype-group">
+    <label>Custom build type</label>
+    <input class="${className}" type="text" value="${_ptEscAttr(buildType)}" placeholder="e.g. Drone Squad" maxlength="80">
+    <div class="field-hint">Saved only on this project; it will not be added to the standard list.</div>
+  </div>`;
 }
 
 function _ptVisiblePresets() {
@@ -128,7 +162,7 @@ function _ptIndRowHtml(ind) {
         <input class="ind-unit-number" type="text" value="${esc(ind.unit_number || "")}" placeholder="101">
       </div>
       <div class="form-group proj-ind-field-xs">
-        <label class="proj-ind-label">Year</label>
+        <label class="proj-ind-label">Vehicle Year</label>
         <input class="ind-year" type="text" value="${esc(ind.year || "")}" placeholder="2026">
       </div>
       <div class="form-group proj-ind-field-sm">

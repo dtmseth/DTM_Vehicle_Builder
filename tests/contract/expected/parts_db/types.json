@@ -1,0 +1,33 @@
+{
+  "body": {
+    "types": [
+      {
+        "label": "Extras",
+        "requires_attribute": "",
+        "type_id": "extras"
+      },
+      {
+        "label": "Structural",
+        "requires_attribute": "",
+        "type_id": "structural"
+      },
+      {
+        "label": "Equipment",
+        "requires_attribute": "",
+        "type_id": "equipment"
+      },
+      {
+        "label": "Lights",
+        "requires_attribute": "",
+        "type_id": "lights"
+      },
+      {
+        "label": "K-9",
+        "requires_attribute": "has_k9",
+        "type_id": "k9"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

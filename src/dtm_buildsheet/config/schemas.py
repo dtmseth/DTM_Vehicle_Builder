@@ -204,6 +204,27 @@ def _validate_asset_manifest(normalized: dict) -> None:
             if key not in light_rule:
                 raise ValueError(f"asset_manifest.json light_icon_rule missing '{key}'")
 
+    definitions = normalized.get("size_rule_definitions", {})
+    if not isinstance(definitions, dict):
+        raise ValueError("asset_manifest.json size_rule_definitions must be an object")
+    for profile_id, profile in definitions.items():
+        if not isinstance(profile, dict):
+            raise ValueError(f"asset_manifest.json size profile '{profile_id}' must be an object")
+        views = profile.get("views", {})
+        if not isinstance(views, dict):
+            raise ValueError(f"asset_manifest.json size profile '{profile_id}' views must be an object")
+        for view, dimensions in views.items():
+            if not isinstance(dimensions, dict) or not all(key in dimensions for key in ("w", "h")):
+                raise ValueError(
+                    f"asset_manifest.json size profile '{profile_id}' view '{view}' must contain w and h"
+                )
+
+    size_rules = normalized.get("part_number_size_rules", {})
+    if not isinstance(size_rules, dict):
+        raise ValueError("asset_manifest.json part_number_size_rules must be an object")
+    if not all(isinstance(value, str) for value in size_rules.values()):
+        raise ValueError("asset_manifest.json part_number_size_rules values must be profile IDs")
+
 
 def _validate_parts_library(normalized: dict) -> None:
     parts = normalized.get("parts")
@@ -265,12 +286,14 @@ _PARTS_DB_REQUIRED_TOP_KEYS = (
     "placements",
     "placement_zones",
     "services",
+    "system_cable_refreshes",
     "preference_filters",
     "color_palette",
     "naming_rules",
 )
 _PRODUCT_REQUIRED_KEYS = ("manufacturer_id", "model")
 _PART_TYPE_REQUIRED_KEYS = ("label", "type_id")
+_FAMILY_REQUIRED_KEYS = ("label", "category", "members")
 
 
 def _validate_parts_db(normalized: dict) -> None:
@@ -311,11 +334,215 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(
                     f"parts_db.json product '{product_id}' part_numbers[{idx}] missing 'part_number'"
                 )
+            if "size_rule_id" in pn and not isinstance(pn["size_rule_id"], str):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' part_numbers[{idx}] size_rule_id must be a string"
+                )
+        render = spec.get("render")
+        if render is not None:
+            if not isinstance(render, dict):
+                raise ValueError(f"parts_db.json product '{product_id}' render must be an object")
+            if "size_rule_id" in render and not isinstance(render["size_rule_id"], str):
+                raise ValueError(f"parts_db.json product '{product_id}' render.size_rule_id must be a string")
+            if (
+                "center_single_at_mirror_location" in render
+                and not isinstance(render["center_single_at_mirror_location"], bool)
+            ):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' render.center_single_at_mirror_location must be a boolean"
+                )
+        aliases = spec.get("model_aliases")
+        if aliases is not None and not (
+            isinstance(aliases, list) and all(isinstance(alias, str) and alias.strip() for alias in aliases)
+        ):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' model_aliases must be a list of non-empty strings"
+            )
         fits = spec.get("fits_part_types", [])
         if not isinstance(fits, list):
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fits_part_types' must be a list"
             )
+        for field in ("picker_primary_part_type", "global_search_part_type"):
+            picker_primary_part_type = spec.get(field)
+            if picker_primary_part_type is not None and (
+                not isinstance(picker_primary_part_type, str)
+                or picker_primary_part_type not in fits
+            ):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' '{field}' "
+                    "must be a part type listed in 'fits_part_types'"
+                )
+        location_options = spec.get("location_options")
+        if location_options is not None and not (
+            isinstance(location_options, list) and all(isinstance(x, str) for x in location_options)
+        ):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'location_options' must be a list of strings"
+            )
+        fixed_location = spec.get("fixed_location")
+        if fixed_location is not None and not isinstance(fixed_location, str):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
+            )
+        for field in ("allow_custom_location", "pa_mic_required"):
+            value = spec.get(field)
+            if value is not None and not isinstance(value, bool):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' '{field}' must be a boolean"
+                )
+        default_colors = spec.get("default_colors")
+        if default_colors is not None and not (
+            isinstance(default_colors, list) and all(isinstance(x, str) for x in default_colors)
+        ):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'default_colors' must be a list of strings"
+            )
+        accessories_disabled = spec.get("accessories_disabled")
+        if accessories_disabled is not None and not isinstance(accessories_disabled, bool):
+            raise ValueError(
+                f"parts_db.json product '{product_id}' 'accessories_disabled' must be a boolean"
+            )
+        console_kit = spec.get("console_kit")
+        if console_kit is not None:
+            if not isinstance(console_kit, dict):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' 'console_kit' must be an object"
+                )
+            if not isinstance(console_kit.get("style", ""), str) or not console_kit.get("style", "").strip():
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' console_kit requires a non-empty 'style'"
+                )
+            if not isinstance(console_kit.get("included", {}), dict):
+                raise ValueError(
+                    f"parts_db.json product '{product_id}' console_kit 'included' must be an object"
+                )
+
+    # Guided radio/radar/camera cable-refresh choices are intentionally
+    # authored separately from the product browse tree.  Each choice must
+    # resolve to a live QB-linked SKU so selecting a refresh creates a billable
+    # estimate line rather than a descriptive, unpriced manifest note.
+    cable_refreshes = normalized.get("system_cable_refreshes")
+    if not isinstance(cable_refreshes, dict):
+        raise ValueError("parts_db.json 'system_cable_refreshes' must be an object")
+    for system_id, entries in cable_refreshes.items():
+        if system_id not in {"radio", "radar", "camera"}:
+            raise ValueError(
+                f"parts_db.json system_cable_refreshes has unknown system '{system_id}'"
+            )
+        if not isinstance(entries, list):
+            raise ValueError(
+                f"parts_db.json system_cable_refreshes '{system_id}' must be a list"
+            )
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] must be an object"
+                )
+            for key in ("id", "label", "part_type", "billing_options"):
+                if key not in entry:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] missing '{key}'"
+                    )
+            if not isinstance(entry["id"], str) or not entry["id"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a non-empty id"
+                )
+            if not isinstance(entry["label"], str) or not entry["label"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a non-empty label"
+                )
+            if not isinstance(entry["part_type"], str) or not entry["part_type"].strip():
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires a part_type"
+                )
+            if "billing_once" in entry and not isinstance(entry["billing_once"], bool):
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_once must be a boolean"
+                )
+            options = entry["billing_options"]
+            if not isinstance(options, list) or not options:
+                raise ValueError(
+                    f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] requires billing_options"
+                )
+            for opt_idx, option in enumerate(options):
+                if not isinstance(option, dict):
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_options[{opt_idx}] must be an object"
+                    )
+                product_id = option.get("product_id")
+                part_number = option.get("part_number")
+                if not isinstance(product_id, str) or not product_id or not isinstance(part_number, str) or not part_number:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] billing_options[{opt_idx}] requires product_id and part_number"
+                    )
+                product = products.get(product_id)
+                if not product:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] references unknown product '{product_id}'"
+                    )
+                sku = next((pn for pn in (product.get("part_numbers") or [])
+                            if pn.get("part_number") == part_number), None)
+                if not sku:
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] references unknown SKU '{part_number}'"
+                    )
+                if not sku.get("qb_item_id") or sku.get("qb_inactive"):
+                    raise ValueError(
+                        f"parts_db.json system_cable_refreshes '{system_id}'[{idx}] SKU '{part_number}' must be live and QB-linked"
+                    )
+
+    # Optional families collection (browse-time grouping, orthogonal to type_id/
+    # zone/section — see docs/audit/PART_TYPE_TAXONOMY_PROPOSAL.md). Additive: absent
+    # entirely on older parts_db.json, so this block is skipped when the key is missing.
+    families = normalized.get("families")
+    if families is not None:
+        if not isinstance(families, dict):
+            raise ValueError("parts_db.json 'families' must be an object keyed by family_id")
+        for family_id, spec in families.items():
+            if not isinstance(spec, dict):
+                raise ValueError(f"parts_db.json family '{family_id}' must be an object")
+            for key in _FAMILY_REQUIRED_KEYS:
+                if key not in spec:
+                    raise ValueError(f"parts_db.json family '{family_id}' missing '{key}'")
+            members = spec.get("members")
+            if not isinstance(members, list) or not all(isinstance(m, str) for m in members):
+                raise ValueError(
+                    f"parts_db.json family '{family_id}' 'members' must be a list of part_type_id strings"
+                )
+            picker_part_label = spec.get("picker_part_label")
+            if picker_part_label is not None and not isinstance(picker_part_label, str):
+                raise ValueError(
+                    f"parts_db.json family '{family_id}' 'picker_part_label' must be a string"
+                )
+            fixed_location = spec.get("fixed_location")
+            if fixed_location is not None and not isinstance(fixed_location, str):
+                raise ValueError(
+                    f"parts_db.json family '{family_id}' 'fixed_location' must be a string"
+                )
+
+    manifest_groups = normalized.get("manifest_groups")
+    if manifest_groups is not None:
+        if not isinstance(manifest_groups, dict):
+            raise ValueError("parts_db.json 'manifest_groups' must be an object")
+        groups = manifest_groups.get("groups", [])
+        if not isinstance(groups, list):
+            raise ValueError("parts_db.json manifest_groups.groups must be a list")
+        for group in groups:
+            if not isinstance(group, dict):
+                raise ValueError("parts_db.json manifest_groups.groups entries must be objects")
+            for key in ("group_id", "label"):
+                if not isinstance(group.get(key), str) or not group.get(key):
+                    raise ValueError(f"parts_db.json manifest group missing string '{key}'")
+            subgroups = group.get("subgroups", [])
+            if subgroups is not None and not isinstance(subgroups, list):
+                raise ValueError("parts_db.json manifest group subgroups must be a list")
+            for subgroup in subgroups or []:
+                if not isinstance(subgroup, dict):
+                    raise ValueError("parts_db.json manifest subgroup entries must be objects")
+                for key in ("subgroup_id", "label"):
+                    if not isinstance(subgroup.get(key), str) or not subgroup.get(key):
+                        raise ValueError(f"parts_db.json manifest subgroup missing string '{key}'")
 
     part_types = normalized.get("part_types")
     if not isinstance(part_types, dict):
@@ -342,6 +569,111 @@ def _validate_parts_db(normalized: dict) -> None:
                     raise ValueError(
                         f"parts_db.json part_type '{pt_id}' tree_positions[{idx}] missing '{k}'"
                     )
+        # Optional location model (per-part-type, see docs/PARTS_DB_AND_PICKER.md):
+        # location_mode is 'placement' (visual, coordinate-driven — lights/bumpers)
+        # or 'text' (a curated pick-list of mount locations — interior/equipment).
+        lmode = spec.get("location_mode")
+        if lmode is not None and lmode not in ("placement", "text"):
+            raise ValueError(
+                f"parts_db.json part_type '{pt_id}' location_mode must be "
+                f"'placement' or 'text' (got {lmode!r})"
+            )
+        lopts = spec.get("location_options")
+        if lopts is not None and not (
+            isinstance(lopts, list) and all(isinstance(x, str) for x in lopts)
+        ):
+            raise ValueError(
+                f"parts_db.json part_type '{pt_id}' location_options must be a list of strings"
+            )
+        recommendations = spec.get("recommended_accessories")
+        if recommendations is not None:
+            if not isinstance(recommendations, list):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' recommended_accessories must be a list"
+                )
+            for idx, recommendation in enumerate(recommendations):
+                if not isinstance(recommendation, dict):
+                    raise ValueError(
+                        f"parts_db.json part_type '{pt_id}' recommended_accessories[{idx}] must be an object"
+                    )
+                for key in ("category", "product_id", "when_existing_part_type", "message"):
+                    value = recommendation.get(key)
+                    if not isinstance(value, str) or not value.strip():
+                        raise ValueError(
+                            f"parts_db.json part_type '{pt_id}' recommended_accessories[{idx}] "
+                            f"requires a non-empty '{key}'"
+                        )
+                minimum = recommendation.get("minimum_existing_count")
+                if isinstance(minimum, bool) or not isinstance(minimum, int) or minimum < 1:
+                    raise ValueError(
+                        f"parts_db.json part_type '{pt_id}' recommended_accessories[{idx}] "
+                        "minimum_existing_count must be an integer of at least 1"
+                    )
+        # Optional family membership (additive; see 'families' above). Kept alongside
+        # .category, not in place of it — the picker still reads .category until it
+        # migrates to family_id + families[...].picker_flow.
+        family_id = spec.get("family_id")
+        if family_id is not None and not isinstance(family_id, str):
+            raise ValueError(f"parts_db.json part_type '{pt_id}' family_id must be a string")
+        render = spec.get("render")
+        if render is not None:
+            if not isinstance(render, dict):
+                raise ValueError(f"parts_db.json part_type '{pt_id}' render must be an object")
+            if "size_rule_id" in render and not isinstance(render["size_rule_id"], str):
+                raise ValueError(f"parts_db.json part_type '{pt_id}' render.size_rule_id must be a string")
+            images = render.get("images")
+            if images is not None and not (
+                isinstance(images, dict)
+                and all(isinstance(k, str) and isinstance(v, str) for k, v in images.items())
+            ):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.images must be an object of view → asset path"
+                )
+            sizes = render.get("size_per_view")
+            if sizes is not None:
+                if not isinstance(sizes, dict):
+                    raise ValueError(
+                        f"parts_db.json part_type '{pt_id}' render.size_per_view must be an object"
+                    )
+                for view, size in sizes.items():
+                    if not isinstance(view, str) or not isinstance(size, dict):
+                        raise ValueError(
+                            f"parts_db.json part_type '{pt_id}' render.size_per_view entries must be objects"
+                        )
+                    if "w" not in size or "h" not in size:
+                        raise ValueError(
+                            f"parts_db.json part_type '{pt_id}' render.size_per_view['{view}'] missing w/h"
+                        )
+            qrules = render.get("quantity_rules")
+            if qrules is not None and not isinstance(qrules, list):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.quantity_rules must be a list"
+                )
+            default_views = render.get("default_views")
+            if default_views is not None and not (
+                isinstance(default_views, list) and all(isinstance(view, str) for view in default_views)
+            ):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.default_views must be a list of strings"
+                )
+            is_fixture = render.get("is_fixture")
+            if is_fixture is not None and not isinstance(is_fixture, bool):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.is_fixture must be a boolean"
+                )
+            quantity_policy = render.get("render_quantity_policy")
+            if quantity_policy is not None and quantity_policy not in {
+                "location_slots", "single_per_line", "quantity_as_slots",
+            }:
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' has invalid render.render_quantity_policy "
+                    f"{quantity_policy!r}"
+                )
+            co_part_rules = render.get("co_part_rules")
+            if co_part_rules is not None and not isinstance(co_part_rules, list):
+                raise ValueError(
+                    f"parts_db.json part_type '{pt_id}' render.co_part_rules must be a list"
+                )
 
 
 def _validate_legacy_workbook_index(normalized: dict) -> None:

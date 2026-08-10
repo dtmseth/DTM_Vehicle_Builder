@@ -1,0 +1,7290 @@
+{
+ "generated": "2026-07-07",
+ "source": "workbook_rules.json v1.0 + legacy_workbook_index.json + parts_db.json",
+ "counts": {
+  "workbook_labels": 132,
+  "base_slots": 106,
+  "mapped": 106,
+  "confirmed_clean": 32,
+  "conflicts_need_ruling": 2,
+  "gaps": 72
+ },
+ "sections": [
+  {
+   "label": "PUSH BUMPER / FRONT STRUCTURE",
+   "parts": [
+    "Push Bumper",
+    "Pit Bar",
+    "Wing Wraps",
+    "Wire Covers"
+   ]
+  },
+  {
+   "label": "FRONT WARNING LIGHTS",
+   "parts": [
+    "Forward Warning 1",
+    "FW 1 Bracket",
+    "Forward Warning 2",
+    "FW 2 Bracket",
+    "Front Side Warning",
+    "Front Side Brackets",
+    "Pit Bar Warning",
+    "Headlight Flasher",
+    "Front Scene"
+   ]
+  },
+  {
+   "label": "SIREN / SPEAKER / PA",
+   "parts": [
+    "Siren Speaker 1",
+    "Siren Speaker 2",
+    "Siren Speaker Bracket",
+    "External Amp",
+    "Howler",
+    "Pa Mic",
+    "Pa Mic Clip"
+   ]
+  },
+  {
+   "label": "FRONT SPECIALTY",
+   "parts": [
+    "Opticom",
+    "Front Dome Light",
+    "Cradle Point",
+    "Cradle Point Antenna"
+   ]
+  },
+  {
+   "label": "MIRROR & SIDE WARNING LIGHTS",
+   "parts": [
+    "Mirror Warning 1",
+    "Mirror Warning Brackets 1",
+    "Mirror Warning 2",
+    "Mirror Warning Brackets 2",
+    "Side Warning 1",
+    "Side Warning Bracket 1",
+    "Side Warning 2",
+    "Side Warning Bracket 2",
+    "Side Warning 3",
+    "Side Warning Bracket 3",
+    "Side Scene"
+   ]
+  },
+  {
+   "label": "LIGHT BARS",
+   "parts": [
+    "Roof Light Bar",
+    "Front Interior Light Bar",
+    "Rear Interior Light Bar"
+   ]
+  },
+  {
+   "label": "REAR WARNING LIGHTS",
+   "parts": [
+    "Rear Warning 1",
+    "Rear Warning Bracket 1",
+    "Rear Warning 2",
+    "Rear Warning Bracket 2",
+    "Rear Warning 3",
+    "Rear Warning Bracket 3",
+    "Rear Scene",
+    "Lower Lift Gate Warning",
+    "Lower Lift Gate Warning Bracket",
+    "Tail Light Flasher"
+   ]
+  },
+  {
+   "label": "RADAR & THERMAL",
+   "parts": [
+    "Radar",
+    "Front Radar Antenna Mount",
+    "Rear Radar Antenna Mount",
+    "Radar Interface Cable (To Camera)",
+    "Thermal Imager",
+    "Thermal Imager Monitor"
+   ]
+  },
+  {
+   "label": "LIGHT CONTROLLER & ELECTRONICS",
+   "parts": [
+    "Light Controller",
+    "Control Head",
+    "Vehicle interface",
+    "Expansion Module"
+   ]
+  },
+  {
+   "label": "PA / SIREN CONTROL",
+   "parts": [
+    "Pa Mic",
+    "Pa Mic Clip"
+   ]
+  },
+  {
+   "label": "RADIO & COMMUNICATIONS",
+   "parts": [
+    "Radio 1",
+    "Radio Mic Clip 1",
+    "Radio Antenna Cable",
+    "Radio Antenna Top",
+    "Radio 2",
+    "Radio Mic Clip 2",
+    "Radio Speaker"
+   ]
+  },
+  {
+   "label": "CENTER CONSOLE & COMPUTER",
+   "parts": [
+    "Center Console",
+    "Special Face Plate 1",
+    "Special Face Plate 2",
+    "Special Face Plate 3",
+    "Special Face Plate 4",
+    "Special Face Plate 5",
+    "Special Face Plate 6",
+    "Special Face Plate 7",
+    "Arm Rest",
+    "Motion Attachment",
+    "Docking Station"
+   ]
+  },
+  {
+   "label": "PRINTER",
+   "parts": [
+    "Printer",
+    "Printer Mount",
+    "Printer Power",
+    "Printer USB",
+    "12v Aux Ports"
+   ]
+  },
+  {
+   "label": "CAMERAS & DVR",
+   "parts": [
+    "Camera DVR",
+    "Front Camera",
+    "Body Camera Dock",
+    "Rear Seat Camera",
+    "Rear Camera",
+    "Wireless Mic Charger"
+   ]
+  },
+  {
+   "label": "PARTITIONS & PRISONER AREA",
+   "parts": [
+    "Front Partition",
+    "Chicago Barrier",
+    "Front Partition Transfer Kit",
+    "Rear Seat Lights 1",
+    "Rear Seat Lights 2",
+    "Rear Seat Cargo Lights",
+    "Rear Seat Divider",
+    "Rear Window Bars",
+    "Replacement Rear Seat",
+    "Rear Partition",
+    "Floor Pan"
+   ]
+  },
+  {
+   "label": "ARMOR & PROTECTION",
+   "parts": [
+    "Bullet Proof Door Panel(s)",
+    "Bullet Proof Door Window(s)"
+   ]
+  },
+  {
+   "label": "CARGO & STORAGE",
+   "parts": [
+    "Storage Compartment",
+    "Cargo Lighting",
+    "Door Lock Button",
+    "Equipment Tray"
+   ]
+  },
+  {
+   "label": "GUNLOCKS",
+   "parts": [
+    "Gunlock 1",
+    "Gunlock Bracket 1",
+    "Gunlock 2",
+    "Gunlock Bracket 2",
+    "Gunlock 3",
+    "Gunlock Bracket 3"
+   ]
+  },
+  {
+   "label": "K-9 EQUIPMENT",
+   "parts": [
+    "K-9 Kennel",
+    "K-9 Heat Alarm/Popper",
+    "K-9 Control Head",
+    "K-9 Add-Ons"
+   ]
+  },
+  {
+   "label": "ELECTRICAL & POWER",
+   "parts": [
+    "Battery Tender",
+    "Auto Eject"
+   ]
+  },
+  {
+   "label": "CONNECTED SYSTEMS",
+   "parts": [
+    "Vehicle to Vehicle Sync",
+    "Cloud System",
+    "Remote Start"
+   ]
+  },
+  {
+   "label": "ARGES & SPOTLIGHT",
+   "parts": [
+    "Arges",
+    "Arges Controller",
+    "Arges Mount",
+    "Photo Eye",
+    "GPD W/ Extension"
+   ]
+  },
+  {
+   "label": "FINISHING & ACCESSORIES",
+   "parts": [
+    "Floor Mats",
+    "Seat Covers",
+    "Window Tint",
+    "Decals",
+    "Harness"
+   ]
+  },
+  {
+   "label": "QUESTIONS / ADDITIONAL NOTES",
+   "parts": []
+  }
+ ],
+ "slots": {
+  "Push Bumper": {
+   "instances": [
+    "Push Bumper"
+   ],
+   "rows": [
+    15
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "WESTIN",
+    "PRO-GARD",
+    "GAMBER JOHNSON",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "PB400",
+    "PB450L",
+    "HDX",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PUSH BUMPER / FRONT STRUCTURE",
+   "sub": false,
+   "part_type_id": "push_bumper",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "westin",
+    "pro_gard",
+    "gamber_johnson",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "westin",
+     "pro_gard"
+    ],
+    "workbook_only": [
+     "gamber_johnson",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "PB400",
+     "PB450L",
+     "HDX"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_pb400",
+    "setina_pb450l",
+    "pro_gard_hdx",
+    "stalker_specify_model"
+   ]
+  },
+  "Pit Bar": {
+   "instances": [
+    "Pit Bar"
+   ],
+   "rows": [
+    16
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "WESTIN",
+    "PRO-GARD",
+    "GAMBER JOHNSON",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "PIT BARS",
+    "PB5",
+    "PB9",
+    "PB10",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PUSH BUMPER / FRONT STRUCTURE",
+   "sub": false,
+   "part_type_id": "pit_bar",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "westin",
+    "pro_gard",
+    "gamber_johnson",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "westin"
+    ],
+    "workbook_only": [
+     "pro_gard",
+     "gamber_johnson",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "PIT BARS",
+     "PB5",
+     "PB9"
+    ],
+    "re_homed": [
+     {
+      "model": "PB10",
+      "product": "setina_pb10",
+      "now_fits": [
+       "wing_wraps"
+      ]
+     }
+    ],
+    "unresolved": []
+   },
+   "flags": [
+    "conflict:model-re-homed",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "westin_pit_bars",
+    "setina_pb5",
+    "setina_pb9",
+    "setina_pb10",
+    "stalker_specify_model"
+   ]
+  },
+  "Wing Wraps": {
+   "instances": [
+    "Wing Wraps"
+   ],
+   "rows": [
+    17
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "WESTIN",
+    "PRO-GARD",
+    "GAMBER JOHNSON",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "WING WRAPS",
+    "PB6",
+    "PB8",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PUSH BUMPER / FRONT STRUCTURE",
+   "sub": false,
+   "part_type_id": "wing_wraps",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "westin",
+    "pro_gard",
+    "gamber_johnson",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "westin"
+    ],
+    "workbook_only": [
+     "pro_gard",
+     "gamber_johnson",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "WING WRAPS",
+     "PB6",
+     "PB8"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "westin_wing_wraps",
+    "setina_pb6",
+    "setina_pb8",
+    "stalker_specify_model"
+   ]
+  },
+  "Wire Covers": {
+   "instances": [
+    "Wire Covers"
+   ],
+   "rows": [
+    18
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "WESTIN",
+    "PRO-GARD",
+    "GAMBER JOHNSON",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [],
+   "section": "PUSH BUMPER / FRONT STRUCTURE",
+   "sub": false,
+   "part_type_id": "wire_covers",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "westin",
+    "pro_gard",
+    "gamber_johnson",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "setina",
+     "westin",
+     "pro_gard",
+     "gamber_johnson",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Forward Warning {n}": {
+   "instances": [
+    "Forward Warning 1",
+    "Forward Warning 2"
+   ],
+   "rows": [
+    19,
+    21
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ION",
+    "T-ION",
+    "2 LAMP TRACER",
+    "NFORCE",
+    "MPOWER",
+    "VXE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "TOP TUBE",
+    "CENTER PLATE OF PB",
+    "GRILL",
+    "LOWER GRILL",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "front (primary)",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "TOP TUBE",
+     "CENTER PLATE OF PB",
+     "GRILL",
+     "LOWER GRILL"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ION",
+     "T-ION",
+     "2 LAMP TRACER",
+     "NFORCE",
+     "MPOWER",
+     "VXE"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_ion",
+    "whelen_t_series",
+    "whelen_2_lamp_tracer",
+    "soundoff_nforce",
+    "soundoff_mpower",
+    "whelen_vxe",
+    "stalker_specify_model"
+   ]
+  },
+  "FW {n} Bracket": {
+   "instances": [
+    "FW 1 Bracket",
+    "FW 2 Bracket"
+   ],
+   "rows": [
+    20,
+    22
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "WESTIN",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "WESTIN 2 LIGHT TUBE",
+    "WESTIN 4 LIGHT TUBE",
+    "TRACER L BRACKETS X2 PER",
+    "UNIVERSAL GRILL BRACKET",
+    "SPECIFY BRACKET"
+   ],
+   "locations": [],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "fw_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm",
+    "westin"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "westin"
+    ],
+    "workbook_only": [
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "WESTIN 2 LIGHT TUBE",
+     "WESTIN 4 LIGHT TUBE",
+     "TRACER L BRACKETS X2 PER",
+     "UNIVERSAL GRILL BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "westin_westin_2_light_tube",
+    "westin_westin_4_light_tube",
+    "whelen_tracer_l_brackets_x2_per",
+    "dtm_universal_grill_bracket"
+   ]
+  },
+  "Front Side Warning": {
+   "instances": [
+    "Front Side Warning"
+   ],
+   "rows": [
+    23
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "OEM",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SURFACE MOUNT ION",
+    "STANDARD MOUNT ION",
+    "T-SERIES ION",
+    "MPOWER",
+    "N-FORCE",
+    "VERTEX",
+    "VXE",
+    "M4",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "SIDE OF PUSH BUMPER",
+    "FOG LIGHT AREA",
+    "FRONT CORNER OF BUMPER",
+    "HEADLIGHTS CUT OUTS",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "front side",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "manufacturers_unmatched": [
+    "OEM"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "SIDE OF PUSH BUMPER",
+     "FOG LIGHT AREA",
+     "FRONT CORNER OF BUMPER"
+    ],
+    "workbook_only": [
+     "HEADLIGHTS CUT OUTS"
+    ]
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "SURFACE MOUNT ION",
+     "STANDARD MOUNT ION",
+     "T-SERIES ION",
+     "MPOWER",
+     "N-FORCE",
+     "VERTEX",
+     "VXE",
+     "M4"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "whelen_surface_mount_ion",
+    "whelen_ion",
+    "whelen_t_series",
+    "soundoff_mpower",
+    "soundoff_n_force",
+    "whelen_vertex",
+    "whelen_vxe",
+    "soundoff_m4",
+    "stalker_specify_model"
+   ]
+  },
+  "Front Side Brackets": {
+   "instances": [
+    "Front Side Brackets"
+   ],
+   "rows": [
+    24
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "SIDE OF PUSH BUMPER",
+    "FOG LIGHT AREA",
+    "FRONT CORNER OF BUMPER",
+    "HEADLIGHTS CUT OUTS",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "front_side_bracket",
+   "mapping": "manual",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "SIDE OF PUSH BUMPER",
+     "FOG LIGHT AREA",
+     "FRONT CORNER OF BUMPER",
+     "HEADLIGHTS CUT OUTS"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Pit Bar Warning": {
+   "instances": [
+    "Pit Bar Warning"
+   ],
+   "rows": [
+    25
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SURFACE MOUNT ION",
+    "STANDARD MOUNT ION",
+    "T-SERIES ION",
+    "MPOWER",
+    "N-FORCE",
+    "VERTEX",
+    "VXE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "PIT BARS",
+    "FOG LIGHT AREA",
+    "FRONT CORNER OF BUMPER",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "pit bar",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "PIT BARS",
+     "FOG LIGHT AREA",
+     "FRONT CORNER OF BUMPER"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "SURFACE MOUNT ION",
+     "STANDARD MOUNT ION",
+     "T-SERIES ION",
+     "MPOWER",
+     "N-FORCE",
+     "VERTEX",
+     "VXE"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_surface_mount_ion",
+    "whelen_ion",
+    "whelen_t_series",
+    "soundoff_mpower",
+    "soundoff_n_force",
+    "whelen_vertex",
+    "whelen_vxe",
+    "stalker_specify_model"
+   ]
+  },
+  "Headlight Flasher": {
+   "instances": [
+    "Headlight Flasher"
+   ],
+   "rows": [
+    26
+   ],
+   "manufacturers_raw": [
+    "OEM",
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "headlight_flasher",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "manufacturers_unmatched": [
+    "OEM"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Front Scene": {
+   "instances": [
+    "Front Scene"
+   ],
+   "rows": [
+    27
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FIELD SERIES",
+    "PIONEER",
+    "PREWIRE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "front_scene",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "FIELD SERIES",
+     "PIONEER"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "PREWIRE",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_field_series",
+    "whelen_pioneer_micro",
+    "whelen_pioneer_nano",
+    "whelen_pioneer_plus",
+    "whelen_pioneer_slimline",
+    "stalker_specify_model"
+   ]
+  },
+  "Siren Speaker {n}": {
+   "instances": [
+    "Siren Speaker 1",
+    "Siren Speaker 2"
+   ],
+   "rows": [
+    28,
+    29
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SA315P",
+    "SA315U",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "TOP OF PUSH BUMPER",
+    "UNDER PUSH BUMPER",
+    "BEHIND GRILL (CENTER)",
+    "BEHIND OEM BUMPER",
+    "VEHICLE SPECIFIC BRACKET",
+    "SPECIFY LOCATION"
+   ],
+   "section": "SIREN / SPEAKER / PA",
+   "sub": false,
+   "part_type_id": "siren_speaker",
+   "mapping": "pattern",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "TOP OF PUSH BUMPER",
+     "UNDER PUSH BUMPER",
+     "BEHIND GRILL (CENTER)",
+     "BEHIND OEM BUMPER",
+     "VEHICLE SPECIFIC BRACKET"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "SA315P",
+     "SA315U"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "whelen_sa315p",
+    "whelen_sa315u",
+    "stalker_specify_model"
+   ]
+  },
+  "Siren Speaker Bracket": {
+   "instances": [
+    "Siren Speaker Bracket"
+   ],
+   "rows": [
+    30
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SAK1",
+    "SAK9",
+    "VEHICLE SPECIFIC BRACKET",
+    "SPECIFY BRACKET"
+   ],
+   "locations": [
+    "FOLLOW SPEAKER LOCATION"
+   ],
+   "section": "SIREN / SPEAKER / PA",
+   "sub": true,
+   "part_type_id": "siren_speaker_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "FOLLOW SPEAKER LOCATION"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "SAK1",
+     "SAK9",
+     "VEHICLE SPECIFIC BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "whelen_sak1",
+    "whelen_sak9",
+    "stalker_vehicle_specific_bracket"
+   ]
+  },
+  "External Amp": {
+   "instances": [
+    "External Amp"
+   ],
+   "rows": [
+    31
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "SIREN / SPEAKER / PA",
+   "sub": false,
+   "part_type_id": "external_amp",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Howler": {
+   "instances": [
+    "Howler"
+   ],
+   "rows": [
+    32
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "WCX HOWLER",
+    "WC HOWLER",
+    "LC HOWLER",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "VEHICLE SPECIFIC BRACKET(S)",
+    "SPECIFY LOCATION"
+   ],
+   "section": "SIREN / SPEAKER / PA",
+   "sub": false,
+   "part_type_id": "howler",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "VEHICLE SPECIFIC BRACKET(S)"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "WCX HOWLER"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "WC HOWLER",
+      "legacy_product": "whelen_wc_howler"
+     },
+     {
+      "model": "LC HOWLER",
+      "legacy_product": "whelen_lc_howler"
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_wcx_howler",
+    "whelen_wc_howler",
+    "whelen_lc_howler",
+    "stalker_specify_model"
+   ]
+  },
+  "Pa Mic": {
+   "instances": [
+    "Pa Mic"
+   ],
+   "rows": [
+    91
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "RIGHT SIDE OF CONSOLE",
+    "DRIVERS DOOR",
+    "SPECIFY LOCATION"
+   ],
+   "section": "PA / SIREN CONTROL",
+   "sub": false,
+   "part_type_id": "pa_mic",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "RIGHT SIDE OF CONSOLE",
+     "DRIVERS DOOR"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Pa Mic Clip": {
+   "instances": [
+    "Pa Mic Clip"
+   ],
+   "rows": [
+    92
+   ],
+   "manufacturers_raw": [
+    "MFG CLIP",
+    "MAGNETIC MIC"
+   ],
+   "models": [],
+   "locations": [],
+   "section": "PA / SIREN CONTROL",
+   "sub": true,
+   "part_type_id": "pa_mic_clip",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "magnetic_mic"
+   ],
+   "manufacturers_unmatched": [
+    "MFG CLIP"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "magnetic_mic"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Opticom": {
+   "instances": [
+    "Opticom"
+   ],
+   "rows": [
+    33
+   ],
+   "manufacturers_raw": [
+    "NOVA",
+    "SHO-ME",
+    "3M",
+    "GTT",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "IN LIGHT BAR",
+    "UPPER WINDSHIELD",
+    "IN GRILL",
+    "SPECIFY LOCATION",
+    "CENTER OF DASH"
+   ],
+   "section": "FRONT SPECIALTY",
+   "sub": false,
+   "part_type_id": "preemption",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "nova",
+    "sho_me",
+    "3m",
+    "gtt"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "IN LIGHT BAR",
+     "UPPER WINDSHIELD",
+     "IN GRILL",
+     "CENTER OF DASH"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "nova",
+     "gtt"
+    ],
+    "workbook_only": [
+     "sho_me",
+     "3m"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Front Dome Light": {
+   "instances": [
+    "Front Dome Light"
+   ],
+   "rows": [
+    34
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "3\"\" ROUND(S)",
+    "6\"\" ROUND",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "Over Center Console",
+    "Specify Location"
+   ],
+   "section": "FRONT SPECIALTY",
+   "sub": false,
+   "part_type_id": "front_dome_light",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "Over Center Console"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "soundoff"
+    ],
+    "workbook_only": [
+     "whelen"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "3\"\" ROUND(S)",
+      "legacy_product": "specify_3_round_s"
+     },
+     {
+      "model": "6\"\" ROUND",
+      "legacy_product": "specify_6_round"
+     }
+    ]
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "specify_3_round_s",
+    "specify_6_round",
+    "stalker_specify_model"
+   ]
+  },
+  "Cradle Point": {
+   "instances": [
+    "Cradle Point"
+   ],
+   "rows": [
+    35
+   ],
+   "manufacturers_raw": [
+    "CRADLE POINT",
+    "SIERRA WIRELESS",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "FRONT OF PARTITION",
+    "ON EQUIPMENT TRAY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT SPECIALTY",
+   "sub": false,
+   "part_type_id": "cradle_point",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "cradle_point",
+    "sierra_wireless"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "FRONT OF PARTITION",
+     "ON EQUIPMENT TRAY"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "cradle_point",
+     "sierra_wireless"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Cradle Point Antenna": {
+   "instances": [
+    "Cradle Point Antenna"
+   ],
+   "rows": [
+    36
+   ],
+   "manufacturers_raw": [],
+   "models": [
+    "ROOF MOUNT",
+    "WINDOW MOUNT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ROOF",
+    "PASS CARGO WINDOW",
+    "DRIVER CARGO WINDOW",
+    "SPECIFY LOCATION"
+   ],
+   "section": "FRONT SPECIALTY",
+   "sub": true,
+   "part_type_id": "cloud_antenna",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "ROOF",
+     "PASS CARGO WINDOW",
+     "DRIVER CARGO WINDOW"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ROOF MOUNT",
+     "WINDOW MOUNT"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "cradle_point_roof_mount",
+    "cradle_point_window_mount",
+    "stalker_specify_model"
+   ]
+  },
+  "Mirror Warning {n}": {
+   "instances": [
+    "Mirror Warning 1",
+    "Mirror Warning 2"
+   ],
+   "rows": [
+    37,
+    39
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "U-SERIES",
+    "MIRROR BEAMS",
+    "INTERSECTORS",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "UNDER MIRROR",
+    "FRONT OF MIRROR",
+    "SPECIFY LOCATION"
+   ],
+   "section": "MIRROR & SIDE WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "under mirror",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "UNDER MIRROR",
+     "FRONT OF MIRROR"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "U-SERIES",
+     "MIRROR BEAMS"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "INTERSECTORS",
+      "legacy_product": "whelen_intersectors"
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_u_series",
+    "whelen_mirror_beams",
+    "whelen_intersectors",
+    "stalker_specify_model"
+   ]
+  },
+  "Mirror Warning Brackets {n}": {
+   "instances": [
+    "Mirror Warning Brackets 1",
+    "Mirror Warning Brackets 2"
+   ],
+   "rows": [
+    38,
+    40
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [],
+   "section": "MIRROR & SIDE WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "mirror_warning_bracket",
+   "mapping": "manual",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Front Interior Light Bar": {
+   "instances": [
+    "Front Interior Light Bar"
+   ],
+   "rows": [
+    41
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FST",
+    "XLP",
+    "AVENGER X1",
+    "AVENGER X2",
+    "T-IONS W/SHORUD",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "UPPER DRIVER AND PASSENGER",
+    "PASSENGER SIDE ONLY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "LIGHT BARS",
+   "sub": false,
+   "part_type_id": "front_interior_light_bar",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "UPPER DRIVER AND PASSENGER",
+     "PASSENGER SIDE ONLY"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "FST",
+     "XLP",
+     "T-IONS W/SHORUD"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "AVENGER X1",
+      "legacy_product": "federal_signal_avenger_x1"
+     },
+     {
+      "model": "AVENGER X2",
+      "legacy_product": "federal_signal_avenger_x2"
+     }
+    ]
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_fst",
+    "whelen_xlp",
+    "federal_signal_avenger_x1",
+    "federal_signal_avenger_x2",
+    "whelen_t_series",
+    "stalker_specify_model"
+   ]
+  },
+  "Side Warning {n}": {
+   "instances": [
+    "Side Warning 1",
+    "Side Warning 2",
+    "Side Warning 3"
+   ],
+   "rows": [
+    43,
+    45,
+    47
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ION",
+    "T-SERIES",
+    "MEGA T-SERIES",
+    "MINI T-SERIES",
+    "M-POWER",
+    "TRACER 5 LAMP",
+    "TRACER 6 LAMP",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "REAR DOOR WINDOW",
+    "ROCKER PANEL",
+    "UPPER CARGO WINDOW",
+    "LOWER CARGO WINDOW",
+    "ON RUNNING BOARD",
+    "SPECIFY LOCATION"
+   ],
+   "section": "MIRROR & SIDE WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "side",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "REAR DOOR WINDOW",
+     "ROCKER PANEL",
+     "UPPER CARGO WINDOW",
+     "LOWER CARGO WINDOW",
+     "ON RUNNING BOARD"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ION",
+     "T-SERIES",
+     "MEGA T-SERIES",
+     "MINI T-SERIES",
+     "M-POWER",
+     "TRACER 5 LAMP",
+     "TRACER 6 LAMP"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_ion",
+    "whelen_t_series",
+    "whelen_mega_t_series",
+    "whelen_mini_t_series",
+    "soundoff_m_power",
+    "whelen_tracer_5_lamp",
+    "whelen_tracer_6_lamp",
+    "stalker_specify_model"
+   ]
+  },
+  "Side Warning Bracket {n}": {
+   "instances": [
+    "Side Warning Bracket 1",
+    "Side Warning Bracket 2",
+    "Side Warning Bracket 3"
+   ],
+   "rows": [
+    44,
+    46,
+    48
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "L BRACKET",
+    "ANGLE BRACKET",
+    "DTM EXTENDED CARGO WINDOW BRACKET",
+    "SPECIFY BRACKET"
+   ],
+   "locations": [],
+   "section": "MIRROR & SIDE WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "side_warning_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "L BRACKET",
+     "ANGLE BRACKET",
+     "DTM EXTENDED CARGO WINDOW BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "dtm_l_bracket",
+    "dtm_angle_bracket",
+    "dtm_dtm_extended_cargo_window_bracket"
+   ]
+  },
+  "Side Scene": {
+   "instances": [
+    "Side Scene"
+   ],
+   "rows": [
+    49
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "REAR DOOR WINDOW",
+    "ROCKER PANEL",
+    "UPPER CARGO WINDOW",
+    "LOWER CARGO WINDOW",
+    "ON RUNNING BOARD",
+    "ON ROOF",
+    "SPECIFY LOCATION"
+   ],
+   "section": "MIRROR & SIDE WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "side_scene",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "REAR DOOR WINDOW",
+     "ROCKER PANEL",
+     "UPPER CARGO WINDOW",
+     "LOWER CARGO WINDOW",
+     "ON RUNNING BOARD",
+     "ON ROOF"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Roof Light Bar": {
+   "instances": [
+    "Roof Light Bar"
+   ],
+   "rows": [
+    42
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LEGACY",
+    "LIBERTY",
+    "9X EDGE",
+    "CENATOR",
+    "M-POWER",
+    "FREEDOM",
+    "SPECIFY BAR"
+   ],
+   "locations": [],
+   "section": "LIGHT BARS",
+   "sub": false,
+   "part_type_id": "roof_light_bar",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "LEGACY",
+     "LIBERTY",
+     "9X EDGE",
+     "CENATOR",
+     "M-POWER",
+     "FREEDOM"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_legacy",
+    "whelen_liberty",
+    "whelen_9x_edge",
+    "whelen_cenator",
+    "soundoff_m_power",
+    "whelen_freedom"
+   ]
+  },
+  "Rear Interior Light Bar": {
+   "instances": [
+    "Rear Interior Light Bar"
+   ],
+   "rows": [
+    59
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "RST",
+    "XLP",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "LIGHT BARS",
+   "sub": false,
+   "part_type_id": "rear_interior_light_bar",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "RST",
+     "XLP"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "whelen_rst",
+    "whelen_xlp",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Warning {n}": {
+   "instances": [
+    "Rear Warning 1",
+    "Rear Warning 2",
+    "Rear Warning 3"
+   ],
+   "rows": [
+    50,
+    52,
+    54
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ION",
+    "T-SERIES",
+    "MEGA T-SERIES",
+    "MINI T-SERIES",
+    "M-POWER",
+    "TRACER 5 LAMP",
+    "VXE",
+    "VERTEX",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "UPPER REAR WINDOW",
+    "ON TAILGATE/LIFTGATE",
+    "ABOVE LICENSE PLATE",
+    "ON SPECIFIC BRACKET",
+    "PILLARS",
+    "LOWER LIFTGATE LIP",
+    "UNDER TAILGATE",
+    "TAIL LIGHTS",
+    "REAR BUMPER",
+    "SPECIFY LOCATION",
+    "LICENSE PLATE BRACKET"
+   ],
+   "section": "REAR WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "rear",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "UPPER REAR WINDOW",
+     "ON TAILGATE/LIFTGATE",
+     "ABOVE LICENSE PLATE",
+     "ON SPECIFIC BRACKET",
+     "PILLARS",
+     "LOWER LIFTGATE LIP",
+     "UNDER TAILGATE",
+     "TAIL LIGHTS",
+     "REAR BUMPER",
+     "LICENSE PLATE BRACKET"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ION",
+     "T-SERIES",
+     "MEGA T-SERIES",
+     "MINI T-SERIES",
+     "M-POWER",
+     "TRACER 5 LAMP",
+     "VXE",
+     "VERTEX"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_ion",
+    "whelen_t_series",
+    "whelen_mega_t_series",
+    "whelen_mini_t_series",
+    "soundoff_m_power",
+    "whelen_tracer_5_lamp",
+    "whelen_vxe",
+    "whelen_vertex",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Warning Bracket {n}": {
+   "instances": [
+    "Rear Warning Bracket 1",
+    "Rear Warning Bracket 2",
+    "Rear Warning Bracket 3"
+   ],
+   "rows": [
+    51,
+    53,
+    55
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LICENSE PLATE BRACKET",
+    "L BRACKET",
+    "GROMMET MOUNT",
+    "TWIST LOCK ADAPTOR",
+    "SPECIFY BRACKET"
+   ],
+   "locations": [],
+   "section": "REAR WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "rear_warning_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "LICENSE PLATE BRACKET",
+     "L BRACKET",
+     "GROMMET MOUNT",
+     "TWIST LOCK ADAPTOR"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "dtm_license_plate_bracket",
+    "dtm_l_bracket",
+    "dtm_grommet_mount",
+    "dtm_twist_lock_adaptor"
+   ]
+  },
+  "Rear Scene": {
+   "instances": [
+    "Rear Scene"
+   ],
+   "rows": [
+    56
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "FENIEX",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "AM-900",
+    "PIONEER",
+    "FIELD SERIES",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON BACK RACK",
+    "UNDER TAILGATE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "REAR WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "rear_scene",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "feniex"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "UNDER TAILGATE"
+    ],
+    "workbook_only": [
+     "ON BACK RACK"
+    ]
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff",
+     "feniex"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "PIONEER",
+     "FIELD SERIES"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "AM-900",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_pioneer_micro",
+    "whelen_pioneer_nano",
+    "whelen_pioneer_plus",
+    "whelen_pioneer_slimline",
+    "whelen_field_series",
+    "stalker_specify_model"
+   ]
+  },
+  "Lower Lift Gate Warning": {
+   "instances": [
+    "Lower Lift Gate Warning"
+   ],
+   "rows": [
+    57
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ION",
+    "T-SERIES",
+    "MEGA T-SERIES",
+    "MINI T-SERIES",
+    "M-POWER",
+    "VXE",
+    "VERTEX",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "UPPER REAR WINDOW",
+    "ON TAILGATE/LIFTGATE",
+    "ABOVE LICENSE PLATE",
+    "ON SPECIFIC BRACKET",
+    "PILLARS",
+    "LOWER LIFTGATE LIP",
+    "UNDER TAILGATE",
+    "TAIL LIGHTS",
+    "REAR BUMPER",
+    "SPECIFY LOCATION"
+   ],
+   "section": "REAR WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "lower liftgate",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "UPPER REAR WINDOW",
+     "ON TAILGATE/LIFTGATE",
+     "ABOVE LICENSE PLATE",
+     "ON SPECIFIC BRACKET",
+     "PILLARS",
+     "LOWER LIFTGATE LIP",
+     "UNDER TAILGATE",
+     "TAIL LIGHTS",
+     "REAR BUMPER"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ION",
+     "T-SERIES",
+     "MEGA T-SERIES",
+     "MINI T-SERIES",
+     "M-POWER",
+     "VXE",
+     "VERTEX"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_ion",
+    "whelen_t_series",
+    "whelen_mega_t_series",
+    "whelen_mini_t_series",
+    "soundoff_m_power",
+    "whelen_vxe",
+    "whelen_vertex",
+    "stalker_specify_model"
+   ]
+  },
+  "Lower Lift Gate Warning Bracket": {
+   "instances": [
+    "Lower Lift Gate Warning Bracket"
+   ],
+   "rows": [
+    58
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "BEARDED 3D",
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "L BRACKET",
+    "GROMMET MOUNT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "REAR WARNING LIGHTS",
+   "sub": true,
+   "part_type_id": "lower_liftgate_warning_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff",
+    "bearded_3d",
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff",
+     "bearded_3d",
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "L BRACKET",
+     "GROMMET MOUNT"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "dtm_l_bracket",
+    "dtm_grommet_mount",
+    "stalker_specify_model"
+   ]
+  },
+  "Tail Light Flasher": {
+   "instances": [
+    "Tail Light Flasher"
+   ],
+   "rows": [
+    60
+   ],
+   "manufacturers_raw": [
+    "OEM",
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FLASHED WITH CORE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "REAR WARNING LIGHTS",
+   "sub": false,
+   "part_type_id": "tail_light_flasher",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "manufacturers_unmatched": [
+    "OEM"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "FLASHED WITH CORE",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Radar": {
+   "instances": [
+    "Radar"
+   ],
+   "rows": [
+    64
+   ],
+   "manufacturers_raw": [
+    "STALKER",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "DSR",
+    "DSR 2X",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON DASH",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADAR & THERMAL",
+   "sub": false,
+   "part_type_id": "radar_display_unit",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "stalker"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "ON DASH"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "stalker"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "DSR",
+     "DSR 2X"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "stalker_dsr",
+    "stalker_dsr_2x",
+    "stalker_specify_model"
+   ]
+  },
+  "Front Radar Antenna Mount": {
+   "instances": [
+    "Front Radar Antenna Mount"
+   ],
+   "rows": [
+    65
+   ],
+   "manufacturers_raw": [
+    "STALKER",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LOW A BRACKET",
+    "HIGH A BRACKET",
+    "DUAL SWIVEL BRACKET",
+    "VEHICLE SPECIFIC BRACKET",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "DRIVER SIDE DASH",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADAR & THERMAL",
+   "sub": true,
+   "part_type_id": "front_radar_antenna_mount",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "stalker"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "DRIVER SIDE DASH"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "stalker"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "LOW A BRACKET",
+     "HIGH A BRACKET",
+     "DUAL SWIVEL BRACKET",
+     "VEHICLE SPECIFIC BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "stalker_low_a_bracket",
+    "stalker_high_a_bracket",
+    "stalker_dual_swivel_bracket",
+    "stalker_vehicle_specific_bracket",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Radar Antenna Mount": {
+   "instances": [
+    "Rear Radar Antenna Mount"
+   ],
+   "rows": [
+    66
+   ],
+   "manufacturers_raw": [
+    "STALKER",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LOW A BRACKET",
+    "HIGH A BRACKET",
+    "DUAL SWIVEL BRACKET",
+    "VEHICLE SPECIFIC BRACKET",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "DRIVER SIDE PILLAR",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADAR & THERMAL",
+   "sub": true,
+   "part_type_id": "rear_radar_antenna_mount",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "stalker"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "DRIVER SIDE PILLAR"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "stalker"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "LOW A BRACKET",
+     "HIGH A BRACKET",
+     "DUAL SWIVEL BRACKET",
+     "VEHICLE SPECIFIC BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "stalker_low_a_bracket",
+    "stalker_high_a_bracket",
+    "stalker_dual_swivel_bracket",
+    "stalker_vehicle_specific_bracket",
+    "stalker_specify_model"
+   ]
+  },
+  "Radar Interface Cable (To Camera)": {
+   "instances": [
+    "Radar Interface Cable (To Camera)"
+   ],
+   "rows": [
+    67
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "RADAR & THERMAL",
+   "sub": true,
+   "part_type_id": "radar_cable",
+   "mapping": "manual",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Thermal Imager": {
+   "instances": [
+    "Thermal Imager"
+   ],
+   "rows": [
+    68
+   ],
+   "manufacturers_raw": [
+    "NIGHT RIDE",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "SPOT LIGHT MOUNT",
+    "DRIVER FENDER MOUNT",
+    "PASS FENDER MOUNT",
+    "LIGHT BAR MOUNT",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADAR & THERMAL",
+   "sub": false,
+   "part_type_id": "thermal_imager",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "night_ride"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "SPOT LIGHT MOUNT"
+    ],
+    "workbook_only": [
+     "DRIVER FENDER MOUNT",
+     "PASS FENDER MOUNT",
+     "LIGHT BAR MOUNT"
+    ]
+   },
+   "mfr_check": {
+    "confirmed": [
+     "night_ride"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Thermal Imager Monitor": {
+   "instances": [
+    "Thermal Imager Monitor"
+   ],
+   "rows": [
+    69
+   ],
+   "manufacturers_raw": [],
+   "models": [
+    "DIRECT TO COMPUTER",
+    "7\"\" SCREEN",
+    "8\"\" SCREEN",
+    "9\"\" SCREEN",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON DASH",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADAR & THERMAL",
+   "sub": true,
+   "part_type_id": "thermal_imager_monitor",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON DASH"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "7\"\" SCREEN",
+     "8\"\" SCREEN",
+     "9\"\" SCREEN"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "DIRECT TO COMPUTER",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "havis_7_screen",
+    "havis_8_screen",
+    "havis_9_screen",
+    "stalker_specify_model"
+   ]
+  },
+  "Light Controller": {
+   "instances": [
+    "Light Controller"
+   ],
+   "rows": [
+    87
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CORE",
+    "BLUEPRINT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON EQUIPMENT TRAY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "LIGHT CONTROLLER & ELECTRONICS",
+   "sub": false,
+   "part_type_id": "light_controller",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON EQUIPMENT TRAY"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "CORE"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "BLUEPRINT",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_core",
+    "stalker_specify_model"
+   ]
+  },
+  "Control Head": {
+   "instances": [
+    "Control Head"
+   ],
+   "rows": [
+    88
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CCTL5",
+    "CCTL6",
+    "CCTL7",
+    "CCTL8",
+    "CCTL9",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "IN CENTER CONSOLE",
+    "RIGHT SIDE OF CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "LIGHT CONTROLLER & ELECTRONICS",
+   "sub": false,
+   "part_type_id": "control_head",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "IN CENTER CONSOLE",
+     "RIGHT SIDE OF CONSOLE"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "CCTL5",
+     "CCTL6",
+     "CCTL7",
+     "CCTL8",
+     "CCTL9"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "whelen_cctl5",
+    "whelen_cctl6",
+    "whelen_cctl7",
+    "whelen_cctl8",
+    "whelen_cctl9",
+    "stalker_specify_model"
+   ]
+  },
+  "Vehicle interface": {
+   "instances": [
+    "Vehicle interface"
+   ],
+   "rows": [
+    89
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "LIGHT CONTROLLER & ELECTRONICS",
+   "sub": false,
+   "part_type_id": "vehicle_interface",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "soundoff"
+    ],
+    "workbook_only": [
+     "whelen"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Expansion Module": {
+   "instances": [
+    "Expansion Module"
+   ],
+   "rows": [
+    90
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CEM8",
+    "CEM16",
+    "CEM24",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON EQUIPMENT TRAY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "LIGHT CONTROLLER & ELECTRONICS",
+   "sub": false,
+   "part_type_id": "expansion_module",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON EQUIPMENT TRAY"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "CEM8",
+     "CEM16",
+     "CEM24"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "whelen_cem8",
+    "whelen_cem16",
+    "whelen_cem24",
+    "stalker_specify_model"
+   ]
+  },
+  "Radio {n}": {
+   "instances": [
+    "Radio 1",
+    "Radio 2"
+   ],
+   "rows": [
+    93,
+    97
+   ],
+   "manufacturers_raw": [
+    "MOTOROLA",
+    "KENWOOD",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ALL IN ONE UNIT",
+    "SPLIT UNIT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "FRONT OF PARTITION",
+    "ON EQUIPMENT TRAY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADIO & COMMUNICATIONS",
+   "sub": false,
+   "part_type_id": "radio_head",
+   "mapping": "pattern",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "motorola",
+    "kenwood"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "FRONT OF PARTITION",
+     "ON EQUIPMENT TRAY"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "motorola"
+    ],
+    "workbook_only": [
+     "kenwood"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "ALL IN ONE UNIT",
+     "SPLIT UNIT"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "motorola_all_in_one_unit",
+    "motorola_split_unit",
+    "stalker_specify_model"
+   ]
+  },
+  "Radio Mic Clip {n}": {
+   "instances": [
+    "Radio Mic Clip 1",
+    "Radio Mic Clip 2"
+   ],
+   "rows": [
+    94,
+    98
+   ],
+   "manufacturers_raw": [
+    "MFG CLIP",
+    "MAGNETIC MIC"
+   ],
+   "models": [],
+   "locations": [
+    "ON DASH",
+    "RIGHT SIDE OF CONSOLE",
+    "LEFT SIDE OF CONSOLE",
+    "TOP PLATE OF CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADIO & COMMUNICATIONS",
+   "sub": true,
+   "part_type_id": "radio_mic_clip",
+   "mapping": "pattern",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "magnetic_mic"
+   ],
+   "manufacturers_unmatched": [
+    "MFG CLIP"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "ON DASH",
+     "RIGHT SIDE OF CONSOLE",
+     "LEFT SIDE OF CONSOLE",
+     "TOP PLATE OF CONSOLE"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "magnetic_mic"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": []
+  },
+  "Radio Antenna Cable": {
+   "instances": [
+    "Radio Antenna Cable"
+   ],
+   "rows": [
+    95
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [
+    "LEFT CARGO WINDOW",
+    "RIGHT CARGO WINDOW",
+    "SPECIFY LOCATION"
+   ],
+   "section": "RADIO & COMMUNICATIONS",
+   "sub": true,
+   "part_type_id": "radio_antenna_cable",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "LEFT CARGO WINDOW",
+     "RIGHT CARGO WINDOW"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": []
+  },
+  "Radio Antenna Top": {
+   "instances": [
+    "Radio Antenna Top"
+   ],
+   "rows": [
+    96
+   ],
+   "manufacturers_raw": [
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "WHIP STYLE",
+    "CYLINDER STYLE",
+    "WINDOW MOUNT",
+    "SPECITY MODEL"
+   ],
+   "locations": [
+    "REAR LEFT ROOF",
+    "LEFT CARGO WINDOW",
+    "RIGHT CARGO WINDOW"
+   ],
+   "section": "RADIO & COMMUNICATIONS",
+   "sub": true,
+   "part_type_id": "radio_antenna_top",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "REAR LEFT ROOF"
+    ],
+    "workbook_only": [
+     "LEFT CARGO WINDOW",
+     "RIGHT CARGO WINDOW"
+    ]
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "WHIP STYLE",
+     "CYLINDER STYLE",
+     "WINDOW MOUNT"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "SPECITY MODEL",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "specify_whip_style",
+    "specify_cylinder_style",
+    "cradle_point_window_mount"
+   ]
+  },
+  "Center Console": {
+   "instances": [
+    "Center Console"
+   ],
+   "rows": [
+    70
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "VEHICLE SPECIFIC",
+    "UNIVERSAL",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "CENTER CONSOLE & COMPUTER",
+   "sub": false,
+   "part_type_id": "console",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "gamber_johnson",
+     "havis"
+    ],
+    "workbook_only": [
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "VEHICLE SPECIFIC",
+     "UNIVERSAL"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "havis_vehicle_specific",
+    "havis_universal",
+    "stalker_specify_model"
+   ]
+  },
+  "Special Face Plate {n}": {
+   "instances": [
+    "Special Face Plate 1",
+    "Special Face Plate 2",
+    "Special Face Plate 3",
+    "Special Face Plate 4",
+    "Special Face Plate 5",
+    "Special Face Plate 6",
+    "Special Face Plate 7"
+   ],
+   "rows": [
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CORE CONTROL HEAD",
+    "MOTORAOLA XTL",
+    "WATCHGUARD DVR",
+    "ARGES CONTROL HEAD",
+    "3.5\"\" POCKET",
+    "6\"\" POCKET",
+    "ACE K-9",
+    "SWITCH PLATE (SPECIFY)",
+    "CUP HOLDERS",
+    "FACTORY COMPONENT RELOCATION PLATE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "CENTER CONSOLE & COMPUTER",
+   "sub": false,
+   "part_type_id": "special_face_plate",
+   "mapping": "pattern",
+   "max_instances_in_template": 7,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "gamber_johnson",
+     "havis"
+    ],
+    "workbook_only": [
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "CORE CONTROL HEAD",
+     "MOTORAOLA XTL",
+     "WATCHGUARD DVR",
+     "ARGES CONTROL HEAD",
+     "3.5\"\" POCKET",
+     "6\"\" POCKET",
+     "ACE K-9",
+     "CUP HOLDERS",
+     "FACTORY COMPONENT RELOCATION PLATE"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "SWITCH PLATE (SPECIFY)",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_core_control_head",
+    "motorola_motoraola_xtl",
+    "watchguard_watchguard_dvr",
+    "arges_arges_control_head",
+    "havis_3_5_pocket",
+    "havis_6_pocket",
+    "ace_k_9_ace_k_9",
+    "havis_cup_holders",
+    "havis_factory_component_relocation_plate",
+    "stalker_specify_model"
+   ]
+  },
+  "Arm Rest": {
+   "instances": [
+    "Arm Rest"
+   ],
+   "rows": [
+    78
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "STANDARD ARM REST",
+    "PRINTER ARM REST",
+    "SIDE ARM REST",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "CENTER CONSOLE & COMPUTER",
+   "sub": false,
+   "part_type_id": "arm_rest",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "gamber_johnson",
+     "havis"
+    ],
+    "workbook_only": [
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "STANDARD ARM REST",
+     "PRINTER ARM REST",
+     "SIDE ARM REST"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "havis_standard_arm_rest",
+    "havis_printer_arm_rest",
+    "havis_side_arm_rest",
+    "stalker_specify_model"
+   ]
+  },
+  "Motion Attachment": {
+   "instances": [
+    "Motion Attachment"
+   ],
+   "rows": [
+    79
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "9\"\" MONGOOSE",
+    "9\"\" XE",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "MOUNTED TO CONSOLE",
+    "MOUNTED TO PEDESTAL",
+    "SPECIFY LOACTION"
+   ],
+   "section": "CENTER CONSOLE & COMPUTER",
+   "sub": false,
+   "part_type_id": "motion_attachment",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "MOUNTED TO CONSOLE",
+     "MOUNTED TO PEDESTAL"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "havis"
+    ],
+    "workbook_only": [
+     "gamber_johnson",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "9\"\" MONGOOSE",
+     "9\"\" XE"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "havis_9_mongoose",
+    "havis_9_xe",
+    "stalker_specify_model"
+   ]
+  },
+  "Docking Station": {
+   "instances": [
+    "Docking Station"
+   ],
+   "rows": [
+    80
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "SPECIFY"
+   ],
+   "models": [
+    "SPECIFY DOCK",
+    "SPECIFY CRADLE"
+   ],
+   "locations": [],
+   "section": "CENTER CONSOLE & COMPUTER",
+   "sub": false,
+   "part_type_id": "docking_station",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "gamber_johnson",
+     "havis"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Printer": {
+   "instances": [
+    "Printer"
+   ],
+   "rows": [
+    81
+   ],
+   "manufacturers_raw": [
+    "BROTHER",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "PJ-822",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "PRINTER ARMREST MOUNT",
+    "IN CONSOLE",
+    "HEADREST MOUNT",
+    "SPECIFY LOCATION"
+   ],
+   "section": "PRINTER",
+   "sub": false,
+   "part_type_id": "printer",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "brother"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "PRINTER ARMREST MOUNT",
+     "IN CONSOLE",
+     "HEADREST MOUNT"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "brother"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "PJ-822"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "brother_pj_822",
+    "stalker_specify_model"
+   ]
+  },
+  "Printer Mount": {
+   "instances": [
+    "Printer Mount"
+   ],
+   "rows": [
+    82
+   ],
+   "manufacturers_raw": [
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "PATROL PC",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PRINTER",
+   "sub": true,
+   "part_type_id": "printer_mount",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "gamber_johnson",
+    "havis",
+    "patrol_pc"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "gamber_johnson",
+     "havis",
+     "patrol_pc"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Printer Power": {
+   "instances": [
+    "Printer Power"
+   ],
+   "rows": [
+    83
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "PRINTER",
+   "sub": true,
+   "part_type_id": "printer_power",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Printer USB": {
+   "instances": [
+    "Printer USB"
+   ],
+   "rows": [
+    84
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "PRINTER",
+   "sub": true,
+   "part_type_id": "printer_usb",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "12v Aux Ports": {
+   "instances": [
+    "12v Aux Ports"
+   ],
+   "rows": [
+    85
+   ],
+   "manufacturers_raw": [
+    "SHO-ME",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "USB TYPE A",
+    "USB TYPE C",
+    "CIGERETTE LIGHTER STYLE",
+    "MULTI STYLE BLOCK",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "RIGHT SIDE ON CONSOLE",
+    "IN FACEPLATE",
+    "BACK OF CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "PRINTER",
+   "sub": false,
+   "part_type_id": "aux_12v_ports",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "sho_me"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "RIGHT SIDE ON CONSOLE",
+     "IN FACEPLATE",
+     "BACK OF CONSOLE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "sho_me"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "USB TYPE A",
+     "USB TYPE C",
+     "CIGERETTE LIGHTER STYLE",
+     "MULTI STYLE BLOCK"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "sho_me_usb_type_a",
+    "sho_me_usb_type_c",
+    "sho_me_cigerette_lighter_style",
+    "sho_me_multi_style_block",
+    "stalker_specify_model"
+   ]
+  },
+  "Camera DVR": {
+   "instances": [
+    "Camera DVR"
+   ],
+   "rows": [
+    102
+   ],
+   "manufacturers_raw": [
+    "AXON",
+    "MOTOROLA",
+    "WATCHGUARD",
+    "10-8",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FLEET 3",
+    "M500",
+    "4RE",
+    "FLEET 2",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON FRONT PARTITION",
+    "ON EQUIPMENT TRAY",
+    "IN CENTER CONSOILE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CAMERAS & DVR",
+   "sub": false,
+   "part_type_id": "camera_dvr",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "axon",
+    "motorola",
+    "watchguard",
+    "10_8"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON FRONT PARTITION",
+     "ON EQUIPMENT TRAY",
+     "IN CENTER CONSOILE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "axon",
+     "watchguard"
+    ],
+    "workbook_only": [
+     "motorola",
+     "10_8"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "FLEET 3",
+     "M500",
+     "4RE",
+     "FLEET 2"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "axon_fleet_3",
+    "watchguard_m500",
+    "watchguard_4re",
+    "axon_fleet_2",
+    "stalker_specify_model"
+   ]
+  },
+  "Front Camera": {
+   "instances": [
+    "Front Camera"
+   ],
+   "rows": [
+    103
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "CAMERAS & DVR",
+   "sub": false,
+   "part_type_id": "front_camera",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Body Camera Dock": {
+   "instances": [
+    "Body Camera Dock"
+   ],
+   "rows": [
+    104
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [
+    "PASSENGER SIDE VISOR",
+    "ON CENTER CONSOLE",
+    "IN GUNLOCK POCKET",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CAMERAS & DVR",
+   "sub": true,
+   "part_type_id": "body_camera_dock",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "PASSENGER SIDE VISOR",
+     "ON CENTER CONSOLE",
+     "IN GUNLOCK POCKET"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Rear Seat Camera": {
+   "instances": [
+    "Rear Seat Camera"
+   ],
+   "rows": [
+    105
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [
+    "ON DRIVER SIDE HEADLINER",
+    "CENTER OF PARTITION",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CAMERAS & DVR",
+   "sub": true,
+   "part_type_id": "rear_seat_camera",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON DRIVER SIDE HEADLINER",
+     "CENTER OF PARTITION"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Rear Camera": {
+   "instances": [
+    "Rear Camera"
+   ],
+   "rows": [
+    106
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "CAMERAS & DVR",
+   "sub": false,
+   "part_type_id": "rear_camera",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Wireless Mic Charger": {
+   "instances": [
+    "Wireless Mic Charger"
+   ],
+   "rows": [
+    107
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [
+    "PASSENGER SIDE VISOR",
+    "ON CENTER CONSOLE",
+    "IN GUNLOCK POCKET",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CAMERAS & DVR",
+   "sub": false,
+   "part_type_id": "wireless_mic_charger",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "PASSENGER SIDE VISOR",
+     "ON CENTER CONSOLE",
+     "IN GUNLOCK POCKET"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Front Partition": {
+   "instances": [
+    "Front Partition"
+   ],
+   "rows": [
+    108
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FULL PARTITION",
+    "SINGLE PRISIONER",
+    "FULL XL PARTITION",
+    "PASSENGER SIDE XL PARTITION",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "front_partition",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina"
+    ],
+    "workbook_only": [
+     "pro_gard",
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "FULL PARTITION",
+     "SINGLE PRISIONER",
+     "FULL XL PARTITION",
+     "PASSENGER SIDE XL PARTITION"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_full_partition",
+    "setina_single_prisioner",
+    "setina_full_xl_partition",
+    "setina_passenger_side_xl_partition",
+    "stalker_specify_model"
+   ]
+  },
+  "Chicago Barrier": {
+   "instances": [
+    "Chicago Barrier"
+   ],
+   "rows": [
+    109
+   ],
+   "manufacturers_raw": [],
+   "models": [
+    "STEEL",
+    "POLY",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": true,
+   "part_type_id": "chicago_barrier",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "STEEL",
+     "POLY"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "setina_steel",
+    "setina_poly",
+    "stalker_specify_model"
+   ]
+  },
+  "Front Partition Transfer Kit": {
+   "instances": [
+    "Front Partition Transfer Kit"
+   ],
+   "rows": [
+    110
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": true,
+   "part_type_id": "front_partition_transfer_kit",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Rear Seat Lights {n}": {
+   "instances": [
+    "Rear Seat Lights 1",
+    "Rear Seat Lights 2"
+   ],
+   "rows": [
+    111,
+    112
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "3\"\" ROUND",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "LOWER KICK PANEL(S)",
+    "HEADLINER",
+    "ON FRONT PARTITION",
+    "SPECIFY LOCATION"
+   ],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "rear_seat_lights",
+   "mapping": "pattern",
+   "max_instances_in_template": 2,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "LOWER KICK PANEL(S)",
+     "HEADLINER",
+     "ON FRONT PARTITION"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "soundoff"
+    ],
+    "workbook_only": [
+     "whelen"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "3\"\" ROUND",
+      "legacy_product": "specify_3_round"
+     }
+    ]
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "specify_3_round",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Seat Cargo Lights": {
+   "instances": [
+    "Rear Seat Cargo Lights"
+   ],
+   "rows": [
+    113
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "3\"\" ROUND",
+    "T-SERIES",
+    "MEGA T-SERIES",
+    "6\"\" ROUND",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "HEADLINER",
+    "UNDER SHELF",
+    "HEADLINER AND UNDER SHELF",
+    "SPECIFY LOCATION(S)"
+   ],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "rear_seat_cargo_lights",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "HEADLINER",
+     "UNDER SHELF",
+     "HEADLINER AND UNDER SHELF"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "T-SERIES",
+     "MEGA T-SERIES"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "3\"\" ROUND",
+      "legacy_product": "specify_3_round"
+     },
+     {
+      "model": "6\"\" ROUND",
+      "legacy_product": "specify_6_round"
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "specify_3_round",
+    "whelen_t_series",
+    "whelen_mega_t_series",
+    "specify_6_round",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Seat Divider": {
+   "instances": [
+    "Rear Seat Divider"
+   ],
+   "rows": [
+    114
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "POLY DIVIDER",
+    "CARGO MAXX",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "rear_seat_divider",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina"
+    ],
+    "workbook_only": [
+     "pro_gard",
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "POLY DIVIDER",
+     "CARGO MAXX"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_poly_divider",
+    "setina_cargo_maxx",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Window Bars": {
+   "instances": [
+    "Rear Window Bars"
+   ],
+   "rows": [
+    115
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "STEEL VERTICAL",
+    "STEEL HORIZONTAL",
+    "POLY",
+    "POLY TINTED",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "rear_window_bars",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina"
+    ],
+    "workbook_only": [
+     "pro_gard",
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "STEEL VERTICAL",
+     "STEEL HORIZONTAL",
+     "POLY",
+     "POLY TINTED"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_steel_vertical",
+    "setina_steel_horizontal",
+    "setina_poly",
+    "setina_poly_tinted",
+    "stalker_specify_model"
+   ]
+  },
+  "Replacement Rear Seat": {
+   "instances": [
+    "Replacement Rear Seat"
+   ],
+   "rows": [
+    116
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS",
+    "POLY SEAT COVER",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "replacement_rear_seat",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "pro_gard"
+    ],
+    "workbook_only": [
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "FULL REPLACMENT SEAT W/ CENTER PULL SEAT BELTS",
+     "POLY SEAT COVER"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "pro_gard_full_replacment_seat_w_center_pull_seat_belts",
+    "pro_gard_poly_seat_cover",
+    "stalker_specify_model"
+   ]
+  },
+  "Rear Partition": {
+   "instances": [
+    "Rear Partition"
+   ],
+   "rows": [
+    117
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "STEEL WINDOW",
+    "POLY WINDOW",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "rear_partition",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "pro_gard"
+    ],
+    "workbook_only": [
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "STEEL WINDOW",
+     "POLY WINDOW"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_steel_window",
+    "setina_poly_window",
+    "stalker_specify_model"
+   ]
+  },
+  "Floor Pan": {
+   "instances": [
+    "Floor Pan"
+   ],
+   "rows": [
+    118
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "PRO-GARD",
+    "TROY",
+    "GAMBER JOHNSON",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "POLY FLOOR PAN",
+    "POLY FLOOR PAN W/ DRAINS"
+   ],
+   "locations": [],
+   "section": "PARTITIONS & PRISONER AREA",
+   "sub": false,
+   "part_type_id": "floor_pan",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "pro_gard",
+    "troy",
+    "gamber_johnson"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "pro_gard"
+    ],
+    "workbook_only": [
+     "setina",
+     "troy",
+     "gamber_johnson"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "POLY FLOOR PAN",
+     "POLY FLOOR PAN W/ DRAINS"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "pro_gard_poly_floor_pan",
+    "pro_gard_poly_floor_pan_w_drains"
+   ]
+  },
+  "Bullet Proof Door Panel(s)": {
+   "instances": [
+    "Bullet Proof Door Panel(s)"
+   ],
+   "rows": [
+    119
+   ],
+   "manufacturers_raw": [
+    "ANGEL ARMOR",
+    "CLEAR ARMOR",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LEVEL 3A (HANDGUN)",
+    "LEVEL 3+(RIFLE)",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "DRIVERS DOOR ONLY",
+    "DRIVER AND PASSENGER FRONT DOORS",
+    "SPECIFY DOOR(S)"
+   ],
+   "section": "ARMOR & PROTECTION",
+   "sub": false,
+   "part_type_id": "bullet_proof_door_panel",
+   "mapping": "pattern~plural",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "angel_armor",
+    "clear_armor"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "DRIVERS DOOR ONLY",
+     "DRIVER AND PASSENGER FRONT DOORS"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "angel_armor"
+    ],
+    "workbook_only": [
+     "clear_armor"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "LEVEL 3A (HANDGUN)",
+     "LEVEL 3+(RIFLE)"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "angel_armor_level_3a_handgun",
+    "angel_armor_level_3_rifle",
+    "stalker_specify_model"
+   ]
+  },
+  "Bullet Proof Door Window(s)": {
+   "instances": [
+    "Bullet Proof Door Window(s)"
+   ],
+   "rows": [
+    120
+   ],
+   "manufacturers_raw": [
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "LEVEL 3A (HANDGUN)",
+    "LEVEL 3+(RIFLE)",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "DRIVERS DOOR ONLY",
+    "DRIVER AND PASSENGER FRONT DOORS",
+    "SPECIFY WINDOW(S)"
+   ],
+   "section": "ARMOR & PROTECTION",
+   "sub": false,
+   "part_type_id": "bullet_proof_door_window",
+   "mapping": "pattern~plural",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "DRIVERS DOOR ONLY",
+     "DRIVER AND PASSENGER FRONT DOORS"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "LEVEL 3A (HANDGUN)",
+     "LEVEL 3+(RIFLE)"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "angel_armor_level_3a_handgun",
+    "angel_armor_level_3_rifle",
+    "stalker_specify_model"
+   ]
+  },
+  "Storage Compartment": {
+   "instances": [
+    "Storage Compartment"
+   ],
+   "rows": [
+    121
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "TRUCK VAULT",
+    "DECKED",
+    "HAVIS",
+    "PRO-GARD",
+    "GAMBER JOHNSON",
+    "5-0 FAB (DTM)",
+    "WESTIN",
+    "AMERICAN ALUMINUM",
+    "1ST IN EMERGENCY",
+    "ROCKLAND CABINETS",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [],
+   "section": "CARGO & STORAGE",
+   "sub": false,
+   "part_type_id": "rear_storage_box",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "truck_vault",
+    "decked",
+    "havis",
+    "pro_gard",
+    "gamber_johnson",
+    "5_0_fab_dtm",
+    "westin",
+    "american_aluminum",
+    "1st_in_emergency",
+    "rockland_cabinets"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "decked",
+     "havis",
+     "5_0_fab_dtm",
+     "rockland_cabinets"
+    ],
+    "workbook_only": [
+     "setina",
+     "truck_vault",
+     "pro_gard",
+     "gamber_johnson",
+     "westin",
+     "american_aluminum",
+     "1st_in_emergency"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Cargo Lighting": {
+   "instances": [
+    "Cargo Lighting"
+   ],
+   "rows": [
+    122
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "3\"\" ROUND",
+    "T-SERIES",
+    "MEGA T-SERIES",
+    "6\"\" ROUND",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON LIFT GATE",
+    "HEADLINER",
+    "ON LIFTGATE AND HEADLINER",
+    "SPECIFY LOCATION(S)"
+   ],
+   "section": "CARGO & STORAGE",
+   "sub": false,
+   "part_type_id": "cargo_lighting",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON LIFT GATE",
+     "HEADLINER",
+     "ON LIFTGATE AND HEADLINER"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen",
+     "soundoff"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "T-SERIES",
+     "MEGA T-SERIES"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "3\"\" ROUND",
+      "legacy_product": "specify_3_round"
+     },
+     {
+      "model": "6\"\" ROUND",
+      "legacy_product": "specify_6_round"
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "specify_3_round",
+    "whelen_t_series",
+    "whelen_mega_t_series",
+    "specify_6_round",
+    "stalker_specify_model"
+   ]
+  },
+  "Door Lock Button": {
+   "instances": [
+    "Door Lock Button"
+   ],
+   "rows": [
+    123
+   ],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [
+    "ON LEFT D-PILLAR",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CARGO & STORAGE",
+   "sub": false,
+   "part_type_id": "door_lock_button",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON LEFT D-PILLAR"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Equipment Tray": {
+   "instances": [
+    "Equipment Tray"
+   ],
+   "rows": [
+    124
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "5-0 FAB (DTM)",
+    "GAMBER JOHNSON",
+    "HAVIS",
+    "TRUCK VAULT",
+    "TROY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "EQUIPMENT DRAWER",
+    "EQUIPMENT TRAY",
+    "EQUIMPENT BOX",
+    "REPLACEMENT FLOOR",
+    "BOARD",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON REAR PARTITION",
+    "UNDER CARGO BOX",
+    "PART OF CARGO MAXX",
+    "CARGO AREA FLOOR",
+    "ON REAR SEAT",
+    "IN CONSOLE",
+    "SPECIFY LOACTION"
+   ],
+   "section": "CARGO & STORAGE",
+   "sub": false,
+   "part_type_id": "equipment_tray",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "5_0_fab_dtm",
+    "gamber_johnson",
+    "havis",
+    "truck_vault",
+    "troy"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON REAR PARTITION",
+     "UNDER CARGO BOX",
+     "PART OF CARGO MAXX",
+     "CARGO AREA FLOOR",
+     "ON REAR SEAT",
+     "IN CONSOLE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "5_0_fab_dtm"
+    ],
+    "workbook_only": [
+     "gamber_johnson",
+     "havis",
+     "truck_vault",
+     "troy"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "EQUIPMENT DRAWER",
+     "EQUIPMENT TRAY",
+     "EQUIMPENT BOX",
+     "REPLACEMENT FLOOR",
+     "BOARD"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "setina_equipment_drawer",
+    "setina_equipment_tray",
+    "setina_equimpent_box",
+    "setina_replacement_floor",
+    "setina_board",
+    "stalker_specify_model"
+   ]
+  },
+  "Gunlock {n}": {
+   "instances": [
+    "Gunlock 1",
+    "Gunlock 2",
+    "Gunlock 3"
+   ],
+   "rows": [
+    125,
+    127,
+    129
+   ],
+   "manufacturers_raw": [
+    "SANTA CRUZ",
+    "SETINA",
+    "BLAC-RAC",
+    "PRO-GARD",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SINGLE HANDCUFF",
+    "DUAL HANDCUFF",
+    "SINGLE SHOT GUN",
+    "DUAL SHOT GUN",
+    "HANDCUFF AND SHOT GUN",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "OVERHEAD ON FRONT PARTITION",
+    "GUN LOCK POCKET",
+    "LEFT GUN LOCK POCKET",
+    "RIGHT GUN LOCK POCKET",
+    "OVER HEAD IN REAR",
+    "CARGO AREA MOUNT (SPECIFY)",
+    "REAR SEAT MOUNT",
+    "SINGLE PRISIONER FACING FORWARD",
+    "SPECIFY LOCATION"
+   ],
+   "section": "GUNLOCKS",
+   "sub": false,
+   "part_type_id": "gun_lock",
+   "mapping": "pattern",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "santa_cruz",
+    "setina",
+    "blac_rac",
+    "pro_gard"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "OVERHEAD ON FRONT PARTITION",
+     "GUN LOCK POCKET",
+     "LEFT GUN LOCK POCKET",
+     "RIGHT GUN LOCK POCKET",
+     "OVER HEAD IN REAR",
+     "CARGO AREA MOUNT (SPECIFY)",
+     "REAR SEAT MOUNT",
+     "SINGLE PRISIONER FACING FORWARD"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "santa_cruz",
+     "setina",
+     "pro_gard"
+    ],
+    "workbook_only": [
+     "blac_rac"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "SINGLE HANDCUFF",
+     "DUAL HANDCUFF",
+     "SINGLE SHOT GUN",
+     "DUAL SHOT GUN",
+     "HANDCUFF AND SHOT GUN"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "pro_gard_single_handcuff",
+    "pro_gard_dual_handcuff",
+    "pro_gard_single_shot_gun",
+    "pro_gard_dual_shot_gun",
+    "pro_gard_handcuff_and_shot_gun",
+    "stalker_specify_model"
+   ]
+  },
+  "Gunlock Bracket {n}": {
+   "instances": [
+    "Gunlock Bracket 1",
+    "Gunlock Bracket 2",
+    "Gunlock Bracket 3"
+   ],
+   "rows": [
+    126,
+    128,
+    130
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "5-0 FAB (DTM)",
+    "SANTA CRUZ",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FRONT OVERHEAD BRACKETS",
+    "REAR OVERHEAD BRACKETS",
+    "SINGLE T-RAIL",
+    "DUAL T-RAIL",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "GUNLOCKS",
+   "sub": true,
+   "part_type_id": "gun_lock_bracket",
+   "mapping": "pattern",
+   "max_instances_in_template": 3,
+   "manufacturer_ids": [
+    "setina",
+    "5_0_fab_dtm",
+    "santa_cruz"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "5_0_fab_dtm",
+     "santa_cruz"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "FRONT OVERHEAD BRACKETS",
+     "REAR OVERHEAD BRACKETS",
+     "SINGLE T-RAIL",
+     "DUAL T-RAIL"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "santa_cruz_front_overhead_brackets",
+    "santa_cruz_rear_overhead_brackets",
+    "santa_cruz_single_t_rail",
+    "santa_cruz_dual_t_rail",
+    "stalker_specify_model"
+   ]
+  },
+  "K-9 Kennel": {
+   "instances": [
+    "K-9 Kennel"
+   ],
+   "rows": [
+    131
+   ],
+   "manufacturers_raw": [
+    "SETINA",
+    "HAVIS",
+    "AMERICAN ALUMINUM",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "FULL PLATFORM",
+    "2/3 1/3 DRIVER EXIT",
+    "2/3 1/2 PASS EXIT",
+    "ULTIMATE",
+    "ULTIMATE II",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "K-9 EQUIPMENT",
+   "sub": false,
+   "part_type_id": "k9_kennel",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "setina",
+    "havis",
+    "american_aluminum"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "setina",
+     "american_aluminum"
+    ],
+    "workbook_only": [
+     "havis"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "FULL PLATFORM",
+     "2/3 1/3 DRIVER EXIT",
+     "2/3 1/2 PASS EXIT",
+     "ULTIMATE II"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "ULTIMATE",
+      "legacy_product": "ace_k_9_ultimate"
+     }
+    ]
+   },
+   "flags": [
+    "gap:manufacturer-coverage",
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "ace_k_9_full_platform",
+    "ace_k_9_2_3_1_3_driver_exit",
+    "ace_k_9_2_3_1_2_pass_exit",
+    "ace_k_9_ultimate",
+    "ace_k_9_ultimate_ii",
+    "stalker_specify_model"
+   ]
+  },
+  "K-9 Heat Alarm/Popper": {
+   "instances": [
+    "K-9 Heat Alarm/Popper"
+   ],
+   "rows": [
+    132
+   ],
+   "manufacturers_raw": [
+    "ACE K-9",
+    "RAY ALLEN",
+    "PREIMER K-9",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "HEAT ALARM ONLY",
+    "HEAT ALARM AND DOOR POPPER",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON FRONT OF K-9 PARTITION",
+    "ON EQUIPMEBNT TRAY",
+    "SPECIFY LOCATION"
+   ],
+   "section": "K-9 EQUIPMENT",
+   "sub": false,
+   "part_type_id": "k9_heat_alarm_popper",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "ace_k_9",
+    "ray_allen",
+    "preimer_k_9"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [
+     "ON FRONT OF K-9 PARTITION",
+     "ON EQUIPMEBNT TRAY"
+    ],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "ace_k_9"
+    ],
+    "workbook_only": [
+     "ray_allen",
+     "preimer_k_9"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "HEAT ALARM ONLY",
+     "HEAT ALARM AND DOOR POPPER"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "pro_gard_heat_alarm_only",
+    "pro_gard_heat_alarm_and_door_popper",
+    "stalker_specify_model"
+   ]
+  },
+  "K-9 Control Head": {
+   "instances": [
+    "K-9 Control Head"
+   ],
+   "rows": [
+    133
+   ],
+   "manufacturers_raw": [
+    "ACE K-9",
+    "RAY ALLEN",
+    "PREIMER K-9",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "IN CENTER CONSOLE",
+    "PASSENGER SIDE VISOR",
+    "TOP PLATE OF CONSOLE",
+    "RIGHT OF CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "K-9 EQUIPMENT",
+   "sub": false,
+   "part_type_id": "k9_control_head",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "ace_k_9",
+    "ray_allen",
+    "preimer_k_9"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "IN CENTER CONSOLE",
+     "PASSENGER SIDE VISOR",
+     "TOP PLATE OF CONSOLE",
+     "RIGHT OF CONSOLE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "ace_k_9",
+     "ray_allen",
+     "preimer_k_9"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "K-9 Add-Ons": {
+   "instances": [
+    "K-9 Add-Ons"
+   ],
+   "rows": [
+    134
+   ],
+   "manufacturers_raw": [
+    "ACE K-9",
+    "RAY ALLEN",
+    "PREIMER K-9",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "IN CENTER CONSOLE",
+    "PASSENGER SIDE VISOR",
+    "TOP PLATE OF CONSOLE",
+    "RIGHT OF CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "K-9 EQUIPMENT",
+   "sub": false,
+   "part_type_id": "k9_add_ons",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "ace_k_9",
+    "ray_allen",
+    "preimer_k_9"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "IN CENTER CONSOLE",
+     "PASSENGER SIDE VISOR",
+     "TOP PLATE OF CONSOLE",
+     "RIGHT OF CONSOLE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "ace_k_9",
+     "ray_allen",
+     "preimer_k_9"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Battery Tender": {
+   "instances": [
+    "Battery Tender"
+   ],
+   "rows": [
+    135
+   ],
+   "manufacturers_raw": [
+    "SCHUMACHER",
+    "BATTERY TENDER",
+    "KUSSMAUL",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "ON EQUIPMENT TRAY",
+    "UNDER HOOD",
+    "SPECIFY LOCATION"
+   ],
+   "section": "ELECTRICAL & POWER",
+   "sub": false,
+   "part_type_id": "battery_tender",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "schumacher",
+    "battery_tender",
+    "kussmaul"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON EQUIPMENT TRAY",
+     "UNDER HOOD"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "schumacher"
+    ],
+    "workbook_only": [
+     "battery_tender",
+     "kussmaul"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Auto Eject": {
+   "instances": [
+    "Auto Eject"
+   ],
+   "rows": [
+    136
+   ],
+   "manufacturers_raw": [
+    "KUSSMAUL",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "WATER PROOF",
+    "NON-WATER PROOF",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "LEFT FRONT QUARTER PANEL",
+    "LEFT REAR QUARTER PANEL",
+    "ON BACK RACK",
+    "SPECIFY LOCATION"
+   ],
+   "section": "ELECTRICAL & POWER",
+   "sub": false,
+   "part_type_id": "auto_eject",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "kussmaul"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": [
+     "LEFT FRONT QUARTER PANEL",
+     "LEFT REAR QUARTER PANEL",
+     "ON BACK RACK"
+    ]
+   },
+   "mfr_check": {
+    "confirmed": [
+     "kussmaul"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "WATER PROOF",
+     "NON-WATER PROOF"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:location-options"
+   ],
+   "legacy_products": [
+    "kussmaul_water_proof",
+    "kussmaul_non_water_proof",
+    "stalker_specify_model"
+   ]
+  },
+  "Vehicle to Vehicle Sync": {
+   "instances": [
+    "Vehicle to Vehicle Sync"
+   ],
+   "rows": [
+    141
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [],
+   "locations": [
+    "IN LIGHT BAR",
+    "ON CARGO WINDOW"
+   ],
+   "section": "CONNECTED SYSTEMS",
+   "sub": false,
+   "part_type_id": "v2v_sync",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "IN LIGHT BAR",
+     "ON CARGO WINDOW"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": [
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": []
+  },
+  "Cloud System": {
+   "instances": [
+    "Cloud System"
+   ],
+   "rows": [
+    142
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SOUNDOFF",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "VERIZON ROOF MOUNT",
+    "VERIZON WINDOW MOUNT",
+    "FIRST NET ROOF MOUNT",
+    "FIRST NET WINDOW MOUNT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "ON EQUIPMENT TRAY",
+    "FRONT OF PARTITION",
+    "SPECIFY LOCATION"
+   ],
+   "section": "CONNECTED SYSTEMS",
+   "sub": false,
+   "part_type_id": "cloud_system_tray",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen",
+    "soundoff"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "ON EQUIPMENT TRAY",
+     "FRONT OF PARTITION"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "whelen",
+     "soundoff"
+    ]
+   },
+   "model_check": {
+    "confirmed": [
+     "VERIZON ROOF MOUNT",
+     "VERIZON WINDOW MOUNT",
+     "FIRST NET ROOF MOUNT",
+     "FIRST NET WINDOW MOUNT"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "cradle_point_verizon_roof_mount",
+    "cradle_point_verizon_window_mount",
+    "cradle_point_first_net_roof_mount",
+    "cradle_point_first_net_window_mount",
+    "stalker_specify_model"
+   ]
+  },
+  "Remote Start": {
+   "instances": [
+    "Remote Start"
+   ],
+   "rows": [
+    140
+   ],
+   "manufacturers_raw": [
+    "ARCTI START",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "1 BUTTON 1 WAY",
+    "4 BUTTON 1 WAY",
+    "1 BUTTON 2 WAY",
+    "4 BUTTON 2 WAY",
+    "5 BUTTON LCD",
+    "SPECIFY"
+   ],
+   "locations": [],
+   "section": "CONNECTED SYSTEMS",
+   "sub": false,
+   "part_type_id": "remote_start",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "manufacturers_unmatched": [
+    "ARCTI START"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "1 BUTTON 1 WAY",
+     "4 BUTTON 1 WAY",
+     "1 BUTTON 2 WAY",
+     "4 BUTTON 2 WAY"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "5 BUTTON LCD",
+      "legacy_product": "arcti_start_5_button_lcd"
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "arcti_start_1_button_1_way",
+    "arcti_start_4_button_1_way",
+    "arcti_start_1_button_2_way",
+    "arcti_start_4_button_2_way",
+    "arcti_start_5_button_lcd",
+    "arcti_start_specify"
+   ]
+  },
+  "Arges": {
+   "instances": [
+    "Arges"
+   ],
+   "rows": [
+    143
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "PRO-FOCUS",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "LEFT FRONT FENDER",
+    "RIGHT FRONT FENDER",
+    "LEFT AND RIGHT FENDER",
+    "LIGHTBAR MOUNT",
+    "SPECIFY LOCATION"
+   ],
+   "section": "ARGES & SPOTLIGHT",
+   "sub": false,
+   "part_type_id": "arges_face",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen"
+   ],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [
+     "LEFT FRONT FENDER",
+     "RIGHT FRONT FENDER",
+     "LEFT AND RIGHT FENDER",
+     "LIGHTBAR MOUNT"
+    ],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "PRO-FOCUS"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_pro_focus",
+    "stalker_specify_model"
+   ]
+  },
+  "Arges Controller": {
+   "instances": [
+    "Arges Controller"
+   ],
+   "rows": [
+    144
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "ARGES W/ BAIL BRACKET",
+    "ARGES W/ SWIVEL BRACKET",
+    "ARGES W/ VERSATILE BAIL BRACKET",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "LEFT ON DASH",
+    "IN CENTER CONSOLE",
+    "SPECIFY LOCATION"
+   ],
+   "section": "ARGES & SPOTLIGHT",
+   "sub": true,
+   "part_type_id": "arges_controller",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "LEFT ON DASH",
+     "IN CENTER CONSOLE"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "ARGES W/ BAIL BRACKET",
+     "ARGES W/ SWIVEL BRACKET",
+     "ARGES W/ VERSATILE BAIL BRACKET"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "whelen_arges_w_bail_bracket",
+    "whelen_arges_w_swivel_bracket",
+    "whelen_arges_w_versatile_bail_bracket",
+    "stalker_specify_model"
+   ]
+  },
+  "Arges Mount": {
+   "instances": [
+    "Arges Mount"
+   ],
+   "rows": [
+    145
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "VEHICLE SPECIFIC MOUNT",
+    "LIGHT BAR MOUNT",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "ARGES & SPOTLIGHT",
+   "sub": true,
+   "part_type_id": "arges_mount",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "LIGHT BAR MOUNT"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "VEHICLE SPECIFIC MOUNT",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_light_bar_mount",
+    "stalker_specify_model"
+   ]
+  },
+  "Photo Eye": {
+   "instances": [
+    "Photo Eye"
+   ],
+   "rows": [
+    146
+   ],
+   "manufacturers_raw": [
+    "WHELEN",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CENTER OF DASH",
+    "REAR VIEW MIRROR PLASTIC",
+    "IN LIGHT BAR",
+    "SPECIFY LOCATION"
+   ],
+   "locations": [],
+   "section": "ARGES & SPOTLIGHT",
+   "sub": false,
+   "part_type_id": "photo_eye",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "whelen"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "whelen"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "REAR VIEW MIRROR PLASTIC"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "CENTER OF DASH",
+      "legacy_product": null
+     },
+     {
+      "model": "IN LIGHT BAR",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "whelen_rear_view_mirror_plastic",
+    "whelen_specify_location"
+   ]
+  },
+  "GPD W/ Extension": {
+   "instances": [
+    "GPD W/ Extension"
+   ],
+   "rows": [
+    147
+   ],
+   "manufacturers_raw": [
+    "GLOBESAT",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CENTER OF DASH",
+    "FRONT RIGHT OF DASH",
+    "ROOF MOUNTED",
+    "SPECIFY LOACTION"
+   ],
+   "locations": [],
+   "section": "ARGES & SPOTLIGHT",
+   "sub": false,
+   "part_type_id": "gpd",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "globesat"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "globesat"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "FRONT RIGHT OF DASH",
+     "ROOF MOUNTED"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "CENTER OF DASH",
+      "legacy_product": null
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "globesat_front_right_of_dash",
+    "globesat_roof_mounted",
+    "globesat_specify_loaction"
+   ]
+  },
+  "Floor Mats": {
+   "instances": [
+    "Floor Mats"
+   ],
+   "rows": [
+    138
+   ],
+   "manufacturers_raw": [
+    "WEATHER TECH",
+    "HUSKY",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "FRONT DRIVER AND PASSENGER",
+    "FRONT AND REAR",
+    "FRONT REAR AND CARGO",
+    "CARGO MAT"
+   ],
+   "section": "FINISHING & ACCESSORIES",
+   "sub": false,
+   "part_type_id": "floor_mats",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "weather_tech",
+    "husky"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "FRONT DRIVER AND PASSENGER",
+     "FRONT AND REAR",
+     "FRONT REAR AND CARGO",
+     "CARGO MAT"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "weather_tech",
+     "husky"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "stalker_specify_model"
+   ]
+  },
+  "Seat Covers": {
+   "instances": [
+    "Seat Covers"
+   ],
+   "rows": [
+    139
+   ],
+   "manufacturers_raw": [
+    "TIGER TOUGH",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "STANDARD",
+    "WITH CUSTOM PATCH",
+    "SPECIFY MODEL"
+   ],
+   "locations": [
+    "DRIVER ONLY",
+    "DRIVER AND PASSENGER",
+    "FULL FRONT",
+    "FULL REAR",
+    "FRONT AND REAR",
+    "SPECIFY MODEL"
+   ],
+   "section": "FINISHING & ACCESSORIES",
+   "sub": false,
+   "part_type_id": "seat_covers",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "tiger_tough"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [
+     "DRIVER ONLY",
+     "DRIVER AND PASSENGER",
+     "FULL FRONT",
+     "FULL REAR",
+     "FRONT AND REAR"
+    ],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "tiger_tough"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "STANDARD"
+    ],
+    "re_homed": [],
+    "unresolved": [
+     {
+      "model": "WITH CUSTOM PATCH",
+      "legacy_product": "tiger_tough_with_custom_patch"
+     }
+    ]
+   },
+   "flags": [
+    "gap:model-unresolved"
+   ],
+   "legacy_products": [
+    "tiger_tough_standard",
+    "tiger_tough_with_custom_patch",
+    "stalker_specify_model"
+   ]
+  },
+  "Window Tint": {
+   "instances": [
+    "Window Tint"
+   ],
+   "rows": [
+    150
+   ],
+   "manufacturers_raw": [
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "COMPLETE SQUAD HARNESS",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "FINISHING & ACCESSORIES",
+   "sub": false,
+   "part_type_id": "window_tint",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": [
+     "5_0_fab_dtm"
+    ]
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [
+     {
+      "model": "COMPLETE SQUAD HARNESS",
+      "product": "5_0_fab_dtm_complete_squad_harness",
+      "now_fits": [
+       "harness"
+      ]
+     }
+    ],
+    "unresolved": []
+   },
+   "flags": [
+    "conflict:model-re-homed",
+    "gap:manufacturer-coverage"
+   ],
+   "legacy_products": [
+    "5_0_fab_dtm_complete_squad_harness",
+    "stalker_specify_model"
+   ]
+  },
+  "Decals": {
+   "instances": [
+    "Decals"
+   ],
+   "rows": [
+    148
+   ],
+   "manufacturers_raw": [
+    "ADVANCED GRAPHICS",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "CUSTOM GRAPHICS ( WORK WITH MFG)"
+   ],
+   "locations": [],
+   "section": "FINISHING & ACCESSORIES",
+   "sub": false,
+   "part_type_id": "decals",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "advanced_graphics"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "advanced_graphics"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "CUSTOM GRAPHICS ( WORK WITH MFG)"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "advanced_graphics_custom_graphics_work_with_mfg"
+   ]
+  },
+  "Harness": {
+   "instances": [
+    "Harness"
+   ],
+   "rows": [
+    149
+   ],
+   "manufacturers_raw": [
+    "5-0 FAB (DTM)",
+    "SPECIFY MFG"
+   ],
+   "models": [
+    "COMPLETE SQUAD HARNESS",
+    "SPECIFY MODEL"
+   ],
+   "locations": [],
+   "section": "FINISHING & ACCESSORIES",
+   "sub": false,
+   "part_type_id": "harness",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [
+    "5_0_fab_dtm"
+   ],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [
+     "5_0_fab_dtm"
+    ],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [
+     "COMPLETE SQUAD HARNESS"
+    ],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": [
+    "5_0_fab_dtm_complete_squad_harness",
+    "stalker_specify_model"
+   ]
+  },
+  "2-Lamp Tracer": {
+   "instances": [
+    "2-Lamp Tracer"
+   ],
+   "rows": [],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": null,
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "front (tracer)",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "5-Lamp Tracer": {
+   "instances": [
+    "5-Lamp Tracer"
+   ],
+   "rows": [],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": null,
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "side running board (tracer)",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "6-Lamp Tracer": {
+   "instances": [
+    "6-Lamp Tracer"
+   ],
+   "rows": [],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": null,
+   "sub": false,
+   "part_type_id": "warning_light",
+   "mapping": "superseded",
+   "legacy_zone": "side running board (tracer)",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "placement",
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  },
+  "Radio Speaker": {
+   "instances": [
+    "Radio Speaker"
+   ],
+   "rows": [],
+   "manufacturers_raw": [],
+   "models": [],
+   "locations": [],
+   "section": "RADIO & COMMUNICATIONS",
+   "sub": false,
+   "part_type_id": "radio_speaker",
+   "mapping": "pattern",
+   "max_instances_in_template": 1,
+   "manufacturer_ids": [],
+   "loc_check": {
+    "mode": "text",
+    "confirmed": [],
+    "workbook_only": [],
+    "parts_db_only": []
+   },
+   "mfr_check": {
+    "confirmed": [],
+    "workbook_only": []
+   },
+   "model_check": {
+    "confirmed": [],
+    "re_homed": [],
+    "unresolved": []
+   },
+   "flags": [],
+   "legacy_products": []
+  }
+ },
+ "manufacturer_models": {
+  "10_8": [
+   "Camera DVR"
+  ],
+  "1st_in_emergency": [
+   "Storage Compartment"
+  ],
+  "3m": [
+   "Opticom"
+  ],
+  "5_0_fab_dtm": [
+   "FW {n} Bracket",
+   "Front Side Brackets",
+   "Siren Speaker Bracket",
+   "Mirror Warning Brackets {n}",
+   "Side Warning Bracket {n}",
+   "Rear Warning Bracket {n}",
+   "Lower Lift Gate Warning Bracket",
+   "Storage Compartment",
+   "Equipment Tray",
+   "Gunlock Bracket {n}",
+   "Window Tint",
+   "Harness"
+  ],
+  "ace_k_9": [
+   "K-9 Heat Alarm/Popper",
+   "K-9 Control Head",
+   "K-9 Add-Ons"
+  ],
+  "advanced_graphics": [
+   "Decals"
+  ],
+  "american_aluminum": [
+   "Storage Compartment",
+   "K-9 Kennel"
+  ],
+  "angel_armor": [
+   "Bullet Proof Door Panel(s)"
+  ],
+  "axon": [
+   "Camera DVR"
+  ],
+  "battery_tender": [
+   "Battery Tender"
+  ],
+  "bearded_3d": [
+   "FW {n} Bracket",
+   "Front Side Brackets",
+   "Siren Speaker Bracket",
+   "Mirror Warning Brackets {n}",
+   "Side Warning Bracket {n}",
+   "Rear Warning Bracket {n}",
+   "Lower Lift Gate Warning Bracket"
+  ],
+  "blac_rac": [
+   "Gunlock {n}"
+  ],
+  "brother": [
+   "Printer"
+  ],
+  "clear_armor": [
+   "Bullet Proof Door Panel(s)"
+  ],
+  "cradle_point": [
+   "Cradle Point"
+  ],
+  "decked": [
+   "Storage Compartment"
+  ],
+  "feniex": [
+   "Rear Scene"
+  ],
+  "gamber_johnson": [
+   "Push Bumper",
+   "Pit Bar",
+   "Wing Wraps",
+   "Wire Covers",
+   "Center Console",
+   "Special Face Plate {n}",
+   "Arm Rest",
+   "Motion Attachment",
+   "Docking Station",
+   "Printer Mount",
+   "Front Partition",
+   "Rear Seat Divider",
+   "Rear Window Bars",
+   "Replacement Rear Seat",
+   "Rear Partition",
+   "Floor Pan",
+   "Storage Compartment",
+   "Equipment Tray"
+  ],
+  "globesat": [
+   "GPD W/ Extension"
+  ],
+  "gtt": [
+   "Opticom"
+  ],
+  "havis": [
+   "Center Console",
+   "Special Face Plate {n}",
+   "Arm Rest",
+   "Motion Attachment",
+   "Docking Station",
+   "Printer Mount",
+   "Storage Compartment",
+   "Equipment Tray",
+   "K-9 Kennel"
+  ],
+  "husky": [
+   "Floor Mats"
+  ],
+  "kenwood": [
+   "Radio {n}"
+  ],
+  "kussmaul": [
+   "Battery Tender",
+   "Auto Eject"
+  ],
+  "magnetic_mic": [
+   "Pa Mic Clip",
+   "Radio Mic Clip {n}"
+  ],
+  "motorola": [
+   "Radio {n}",
+   "Camera DVR"
+  ],
+  "night_ride": [
+   "Thermal Imager"
+  ],
+  "nova": [
+   "Opticom"
+  ],
+  "patrol_pc": [
+   "Printer Mount"
+  ],
+  "preimer_k_9": [
+   "K-9 Heat Alarm/Popper",
+   "K-9 Control Head",
+   "K-9 Add-Ons"
+  ],
+  "pro_gard": [
+   "Push Bumper",
+   "Pit Bar",
+   "Wing Wraps",
+   "Wire Covers",
+   "Front Partition",
+   "Rear Seat Divider",
+   "Rear Window Bars",
+   "Replacement Rear Seat",
+   "Rear Partition",
+   "Floor Pan",
+   "Storage Compartment",
+   "Gunlock {n}"
+  ],
+  "ray_allen": [
+   "K-9 Heat Alarm/Popper",
+   "K-9 Control Head",
+   "K-9 Add-Ons"
+  ],
+  "rockland_cabinets": [
+   "Storage Compartment"
+  ],
+  "santa_cruz": [
+   "Gunlock {n}",
+   "Gunlock Bracket {n}"
+  ],
+  "schumacher": [
+   "Battery Tender"
+  ],
+  "setina": [
+   "Push Bumper",
+   "Pit Bar",
+   "Wing Wraps",
+   "Wire Covers",
+   "Front Partition",
+   "Rear Seat Divider",
+   "Rear Window Bars",
+   "Replacement Rear Seat",
+   "Rear Partition",
+   "Floor Pan",
+   "Storage Compartment",
+   "Equipment Tray",
+   "Gunlock {n}",
+   "Gunlock Bracket {n}",
+   "K-9 Kennel"
+  ],
+  "sho_me": [
+   "Opticom",
+   "12v Aux Ports"
+  ],
+  "sierra_wireless": [
+   "Cradle Point"
+  ],
+  "soundoff": [
+   "Forward Warning {n}",
+   "FW {n} Bracket",
+   "Front Side Warning",
+   "Front Side Brackets",
+   "Pit Bar Warning",
+   "Headlight Flasher",
+   "Front Scene",
+   "Siren Speaker {n}",
+   "Siren Speaker Bracket",
+   "External Amp",
+   "Howler",
+   "Pa Mic",
+   "Front Dome Light",
+   "Mirror Warning {n}",
+   "Mirror Warning Brackets {n}",
+   "Front Interior Light Bar",
+   "Side Warning {n}",
+   "Side Warning Bracket {n}",
+   "Side Scene",
+   "Roof Light Bar",
+   "Rear Interior Light Bar",
+   "Rear Warning {n}",
+   "Rear Warning Bracket {n}",
+   "Rear Scene",
+   "Lower Lift Gate Warning",
+   "Lower Lift Gate Warning Bracket",
+   "Tail Light Flasher",
+   "Light Controller",
+   "Control Head",
+   "Vehicle interface",
+   "Expansion Module",
+   "Rear Seat Lights {n}",
+   "Rear Seat Cargo Lights",
+   "Cargo Lighting",
+   "Vehicle to Vehicle Sync",
+   "Cloud System"
+  ],
+  "stalker": [
+   "Radar",
+   "Front Radar Antenna Mount",
+   "Rear Radar Antenna Mount"
+  ],
+  "tiger_tough": [
+   "Seat Covers"
+  ],
+  "troy": [
+   "Push Bumper",
+   "Pit Bar",
+   "Wing Wraps",
+   "Wire Covers",
+   "Center Console",
+   "Special Face Plate {n}",
+   "Arm Rest",
+   "Motion Attachment",
+   "Front Partition",
+   "Rear Seat Divider",
+   "Rear Window Bars",
+   "Replacement Rear Seat",
+   "Rear Partition",
+   "Floor Pan",
+   "Equipment Tray"
+  ],
+  "truck_vault": [
+   "Storage Compartment",
+   "Equipment Tray"
+  ],
+  "watchguard": [
+   "Camera DVR"
+  ],
+  "weather_tech": [
+   "Floor Mats"
+  ],
+  "westin": [
+   "Push Bumper",
+   "Pit Bar",
+   "Wing Wraps",
+   "Wire Covers",
+   "FW {n} Bracket",
+   "Storage Compartment"
+  ],
+  "whelen": [
+   "Forward Warning {n}",
+   "FW {n} Bracket",
+   "Front Side Warning",
+   "Front Side Brackets",
+   "Pit Bar Warning",
+   "Headlight Flasher",
+   "Front Scene",
+   "Siren Speaker {n}",
+   "Siren Speaker Bracket",
+   "External Amp",
+   "Howler",
+   "Pa Mic",
+   "Front Dome Light",
+   "Mirror Warning {n}",
+   "Mirror Warning Brackets {n}",
+   "Front Interior Light Bar",
+   "Side Warning {n}",
+   "Side Warning Bracket {n}",
+   "Side Scene",
+   "Roof Light Bar",
+   "Rear Interior Light Bar",
+   "Rear Warning {n}",
+   "Rear Warning Bracket {n}",
+   "Rear Scene",
+   "Lower Lift Gate Warning",
+   "Lower Lift Gate Warning Bracket",
+   "Tail Light Flasher",
+   "Light Controller",
+   "Control Head",
+   "Vehicle interface",
+   "Expansion Module",
+   "Rear Seat Lights {n}",
+   "Rear Seat Cargo Lights",
+   "Cargo Lighting",
+   "Vehicle to Vehicle Sync",
+   "Cloud System",
+   "Arges",
+   "Arges Controller",
+   "Arges Mount",
+   "Photo Eye"
+  ]
+ },
+ "reconciliation": {
+  "clean": [
+   "12v Aux Ports",
+   "2-Lamp Tracer",
+   "5-Lamp Tracer",
+   "6-Lamp Tracer",
+   "Arges",
+   "Arges Controller",
+   "Body Camera Dock",
+   "Chicago Barrier",
+   "Decals",
+   "Docking Station",
+   "Door Lock Button",
+   "Forward Warning {n}",
+   "Front Camera",
+   "Front Partition Transfer Kit",
+   "Front Radar Antenna Mount",
+   "Gunlock Bracket {n}",
+   "Harness",
+   "Lower Lift Gate Warning",
+   "Pit Bar Warning",
+   "Printer",
+   "Printer Mount",
+   "Printer Power",
+   "Printer USB",
+   "Radar Interface Cable (To Camera)",
+   "Radio Speaker",
+   "Rear Camera",
+   "Rear Radar Antenna Mount",
+   "Rear Seat Camera",
+   "Rear Warning {n}",
+   "Roof Light Bar",
+   "Side Warning {n}",
+   "Wireless Mic Charger"
+  ],
+  "conflicts": [
+   "Pit Bar",
+   "Window Tint"
+  ],
+  "gaps": [
+   "Arges Mount",
+   "Arm Rest",
+   "Auto Eject",
+   "Battery Tender",
+   "Bullet Proof Door Panel(s)",
+   "Bullet Proof Door Window(s)",
+   "Camera DVR",
+   "Cargo Lighting",
+   "Center Console",
+   "Cloud System",
+   "Control Head",
+   "Cradle Point",
+   "Cradle Point Antenna",
+   "Equipment Tray",
+   "Expansion Module",
+   "External Amp",
+   "FW {n} Bracket",
+   "Floor Mats",
+   "Floor Pan",
+   "Front Dome Light",
+   "Front Interior Light Bar",
+   "Front Partition",
+   "Front Scene",
+   "Front Side Brackets",
+   "Front Side Warning",
+   "GPD W/ Extension",
+   "Gunlock {n}",
+   "Headlight Flasher",
+   "Howler",
+   "K-9 Add-Ons",
+   "K-9 Control Head",
+   "K-9 Heat Alarm/Popper",
+   "K-9 Kennel",
+   "Light Controller",
+   "Lower Lift Gate Warning Bracket",
+   "Mirror Warning Brackets {n}",
+   "Mirror Warning {n}",
+   "Motion Attachment",
+   "Opticom",
+   "Pa Mic",
+   "Pa Mic Clip",
+   "Photo Eye",
+   "Push Bumper",
+   "Radar",
+   "Radio Antenna Cable",
+   "Radio Antenna Top",
+   "Radio Mic Clip {n}",
+   "Radio {n}",
+   "Rear Interior Light Bar",
+   "Rear Partition",
+   "Rear Scene",
+   "Rear Seat Cargo Lights",
+   "Rear Seat Divider",
+   "Rear Seat Lights {n}",
+   "Rear Warning Bracket {n}",
+   "Rear Window Bars",
+   "Remote Start",
+   "Replacement Rear Seat",
+   "Seat Covers",
+   "Side Scene",
+   "Side Warning Bracket {n}",
+   "Siren Speaker Bracket",
+   "Siren Speaker {n}",
+   "Special Face Plate {n}",
+   "Storage Compartment",
+   "Tail Light Flasher",
+   "Thermal Imager",
+   "Thermal Imager Monitor",
+   "Vehicle interface",
+   "Vehicle to Vehicle Sync",
+   "Wing Wraps",
+   "Wire Covers"
+  ]
+ }
+}

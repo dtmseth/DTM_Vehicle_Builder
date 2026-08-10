@@ -1,0 +1,238 @@
+{
+  "manufacturer_id": "whelen",
+  "new_products": [
+    {
+      "product_id": "whelen_outer_edge",
+      "model": "OUTER EDGE",
+      "fits_part_types": [
+        "rear_interior_light_bar"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "sku": "BS44Z",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BS44ZT",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BS48Z",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "BS50Z",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BS50ZT",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BS54Z",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BS54ZT",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BS578",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "MACH-E"
+      ]
+    },
+    {
+      "sku": "BSFW35Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "CHARGER"
+      ]
+    },
+    {
+      "sku": "BSFW42X",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "RAM-1500"
+      ]
+    },
+    {
+      "sku": "BSFW444",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BSFW445",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BSFW448",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BSFW44Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BSFW44ZT",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "DURANGO"
+      ]
+    },
+    {
+      "sku": "BSFW475",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "BSFW47Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "F-150"
+      ]
+    },
+    {
+      "sku": "BSFW48X",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "EXPEDITION"
+      ]
+    },
+    {
+      "sku": "BSFW49X",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "CHEVY-1500"
+      ]
+    },
+    {
+      "sku": "BSFW505",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BSFW50Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BSFW50ZT",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BSFW54X",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BSFW54XT",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    },
+    {
+      "sku": "BSFW56X",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "TESLA"
+      ]
+    },
+    {
+      "sku": "BSFW57Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "MACH-E"
+      ]
+    },
+    {
+      "sku": "BSFW59Z",
+      "product": "whelen_fst",
+      "vehicle_tags": [
+        "BLAZER"
+      ]
+    },
+    {
+      "sku": "BSRW10",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "BSRW12",
+      "product": "whelen_rst",
+      "vehicle_tags": [
+        "any"
+      ]
+    },
+    {
+      "sku": "BW50UF6P",
+      "product": "whelen_xlp",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "BW50UFX",
+      "product": "whelen_xlp",
+      "vehicle_tags": [
+        "PIU"
+      ]
+    },
+    {
+      "sku": "OEWD54",
+      "product": "whelen_outer_edge",
+      "vehicle_tags": [
+        "TAHOE"
+      ]
+    }
+  ]
+}

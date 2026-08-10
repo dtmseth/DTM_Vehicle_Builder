@@ -7,6 +7,8 @@ content actually flows in both directions.
 
 from __future__ import annotations
 
+import hashlib
+import threading
 from pathlib import Path
 
 import pytest
@@ -20,7 +22,7 @@ from dtm_buildsheet.app.adapters.noop import (
 from dtm_buildsheet.app.adapters.wiring import AdapterBundle, set_active_bundle
 from dtm_buildsheet.app.services import shared_work_service
 from dtm_buildsheet.paths import AppPaths
-from dtm_buildsheet.storage.base import StorageProvider
+from dtm_buildsheet.storage.base import FileMetadata, StorageProvider
 
 
 # ── Fakes ────────────────────────────────────────────────────────────────────
@@ -53,6 +55,61 @@ class _FakeRemote(StorageProvider):
         directory = directory.strip("/")
         prefix = f"{directory}/" if directory else ""
         return [p for p in self.files if p.startswith(prefix) and "/" not in p[len(prefix):]]
+
+
+class _EtagRemote(_FakeRemote):
+    """In-memory remote with stable content-derived etags."""
+
+    def list_files_with_metadata(self, directory: str) -> list[FileMetadata]:
+        return [
+            FileMetadata(path=path, etag=hashlib.sha256(self.files[path]).hexdigest())
+            for path in self.list_files(directory)
+        ]
+
+
+class _BlockingRemote(_EtagRemote):
+    """Lets a test queue a second save while the first upload is in flight."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.first_write_started = threading.Event()
+        self.release_first_write = threading.Event()
+        self.final_write_finished = threading.Event()
+        self.writes: list[bytes] = []
+
+    def write_text(self, path: str, data: str) -> None:
+        self.writes.append(data.encode("utf-8"))
+        if len(self.writes) == 1:
+            self.first_write_started.set()
+            assert self.release_first_write.wait(timeout=1)
+        super().write_text(path, data)
+        if len(self.writes) >= 2:
+            self.final_write_finished.set()
+
+
+class _FailingWriteRemote(_EtagRemote):
+    """Remote whose upload path is temporarily unavailable."""
+
+    def write_text(self, path: str, data: str) -> None:
+        raise OSError("SharePoint upload failed")
+
+
+class _StaleReadAfterWriteRemote(_EtagRemote):
+    """Simulate Graph listing/read propagation lag immediately after a write."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._stale_payloads: dict[str, bytes] = {}
+
+    def write_text(self, path: str, data: str) -> None:
+        if path in self.files:
+            self._stale_payloads[path] = self.files[path]
+        super().write_text(path, data)
+
+    def read_bytes(self, path: str) -> bytes:
+        if path in self._stale_payloads:
+            return self._stale_payloads.pop(path)
+        return super().read_bytes(path)
 
 
 class _StubIdentity:
@@ -137,6 +194,24 @@ def test_mirror_draft_uploads_to_sharepoint(cloud_on, paths):
     assert "Drafts/draft-abc.json" in remote.files
 
 
+def test_background_mirror_drains_to_the_newest_draft_snapshot(cloud_on, paths):
+    remote = _BlockingRemote()
+    set_active_bundle(_make_bundle(storage=remote))
+    local = paths.workspace_drafts_dir / "draft-abc.json"
+    local.write_text('{"revision": 1}', "utf-8")
+
+    shared_work_service.mirror_draft_to_cloud_in_background("draft-abc", local)
+    assert remote.first_write_started.wait(timeout=1)
+
+    local.write_text('{"revision": 2}', "utf-8")
+    shared_work_service.mirror_draft_to_cloud_in_background("draft-abc", local)
+    remote.release_first_write.set()
+
+    assert remote.final_write_finished.wait(timeout=1)
+    assert remote.writes == [b'{"revision": 1}', b'{"revision": 2}']
+    assert remote.files["Drafts/draft-abc.json"] == b'{"revision": 2}'
+
+
 def test_mirror_rejects_unsafe_ids(cloud_on, paths):
     """Path traversal in record_id must not write anywhere on SharePoint."""
     remote = _FakeRemote()
@@ -202,6 +277,104 @@ def test_sync_updates_when_remote_changes(cloud_on, paths):
     r = shared_work_service.sync_work_data(paths)
     assert r["drafts_updated"] == 1
     assert (paths.workspace_drafts_dir / "draft-1.json").read_bytes() == b'{"v": 2}'
+
+
+def test_sync_keeps_a_newer_local_save_when_remote_etag_is_unchanged(cloud_on, paths):
+    """A failed background upload must not let the next sync erase a draft."""
+    remote = _EtagRemote()
+    remote.files["Drafts/draft-1.json"] = b'{"v": 1}'
+    set_active_bundle(_make_bundle(storage=remote))
+    shared_work_service.sync_work_data(paths)
+
+    local = paths.workspace_drafts_dir / "draft-1.json"
+    local.write_bytes(b'{"v": 2}')
+    report = shared_work_service.sync_work_data(paths)
+
+    assert report["drafts_updated"] == 0
+    assert report["drafts_uploaded"] == 1
+    assert local.read_bytes() == b'{"v": 2}'
+    assert remote.files["Drafts/draft-1.json"] == b'{"v": 2}'
+
+
+def test_v2_state_preserves_newer_local_draft_when_upload_fails(cloud_on, paths):
+    """A v2→v3 migration must not repeat the old overwrite-loss bug."""
+    remote = _FailingWriteRemote()
+    remote.files["Drafts/draft-1.json"] = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T10:00:00+00:00","parts":[]}'
+    )
+    local = paths.workspace_drafts_dir / "draft-1.json"
+    local_payload = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T12:00:00+00:00","parts":[{"name":"new"}]}'
+    )
+    local.write_bytes(local_payload)
+    # The prior app wrote only eTags, so this mirrors the affected machines.
+    (paths.workspace_dir / ".cloud_state.json").write_text(json.dumps({
+        "schema_version": 2,
+        "projects": {},
+        "drafts": {"draft-1": "old-etag"},
+    }))
+    set_active_bundle(_make_bundle(storage=remote))
+
+    report = shared_work_service.sync_work_data(paths)
+
+    assert report["drafts_updated"] == 0
+    assert report["drafts_uploaded"] == 0
+    assert local.read_bytes() == local_payload
+    # A second sync must keep protecting it until an upload can succeed.
+    shared_work_service.sync_work_data(paths)
+    assert local.read_bytes() == local_payload
+
+
+def test_v2_state_uploads_newer_local_draft_before_it_can_be_overwritten(cloud_on, paths):
+    remote = _EtagRemote()
+    remote.files["Drafts/draft-1.json"] = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T10:00:00+00:00","parts":[]}'
+    )
+    local = paths.workspace_drafts_dir / "draft-1.json"
+    local_payload = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T12:00:00+00:00","parts":[{"name":"new"}]}'
+    )
+    local.write_bytes(local_payload)
+    (paths.workspace_dir / ".cloud_state.json").write_text(json.dumps({
+        "schema_version": 2,
+        "projects": {},
+        "drafts": {"draft-1": "old-etag"},
+    }))
+    set_active_bundle(_make_bundle(storage=remote))
+
+    report = shared_work_service.sync_work_data(paths)
+
+    assert report["drafts_updated"] == 0
+    assert report["drafts_uploaded"] == 1
+    assert local.read_bytes() == local_payload
+    assert remote.files["Drafts/draft-1.json"] == local_payload
+
+
+def test_sync_preserves_local_draft_while_graph_confirms_a_recent_upload(cloud_on, paths):
+    """A stale post-upload read cannot roll back the successfully saved draft."""
+    remote = _StaleReadAfterWriteRemote()
+    remote.files["Drafts/draft-1.json"] = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T10:00:00+00:00","parts":[]}'
+    )
+    local = paths.workspace_drafts_dir / "draft-1.json"
+    local_payload = (
+        b'{"draft_id":"draft-1","updated_at":"2026-08-06T12:00:00+00:00","parts":[{"name":"new"}]}'
+    )
+    local.write_bytes(local_payload)
+    (paths.workspace_dir / ".cloud_state.json").write_text(json.dumps({
+        "schema_version": 2,
+        "projects": {},
+        "drafts": {"draft-1": "old-etag"},
+    }))
+    set_active_bundle(_make_bundle(storage=remote))
+
+    shared_work_service.sync_work_data(paths)
+    report = shared_work_service.sync_work_data(paths)
+
+    assert report["drafts_updated"] == 0
+    assert report["drafts_uploaded"] == 1
+    assert local.read_bytes() == local_payload
+    assert remote.files["Drafts/draft-1.json"] == local_payload
 
 
 def test_sync_ignores_unsafe_remote_ids(cloud_on, paths):

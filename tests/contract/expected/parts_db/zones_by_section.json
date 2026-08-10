@@ -1,0 +1,32 @@
+{
+  "body": {
+    "zones": [
+      {
+        "label": "Front",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "front"
+      },
+      {
+        "label": "Rear",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "rear"
+      },
+      {
+        "label": "Side",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "side"
+      },
+      {
+        "label": "Roof",
+        "requires_attribute": "",
+        "section": "exterior",
+        "zone_id": "roof"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}

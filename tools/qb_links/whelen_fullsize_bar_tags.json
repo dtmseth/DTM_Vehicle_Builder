@@ -1,0 +1,20 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Full-size roof lightbars: vehicle_tags by length (Seth, 2026-06-26): 48\" fits Durango ONLY; 54\" fits everything else (PIU/Traverse/Tahoe/F-150, NOT Durango). App vehicle vocabulary = PIU, TRAVERSE, TAHOE, DURANGO, F-150; tag match is exact (no 'all-except' wildcard), so 54\" lists the four non-Durango vehicles explicitly. links: re-tag the existing in-QB Legacy/Liberty SKUs (friendly_name omitted = preserved). pending_parts: Edge 9X is made-to-order (NCNR), not in DTM's QB yet, so added as pending-QB ($0 placeholder price; list prices in docs/reference/WHELEN_PRICE_LIST_PL26.md if set later). Edge 9X SKUs mirror Legacy: short (9XS) + tall (9XT) profiles, 48\"(8)/54\"(2) lengths, color codes DDDD (R/W) and DEDE (Duo R/B). ITL12 (a takedown OPTION mis-filed as a Liberty bar) and the SoundOff M-POWER (non-Whelen, no length data) are intentionally NOT re-tagged. NOTE: when a new vehicle type is added to the app, 54\" tag lists must be extended.",
+
+  "links": [
+    {"sku": "EB2DDDD", "product": "whelen_legacy",  "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"]},
+    {"sku": "EB2DEDE", "product": "whelen_legacy",  "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"]},
+    {"sku": "EB8DEDE", "product": "whelen_legacy",  "vehicle_tags": ["DURANGO"]},
+    {"sku": "BB2SP3J", "product": "whelen_liberty", "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"]}
+  ],
+
+  "pending_parts": [
+    {"product": "whelen_9x_edge", "part_number": "9XS2DDDD", "price": 0.0, "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"], "friendly_name": "Edge 9X (short) 54\" WCX, Red/White"},
+    {"product": "whelen_9x_edge", "part_number": "9XS2DEDE", "price": 0.0, "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"], "friendly_name": "Edge 9X (short) 54\" WCX Duo, Red/Blue"},
+    {"product": "whelen_9x_edge", "part_number": "9XS8DEDE", "price": 0.0, "vehicle_tags": ["DURANGO"],                          "friendly_name": "Edge 9X (short) 48\" WCX Duo, Red/Blue"},
+    {"product": "whelen_9x_edge", "part_number": "9XT2DDDD", "price": 0.0, "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"], "friendly_name": "Edge 9X (tall) 54\" WCX, Red/White"},
+    {"product": "whelen_9x_edge", "part_number": "9XT2DEDE", "price": 0.0, "vehicle_tags": ["PIU", "TRAVERSE", "TAHOE", "F-150"], "friendly_name": "Edge 9X (tall) 54\" WCX Duo, Red/Blue"},
+    {"product": "whelen_9x_edge", "part_number": "9XT8DEDE", "price": 0.0, "vehicle_tags": ["DURANGO"],                          "friendly_name": "Edge 9X (tall) 48\" WCX Duo, Red/Blue"}
+  ]
+}

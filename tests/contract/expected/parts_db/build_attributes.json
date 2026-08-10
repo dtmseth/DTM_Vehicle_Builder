@@ -1,0 +1,50 @@
+{
+  "body": {
+    "build_attributes": [
+      {
+        "attribute_id": "has_k9",
+        "default_by_build_type": {
+          "K-9": true
+        },
+        "label": "K-9 Vehicle"
+      },
+      {
+        "attribute_id": "has_prisoner_compartment",
+        "default_by_build_type": {
+          "Admin": false,
+          "K-9": false,
+          "Patrol": true,
+          "Unmarked": true
+        },
+        "label": "Has Prisoner Compartment"
+      },
+      {
+        "attribute_id": "has_side_storage",
+        "default_by_build_type": {},
+        "label": "Has Side Storage"
+      },
+      {
+        "attribute_id": "has_console",
+        "default_by_build_type": {
+          "Admin": true,
+          "K-9": true,
+          "Patrol": true,
+          "Unmarked": true
+        },
+        "label": "Has Console"
+      },
+      {
+        "attribute_id": "has_equipment_tray",
+        "default_by_build_type": {
+          "Admin": false,
+          "K-9": true,
+          "Patrol": true,
+          "Unmarked": true
+        },
+        "label": "Has Equipment Tray"
+      }
+    ]
+  },
+  "handled": true,
+  "status": 200
+}
