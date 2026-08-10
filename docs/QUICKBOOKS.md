@@ -4,7 +4,8 @@
 `QUICKBOOKS_STATUS.md` (handoff/status), `QUICKBOOKS_INTEGRATION.md` (design), and
 `QUICKBOOKS_QUESTIONNAIRE.md` (Intuit App Assessment answers).
 
-**Branch**: `claude/quickbooks-integration-design-rcgula` (all QB work; not yet merged to `main`).
+**Code location**: the QB foundation is in `main`; public QB controls remain hidden. The production
+catalog preview is a separate, read-only owner workflow — not a switch that enables routine sync.
 **Related**: [EXTERNAL_CONNECTION_SECURITY.md](EXTERNAL_CONNECTION_SECURITY.md) (security standard),
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) (the parts catalog QB feeds), `relay/DEPLOY.md` (relay deploy).
 
@@ -28,10 +29,13 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 | **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox**. B/C built + unit-tested. |
 | **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Customer sync and estimate flow built + unit-tested. New estimates do not create jobs. |
 | **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
+| **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Built locally. Production credentials, relay deployment, and the first read-only pull remain pending. It cannot reconcile or change `parts_db`. |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ⛔ Not done. Requires sandbox test cycle confirmation + relay deploy (§5–6). |
 
-**Currently runs against the SANDBOX company using Development keys.** No Production keys, no
-relay deployed, questionnaire not submitted. Nothing is live against a real QBO company yet.
+**The standard QB connection still runs against the SANDBOX company using Development keys.** No
+routine production sync is configured. The separate production-preview profile has its own local
+metadata, encrypted keychain store, and Item cache; it is not connected until the owner supplies
+Production credentials and a deployed HTTPS relay.
 
 **Write boundary**: the app writes **Customers and non-posting Estimates** —
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
@@ -86,6 +90,35 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
     30 min, only when connected, no-ops under pytest. Wired in `server.py:main()`.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
+
+### Production catalog preview — read-only migration gate
+
+The production company may organize Items differently from sandbox. Therefore production does not
+use `run_full_sync()` or the 30-minute poller. The preview is deliberately isolated:
+
+- `tools/qb_create_migration_snapshot.py` creates an immutable local baseline containing the
+  installed `parts_db.json` and, when available, the normalized sandbox Items cache. It never reads
+  or copies connection metadata, OAuth tokens, or keychain data.
+- `quickbooks_production_preview_config.json` and
+  `quickbooks_production_preview_credentials.bin` are separate from the standard sandbox profile.
+  The production preview accepts Production credentials only; its redirect URI must be HTTPS.
+- `qb_production_preview_service.py` writes only a separate production Items cache, report, and
+  prepared plan. It has no `save_config_file()` call and cannot update `parts_db.json`.
+- The report compares the Builder `part_number` against **both** QBO `Name` and QBO `Sku`, reports
+  the exact-match totals for each column, and lets the owner select the correct field once. The
+  sandbox baseline currently demonstrates why this matters: vendor identifiers there are held in
+  QBO `Name`, while `Sku` is often blank.
+- QBO Items present in the sandbox cache but absent from the baseline Builder catalog are carried
+  forward as **intentional exclusions** when their normalized Name or SKU appears in production.
+  They remain outside the Builder catalog; unrecognized production-only Items still block the
+  eventual mapping approval and remain untouched in the exact-match plan.
+- Once the owner selects the proven identifier field, the app may prepare one exact-match plan for
+  every unambiguous match. Ambiguous, missing, unexpected, or blank-key rows stay out of that plan
+  for later review. **Prepared is not applied:** a later explicit owner-approved apply step is
+  required before any catalog link changes.
+
+The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appears only on a machine
+that already has a valid local migration snapshot; public QB sales/estimate controls remain hidden.
 
 ### Phase 3 — Customers ↔ Agencies + estimate customer flow
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
@@ -208,6 +241,11 @@ entry gains `qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_syn
 items are flagged, never deleted (old builds may reference discontinued parts). Triggers: app start
 (background), 30-min poll, manual "Sync Now".
 
+**Production exception:** those triggers belong only to the standard connection. They must never
+use the production-preview profile. The preview reads active production Items into its own local
+cache and produces a mapping report; it has no reconciliation, background polling, customer import,
+or estimate capability.
+
 ### Future: reviewed QBO catalog-change queue (owner decision)
 
 The recurring catalog sync must become **reviewed-first** before it automatically creates or
@@ -324,9 +362,10 @@ Intuit's most common rejection is "connect/disconnect/reconnect not tested." Do 
 5. Connect → sign in with the Intuit **developer account** → authorize the sandbox company.
 6. Pull items, link a couple to parts, pull customers → agencies.
 
-For Production later: deploy the relay (`relay/DEPLOY.md`), register the relay HTTPS URL under the
-**Production** tab, submit the questionnaire, then switch the app to `environment=production` with
-Production keys + the relay redirect URI.
+For the first Production catalog comparison: deploy the relay (`relay/DEPLOY.md`), register the
+relay HTTPS URL under the **Production** tab, and use the separate **QB Catalog Preview** profile
+with Production keys. Do **not** switch the standard QuickBooks connection to production; it remains
+the sandbox integration until the reviewed migration is approved.
 
 ---
 
@@ -338,16 +377,23 @@ reviewed catalog-mapping migration, never as a routine sync. It must not overwri
 otherwise "clean up" existing Builder parts merely because the production company is organized
 differently.
 
+**Baseline checkpoint complete (2026-08-10):** an immutable local pre-production mapping snapshot
+was created from the installed Builder catalog: 785 products, 1,353 part-number entries, 1,222
+currently linked entries, and 29 pending-QB entries. It also preserves the 1,291-item normalized
+sandbox cache used to recognize intentionally excluded QBO Items. The snapshot is local-only and
+is not a cloud mirror or an automatic rollback mechanism.
+
 The sandbox and production companies have different QBO Item IDs even where the underlying vendor
 SKU is the same. Before enabling any production reconciliation or background polling:
 
 1. Take a recoverable snapshot of the current `parts_db.json` and the existing QB links.
 2. Pull the production item catalog into an isolated preview/cache, with automatic reconciliation
    and the 30-minute background sync disabled for this first pass.
-3. Produce a reviewable mapping report for every existing QB-linked SKU: exact normalized SKU
-   match, candidate production Item ID, description/price/active-state differences, and the result
-   (`safe match`, `needs owner choice`, `production-only`, or `Builder-only`). Do not use item name,
-   category, or account layout alone as a safe match.
+3. Produce a reviewable mapping report for every existing QB-linked SKU: compare exact normalized
+   Builder part number against both production QBO `Name` and `Sku`, select the proven identifier
+   field once, then report candidate production Item ID, description/price/active-state differences,
+   and the result (`safe match`, `needs owner choice`, `production-only`, or `Builder-only`). Do not
+   accept a Name-based match until its column-level match rate and exceptions have been reviewed.
 4. Require explicit owner approval before replacing a sandbox Item ID, accepting production-owned
    price/description changes, or marking a linked Builder part inactive. Preserve Builder-owned
    metadata such as part type, placement, render asset, compatibility, and manifest grouping.
@@ -368,8 +414,19 @@ it does not replace the initial migration review.
 
 - **Deploy the hosted relay** (`relay/DEPLOY.md`) and register its HTTPS URL as the Production
   redirect URI in the Intuit dashboard.
+- Enter Production Client ID/Secret in the isolated **QB Catalog Preview** profile, connect the
+  production company, and pull its Items into the separate preview cache. This is a read-only
+  catalog comparison — do not use the standard QuickBooks connection or its Sync button.
+- Review the Name-versus-SKU exact-match totals, select the production field that represents the
+  vendor identifier, and verify that intentional exclusions are correctly recognized. Unexpected
+  production-only or Builder-only rows are exceptions, not automatic imports.
+- After reviewing the column totals, prepare one plan for every unambiguous exact match. Any
+  ambiguous, Builder-only, pending, or unexpected production item remains an exception and is not
+  touched. The plan still does not apply links; owner approval plus a separate apply feature are
+  required.
 - **Run the sandbox test cycle** (§5) and **submit the questionnaire** (§8).
-- Obtain Production Client ID/Secret after approval; enter them with `environment=production`.
+- Obtain Production Client ID/Secret after approval; enter them only in the isolated production
+  preview profile.
 - Complete and approve the protected production inventory-transition review (§6) before any
   production reconciliation, background sync, or estimate creation.
 

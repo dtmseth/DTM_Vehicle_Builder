@@ -121,3 +121,20 @@ you're touching. New gotchas get appended to the bottom with a date.
     or 12/12;
     the current command is still `.venv/bin/python tools/ui_smoke/run_smoke.py`, but expected
     success is 15/15.
+
+---
+
+## 2026-08-10 QuickBooks production-preview follow-up
+
+25. **Production QuickBooks is preview-only until separately approved.** Use the isolated
+    `production_preview` profile and its separate cache; it must never call the normal reconcile
+    path or the 30-minute poller. Production comparison writes reports/plans only, never
+    `parts_db.json`.
+26. **Confirm the QBO identifier column before bulk mapping.** The current sandbox stores vendor
+    part numbers in QBO `Name` while `Sku` is often blank. Compare both fields against Builder
+    `part_number`; only an owner-confirmed, unambiguous exact-match field can prepare a mapping
+    plan. Known baseline exclusions remain excluded.
+27. **Cloud-off does not disable the existing sandbox QuickBooks item poll.** `DTM_CLOUD=0` prevents
+    SharePoint mirroring, but the normal connected sandbox profile can still issue read-only QBO
+    Item queries and reconcile its local workspace cache. The isolated production-preview profile
+    is never included in that startup/polling path.

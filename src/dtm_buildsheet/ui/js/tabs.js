@@ -35,6 +35,7 @@ const ALL_STAB_CONTENTS = [
   "stab-sales-reps",
   "stab-presets",
   "stab-quickbooks",
+  "stab-quickbooks-production-preview",
   "stab-workbook-tools",
 ];
 
@@ -107,6 +108,7 @@ function _runStabSideEffects(stab) {
   if (stab === "sku-grid" && typeof initSkuGridTab === "function") initSkuGridTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
   if (stab === "quickbooks" && QUICKBOOKS_UI_ENABLED && typeof initQuickBooksTab === "function") initQuickBooksTab();
+  if (stab === "quickbooks-production-preview" && typeof initQuickBooksProductionPreview === "function") initQuickBooksProductionPreview();
 }
 
 function switchTab(t) {

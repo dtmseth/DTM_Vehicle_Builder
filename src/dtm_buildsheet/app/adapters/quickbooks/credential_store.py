@@ -52,8 +52,15 @@ class QuickBooksCredentialStore:
     removes it.
     """
 
-    def __init__(self, location: Path | None = None) -> None:
-        self._location = str(location or (_app_data_dir() / _CREDENTIAL_FILENAME))
+    def __init__(self, location: Path | None = None, *, filename: str = _CREDENTIAL_FILENAME) -> None:
+        """Create a keychain-backed store.
+
+        ``filename`` is an isolated encrypted-store namespace, not a plaintext
+        credential file.  The production-catalog preview deliberately uses a
+        separate namespace so its production OAuth tokens can never replace
+        the existing sandbox/standard connection.
+        """
+        self._location = str(location or (_app_data_dir() / filename))
 
     def _persistence(self):
         # Imported lazily so the module loads in environments where

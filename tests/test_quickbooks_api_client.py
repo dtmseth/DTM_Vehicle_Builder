@@ -75,6 +75,19 @@ def test_post_uses_current_minor_version(monkeypatch):
     assert captured["params"]["minorversion"] == "75"
 
 
+def test_transport_failure_never_exposes_request_url(monkeypatch):
+    def _boom(*args, **kwargs):
+        raise RuntimeError("https://quickbooks.example/path?access_token=do-not-log")
+
+    monkeypatch.setattr(api_client.requests, "get", _boom)
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    with pytest.raises(api_client.QuickBooksApiError) as exc_info:
+        client.query("SELECT Id FROM Item")
+
+    assert str(exc_info.value) == "request_failed"
+
+
 def test_fetch_preferences_normalizes_enabled_sales_custom_fields(monkeypatch):
     client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
     monkeypatch.setattr(client, "query", lambda statement: {

@@ -104,8 +104,8 @@ class QuickBooksApiClient:
         params = {"query": statement, "minorversion": _MINOR_VERSION}
         try:
             resp = requests.get(url, headers=self._headers(), params=params, timeout=_HTTP_TIMEOUT)
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError(f"request_failed: {exc}") from exc
+        except Exception:  # noqa: BLE001 — transport text may contain a request URL
+            raise QuickBooksApiError("request_failed") from None
 
         tid = resp.headers.get("intuit_tid", "")
         logger.info("QB query: status=%s intuit_tid=%s", resp.status_code, tid)
@@ -113,8 +113,8 @@ class QuickBooksApiClient:
             raise _http_error(resp, tid)
         try:
             return resp.json().get("QueryResponse", {})
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError("unparseable_response") from exc
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
 
     def _post(self, entity: str, payload: dict, *, query_params: dict | None = None) -> dict:
         """POST a create/sparse-update to a QBO entity endpoint.
@@ -130,8 +130,8 @@ class QuickBooksApiClient:
             resp = requests.post(
                 url, headers=headers, params=params, json=payload, timeout=_HTTP_TIMEOUT
             )
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError(f"request_failed: {exc}") from exc
+        except Exception:  # noqa: BLE001 — transport text may contain a request URL
+            raise QuickBooksApiError("request_failed") from None
 
         tid = resp.headers.get("intuit_tid", "")
         logger.info("QB %s write: status=%s intuit_tid=%s", entity, resp.status_code, tid)
@@ -139,8 +139,8 @@ class QuickBooksApiClient:
             raise _http_error(resp, tid)
         try:
             return resp.json()
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError("unparseable_response") from exc
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
 
     def fetch_active_items(self, *, page_size: int = 1000) -> list[dict]:
         """Return all active Items, following QBO's STARTPOSITION pagination.

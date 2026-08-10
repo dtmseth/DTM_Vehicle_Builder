@@ -84,6 +84,28 @@
     .btn-danger{background:#fdecea;color:var(--red);border:1px solid #f5b7b1}.btn-danger:hover{background:#fbdcda}
     .btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:#b8952e}
     .btn-sm{padding:5px 10px;font-size:12px}
+
+    /* ── Production QuickBooks catalog preview (read-only migration tool) ── */
+    .qbpp-card{max-width:980px}
+    .qbpp-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#166534;background:#dcfce7;border-radius:999px;padding:3px 8px}
+    .qbpp-lede,.qbpp-hint,.qbpp-detail{font-size:12px;color:var(--muted);line-height:1.45}
+    .qbpp-status{font-size:13px;font-weight:600;color:var(--navy);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 11px}
+    .qbpp-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+    .qbpp-input{box-sizing:border-box;width:100%;margin-top:4px}
+    .qbpp-row>.qbpp-input{flex:1;min-width:260px;margin-top:0}
+    .qbpp-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .qbpp-form-grid label,.qbpp-field-select{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .qbpp-form-wide{grid-column:1/-1}
+    .qbpp-field-select{margin-left:auto;min-width:250px}
+    .qbpp-danger{color:var(--red)}
+    .qbpp-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:14px}
+    .qbpp-metric{border:1px solid var(--border);border-radius:6px;padding:9px;background:#fff}
+    .qbpp-metric-label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+    .qbpp-metric-value{font-size:18px;font-weight:700;color:var(--navy)}
+    .qbpp-exceptions{margin-top:12px;max-height:270px;overflow:auto}
+    .qbpp-exception{padding:8px 10px;border-top:1px solid var(--border);font-size:12px;color:var(--navy)}
+    .qbpp-exception:first-child{border-top:0}
+    @media(max-width:700px){.qbpp-form-grid{grid-template-columns:1fr}.qbpp-form-wide{grid-column:auto}.qbpp-field-select{margin-left:0;width:100%}}
     .btn-block{width:100%;justify-content:center;padding:13px}
 
     /* form */
