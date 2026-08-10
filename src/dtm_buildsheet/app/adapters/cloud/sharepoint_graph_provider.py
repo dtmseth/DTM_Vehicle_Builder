@@ -21,6 +21,16 @@ SMALL_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024
 TokenProvider = Callable[[], str]
 
 
+class SharePointRequestError(RuntimeError):
+    """A safe summary of a failed Microsoft Graph request.
+
+    Graph may redirect downloads to a time-limited URL that contains an
+    authorization query string.  ``requests.HTTPError`` includes that final
+    URL in its text, so callers must receive this deliberately plain error
+    instead of the original exception.
+    """
+
+
 class SharePointGraphProvider(StorageProvider):
     """`StorageProvider` backed by Microsoft Graph drive items.
 
@@ -53,15 +63,19 @@ class SharePointGraphProvider(StorageProvider):
 
     def read_bytes(self, path: str) -> bytes:
         url = self._item_content_url(path)
-        response = self._session.get(
-            url,
-            headers=self._auth_headers(),
-            timeout=self._http_timeout,
-            allow_redirects=True,
+        response = self._request(
+            "read",
+            path,
+            lambda: self._session.get(
+                url,
+                headers=self._auth_headers(),
+                timeout=self._http_timeout,
+                allow_redirects=True,
+            ),
         )
         if response.status_code == 404:
             raise FileNotFoundError(path)
-        response.raise_for_status()
+        self._raise_for_status(response, operation="read", path=path)
         return response.content
 
     def write_bytes(self, path: str, data: bytes) -> None:
@@ -69,29 +83,37 @@ class SharePointGraphProvider(StorageProvider):
             raise NotImplementedError(
                 f"SharePoint upload >{SMALL_UPLOAD_LIMIT_BYTES} bytes requires an "
                 "upload session — not implemented yet"
-            )
-        url = self._item_content_url(path)
-        response = self._session.put(
-            url,
-            headers={
-                **self._auth_headers(),
-                "Content-Type": "application/octet-stream",
-            },
-            data=data,
-            timeout=self._http_timeout,
         )
-        response.raise_for_status()
+        url = self._item_content_url(path)
+        response = self._request(
+            "write",
+            path,
+            lambda: self._session.put(
+                url,
+                headers={
+                    **self._auth_headers(),
+                    "Content-Type": "application/octet-stream",
+                },
+                data=data,
+                timeout=self._http_timeout,
+            ),
+        )
+        self._raise_for_status(response, operation="write", path=path)
 
     def delete(self, path: str) -> None:
         url = self._item_url(path)
-        response = self._session.delete(
-            url,
-            headers=self._auth_headers(),
-            timeout=self._http_timeout,
+        response = self._request(
+            "delete",
+            path,
+            lambda: self._session.delete(
+                url,
+                headers=self._auth_headers(),
+                timeout=self._http_timeout,
+            ),
         )
         if response.status_code == 404:
             raise FileNotFoundError(path)
-        response.raise_for_status()
+        self._raise_for_status(response, operation="delete", path=path)
 
     def list_files(self, directory: str) -> list[str]:
         """Return drive-relative paths of files directly under *directory*."""
@@ -111,14 +133,18 @@ class SharePointGraphProvider(StorageProvider):
         url = self._children_url(base)
         results: list[FileMetadata] = []
         while url:
-            response = self._session.get(
-                url,
-                headers=self._auth_headers(),
-                timeout=self._http_timeout,
+            response = self._request(
+                "list",
+                directory,
+                lambda: self._session.get(
+                    url,
+                    headers=self._auth_headers(),
+                    timeout=self._http_timeout,
+                ),
             )
             if response.status_code == 404:
                 raise FileNotFoundError(directory)
-            response.raise_for_status()
+            self._raise_for_status(response, operation="list", path=directory)
             payload = response.json()
             for item in payload.get("value", []):
                 if "folder" in item:
@@ -140,6 +166,26 @@ class SharePointGraphProvider(StorageProvider):
 
     def _auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._token_provider()}"}
+
+    def _request(self, operation: str, path: str, send):
+        """Send one request without exposing request/redirect URLs on error."""
+        try:
+            return send()
+        except requests.RequestException as exc:
+            raise SharePointRequestError(
+                f"SharePoint {operation} request failed for {self._normalize(path)} "
+                f"({type(exc).__name__})"
+            ) from None
+
+    def _raise_for_status(self, response, *, operation: str, path: str) -> None:
+        try:
+            response.raise_for_status()
+        except requests.RequestException:
+            status = getattr(response, "status_code", None)
+            status_text = f"HTTP {status}" if status else "HTTP request failed"
+            raise SharePointRequestError(
+                f"SharePoint {operation} failed for {self._normalize(path)} ({status_text})"
+            ) from None
 
     def _drive_root(self) -> str:
         return (

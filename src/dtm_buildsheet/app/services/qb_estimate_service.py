@@ -470,7 +470,7 @@ def _load_unit_draft(paths: AppPaths, project_id: str, individual_id: str):
     On success returns a 4-tuple; on failure returns a dict with ``error``.
     """
     from ...inputs import project_entry
-    from ...inputs.project_drafts import load_draft
+    from .draft_service import load_draft_for_request
 
     try:
         project = project_entry.load_project(project_id, paths)
@@ -482,7 +482,7 @@ def _load_unit_draft(paths: AppPaths, project_id: str, individual_id: str):
     if not unit.draft_id:
         return {"ok": False, "error": "no_build"}
     try:
-        draft = load_draft(unit.draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(unit.draft_id, paths)
     except FileNotFoundError:
         return {"ok": False, "error": "no_build"}
     return project, build_unit, unit, draft

@@ -46,6 +46,32 @@ from .custom_part_service import list_custom_parts, remember_custom_part
 from .parts_db_service import get_parts_db_service
 
 
+def load_draft_for_request(
+    draft_id: str,
+    paths: AppPaths,
+    *,
+    refresh_remote: bool = False,
+) -> BuildDraft:
+    """Load a draft, retrieving one cloud-backed build when necessary.
+
+    Startup sync intentionally avoids downloading the full historical draft
+    archive.  Build handlers use this gateway so the selected record is
+    available on a new device without treating a missing local cache as a new
+    blank draft.  A refresh is used only when the user explicitly opens a
+    build; edits keep their current local snapshot intact.
+    """
+    if refresh_remote:
+        from .shared_work_service import hydrate_draft_from_cloud
+        hydrate_draft_from_cloud(draft_id, paths, refresh=True)
+    try:
+        return load_draft(draft_id, paths.workspace_drafts_dir)
+    except FileNotFoundError:
+        from .shared_work_service import hydrate_draft_from_cloud
+        if not hydrate_draft_from_cloud(draft_id, paths):
+            raise
+        return load_draft(draft_id, paths.workspace_drafts_dir)
+
+
 def _matching_single_speaker(draft: BuildDraft, part: DraftPart) -> DraftPart | None:
     """Find the one compatible speaker line that can become a pair.
 
@@ -150,7 +176,7 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
                 "error": "catalog_sku_exists",
                 "catalog_part": catalog_match,
             }
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         part = draft_part_from_payload({
             "name": fields["description"],
             "new_or_used": "New",
@@ -204,7 +230,7 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
 
 def handle_get_draft(draft_id: str, paths: AppPaths) -> dict:
     try:
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths, refresh_remote=True)
         from dataclasses import asdict
         return {"ok": True, "draft": asdict(draft)}
     except FileNotFoundError:
@@ -218,7 +244,7 @@ def handle_save_draft(body: dict, paths: AppPaths) -> dict:
         draft_id = body.get("draft_id")
         if draft_id:
             try:
-                draft = load_draft(draft_id, paths.workspace_drafts_dir)
+                draft = load_draft_for_request(draft_id, paths)
             except FileNotFoundError:
                 draft = new_draft()
                 draft.draft_id = draft_id
@@ -259,7 +285,7 @@ def handle_save_override(draft_id: str, body: dict, paths: AppPaths) -> dict:
     An empty override dict removes that key (treated as a reset).
     """
     try:
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         key = body.get("key", "")
         override = body.get("override", {})
         if not key:
@@ -285,7 +311,7 @@ def handle_save_overrides_batch(draft_id: str, body: dict, paths: AppPaths) -> d
     Sets user_modified when at least one non-empty override is written.
     """
     try:
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         overrides = body.get("overrides", {})
         if not isinstance(overrides, dict):
             return {"ok": False, "error": "overrides must be a dict"}
@@ -445,7 +471,7 @@ def handle_replace_console_setup_parts(
         ):
             return {"ok": False, "error": "radio reconciliation requires a console radio mic clip"}
 
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         owner = find_part_by_line_id(draft, parent_line_id)
         if owner is None:
             return {"ok": False, "error": f"Console not found: {parent_line_id}"}
@@ -544,7 +570,7 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
             return {"ok": False, "error": "invalid draft_id"}
         if not body.get("name", "").strip():
             return {"ok": False, "error": "name is required"}
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         part = draft_part_from_payload(body, paths)
         matching_speaker = _matching_single_speaker(draft, part)
         if matching_speaker is not None:
@@ -599,7 +625,7 @@ def handle_update_part_in_draft(draft_id: str, line_id: str, body: dict, paths: 
         clean_line_id = safe_id(line_id)
         if not clean_line_id or clean_line_id != line_id:
             return {"ok": False, "error": "invalid line_id"}
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         result = find_part_by_line_id(draft, line_id)
         if result is None:
             return {"ok": False, "error": f"Part not found: {line_id}"}
@@ -633,7 +659,7 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
         clean_line_id = safe_id(line_id)
         if not clean_line_id or clean_line_id != line_id:
             return {"ok": False, "error": "invalid line_id"}
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         result = find_part_by_line_id(draft, line_id)
         if result is None:
             return {"ok": False, "error": f"Part not found: {line_id}"}
@@ -690,7 +716,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
     log_lines: list[str] = []
     try:
         draft_id = body.get("draft_id", "")
-        draft = load_draft(draft_id, paths.workspace_drafts_dir)
+        draft = load_draft_for_request(draft_id, paths)
         project = draft_to_project_input(draft)
         _t_step(f"load_draft({draft_id})")
         log_lines.append(f"Draft: {draft_id}")
