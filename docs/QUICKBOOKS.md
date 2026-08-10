@@ -330,12 +330,48 @@ Production keys + the relay redirect URI.
 
 ---
 
-## 6. What's left before Production go-live (Phase 4)
+## 6. Production inventory transition — owner safeguard
+
+**Owner decision (2026-08-10):** The production QBO company uses a different inventory layout from
+the sandbox company that seeded the Builder catalog. Treat the first production connection as a
+reviewed catalog-mapping migration, never as a routine sync. It must not overwrite, deactivate, or
+otherwise "clean up" existing Builder parts merely because the production company is organized
+differently.
+
+The sandbox and production companies have different QBO Item IDs even where the underlying vendor
+SKU is the same. Before enabling any production reconciliation or background polling:
+
+1. Take a recoverable snapshot of the current `parts_db.json` and the existing QB links.
+2. Pull the production item catalog into an isolated preview/cache, with automatic reconciliation
+   and the 30-minute background sync disabled for this first pass.
+3. Produce a reviewable mapping report for every existing QB-linked SKU: exact normalized SKU
+   match, candidate production Item ID, description/price/active-state differences, and the result
+   (`safe match`, `needs owner choice`, `production-only`, or `Builder-only`). Do not use item name,
+   category, or account layout alone as a safe match.
+4. Require explicit owner approval before replacing a sandbox Item ID, accepting production-owned
+   price/description changes, or marking a linked Builder part inactive. Preserve Builder-owned
+   metadata such as part type, placement, render asset, compatibility, and manifest grouping.
+5. Verify approved mappings by category and SKU count, then make a small representative test build
+   and create **one non-posting estimate** for manual comparison in QBO.
+6. Enable the normal background sync only after the owner signs off on that result. Keep the
+   snapshot until the first routine production sync has been reviewed.
+
+The current sync is safe against physical deletion, but it can update QB-owned fields for already
+linked SKUs and mark missing items inactive. Therefore this reviewed first-production workflow must
+be implemented and tested (or performed with an equivalently documented, isolated manual process)
+before connecting the real company. The later reviewed catalog-change queue (§3) complements this;
+it does not replace the initial migration review.
+
+---
+
+## 7. What's left before Production go-live (Phase 4)
 
 - **Deploy the hosted relay** (`relay/DEPLOY.md`) and register its HTTPS URL as the Production
   redirect URI in the Intuit dashboard.
-- **Run the sandbox test cycle** (§5) and **submit the questionnaire** (§7).
+- **Run the sandbox test cycle** (§5) and **submit the questionnaire** (§8).
 - Obtain Production Client ID/Secret after approval; enter them with `environment=production`.
+- Complete and approve the protected production inventory-transition review (§6) before any
+  production reconciliation, background sync, or estimate creation.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
@@ -346,7 +382,7 @@ from this QB item" (link-to-existing is the shipped path); customer down-sync on
 
 ---
 
-## 7. Appendix — App Assessment Questionnaire (prepared answers)
+## 8. Appendix — App Assessment Questionnaire (prepared answers)
 
 Reference when completing the questionnaire in the Intuit Developer Dashboard (organized by its tab
 order). Complete the §5 sandbox test cycle first — Intuit rejects submissions where testing isn't done.

@@ -138,6 +138,9 @@ QuickBooks Online integration, complete all of the following:
 3. Submit and complete Intuit's App Assessment.
 4. Configure the production client credentials in the OS keychain and run a controlled production
    validation.
+5. Run the separate, approval-required production inventory transition: preview/map production
+   items against the existing Builder catalog, preserve Builder-owned metadata, and verify one
+   non-posting estimate before enabling routine reconciliation or background sync.
 
 Until those steps are complete, decide before the public release whether QB controls are hidden,
 disabled, or visibly labelled as internal/sandbox-only. Do not imply that production QB is ready.
