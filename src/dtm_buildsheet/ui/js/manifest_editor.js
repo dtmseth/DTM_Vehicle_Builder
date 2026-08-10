@@ -16,15 +16,6 @@ async function loadDraftManifest(draftId) {
   if (!res.ok) return;
   _meDraft = res.draft;
   await Promise.all([_meBuildGroupMap(), _meEnsureCatalog()]);
-  // Workbook rules drive the section→parts grouping. Without them every part
-  // falls into "Other". They normally load when the user opens the add/edit
-  // modal — but the initial render happens before that, so the manifest
-  // appeared uncategorized until a part was added. Load up-front instead.
-  if (!_workbookRules?.template_sections) {
-    const wr = await api("/api/workbook-rules");
-    if (wr?.template_sections) _workbookRules = wr;
-  }
-  _meRebuildSections();
   _meRender();
   show("card-manifest");
 }
