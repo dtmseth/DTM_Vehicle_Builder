@@ -89,7 +89,7 @@ Or use the convenience scripts: `Build_Mac_App.command`, `packaging/build_window
 
 ## Versioning
 
-Semantic versioning (`bump-my-version`). See `docs/VERSIONING.md`. Current: `v2.2.13`.
+Semantic versioning (`bump-my-version`). See `docs/VERSIONING.md`. Current: `v3.0.0`.
 
 ## Release checklist
 

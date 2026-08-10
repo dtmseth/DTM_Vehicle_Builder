@@ -13,8 +13,9 @@ Update this document as release decisions are made; it is the single short recor
 - **QuickBooks decision:** Do **not** block this release on connecting the app to production
   QuickBooks Online. Hide all public QB controls for this release; retain the catalog foundation
   and backend for a separate, explicit production launch.
-- **Release type:** Expected to be a **minor** release because it adds substantial, compatible
-  workflow improvements. Confirm the version only after the final UI scope is complete.
+- **Release type:** **Major — v3.0.0.** Owner chose the major-version transition for this complete
+  Part Picker and project-workflow release. After the PR merges, run the Build workflow with the
+  already-set `current` version; do not bump it a second time.
 
 ## Current starting point
 
