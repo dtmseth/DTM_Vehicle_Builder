@@ -7,6 +7,7 @@ GET:
 - /api/quickbooks/items     — locally cached pulled items (no network)
 - /api/quickbooks/customers/preview — dry-run count of a customer import
 - /api/quickbooks/pricing-status — read-only price-level capability check
+- /api/quickbooks/customer-pricing — shared Default manufacturer discounts
 - /api/quickbooks/production-preview/* — isolated production catalog mapping preview
 
 POST:
@@ -16,6 +17,7 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
+- /api/quickbooks/customer-pricing/default — save the reviewed shared Default rule
 - /api/quickbooks/production-preview/create-snapshot — create/select a local immutable baseline
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
@@ -38,6 +40,7 @@ from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
 from ..services import (
+    customer_pricing_service,
     qb_estimate_service,
     qb_production_preview_service,
     qb_sync_service,
@@ -94,6 +97,9 @@ def route_quickbooks(
     if method == "GET" and path == "/api/quickbooks/pricing-status":
         _send_json(handler, qb_sync_service.get_pricing_status(paths))
         return True
+    if method == "GET" and path == "/api/quickbooks/customer-pricing":
+        _send_json(handler, customer_pricing_service.get_default_rule(paths))
+        return True
     if method == "GET" and path == "/api/quickbooks/estimate-field-setup":
         _send_json(handler, qb_sync_service.get_estimate_field_setup(paths))
         return True
@@ -108,6 +114,9 @@ def route_quickbooks(
         return True
     if method == "POST" and path == "/api/quickbooks/sync":
         _send_json(handler, qb_sync_service.run_full_sync(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/customer-pricing/default":
+        _send_json(handler, customer_pricing_service.save_default_rule(paths, body))
         return True
     if method == "POST" and path == "/api/quickbooks/production-preview/select-snapshot":
         _send_json(

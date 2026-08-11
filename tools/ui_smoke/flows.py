@@ -97,6 +97,24 @@ def flow_tab_load(page, base_url: str) -> None:
     for stab in ("projects-defaults", "agencies", "sales-reps", "presets", "quickbooks"):
         page.click(f".stab[data-stab='{stab}']")
         page.wait_for_timeout(_SETTLE_MS)
+        if stab == "agencies":
+            page.click("#btn-add-agency")
+            page.wait_for_selector("#agency-create-modal.open")
+            page.wait_for_selector("[data-agency-pricing='whelen']", state="attached")
+            assert page.locator("#ac-pricing-use-default").is_checked()
+            page.uncheck("#ac-pricing-use-default")
+            assert page.locator("#ac-pricing-overrides").is_visible()
+            assert page.locator("[data-agency-pricing='whelen']").input_value() == "38"
+            page.click("#ac-cancel")
+        if stab == "quickbooks":
+            page.wait_for_selector("[data-pricing-default='whelen']")
+            expected = {
+                "gamber_johnson": "40", "havis": "20", "pac_tool": "5",
+                "santa_cruz": "25", "setina": "20", "westin": "15", "whelen": "38",
+            }
+            for manufacturer_id, discount in expected.items():
+                actual = page.locator(f"[data-pricing-default='{manufacturer_id}']").input_value()
+                assert actual == discount, f"{manufacturer_id} default pricing: expected {discount}, got {actual}"
 
     # Advanced Settings + its stabs (+ inner stabs for the two grouped ones)
     page.click(".htab[data-tab='advanced-settings']")

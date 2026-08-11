@@ -808,6 +808,25 @@
     .qb-setup-hint{font-size:11px;color:var(--muted);margin:5px 0 0}
     .pp-siren-tone{padding-top:8px;border-top:1px solid var(--border)}
     .pp-siren-note{display:block;max-width:460px;color:var(--muted);font-size:11px;line-height:1.4}
+    .qb-pricing-panel{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
+    .qb-pricing-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .qb-pricing-heading strong{color:var(--navy)}
+    .qb-pricing-heading p{font-size:12px;color:var(--muted);margin:4px 0 0;max-width:640px}
+    .qb-pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+    .qb-pricing-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface,#fff)}
+    .qb-pricing-row label{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--navy)}
+    .qb-pricing-row input{width:64px;text-align:right}
+    .qb-pricing-percent{font-size:12px;color:var(--muted)}
+    .qb-pricing-empty{font-size:12px;color:var(--muted);padding:8px 0}
+    .agency-pricing-toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px}
+    .agency-pricing-overrides[hidden]{display:none}
+    .qb-est-pricing-summary{padding:10px 12px;margin-bottom:10px;border:1px solid #86c99a;border-radius:6px;background:#f0fbf3;font-size:12px}
+    .qb-est-pricing-title{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--green)}
+    .qb-est-pricing-title span{color:var(--muted)}
+    .qb-est-pricing-discounts{margin-top:5px;color:var(--navy);line-height:1.45}
+    .qb-est-pricing-totals{display:flex;flex-wrap:wrap;gap:14px;margin-top:7px;color:var(--muted)}
+    .qb-est-pricing-totals strong{color:var(--navy);margin-left:3px}
+    .qb-est-bank-note{padding:9px 11px;margin-bottom:12px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45}
     @media(max-width:800px){
       .guided-system-layout{grid-template-columns:1fr}
       .guided-summary{order:2}

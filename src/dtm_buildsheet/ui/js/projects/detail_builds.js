@@ -787,6 +787,28 @@ function _ptMoney2(n) {
   return isNaN(v) ? "$0.00" : "$" + v.toFixed(2);
 }
 
+function _ptEstimatePricingSummary(pricing) {
+  const p = pricing || {};
+  if (!p.rule_name) return "";
+  const applied = (p.applied_discounts || []).map((row) =>
+    `${esc(row.manufacturer)} ${Number(row.discount_percent).toFixed(1).replace(/\.0$/, "")}%${row.override ? " (customer)" : ""}`
+  ).join(" · ");
+  const source = p.source === "customer_override" ? "Default + customer override" : "Default";
+  return `<div class="qb-est-pricing-summary">
+    <div class="qb-est-pricing-title"><strong>${esc(source)} pricing</strong><span>${esc(p.rule_name)}</span></div>
+    ${applied ? `<div class="qb-est-pricing-discounts">${applied}</div>` : ""}
+    <div class="qb-est-pricing-totals">
+      <span>List <strong>${_ptMoney2(p.list_total)}</strong></span>
+      <span>Savings <strong>${_ptMoney2(p.savings)}</strong></span>
+      <span>Customer <strong>${_ptMoney2(p.customer_total)}</strong></span>
+    </div>
+  </div>`;
+}
+
+function _ptBankTransferEstimateNote() {
+  return `<div class="qb-est-bank-note"><strong>Bank transfer:</strong> QuickBooks only exposes the ACH switch through its Invoice API, not its Estimate API. After creating this estimate, keep Bank transfer enabled in QuickBooks. The “1% per transaction, max $20” text is QuickBooks' processing fee, not a line-item charge.</div>`;
+}
+
 async function _ptQbConnected() {
   try { const s = await api("/api/quickbooks/status"); return !!s?.connected; }
   catch (_) { return false; }
@@ -1086,25 +1108,17 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
     return;
   }
 
-  let pricing = null;
   let customer = v.customer;
   let customerLinked = !!v.customer_linked;
   let customerMissing = [];
   try {
-    [pricing, customer] = await Promise.all([
-      api("/api/quickbooks/pricing-status"),
-      api("/api/quickbooks/estimates/customer-preview", { project_id: projectId }),
-    ]);
+    customer = await api("/api/quickbooks/estimates/customer-preview", { project_id: projectId });
     if (customer?.ok) {
       customerLinked = !!customer.customer_linked;
       customerMissing = customer.missing_fields || [];
       customer = customer.customer;
     }
   } catch (_) {}
-  const pricingWarning = pricing?.using_price_levels
-    ? `<div style="padding:9px 11px;background:#fff7e6;border:1px solid #f0c36d;border-radius:6px;font-size:12px;line-height:1.4;margin-bottom:12px"><strong>Pricing note:</strong> ${esc(pricing.warning || "QuickBooks customer price levels are enabled; review rates in QuickBooks before sending.")}</div>`
-    : "";
-
   if (!customerLinked || customerMissing.length) {
     const detail = customerMissing.length
       ? `complete customer fields: ${customerMissing.join(", ")}`
@@ -1113,7 +1127,9 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   }
 
   _ptOpenEstModal("Create QuickBooks estimate",
-    `${pricingWarning}<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
+    `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
+     ${_ptEstimatePricingSummary(v.pricing)}
+     ${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:24px;font-size:13px;margin-bottom:14px">
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
@@ -1237,9 +1253,19 @@ async function _ptOpenBatchEstimateSetup(project) {
   const customerStatus = customerReady
     ? `<div style="padding:8px 10px;margin-bottom:12px;border:1px solid #86c99a;border-radius:6px;background:#f0fbf3;font-size:12px;color:var(--green)">✓ Customer is ready in QuickBooks.</div>`
     : `<div style="padding:9px 11px;margin-bottom:12px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>Customer setup needed first.</strong> Create an estimate for one vehicle first to review and confirm the customer details. Then return here to create the rest as a batch.</div>`;
+  const batchListTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.list_total || 0), 0);
+  const batchCustomerTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.customer_total || 0), 0);
+  const batchPricing = ready.length ? {
+    rule_name: "Default",
+    source: ready.some((check) => check.validation?.pricing?.source === "customer_override") ? "customer_override" : "default",
+    list_total: batchListTotal,
+    customer_total: batchCustomerTotal,
+    savings: batchListTotal - batchCustomerTotal,
+    applied_discounts: [],
+  } : null;
 
   _ptOpenEstModal("Prepare batch QuickBooks estimates",
-    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}
+    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}${_ptEstimatePricingSummary(batchPricing)}${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:12px;margin-bottom:12px"><div style="flex:1;padding:10px;border:1px solid #86c99a;border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Ready to create</div><strong style="font-size:20px;color:var(--green)">${ready.length}</strong></div><div style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Still needs setup</div><strong style="font-size:20px;color:var(--navy)">${attention.length}</strong></div></div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Ready vehicles</div><div style="max-height:140px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px">${readyRows}</div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Vehicles needing attention</div><div style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px">${attentionRows}</div>`,

@@ -6,6 +6,7 @@
   let _pendingOnSuccess = null;
   let _listWired = false;
   let _preferenceLoadToken = 0;
+  let _pricingRule = null;
 
   const _profileFields = [
     "contact_name", "contact_title", "contact_phone", "contact_email",
@@ -41,6 +42,37 @@
     if (options && !options.error && window._PT) _PT.projectOptions = options;
     if (token !== _preferenceLoadToken || typeof _ptSetPreferenceForm !== "function") return;
     _ptSetPreferenceForm("ac", agency?.default_preferences || {});
+  }
+
+  async function _loadPricingRule() {
+    if (_pricingRule?.discounts?.length) return _pricingRule;
+    _pricingRule = await api("/api/quickbooks/customer-pricing").catch(() => null);
+    return _pricingRule;
+  }
+
+  async function _populateAgencyPricing(agency) {
+    const rule = await _loadPricingRule();
+    const rows = rule?.discounts || [];
+    const overrides = agency?.pricing_overrides || {};
+    const useDefault = Object.keys(overrides).length === 0;
+    const toggle = $("ac-pricing-use-default");
+    const panel = $("ac-pricing-overrides");
+    const box = $("ac-pricing-rows");
+    if (toggle) toggle.checked = useDefault;
+    if (panel) panel.hidden = useDefault;
+    if (!box) return;
+    box.innerHTML = rows.map((row) => {
+      const value = Object.prototype.hasOwnProperty.call(overrides, row.manufacturer_id)
+        ? overrides[row.manufacturer_id]
+        : row.discount_percent;
+      return `<div class="qb-pricing-row">
+        <label for="ac-pricing-${escAttr(row.manufacturer_id)}">${esc(row.manufacturer)}</label>
+        <input id="ac-pricing-${escAttr(row.manufacturer_id)}" type="number" min="0" max="100" step="0.1"
+          value="${escAttr(value)}" data-agency-pricing="${escAttr(row.manufacturer_id)}"
+          data-default-discount="${escAttr(row.discount_percent)}" />
+        <span class="qb-pricing-percent">% off</span>
+      </div>`;
+    }).join("");
   }
 
   // Attribute-safe escape (also handles quotes, which the shared esc() does
@@ -141,6 +173,7 @@
     $("ac-ship-same").checked   = _shippingMatchesBilling(agency);
     $("ac-since").value         = agency?.customer_since || "";
     _populateDefaultPreferences(agency);
+    _populateAgencyPricing(agency);
     $("agency-create-modal").classList.add("open");
     setTimeout(() => $("ac-name").focus(), 50);
   };
@@ -183,6 +216,10 @@
   $("ac-ship-same")?.addEventListener("change", (event) => {
     if (event.target.checked) _copyBillingToShipping();
   });
+  $("ac-pricing-use-default")?.addEventListener("change", (event) => {
+    const panel = $("ac-pricing-overrides");
+    if (panel) panel.hidden = event.target.checked;
+  });
 
   $("ac-save")?.addEventListener("click", async () => {
     const name        = $("ac-name").value.trim();
@@ -199,12 +236,28 @@
       customer_since: $("ac-since").value.trim(),
       taxable: $("ac-taxable").value === "" ? null : $("ac-taxable").value === "true",
       default_preferences: _ptPreferencePayload("ac"),
+      pricing_overrides: {},
     };
+    if (!$("ac-pricing-use-default")?.checked) {
+      for (const input of document.querySelectorAll("[data-agency-pricing]")) {
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          toast("Every customer discount must be from 0% through 100%", "error");
+          input.focus();
+          return;
+        }
+        const defaultValue = Number(input.getAttribute("data-default-discount"));
+        if (value !== defaultValue) {
+          payload.pricing_overrides[input.getAttribute("data-agency-pricing")] = value;
+        }
+      }
+    }
     for (const field of _profileFields) {
       const input = _inputFor(field);
       if (input) payload[field] = input.value.trim();
     }
     if (_editingId) payload.agency_id = _editingId;
+    const wasEditing = !!_editingId;
 
     // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
     const res = await apiSave("/api/agency/save", payload);
@@ -213,7 +266,7 @@
       // Suppress the local-only "Agency updated" toast when a proposal toast
       // already fired — two stacked toasts are noisy.
       if (!res.proposed) {
-        toast(_editingId ? "Agency updated" : `Agency "${res.agency.name}" created`, "success");
+        toast(wasEditing ? "Agency updated" : `Agency "${res.agency.name}" created`, "success");
       }
       if (_pendingOnSuccess) { _pendingOnSuccess(res.agency); _pendingOnSuccess = null; }
       await _load();

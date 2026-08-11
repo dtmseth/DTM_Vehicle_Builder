@@ -151,7 +151,13 @@ you're touching. New gotchas get appended to the bottom with a date.
     reviewed migration. The 2026 production transition found 108 sandbox IDs pointing at different
     production Customers. Migration matches unique normalized names first and permanently filters
     owner-rejected duplicate production Customer IDs from future imports.
-31. **Saved presets must retain the rich `DraftPart` shape.** `part_type`, concrete SKU
+31. **QBO Item prices are list prices; estimate prices are calculated separately.** Never reconcile
+    Default/customer discounts into `qb_unit_price` or the Item cache. Apply the shared
+    `customer_pricing.default_rule`, then sparse `AgencyRecord.pricing_overrides`, only to resolved
+    estimate lines and send the reviewed unit price explicitly. The Estimate API does not expose
+    the Invoice-only bank-transfer/ACH toggle; do not invent that field or add Intuit's 1%/$20
+    processing-fee disclosure as an estimate charge.
+32. **Saved presets must retain the rich `DraftPart` shape.** `part_type`, concrete SKU
     `components`, `picker_config`, accessory relationships, and placement metadata drive rendering,
     picker edit round-tripping, and QuickBooks estimate resolution. Reducing a saved build to the
     legacy workbook columns makes a newly created vehicle look similar in the manifest while losing

@@ -89,6 +89,7 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
             (manufacturer_specs.get(manufacturer_id) or {}).get("label", manufacturer_id)
         ).strip() or "Unbranded"
         prod_fields["manufacturer"] = manufacturer
+        prod_fields["manufacturer_id"] = manufacturer_id
         # ``friendly_name`` was used by the first QB importer. Keep it as a
         # compatibility fallback, but prefer the separate QB sales-description
         # field populated by reconciliation.
@@ -141,6 +142,7 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
                 "qb_pending": pn_fields["qb_pending"],
                 "price_usd": pn_fields["price_usd"],
                 "manufacturer": manufacturer,
+                "manufacturer_id": manufacturer_id,
             }
             if not entry["qb_sales_description"] and entry["qb_item_id"]:
                 entry["qb_sales_description"] = cached_descriptions.get(entry["qb_item_id"], "")
@@ -209,6 +211,7 @@ def _resolve_part_number(
                 "qb_sku": entry["qb_sku"],
                 "description": entry.get("qb_sales_description", ""),
                 "manufacturer": entry.get("manufacturer", "Unbranded"),
+                "manufacturer_id": entry.get("manufacturer_id", ""),
                 "unit_price": float(price),
                 "pending": True,
             }, ""
@@ -224,6 +227,7 @@ def _resolve_part_number(
         "qb_sku": entry["qb_sku"],
         "description": entry.get("qb_sales_description", ""),
         "manufacturer": entry.get("manufacturer", "Unbranded"),
+        "manufacturer_id": entry.get("manufacturer_id", ""),
         "unit_price": float(entry["qb_unit_price"]),
         "pending": False,
     }, ""
@@ -517,11 +521,12 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
     project, build_unit, unit, draft = loaded
 
     lines, problems = resolve_build_lines(paths, draft)
+    from . import agency_service, customer_pricing_service
+    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
+    lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
     total = round(sum(ln["amount"] for ln in lines), 2)
     pending = [{"name": ln["name"], "part_number": ln.get("part_number", ""),
                 "amount": ln["amount"]} for ln in lines if ln.get("pending")]
-    from . import agency_service
-    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
     customer = None
     customer_linked = False
     if agency is not None:
@@ -537,6 +542,7 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "can_create": not problems and bool(lines),
         "line_count": len(lines),
         "total": total,
+        "pricing": pricing,
         "problems": problems,
         # Billable but not yet a QB inventory item — created as a flagged note.
         "pending": pending,
@@ -673,6 +679,9 @@ def create_estimate(
     project, _build_unit, unit, draft = loaded
 
     lines, problems = resolve_build_lines(paths, draft)
+    from . import agency_service, customer_pricing_service
+    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
+    lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
     if problems:
         return {"ok": False, "error": "validation_failed",
                 "problems": problems, "line_count": len(lines)}
@@ -719,6 +728,9 @@ def create_estimate(
         memo=" — ".join(memo_parts),
         project_ref=unit.qb_project_id,
     )
+    # Estimates do not expose QuickBooks' invoice-only ACH payment toggle.
+    # Keep the payment method choice in QBO rather than sending an unsupported
+    # field that Intuit may ignore without warning.
     payload["PrivateNote"] = f"DTM vehicle project: {project_name}"
     try:
         result = client.create_estimate(payload)
@@ -750,6 +762,7 @@ def create_estimate(
         "line_count": len(lines),
         "pending_count": pending_count,
         "total": total,
+        "pricing": pricing,
         "qb_project_id": unit.qb_project_id,
         "project_name": project_name,
     }

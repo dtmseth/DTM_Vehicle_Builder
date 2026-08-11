@@ -535,6 +535,20 @@ must refer to a live QB-linked SKU.
       }
     }
   },
+  "customer_pricing": {
+    "default_rule": {
+      "name": "Default",
+      "manufacturer_discounts": {
+        "gamber_johnson": 40,
+        "havis": 20,
+        "pac_tool": 5,
+        "santa_cruz": 25,
+        "setina": 20,
+        "westin": 15,
+        "whelen": 38
+      }
+    }
+  },
   "part_types": {
     "control_head": {
       "label": "Light Control Head",
@@ -564,6 +578,11 @@ must refer to a live QB-linked SKU.
   }
 }
 ```
+
+`customer_pricing.default_rule` is the shared customer sales-price schedule. Keys must reference
+existing manufacturer IDs and values are percentages from 0 through 100. QuickBooks Item prices
+remain list prices; this schedule is applied only when validating/creating estimates. Individual
+agency files may store a sparse `pricing_overrides` object for customer-specific exceptions.
 
 `location_options` is optional and belongs on the product when a model has more precise
 shop-reference choices than its part type. `fixed_location` skips the location step entirely for

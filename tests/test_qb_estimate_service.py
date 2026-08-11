@@ -198,6 +198,7 @@ def test_resolve_uses_builder_sku_with_production_id_price_and_description(paths
         "qb_sku": "",
         "description": "Production description\nwith formatting",
         "manufacturer": "mfg",
+        "manufacturer_id": "mfg",
         "unit_price": 124.5,
         "pending": False,
         "name": "Axe hanger",
@@ -472,6 +473,50 @@ def test_validate_can_create_when_clean(paths):
     assert res["line_count"] == 1 and res["total"] == 300.0 and res["problems"] == []
 
 
+def test_validate_applies_default_whelen_discount_from_qb_list_price(paths):
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["total"] == 124.0
+    assert res["pricing"] == {
+        "rule_name": "Default",
+        "source": "default",
+        "list_total": 200.0,
+        "customer_total": 124.0,
+        "savings": 76.0,
+        "applied_discounts": [{
+            "manufacturer_id": "whelen",
+            "manufacturer": "whelen",
+            "discount_percent": 38.0,
+            "override": False,
+        }],
+    }
+
+
+def test_validate_applies_sparse_agency_pricing_override(paths):
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths)
+    agc.handle_save_agency({
+        "agency_id": aid,
+        "name": "Lakeville PD",
+        "pricing_overrides": {"whelen": 10},
+    }, paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["total"] == 180.0
+    assert res["pricing"]["source"] == "customer_override"
+    assert res["pricing"]["applied_discounts"][0]["override"] is True
+
+
 def test_validate_blocks_with_problems(paths):
     _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 100.0)})
     aid = _make_agency(paths)
@@ -564,6 +609,23 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     assert unit.qb_job_id == "" and unit.qb_estimate_id == "EST1"
     assert unit.qb_project_id == "447322633"
     assert unit.qb_project_name
+
+
+def test_create_estimate_sends_discounted_unit_price_and_no_unsupported_ach_field(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.create_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["ok"] is True and res["total"] == 124.0
+    payload = fake.created_estimates[0]
+    assert payload["Line"][0]["SalesItemLineDetail"]["UnitPrice"] == 62.0
+    assert payload["Line"][0]["Amount"] == 124.0
+    assert "AllowOnlineACHPayment" not in payload
 
 
 def test_create_estimate_does_not_write_custom_fields_with_accounting_only_access(paths, monkeypatch):

@@ -39,6 +39,7 @@ _ABBREV: list[tuple[str, str]] = [
 _AGENCY_EDITABLE_FIELDS = tuple(field for field in CUSTOMER_PROFILE_FIELDS if field != "name") + (
     "customer_since",
     "default_preferences",
+    "pricing_overrides",
 )
 
 
@@ -118,6 +119,7 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
         taxable=taxable,
         customer_since=str(rec.get("customer_since", "")),
         default_preferences=preferences_from_dict(rec.get("default_preferences", {})),
+        pricing_overrides=_clean_pricing_overrides(rec.get("pricing_overrides", {})),
         qb_customer_id=str(rec.get("qb_customer_id", "")),
         created_at=str(rec.get("created_at", "")),
         updated_at=str(rec.get("updated_at", "")),
@@ -217,6 +219,8 @@ def _clean_agency_field(field: str, value: object) -> object:
     """Normalize a UI/API field without treating a missing value as an erase."""
     if field == "default_preferences":
         return preferences_from_dict(value)
+    if field == "pricing_overrides":
+        return _clean_pricing_overrides(value)
     if field == "taxable":
         if value is None or value == "":
             return None
@@ -226,6 +230,11 @@ def _clean_agency_field(field: str, value: object) -> object:
             return value.strip().lower() in {"true", "yes", "1"}
         return bool(value)
     return str(value or "").strip()
+
+
+def _clean_pricing_overrides(value: object) -> dict[str, float]:
+    from .customer_pricing_service import normalize_overrides
+    return normalize_overrides(value)
 
 
 def customer_profile_fields(record: AgencyRecord) -> dict:

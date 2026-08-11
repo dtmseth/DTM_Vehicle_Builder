@@ -35126,5 +35126,19 @@
       "picker_flow": null,
       "order": 4
     }
+  },
+  "customer_pricing": {
+    "default_rule": {
+      "name": "Default",
+      "manufacturer_discounts": {
+        "gamber_johnson": 40.0,
+        "havis": 20.0,
+        "pac_tool": 5.0,
+        "santa_cruz": 25.0,
+        "setina": 20.0,
+        "westin": 15.0,
+        "whelen": 38.0
+      }
+    }
   }
 }

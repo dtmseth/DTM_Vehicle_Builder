@@ -391,9 +391,9 @@ def get_pricing_status(paths: AppPaths) -> dict:
         "ok": True,
         "using_price_levels": using_levels,
         "warning": (
-            "Customer price levels are enabled. The QuickBooks API does not expose "
-            "custom price-level rates; estimate lines will use the synced sandbox "
-            "item prices unless you adjust them in QuickBooks."
+            "QuickBooks customer price levels are enabled. Vehicle Builder uses the "
+            "reviewed local customer-pricing rule calculated from current Production "
+            "Item list prices, because the Accounting API does not expose QBO's rule tables."
             if using_levels else ""
         ),
     }

@@ -938,6 +938,17 @@
         </p>
       </div>
 
+      <div id="qb-pricing-panel" class="qb-pricing-panel">
+        <div class="qb-pricing-heading">
+          <div>
+            <strong>Default customer pricing</strong>
+            <p>Discounts are calculated from the current QuickBooks Item list price. Agencies inherit this rule unless they have an override.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="qb-pricing-save">Save Default Rule</button>
+        </div>
+        <div id="qb-pricing-default-rows" class="qb-pricing-grid"></div>
+      </div>
+
       <!-- Disconnected state -->
       <div id="qb-connect-row">
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">
@@ -1546,6 +1557,15 @@
         <div class="form-group"><label>Console Brand</label><select id="ac-console-brand"></select></div>
       </div>
       <div class="form-group"><label>Default preference notes</label><textarea id="ac-pref-notes" rows="2" placeholder="Optional guidance for the agency's normal build"></textarea></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Customer pricing</div>
+      <p class="field-hint">The Default rule is calculated from QuickBooks list prices. Turn it off only when this agency has different terms.</p>
+      <label class="agency-pricing-toggle"><input id="ac-pricing-use-default" type="checkbox" checked /> Use Default rule</label>
+      <div id="ac-pricing-overrides" class="agency-pricing-overrides" hidden>
+        <div id="ac-pricing-rows" class="qb-pricing-grid"></div>
+        <p class="field-hint">Only values that differ from the Default rule are stored on this agency.</p>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="ac-cancel">Cancel</button>

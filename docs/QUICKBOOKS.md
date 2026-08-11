@@ -29,7 +29,7 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
 | **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Production activated 2026-08-11. Production pull/reconciliation verified read-only against 1,335 active Items. |
 | **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Production customer migration completed 2026-08-11: all 214 agencies linked to existing production Customers; reviewed duplicate Customers excluded. |
-| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
+| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Default/customer pricing is calculated before create. Not yet exercised live. |
 | **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Migration plan reviewed and applied 2026-08-11. The duplicate preview token was retired locally without revoking the promoted standard production authorization. |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ✅ Approved; Production keys obtained and stored through the isolated preview profile. |
 
@@ -224,10 +224,21 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   form mismatch from blocking the non-posting estimate create. The optional
   phone, vehicle, sales-ID, and unit header fields therefore remain managed in
   QuickBooks unless that paid scope is enabled later.
-  The create dialog reports when QB customer price levels are enabled. The accounting API does
-  not expose custom price-level rates, so the estimate uses the synced sandbox item rates until
-  the user reviews/adjusts them in QuickBooks. See Intuit's
+  Production QBO `Item.UnitPrice` is treated as list price. Before validation or creation, the app
+  applies the shared **Default** manufacturer rule: Gamber-Johnson 40%, Havis 20%, PAC Tool 5%,
+  Santa Cruz 25%, Setina 20%, Westin 15%, and Whelen 38% off list. An Agency stores only sparse
+  manufacturer exceptions in `pricing_overrides`; missing values continue to inherit Default.
+  The create dialog shows list total, savings, customer total, and any customer-specific values.
+  The Estimate payload sends the calculated `UnitPrice` and `Amount` explicitly, so QBO's internal
+  item/rule formatting cannot change the reviewed price. Catalog reconciliation still refreshes
+  list prices only and never writes customer prices back into Item data.
+  The Accounting API does not expose QBO's price-rule tables, so these reviewed local rules are
+  deliberately authoritative for Vehicle Builder estimates. See Intuit's
   [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
+  QBO's bank-transfer/ACH switch is exposed for Invoices, not Estimates. Estimate creation therefore
+  does not send an unsupported `AllowOnlineACHPayment` field. Keep Bank transfer enabled in QBO when
+  reviewing/converting the estimate; “1% per transaction, max $20” is Intuit's processing-fee
+  disclosure, not an estimate line item.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
@@ -235,17 +246,19 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   if the unit number is missing, its first action opens that vehicle's Details form directly.
   The batch screen first checks every configured vehicle, lets the user set up missing Projects,
   and creates only the ready estimates after an explicit confirmation.
-  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (25).
+  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (35) and
+  `tests/test_customer_pricing_service.py` (4).
 
 ### Full route list (`/api/quickbooks/*`)
-`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customers/preview` ·
+`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
 `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` ·
-`POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
+`POST customer-pricing/default` · `POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
 `POST projects/bind` ·
 `POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
 
-**Test totals**: full suite ~1593 pass, 1 skipped. QB-specific: service (13), sync (22),
-customer-sync (14), agency-push (13), estimate (25), seed-sandbox (5).
+**Test totals**: full suite 1963 pass, 1 skipped, plus 3 known owner-review golden-digest drifts.
+QB-specific: service (15), sync (24), customer-sync (14), agency-push (13), estimate (35),
+customer-pricing (4), seed-sandbox (5).
 
 ---
 
