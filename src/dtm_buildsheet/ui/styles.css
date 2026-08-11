@@ -793,6 +793,19 @@
     .toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:#1a6091}.toast.warn{background:#b45309;color:#fff}
     .toast.copyable{cursor:copy;max-width:min(520px,calc(100vw - 48px));line-height:1.35}.toast.copyable::after{content:"Click to copy";display:block;margin-top:4px;font-size:11px;font-weight:500;opacity:.85}
     .toast.copyable:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+    /* QuickBooks Project setup walkthrough */
+    .qb-setup-intro{font-size:13px;margin:0}
+    .qb-setup-identity{font-size:12px;color:var(--muted);margin:8px 0 0}
+    .qb-setup-warning{margin:10px 0;padding:9px 11px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45}
+    .qb-setup-first{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);font-size:13px}
+    .qb-setup-steps{padding-left:22px;margin:10px 0 14px;font-size:13px;line-height:1.55}
+    .qb-setup-steps li+li{margin-top:7px}
+    .qb-project-name-copy{display:block;width:100%;text-align:left;overflow-wrap:anywhere;margin:5px 0;padding:7px 8px;border:1px solid var(--border);border-radius:4px;background:#f7f7f7;color:var(--navy);cursor:pointer;font-family:inherit}
+    .qb-project-name-copy span:last-child{float:right;color:var(--muted);font-size:11px}
+    .qb-setup-label{font-size:12px;font-weight:600;color:var(--navy)}
+    .qb-setup-input{width:100%;box-sizing:border-box;margin-top:5px}
+    .qb-setup-hint{font-size:11px;color:var(--muted);margin:5px 0 0}
     @media(max-width:800px){
       .guided-system-layout{grid-template-columns:1fr}
       .guided-summary{order:2}

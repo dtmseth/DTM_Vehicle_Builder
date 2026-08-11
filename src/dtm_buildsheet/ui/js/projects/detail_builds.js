@@ -750,6 +750,38 @@ function _ptEstError(code) {
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }
 
+function _ptEstimateProblemText(problem) {
+  const p = problem || {};
+  const name = p.name || p.part_number || "Unnamed part";
+  const reason = _QB_EST_REASON[p.reason] || p.reason || "Needs QuickBooks attention";
+  return `${name}: ${reason}`;
+}
+
+function _ptToastEstimateBlockers(validation) {
+  const v = validation || {};
+  const blockers = [];
+  if (!v.project?.ready) {
+    blockers.push(v.project?.identity_ready
+      ? "link this vehicle to its QuickBooks Project"
+      : "add a unit number, then link the vehicle to its QuickBooks Project");
+  }
+  const problems = v.problems || [];
+  if (problems.length === 1) {
+    blockers.push(_ptEstimateProblemText(problems[0]));
+  } else if (problems.length > 1) {
+    blockers.push(`${problems.length} parts need QuickBooks attention (first: ${_ptEstimateProblemText(problems[0])})`);
+  }
+  toast(`Estimate not created — ${blockers.join(". ") || "the build needs attention"}`, "error");
+}
+
+function _ptProjectProblemNotice(validation) {
+  const problems = validation?.problems || [];
+  if (!problems.length) return "";
+  const first = _ptEstimateProblemText(problems[0]);
+  const more = problems.length > 1 ? `, plus ${problems.length - 1} more` : "";
+  return `<div class="qb-setup-warning"><strong>There is another estimate blocker.</strong> ${esc(first + more)}. Finish the Project steps here, then resolve the part in <strong>Settings → QuickBooks</strong> before trying again.</div>`;
+}
+
 function _ptMoney2(n) {
   const v = Number(n);
   return isNaN(v) ? "$0.00" : "$" + v.toFixed(2);
@@ -792,6 +824,7 @@ function _ptOpenEstModal(title, bodyHtml, createLabel) {
     e.create.onclick = null;
     if (createLabel) e.create.textContent = createLabel;
   }
+  e.modal?.removeAttribute("hidden");
   e.modal?.classList.add("open");
 }
 
@@ -932,7 +965,7 @@ async function _ptCopyProjectName(text) {
   }
 }
 
-function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked = null) {
+function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked = null, validation = null) {
   const b = binding || {};
   const projectName = b.project_name || "Vehicle project";
   const customerName = b.customer_name || "the correct customer";
@@ -942,25 +975,44 @@ function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked =
     ? `This project is for ${esc((b.identity_labels || []).join(" · "))}.`
     : "Add a unit number in the vehicle details first, then come back here.";
   const rejectedRefNotice = projectRefInvalid
-    ? `<div style="margin:10px 0;padding:9px 11px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>QuickBooks rejected the saved Project link.</strong> The Project may have been deleted, or it may belong to a different customer. Re-open or create the Project under <strong>${esc(customerName)}</strong>, then paste its Project page address here.</div>`
+    ? `<div class="qb-setup-warning"><strong>QuickBooks rejected the saved Project link.</strong> The Project may have been deleted, or it may belong to a different customer. Re-open or create the Project under <strong>${esc(customerName)}</strong>, then paste its Project page address here.</div>`
     : "";
   const instructions = identityReady
-    ? `<ol style="padding-left:20px;margin:10px 0 14px;font-size:13px;line-height:1.55">
+    ? `<ol class="qb-setup-steps">
          <li>In QuickBooks, open <strong>Projects</strong> and find this Project. If it does not exist, choose <strong>New project</strong>.</li>
          <li>Make sure it belongs to <strong>${esc(customerName)}</strong>.</li>
-         <li>Use this exact project name:<button type="button" id="qb-project-name-copy" title="Click to copy this name" style="display:block;width:100%;text-align:left;overflow-wrap:anywhere;margin:5px 0;padding:7px 8px;border:1px solid var(--border);border-radius:4px;background:#f7f7f7;color:var(--navy);cursor:pointer;font-family:inherit"><span>${esc(projectName)}</span><span id="qb-project-name-copy-label" style="float:right;color:var(--muted);font-size:11px">📋 Click to copy</span></button></li>
+         <li>Use this exact project name:<button type="button" id="qb-project-name-copy" class="qb-project-name-copy" title="Click to copy this name"><span>${esc(projectName)}</span><span id="qb-project-name-copy-label">📋 Click to copy</span></button></li>
          <li>Open that Project, copy the web address from your browser's address bar, and paste it below. Do not use a customer page address or customer number.</li>
        </ol>
-       <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks project link</label>
-       <input id="qb-project-id" autocomplete="off" placeholder="Paste the web address here" style="width:100%;box-sizing:border-box;margin-top:5px" />
-       <p style="font-size:11px;color:var(--muted);margin:5px 0 0">If you have the project number instead, you can paste that too.</p>`
-    : `<p style="font-size:13px;line-height:1.5">${identityHint}</p>`;
+       <label class="qb-setup-label">QuickBooks project link</label>
+       <input id="qb-project-id" class="qb-setup-input" autocomplete="off" placeholder="Paste the web address here" />
+       <p class="qb-setup-hint">If you have the project number instead, you can paste that too.</p>`
+    : `<div class="qb-setup-first">
+         <strong>First, identify this vehicle.</strong>
+         <ol class="qb-setup-steps">
+           <li>Choose <strong>Open vehicle details</strong> below.</li>
+           <li>Enter the vehicle's <strong>Unit number</strong>, then save.</li>
+           <li>Choose <strong>QB Estimate</strong> again. This walkthrough will give you the exact QuickBooks Project name and ask for its Project page link.</li>
+         </ol>
+         <button type="button" class="btn btn-primary" id="qb-project-open-details">Open vehicle details</button>
+       </div>`;
 
   _ptOpenEstModal("Set up the QuickBooks Project",
-    `<p style="font-size:13px;margin:0">Do this once for this vehicle. It only connects the vehicle to the Project you create in QuickBooks; it does not create an estimate or send anything to the customer.</p>
-     <p style="font-size:12px;color:var(--muted);margin:8px 0 0">${identityHint}</p>${rejectedRefNotice}${instructions}`,
+    `<p class="qb-setup-intro">Do this once for this vehicle. It only connects the vehicle to the Project you create in QuickBooks; it does not create an estimate or send anything to the customer.</p>
+     <p class="qb-setup-identity">${identityHint}</p>${rejectedRefNotice}${_ptProjectProblemNotice(validation)}${instructions}`,
     identityReady ? "Save project link" : "");
   const e = _ptEstModalEls();
+  $("qb-project-open-details")?.addEventListener("click", () => {
+    const project = _PT.projects.find(p => p.project_id === projectId);
+    const unit = (project?.build_units || []).find(u =>
+      (u.individuals || []).some(i => i.individual_id === individualId));
+    if (!unit) {
+      toast("Could not find this vehicle's details", "error");
+      return;
+    }
+    e.modal?.classList.remove("open");
+    window.PT_openDetailIndModal(projectId, unit.unit_id, individualId);
+  });
   $("qb-project-name-copy")?.addEventListener("click", async () => {
     const copied = await _ptCopyProjectName(projectName);
     const label = $("qb-project-name-copy-label");
@@ -1009,18 +1061,20 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   try {
     v = await api("/api/quickbooks/estimates/validate",
       { project_id: projectId, individual_id: individualId });
-  } catch (e) { toast("Validation failed", "error"); return; }
+  } catch (e) { toast("Estimate not created — QuickBooks validation could not be completed", "error"); return; }
   if (statusEl) statusEl.style.display = "none";
   if (!v?.ok) { toast(_ptEstError(v?.error), "error"); return; }
 
   if (!v.project?.ready) {
-    _ptOpenProjectBindingModal(projectId, individualId, v.project);
+    _ptToastEstimateBlockers(v);
+    _ptOpenProjectBindingModal(projectId, individualId, v.project, null, v);
     return;
   }
 
   if (!v.can_create) {
     const probs = v.problems || [];
     if (!probs.length) { toast("No billable parts in this build", "error"); return; }
+    _ptToastEstimateBlockers(v);
     const rows = probs.map(p =>
       `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
         <span style="font-weight:600;color:var(--navy);min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(p.name || "(unnamed)")}${p.part_number ? ` <span style="color:var(--muted);font-weight:400">${esc(p.part_number)}</span>` : ""}</span>
@@ -1050,6 +1104,13 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   const pricingWarning = pricing?.using_price_levels
     ? `<div style="padding:9px 11px;background:#fff7e6;border:1px solid #f0c36d;border-radius:6px;font-size:12px;line-height:1.4;margin-bottom:12px"><strong>Pricing note:</strong> ${esc(pricing.warning || "QuickBooks customer price levels are enabled; review rates in QuickBooks before sending.")}</div>`
     : "";
+
+  if (!customerLinked || customerMissing.length) {
+    const detail = customerMissing.length
+      ? `complete customer fields: ${customerMissing.join(", ")}`
+      : "confirm or create the QuickBooks customer";
+    toast(`Estimate not created yet — ${detail}`, "error");
+  }
 
   _ptOpenEstModal("Create QuickBooks estimate",
     `${pricingWarning}<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
@@ -1085,6 +1146,8 @@ async function _ptDoCreateEstimate(projectId, individualId) {
     } else {
       if (res?.error === "customer_required" || res?.error === "customer_incomplete") {
         const missing = res?.missing_fields || [];
+        const detail = missing.length ? `: ${missing.join(", ")}` : "";
+        toast(`${_ptEstError(res.error)}${detail}`, "error");
         e.body.innerHTML = `<p style="font-size:13px;margin:0 0 10px">Before this estimate is created, confirm the customer information below. The app will reuse an exact top-level QB customer when one exists, or create a new top-level customer.</p>
           <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
           ${_ptCustomerEditor(res.customer, false, missing)}
@@ -1094,6 +1157,7 @@ async function _ptDoCreateEstimate(projectId, individualId) {
         e.create.textContent = "Create customer & estimate";
         e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
       } else if (res?.error === "invalid_qb_project_ref") {
+        toast(_ptEstError(res.error), "error");
         _ptOpenProjectBindingModal(projectId, individualId, res.project);
       } else {
         toast(_ptEstError(res?.error), "error");
@@ -1101,7 +1165,7 @@ async function _ptDoCreateEstimate(projectId, individualId) {
       }
     }
   } catch (err) {
-    toast("Estimate creation failed", "error");
+    toast("Estimate creation failed — QuickBooks did not complete the request", "error");
     if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
   }
 }

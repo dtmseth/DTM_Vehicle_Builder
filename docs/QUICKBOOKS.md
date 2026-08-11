@@ -230,6 +230,9 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
+  A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
+  issue instead of failing silently. Missing Project links open a numbered manual-QBO walkthrough;
+  if the unit number is missing, its first action opens that vehicle's Details form directly.
   The batch screen first checks every configured vehicle, lets the user set up missing Projects,
   and creates only the ready estimates after an explicit confirmation.
   (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (25).
