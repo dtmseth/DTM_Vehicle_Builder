@@ -18,6 +18,7 @@ from dtm_buildsheet.paths import AppPaths
 
 class _FakeApiClient:
     items: list[dict] = []
+    inactive_items: list[dict] = []
 
     def __init__(self, *, access_token, realm_id, environment="production"):
         assert access_token == "ACCESS"
@@ -26,6 +27,9 @@ class _FakeApiClient:
 
     def fetch_active_items(self):
         return [dict(item) for item in self.items]
+
+    def fetch_inactive_items(self):
+        return [dict(item) for item in self.inactive_items]
 
 
 @pytest.fixture
@@ -37,6 +41,8 @@ def paths(tmp_path):
 
 @pytest.fixture(autouse=True)
 def _preview_connection(monkeypatch):
+    _FakeApiClient.items = []
+    _FakeApiClient.inactive_items = []
     monkeypatch.setattr(preview, "QuickBooksApiClient", _FakeApiClient)
     monkeypatch.setattr(
         preview.quickbooks_service,
@@ -196,3 +202,199 @@ def test_snapshot_with_changed_exclusion_cache_is_not_usable(paths):
 
     assert preview.list_snapshots(paths)["snapshots"] == []
     assert preview.select_snapshot(paths, "baseline") == {"ok": False, "error": "snapshot_not_found_or_invalid"}
+
+
+def test_create_baseline_snapshot_uses_current_catalog_and_selects_it(paths):
+    parts = {
+        "products": {
+            "linked": {"part_numbers": [{"part_number": "A-1", "qb_item_id": "sandbox-1"}]},
+            "pending": {"part_numbers": [{"part_number": "B-2", "qb_pending": True}]},
+        }
+    }
+    source = paths.workspace_config_dir / "parts_db.json"
+    source.write_text(json.dumps(parts), encoding="utf-8")
+    (paths.workspace_dir / "quickbooks_config.json").write_text(
+        json.dumps({"environment": "sandbox", "client_id": "NON-SECRET-ID"}), encoding="utf-8"
+    )
+    (paths.workspace_dir / "quickbooks_items_cache.json").write_text(
+        json.dumps({"items": [{"qb_item_id": "1", "name": "A-1"}], "last_sync_utc": "now"}),
+        encoding="utf-8",
+    )
+    (paths.workspace_dir / "quickbooks_production_preview_config.json").write_text(
+        json.dumps({"client_id": "DO-NOT-COPY"}), encoding="utf-8"
+    )
+    stale_report = paths.workspace_dir / "quickbooks_production_mapping_report.json"
+    stale_plan = paths.workspace_dir / "quickbooks_production_mapping_plan.json"
+    stale_report.write_text('{"snapshot": "old"}', encoding="utf-8")
+    stale_plan.write_text('{"snapshot": "old"}', encoding="utf-8")
+
+    result = preview.create_baseline_snapshot(paths, "After Cleanup #1")
+
+    assert result["ok"] is True
+    assert result["snapshot_name"].endswith("-after-cleanup-1")
+    directory = paths.workspace_dir / "quickbooks_migration_snapshots" / result["snapshot_name"]
+    manifest = json.loads((directory / "manifest.json").read_text())
+    assert manifest["catalog"] == {
+        "products": 2,
+        "part_numbers": 2,
+        "linked_part_numbers": 1,
+        "pending_part_numbers": 1,
+    }
+    assert manifest["sandbox_items_cache"]["items"] == 1
+    assert json.loads((directory / "parts_db.json").read_text()) == parts
+    assert not (directory / "quickbooks_production_preview_config.json").exists()
+    assert not stale_report.exists()
+    assert not stale_plan.exists()
+    assert preview.get_status(paths)["selected_snapshot"]["name"] == result["snapshot_name"]
+
+
+def test_create_baseline_snapshot_rejects_invalid_catalog(paths):
+    (paths.workspace_config_dir / "parts_db.json").write_text('{"not_products": true}', encoding="utf-8")
+
+    assert preview.create_baseline_snapshot(paths) == {"ok": False, "error": "invalid_parts_db"}
+
+
+def test_historical_plan_handles_production_format_differences(paths):
+    _create_snapshot(
+        paths,
+        products={
+            "raw_one": {"part_numbers": [{"part_number": "SC-931-1", "qb_item_id": "s1"}]},
+            "raw_two": {"part_numbers": [{"part_number": "SC-9311", "qb_item_id": "s2"}]},
+            "shared_one": {"part_numbers": [{"part_number": "TCRLBKT", "qb_item_id": "s3"}]},
+            "shared_two": {"part_numbers": [{"part_number": "TCRLBKT", "qb_item_id": "s3"}]},
+            "renamed": {"part_numbers": [{"part_number": "K5011", "qb_item_id": "s4"}]},
+            "bad_name": {"part_numbers": [{"part_number": "c", "qb_item_id": "s5"}]},
+            "inactive": {"part_numbers": [{"part_number": "OLD-1", "qb_item_id": "s6"}]},
+        },
+        sandbox_items=[
+            {"qb_item_id": "s1", "name": "SC-931-1", "description": "ONE", "unit_price": 1, "type": "NonInventory"},
+            {"qb_item_id": "s2", "name": "SC-9311", "description": "TWO", "unit_price": 2, "type": "NonInventory"},
+            {"qb_item_id": "s3", "name": "TCRLBKT", "description": "BRACKET", "unit_price": 3, "type": "NonInventory"},
+            {"qb_item_id": "s4", "name": "K5011", "description": "AXE HANGER", "unit_price": 4, "type": "NonInventory"},
+            {"qb_item_id": "s5", "name": "c", "description": "REAL PRODUCT", "unit_price": 5, "type": "NonInventory"},
+            {"qb_item_id": "s6", "name": "OLD-1", "description": "OLD PRODUCT", "unit_price": 6, "type": "NonInventory"},
+        ],
+    )
+    _FakeApiClient.items = [
+        {"qb_item_id": "p1", "name": "SC-931-1", "sku": "", "description": "ONE", "unit_price": 1, "type": "NonInventory"},
+        {"qb_item_id": "p2", "name": "SC-9311", "sku": "", "description": "TWO", "unit_price": 2, "type": "NonInventory"},
+        {"qb_item_id": "p3", "name": "TCRLBKT", "sku": "", "description": "BRACKET", "unit_price": 3, "type": "NonInventory"},
+        {"qb_item_id": "p4", "name": "K5011-B", "sku": "", "description": "AXE HANGER - BLACK STRAPS", "unit_price": 4.5, "type": "NonInventory"},
+        {"qb_item_id": "p5", "name": "REAL-5", "sku": "", "description": "REAL\nPRODUCT", "unit_price": 5, "type": "NonInventory"},
+    ]
+    _FakeApiClient.inactive_items = [
+        {"qb_item_id": "p6", "name": "OLD-1 (deleted)", "sku": "", "description": "OLD PRODUCT", "unit_price": 7, "type": "NonInventory"},
+    ]
+
+    assert preview.pull_production_catalog(paths)["ok"] is True
+    report = preview.set_mapping_field(paths, "name")["report"]
+    summary = report["historical_link_summary"]
+    assert summary == {
+        "previously_linked_rows": 7,
+        "matched_rows": 7,
+        "unmatched_rows": 0,
+        "unique_sandbox_items": 6,
+        "unique_production_items": 6,
+        "shared_link_rows": 1,
+        "active_matches": 6,
+        "inactive_matches": 1,
+        "blank_sku_matches": 7,
+        "type_change_count": 0,
+        "match_basis": {
+            "exact_name": 4,
+            "historical_deleted_name": 1,
+            "name_variant_description_prefix": 1,
+            "exact_description": 1,
+        },
+    }
+    plan = json.loads((paths.workspace_dir / "quickbooks_production_historical_link_plan.json").read_text())
+    assert plan["application_status"] == "locked_not_applied"
+    assert plan["activation_requirements"]["sandbox_background_polling_must_be_stopped"] is True
+    assert all(row["confidence"] == "high" for row in plan["matches"])
+    inactive = next(row for row in plan["matches"] if row["builder"]["part_number"] == "OLD-1")
+    assert inactive["planned_qb_fields"]["qb_inactive"] is True
+    renamed = next(row for row in plan["matches"] if row["builder"]["part_number"] == "K5011")
+    assert renamed["planned_qb_fields"]["qb_item_id"] == "p4"
+
+
+def test_apply_historical_plan_replaces_only_qb_owned_fields():
+    document = {
+        "products": {
+            "p1": {
+                "model": "Owner model",
+                "tag_ids": ["keep-me"],
+                "part_numbers": [{
+                    "part_number": "K5011",
+                    "color": "black",
+                    "qb_item_id": "sandbox-1",
+                    "qb_sku": "K5011",
+                    "qb_unit_price": 100,
+                }],
+            },
+        },
+    }
+    plan = {
+        "application_status": "locked_not_applied",
+        "summary": {"previously_linked_rows": 1, "matched_rows": 1, "unmatched_rows": 0},
+        "matches": [{
+            "confidence": "high",
+            "builder": {
+                "product_id": "p1",
+                "part_number": "K5011",
+                "baseline_qb_item_id": "sandbox-1",
+            },
+            "planned_qb_fields": {
+                "qb_item_id": "production-1",
+                "qb_sku": "",
+                "qb_sales_description": "Production description",
+                "qb_unit_price": 124.5,
+                "qb_inactive": False,
+            },
+        }],
+    }
+
+    updated, stats = preview._apply_historical_plan_to_document(
+        document, plan, applied_utc="2026-08-11T17:00:00Z"
+    )
+
+    assert stats == {"updated_rows": 1, "inactive_rows": 0}
+    assert document["products"]["p1"]["part_numbers"][0]["qb_item_id"] == "sandbox-1"
+    product = updated["products"]["p1"]
+    assert product["model"] == "Owner model"
+    assert product["tag_ids"] == ["keep-me"]
+    assert product["part_numbers"][0] == {
+        "part_number": "K5011",
+        "color": "black",
+        "qb_item_id": "production-1",
+        "qb_sku": "",
+        "qb_sales_description": "Production description",
+        "qb_unit_price": 124.5,
+        "qb_inactive": False,
+        "qb_last_synced": "2026-08-11T17:00:00Z",
+    }
+
+
+def test_apply_historical_plan_refuses_changed_baseline_row():
+    document = {
+        "products": {
+            "p1": {"part_numbers": [{"part_number": "K5011", "qb_item_id": "changed"}]},
+        },
+    }
+    plan = {
+        "application_status": "locked_not_applied",
+        "summary": {"previously_linked_rows": 1, "matched_rows": 1, "unmatched_rows": 0},
+        "matches": [{
+            "confidence": "high",
+            "builder": {
+                "product_id": "p1",
+                "part_number": "K5011",
+                "baseline_qb_item_id": "sandbox-1",
+            },
+            "planned_qb_fields": {"qb_item_id": "production-1"},
+        }],
+    }
+
+    with pytest.raises(ValueError, match="activation_baseline_row_changed"):
+        preview._apply_historical_plan_to_document(
+            document, plan, applied_utc="2026-08-11T17:00:00Z"
+        )

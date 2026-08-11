@@ -26,16 +26,17 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 | Phase | What | Status |
 |-------|------|--------|
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
-| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox**. B/C built + unit-tested. |
+| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Production activated 2026-08-11. Production pull/reconciliation verified read-only against 1,335 active Items. |
 | **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Customer sync and estimate flow built + unit-tested. New estimates do not create jobs. |
 | **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
-| **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Built locally. Production credentials, relay deployment, and the first read-only pull remain pending. It cannot reconcile or change `parts_db`. |
-| **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ⛔ Not done. Requires sandbox test cycle confirmation + relay deploy (§5–6). |
+| **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Migration plan reviewed and applied 2026-08-11. The duplicate preview token was retired locally without revoking the promoted standard production authorization. |
+| **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ✅ Approved; Production keys obtained and stored through the isolated preview profile. |
 
-**The standard QB connection still runs against the SANDBOX company using Development keys.** No
-routine production sync is configured. The separate production-preview profile has its own local
-metadata, encrypted keychain store, and Item cache; it is not connected until the owner supplies
-Production credentials and a deployed HTTPS relay.
+**The standard QB connection now runs against the Production company using Production keys.** The
+production Item cache is active for normal reconciliation. The separate production-preview profile
+retains only its app-registration secret for audit/reconfiguration; its access token, refresh token,
+and realm binding were removed locally after promotion so it cannot compete with the standard
+profile's rotating refresh token.
 
 **Write boundary**: the app writes **Customers and non-posting Estimates** —
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
@@ -71,8 +72,8 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - `app/routes/quickbooks.py` — all routes; every response sets `Cache-Control: no-store`;
   callback is **302-only** (never echoes code/token).
 - `ui/index.html` + `ui/js/settings/quickbooks.js` — Settings → General → QuickBooks tab.
-- `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). See `relay/DEPLOY.md`.
-  **Not yet deployed.**
+- `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). The production relay is live at
+  `dtmvehiclebuilder.netlify.app`; see `relay/DEPLOY.md`.
 - Tests: `tests/test_quickbooks_service.py` (13, hermetic).
 
 ### Phase 2 — Parts sync
@@ -108,6 +109,10 @@ use `run_full_sync()` or the 30-minute poller. The preview is deliberately isola
   the exact-match totals for each column, and lets the owner select the correct field once. The
   sandbox baseline currently demonstrates why this matters: vendor identifiers there are held in
   QBO `Name`, while `Sku` is often blank.
+- The preview can create and immediately select a new immutable baseline from the current Builder
+  catalog after each owner-reviewed cleanup pass. The button copies only `parts_db.json` and, when
+  the standard profile is sandbox, its normalized Item cache. It never reads or copies credentials,
+  OAuth tokens, or production connection metadata.
 - QBO Items present in the sandbox cache but absent from the baseline Builder catalog are carried
   forward as **intentional exclusions** when their normalized Name or SKU appears in production.
   They remain outside the Builder catalog; unrecognized production-only Items still block the
@@ -116,6 +121,38 @@ use `run_full_sync()` or the 30-minute poller. The preview is deliberately isola
   every unambiguous match. Ambiguous, missing, unexpected, or blank-key rows stay out of that plan
   for later review. **Prepared is not applied:** a later explicit owner-approved apply step is
   required before any catalog link changes.
+
+#### Locked production lineage findings (2026-08-11)
+
+Baseline `20260811T163517Z-post-part-cleanup` is the current migration anchor. The isolated
+production preview contains 1,335 active Items and 281 inactive historical Items. Its
+snapshot-and-cache-pinned historical plan is written to
+`workspace/quickbooks_production_historical_link_plan.json` with status
+`applied` after the owner-approved activation on 2026-08-11.
+
+- All 1,222 previously linked Builder rows have a high-confidence production successor: 1,212
+  literal Name matches, 6 retired `Name (deleted)` matches, 3 controlled `-B` renames, and 1 exact
+  description match. There are zero unmatched prior links.
+- The 1,222 rows resolve to 1,216 unique Items because six Builder rows intentionally share an Item
+  link. Shared links are preserved rather than treated as duplicates.
+- All matched production Items have a blank QBO `Sku`. This is compatible: Builder keeps its own
+  `part_number` for selection/display and stores the production `qb_item_id` as the durable QBO
+  reference. Estimate payloads use `ItemRef.value = qb_item_id`, not `Sku` or `Name`.
+- Six matched production Items are inactive and remain linked with `qb_inactive=true`; estimate
+  validation blocks them instead of deleting or silently substituting another Item.
+- Ten matched Items changed QBO type (nine to Inventory, one to Service). Item type does not alter
+  the estimate reference path; all are addressed through the same Item ID. The change is retained
+  in the plan for audit.
+- Production price and sales description are authoritative after activation. Normal production
+  reconciliation refreshes those fields by Item ID, so price changes and whitespace/newline
+  differences do not break Builder part selection.
+
+Activation stopped the running desktop process before the profile swap, promoted the keychain-held
+production credentials into the standard profile, seeded the standard active Item cache, applied
+only the plan's QB-owned fields, and retired the duplicate preview token without revocation. The
+first standard production pull/reconciliation updated no reviewed links, incorrectly flagged zero
+Items inactive, and linked one formerly pending part by an exact production Name match. Current
+catalog state is 1,223 linked rows, 28 pending rows, and 6 intentionally inactive linked rows.
 
 The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appears only on a machine
 that already has a valid local migration snapshot; public QB sales/estimate controls remain hidden.

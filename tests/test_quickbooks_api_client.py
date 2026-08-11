@@ -129,3 +129,36 @@ def test_create_estimate_uses_standard_legacy_custom_fields_request(monkeypatch)
 
     assert client.create_estimate({}) == {"qb_estimate_id": "1", "doc_number": "10"}
     assert captured["query_params"] is None
+
+
+def test_fetch_inactive_items_paginates_and_preserves_active_flag(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    statements = []
+
+    def fake_query(statement):
+        statements.append(statement)
+        if "STARTPOSITION 1" in statement:
+            return {"Item": [{
+                "Id": "old-1",
+                "Name": "OLD-1 (deleted)",
+                "Sku": "",
+                "Description": "Historical part",
+                "UnitPrice": 12.5,
+                "Type": "NonInventory",
+                "Active": False,
+            }]}
+        return {"Item": []}
+
+    monkeypatch.setattr(client, "query", fake_query)
+
+    assert client.fetch_inactive_items(page_size=1) == [{
+        "qb_item_id": "old-1",
+        "name": "OLD-1 (deleted)",
+        "sku": "",
+        "description": "Historical part",
+        "unit_price": 12.5,
+        "type": "NonInventory",
+        "active": False,
+    }]
+    assert len(statements) == 2
+    assert all("WHERE Active = false" in statement for statement in statements)

@@ -158,6 +158,7 @@ def test_normalize_item_coerces_fields():
         "description": "x",
         "unit_price": 1249.0,
         "type": "Inventory",
+        "active": True,
     }
 
 

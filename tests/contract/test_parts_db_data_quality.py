@@ -315,11 +315,9 @@ def test_warning_bracket_scope_metadata_keeps_family_specific_mounts_out_of_gene
             accessory["product_id"] == "dtm_twist_lock_adaptor"
             for accessory in products[product_id]["accessories"]
         )
-    for product_id in (
-        "westin_westin_2_light_tube",
-        "westin_westin_4_light_tube",
-        "whelen_tracer_l_brackets_x2_per",
-    ):
+    # The two Westin tube placeholders were owner-approved catalog cleanup;
+    # only the real tracer bracket SKU remains in this generic-scope guard.
+    for product_id in ("whelen_tracer_l_brackets_x2_per",):
         assert products[product_id]["include_in_generic_accessory_options"] is False
 
 
@@ -343,7 +341,7 @@ def test_tiger_tough_seat_covers_are_vehicle_scoped_and_offer_custom_patch_embro
 
     embroidery = products["tiger_tough_embroidery"]
     assert embroidery["accessory_category"] == "custom_patch"
-    assert embroidery["part_numbers"][0]["qb_item_id"] == "1209"
+    assert embroidery["part_numbers"][0]["qb_item_id"] == "1291"
     assert "unbilled" not in embroidery["tag_ids"]
     assert set(embroidery["accessory_of_products"]) == {
         product_id for product_id, product in products.items()

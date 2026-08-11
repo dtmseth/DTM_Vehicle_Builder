@@ -1007,6 +1007,11 @@
         <button class="btn btn-secondary" id="qbpp-use-snapshot">Use this snapshot</button>
       </div>
       <div id="qbpp-snapshot-details" class="qbpp-detail"></div>
+      <div class="qbpp-baseline-create">
+        <label>New baseline label<input id="qbpp-snapshot-label" class="qbpp-input" maxlength="80" placeholder="e.g. after placeholder cleanup"></label>
+        <button class="btn btn-secondary" id="qbpp-create-snapshot">Create baseline from current catalog</button>
+      </div>
+      <p class="qbpp-hint">Creates and selects an immutable local snapshot of the current Builder catalog and sandbox item cache. Credentials and production connection data are never copied.</p>
     </div>
 
     <div class="card qbpp-card">

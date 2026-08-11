@@ -47,7 +47,7 @@
       if (!s.selected_snapshot) status.textContent = "Choose a saved catalog baseline before production credentials can be used.";
       else if (!connection.configured) status.textContent = "Baseline protected. Add the separate production preview credentials when the relay is ready.";
       else if (!connection.connected) status.textContent = "Production preview is configured but not connected.";
-      else status.textContent = `Connected to production preview · ${fmt(s.production_item_count)} production items pulled · normal sync remains off`;
+      else status.textContent = `Connected to production preview · ${fmt(s.production_active_item_count)} active + ${fmt(s.production_inactive_item_count)} inactive items pulled · normal sync remains off`;
     }
 
     const detail = $("qbpp-snapshot-details");
@@ -99,13 +99,17 @@
     const name = fields.name || {};
     const sku = fields.sku || {};
     const selected = report.selected_summary || {};
+    const historical = report.historical_link_summary || {};
     const selectedField = report.selected_mapping_field || "";
     if (box) {
       box.innerHTML = [
-        _metric("Production items pulled", report.production_item_count),
+        _metric("Active production items", report.production_item_count),
+        _metric("Inactive historical items", report.production_inactive_item_count),
         _metric("Name: exact matches", name.catalog_exact),
         _metric("SKU: exact matches", sku.catalog_exact),
         _metric("Known intentional exclusions", selected.intentionally_excluded || 0),
+        historical.previously_linked_rows ? _metric("Prior links confidently matched", `${historical.matched_rows}/${historical.previously_linked_rows}`) : "",
+        historical.inactive_matches ? _metric("Matched but inactive", historical.inactive_matches) : "",
         selectedField ? _metric("Selected-column blockers", report.selected_blocker_count) : "",
       ].join("");
     }
@@ -150,6 +154,21 @@
     if (!result?.ok) { toast("Could not select that catalog baseline", "error"); return; }
     toast("Catalog baseline selected", "success");
     await _refresh();
+  }
+
+  async function _createSnapshot() {
+    const button = $("qbpp-create-snapshot");
+    if (button) button.disabled = true;
+    try {
+      const label = $("qbpp-snapshot-label")?.value.trim() || "catalog-review";
+      const result = await api(`${BASE}/create-snapshot`, { label });
+      if (!result?.ok) { toast(result?.error || "Could not create catalog baseline", "error"); return; }
+      if ($("qbpp-snapshot-label")) $("qbpp-snapshot-label").value = "";
+      toast("New immutable catalog baseline created and selected", "success");
+      await _refresh();
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   async function _saveSettings() {
@@ -219,6 +238,7 @@
     if (_wired) return;
     _wired = true;
     $("qbpp-use-snapshot")?.addEventListener("click", _selectSnapshot);
+    $("qbpp-create-snapshot")?.addEventListener("click", _createSnapshot);
     $("qbpp-save-settings")?.addEventListener("click", _saveSettings);
     $("qbpp-connect")?.addEventListener("click", _connect);
     $("qbpp-disconnect")?.addEventListener("click", _disconnect);

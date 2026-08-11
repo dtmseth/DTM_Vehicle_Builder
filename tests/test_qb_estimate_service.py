@@ -163,6 +163,55 @@ def test_resolve_links_priced_active_part(paths):
     assert lines[0]["qty"] == 2 and lines[0]["amount"] == 2498.0
 
 
+def test_resolve_uses_builder_sku_with_production_id_price_and_description(paths):
+    _write_parts_db(paths, {
+        "p1": {
+            "manufacturer_id": "mfg",
+            "model": "K5011",
+            "part_numbers": [{
+                "part_number": "K5011",
+                "qb_item_id": "production-847",
+                "qb_sku": "",
+                "qb_sales_description": "Sandbox description",
+                "qb_unit_price": 100.0,
+            }],
+        },
+    })
+    sync._write_cache(paths, {
+        "items": [{
+            "qb_item_id": "production-847",
+            "name": "K5011-B",
+            "sku": "",
+            "description": "Production description\nwith formatting",
+            "unit_price": 124.5,
+            "type": "NonInventory",
+        }],
+    })
+    draft = new_draft(parts=[DraftPart(name="Axe hanger", part_number="K5011", quantity=2)])
+
+    lines, problems = est.resolve_build_lines(paths, draft)
+
+    assert problems == []
+    assert lines == [{
+        "product_id": "p1",
+        "qb_item_id": "production-847",
+        "qb_sku": "",
+        "description": "Production description\nwith formatting",
+        "manufacturer": "mfg",
+        "unit_price": 124.5,
+        "pending": False,
+        "name": "Axe hanger",
+        "part_number": "K5011",
+        "qty": 2,
+        "amount": 249.0,
+    }]
+    payload = est._build_estimate_payload("customer-1", lines)
+    assert payload["Line"][0]["SalesItemLineDetail"]["ItemRef"] == {
+        "value": "production-847",
+    }
+    assert payload["Line"][0]["Description"] == "Production description\nwith formatting"
+
+
 def test_resolve_uses_concrete_component_skus_for_picker_parent(paths):
     # Picker rows show the product model on the parent (PB450L), but store the
     # vehicle-specific SKU selected by the user in components (BK1001ITU20).

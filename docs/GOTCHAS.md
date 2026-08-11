@@ -138,3 +138,11 @@ you're touching. New gotchas get appended to the bottom with a date.
     SharePoint mirroring, but the normal connected sandbox profile can still issue read-only QBO
     Item queries and reconcile its local workspace cache. The isolated production-preview profile
     is never included in that startup/polling path.
+28. **Production may contain both `SKU` and `SKU (deleted)` Items.** Historical migration matching
+    must prefer the literal active/raw Name before treating the deleted-name suffix as lineage.
+    Description-only normalization can make the current and retired records look identical while
+    their Item IDs, active state, and prices differ.
+29. **A promoted OAuth refresh token must have one active profile owner.** Copying the production
+    preview token into the standard profile and leaving both profiles connected creates a refresh-
+    token rotation race. Promotion removes access/refresh/realm data from the preview store without
+    revoking it; revocation would also invalidate the newly promoted standard connection.

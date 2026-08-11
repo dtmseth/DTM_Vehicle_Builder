@@ -16,6 +16,7 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
+- /api/quickbooks/production-preview/create-snapshot — create/select a local immutable baseline
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
@@ -112,6 +113,12 @@ def route_quickbooks(
         _send_json(
             handler,
             qb_production_preview_service.select_snapshot(paths, body.get("snapshot_name", "")),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/create-snapshot":
+        _send_json(
+            handler,
+            qb_production_preview_service.create_baseline_snapshot(paths, body.get("label", "")),
         )
         return True
     if method == "POST" and path == "/api/quickbooks/production-preview/settings":

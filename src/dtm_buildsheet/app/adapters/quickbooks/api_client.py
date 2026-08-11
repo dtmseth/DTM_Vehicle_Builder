@@ -165,6 +165,29 @@ class QuickBooksApiClient:
             start += page_size
         return items
 
+    def fetch_inactive_items(self, *, page_size: int = 1000) -> list[dict]:
+        """Return inactive Items for migration/history review only.
+
+        Routine reconciliation deliberately uses ``fetch_active_items`` so a
+        missing linked Item becomes inactive. The production catalog preview
+        additionally needs these rows to migrate historical sandbox links.
+        """
+        items: list[dict] = []
+        start = 1
+        while True:
+            stmt = (
+                "SELECT Id, Name, Sku, Description, UnitPrice, Type, Active "
+                f"FROM Item WHERE Active = false STARTPOSITION {start} MAXRESULTS {page_size}"
+            )
+            qr = self.query(stmt)
+            batch = qr.get("Item", []) or []
+            for raw in batch:
+                items.append(_normalize_item(raw))
+            if len(batch) < page_size:
+                break
+            start += page_size
+        return items
+
     def fetch_active_customers(self, *, page_size: int = 1000, top_level_only: bool = True) -> list[dict]:
         """Return active Customers (top-level only by default).
 
@@ -482,6 +505,7 @@ def _normalize_item(raw: dict) -> dict:
         "description": (raw.get("Description") or "").strip(),
         "unit_price": price,
         "type": (raw.get("Type") or "").strip(),
+        "active": bool(raw.get("Active", True)),
     }
 
 
