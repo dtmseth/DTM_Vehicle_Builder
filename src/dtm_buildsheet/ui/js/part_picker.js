@@ -26,6 +26,7 @@ let _pickerState = {
   sel: null,               // { product_id, model, mfr, sku? }  current selection
   loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" },
   partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" },
+  sirenDualTones: false,  // qty-2 Whelen speaker option; adds CEXAMP as a billed component
   comment: "",             // user-authored text shown in the build manifest
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
@@ -469,6 +470,7 @@ function _pickerClearSelection() {
   _pickerState.systemSetup = { active: false, kind: "", product: null };
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
+  _pickerState.sirenDualTones = false;
   _pickerState.accessories = []; _pickerState.accessoryChoices = {}; _pickerState.accLoadedFor = null;
   _pickerResetLocation();
   _pickerRenderProducts();
@@ -589,6 +591,7 @@ async function _pickerOpenEdit(part) {
     paMicLocationCustom: pc.details?.paMicLocationCustom || "",
     paMicClip: pc.details?.paMicClip || "",
   };
+  _pickerState.sirenDualTones = pc.siren_dual_tones === true;
   if (pc.westin) {
     _pickerState.westin = {
       ..._pickerNewWestinState(), active: true,
@@ -669,6 +672,7 @@ function _pickerResetState() {
   _pickerState.optionsRemoved = false;
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" };
   _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
+  _pickerState.sirenDualTones = false;
   _pickerState.comment = "";
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
@@ -1342,14 +1346,57 @@ function _pickerIsSirenSpeakerContext() {
   return _pickerResolvedPartTypeId(_pickerState.filters) === "siren_speaker";
 }
 
+function _pickerSirenSupportsDualTones() {
+  return _pickerIsSirenSpeakerContext();
+}
+
 function _pickerSirenQtyHtml() {
   const q = Math.min(2, Math.max(1, _pickerState.config.count || 1));
+  const dualTone = q === 2 && _pickerState.sirenDualTones && _pickerSirenSupportsDualTones();
+  const toneChoice = q === 2 && _pickerSirenSupportsDualTones()
+    ? `<div class="pf-group pp-siren-tone"><span class="pf-label">Dual siren tones?</span><div class="pf-pills">
+         <button class="pf-pill${dualTone ? "" : " active"}" data-siren-dual-tone="no">No</button>
+         <button class="pf-pill${dualTone ? " active" : ""}" data-siren-dual-tone="yes">Yes — add CEXAMP</button>
+       </div><span class="pp-siren-note">Adds one WeCanX® External Amplifier so the two speakers can run dual siren tones.</span></div>`
+    : "";
   return `<div class="pp-prod-options pp-siren-options">
     <div class="pf-group"><span class="pf-label">Speakers</span><div class="pf-pills">
       <button class="pf-pill${q === 1 ? " active" : ""}" data-siren-qty="1">1</button>
       <button class="pf-pill${q === 2 ? " active" : ""}" data-siren-qty="2">2</button>
-    </div></div>
+    </div></div>${toneChoice}
   </div>`;
+}
+
+function _pickerSirenDualToneComponent() {
+  if (_pickerState.config.count !== 2
+      || !_pickerState.sirenDualTones
+      || !_pickerSirenSupportsDualTones()) return null;
+  return {
+    label: "WeCanX External Amplifier",
+    part_number: "CEXAMP",
+    part_type: "external_amp",
+    color: "",
+    quantity: 1,
+    price: null,
+  };
+}
+
+function _pickerHowlerVehicleSkus(product, skus, vehicle) {
+  if (product?.product_id !== "whelen_wcx_howler" || !vehicle) return skus;
+  const vehicleKey = String(vehicle).toUpperCase();
+  const preferredPartNumber = vehicleKey === "DURANGO"
+    ? "CHWLDD36"
+    : vehicleKey === "PIU" ? "CHWLFE29" : "CHWLUNI";
+  const productSkus = product.skus || skus;
+  const preferred = productSkus.find(sku => sku.part_number === preferredPartNumber);
+  if (!preferred) return skus;
+  // Preserve a historical saved choice while editing so it can be reviewed
+  // and intentionally changed to the recommended current vehicle SKU.
+  const savedPartNumber = _pickerState.editLineId && _pickerState.sel?.product_id === product.product_id
+    ? _pickerState.sel.sku : "";
+  const saved = savedPartNumber && savedPartNumber !== preferredPartNumber
+    ? productSkus.find(sku => sku.part_number === savedPartNumber) : null;
+  return saved ? [preferred, saved] : [preferred];
 }
 
 function _pickerIsWestinBasePushBumper(product) {
@@ -1690,8 +1737,9 @@ function _pickerRenderProducts() {
     const open = _pickerState.expanded.has(p.product_id);
     const selected = _pickerState.sel && _pickerState.sel.product_id === p.product_id;
     // SKUs shown for this product, narrowed to the selected vehicle when filtering.
-    const skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
+    let skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
       .filter(s => _pickerSkuAllowedForCurrentFlow(s, p));
+    if (vehFiltering) skus = _pickerHowlerVehicleSkus(p, skus, veh);
     const prices = skus.map(s => s.price).filter(v => v != null);
     const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
     const qb = skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
@@ -1823,9 +1871,15 @@ function _pickerRenderProducts() {
   }));
   el.querySelectorAll("[data-siren-qty]").forEach(btn => btn.addEventListener("click", () => {
     _pickerState.config.count = Math.min(2, Math.max(1, parseInt(btn.dataset.sirenQty || "1", 10)));
+    if (_pickerState.config.count !== 2) _pickerState.sirenDualTones = false;
     _pickerPlaceDots();
     _pickerRenderProducts();
     _pickerRenderAccessories();
+    _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-siren-dual-tone]").forEach(btn => btn.addEventListener("click", () => {
+    _pickerState.sirenDualTones = btn.dataset.sirenDualTone === "yes";
+    _pickerRenderProducts();
     _pickerUpdateFooter();
   }));
   const vt = el.querySelector("#pp-veh-only");
@@ -3050,6 +3104,14 @@ function _pickerVisibleAccessoryGroups() {
   groups = groups.filter(group => !(group.recommendations || []).length
     || _pickerRecommendationForGroup(group) || _pickerRecommendationHasSavedChoice(group));
   const selected = _pickerState.sel && _pickerState.products.find(product => product.product_id === _pickerState.sel.product_id);
+  const integratedHowlerAssembly = selected?.product_id === "whelen_wcx_howler"
+    && ["CHWLDD36", "CHWLFE29", "CHWLUNI"].includes(_pickerState.sel?.sku || "");
+  if (integratedHowlerAssembly) {
+    // These current Howler assemblies include their vehicle-specific or
+    // universal bracket. The legacy inactive CHOWLER item did not, so retain
+    // its historical optional mount prompt when reviewing an old build.
+    groups = groups.filter(group => group.category !== "bracket_mount");
+  }
   if (_pickerIsWestinBasePushBumper(selected)) {
     // The Westin controls beside the bumper own both specific Westin
     // accessory categories; never duplicate them in the generic panel.
@@ -5622,6 +5684,7 @@ async function _pickerDoAdd(addAndContinue) {
     skuChoices: { ..._pickerState.skuChoices },
     details: _pickerControlHeadRequiresPaMic() ? { ..._pickerState.partDetails } : {},
   };
+  if (_pickerIsSirenSpeakerContext()) pickerConfig.siren_dual_tones = _pickerState.sirenDualTones === true;
   if (_pickerState.westin?.active) {
     pickerConfig.westin = {
       wire: _pickerState.westin.wire,
@@ -5727,12 +5790,17 @@ async function _pickerDoAdd(addAndContinue) {
       // Include picker_config so Edit can pre-fill exactly (Step 6).
       const detailNote = _pickerPartDetailsNote();
       const detailComponent = _pickerPartDetailsComponent();
+      const sirenDualToneComponent = _pickerSirenDualToneComponent();
       const payload = {
         ...row,
         new_or_used: _pickerState.partStatus,
         comment: _pickerState.comment || "",
         ...(detailNote ? { notes: detailNote } : {}),
-        ...(detailComponent ? { components: [...(row.components || []), detailComponent] } : {}),
+        components: [
+          ...(row.components || []),
+          ...(detailComponent ? [detailComponent] : []),
+          ...(sirenDualToneComponent ? [sirenDualToneComponent] : []),
+        ],
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };

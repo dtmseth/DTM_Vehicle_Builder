@@ -34,7 +34,10 @@ REPO = Path(__file__).resolve().parents[1]
 PARTS_DB = REPO / "src" / "dtm_buildsheet" / "resources" / "config" / "parts_db.json"
 CACHE = REPO / "workspace" / "quickbooks_items_cache.json"
 
-_QB_FIELDS = ("qb_item_id", "qb_sku", "qb_unit_price", "qb_inactive", "vehicle_tags")
+_QB_FIELDS = (
+    "qb_item_id", "qb_sku", "qb_sales_description", "qb_unit_price",
+    "qb_inactive", "vehicle_tags",
+)
 
 # Light part_type IDs — color/lens data only populated for products fitting these.
 # Dynamically loaded from parts_db types with type_id="lights".
@@ -277,9 +280,15 @@ def apply_mapping(parts_db: dict, mapping: dict, cache: dict) -> list[str]:
             "part_number": sku,
             "qb_item_id": str(item.get("qb_item_id", "")),
             "qb_sku": str(item.get("sku", "")),
+            "qb_sales_description": desc,
             "qb_unit_price": item.get("unit_price"),
             "qb_inactive": False,
-            "vehicle_tags": list(link.get("vehicle_tags") or ["any"]),
+            # An explicitly empty list means a universal SKU. Missing means
+            # the legacy/default "any" tag. Keep that distinction so a
+            # vehicle-specific sibling can be preferred over its universal
+            # fallback without enumerating every other vehicle type.
+            "vehicle_tags": list(link["vehicle_tags"])
+            if "vehicle_tags" in link else ["any"],
             "color": color_info["color"],
             "secondary_color": color_info["secondary_color"],
             "tertiary_color": color_info.get("tertiary_color", ""),

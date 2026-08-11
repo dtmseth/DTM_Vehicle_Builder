@@ -349,3 +349,28 @@ def test_tiger_tough_seat_covers_are_vehicle_scoped_and_offer_custom_patch_embro
         and "seat_covers" in product.get("fits_part_types", [])
     }
     assert not any("digit" in product_id for product_id in products)
+
+
+def test_howler_vehicle_skus_and_external_amp_are_production_linked(tmp_path):
+    paths = hermetic_paths(tmp_path)
+    doc = json.loads((paths.workspace_config_dir / "parts_db.json").read_text("utf-8"))
+    products = doc["products"]
+
+    howler_skus = {
+        sku["part_number"]: sku
+        for sku in products["whelen_wcx_howler"]["part_numbers"]
+    }
+    expected = {
+        "CHWLDD36": ("1641", ["DURANGO"]),
+        "CHWLFE29": ("663", ["PIU"]),
+        "CHWLUNI": ("1290", []),
+    }
+    for part_number, (qb_item_id, vehicle_tags) in expected.items():
+        assert howler_skus[part_number]["qb_item_id"] == qb_item_id
+        assert howler_skus[part_number]["qb_inactive"] is False
+        assert howler_skus[part_number]["vehicle_tags"] == vehicle_tags
+
+    cexamp = products["whelen_external_amplifier"]["part_numbers"][0]
+    assert cexamp["part_number"] == "CEXAMP"
+    assert cexamp["qb_item_id"] == "412"
+    assert cexamp["qb_inactive"] is False

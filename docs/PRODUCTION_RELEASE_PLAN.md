@@ -48,9 +48,9 @@ Update this document as release decisions are made; it is the single short recor
 | --- | --- | --- |
 | Branch position | [PR #8](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/8) is merged to `main`; the post-merge checks and Mac/Windows builds passed | Release follow-up below must land before tagging/publishing |
 | Working tree | Source and reference changes are committed; local `.hermes/` scratch notes remain intentionally untracked and excluded | Ready |
-| Contract suite | 54/54 passed after reviewing and recording the intended pit-bar/wing-wrap and rendered-antenna data changes | Ready |
+| Contract suite | 55/55 passed after reviewing and recording the intended catalog data changes | Ready |
 | Golden masters | 6/6 passed after visual review and deliberate post-integration re-recording | Ready; the accepted output includes the compact manifests, corrected rendering/legend behavior, nested child parts, build-card quantities, and the current image-sizing behavior |
-| UI smoke suite | 15/15 passed after integration with no browser errors, external requests, or cloud access | Ready |
+| UI smoke suite | 16/16 passed after integration with no browser errors, external requests, or cloud access | Ready |
 | Full cloud-off test suite | 1,924 passed, 1 skipped after the final v3.0.0 release-check fixes | Ready |
 | Production dependency audit | Fresh Python 3.13 environment resolves cleanly with no known vulnerabilities | Ready; hosted audit also updates its installer before scanning |
 

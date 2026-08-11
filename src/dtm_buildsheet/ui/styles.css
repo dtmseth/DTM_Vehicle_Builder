@@ -806,6 +806,8 @@
     .qb-setup-label{font-size:12px;font-weight:600;color:var(--navy)}
     .qb-setup-input{width:100%;box-sizing:border-box;margin-top:5px}
     .qb-setup-hint{font-size:11px;color:var(--muted);margin:5px 0 0}
+    .pp-siren-tone{padding-top:8px;border-top:1px solid var(--border)}
+    .pp-siren-note{display:block;max-width:460px;color:var(--muted);font-size:11px;line-height:1.4}
     @media(max-width:800px){
       .guided-system-layout{grid-template-columns:1fr}
       .guided-summary{order:2}

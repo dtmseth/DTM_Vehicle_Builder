@@ -321,6 +321,15 @@ location" rows.
 - **Westin push bumpers.** Base Westin bumpers can add wire-cover and light-channel accessory rows.
   Westin does not sell pre-lighted bumpers; the later billed-light choice for a selected channel is
   still a product/workflow follow-up.
+- **Howler WCX vehicle routing.** With vehicle filtering enabled, the picker recommends exactly one
+  current Howler assembly: `CHWLDD36` for Durango, `CHWLFE29` for PIU, and the untagged universal
+  `CHWLUNI` for every other vehicle. These assemblies already include their mounting bracket, so
+  the picker suppresses the legacy extra-bracket prompt for them. A historical saved SKU remains
+  visible while editing so the user can review and deliberately migrate it.
+- **Two-speaker dual tones.** A siren-speaker selection with quantity two asks whether the
+  agency wants dual siren tones. Choosing Yes adds one linked `CEXAMP` as a concrete child component;
+  estimates therefore bill two speaker SKUs plus one external amplifier, while rendering remains
+  driven by the two-speaker parent quantity.
 - **Guided systems.** Radio, radar, and camera families first select the system on the
   SKU tab. Radio uses the selected radio-unit SKU as that identity and opens its setup details
   immediately; radar and camera select a platform before their Details tab. The guided workflow

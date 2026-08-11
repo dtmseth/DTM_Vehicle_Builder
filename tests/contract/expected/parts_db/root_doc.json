@@ -34635,7 +34635,7 @@
           },
           {
             "color": "",
-            "friendly_name": "WHELEN WCX LO FREQ SIREN AMP EXPLORER",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Ford Police Interceptor Utility, 2020-2025",
             "lens_type": "",
             "part_number": "CHWLFE29",
             "qb_inactive": false,
@@ -34652,7 +34652,7 @@
           },
           {
             "color": "",
-            "friendly_name": "WHELEN WCX LOW FREQ SIREN AMP UNIV MT",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Universal Mounting Bracket",
             "lens_type": "",
             "part_number": "CHWLUNI",
             "qb_inactive": false,
@@ -34663,8 +34663,22 @@
             "qb_unit_price": 756.0,
             "secondary_color": "",
             "tertiary_color": "",
+            "vehicle_tags": []
+          },
+          {
+            "color": "",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Dodge Durango, 2021-2024",
+            "lens_type": "",
+            "part_number": "CHWLDD36",
+            "qb_inactive": false,
+            "qb_item_id": "1641",
+            "qb_sales_description": "WHELEN SIREN AMPLIFIER WITH ONE SPEAKER, INCLUDES MOUNTING BRACKET FOR DODGE DURANGO, 2021-2024",
+            "qb_sku": "",
+            "qb_unit_price": 756.0,
+            "secondary_color": "",
+            "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ],

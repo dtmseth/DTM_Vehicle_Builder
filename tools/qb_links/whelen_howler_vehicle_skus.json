@@ -1,0 +1,24 @@
+{
+  "manufacturer_id": "whelen",
+  "_note": "Owner-approved Howler WCX vehicle routing: Durango uses CHWLDD36, PIU uses CHWLFE29, and CHWLUNI is the untagged universal fallback for every other vehicle. All three Items already exist in production QuickBooks; this mapping links/refreshes their production IDs and descriptions without creating any QBO Item.",
+  "links": [
+    {
+      "sku": "CHWLDD36",
+      "product": "whelen_wcx_howler",
+      "vehicle_tags": ["DURANGO"],
+      "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Dodge Durango, 2021-2024"
+    },
+    {
+      "sku": "CHWLFE29",
+      "product": "whelen_wcx_howler",
+      "vehicle_tags": ["PIU"],
+      "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Ford Police Interceptor Utility, 2020-2025"
+    },
+    {
+      "sku": "CHWLUNI",
+      "product": "whelen_wcx_howler",
+      "vehicle_tags": [],
+      "friendly_name": "Siren Amplifier with One Speaker, Includes Universal Mounting Bracket"
+    }
+  ]
+}

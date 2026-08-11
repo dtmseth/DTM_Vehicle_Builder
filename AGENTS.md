@@ -46,7 +46,7 @@ picker/placement flaws (owner flaw list). Status + next steps live in the sessio
 above; findings in the ledger. **Working norms:** run cloud-off
 (`DTM_CLOUD=0 python -m dtm_buildsheet` or preview config "DTM App") — cloud-on triggers the 60s
 SharePoint sync that clobbers `parts_db.json`. Safety pins are `pytest tests/golden
-tests/contract` + `tools/ui_smoke/run_smoke.py` (currently 15 smoke flows). Golden masters must
+tests/contract` + `tools/ui_smoke/run_smoke.py` (currently 16 smoke flows). Golden masters must
 NOT move from authoring/DB changes; re-record contract snapshots only on intended DB/route
 changes, diff eyeballed. Current dirty-tree note: contract tests and UI smoke are green, but
 `pytest tests/golden tests/contract` has known golden digest drift pending owner review. Render

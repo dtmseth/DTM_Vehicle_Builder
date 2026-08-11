@@ -10904,7 +10904,7 @@
         "primary_type_id": "equipment",
         "primary_type_label": "Equipment",
         "product_id": "whelen_wcx_howler",
-        "search_text": "Howler WCX whelen Whelen Howler Equipment howler Howler Equipment any PIU any CHOWLER CHWLFE29 CHWLUNI WHELEN WCX LOW FREQUENCY SIREN SYSTEM WHELEN WCX LO FREQ SIREN AMP EXPLORER WHELEN WCX LOW FREQ SIREN AMP UNIV MT",
+        "search_text": "Howler WCX whelen Whelen Howler Equipment howler Howler Equipment any PIU DURANGO CHOWLER CHWLFE29 CHWLUNI CHWLDD36 WHELEN WCX LOW FREQUENCY SIREN SYSTEM Siren Amplifier with One Speaker, Includes Mounting Bracket for Ford Police Interceptor Utility, 2020-2025 Siren Amplifier with One Speaker, Includes Universal Mounting Bracket Siren Amplifier with One Speaker, Includes Mounting Bracket for Dodge Durango, 2021-2024",
         "skus": [
           {
             "color": "",
@@ -10922,7 +10922,7 @@
           },
           {
             "color": "",
-            "friendly_name": "WHELEN WCX LO FREQ SIREN AMP EXPLORER",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Ford Police Interceptor Utility, 2020-2025",
             "lens_type": "",
             "part_number": "CHWLFE29",
             "price": 756.0,
@@ -10936,7 +10936,7 @@
           },
           {
             "color": "",
-            "friendly_name": "WHELEN WCX LOW FREQ SIREN AMP UNIV MT",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Universal Mounting Bracket",
             "lens_type": "",
             "part_number": "CHWLUNI",
             "price": 756.0,
@@ -10944,8 +10944,20 @@
             "qb_pending": false,
             "secondary_color": "",
             "tertiary_color": "",
+            "vehicle_tags": []
+          },
+          {
+            "color": "",
+            "friendly_name": "Siren Amplifier with One Speaker, Includes Mounting Bracket for Dodge Durango, 2021-2024",
+            "lens_type": "",
+            "part_number": "CHWLDD36",
+            "price": 756.0,
+            "qb": true,
+            "qb_pending": false,
+            "secondary_color": "",
+            "tertiary_color": "",
             "vehicle_tags": [
-              "any"
+              "DURANGO"
             ]
           }
         ]

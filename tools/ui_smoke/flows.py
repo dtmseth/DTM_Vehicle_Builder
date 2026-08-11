@@ -1791,6 +1791,109 @@ def flow_preview_drag_mirroring(page, base_url: str) -> None:
     assert positions("horizontal:top") == horizontal["after"]
 
 
+def flow_howler_routing_and_dual_tone_siren(page, base_url: str) -> None:
+    """Vehicle-specific Howlers and optional CEXAMP survive picker round-trip."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="PIU")
+    _open_build_editor(page, base_url)
+
+    routed = page.evaluate("""() => {
+      const product = {
+        product_id: 'whelen_wcx_howler',
+        skus: [
+          {part_number: 'CHWLDD36'},
+          {part_number: 'CHWLFE29'},
+          {part_number: 'CHWLUNI'},
+        ],
+      };
+      const routes = Object.fromEntries(['DURANGO', 'PIU', 'TAHOE'].map(vehicle => [
+        vehicle,
+        _pickerHowlerVehicleSkus(product, product.skus, vehicle).map(sku => sku.part_number),
+      ]));
+      const priorEditLineId = _pickerState.editLineId;
+      const priorSelection = _pickerState.sel;
+      _pickerState.editLineId = 'historical-line';
+      _pickerState.sel = {product_id: product.product_id, sku: 'CHWLDD36'};
+      const historical = _pickerHowlerVehicleSkus(
+        product,
+        product.skus.filter(sku => ['CHWLFE29', 'CHWLUNI'].includes(sku.part_number)),
+        'PIU',
+      ).map(sku => sku.part_number);
+      _pickerState.editLineId = priorEditLineId;
+      _pickerState.sel = priorSelection;
+      return {routes, historical};
+    }""")
+    assert routed["routes"] == {
+        "DURANGO": ["CHWLDD36"],
+        "PIU": ["CHWLFE29"],
+        "TAHOE": ["CHWLUNI"],
+    }, routed
+    assert routed["historical"] == ["CHWLFE29", "CHWLDD36"], routed
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "CHWL")
+    page.wait_for_selector(".pp-head[data-pid='whelen_wcx_howler']")
+    page.click(".pp-head[data-pid='whelen_wcx_howler']")
+    page.wait_for_selector("[data-pick='CHWLFE29']")
+    visible_howler_skus = page.locator(
+        ".pp-row[data-pid='whelen_wcx_howler'] [data-pick]"
+    ).evaluate_all("els => els.map(el => el.dataset.pick)")
+    assert visible_howler_skus == ["CHWLFE29"], visible_howler_skus
+    page.click("[data-pick='CHWLFE29']")
+    page.wait_for_timeout(_SETTLE_MS)
+    assert page.locator("select[data-cat='bracket_mount']").count() == 0, (
+        "current CHWL assemblies already include their bracket"
+    )
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "SA315P")
+    page.wait_for_selector(".pp-head[data-pid='whelen_sa315p']")
+    page.click(".pp-head[data-pid='whelen_sa315p']")
+    page.wait_for_selector("[data-pick='SA315P'][data-pid='whelen_sa315p']")
+    page.click("[data-pick='SA315P'][data-pid='whelen_sa315p']")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click("[data-siren-qty='2']")
+    page.wait_for_selector("[data-siren-dual-tone='yes']")
+    bracket_selects = page.locator("select[data-cat='bracket_mount']")
+    for index in range(bracket_selects.count()):
+        bracket_selects.nth(index).select_option("none")
+    page.click("[data-siren-dual-tone='yes']")
+    assert "active" in (page.get_attribute("[data-siren-dual-tone='yes']", "class") or "")
+    page.click("#picker-tab-btn-location")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.wait_for_selector(".picker-dot[data-name='BEHIND GRILL (CENTER)']")
+    page.locator(".picker-dot[data-name='BEHIND GRILL (CENTER)']").first.click(force=True)
+    save_state = page.evaluate("""() => ({
+      disabled: document.querySelector('#picker-add-btn').disabled,
+      selected: _pickerState.loc.selected,
+      textCustom: _pickerState.loc.textCustom,
+      sel: _pickerState.sel,
+      filters: _pickerState.filters,
+      accessories: _pickerState.accessories,
+      accessoryChoices: _pickerState.accessoryChoices,
+    })""")
+    assert save_state["disabled"] is False, save_state
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    speaker = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "siren_speaker")
+    assert speaker["quantity"] == 2
+    assert speaker["picker_config"]["siren_dual_tones"] is True
+    component_qty = {component["part_number"]: component["quantity"] for component in speaker["components"]}
+    assert component_qty["SA315P"] == 2
+    assert component_qty["CEXAMP"] == 1
+
+    page.evaluate("(lineId) => openPartEditModal(lineId)", speaker["line_id"])
+    page.wait_for_selector("[data-siren-dual-tone='yes']")
+    assert page.evaluate("_pickerState.sirenDualTones") is True
+    assert "active" in (page.get_attribute("[data-siren-dual-tone='yes']", "class") or "")
+    page.evaluate("pickerClose()")
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -1807,6 +1910,7 @@ FLOWS = {
     "scene_light_qty_only": flow_scene_light_qty_only,
     "picker_multi_add": flow_picker_multi_add,
     "preview_drag_mirroring": flow_preview_drag_mirroring,
+    "howler_routing_and_dual_tone_siren": flow_howler_routing_and_dual_tone_siren,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
