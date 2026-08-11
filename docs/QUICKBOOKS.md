@@ -4,7 +4,8 @@
 `QUICKBOOKS_STATUS.md` (handoff/status), `QUICKBOOKS_INTEGRATION.md` (design), and
 `QUICKBOOKS_QUESTIONNAIRE.md` (Intuit App Assessment answers).
 
-**Code location**: the QB foundation is in `main`; public QB controls remain hidden. The production
+**Code location**: the QB foundation is in `main`; guarded QB settings and estimate controls are
+enabled following the production catalog and customer migrations. The production
 catalog preview is a separate, read-only owner workflow — not a switch that enables routine sync.
 **Related**: [EXTERNAL_CONNECTION_SECURITY.md](EXTERNAL_CONNECTION_SECURITY.md) (security standard),
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) (the parts catalog QB feeds), `relay/DEPLOY.md` (relay deploy).
@@ -155,7 +156,8 @@ Items inactive, and linked one formerly pending part by an exact production Name
 catalog state is 1,223 linked rows, 28 pending rows, and 6 intentionally inactive linked rows.
 
 The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appears only on a machine
-that already has a valid local migration snapshot; public QB sales/estimate controls remain hidden.
+that already has a valid local migration snapshot. Guarded QB sales/estimate controls are enabled;
+all write operations still require their backend checks and explicit confirmation.
 
 ### Phase 3 — Customers ↔ Agencies + estimate customer flow
 - **Production migration:** QBO Customer IDs are company-local, so the 211 stored sandbox IDs were
@@ -461,23 +463,14 @@ it does not replace the initial migration review.
 
 ## 7. What's left before Production go-live (Phase 4)
 
-- **Deploy the hosted relay** (`relay/DEPLOY.md`) and register its HTTPS URL as the Production
-  redirect URI in the Intuit dashboard.
-- Enter Production Client ID/Secret in the isolated **QB Catalog Preview** profile, connect the
-  production company, and pull its Items into the separate preview cache. This is a read-only
-  catalog comparison — do not use the standard QuickBooks connection or its Sync button.
-- Review the Name-versus-SKU exact-match totals, select the production field that represents the
-  vendor identifier, and verify that intentional exclusions are correctly recognized. Unexpected
-  production-only or Builder-only rows are exceptions, not automatic imports.
-- After reviewing the column totals, prepare one plan for every unambiguous exact match. Any
-  ambiguous, Builder-only, pending, or unexpected production item remains an exception and is not
-  touched. The plan still does not apply links; owner approval plus a separate apply feature are
-  required.
-- **Run the sandbox test cycle** (§5) and **submit the questionnaire** (§8).
-- Obtain Production Client ID/Secret after approval; enter them only in the isolated production
-  preview profile.
-- Complete and approve the protected production inventory-transition review (§6) before any
-  production reconciliation, background sync, or estimate creation.
+The relay, App Assessment, Production credentials, isolated catalog migration, and customer
+migration are complete. The remaining controlled activation steps are:
+
+- Use the enabled estimate UI to validate a representative configured vehicle, without creating
+  anything, and review its customer/project resolution and every line item.
+- After owner approval, create one non-posting production Estimate and compare it manually in QBO.
+- Enable normal background sync only after that first Estimate and the resulting production state
+  have been reviewed. Background sync remains disabled until then.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll

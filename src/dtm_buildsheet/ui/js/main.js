@@ -15,7 +15,7 @@ window.addEventListener("DOMContentLoaded", async()=>{
     const settings=await api("/api/app-settings");
     if(settings && !_appSettings) _appSettings=settings;
   }catch(e){}
-  // Keep a future internal QuickBooks OAuth round-trip out of the public UI.
+  // Restore the QuickBooks Settings tab after a successful OAuth round-trip.
   if (window.DTM_QUICKBOOKS_UI_ENABLED === true
       && typeof qbConsumeReturnTab === "function" && qbConsumeReturnTab()) return;
   // All tab-specific scripts are now loaded — open Projects tab as default

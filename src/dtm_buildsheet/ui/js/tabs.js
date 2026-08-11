@@ -52,6 +52,8 @@ const HEADER_DEFAULT_STAB = {
   "advanced-settings": "placements",
 };
 const QUICKBOOKS_UI_ENABLED = window.DTM_QUICKBOOKS_UI_ENABLED === true;
+const _quickBooksStabButton = document.querySelector(".stab[data-stab='quickbooks']");
+if (_quickBooksStabButton) _quickBooksStabButton.hidden = !QUICKBOOKS_UI_ENABLED;
 
 let _activeHeaderTab = null;
 const _stabPerHeader = { "general-settings": null, "advanced-settings": null };

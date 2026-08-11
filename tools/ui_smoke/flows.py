@@ -88,17 +88,13 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector("#tab-projects:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
 
-    # General Settings + its public stabs. QuickBooks remains available in the
-    # codebase for the later controlled launch but must not appear in this
-    # release's public interface, including via a stale deep-link attempt.
+    # General Settings + its public stabs, including the production-enabled
+    # QuickBooks connection surface.
     page.click(".htab[data-tab='general-settings']")
     page.wait_for_selector("#stab-bar-general:not([hidden])")
-    assert page.evaluate("() => window.DTM_QUICKBOOKS_UI_ENABLED === false")
-    assert page.locator(".stab[data-stab='quickbooks']").is_hidden()
-    assert page.locator("#stab-quickbooks").is_hidden()
-    page.evaluate("() => _showOuterStab('quickbooks')")
-    assert page.locator("#stab-projects-defaults").is_visible()
-    for stab in ("projects-defaults", "agencies", "sales-reps", "presets"):
+    assert page.evaluate("() => window.DTM_QUICKBOOKS_UI_ENABLED === true")
+    assert page.locator(".stab[data-stab='quickbooks']").is_visible()
+    for stab in ("projects-defaults", "agencies", "sales-reps", "presets", "quickbooks"):
         page.click(f".stab[data-stab='{stab}']")
         page.wait_for_timeout(_SETTLE_MS)
 

@@ -73,8 +73,9 @@ Update this document as release decisions are made; it is the single short recor
 5. **Complete:** integrated the six newer `main` commits, preserved the current app-version,
    image-sizing, manifest, rendering, and update-behavior fixes, resolved the overlap with the
    Part Picker manifest initialization, and reran every gate above.
-6. **Complete:** public QuickBooks controls are hidden behind the release flag. Do not enable them
-   until the separate QuickBooks production gate is complete.
+6. **Complete:** the QuickBooks production catalog and customer migration gates were completed on
+   2026-08-11, and the guarded QuickBooks settings/estimate controls are now enabled. Estimate
+   creation still requires its explicit validation and confirmation flow.
 7. **Complete:** raised the release dependencies past the current audit advisories, corrected the
    case-sensitive push-bumper asset reference caught by Linux CI, and updated the audit job's
    installer before scanning. The refreshed hosted PR checks all passed.
