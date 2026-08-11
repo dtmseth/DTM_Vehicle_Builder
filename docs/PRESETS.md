@@ -1,6 +1,6 @@
 # Preset System
 
-Presets are JSON files (schema_version 2) that define reusable part configurations for
+Presets are JSON files (schema_version 3) that define reusable part configurations for
 builds. They are cached locally and mirrored to SharePoint — **the cloud is the source
 of truth**, not the local cache.
 
@@ -17,6 +17,11 @@ of truth**, not the local cache.
   "parts": [...]
 }
 ```
+
+Each part preserves the complete reusable build shape, including `part_type`, concrete SKU
+`components`, `picker_config`, accessory relationships, status, and per-part placement metadata.
+The preset also preserves the draft-level `placement_overrides`. These fields are required for a
+new vehicle created from a saved setup to render and estimate identically to its source build.
 
 Label is auto-generated from agency + build_type + vehicle_types.
 

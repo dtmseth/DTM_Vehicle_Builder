@@ -22,14 +22,10 @@ _log = logging.getLogger(__name__)
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
-_PART_FIELDS = {
-    "name", "include", "manufacturer", "part_number",
-    "location", "raw_color", "quantity", "lens", "notes",
-    "explicit_color_profile", "driver_color", "passenger_color", "center_color",
-}
-
 _PART_DEFAULTS: dict = {
     "include": True,
+    "new_or_used": "New",
+    "source": "",
     "manufacturer": "",
     "part_number": "",
     "location": "",
@@ -37,10 +33,23 @@ _PART_DEFAULTS: dict = {
     "quantity": 0,
     "lens": "",
     "notes": "",
+    "comment": "",
     "explicit_color_profile": "",
     "driver_color": "",
     "passenger_color": "",
     "center_color": "",
+    # Presets are reusable build configurations, not flat workbook rows. Keep
+    # the picker/renderer identity and concrete SKU breakdown intact so a new
+    # vehicle behaves exactly like the build the preset came from.
+    "placement_overrides": {},
+    "components": [],
+    "line_id": "",
+    "parent_line_id": "",
+    "linked_parent_line_id": "",
+    "accessory_category": "",
+    "accessory_parent_product": "",
+    "part_type": "",
+    "picker_config": {},
 }
 
 
@@ -69,7 +78,12 @@ def validate_preset_payload(payload: dict) -> dict:
             raise ValueError(f"Preset parts[{i}] must have a non-empty 'name'")
         part: dict = {"name": name}
         for field, default in _PART_DEFAULTS.items():
-            part[field] = raw.get(field, default)
+            value = raw.get(field, default)
+            if field in {"placement_overrides", "picker_config"}:
+                value = dict(value) if isinstance(value, dict) else {}
+            elif field == "components":
+                value = list(value) if isinstance(value, list) else []
+            part[field] = value
         normalised_parts.append(part)
 
     agency_ids = payload.get("agency_ids", [])
@@ -82,7 +96,7 @@ def validate_preset_payload(payload: dict) -> dict:
     po = payload.get("placement_overrides")
 
     return {
-        "schema_version": max(int(payload.get("schema_version", 1)), 2) if (agency_ids or build_types) else int(payload.get("schema_version", 1)),
+        "schema_version": max(int(payload.get("schema_version", 1)), 3),
         "preset_id": preset_id,
         "label": label,
         "description": str(payload.get("description", "")).strip(),
@@ -139,7 +153,7 @@ _BLANK_CUSTOM_SUMMARY = {
 }
 
 _BLANK_CUSTOM_FULL = {
-    "schema_version": 2,
+    "schema_version": 3,
     "preset_id": "blank_custom",
     "label": "Blank / Custom",
     "description": "Empty starting point. Add whichever parts apply to this build.",
@@ -237,6 +251,14 @@ def _part_input_from_dict(d: dict) -> PartInput:
         driver_color=str(d.get("driver_color", "")),
         passenger_color=str(d.get("passenger_color", "")),
         center_color=str(d.get("center_color", "")),
+        line_id=str(d.get("line_id", "")),
+        part_type=str(d.get("part_type", "")),
+        parent_line_id=str(d.get("parent_line_id", "")),
+        linked_parent_line_id=str(d.get("linked_parent_line_id", "")),
+        accessory_category=str(d.get("accessory_category", "")),
+        accessory_parent_product=str(d.get("accessory_parent_product", "")),
+        components=list(d.get("components") or []),
+        picker_config=dict(d.get("picker_config") or {}),
     )
 
 

@@ -151,3 +151,8 @@ you're touching. New gotchas get appended to the bottom with a date.
     reviewed migration. The 2026 production transition found 108 sandbox IDs pointing at different
     production Customers. Migration matches unique normalized names first and permanently filters
     owner-rejected duplicate production Customer IDs from future imports.
+31. **Saved presets must retain the rich `DraftPart` shape.** `part_type`, concrete SKU
+    `components`, `picker_config`, accessory relationships, and placement metadata drive rendering,
+    picker edit round-tripping, and QuickBooks estimate resolution. Reducing a saved build to the
+    legacy workbook columns makes a newly created vehicle look similar in the manifest while losing
+    its renderer identity and billable SKUs.

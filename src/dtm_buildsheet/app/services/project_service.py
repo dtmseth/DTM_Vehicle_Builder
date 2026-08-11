@@ -7,7 +7,7 @@ _log = logging.getLogger(__name__)
 
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
 from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences, IndividualUnit
-from ...inputs.project_drafts import DraftPart, new_draft, save_draft
+from ...inputs.project_drafts import DraftPart, draft_part_from_payload, new_draft, save_draft
 from ...inputs.project_entry import (
     delete_project,
     list_projects,
@@ -18,7 +18,18 @@ from ...inputs.project_entry import (
 from ...naming import safe_project_id
 from ...paths import AppPaths
 from .draft_service import load_draft_for_request
-from .preset_service import load_preset
+from .preset_service import load_preset_dict
+
+
+def _load_preset_draft_parts(preset_id: str, paths: AppPaths) -> tuple[list[DraftPart], dict]:
+    """Load a preset without dropping picker, renderer, or SKU metadata."""
+    try:
+        preset = load_preset_dict(preset_id, paths)
+    except FileNotFoundError:
+        preset = load_preset_dict("blank_custom", paths)
+    parts = [draft_part_from_payload(raw, paths) for raw in preset.get("parts") or []]
+    overrides = preset.get("placement_overrides")
+    return parts, dict(overrides) if isinstance(overrides, dict) else {}
 
 
 def _project_output_root(paths: AppPaths) -> str:
@@ -162,35 +173,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
     if not preset_id:
         preset_id = "blank_custom"
 
-    try:
-        part_inputs = load_preset(preset_id, paths)
-    except FileNotFoundError:
-        try:
-            part_inputs = load_preset("blank_custom", paths)
-        except FileNotFoundError:
-            part_inputs = []
-
-    draft_parts = [
-        DraftPart(
-            name=p.name,
-            include=p.include,
-            new_or_used=p.new_or_used or "New",
-            source=p.source,
-            manufacturer=p.manufacturer,
-            part_number=p.part_number,
-            location=p.location,
-            raw_color=p.raw_color,
-            quantity=p.quantity,
-            lens=p.lens,
-            notes=p.notes,
-            comment=getattr(p, "comment", ""),
-            explicit_color_profile=p.explicit_color_profile,
-            driver_color=p.driver_color,
-            passenger_color=p.passenger_color,
-            center_color=p.center_color,
-        )
-        for p in part_inputs
-    ]
+    draft_parts, preset_overrides = _load_preset_draft_parts(preset_id, paths)
 
     # A project can contain multiple vehicle estimates, so its generated build
     # sheets must not inherit a single blanket quote number as their identity.
@@ -242,6 +225,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         notes=notes,
         project_notes=project.project_notes,
     )
+    draft.placement_overrides = preset_overrides
     save_draft(draft, paths.workspace_drafts_dir)
 
     unit.draft_id = draft.draft_id
@@ -274,34 +258,7 @@ def handle_create_individual_draft(
         return {"ok": False, "error": f"Individual unit not found: {individual_id}"}
 
     preset_id = unit.preset_id.strip() if unit.preset_id else "blank_custom"
-    try:
-        part_inputs = load_preset(preset_id, paths)
-    except FileNotFoundError:
-        try:
-            part_inputs = load_preset("blank_custom", paths)
-        except FileNotFoundError:
-            part_inputs = []
-
-    draft_parts = [
-        DraftPart(
-            name=p.name,
-            include=p.include,
-            new_or_used=p.new_or_used or "New",
-            source=p.source,
-            manufacturer=p.manufacturer,
-            part_number=p.part_number,
-            location=p.location,
-            raw_color=p.raw_color,
-            quantity=p.quantity,
-            lens=p.lens,
-            notes=p.notes,
-            explicit_color_profile=p.explicit_color_profile,
-            driver_color=p.driver_color,
-            passenger_color=p.passenger_color,
-            center_color=p.center_color,
-        )
-        for p in part_inputs
-    ]
+    draft_parts, preset_overrides = _load_preset_draft_parts(preset_id, paths)
 
     project_id_val = safe_project_id(project.project_id, fallback="PROJECT")
     project_total_units = sum(u.quantity for u in project.build_units)
@@ -373,6 +330,7 @@ def handle_create_individual_draft(
         notes=notes,
         project_notes=project.project_notes,
     )
+    draft.placement_overrides = preset_overrides
     save_draft(draft, paths.workspace_drafts_dir)
 
     individual.draft_id = draft.draft_id
