@@ -27,7 +27,7 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 |-------|------|--------|
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
 | **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Production activated 2026-08-11. Production pull/reconciliation verified read-only against 1,335 active Items. |
-| **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Customer sync and estimate flow built + unit-tested. New estimates do not create jobs. |
+| **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Production customer migration completed 2026-08-11: all 214 agencies linked to existing production Customers; reviewed duplicate Customers excluded. |
 | **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
 | **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Migration plan reviewed and applied 2026-08-11. The duplicate preview token was retired locally without revoking the promoted standard production authorization. |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ✅ Approved; Production keys obtained and stored through the isolated preview profile. |
@@ -158,6 +158,18 @@ The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appea
 that already has a valid local migration snapshot; public QB sales/estimate controls remain hidden.
 
 ### Phase 3 — Customers ↔ Agencies + estimate customer flow
+- **Production migration:** QBO Customer IDs are company-local, so the 211 stored sandbox IDs were
+  never copied directly. A guarded migration snapshot ignored every old ID, relinked 207 agencies
+  by one unique normalized production name, filled 671 blank profile fields, and required owner
+  decisions for every exception. The reviewed finish linked Minnesota State Patrol to Customer 39,
+  Cold Spring Fire Department to 240, and the Camp Ripley training agency to 104; deleted two
+  owner-confirmed local sample agencies; and imported Baker Police Department, Custer County
+  Sheriff, Dundas Police Department, and Camp Ripley Fire Department. All 214 remaining agencies
+  now point to distinct, existing production Customers.
+- Production Customer IDs 38, 88, and 407 are reviewed duplicate records. Future customer import
+  previews and imports exclude them so they cannot replace the selected State Patrol/Cold Spring
+  links. The local migration plan and immutable agency snapshot remain in the ignored `workspace/`
+  recovery area; credentials are never included.
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,

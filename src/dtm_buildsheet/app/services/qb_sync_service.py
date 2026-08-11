@@ -339,12 +339,20 @@ def preview_customer_import(paths: AppPaths) -> dict:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+    ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
+    customers = [
+        customer for customer in customers
+        if str(customer.get("qb_customer_id") or "") not in ignored_ids
+    ]
     return agency_service.preview_qb_customer_import(customers, paths)
 
 
 def import_customers(paths: AppPaths) -> dict:
     """Fetch QB customers and upsert them into agencies. Returns created/updated."""
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
     client, err = _build_client(paths)
     if err:
         return err
@@ -354,7 +362,12 @@ def import_customers(paths: AppPaths) -> dict:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+    ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
+    customers = [
+        customer for customer in customers
+        if str(customer.get("qb_customer_id") or "") not in ignored_ids
+    ]
     result = agency_service.upsert_agencies_from_qb(customers, paths)
     logger.info(
         "QB customer import: %d created, %d updated",
@@ -490,7 +503,10 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     or ``{"ok": False, "error": ...}``. Safe to call directly (tests) or via
     ``push_agency_in_background``.
     """
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
 
     record = agency_service.get_agency(paths, agency_id)
     if record is None:
@@ -545,6 +561,9 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
     import threading
 
     if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
         return
     try:
         if not quickbooks_service.get_status(paths).get("connected"):

@@ -146,3 +146,8 @@ you're touching. New gotchas get appended to the bottom with a date.
     preview token into the standard profile and leaving both profiles connected creates a refresh-
     token rotation race. Promotion removes access/refresh/realm data from the preview store without
     revoking it; revocation would also invalidate the newly promoted standard connection.
+30. **QuickBooks Customer IDs are company-local and can collide across sandbox/production.** Never
+    carry agency `qb_customer_id` values across companies or run the normal ID-first import before a
+    reviewed migration. The 2026 production transition found 108 sandbox IDs pointing at different
+    production Customers. Migration matches unique normalized names first and permanently filters
+    owner-rejected duplicate production Customer IDs from future imports.
