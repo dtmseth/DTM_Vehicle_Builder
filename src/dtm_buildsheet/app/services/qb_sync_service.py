@@ -551,6 +551,12 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     fields = agency_service.customer_profile_fields(record)
 
     try:
+        # CustomerType IDs are company-local, so resolve Retail by name instead
+        # of persisting or hard-coding the production company's current ID.
+        retail_type_id = client.find_customer_type_by_name("Retail")
+        if not retail_type_id:
+            return {"ok": False, "error": "retail_customer_type_not_found"}
+        fields["customer_type_id"] = retail_type_id
         existing_id = (record.qb_customer_id or "").strip()
         if existing_id:
             current = client.read_customer(existing_id)
@@ -569,6 +575,13 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
         if matched:
             matched_id = str(matched.get("qb_customer_id", "")).strip()
             if matched_id:
+                current = client.read_customer(matched_id)
+                if current is not None:
+                    client.update_customer(
+                        matched_id,
+                        current.get("SyncToken", "0"),
+                        {"customer_type_id": retail_type_id},
+                    )
                 agency_service.merge_missing_customer_profile(record, matched)
                 agency_service.set_qb_customer_id(paths, agency_id, matched_id)
                 logger.info("QB agency push: linked existing customer")
@@ -725,7 +738,12 @@ def ensure_top_level_customer(
                 "missing_fields": missing,
             }
         try:
-            created = client.create_customer(effective_fields)
+            retail_type_id = client.find_customer_type_by_name("Retail")
+            if not retail_type_id:
+                return {"ok": False, "error": "retail_customer_type_not_found"}
+            created = client.create_customer({
+                **effective_fields, "customer_type_id": retail_type_id,
+            })
         except QuickBooksApiError as exc:
             logger.warning("QuickBooks customer create failed: %s", exc)
             return {"ok": False, "error": str(exc)}
@@ -753,7 +771,12 @@ def ensure_top_level_customer(
             try:
                 current = client.read_customer(customer_id)
                 sync_token = (current or {}).get("SyncToken", (customer or {}).get("sync_token", "0"))
-                client.update_customer(customer_id, sync_token, effective_fields)
+                retail_type_id = client.find_customer_type_by_name("Retail")
+                if not retail_type_id:
+                    return {"ok": False, "error": "retail_customer_type_not_found"}
+                client.update_customer(customer_id, sync_token, {
+                    **effective_fields, "customer_type_id": retail_type_id,
+                })
             except QuickBooksApiError as exc:
                 logger.warning("QuickBooks customer profile update failed: %s", exc)
                 return {"ok": False, "error": str(exc)}

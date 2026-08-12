@@ -46,6 +46,9 @@ class _FakeClient:
         self.reads.append(customer_id)
         return self.existing
 
+    def find_customer_type_by_name(self, name):
+        return "retail-type-id" if name == "Retail" else ""
+
     def create_customer(self, fields):
         self.created.append(fields)
         return {"qb_customer_id": self.new_id, "sync_token": "0"}
@@ -88,6 +91,7 @@ def test_build_customer_payload_maps_full_customer_profile():
         "bill_state": "MN",
         "bill_postal_code": "55001",
         "ship_address_line1": "2 Depot",
+        "customer_type_id": "retail-type-id",
     })
     assert p["Title"] == "Fleet Manager"
     assert p["Mobile"] == {"FreeFormNumber": "555-0111"}
@@ -100,6 +104,7 @@ def test_build_customer_payload_maps_full_customer_profile():
         "Line1": "1 Main", "City": "Alpha", "CountrySubDivisionCode": "MN", "PostalCode": "55001",
     }
     assert p["ShipAddr"] == {"Line1": "2 Depot"}
+    assert p["CustomerTypeRef"] == {"value": "retail-type-id"}
 
 
 def test_customer_result_extracts_id_and_token():
@@ -120,6 +125,7 @@ def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
     res = sync.push_agency(paths, aid)
     assert res == {"ok": True, "qb_customer_id": "900", "action": "created"}
     assert len(fake.created) == 1 and fake.created[0]["name"] == "Alpha PD"
+    assert fake.created[0]["customer_type_id"] == "retail-type-id"
     # Id written back onto the agency record.
     assert agc.get_agency(paths, aid).qb_customer_id == "900"
 
@@ -183,6 +189,19 @@ def test_push_surfaces_api_error(paths, monkeypatch):
     res = sync.push_agency(paths, aid)
     assert res["ok"] is False and "http_400" in res["error"]
     assert agc.get_agency(paths, aid).qb_customer_id == ""  # nothing written back
+
+
+def test_push_blocks_when_retail_customer_type_is_missing(paths, monkeypatch):
+    agc.handle_save_agency({"name": "No Retail PD"}, paths)
+    aid = agc.load_agencies(paths)[0].agency_id
+    fake = _FakeClient()
+    fake.find_customer_type_by_name = lambda name: ""
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+
+    assert sync.push_agency(paths, aid) == {
+        "ok": False, "error": "retail_customer_type_not_found",
+    }
+    assert fake.created == [] and fake.updated == []
 
 
 # ── auto-trigger + re-entrancy ───────────────────────────────────────────────

@@ -48,6 +48,10 @@ UI, so a rejected Customer write cannot disappear in a background thread. New ag
 non-taxable. Because this production company has Automated Sales Tax enabled, non-taxable Customer
 writes include its established government/public-safety exemption reason ID `3`; the production
 customer population uses that reason for 134 existing exempt agencies.
+Every agency Customer written by the app is also assigned the active QBO **Retail** Customer Type.
+The integration resolves that type's company-local ID by its exact name at write time; it never
+persists or hard-codes the production ID. In this company, Retail activates the shared QBO price
+rules when a user adds an Item in the QBO form.
 Before estimate creation, the linked QBO Project's taxable flag is aligned with the agency Customer;
 QBO Projects otherwise retain their own taxable default and can add tax even when the parent agency
 is exempt.
@@ -242,7 +246,9 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   manufacturer exceptions in `pricing_overrides`; missing values continue to inherit Default.
   The create dialog shows list total, savings, customer total, and any customer-specific values.
   The Estimate payload sends the calculated `UnitPrice` and `Amount` explicitly, so QBO's internal
-  item/rule formatting cannot change the reviewed price. Catalog reconciliation still refreshes
+  item/rule formatting cannot change the reviewed price. Production estimate inspection confirms
+  these discounted values are stored as each line's raw `UnitPrice`/`Amount`; QBO does not add a
+  second discount layer over app-supplied rates. Catalog reconciliation still refreshes
   list prices only and never writes customer prices back into Item data.
   The Accounting API does not expose QBO's price-rule tables, so these reviewed local rules are
   deliberately authoritative for Vehicle Builder estimates. See Intuit's

@@ -117,6 +117,15 @@ def test_fetch_preferences_normalizes_enabled_sales_custom_fields(monkeypatch):
     ]
 
 
+def test_find_customer_type_by_name_returns_unique_active_exact_match(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "query", lambda statement: {
+        "CustomerType": [{"Id": "retail-id", "Name": "Retail", "Active": True}],
+    })
+
+    assert client.find_customer_type_by_name("Retail") == "retail-id"
+
+
 def test_create_estimate_uses_standard_legacy_custom_fields_request(monkeypatch):
     captured = {}
 

@@ -72,6 +72,16 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
 
         if "customer" in body:
             project.customer = customer_from_dict(body["customer"])
+            # The search box permits free typing. If the user types the exact
+            # name of one saved agency without clicking its suggestion, repair
+            # the missing ID here so QuickBooks/customer-profile workflows do
+            # not lose the otherwise valid association.
+            if project.customer.agency and not project.customer.agency_id:
+                from .agency_service import load_agencies
+                wanted = project.customer.agency.strip().casefold()
+                matches = [a for a in load_agencies(paths) if a.name.strip().casefold() == wanted]
+                if len(matches) == 1:
+                    project.customer.agency_id = matches[0].agency_id
 
         # Agency defaults are copied only as a project is first created.  This
         # deliberately avoids retroactively changing existing projects when an

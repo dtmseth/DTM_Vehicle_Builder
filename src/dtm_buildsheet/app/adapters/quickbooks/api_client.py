@@ -249,6 +249,19 @@ class QuickBooksApiClient:
         batch = qr.get("Customer", []) or []
         return batch[0] if batch else None
 
+    def find_customer_type_by_name(self, name: str) -> str:
+        """Return the company-local CustomerType Id for an exact name."""
+        escaped = str(name or "").strip().replace("'", "\\'")
+        if not escaped:
+            return ""
+        qr = self.query(f"SELECT * FROM CustomerType WHERE Name = '{escaped}' MAXRESULTS 2")
+        matches = [
+            row for row in (qr.get("CustomerType", []) or [])
+            if str(row.get("Name") or "").strip().casefold() == escaped.casefold()
+            and row.get("Active", True) is not False
+        ]
+        return str(matches[0].get("Id") or "").strip() if len(matches) == 1 else ""
+
     def create_customer(self, fields: dict) -> dict:
         """Create a Customer from VB agency ``fields``. Returns id + sync token."""
         envelope = self._post("customer", _build_customer_payload(fields))
@@ -460,6 +473,9 @@ def _build_customer_payload(fields: dict) -> dict:
             payload["TaxExemptionReasonId"] = str(
                 fields.get("tax_exemption_reason_id") or "3"
             )
+    customer_type_id = str(fields.get("customer_type_id") or "").strip()
+    if customer_type_id:
+        payload["CustomerTypeRef"] = {"value": customer_type_id}
 
     bill_addr = _build_address_payload(fields, "bill")
     if bill_addr:

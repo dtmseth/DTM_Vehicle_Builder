@@ -144,6 +144,18 @@ class TestHandleSaveProject:
         assert project.preferences.camera_brand == "Axon"
         assert project.preferences.console_brand == "Havis"
 
+    def test_exact_typed_agency_name_repairs_missing_agency_id(self, tmp_path):
+        paths = _paths(tmp_path)
+        agency = handle_save_agency({"name": "Seth Test"}, paths)["agency"]
+
+        result = handle_save_project({
+            "customer": {"agency": "Seth Test", "agency_id": ""},
+            "build_units": [],
+        }, paths)
+
+        project = load_project(result["project_id"], paths)
+        assert project.customer.agency_id == agency["agency_id"]
+
     def test_explicit_project_preferences_override_agency_defaults(self, tmp_path):
         paths = _paths(tmp_path)
         agency = handle_save_agency({

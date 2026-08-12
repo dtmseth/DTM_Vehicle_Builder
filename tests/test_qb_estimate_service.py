@@ -62,6 +62,9 @@ class FakeClient:
     def read_customer(self, customer_id):
         return None
 
+    def find_customer_type_by_name(self, name):
+        return "retail-type-id" if name == "Retail" else ""
+
     def find_top_level_customer_by_display_name(self, name):
         # The estimate flow must reuse the agency Customer and never create a
         # vehicle sub-customer.
@@ -819,6 +822,7 @@ def test_create_estimate_requires_customer_confirmation_then_creates_top_level_c
     )
     assert created["ok"] is True
     assert fake.created_customers[0]["name"] == "Lakeville Police Department"
+    assert fake.created_customers[0]["customer_type_id"] == "retail-type-id"
     assert fake.created_estimates[0]["CustomerRef"]["value"] == "CUST1"
     saved = project_entry.load_project(pid, paths)
     assert saved.customer.agency == "Lakeville Police Department"
@@ -874,6 +878,7 @@ def test_confirmed_profile_updates_linked_customer_before_estimate(paths, monkey
     assert result["ok"] is True
     assert fake.updated_customers[0][0] == "CUST9"
     assert fake.updated_customers[0][2]["bill_address_line1"] == "123 Main Street"
+    assert fake.updated_customers[0][2]["customer_type_id"] == "retail-type-id"
     assert fake.created_estimates
 
 

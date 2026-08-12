@@ -749,6 +749,7 @@ function _ptEstError(code) {
     validation_unavailable: "Could not check this vehicle right now",
     pricing_refresh_failed: "Could not refresh current QuickBooks Item prices — the estimate was not created",
     project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
+    retail_customer_type_not_found: "QuickBooks does not have an active Retail customer type",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }
