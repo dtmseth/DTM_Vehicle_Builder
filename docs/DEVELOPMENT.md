@@ -52,7 +52,7 @@ Security scans (run in CI; locally install once with
 
 ```bash
 .venv/bin/pip-audit --skip-editable           # dependency vulnerabilities
-.venv/bin/bandit -r src/dtm_buildsheet        # static security scan (report-only)
+.venv/bin/bandit -r src/dtm_buildsheet -lll   # enforcing high-severity security scan
 ```
 
 ## CI
@@ -62,7 +62,8 @@ GitHub Actions:
 `.github/workflows/checks.yml` — triggered on every PR and push to `main`:
 - **import-linter**: import-boundary contracts (fails on any new violation)
 - **pip-audit**: known-vulnerability audit of resolved dependencies
-- **bandit**: static security scan, report-only first pass
+- **bandit**: enforcing high-severity static security scan; the reviewed medium/low baseline is
+  tracked in `docs/audit/LEDGER.md` FINDING-020
 
 `.github/workflows/build.yml` — triggered on every push to `main`:
 - **Mac job**: PyInstaller → `.app` → `.dmg` (drag-to-Applications)

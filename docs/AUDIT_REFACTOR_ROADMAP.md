@@ -427,8 +427,9 @@ command.
 Three import-linter contracts live in `pyproject.toml` (layers derived from the real graph:
 app → inputs → config → storage → planning → rules → domain → naming/paths; forbidden-shim
 contract; external-I/O contract confining `requests`/`msal` to `app.adapters`), enforced in
-`checks.yml` with `pip-audit` (enforcing) and `bandit` (report-only first pass: 51 low /
-4 medium / 1 high — Phase B ledger triage material). Definition of done verified
+`checks.yml` with `pip-audit` (enforcing) and `bandit` (high-severity enforcing as of
+2026-08-12; the reviewed medium/low first-pass baseline remains Phase B ledger triage material).
+Definition of done verified
 (deliberate violation failed the lint). The baseline is shrink-only *and self-enforcing*
 (import-linter errors on unmatched ignores). **The discovery pass found the §0 expectation
 too optimistic** — baselined violations, each tagged with its retiring step:

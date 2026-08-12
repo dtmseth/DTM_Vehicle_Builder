@@ -106,7 +106,10 @@ class AppPaths:
 
 
 def _md5(path: Path) -> str:
-    return hashlib.md5(path.read_bytes()).hexdigest()
+    # This digest only detects changed bundled files; it is not an integrity or
+    # authentication primitive. Marking that intent keeps security scanners
+    # from treating the checksum as cryptographic use.
+    return hashlib.md5(path.read_bytes(), usedforsecurity=False).hexdigest()
 
 
 def _copy_missing_tree(source_root: Path, dest_root: Path) -> int:
