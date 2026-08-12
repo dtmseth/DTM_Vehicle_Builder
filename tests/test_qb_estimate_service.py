@@ -611,7 +611,7 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     assert unit.qb_project_name
 
 
-def test_create_estimate_sends_discounted_unit_price_and_no_unsupported_ach_field(paths, monkeypatch):
+def test_create_estimate_sends_discounted_unit_price_without_invoice_only_ach_field(paths, monkeypatch):
     fake = _use_fake(monkeypatch)
     product = _linked_product("A", "AA", "1", 100.0)
     product["manufacturer_id"] = "whelen"

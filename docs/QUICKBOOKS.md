@@ -235,10 +235,11 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   The Accounting API does not expose QBO's price-rule tables, so these reviewed local rules are
   deliberately authoritative for Vehicle Builder estimates. See Intuit's
   [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
-  QBO's bank-transfer/ACH switch is exposed for Invoices, not Estimates. Estimate creation therefore
-  does not send an unsupported `AllowOnlineACHPayment` field. Keep Bank transfer enabled in QBO when
-  reviewing/converting the estimate; “1% per transaction, max $20” is Intuit's processing-fee
-  disclosure, not an estimate line item.
+  The QBO Estimate form has a separate **Discounts and fees → Bank transfer — 1% per transaction,
+  max $20** switch. It is not the Invoice entity's `AllowOnlineACHPayment` field. The Accounting API
+  does not return or document a writable field for this Estimate-form switch (including on existing
+  production Estimates), so estimate creation cannot set or verify it. The create review explicitly
+  instructs the user to turn it on in QBO after creation; the app must not send an invented field.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog

@@ -806,7 +806,7 @@ function _ptEstimatePricingSummary(pricing) {
 }
 
 function _ptBankTransferEstimateNote() {
-  return `<div class="qb-est-bank-note"><strong>Bank transfer:</strong> QuickBooks only exposes the ACH switch through its Invoice API, not its Estimate API. After creating this estimate, keep Bank transfer enabled in QuickBooks. The “1% per transaction, max $20” text is QuickBooks' processing fee, not a line-item charge.</div>`;
+  return `<div class="qb-est-bank-note"><strong>QuickBooks follow-up:</strong> After creating this estimate, open <strong>Discounts and fees</strong> in QuickBooks and turn on <strong>Bank transfer — 1% per transaction, max $20</strong>. QuickBooks does not expose this Estimate-form switch through the Accounting API, so Vehicle Builder cannot set or verify it automatically.</div>`;
 }
 
 async function _ptQbConnected() {

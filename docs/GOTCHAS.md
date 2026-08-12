@@ -154,9 +154,10 @@ you're touching. New gotchas get appended to the bottom with a date.
 31. **QBO Item prices are list prices; estimate prices are calculated separately.** Never reconcile
     Default/customer discounts into `qb_unit_price` or the Item cache. Apply the shared
     `customer_pricing.default_rule`, then sparse `AgencyRecord.pricing_overrides`, only to resolved
-    estimate lines and send the reviewed unit price explicitly. The Estimate API does not expose
-    the Invoice-only bank-transfer/ACH toggle; do not invent that field or add Intuit's 1%/$20
-    processing-fee disclosure as an estimate charge.
+    estimate lines and send the reviewed unit price explicitly. The Estimate form's **Discounts and
+    fees → Bank transfer — 1% per transaction, max $20** switch is separate from the Invoice-only
+    `AllowOnlineACHPayment` field and is not exposed by the Estimate API. Do not invent a field;
+    require the explicit QBO follow-up after creation.
 32. **Saved presets must retain the rich `DraftPart` shape.** `part_type`, concrete SKU
     `components`, `picker_config`, accessory relationships, and placement metadata drive rendering,
     picker edit round-tripping, and QuickBooks estimate resolution. Reducing a saved build to the

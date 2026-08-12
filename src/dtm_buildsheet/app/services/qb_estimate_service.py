@@ -728,9 +728,10 @@ def create_estimate(
         memo=" — ".join(memo_parts),
         project_ref=unit.qb_project_id,
     )
-    # Estimates do not expose QuickBooks' invoice-only ACH payment toggle.
-    # Keep the payment method choice in QBO rather than sending an unsupported
-    # field that Intuit may ignore without warning.
+    # QBO does not expose the Estimate form's Discounts and fees → Bank
+    # transfer switch through the Accounting API. Do not confuse it with the
+    # Invoice-only AllowOnlineACHPayment field or send an invented Estimate
+    # field that Intuit may silently ignore.
     payload["PrivateNote"] = f"DTM vehicle project: {project_name}"
     try:
         result = client.create_estimate(payload)
