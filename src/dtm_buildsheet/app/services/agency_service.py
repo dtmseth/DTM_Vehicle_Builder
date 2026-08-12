@@ -494,12 +494,14 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
         save_setting_to_cloud_in_background(
             f"agencies/{record.agency_id}.json", serialized,
         )
-        # Mirror the agency up to QuickBooks (create/update the Customer) in the
-        # background, exactly like the SharePoint mirror above. No-ops unless
-        # QB is connected; stamps qb_customer_id back on first create.
+        # Mirror the agency to QuickBooks before returning so a rejected
+        # Customer create/update is visible to the user instead of disappearing
+        # inside a daemon thread. The local agency remains saved either way.
         from . import qb_sync_service
-        qb_sync_service.push_agency_in_background(paths, record.agency_id)
-        return {"ok": True, "agency": asdict(record), **proposal_result}
+        qb_sync = qb_sync_service.push_agency_after_save(paths, record.agency_id)
+        # A successful create stamps qb_customer_id back onto the cached record.
+        saved_record = _records(paths).get(record.agency_id) or record
+        return {"ok": True, "agency": asdict(saved_record), "qb_sync": qb_sync, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

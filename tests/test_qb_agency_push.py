@@ -95,6 +95,7 @@ def test_build_customer_payload_maps_full_customer_profile():
     assert p["WebAddr"] == {"URI": "https://alpha.example"}
     assert p["Notes"] == "Use PO number"
     assert p["Taxable"] is False
+    assert p["TaxExemptionReasonId"] == "3"
     assert p["BillAddr"] == {
         "Line1": "1 Main", "City": "Alpha", "CountrySubDivisionCode": "MN", "PostalCode": "55001",
     }
@@ -187,13 +188,15 @@ def test_push_surfaces_api_error(paths, monkeypatch):
 # ── auto-trigger + re-entrancy ───────────────────────────────────────────────
 
 
-def test_save_agency_triggers_background_push(paths, monkeypatch):
+def test_save_agency_reports_synchronous_qb_push(paths, monkeypatch):
     calls = []
     monkeypatch.setattr(
-        sync, "push_agency_in_background", lambda p, aid: calls.append(aid)
+        sync, "push_agency_after_save",
+        lambda p, aid: calls.append(aid) or {"ok": True, "action": "created", "qb_customer_id": "55"},
     )
-    agc.handle_save_agency({"name": "Zeta PD"}, paths)
+    result = agc.handle_save_agency({"name": "Zeta PD"}, paths)
     assert len(calls) == 1
+    assert result["qb_sync"]["action"] == "created"
 
 
 def test_background_push_noops_under_pytest(paths, monkeypatch):

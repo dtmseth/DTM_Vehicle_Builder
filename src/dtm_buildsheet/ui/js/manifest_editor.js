@@ -581,6 +581,9 @@ async function addPartManual() {
 async function openPartEditModal(lineId) {
   const part = (_meDraft?.parts || []).find(p => p.line_id === lineId);
   if (!part) return;
+  if (part.picker_config?.custom_part && typeof pickerCustomPartOpen === "function") {
+    return pickerCustomPartOpen(part);
+  }
   // Accessory line → focused category-scoped swap, not the full part picker.
   if (part.parent_line_id && part.accessory_parent_product && part.accessory_category) {
     return _meEditAccessory(part);

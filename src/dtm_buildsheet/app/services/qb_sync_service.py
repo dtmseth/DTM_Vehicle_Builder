@@ -185,12 +185,18 @@ def get_cached_items(paths: AppPaths) -> dict:
 
 def find_cached_active_item_by_name(paths: AppPaths, name: str) -> dict | None:
     """Return one exact-name active Item from the latest local QB pull."""
-    wanted = str(name or "").strip().casefold()
+    wanted = str(name or "").strip()
     if not wanted:
         return None
-    for item in _read_cache(paths).get("items", []):
-        if str(item.get("name") or "").strip().casefold() == wanted:
+    items = _read_cache(paths).get("items", [])
+    # Prefer literal case as QBO can contain both "MISC PART" and "Misc Part".
+    for item in items:
+        if str(item.get("name") or "").strip() == wanted:
             return item
+    matches = [item for item in items
+               if str(item.get("name") or "").strip().casefold() == wanted.casefold()]
+    if len(matches) == 1:
+        return matches[0]
     return None
 
 
@@ -604,6 +610,22 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
             logger.warning("QuickBooks agency background push failed")
 
     threading.Thread(target=_run, name="qb-agency-push", daemon=True).start()
+
+
+def push_agency_after_save(paths: AppPaths, agency_id: str) -> dict:
+    """Synchronously mirror one saved agency so the UI can report failures."""
+    import os
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return {"ok": True, "skipped": "pytest"}
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
+    try:
+        if not quickbooks_service.get_status(paths).get("connected"):
+            return {"ok": True, "skipped": "not_connected"}
+    except Exception:
+        return {"ok": False, "error": "quickbooks_status_unavailable"}
+    return push_agency(paths, agency_id)
 
 
 def _normalized_customer_from_raw(raw: dict) -> dict:

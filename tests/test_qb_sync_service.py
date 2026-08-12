@@ -109,6 +109,15 @@ def test_find_cached_active_item_by_name_requires_exact_name(paths):
     assert sync.find_cached_active_item_by_name(paths, "Whelen Liberty") is None
 
 
+def test_find_cached_item_prefers_literal_case_when_names_collide(paths):
+    cache = {"items": [
+        {"qb_item_id": "lower", "name": "Misc Part"},
+        {"qb_item_id": "upper", "name": "MISC PART"},
+    ]}
+    (paths.workspace_dir / "quickbooks_items_cache.json").write_text(json.dumps(cache))
+    assert sync.find_cached_active_item_by_name(paths, "MISC PART")["qb_item_id"] == "upper"
+
+
 def test_refresh_estimate_catalog_hides_low_level_failure(paths, monkeypatch):
     monkeypatch.setattr(sync, "run_full_sync", lambda paths: {"ok": False, "error": "token detail"})
     assert sync.refresh_estimate_catalog(paths) == {

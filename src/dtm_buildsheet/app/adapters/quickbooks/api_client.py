@@ -453,6 +453,13 @@ def _build_customer_payload(fields: dict) -> dict:
         payload["Notes"] = notes
     if fields.get("taxable") is not None:
         payload["Taxable"] = bool(fields["taxable"])
+        # This production company uses Automated Sales Tax. Its established
+        # government/public-safety customers overwhelmingly use exemption
+        # reason 3; QBO rejects a new non-taxable Customer without a reason.
+        if not payload["Taxable"]:
+            payload["TaxExemptionReasonId"] = str(
+                fields.get("tax_exemption_reason_id") or "3"
+            )
 
     bill_addr = _build_address_payload(fields, "bill")
     if bill_addr:

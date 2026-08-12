@@ -43,6 +43,12 @@ profile's rotating refresh token.
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
 hard-gated to `environment == "sandbox"`.)
 
+Agency saves synchronously create/update their top-level QBO Customer and return the result to the
+UI, so a rejected Customer write cannot disappear in a background thread. New agencies default to
+non-taxable. Because this production company has Automated Sales Tax enabled, non-taxable Customer
+writes include its established government/public-safety exemption reason ID `3`; the production
+customer population uses that reason for 134 existing exempt agencies.
+
 **Parts-import effort — FULL import done (2026-07-01).** The whole synced QBO item cache is now in
 `parts_db`. `tools/qb_import_all.py` bulk-created **+670 products** (262→932) for every item not
 already present — one product per SKU, each carrying its real QB linkage (id / sku / price) + the QB

@@ -25,6 +25,7 @@ from dtm_buildsheet.app.services.draft_service import (
     handle_remove_part_from_draft,
     handle_replace_console_setup_parts,
     handle_update_part_in_draft,
+    handle_update_custom_part_in_draft,
 )
 from dtm_buildsheet.paths import AppPaths
 from dtm_buildsheet.app.services import parts_db_service
@@ -304,6 +305,32 @@ class TestCustomPart:
         assert history[0]["unit_price"] == 42.5
         assert history[0]["last_used_at"]
         assert any(entry["action"] == "custom_part_added" for entry in loaded.audit_trail)
+
+    def test_updates_custom_fields_and_optional_manifest_category(self, tmp_path):
+        paths = _paths(tmp_path)
+        (paths.workspace_config_dir / "parts_db.json").write_text(json.dumps({
+            "schema_version": 2,
+            "part_types": {"cable": {"label": "Cable", "type_id": "equipment"}},
+            "products": {},
+        }), "utf-8")
+        parts_db_service.reset_for_testing()
+        draft = _saved_draft(paths)
+        added = handle_add_custom_part_to_draft(draft.draft_id, {
+            "sku": "OLD", "description": "Old description", "unit_price": 10, "quantity": 1,
+        }, paths)
+
+        updated = handle_update_custom_part_in_draft(draft.draft_id, added["line_id"], {
+            "sku": "NEW", "description": "New description", "unit_price": "25.50",
+            "quantity": 3, "part_type": "cable",
+        }, paths)
+
+        assert updated["ok"] is True
+        part = load_draft(draft.draft_id, paths.workspace_drafts_dir).parts[0]
+        assert (part.name, part.part_number, part.quantity, part.part_type) == (
+            "New description", "NEW", 3, "cable",
+        )
+        assert part.picker_config["custom_part"]["unit_price"] == 25.5
+        parts_db_service.reset_for_testing()
 
     def test_catalog_sku_requires_explicit_custom_override(self, tmp_path):
         paths = _paths(tmp_path)

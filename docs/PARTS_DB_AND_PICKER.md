@@ -440,6 +440,11 @@ price, and quantity are required and are saved in the draft row's
 `picker_config.custom_part` snapshot. The row stays in the manifest but intentionally has no
 vehicle placement or render asset.
 
+Custom rows reopen this same form from the manifest Edit button. SKU, description, quantity, price,
+and an optional manifest category can be changed without entering the managed Part Picker. The
+category uses an existing manifest section for organization only; it does not turn the row into a
+catalog product or change its draft-local pricing snapshot.
+
 - An exact SKU match in `parts_db.json` is detected case-insensitively. The picker offers to open
   the catalog SKU's normal setup/placement flow; the operator can explicitly keep a distinct custom
   line only when that is intentional.
@@ -447,7 +452,8 @@ vehicle placement or render asset.
   This convenience history is not inventory, is not a settings change, and is not cloud-synced;
   the authoritative quote data remains with the shared draft.
 - Estimate resolution makes the saved unit price and quantity a `custom: true` sales line through
-  the exact active QuickBooks `MISC PART` Item. The entered SKU, description, quantity, unit price,
+  the literal active QuickBooks `MISC PART` Item (case-sensitive because this company also contains
+  a distinct `Misc Part` Item). The entered SKU, description, quantity, unit price,
   and extended amount remain visible on the estimate line, so QBO includes it in the document total.
   If `MISC PART` is unavailable, estimate creation is blocked instead of silently posting a $0 note.
 

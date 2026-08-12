@@ -263,10 +263,16 @@
     const res = await apiSave("/api/agency/save", payload);
     if (res?.ok) {
       _closeModal();
+      const qbSync = res.qb_sync || {};
       // Suppress the local-only "Agency updated" toast when a proposal toast
       // already fired — two stacked toasts are noisy.
       if (!res.proposed) {
-        toast(wasEditing ? "Agency updated" : `Agency "${res.agency.name}" created`, "success");
+        if (qbSync.ok === false) {
+          toast(`Agency saved, but QuickBooks sync failed: ${qbSync.error || "unknown error"}`, "error");
+        } else {
+          const qbSuffix = qbSync.action ? ` and ${qbSync.action} in QuickBooks` : "";
+          toast(wasEditing ? `Agency updated${qbSuffix}` : `Agency "${res.agency.name}" created${qbSuffix}`, "success");
+        }
       }
       if (_pendingOnSuccess) { _pendingOnSuccess(res.agency); _pendingOnSuccess = null; }
       await _load();

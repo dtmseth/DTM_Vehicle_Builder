@@ -424,6 +424,37 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
 
+    # A draft-local custom line edits in its own priced form, and can opt into
+    # an existing manifest category without becoming a managed catalog SKU.
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.click("[data-picker-custom-part]")
+    page.wait_for_selector("#picker-custom-part-modal.open")
+    page.fill("#picker-custom-part-sku", "SMOKE-CUSTOM")
+    page.fill("#picker-custom-part-description", "Smoke custom part")
+    page.fill("#picker-custom-part-price", "12.50")
+    page.fill("#picker-custom-part-qty", "2")
+    category_value = page.locator("#picker-custom-part-category option").nth(1).get_attribute("value")
+    assert category_value
+    page.select_option("#picker-custom-part-category", category_value)
+    page.click("#picker-custom-part-save")
+    page.wait_for_selector("#picker-custom-part-modal.open", state="hidden")
+    custom_draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    custom = next(p for p in custom_draft["draft"]["parts"] if p.get("part_number") == "SMOKE-CUSTOM")
+    assert custom.get("part_type") == category_value
+    page.click(f".me-edit-btn[data-lid='{custom['line_id']}']")
+    page.wait_for_selector("#picker-custom-part-modal.open")
+    assert not page.locator("#picker-panel.open").is_visible()
+    assert page.input_value("#picker-custom-part-price") == "12.5"
+    page.fill("#picker-custom-part-description", "Edited smoke custom part")
+    page.fill("#picker-custom-part-price", "15.75")
+    page.click("#picker-custom-part-save")
+    page.wait_for_selector("#picker-custom-part-modal.open", state="hidden")
+    custom_draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    custom = next(p for p in custom_draft["draft"]["parts"] if p.get("part_number") == "SMOKE-CUSTOM")
+    assert custom["name"] == "Edited smoke custom part"
+    assert custom["picker_config"]["custom_part"]["unit_price"] == 15.75
+
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
     assert page.locator("#picker-part-status").is_visible()

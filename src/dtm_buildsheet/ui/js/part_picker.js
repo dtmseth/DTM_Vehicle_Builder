@@ -262,7 +262,7 @@ function pickerClose() {
 // ── One-off billable custom parts ──────────────────────
 // These remain draft-local billable rows.  The small recent list is only a
 // convenience for this app installation; it never turns into QB inventory.
-const _pickerCustomPartState = { wired: false, conflict: null, recent: [] };
+const _pickerCustomPartState = { wired: false, conflict: null, recent: [], editLineId: "", categoriesLoaded: false, returnToPicker: false };
 
 function _pickerCustomPartInputs() {
   return {
@@ -270,6 +270,7 @@ function _pickerCustomPartInputs() {
     description: $("picker-custom-part-description"),
     price: $("picker-custom-part-price"),
     quantity: $("picker-custom-part-qty"),
+    category: $("picker-custom-part-category"),
   };
 }
 
@@ -327,6 +328,29 @@ async function _pickerCustomLoadRecent() {
   _pickerCustomRenderRecent();
 }
 
+async function _pickerCustomLoadCategories() {
+  if (_pickerCustomPartState.categoriesLoaded) return;
+  const select = $("picker-custom-part-category");
+  if (!select) return;
+  try {
+    const result = await api("/api/parts-db/manifest-groups");
+    const options = [`<option value="">Other / Custom Parts</option>`];
+    for (const group of (result?.groups || [])) {
+      const rows = (group.subgroups || []).filter(row => (row.part_types || []).length);
+      if (!rows.length) continue;
+      options.push(`<optgroup label="${esc(group.label || group.group_id)}">`);
+      for (const row of rows) {
+        options.push(`<option value="${esc(row.part_types[0])}">${esc(row.label || row.subgroup_id)}</option>`);
+      }
+      options.push(`</optgroup>`);
+    }
+    select.innerHTML = options.join("");
+    _pickerCustomPartState.categoriesLoaded = true;
+  } catch (error) {
+    console.warn("Custom part categories failed to load", error);
+  }
+}
+
 async function _pickerCustomCheckSku() {
   const sku = _pickerCustomPartInputs().sku?.value.trim() || "";
   if (!sku) { _pickerCustomClearConflict(); return; }
@@ -355,23 +379,42 @@ function _pickerCustomWire() {
   _pickerCustomPartState.wired = true;
 }
 
-async function pickerCustomPartOpen() {
+async function pickerCustomPartOpen(part = null) {
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
   _pickerCustomWire();
   _pickerCustomClearConflict();
+  _pickerCustomPartState.editLineId = part?.line_id || "";
+  const pickerPanel = $("picker-panel");
+  _pickerCustomPartState.returnToPicker = !!pickerPanel?.classList.contains("open");
+  if (_pickerCustomPartState.returnToPicker) pickerPanel.classList.remove("open");
   const form = $("picker-custom-part-form");
   form?.reset();
-  const quantity = $("picker-custom-part-qty");
-  if (quantity) quantity.value = "1";
+  await _pickerCustomLoadCategories();
+  const inputs = _pickerCustomPartInputs();
+  const custom = part?.picker_config?.custom_part || {};
+  inputs.sku.value = custom.sku || part?.part_number || "";
+  inputs.description.value = custom.description || part?.name || "";
+  inputs.price.value = custom.unit_price ?? "";
+  inputs.quantity.value = part?.quantity || 1;
+  inputs.category.value = part?.part_type && part.part_type !== "custom_part" ? part.part_type : "";
+  const editing = !!_pickerCustomPartState.editLineId;
+  const title = $("picker-custom-part-title");
+  const save = $("picker-custom-part-save");
+  if (title) title.textContent = editing ? "Edit Custom Part" : "Add Custom Part";
+  if (save) save.textContent = editing ? "Save custom part" : "Add billable custom part";
   $("picker-custom-part-modal")?.classList.add("open");
   $("picker-custom-part-sku")?.focus();
   await _pickerCustomLoadRecent();
 }
 
-function pickerCustomPartClose() {
+function pickerCustomPartClose(options = {}) {
+  const reopenPicker = options?.reopen !== false;
   $("picker-custom-part-modal")?.classList.remove("open");
   _pickerCustomClearConflict();
+  _pickerCustomPartState.editLineId = "";
+  if (reopenPicker && _pickerCustomPartState.returnToPicker) $("picker-panel")?.classList.add("open");
+  _pickerCustomPartState.returnToPicker = false;
 }
 
 async function _pickerCustomUseExisting() {
@@ -432,11 +475,16 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
   const save = $("picker-custom-part-save");
   if (save) save.disabled = true;
   try {
-    const result = await api(`/api/draft/${draftId}/custom-part`, {
+    const editLineId = _pickerCustomPartState.editLineId;
+    const endpoint = editLineId
+      ? `/api/draft/${draftId}/custom-part/${editLineId}/update`
+      : `/api/draft/${draftId}/custom-part`;
+    const result = await api(endpoint, {
       sku: inputs.sku.value.trim(),
       description: inputs.description.value.trim(),
       unit_price: inputs.price.value,
       quantity: inputs.quantity.value,
+      part_type: inputs.category.value,
       allow_existing_duplicate: !!allowExistingDuplicate,
     });
     if (result?.error === "catalog_sku_exists") {
@@ -447,8 +495,8 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
       toast(result?.error || "Could not add custom part", "error");
       return;
     }
-    pickerCustomPartClose();
-    toast("Billable custom part added", "success");
+    pickerCustomPartClose({ reopen: false });
+    toast(editLineId ? "Custom part updated" : "Billable custom part added", "success");
     await _pickerFinalize(draftId, false);
   } catch (error) {
     console.error("Custom part save failed", error);
