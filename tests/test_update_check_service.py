@@ -263,6 +263,10 @@ def test_queue_installer_replaces_older_queued(tmp_path: Path, monkeypatch):
 
 def test_get_pending_update_info_reports_version(tmp_path: Path, monkeypatch):
     monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "3.0.0",
+    )
     from dtm_buildsheet.app.services.update_check_service import (
         get_pending_update_info,
         queue_installer_for_next_launch,
