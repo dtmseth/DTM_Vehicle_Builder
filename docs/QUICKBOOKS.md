@@ -48,6 +48,9 @@ UI, so a rejected Customer write cannot disappear in a background thread. New ag
 non-taxable. Because this production company has Automated Sales Tax enabled, non-taxable Customer
 writes include its established government/public-safety exemption reason ID `3`; the production
 customer population uses that reason for 134 existing exempt agencies.
+Before estimate creation, the linked QBO Project's taxable flag is aligned with the agency Customer;
+QBO Projects otherwise retain their own taxable default and can add tax even when the parent agency
+is exempt.
 
 **Parts-import effort — FULL import done (2026-07-01).** The whole synced QBO item cache is now in
 `parts_db`. `tools/qb_import_all.py` bulk-created **+670 products** (262→932) for every item not

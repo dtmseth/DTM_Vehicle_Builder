@@ -529,6 +529,25 @@ def _load_individual(paths: AppPaths, project_id: str, individual_id: str):
     return project, build_unit, unit
 
 
+def _ensure_project_tax_status(client, qb_project_id: str, agency) -> dict:
+    """Keep a QBO Project's taxable flag aligned with its agency Customer."""
+    if agency is None or not qb_project_id or agency.taxable is None:
+        return {"ok": True, "changed": False}
+    try:
+        current = client.read_customer(qb_project_id)
+        if current is None or current.get("Taxable") == bool(agency.taxable):
+            return {"ok": True, "changed": False}
+        client.update_customer(
+            qb_project_id,
+            str(current.get("SyncToken", "0")),
+            {"taxable": bool(agency.taxable)},
+        )
+        return {"ok": True, "changed": True}
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks Project tax sync failed: %s", exc)
+        return {"ok": False, "error": "project_tax_sync_failed"}
+
+
 # ── public API ────────────────────────────────────────────────────────────────
 
 
@@ -731,6 +750,10 @@ def create_estimate(
     client, err = qb_sync_service._build_client(paths)
     if err:
         return err
+
+    tax_sync = _ensure_project_tax_status(client, unit.qb_project_id, agency)
+    if not tax_sync.get("ok"):
+        return tax_sync
 
     customer_result = qb_sync_service.ensure_top_level_customer(
         paths,

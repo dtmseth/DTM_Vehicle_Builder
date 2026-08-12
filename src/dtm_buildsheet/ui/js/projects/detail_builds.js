@@ -748,6 +748,7 @@ function _ptEstError(code) {
     validation_failed: "Some parts aren't linked to QuickBooks",
     validation_unavailable: "Could not check this vehicle right now",
     pricing_refresh_failed: "Could not refresh current QuickBooks Item prices — the estimate was not created",
+    project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }

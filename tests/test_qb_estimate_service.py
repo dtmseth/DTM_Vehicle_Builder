@@ -473,6 +473,23 @@ def test_validate_blocks_when_current_prices_cannot_refresh(paths, monkeypatch):
     }
 
 
+def test_project_tax_status_is_aligned_to_non_taxable_agency():
+    class Client:
+        def __init__(self):
+            self.updated = []
+
+        def read_customer(self, customer_id):
+            return {"Id": customer_id, "SyncToken": "4", "Taxable": True}
+
+        def update_customer(self, customer_id, sync_token, fields):
+            self.updated.append((customer_id, sync_token, fields))
+
+    client = Client()
+    agency = type("Agency", (), {"taxable": False})()
+    assert est._ensure_project_tax_status(client, "434", agency) == {"ok": True, "changed": True}
+    assert client.updated == [("434", "4", {"taxable": False})]
+
+
 def test_validate_reports_pending_but_can_create(paths):
     _write_parts_db(paths, {
         "linked": _linked_product("A", "AA", "1", 10.0),
