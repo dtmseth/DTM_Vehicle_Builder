@@ -14,9 +14,9 @@ jobs:
     name: Test suite + coverage floor (AUDIT_REFACTOR_ROADMAP.md §8.1 Step 1d)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
 
@@ -35,9 +35,9 @@ jobs:
     name: Import boundaries (import-linter)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
 
@@ -51,9 +51,9 @@ jobs:
     name: Dependency vulnerabilities (pip-audit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
 
@@ -78,18 +78,17 @@ jobs:
     name: Static security scan (bandit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
 
       - name: Install bandit
         run: pip install bandit
 
-      # Report-only first pass (§8.1 Step 2): findings are visible in the log
-      # but do not fail CI. Tighten to enforcing once the initial findings are
-      # triaged in the Phase B ledger.
+      # High-severity findings fail CI. The reviewed medium/low baseline remains
+      # tracked in FINDING-020 without emitting a false failing annotation on
+      # every otherwise-green run.
       - name: Scan src/dtm_buildsheet
-        run: bandit -r src/dtm_buildsheet -f txt
-        continue-on-error: true
+        run: bandit -r src/dtm_buildsheet -lll -f txt

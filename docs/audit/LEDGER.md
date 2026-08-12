@@ -493,7 +493,7 @@ Zero production-code changes.
   silently deleted, since dispositioning docs outside a landing change risks
   losing the "why" context the extraction session needs.
 
-### FINDING-020: bandit first-pass triage — 51 low / 4 medium / 1 high (report-only, `checks.yml` doesn't fail the build on findings)
+### FINDING-020: bandit first-pass triage — high severity enforced; reviewed medium/low baseline remains
 - **Location:** `.github/workflows/checks.yml` `bandit` job (`bandit -r
   src/dtm_buildsheet -f txt`, no `-ll`/exit-code gate — Phase A wired it
   report-only per roadmap §6 "standing tooling, not one-off effort")
@@ -523,10 +523,18 @@ Zero production-code changes.
   `ppt_helpers.py:217` swallows an exception around optional logo placement
   (cosmetic-failure-tolerant by design, not a hidden bug — still worth a
   narrower `except` when that function is next touched).
-- **Disposition:** ledgered for Phase B/C triage per roadmap §8 (Phase C
-  handles boundary/crash findings; legacy-slated locations are fixed-by-D, not
-  patched twice — none of these four boundary/high findings sit in a
-  retirement-slated module, so none qualify for that exemption).
+- **2026-08-12 release update:** the non-security MD5 checksum now declares
+  `usedforsecurity=False`, clearing the only high finding. CI runs Bandit with
+  `-lll` and enforces a zero-high-severity gate instead of using
+  `continue-on-error`; this removes the misleading failure annotation from
+  otherwise-green checks. GitHub's checkout/setup-python actions were also
+  advanced to their current Node-compatible major versions. The medium QBO
+  query-language findings and low desktop-process/exception findings remain
+  explicitly tracked here rather than being silently declared fixed.
+- **Disposition:** high-severity gate RESOLVED and enforcing; medium/low items
+  remain ledgered for Phase B/C triage per roadmap §8 (Phase C handles
+  boundary/crash findings; legacy-slated locations are fixed-by-D, not patched
+  twice).
 
 ### FINDING-021: `cloud_config_path()` reads a module-level constant, not the injected `AppPaths` — hermetic-workspace isolation gap outside test/smoke code
 - **Location:** `app/adapters/cloud/config.py::cloud_config_path()` (reads
