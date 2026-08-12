@@ -217,11 +217,15 @@ stable project name is written into `CustomerMemo` and `PrivateNote`, and persis
 `IndividualUnit.qb_project_id`; no new sub-customer is created.
 
 **True QBO Projects are a separate capability:** Intuit documents a Project API, but it requires
-the company's Projects feature plus a premium/restricted Project Management scope. The current
-desktop OAuth scope is the regular accounting scope, so the app does not create or list Projects
-programmatically. The standard Estimate REST request does accept a known `ProjectRef`, which is
-why manually created Projects can be linked at no additional API-tier cost. The premium API is
-only needed to automate Project creation/listing. See Intuit's
+the company's Projects feature plus the premium/restricted `project-management.project` scope.
+That scope is unavailable to the current no-charge **Builder** developer tier; it requires the
+Intuit workspace to subscribe to **Silver or higher** (Silver is currently US$300/month). The QBO
+company must also be Plus, Advanced, or Intuit Enterprise Suite; project estimates through the new
+Project API require Advanced or Enterprise Suite. The current desktop OAuth scope is the regular
+accounting scope, so the app does not create or list Projects programmatically. The standard
+Estimate REST request does accept a known `ProjectRef`, which is why manually created Projects can
+be linked without the premium scope. The premium API is only needed to automate Project
+creation/listing. See Intuit's
 [Project API getting started](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/get-started)
 and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/use-cases).
 
@@ -258,6 +262,15 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   does not return or document a writable field for this Estimate-form switch (including on existing
   production Estimates), so estimate creation cannot set or verify it. The create review explicitly
   instructs the user to turn it on in QBO after creation; the app must not send an invented field.
+  QBO's standard Accounting API **does** support attaching the generated build-sheet PDF to an
+  existing Estimate. This is a second request after Estimate creation: multipart `POST /upload`
+  with `application/pdf` content and Attachable metadata whose `EntityRef` type is `Estimate` and
+  value is the returned Estimate ID. QBO requires the Estimate to exist first and permits up to
+  100 MB total per upload request. The app already retains both required inputs on the vehicle
+  (`pdf_path` and `qb_estimate_id`). A future guarded implementation should offer **Attach build
+  PDF**, show the exact filename, verify that it is a readable PDF, avoid accidental duplicate
+  uploads, and report attachment failure separately—the successfully created Estimate must never
+  be represented as failed or retried just because its subsequent upload failed.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
@@ -509,7 +522,17 @@ migration are complete. The remaining controlled activation steps are:
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
-(manual button today, owner chose reviewed-first).
+(manual button today, owner chose reviewed-first); automatic QBO Project creation after a future
+Silver+ developer-tier upgrade; generated build-PDF attachment to an existing Estimate.
+
+**Deferred multi-user identity/audit design:** keep one administrator-controlled company OAuth
+connection rather than distributing its refresh token to every workstation. Individual Builder
+users may later authenticate with OpenID Connect (or the existing Microsoft 365 identity), while
+the Builder keeps its own immutable user/action/QBO-entity audit trail. QBO records third-party API
+writes as `System Administration`, so separate user sign-ins do not make QBO's native audit log
+attribute those writes to each employee. If this becomes a multi-workstation feature, move the
+single company refresh token and API execution into an authenticated central service; the current
+redirect-only Netlify relay is deliberately not such a backend.
 
 > **Go-live is externally gated** (relay + questionnaire + Intuit approval). It is *not* advanced by
 > the parts-import grind and should not block it. Run it as its own track when ready.
