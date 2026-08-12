@@ -2220,26 +2220,26 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "GAMBER JOHNSON  ·  SKU: VEHICLE SPECIFIC"
+                          "text": "GAMBER JOHNSON  ·  VEHICLE SPECIFIC"
                         }
                       ]
                     }
                   ],
-                  "text": "Center Console\nGAMBER JOHNSON  ·  SKU: VEHICLE SPECIFIC"
+                  "text": "Center Console\nGAMBER JOHNSON  ·  VEHICLE SPECIFIC"
                 },
                 {
                   "paragraphs": [
                     {
                       "runs": [
                         {
-                          "color": "#1A1A1A",
+                          "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                          "text": "—"
                         }
                       ]
                     }
                   ],
-                  "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                  "text": "—"
                 },
                 {
                   "paragraphs": [
@@ -5885,12 +5885,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "GAMBER JOHNSON  ·  SKU: CUP HOLDERS"
+                          "text": "GAMBER JOHNSON  ·  CUP HOLDERS"
                         }
                       ]
                     }
                   ],
-                  "text": "Special Face Plate 4\nGAMBER JOHNSON  ·  SKU: CUP HOLDERS"
+                  "text": "Special Face Plate 4\nGAMBER JOHNSON  ·  CUP HOLDERS"
                 },
                 {
                   "paragraphs": [
@@ -6201,7 +6201,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 3291840,
+          "height_emu": 3419856,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -6326,7 +6326,7 @@
                         {
                           "color": "#1A1A1A",
                           "size_pt": 8.0,
-                          "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART"
+                          "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART\n(x2 REAR CARGO AREA, x3 CAGE LIGHT)"
                         }
                       ]
                     },
@@ -6340,7 +6340,7 @@
                       ]
                     }
                   ],
-                  "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART\nR/W\nLens: Clear\nSWITCHED ON D-PILLAR"
+                  "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART\n(x2 REAR CARGO AREA, x3 CAGE LIGHT)\nR/W\nLens: Clear\nSWITCHED ON D-PILLAR"
                 },
                 {
                   "paragraphs": [
@@ -7006,7 +7006,7 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              585216,
+              713232,
               329184,
               329184,
               329184,

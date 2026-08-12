@@ -3656,12 +3656,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "WHELEN  ·  SKU: WESTIN 2 LIGHT TUBE"
+                          "text": "WHELEN  ·  WESTIN 2 LIGHT TUBE"
                         }
                       ]
                     }
                   ],
-                  "text": "FW 2 Bracket\nWHELEN  ·  SKU: WESTIN 2 LIGHT TUBE"
+                  "text": "FW 2 Bracket\nWHELEN  ·  WESTIN 2 LIGHT TUBE"
                 },
                 {
                   "paragraphs": [
@@ -4175,26 +4175,26 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "GAMBER JOHNSON  ·  SKU: VEHICLE SPECIFIC"
+                          "text": "GAMBER JOHNSON  ·  VEHICLE SPECIFIC"
                         }
                       ]
                     }
                   ],
-                  "text": "Center Console\nGAMBER JOHNSON  ·  SKU: VEHICLE SPECIFIC"
+                  "text": "Center Console\nGAMBER JOHNSON  ·  VEHICLE SPECIFIC"
                 },
                 {
                   "paragraphs": [
                     {
                       "runs": [
                         {
-                          "color": "#1A1A1A",
+                          "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                          "text": "—"
                         }
                       ]
                     }
                   ],
-                  "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                  "text": "—"
                 },
                 {
                   "paragraphs": [
@@ -4266,12 +4266,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Setina  ·  SKU: STEEL"
+                          "text": "STEEL"
                         }
                       ]
                     }
                   ],
-                  "text": "Chicago Barrier\nSetina  ·  SKU: STEEL"
+                  "text": "Chicago Barrier\nSTEEL"
                 },
                 {
                   "paragraphs": [
@@ -9061,12 +9061,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "SETINA  ·  SKU: POLY FLOOR PAN"
+                          "text": "SETINA  ·  POLY FLOOR PAN"
                         }
                       ]
                     }
                   ],
-                  "text": "Floor Pan\nSETINA  ·  SKU: POLY FLOOR PAN"
+                  "text": "Floor Pan\nSETINA  ·  POLY FLOOR PAN"
                 },
                 {
                   "paragraphs": [
@@ -9416,12 +9416,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "WHELEN  ·  SKU: WESTIN 2 LIGHT TUBE"
+                          "text": "WHELEN  ·  WESTIN 2 LIGHT TUBE"
                         }
                       ]
                     }
                   ],
-                  "text": "FW 1 Bracket\nWHELEN  ·  SKU: WESTIN 2 LIGHT TUBE"
+                  "text": "FW 1 Bracket\nWHELEN  ·  WESTIN 2 LIGHT TUBE"
                 },
                 {
                   "paragraphs": [
@@ -12586,12 +12586,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "SETINA  ·  SKU: POLY DIVIDER"
+                          "text": "SETINA  ·  POLY DIVIDER"
                         }
                       ]
                     }
                   ],
-                  "text": "Rear Seat Divider\nSETINA  ·  SKU: POLY DIVIDER"
+                  "text": "Rear Seat Divider\nSETINA  ·  POLY DIVIDER"
                 },
                 {
                   "paragraphs": [
