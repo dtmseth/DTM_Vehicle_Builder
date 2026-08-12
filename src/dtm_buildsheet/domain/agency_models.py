@@ -85,11 +85,14 @@ class AgencyRecord:
     ship_postal_code: str = ""
     ship_country: str = ""
     notes: str = ""
-    taxable: bool | None = None
+    taxable: bool = False
     customer_since: str = ""
     # These are the agency's normal equipment choices.  New projects copy
     # them once; a project can then keep a different choice for an exception.
     default_preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
+    # Sparse manufacturer_id → discount-percent exceptions. Missing entries
+    # continue to inherit the shared Default customer-pricing rule.
+    pricing_overrides: dict[str, float] = field(default_factory=dict)
     qb_customer_id: str = ""   # FK → QuickBooks Customer.Id (empty = not linked)
     created_at: str = ""
     updated_at: str = ""

@@ -82,6 +82,25 @@ class TestPerRecordStorage:
         assert agency.default_preferences.camera_brand == "Axon"
         assert agency.default_preferences.push_bumper_brand == "Setina"
 
+    def test_customer_pricing_overrides_round_trip(self, tmp_path):
+        paths = _paths(tmp_path)
+        saved = handle_save_agency({
+            "name": "Alpha PD",
+            "pricing_overrides": {"whelen": 35, "havis": 12.5},
+        }, paths)
+        assert saved["ok"] is True
+        agency_service._cache.clear()
+        agency = load_agencies(paths)[0]
+        assert agency.pricing_overrides == {"whelen": 35.0, "havis": 12.5}
+
+    def test_customer_pricing_override_rejects_out_of_range_discount(self, tmp_path):
+        result = handle_save_agency({
+            "name": "Alpha PD",
+            "pricing_overrides": {"whelen": 101},
+        }, _paths(tmp_path))
+        assert result["ok"] is False
+        assert "0 through 100" in result["error"]
+
     def test_project_choices_can_update_only_agency_default_preferences(self, tmp_path):
         paths = _paths(tmp_path)
         saved = handle_save_agency({

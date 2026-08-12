@@ -13,8 +13,10 @@ and Intuit's ``intuit_tid`` trace header are logged.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
+from pathlib import Path
 
 import requests
 
@@ -104,8 +106,8 @@ class QuickBooksApiClient:
         params = {"query": statement, "minorversion": _MINOR_VERSION}
         try:
             resp = requests.get(url, headers=self._headers(), params=params, timeout=_HTTP_TIMEOUT)
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError(f"request_failed: {exc}") from exc
+        except Exception:  # noqa: BLE001 — transport text may contain a request URL
+            raise QuickBooksApiError("request_failed") from None
 
         tid = resp.headers.get("intuit_tid", "")
         logger.info("QB query: status=%s intuit_tid=%s", resp.status_code, tid)
@@ -113,8 +115,8 @@ class QuickBooksApiClient:
             raise _http_error(resp, tid)
         try:
             return resp.json().get("QueryResponse", {})
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError("unparseable_response") from exc
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
 
     def _post(self, entity: str, payload: dict, *, query_params: dict | None = None) -> dict:
         """POST a create/sparse-update to a QBO entity endpoint.
@@ -130,8 +132,8 @@ class QuickBooksApiClient:
             resp = requests.post(
                 url, headers=headers, params=params, json=payload, timeout=_HTTP_TIMEOUT
             )
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError(f"request_failed: {exc}") from exc
+        except Exception:  # noqa: BLE001 — transport text may contain a request URL
+            raise QuickBooksApiError("request_failed") from None
 
         tid = resp.headers.get("intuit_tid", "")
         logger.info("QB %s write: status=%s intuit_tid=%s", entity, resp.status_code, tid)
@@ -139,8 +141,8 @@ class QuickBooksApiClient:
             raise _http_error(resp, tid)
         try:
             return resp.json()
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksApiError("unparseable_response") from exc
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
 
     def fetch_active_items(self, *, page_size: int = 1000) -> list[dict]:
         """Return all active Items, following QBO's STARTPOSITION pagination.
@@ -155,6 +157,29 @@ class QuickBooksApiClient:
             stmt = (
                 "SELECT Id, Name, Sku, Description, UnitPrice, Type, Active "
                 f"FROM Item WHERE Active = true STARTPOSITION {start} MAXRESULTS {page_size}"
+            )
+            qr = self.query(stmt)
+            batch = qr.get("Item", []) or []
+            for raw in batch:
+                items.append(_normalize_item(raw))
+            if len(batch) < page_size:
+                break
+            start += page_size
+        return items
+
+    def fetch_inactive_items(self, *, page_size: int = 1000) -> list[dict]:
+        """Return inactive Items for migration/history review only.
+
+        Routine reconciliation deliberately uses ``fetch_active_items`` so a
+        missing linked Item becomes inactive. The production catalog preview
+        additionally needs these rows to migrate historical sandbox links.
+        """
+        items: list[dict] = []
+        start = 1
+        while True:
+            stmt = (
+                "SELECT Id, Name, Sku, Description, UnitPrice, Type, Active "
+                f"FROM Item WHERE Active = false STARTPOSITION {start} MAXRESULTS {page_size}"
             )
             qr = self.query(stmt)
             batch = qr.get("Item", []) or []
@@ -225,6 +250,19 @@ class QuickBooksApiClient:
         qr = self.query(f"SELECT * FROM Customer WHERE Id = '{cid}'")
         batch = qr.get("Customer", []) or []
         return batch[0] if batch else None
+
+    def find_customer_type_by_name(self, name: str) -> str:
+        """Return the company-local CustomerType Id for an exact name."""
+        escaped = str(name or "").strip().replace("'", "\\'")
+        if not escaped:
+            return ""
+        qr = self.query(f"SELECT * FROM CustomerType WHERE Name = '{escaped}' MAXRESULTS 2")
+        matches = [
+            row for row in (qr.get("CustomerType", []) or [])
+            if str(row.get("Name") or "").strip().casefold() == escaped.casefold()
+            and row.get("Active", True) is not False
+        ]
+        return str(matches[0].get("Id") or "").strip() if len(matches) == 1 else ""
 
     def create_customer(self, fields: dict) -> dict:
         """Create a Customer from VB agency ``fields``. Returns id + sync token."""
@@ -334,6 +372,97 @@ class QuickBooksApiClient:
             "doc_number": str(raw.get("DocNumber", "")),
         }
 
+    def read_estimate(self, estimate_id: str) -> dict | None:
+        """Return an existing Estimate including its current SyncToken."""
+        eid = str(estimate_id or "").strip()
+        if not eid:
+            return None
+        qr = self.query(f"SELECT * FROM Estimate WHERE Id = '{eid}'")
+        batch = qr.get("Estimate", []) or []
+        return batch[0] if batch else None
+
+    def update_estimate(self, estimate_id: str, sync_token: str, payload: dict) -> dict:
+        """Replace the Builder-owned fields and lines of an existing Estimate."""
+        raw = (self._post("estimate", {
+            "Id": str(estimate_id),
+            "SyncToken": str(sync_token),
+            "sparse": True,
+            **payload,
+        }) or {}).get("Estimate", {}) or {}
+        return {
+            "qb_estimate_id": str(raw.get("Id", estimate_id)),
+            "doc_number": str(raw.get("DocNumber", "")),
+        }
+
+    def fetch_estimate_attachments(self, estimate_id: str) -> list[dict]:
+        """Return attachment identity metadata for one Estimate."""
+        eid = str(estimate_id or "").strip()
+        if not eid:
+            return []
+        qr = self.query(
+            "SELECT * FROM Attachable WHERE "
+            "AttachableRef.EntityRef.Type = 'Estimate' AND "
+            f"AttachableRef.EntityRef.value = '{eid}'"
+        )
+        return [{
+            "id": str(row.get("Id", "")),
+            "file_name": str(row.get("FileName", "")),
+            "size": int(row.get("Size") or 0),
+        } for row in (qr.get("Attachable", []) or [])]
+
+    def upload_estimate_attachment(self, estimate_id: str, pdf_path: str) -> dict:
+        """Upload one local PDF and link it to an existing Estimate."""
+        path = Path(pdf_path)
+        metadata = {
+            "AttachableRef": [{
+                "EntityRef": {"type": "Estimate", "value": str(estimate_id)},
+            }],
+            "FileName": path.name,
+            "ContentType": "application/pdf",
+        }
+        url = f"{self._base()}/v3/company/{self._realm_id}/upload"
+        headers = self._headers()
+        try:
+            with path.open("rb") as stream:
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    params={"minorversion": _MINOR_VERSION},
+                    files={
+                        "file_metadata_01": (
+                            "attachment.json", json.dumps(metadata), "application/json",
+                        ),
+                        "file_content_01": (path.name, stream, "application/pdf"),
+                    },
+                    timeout=_HTTP_TIMEOUT,
+                )
+        except OSError:
+            raise QuickBooksApiError("attachment_file_unreadable") from None
+        except Exception:  # noqa: BLE001 — transport text may expose request data
+            raise QuickBooksApiError("request_failed") from None
+        tid = response.headers.get("intuit_tid", "")
+        logger.info("QB attachment upload: status=%s intuit_tid=%s", response.status_code, tid)
+        if response.status_code != 200:
+            raise _http_error(response, tid)
+        try:
+            entries = response.json().get("AttachableResponse", []) or []
+            first = entries[0] or {} if entries else {}
+            if first.get("Fault"):
+                errors = first["Fault"].get("Error", []) or []
+                error = errors[0] if isinstance(errors, list) and errors else {}
+                code = str(error.get("code") or "").strip()
+                message = " ".join(str(error.get("Message") or "").split())[:180]
+                summary = f"qb_{code}: {message}" if code and message else "attachment_upload_failed"
+                raise QuickBooksApiError(summary)
+            raw = first.get("Attachable", {})
+            if not raw.get("Id"):
+                raise QuickBooksApiError("attachment_upload_failed")
+            return {"attachment_id": str(raw.get("Id", "")), "file_name": path.name}
+        except QuickBooksApiError:
+            raise
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
+
 
 def _sales_form_custom_fields(sales_preferences: object) -> list[dict]:
     """Normalize enabled legacy sales-form custom fields from Preferences.
@@ -430,6 +559,16 @@ def _build_customer_payload(fields: dict) -> dict:
         payload["Notes"] = notes
     if fields.get("taxable") is not None:
         payload["Taxable"] = bool(fields["taxable"])
+        # This production company uses Automated Sales Tax. Its established
+        # government/public-safety customers overwhelmingly use exemption
+        # reason 3; QBO rejects a new non-taxable Customer without a reason.
+        if not payload["Taxable"]:
+            payload["TaxExemptionReasonId"] = str(
+                fields.get("tax_exemption_reason_id") or "3"
+            )
+    customer_type_id = str(fields.get("customer_type_id") or "").strip()
+    if customer_type_id:
+        payload["CustomerTypeRef"] = {"value": customer_type_id}
 
     bill_addr = _build_address_payload(fields, "bill")
     if bill_addr:
@@ -482,6 +621,7 @@ def _normalize_item(raw: dict) -> dict:
         "description": (raw.get("Description") or "").strip(),
         "unit_price": price,
         "type": (raw.get("Type") or "").strip(),
+        "active": bool(raw.get("Active", True)),
     }
 
 

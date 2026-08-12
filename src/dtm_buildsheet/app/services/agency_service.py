@@ -39,6 +39,7 @@ _ABBREV: list[tuple[str, str]] = [
 _AGENCY_EDITABLE_FIELDS = tuple(field for field in CUSTOMER_PROFILE_FIELDS if field != "name") + (
     "customer_since",
     "default_preferences",
+    "pricing_overrides",
 )
 
 
@@ -86,9 +87,9 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
     taxable = rec.get("taxable")
     if isinstance(taxable, str):
         normalized_taxable = taxable.strip().lower()
-        taxable = normalized_taxable in {"true", "yes", "1"} if normalized_taxable else None
+        taxable = normalized_taxable in {"true", "yes", "1"} if normalized_taxable else False
     elif not isinstance(taxable, bool):
-        taxable = None
+        taxable = False
 
     return AgencyRecord(
         agency_id=str(rec.get("agency_id", "")),
@@ -118,6 +119,7 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
         taxable=taxable,
         customer_since=str(rec.get("customer_since", "")),
         default_preferences=preferences_from_dict(rec.get("default_preferences", {})),
+        pricing_overrides=_clean_pricing_overrides(rec.get("pricing_overrides", {})),
         qb_customer_id=str(rec.get("qb_customer_id", "")),
         created_at=str(rec.get("created_at", "")),
         updated_at=str(rec.get("updated_at", "")),
@@ -217,15 +219,22 @@ def _clean_agency_field(field: str, value: object) -> object:
     """Normalize a UI/API field without treating a missing value as an erase."""
     if field == "default_preferences":
         return preferences_from_dict(value)
+    if field == "pricing_overrides":
+        return _clean_pricing_overrides(value)
     if field == "taxable":
         if value is None or value == "":
-            return None
+            return False
         if isinstance(value, bool):
             return value
         if isinstance(value, str):
             return value.strip().lower() in {"true", "yes", "1"}
         return bool(value)
     return str(value or "").strip()
+
+
+def _clean_pricing_overrides(value: object) -> dict[str, float]:
+    from .customer_pricing_service import normalize_overrides
+    return normalize_overrides(value)
 
 
 def customer_profile_fields(record: AgencyRecord) -> dict:
@@ -485,12 +494,14 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
         save_setting_to_cloud_in_background(
             f"agencies/{record.agency_id}.json", serialized,
         )
-        # Mirror the agency up to QuickBooks (create/update the Customer) in the
-        # background, exactly like the SharePoint mirror above. No-ops unless
-        # QB is connected; stamps qb_customer_id back on first create.
+        # Mirror the agency to QuickBooks before returning so a rejected
+        # Customer create/update is visible to the user instead of disappearing
+        # inside a daemon thread. The local agency remains saved either way.
         from . import qb_sync_service
-        qb_sync_service.push_agency_in_background(paths, record.agency_id)
-        return {"ok": True, "agency": asdict(record), **proposal_result}
+        qb_sync = qb_sync_service.push_agency_after_save(paths, record.agency_id)
+        # A successful create stamps qb_customer_id back onto the cached record.
+        saved_record = _records(paths).get(record.agency_id) or record
+        return {"ok": True, "agency": asdict(saved_record), "qb_sync": qb_sync, **proposal_result}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

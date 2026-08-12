@@ -217,3 +217,56 @@ def test_disconnect_clears_tokens_keeps_app_creds(paths, _fakes):
     for key in ("access_token", "refresh_token", "realm_id"):
         assert key not in _fakes.data
     assert _fakes.data["client_secret"] == "SEC"
+
+
+def test_production_preview_profile_isolated_from_standard_connection(paths, monkeypatch):
+    """A production comparison must never replace the sandbox credentials."""
+    standard = _MemStore()
+    preview = _MemStore()
+
+    def _profile_store(profile="default"):
+        return preview if profile == svc.PRODUCTION_PREVIEW_PROFILE else standard
+
+    monkeypatch.setattr(svc, "_store", _profile_store)
+    monkeypatch.setattr(svc, "_pending_state", None)
+    monkeypatch.setattr(svc, "_pending_states", {})
+
+    svc.save_settings(
+        paths,
+        client_id="SANDBOX-ID",
+        client_secret="SANDBOX-SECRET",
+        environment="sandbox",
+        redirect_uri="http://localhost:7655/api/quickbooks/callback",
+    )
+    svc.save_settings(
+        paths,
+        client_id="PRODUCTION-ID",
+        client_secret="PRODUCTION-SECRET",
+        environment="production",
+        redirect_uri="https://relay.example/qb-callback",
+        profile=svc.PRODUCTION_PREVIEW_PROFILE,
+    )
+
+    assert svc.get_status(paths)["environment"] == "sandbox"
+    assert svc.get_status(paths)["client_id"] == "SANDBOX-ID"
+    assert svc.get_status(paths, profile=svc.PRODUCTION_PREVIEW_PROFILE)["environment"] == "production"
+    assert svc.get_status(paths, profile=svc.PRODUCTION_PREVIEW_PROFILE)["client_id"] == "PRODUCTION-ID"
+    assert standard.data["client_secret"] == "SANDBOX-SECRET"
+    assert preview.data["client_secret"] == "PRODUCTION-SECRET"
+    assert (paths.workspace_dir / "quickbooks_config.json").exists()
+    assert (paths.workspace_dir / "quickbooks_production_preview_config.json").exists()
+
+
+def test_production_preview_rejects_sandbox_environment(paths, _fakes):
+    result = svc.save_settings(
+        paths,
+        client_id="CID",
+        client_secret="SEC",
+        environment="sandbox",
+        redirect_uri="http://localhost:7655/api/quickbooks/callback",
+        profile=svc.PRODUCTION_PREVIEW_PROFILE,
+    )
+    assert result == {
+        "ok": False,
+        "error": "Production catalog preview only accepts production credentials.",
+    }

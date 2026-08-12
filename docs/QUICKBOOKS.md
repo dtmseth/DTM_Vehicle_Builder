@@ -4,7 +4,9 @@
 `QUICKBOOKS_STATUS.md` (handoff/status), `QUICKBOOKS_INTEGRATION.md` (design), and
 `QUICKBOOKS_QUESTIONNAIRE.md` (Intuit App Assessment answers).
 
-**Branch**: `claude/quickbooks-integration-design-rcgula` (all QB work; not yet merged to `main`).
+**Code location**: the QB foundation is in `main`; guarded QB settings and estimate controls are
+enabled following the production catalog and customer migrations. The production
+catalog preview is a separate, read-only owner workflow — not a switch that enables routine sync.
 **Related**: [EXTERNAL_CONNECTION_SECURITY.md](EXTERNAL_CONNECTION_SECURITY.md) (security standard),
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) (the parts catalog QB feeds), `relay/DEPLOY.md` (relay deploy).
 
@@ -25,17 +27,34 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 | Phase | What | Status |
 |-------|------|--------|
 | **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
-| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Built. Pull (A) **tested in sandbox**. B/C built + unit-tested. |
-| **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Customer sync and estimate flow built + unit-tested. New estimates do not create jobs. |
-| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Not yet exercised live. |
-| **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ⛔ Not done. Requires sandbox test cycle confirmation + relay deploy (§5–6). |
+| **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Production activated 2026-08-11. Production pull/reconciliation verified read-only against 1,335 active Items. |
+| **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Production customer migration completed 2026-08-11: all 214 agencies linked to existing production Customers; reviewed duplicate Customers excluded. |
+| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Default/customer pricing is calculated before create. Not yet exercised live. |
+| **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Migration plan reviewed and applied 2026-08-11. The duplicate preview token was retired locally without revoking the promoted standard production authorization. |
+| **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ✅ Approved; Production keys obtained and stored through the isolated preview profile. |
 
-**Currently runs against the SANDBOX company using Development keys.** No Production keys, no
-relay deployed, questionnaire not submitted. Nothing is live against a real QBO company yet.
+**The standard QB connection now runs against the Production company using Production keys.** The
+production Item cache is active for normal reconciliation. The separate production-preview profile
+retains only its app-registration secret for audit/reconfiguration; its access token, refresh token,
+and realm binding were removed locally after promotion so it cannot compete with the standard
+profile's rotating refresh token.
 
 **Write boundary**: the app writes **Customers and non-posting Estimates** —
 never Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
 hard-gated to `environment == "sandbox"`.)
+
+Agency saves synchronously create/update their top-level QBO Customer and return the result to the
+UI, so a rejected Customer write cannot disappear in a background thread. New agencies default to
+non-taxable. Because this production company has Automated Sales Tax enabled, non-taxable Customer
+writes include its established government/public-safety exemption reason ID `3`; the production
+customer population uses that reason for 134 existing exempt agencies.
+Every agency Customer written by the app is also assigned the active QBO **Retail** Customer Type.
+The integration resolves that type's company-local ID by its exact name at write time; it never
+persists or hard-codes the production ID. In this company, Retail activates the shared QBO price
+rules when a user adds an Item in the QBO form.
+Before estimate creation, the linked QBO Project's taxable flag is aligned with the agency Customer;
+QBO Projects otherwise retain their own taxable default and can add tax even when the parent agency
+is exempt.
 
 **Parts-import effort — FULL import done (2026-07-01).** The whole synced QBO item cache is now in
 `parts_db`. `tools/qb_import_all.py` bulk-created **+670 products** (262→932) for every item not
@@ -67,8 +86,8 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - `app/routes/quickbooks.py` — all routes; every response sets `Cache-Control: no-store`;
   callback is **302-only** (never echoes code/token).
 - `ui/index.html` + `ui/js/settings/quickbooks.js` — Settings → General → QuickBooks tab.
-- `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). See `relay/DEPLOY.md`.
-  **Not yet deployed.**
+- `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). The production relay is live at
+  `dtmvehiclebuilder.netlify.app`; see `relay/DEPLOY.md`.
 - Tests: `tests/test_quickbooks_service.py` (13, hermetic).
 
 ### Phase 2 — Parts sync
@@ -87,7 +106,88 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
 
+### Production catalog preview — read-only migration gate
+
+The production company may organize Items differently from sandbox. Therefore production does not
+use `run_full_sync()` or the 30-minute poller. The preview is deliberately isolated:
+
+- `tools/qb_create_migration_snapshot.py` creates an immutable local baseline containing the
+  installed `parts_db.json` and, when available, the normalized sandbox Items cache. It never reads
+  or copies connection metadata, OAuth tokens, or keychain data.
+- `quickbooks_production_preview_config.json` and
+  `quickbooks_production_preview_credentials.bin` are separate from the standard sandbox profile.
+  The production preview accepts Production credentials only; its redirect URI must be HTTPS.
+- `qb_production_preview_service.py` writes only a separate production Items cache, report, and
+  prepared plan. It has no `save_config_file()` call and cannot update `parts_db.json`.
+- The report compares the Builder `part_number` against **both** QBO `Name` and QBO `Sku`, reports
+  the exact-match totals for each column, and lets the owner select the correct field once. The
+  sandbox baseline currently demonstrates why this matters: vendor identifiers there are held in
+  QBO `Name`, while `Sku` is often blank.
+- The preview can create and immediately select a new immutable baseline from the current Builder
+  catalog after each owner-reviewed cleanup pass. The button copies only `parts_db.json` and, when
+  the standard profile is sandbox, its normalized Item cache. It never reads or copies credentials,
+  OAuth tokens, or production connection metadata.
+- QBO Items present in the sandbox cache but absent from the baseline Builder catalog are carried
+  forward as **intentional exclusions** when their normalized Name or SKU appears in production.
+  They remain outside the Builder catalog; unrecognized production-only Items still block the
+  eventual mapping approval and remain untouched in the exact-match plan.
+- Once the owner selects the proven identifier field, the app may prepare one exact-match plan for
+  every unambiguous match. Ambiguous, missing, unexpected, or blank-key rows stay out of that plan
+  for later review. **Prepared is not applied:** a later explicit owner-approved apply step is
+  required before any catalog link changes.
+
+#### Locked production lineage findings (2026-08-11)
+
+Baseline `20260811T163517Z-post-part-cleanup` is the current migration anchor. The isolated
+production preview contains 1,335 active Items and 281 inactive historical Items. Its
+snapshot-and-cache-pinned historical plan is written to
+`workspace/quickbooks_production_historical_link_plan.json` with status
+`applied` after the owner-approved activation on 2026-08-11.
+
+- All 1,222 previously linked Builder rows have a high-confidence production successor: 1,212
+  literal Name matches, 6 retired `Name (deleted)` matches, 3 controlled `-B` renames, and 1 exact
+  description match. There are zero unmatched prior links.
+- The 1,222 rows resolve to 1,216 unique Items because six Builder rows intentionally share an Item
+  link. Shared links are preserved rather than treated as duplicates.
+- All matched production Items have a blank QBO `Sku`. This is compatible: Builder keeps its own
+  `part_number` for selection/display and stores the production `qb_item_id` as the durable QBO
+  reference. Estimate payloads use `ItemRef.value = qb_item_id`, not `Sku` or `Name`.
+- Six matched production Items are inactive and remain linked with `qb_inactive=true`; estimate
+  validation blocks them instead of deleting or silently substituting another Item.
+- Ten matched Items changed QBO type (nine to Inventory, one to Service). Item type does not alter
+  the estimate reference path; all are addressed through the same Item ID. The change is retained
+  in the plan for audit.
+- Production price and sales description are authoritative after activation. Normal production
+  reconciliation refreshes those fields by Item ID, so price changes and whitespace/newline
+  differences do not break Builder part selection.
+- Estimate validation and creation each perform a fresh Item pull and reconciliation first. If
+  current production prices cannot be refreshed, the estimate is blocked instead of using stale
+  cached prices.
+
+Activation stopped the running desktop process before the profile swap, promoted the keychain-held
+production credentials into the standard profile, seeded the standard active Item cache, applied
+only the plan's QB-owned fields, and retired the duplicate preview token without revocation. The
+first standard production pull/reconciliation updated no reviewed links, incorrectly flagged zero
+Items inactive, and linked one formerly pending part by an exact production Name match. Current
+catalog state is 1,223 linked rows, 28 pending rows, and 6 intentionally inactive linked rows.
+
+The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appears only on a machine
+that already has a valid local migration snapshot. Guarded QB sales/estimate controls are enabled;
+all write operations still require their backend checks and explicit confirmation.
+
 ### Phase 3 — Customers ↔ Agencies + estimate customer flow
+- **Production migration:** QBO Customer IDs are company-local, so the 211 stored sandbox IDs were
+  never copied directly. A guarded migration snapshot ignored every old ID, relinked 207 agencies
+  by one unique normalized production name, filled 671 blank profile fields, and required owner
+  decisions for every exception. The reviewed finish linked Minnesota State Patrol to Customer 39,
+  Cold Spring Fire Department to 240, and the Camp Ripley training agency to 104; deleted two
+  owner-confirmed local sample agencies; and imported Baker Police Department, Custer County
+  Sheriff, Dundas Police Department, and Camp Ripley Fire Department. All 214 remaining agencies
+  now point to distinct, existing production Customers.
+- Production Customer IDs 38, 88, and 407 are reviewed duplicate records. Future customer import
+  previews and imports exclude them so they cannot replace the selected State Patrol/Cold Spring
+  links. The local migration plan and immutable agency snapshot remain in the ignored `workspace/`
+  recovery area; credentials are never included.
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,
@@ -117,11 +217,15 @@ stable project name is written into `CustomerMemo` and `PrivateNote`, and persis
 `IndividualUnit.qb_project_id`; no new sub-customer is created.
 
 **True QBO Projects are a separate capability:** Intuit documents a Project API, but it requires
-the company's Projects feature plus a premium/restricted Project Management scope. The current
-desktop OAuth scope is the regular accounting scope, so the app does not create or list Projects
-programmatically. The standard Estimate REST request does accept a known `ProjectRef`, which is
-why manually created Projects can be linked at no additional API-tier cost. The premium API is
-only needed to automate Project creation/listing. See Intuit's
+the company's Projects feature plus the premium/restricted `project-management.project` scope.
+That scope is unavailable to the current no-charge **Builder** developer tier; it requires the
+Intuit workspace to subscribe to **Silver or higher** (Silver is currently US$300/month). The QBO
+company must also be Plus, Advanced, or Intuit Enterprise Suite; project estimates through the new
+Project API require Advanced or Enterprise Suite. The current desktop OAuth scope is the regular
+accounting scope, so the app does not create or list Projects programmatically. The standard
+Estimate REST request does accept a known `ProjectRef`, which is why manually created Projects can
+be linked without the premium scope. The premium API is only needed to automate Project
+creation/listing. See Intuit's
 [Project API getting started](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/get-started)
 and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/workflows/manage-projects/use-cases).
 
@@ -134,31 +238,64 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   linked/active/priced; uses QB sales descriptions, consolidates duplicate SKUs, sorts by brand,
   resolves the top-level customer, requires a true QBO Project, writes `ProjectRef`, and writes
   `qb_estimate_id` back), `create_estimates_batch()`.
+  A vehicle with a stored `qb_estimate_id` cannot silently create another form. The review asks the
+  user to either **update the existing Estimate** (read current `SyncToken`, then sparse-update the
+  complete Builder-owned line array and header fields) or deliberately **create a separate new
+  Estimate**. The new ID replaces the vehicle's current local Estimate link; the older QBO form is
+  retained in QuickBooks.
   The standard Accounting-only connection deliberately does not write
   sales-form custom fields: modern QuickBooks fields require their paid Custom
   Fields API to resolve the company-specific field IDs. This keeps a custom
   form mismatch from blocking the non-posting estimate create. The optional
   phone, vehicle, sales-ID, and unit header fields therefore remain managed in
   QuickBooks unless that paid scope is enabled later.
-  The create dialog reports when QB customer price levels are enabled. The accounting API does
-  not expose custom price-level rates, so the estimate uses the synced sandbox item rates until
-  the user reviews/adjusts them in QuickBooks. See Intuit's
+  Production QBO `Item.UnitPrice` is treated as list price. Before validation or creation, the app
+  applies the shared **Default** manufacturer rule: Gamber-Johnson 40%, Havis 20%, PAC Tool 5%,
+  Santa Cruz 25%, Setina 20%, Westin 15%, and Whelen 38% off list. An Agency stores only sparse
+  manufacturer exceptions in `pricing_overrides`; missing values continue to inherit Default.
+  The create dialog shows list total, savings, customer total, and any customer-specific values.
+  The Estimate payload sends the calculated `UnitPrice` and `Amount` explicitly, so QBO's internal
+  item/rule formatting cannot change the reviewed price. Production estimate inspection confirms
+  these discounted values are stored as each line's raw `UnitPrice`/`Amount`; QBO does not add a
+  second discount layer over app-supplied rates. Catalog reconciliation still refreshes
+  list prices only and never writes customer prices back into Item data.
+  The Accounting API does not expose QBO's price-rule tables, so these reviewed local rules are
+  deliberately authoritative for Vehicle Builder estimates. See Intuit's
   [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
+  The QBO Estimate form has a separate **Discounts and fees → Bank transfer — 1% per transaction,
+  max $20** switch. It is not the Invoice entity's `AllowOnlineACHPayment` field. The Accounting API
+  does not return or document a writable field for this Estimate-form switch (including on existing
+  production Estimates), so estimate creation cannot set or verify it. The create review explicitly
+  instructs the user to turn it on in QBO after creation; the app must not send an invented field.
+  QBO's standard Accounting API supports attaching the generated build-sheet PDF to an
+  existing Estimate. This is a second request after Estimate creation: multipart `POST /upload`
+  with `application/pdf` content and Attachable metadata whose `EntityRef` type is `Estimate` and
+  value is the returned Estimate ID. QBO requires the Estimate to exist first and permits up to
+  100 MB total per upload request. The estimate review now offers **Attach build PDF**, shows the
+  exact filename, verifies a readable PDF inside an approved output directory, and skips an
+  already-linked file with the same name and byte size. Upload failure is reported separately—the
+  successfully created or updated Estimate is never represented as failed or retried merely
+  because its subsequent attachment upload failed.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
+  A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
+  issue instead of failing silently. Missing Project links open a numbered manual-QBO walkthrough;
+  if the unit number is missing, its first action opens that vehicle's Details form directly.
   The batch screen first checks every configured vehicle, lets the user set up missing Projects,
   and creates only the ready estimates after an explicit confirmation.
-  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (25).
+  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (35) and
+  `tests/test_customer_pricing_service.py` (4).
 
 ### Full route list (`/api/quickbooks/*`)
-`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customers/preview` ·
+`GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
 `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` ·
-`POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
+`POST customer-pricing/default` · `POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
 `POST projects/bind` ·
 `POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
 
-**Test totals**: full suite ~1593 pass, 1 skipped. QB-specific: service (13), sync (22),
-customer-sync (14), agency-push (13), estimate (25), seed-sandbox (5).
+**Test totals**: full suite 1963 pass, 1 skipped, plus 3 known owner-review golden-digest drifts.
+QB-specific: service (15), sync (24), customer-sync (14), agency-push (13), estimate (35),
+customer-pricing (4), seed-sandbox (5).
 
 ---
 
@@ -207,6 +344,11 @@ categorization (placement rules, build types, vehicle compatibility). Each linke
 entry gains `qb_item_id`, `qb_sku`, `qb_unit_price`, `qb_inactive`, `qb_last_synced`. Inactive QBO
 items are flagged, never deleted (old builds may reference discontinued parts). Triggers: app start
 (background), 30-min poll, manual "Sync Now".
+
+**Production exception:** those triggers belong only to the standard connection. They must never
+use the production-preview profile. The preview reads active production Items into its own local
+cache and produces a mapping report; it has no reconciliation, background polling, customer import,
+or estimate capability.
 
 ### Future: reviewed QBO catalog-change queue (owner decision)
 
@@ -324,9 +466,10 @@ Intuit's most common rejection is "connect/disconnect/reconnect not tested." Do 
 5. Connect → sign in with the Intuit **developer account** → authorize the sandbox company.
 6. Pull items, link a couple to parts, pull customers → agencies.
 
-For Production later: deploy the relay (`relay/DEPLOY.md`), register the relay HTTPS URL under the
-**Production** tab, submit the questionnaire, then switch the app to `environment=production` with
-Production keys + the relay redirect URI.
+For the first Production catalog comparison: deploy the relay (`relay/DEPLOY.md`), register the
+relay HTTPS URL under the **Production** tab, and use the separate **QB Catalog Preview** profile
+with Production keys. Do **not** switch the standard QuickBooks connection to production; it remains
+the sandbox integration until the reviewed migration is approved.
 
 ---
 
@@ -338,16 +481,23 @@ reviewed catalog-mapping migration, never as a routine sync. It must not overwri
 otherwise "clean up" existing Builder parts merely because the production company is organized
 differently.
 
+**Baseline checkpoint complete (2026-08-10):** an immutable local pre-production mapping snapshot
+was created from the installed Builder catalog: 785 products, 1,353 part-number entries, 1,222
+currently linked entries, and 29 pending-QB entries. It also preserves the 1,291-item normalized
+sandbox cache used to recognize intentionally excluded QBO Items. The snapshot is local-only and
+is not a cloud mirror or an automatic rollback mechanism.
+
 The sandbox and production companies have different QBO Item IDs even where the underlying vendor
 SKU is the same. Before enabling any production reconciliation or background polling:
 
 1. Take a recoverable snapshot of the current `parts_db.json` and the existing QB links.
 2. Pull the production item catalog into an isolated preview/cache, with automatic reconciliation
    and the 30-minute background sync disabled for this first pass.
-3. Produce a reviewable mapping report for every existing QB-linked SKU: exact normalized SKU
-   match, candidate production Item ID, description/price/active-state differences, and the result
-   (`safe match`, `needs owner choice`, `production-only`, or `Builder-only`). Do not use item name,
-   category, or account layout alone as a safe match.
+3. Produce a reviewable mapping report for every existing QB-linked SKU: compare exact normalized
+   Builder part number against both production QBO `Name` and `Sku`, select the proven identifier
+   field once, then report candidate production Item ID, description/price/active-state differences,
+   and the result (`safe match`, `needs owner choice`, `production-only`, or `Builder-only`). Do not
+   accept a Name-based match until its column-level match rate and exceptions have been reviewed.
 4. Require explicit owner approval before replacing a sandbox Item ID, accepting production-owned
    price/description changes, or marking a linked Builder part inactive. Preserve Builder-owned
    metadata such as part type, placement, render asset, compatibility, and manifest grouping.
@@ -366,16 +516,28 @@ it does not replace the initial migration review.
 
 ## 7. What's left before Production go-live (Phase 4)
 
-- **Deploy the hosted relay** (`relay/DEPLOY.md`) and register its HTTPS URL as the Production
-  redirect URI in the Intuit dashboard.
-- **Run the sandbox test cycle** (§5) and **submit the questionnaire** (§8).
-- Obtain Production Client ID/Secret after approval; enter them with `environment=production`.
-- Complete and approve the protected production inventory-transition review (§6) before any
-  production reconciliation, background sync, or estimate creation.
+The relay, App Assessment, Production credentials, isolated catalog migration, and customer
+migration are complete. The remaining controlled activation steps are:
+
+- Use the enabled estimate UI to validate a representative configured vehicle, without creating
+  anything, and review its customer/project resolution and every line item.
+- After owner approval, create one non-posting production Estimate and compare it manually in QBO.
+- Enable normal background sync only after that first Estimate and the resulting production state
+  have been reviewed. Background sync remains disabled until then.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
-(manual button today, owner chose reviewed-first).
+(manual button today, owner chose reviewed-first); automatic QBO Project creation after a future
+Silver+ developer-tier upgrade.
+
+**Deferred multi-user identity/audit design:** keep one administrator-controlled company OAuth
+connection rather than distributing its refresh token to every workstation. Individual Builder
+users may later authenticate with OpenID Connect (or the existing Microsoft 365 identity), while
+the Builder keeps its own immutable user/action/QBO-entity audit trail. QBO records third-party API
+writes as `System Administration`, so separate user sign-ins do not make QBO's native audit log
+attribute those writes to each employee. If this becomes a multi-workstation feature, move the
+single company refresh token and API execution into an authenticated central service; the current
+redirect-only Netlify relay is deliberately not such a backend.
 
 > **Go-live is externally gated** (relay + questionnaire + Intuit approval). It is *not* advanced by
 > the parts-import grind and should not block it. Run it as its own track when ready.
@@ -388,10 +550,28 @@ Reference when completing the questionnaire in the Intuit Developer Dashboard (o
 order). Complete the §5 sandbox test cycle first — Intuit rejects submissions where testing isn't done.
 
 **Info to have ready:** App name `DTM Vehicle Builder`; category Accounting/Internal business tool;
-country US; **1 realm** (our company only); Launch/Disconnect URL `https://<domain>`; Production
-redirect `https://<domain>/.netlify/functions/qb-callback`; dev redirect
-`http://localhost:7655/api/quickbooks/callback`; scope `com.intuit.quickbooks.accounting`; hosting
-US (runs locally on user machines); no fixed IP (desktop app).
+country US; **1 realm** (our company only); Intuit Single Sign-on **No**; scope
+`com.intuit.quickbooks.accounting`; hosting US (runs locally on user machines); no fixed IP
+(desktop app). Deploy the relay before entering any Production URL. Use the provider-assigned HTTPS
+origin exactly; do not invent a host domain.
+
+For a verified deployed origin such as `https://dtm-qb-relay.netlify.app`, enter:
+
+| Intuit field | Value |
+|---|---|
+| App host domain | `dtm-qb-relay.netlify.app` (hostname only) |
+| Launch URL | `https://dtm-qb-relay.netlify.app/` |
+| Connect URL | `https://dtm-qb-relay.netlify.app/connect/` |
+| Reconnect URL | `https://dtm-qb-relay.netlify.app/reconnect/` |
+| Disconnect URL | `https://dtm-qb-relay.netlify.app/disconnect/` |
+| Production redirect URI (Netlify) | `https://dtm-qb-relay.netlify.app/.netlify/functions/qb-callback` |
+| Production redirect URI (Vercel alternative) | `https://<verified-vercel-host>/api/qb-callback` |
+| Development redirect URI | `http://localhost:7655/api/quickbooks/callback` |
+
+The hostname above is an example shape, not a reserved or deployed DTM hostname. Substitute the
+actual origin only after `relay/verify_deployment.sh <origin> netlify` (or `vercel`) passes. The public connect/reconnect pages are
+instructions for this non-SSO internal desktop app; OAuth itself starts only from the isolated
+**QB Catalog Preview** profile on the authorized workstation.
 
 **§1 How your app operates:** internal desktop app generating vehicle build sheets for law
 enforcement / emergency-vehicle upfits; QB integration syncs the parts catalog (Items) and creates

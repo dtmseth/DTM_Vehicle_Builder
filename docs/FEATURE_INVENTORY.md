@@ -572,6 +572,9 @@ The project detail view has three sub-tabs:
 | `contact_name` | Required on creation |
 | `contact_info` | Required on creation (phone or email) |
 | `customer_since` | Free text year / best guess |
+| `default_preferences` | Equipment defaults copied into new projects |
+| `pricing_overrides` | Sparse manufacturer discount exceptions; empty inherits Default pricing |
+| `qb_customer_id` | Company-local QuickBooks Customer ID |
 | `created_at` / `updated_at` | ISO timestamps |
 
 ### Fuzzy Search

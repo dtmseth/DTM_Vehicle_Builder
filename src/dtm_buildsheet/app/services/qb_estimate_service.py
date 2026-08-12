@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import math
 import re
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
@@ -89,6 +90,7 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
             (manufacturer_specs.get(manufacturer_id) or {}).get("label", manufacturer_id)
         ).strip() or "Unbranded"
         prod_fields["manufacturer"] = manufacturer
+        prod_fields["manufacturer_id"] = manufacturer_id
         # ``friendly_name`` was used by the first QB importer. Keep it as a
         # compatibility fallback, but prefer the separate QB sales-description
         # field populated by reconciliation.
@@ -141,6 +143,7 @@ def _resolution_index(paths: AppPaths) -> tuple[dict, dict, dict]:
                 "qb_pending": pn_fields["qb_pending"],
                 "price_usd": pn_fields["price_usd"],
                 "manufacturer": manufacturer,
+                "manufacturer_id": manufacturer_id,
             }
             if not entry["qb_sales_description"] and entry["qb_item_id"]:
                 entry["qb_sales_description"] = cached_descriptions.get(entry["qb_item_id"], "")
@@ -209,6 +212,7 @@ def _resolve_part_number(
                 "qb_sku": entry["qb_sku"],
                 "description": entry.get("qb_sales_description", ""),
                 "manufacturer": entry.get("manufacturer", "Unbranded"),
+                "manufacturer_id": entry.get("manufacturer_id", ""),
                 "unit_price": float(price),
                 "pending": True,
             }, ""
@@ -224,6 +228,7 @@ def _resolve_part_number(
         "qb_sku": entry["qb_sku"],
         "description": entry.get("qb_sales_description", ""),
         "manufacturer": entry.get("manufacturer", "Unbranded"),
+        "manufacturer_id": entry.get("manufacturer_id", ""),
         "unit_price": float(entry["qb_unit_price"]),
         "pending": False,
     }, ""
@@ -260,9 +265,29 @@ def _resolve_custom_part(draft_part) -> tuple[dict | None, str]:
         "description": description,
         "manufacturer": "Custom",
         "unit_price": price,
-        "pending": True,
+        "pending": False,
         "custom": True,
     }, ""
+
+
+def _attach_custom_parts_to_misc_item(paths: AppPaths, lines: list[dict]) -> list[dict]:
+    """Bill one-off priced parts through the exact active ``MISC PART`` Item."""
+    custom_lines = [line for line in lines if line.get("custom")]
+    if not custom_lines:
+        return []
+    misc_item = qb_sync_service.find_cached_active_item_by_name(paths, "MISC PART")
+    item_id = str((misc_item or {}).get("qb_item_id") or "").strip()
+    if not item_id:
+        return [{
+            "name": line["name"],
+            "part_number": line.get("part_number", ""),
+            "reason": "custom_item_unavailable",
+        } for line in custom_lines]
+    for line in custom_lines:
+        line["qb_item_id"] = item_id
+        line["qb_item_name"] = str(misc_item.get("name") or "MISC PART")
+        line["pending"] = False
+    return []
 
 
 def _component_quantity(component: dict) -> int:
@@ -444,7 +469,10 @@ def _build_estimate_payload(
             # This is the QB item's Sales Description, not the manifest row
             # name. The latter is only our local fallback when QB has no
             # description available yet.
-            "Description": ln.get("description") or ln["name"],
+            "Description": (
+                f"{ln.get('part_number') or ln.get('qb_sku')} — {ln.get('description') or ln['name']}"
+                if ln.get("custom") else ln.get("description") or ln["name"]
+            ),
             "SalesItemLineDetail": {
                 "ItemRef": {"value": ln["qb_item_id"]},
                 "Qty": ln["qty"],
@@ -502,26 +530,51 @@ def _load_individual(paths: AppPaths, project_id: str, individual_id: str):
     return project, build_unit, unit
 
 
+def _ensure_project_tax_status(client, qb_project_id: str, agency) -> dict:
+    """Keep a QBO Project's taxable flag aligned with its agency Customer."""
+    if agency is None or not qb_project_id or agency.taxable is None:
+        return {"ok": True, "changed": False}
+    try:
+        current = client.read_customer(qb_project_id)
+        if current is None or current.get("Taxable") == bool(agency.taxable):
+            return {"ok": True, "changed": False}
+        client.update_customer(
+            qb_project_id,
+            str(current.get("SyncToken", "0")),
+            {"taxable": bool(agency.taxable)},
+        )
+        return {"ok": True, "changed": True}
+    except QuickBooksApiError as exc:
+        logger.warning("QuickBooks Project tax sync failed: %s", exc)
+        return {"ok": False, "error": "project_tax_sync_failed"}
+
+
 # ── public API ────────────────────────────────────────────────────────────────
 
 
 def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -> dict:
     """Dry run: resolve the build and report whether an estimate can be created.
 
-    No network, no writes. ``can_create`` is True only when there are billable
-    lines and zero problems.
+    Refreshes the read-only QB Item catalog first. ``can_create`` is True only
+    when there are billable lines and zero problems.
     """
     loaded = _load_unit_draft(paths, project_id, individual_id)
     if isinstance(loaded, dict):
         return loaded
     project, build_unit, unit, draft = loaded
 
+    refresh = qb_sync_service.refresh_estimate_catalog(paths)
+    if not refresh.get("ok"):
+        return refresh
+
     lines, problems = resolve_build_lines(paths, draft)
+    problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
+    from . import agency_service, customer_pricing_service
+    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
+    lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
     total = round(sum(ln["amount"] for ln in lines), 2)
     pending = [{"name": ln["name"], "part_number": ln.get("part_number", ""),
                 "amount": ln["amount"]} for ln in lines if ln.get("pending")]
-    from . import agency_service
-    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
     customer = None
     customer_linked = False
     if agency is not None:
@@ -537,12 +590,17 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "can_create": not problems and bool(lines),
         "line_count": len(lines),
         "total": total,
+        "pricing": pricing,
+        "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "problems": problems,
         # Billable but not yet a QB inventory item — created as a flagged note.
         "pending": pending,
         "pending_count": len(pending),
         "customer": customer,
         "customer_linked": customer_linked,
+        "existing_estimate_id": str(unit.qb_estimate_id or "").strip(),
+        "pdf_available": bool(str(unit.pdf_path or "").strip()),
+        "pdf_name": Path(unit.pdf_path).name if str(unit.pdf_path or "").strip() else "",
         "project": _project_binding_summary(paths, project, build_unit, unit),
     }
 
@@ -661,6 +719,8 @@ def create_estimate(
     memo: str = "",
     customer_confirmed: bool = False,
     customer_fields: dict | None = None,
+    existing_action: str = "",
+    attach_pdf: bool = False,
 ) -> dict:
     """Create a QBO Estimate for one vehicle. Blocks if any part is unbillable.
 
@@ -672,7 +732,43 @@ def create_estimate(
         return loaded
     project, _build_unit, unit, draft = loaded
 
+    existing_action = str(existing_action or "").strip()
+    existing_estimate_id = str(unit.qb_estimate_id or "").strip()
+    if existing_estimate_id and existing_action not in {"update", "create_new"}:
+        return {
+            "ok": False,
+            "error": "duplicate_estimate_confirmation_required",
+            "existing_estimate_id": existing_estimate_id,
+        }
+    if existing_action == "update" and not existing_estimate_id:
+        return {"ok": False, "error": "existing_estimate_not_found"}
+
+    pdf_path = Path(unit.pdf_path) if str(unit.pdf_path or "").strip() else None
+    if attach_pdf:
+        from .export_service import _allowed_roots, _check_allowed
+        if pdf_path is not None and _check_allowed(pdf_path, _allowed_roots(paths)):
+            return {"ok": False, "error": "build_pdf_outside_output"}
+        if pdf_path is None or not pdf_path.is_file():
+            return {"ok": False, "error": "build_pdf_missing"}
+        if pdf_path.suffix.lower() != ".pdf":
+            return {"ok": False, "error": "build_pdf_invalid"}
+        try:
+            with pdf_path.open("rb") as stream:
+                signature = stream.read(5)
+            if pdf_path.stat().st_size > 100 * 1024 * 1024 or signature != b"%PDF-":
+                return {"ok": False, "error": "build_pdf_invalid"}
+        except OSError:
+            return {"ok": False, "error": "build_pdf_missing"}
+
+    refresh = qb_sync_service.refresh_estimate_catalog(paths)
+    if not refresh.get("ok"):
+        return refresh
+
     lines, problems = resolve_build_lines(paths, draft)
+    problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
+    from . import agency_service, customer_pricing_service
+    agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
+    lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
     if problems:
         return {"ok": False, "error": "validation_failed",
                 "problems": problems, "line_count": len(lines)}
@@ -688,6 +784,10 @@ def create_estimate(
     client, err = qb_sync_service._build_client(paths)
     if err:
         return err
+
+    tax_sync = _ensure_project_tax_status(client, unit.qb_project_id, agency)
+    if not tax_sync.get("ok"):
+        return tax_sync
 
     customer_result = qb_sync_service.ensure_top_level_customer(
         paths,
@@ -719,11 +819,31 @@ def create_estimate(
         memo=" — ".join(memo_parts),
         project_ref=unit.qb_project_id,
     )
+    # QBO does not expose the Estimate form's Discounts and fees → Bank
+    # transfer switch through the Accounting API. Do not confuse it with the
+    # Invoice-only AllowOnlineACHPayment field or send an invented Estimate
+    # field that Intuit may silently ignore.
     payload["PrivateNote"] = f"DTM vehicle project: {project_name}"
     try:
-        result = client.create_estimate(payload)
+        if existing_action == "update":
+            current_estimate = client.read_estimate(existing_estimate_id)
+            if current_estimate is None:
+                return {
+                    "ok": False,
+                    "error": "existing_estimate_not_found",
+                    "existing_estimate_id": existing_estimate_id,
+                }
+            result = client.update_estimate(
+                existing_estimate_id,
+                current_estimate.get("SyncToken", "0"),
+                payload,
+            )
+            estimate_action = "updated"
+        else:
+            result = client.create_estimate(payload)
+            estimate_action = "created"
     except QuickBooksApiError as exc:
-        logger.warning("QuickBooks estimate create failed: %s", exc)
+        logger.warning("QuickBooks estimate write failed: %s", exc)
         # Do not leave a locally stored, rejected project reference looking
         # usable. Keep it intact for auditability, but give the UI the binding
         # context it needs to send the user straight back to Project setup.
@@ -740,18 +860,42 @@ def create_estimate(
     unit.qb_project_name = project_name
     from ...inputs import project_entry
     project_entry.save_project(project, paths)
+    attachment = None
+    if attach_pdf and pdf_path is not None:
+        try:
+            existing_attachments = client.fetch_estimate_attachments(estimate_id)
+            pdf_size = pdf_path.stat().st_size
+            duplicate = next((row for row in existing_attachments if
+                row.get("file_name") == pdf_path.name and row.get("size") == pdf_size), None)
+            if duplicate:
+                attachment = {
+                    "ok": True,
+                    "skipped": "already_attached",
+                    "attachment_id": duplicate.get("id", ""),
+                    "file_name": pdf_path.name,
+                }
+            else:
+                uploaded = client.upload_estimate_attachment(estimate_id, str(pdf_path))
+                attachment = {"ok": True, **uploaded}
+        except (OSError, QuickBooksApiError) as exc:
+            logger.warning("QuickBooks build PDF attachment failed: %s", exc)
+            attachment = {"ok": False, "error": str(exc)}
     total = round(sum(ln["amount"] for ln in lines), 2)
     pending_count = sum(1 for ln in lines if ln.get("pending"))
-    logger.info("QB estimate created: %d lines (%d pending)", len(lines), pending_count)
+    logger.info("QB estimate %s: %d lines (%d pending)", estimate_action, len(lines), pending_count)
     return {
         "ok": True,
+        "action": estimate_action,
         "qb_estimate_id": estimate_id,
         "doc_number": result.get("doc_number", ""),
         "line_count": len(lines),
         "pending_count": pending_count,
         "total": total,
+        "pricing": pricing,
+        "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "qb_project_id": unit.qb_project_id,
         "project_name": project_name,
+        "attachment": attachment,
     }
 
 

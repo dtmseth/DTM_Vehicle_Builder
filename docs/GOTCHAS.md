@@ -117,7 +117,53 @@ you're touching. New gotchas get appended to the bottom with a date.
     `location_mode:"text"` and `location_options` only gives the picker/dropdown a friendly list.
     If the selected location is expected to render, the exact location key must exist in
     `vehicle_layouts.json` or be mapped through a resolver/alias.
-24. **Smoke flow count is currently 15.** Older docs and ledger entries may mention 9/9, 10/10,
+24. **Smoke flow count is currently 16.** Older docs and ledger entries may mention 9/9, 10/10,
     or 12/12;
     the current command is still `.venv/bin/python tools/ui_smoke/run_smoke.py`, but expected
-    success is 15/15.
+    success is 16/16.
+
+---
+
+## 2026-08-10 QuickBooks production-preview follow-up
+
+25. **Production QuickBooks is preview-only until separately approved.** Use the isolated
+    `production_preview` profile and its separate cache; it must never call the normal reconcile
+    path or the 30-minute poller. Production comparison writes reports/plans only, never
+    `parts_db.json`.
+26. **Confirm the QBO identifier column before bulk mapping.** The current sandbox stores vendor
+    part numbers in QBO `Name` while `Sku` is often blank. Compare both fields against Builder
+    `part_number`; only an owner-confirmed, unambiguous exact-match field can prepare a mapping
+    plan. Known baseline exclusions remain excluded.
+27. **Cloud-off does not disable the existing sandbox QuickBooks item poll.** `DTM_CLOUD=0` prevents
+    SharePoint mirroring, but the normal connected sandbox profile can still issue read-only QBO
+    Item queries and reconcile its local workspace cache. The isolated production-preview profile
+    is never included in that startup/polling path.
+28. **Production may contain both `SKU` and `SKU (deleted)` Items.** Historical migration matching
+    must prefer the literal active/raw Name before treating the deleted-name suffix as lineage.
+    Description-only normalization can make the current and retired records look identical while
+    their Item IDs, active state, and prices differ.
+29. **A promoted OAuth refresh token must have one active profile owner.** Copying the production
+    preview token into the standard profile and leaving both profiles connected creates a refresh-
+    token rotation race. Promotion removes access/refresh/realm data from the preview store without
+    revoking it; revocation would also invalidate the newly promoted standard connection.
+30. **QuickBooks Customer IDs are company-local and can collide across sandbox/production.** Never
+    carry agency `qb_customer_id` values across companies or run the normal ID-first import before a
+    reviewed migration. The 2026 production transition found 108 sandbox IDs pointing at different
+    production Customers. Migration matches unique normalized names first and permanently filters
+    owner-rejected duplicate production Customer IDs from future imports.
+31. **QBO Item prices are list prices; estimate prices are calculated separately.** Never reconcile
+    Default/customer discounts into `qb_unit_price` or the Item cache. Apply the shared
+    `customer_pricing.default_rule`, then sparse `AgencyRecord.pricing_overrides`, only to resolved
+    estimate lines and send the reviewed unit price explicitly. The Estimate form's **Discounts and
+    fees → Bank transfer — 1% per transaction, max $20** switch is separate from the Invoice-only
+    `AllowOnlineACHPayment` field and is not exposed by the Estimate API. Do not invent a field;
+    require the explicit QBO follow-up after creation.
+32. **Saved presets must retain the rich `DraftPart` shape.** `part_type`, concrete SKU
+    `components`, `picker_config`, accessory relationships, and placement metadata drive rendering,
+    picker edit round-tripping, and QuickBooks estimate resolution. Reducing a saved build to the
+    legacy workbook columns makes a newly created vehicle look similar in the manifest while losing
+    its renderer identity and billable SKUs.
+33. **Estimate creation and PDF attachment are separate QBO writes.** A successful Estimate must
+    remain successful if its later Attachable upload fails. Never automatically retry the Estimate
+    write after an attachment error; doing so creates duplicate financial forms. Existing vehicle
+    estimates require an explicit update-vs-create-new choice before any Estimate write.

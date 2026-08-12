@@ -522,6 +522,7 @@ must refer to a live QB-linked SKU.
       "fixed_location": "<single shop-reference location>",
       "allow_custom_location": true,
       "pa_mic_required": false,
+      "handheld_mag_mic_prompt": true,
       "default_colors": ["red", "white"],
       "accessories_disabled": true,
       "console_kit": {
@@ -532,6 +533,20 @@ must refer to a live QB-linked SKU.
           "armrest": "printer",
           "motion_attachment": "mongoose"
         }
+      }
+    }
+  },
+  "customer_pricing": {
+    "default_rule": {
+      "name": "Default",
+      "manufacturer_discounts": {
+        "gamber_johnson": 40,
+        "havis": 20,
+        "pac_tool": 5,
+        "santa_cruz": 25,
+        "setina": 20,
+        "westin": 15,
+        "whelen": 38
       }
     }
   },
@@ -565,6 +580,11 @@ must refer to a live QB-linked SKU.
 }
 ```
 
+`customer_pricing.default_rule` is the shared customer sales-price schedule. Keys must reference
+existing manufacturer IDs and values are percentages from 0 through 100. QuickBooks Item prices
+remain list prices; this schedule is applied only when validating/creating estimates. Individual
+agency files may store a sparse `pricing_overrides` object for customer-specific exceptions.
+
 `location_options` is optional and belongs on the product when a model has more precise
 shop-reference choices than its part type. `fixed_location` skips the location step entirely for
 a product that can only be installed in one place. `default_colors` optionally preselects a
@@ -572,6 +592,8 @@ light's colors for a new picker selection; it never overwrites an existing line'
 `allow_custom_location` lets a product retain the Custom choice even when it has exactly one
 curated location. `pa_mic_required` applies to `control_head` products and defaults to `true`;
 set it to `false` for a control head that does not include a PA microphone.
+`handheld_mag_mic_prompt` replaces that PA-mic setup with a simple Mag Mic yes/no choice and
+adds MMSU-1 directly, without asking about a bracket accessory.
 `picker_primary_part_type` is optional and chooses the product's semantic part-picker context;
 it must also be listed in that product's `fits_part_types`. It applies no matter how the product
 was reached, so a product with multiple physical homes consistently opens the right configurator.

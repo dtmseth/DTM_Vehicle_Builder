@@ -4,9 +4,10 @@
 let _layouts=null, _manifest=null, _catalog=null, _workbookRules=null, _appSettings=null;
 let _activeVehicle="PIU", _activeView="front";
 let _selectedLocKey=null, _locsDirty=false;
-// The QuickBooks foundation remains in the app for catalog integrity and a
-// future controlled launch, but it is not a public-release feature yet.
-window.DTM_QUICKBOOKS_UI_ENABLED = false;
+// Production catalog/customer migration is complete. Keep the feature visible
+// even on a disconnected workstation so Settings can explain how to connect;
+// every operation still performs its own backend connection/write guards.
+window.DTM_QUICKBOOKS_UI_ENABLED = true;
 const _uploadedImages={};  // view → {filename, b64, dataUrl}
 const _modalUploadedImages={};  // view → {filename, b64, dataUrl}
 const _modalDeletedViews=new Set();  // views marked for deletion from the active asset manifest bucket

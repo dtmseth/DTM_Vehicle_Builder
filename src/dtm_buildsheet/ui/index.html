@@ -97,6 +97,7 @@
     <button class="stab" data-stab="sizes" data-stab-group="advanced">📐 Light Size Rules</button>
     <button class="stab" data-stab="part-manager" data-stab-group="advanced">🔩 Part Manager</button>
     <button class="stab" data-stab="vehicles" data-stab-group="advanced">🚗 Vehicle Manager</button>
+    <button class="stab" id="qbpp-stab-button" data-stab="quickbooks-production-preview" data-stab-group="advanced" hidden>⚖️ QB Catalog Preview</button>
     <button class="stab" data-stab="workbook-tools" data-stab-group="advanced">🔧 Workbook Tools</button>
   </div>
 
@@ -937,6 +938,17 @@
         </p>
       </div>
 
+      <div id="qb-pricing-panel" class="qb-pricing-panel">
+        <div class="qb-pricing-heading">
+          <div>
+            <strong>Default customer pricing</strong>
+            <p>Discounts are calculated from the current QuickBooks Item list price. Agencies inherit this rule unless they have an override.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="qb-pricing-save">Save Default Rule</button>
+        </div>
+        <div id="qb-pricing-default-rows" class="qb-pricing-grid"></div>
+      </div>
+
       <!-- Disconnected state -->
       <div id="qb-connect-row">
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px">
@@ -979,6 +991,83 @@
 
       <button class="btn btn-primary" id="qb-save-settings">💾 Save Settings</button>
     </details>
+  </div>
+
+  <!-- ── PRODUCTION QUICKBOOKS CATALOG PREVIEW ──
+       This is intentionally separate from the hidden regular QB controls.
+       It permits only a snapshot-pinned Item read + mapping review. -->
+  <div id="stab-quickbooks-production-preview" hidden>
+    <div class="card qbpp-card">
+      <div class="card-title">
+        <span>QuickBooks Production Catalog Preview</span>
+        <span class="qbpp-badge">Read-only</span>
+      </div>
+      <p class="qbpp-lede">
+        This comparison cannot change your Builder catalog, create customers, create estimates, or
+        start background QuickBooks syncing. It uses a separate production connection and a saved
+        catalog snapshot.
+      </p>
+      <div id="qbpp-status" class="qbpp-status">Loading preview status…</div>
+    </div>
+
+    <div class="card qbpp-card">
+      <div class="card-title"><span>1. Catalog baseline</span></div>
+      <p class="qbpp-lede">Choose the saved catalog state that production items will be compared against.</p>
+      <div class="qbpp-row">
+        <select id="qbpp-snapshot" class="qbpp-input" aria-label="Catalog snapshot"></select>
+        <button class="btn btn-secondary" id="qbpp-use-snapshot">Use this snapshot</button>
+      </div>
+      <div id="qbpp-snapshot-details" class="qbpp-detail"></div>
+      <div class="qbpp-baseline-create">
+        <label>New baseline label<input id="qbpp-snapshot-label" class="qbpp-input" maxlength="80" placeholder="e.g. after placeholder cleanup"></label>
+        <button class="btn btn-secondary" id="qbpp-create-snapshot">Create baseline from current catalog</button>
+      </div>
+      <p class="qbpp-hint">Creates and selects an immutable local snapshot of the current Builder catalog and sandbox item cache. Credentials and production connection data are never copied.</p>
+    </div>
+
+    <div class="card qbpp-card">
+      <div class="card-title"><span>2. Production connection</span></div>
+      <p class="qbpp-lede">
+        These credentials are used only for this catalog preview. They are kept separately from the
+        sandbox connection in your operating system keychain.
+      </p>
+      <div class="qbpp-form-grid">
+        <label>Production Client ID<input id="qbpp-client-id" class="qbpp-input" autocomplete="off"></label>
+        <label>Production Client Secret<input id="qbpp-client-secret" class="qbpp-input" type="password" autocomplete="off"></label>
+        <label class="qbpp-form-wide">HTTPS Redirect URI<input id="qbpp-redirect-uri" class="qbpp-input" placeholder="https://your-domain.example/qb-callback"></label>
+      </div>
+      <p class="qbpp-hint">The redirect must be the deployed HTTPS relay URL registered in Intuit. It cannot be localhost.</p>
+      <div class="qbpp-row">
+        <button class="btn btn-secondary" id="qbpp-save-settings">Save production preview settings</button>
+        <button class="btn btn-primary" id="qbpp-connect">Connect production company</button>
+        <button class="btn btn-secondary qbpp-danger" id="qbpp-disconnect" hidden>Disconnect preview</button>
+      </div>
+    </div>
+
+    <div class="card qbpp-card">
+      <div class="card-title"><span>3. Compare catalog columns</span></div>
+      <p class="qbpp-lede">
+        Pull a separate copy of active production Items, then compare the Builder part number against
+        QuickBooks <strong>Name</strong> and <strong>SKU</strong>. We will select the correct production column once,
+        then prepare all unambiguous exact matches together.
+      </p>
+      <div class="qbpp-row">
+        <button class="btn btn-primary" id="qbpp-pull">Pull production catalog for comparison</button>
+        <label class="qbpp-field-select">Compare against
+          <select id="qbpp-mapping-field" class="qbpp-input">
+            <option value="">Choose after reviewing the column totals</option>
+            <option value="name">QuickBooks Name</option>
+            <option value="sku">QuickBooks SKU</option>
+          </select>
+        </label>
+      </div>
+      <div id="qbpp-report" class="qbpp-report"></div>
+      <div id="qbpp-exceptions" class="qbpp-exceptions"></div>
+      <div class="qbpp-row" id="qbpp-plan-row" hidden>
+        <button class="btn btn-secondary" id="qbpp-prepare-plan">Prepare automatic mapping plan</button>
+        <span class="qbpp-hint">This prepares every unambiguous exact match. Exceptions stay untouched; it does not link or change any part.</span>
+      </div>
+    </div>
   </div>
 
   <!-- QB link picker: choose an existing VB product to attach a QB item to. -->
@@ -1450,7 +1539,7 @@
     </div>
     <div class="modal-section">
       <div class="form-row">
-        <div class="form-group"><label>Taxable</label><select id="ac-taxable"><option value="">Not set</option><option value="true">Taxable</option><option value="false">Not taxable</option></select></div>
+        <div class="form-group"><label>Taxable</label><select id="ac-taxable"><option value="false">Not taxable</option><option value="true">Taxable</option></select></div>
         <div class="form-group"><label>Customer Since</label><input id="ac-since" type="text" placeholder="e.g. 2019" /></div>
       </div>
       <div class="form-group"><label>Customer Notes</label><textarea id="ac-notes" rows="2" placeholder="Internal customer notes"></textarea></div>
@@ -1468,6 +1557,15 @@
         <div class="form-group"><label>Console Brand</label><select id="ac-console-brand"></select></div>
       </div>
       <div class="form-group"><label>Default preference notes</label><textarea id="ac-pref-notes" rows="2" placeholder="Optional guidance for the agency's normal build"></textarea></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Customer pricing</div>
+      <p class="field-hint">The Default rule is calculated from QuickBooks list prices. Turn it off only when this agency has different terms.</p>
+      <label class="agency-pricing-toggle"><input id="ac-pricing-use-default" type="checkbox" checked /> Use Default rule</label>
+      <div id="ac-pricing-overrides" class="agency-pricing-overrides" hidden>
+        <div id="ac-pricing-rows" class="qb-pricing-grid"></div>
+        <p class="field-hint">Only values that differ from the Default rule are stored on this agency.</p>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="ac-cancel">Cancel</button>
@@ -1945,6 +2043,10 @@
         <span>Unit price <b>*</b></span>
         <input id="picker-custom-part-price" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
       </label>
+      <label class="picker-custom-part-field picker-custom-part-field--wide">
+        <span>Manifest category <small>(optional)</small></span>
+        <select id="picker-custom-part-category"><option value="">Other / Custom Parts</option></select>
+      </label>
     </div>
     <div id="picker-custom-part-conflict" class="picker-custom-part-conflict" hidden></div>
     <div id="picker-custom-part-recent-wrap" class="picker-custom-part-recent" hidden>
@@ -2115,6 +2217,7 @@
 <script src="/ui/js/settings/sales_reps.js"></script>
 <script src="/ui/js/settings/presets_mgr.js"></script>
 <script src="/ui/js/settings/quickbooks.js"></script>
+<script src="/ui/js/settings/quickbooks_production_preview.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>
 <script src="/ui/js/manifest_editor.js"></script>
 <script src="/ui/js/part_picker.js"></script>

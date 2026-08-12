@@ -9,6 +9,7 @@ import pytest
 
 from dtm_buildsheet.app.services.project_service import (
     handle_create_draft,
+    handle_create_individual_draft,
     handle_delete_project,
     handle_get_project,
     handle_list_projects,
@@ -142,6 +143,18 @@ class TestHandleSaveProject:
         assert project.preferences.lighting_brands == ["Whelen"]
         assert project.preferences.camera_brand == "Axon"
         assert project.preferences.console_brand == "Havis"
+
+    def test_exact_typed_agency_name_repairs_missing_agency_id(self, tmp_path):
+        paths = _paths(tmp_path)
+        agency = handle_save_agency({"name": "Seth Test"}, paths)["agency"]
+
+        result = handle_save_project({
+            "customer": {"agency": "Seth Test", "agency_id": ""},
+            "build_units": [],
+        }, paths)
+
+        project = load_project(result["project_id"], paths)
+        assert project.customer.agency_id == agency["agency_id"]
 
     def test_explicit_project_preferences_override_agency_defaults(self, tmp_path):
         paths = _paths(tmp_path)
@@ -337,6 +350,82 @@ class TestHandleCreateDraft:
         result = handle_create_draft(pid, "unit-1", paths)
         draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
         assert len(draft.parts) > 0
+
+    def test_preset_retains_picker_skus_and_render_identity(self, tmp_path):
+        paths = _paths(tmp_path)
+        paths.workspace_presets_dir.mkdir(parents=True, exist_ok=True)
+        (paths.workspace_presets_dir / "patrol_piu_standard.json").write_text(
+            json.dumps({
+                "schema_version": 3,
+                "preset_id": "patrol_piu_standard",
+                "label": "Patrol PIU Standard",
+                "vehicle_types": [],
+                "agency_ids": [],
+                "build_types": [],
+                "tag": "",
+                "placement_overrides": {"front_interior_light_bar:front": {"dx": 0.1}},
+                "parts": [{
+                    "name": "Front Interior Light Bar",
+                    "include": True,
+                    "part_number": "Inner Edge FST",
+                    "part_type": "front_interior_light_bar",
+                    "components": [{"part_number": "BSFW50ZT", "quantity": 1}],
+                    "picker_config": {"coverage": "full"},
+                    "new_or_used": "Reused",
+                }],
+            })
+        )
+        create = handle_save_project(_project_body(), paths)
+        result = handle_create_draft(create["project_id"], "unit-1", paths)
+        draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
+
+        assert draft.placement_overrides == {
+            "front_interior_light_bar:front": {"dx": 0.1}
+        }
+        assert len(draft.parts) == 1
+        part = draft.parts[0]
+        assert part.part_type == "front_interior_light_bar"
+        assert part.components == [{"part_number": "BSFW50ZT", "quantity": 1}]
+        assert part.picker_config == {"coverage": "full"}
+        assert part.new_or_used == "Reused"
+
+    def test_individual_vehicle_retains_rich_preset_fields(self, tmp_path):
+        paths = _paths(tmp_path)
+        paths.workspace_presets_dir.mkdir(parents=True, exist_ok=True)
+        (paths.workspace_presets_dir / "patrol_piu_standard.json").write_text(
+            json.dumps({
+                "schema_version": 3,
+                "preset_id": "patrol_piu_standard",
+                "label": "Patrol PIU Standard",
+                "vehicle_types": [],
+                "agency_ids": [],
+                "build_types": [],
+                "parts": [{
+                    "name": "Rear Interior Light Bar",
+                    "part_number": "Inner Edge RST",
+                    "part_type": "rear_interior_light_bar",
+                    "components": [{"part_number": "BS50ZT", "quantity": 1}],
+                    "picker_config": {"coverage": "full"},
+                }],
+            })
+        )
+        body = _project_body()
+        body["build_units"][0]["individuals"] = [{
+            "individual_id": "vehicle-1",
+            "unit_number": "101",
+            "year": "2026",
+        }]
+        create = handle_save_project(body, paths)
+        result = handle_create_individual_draft(
+            create["project_id"], "unit-1", "vehicle-1", paths
+        )
+        draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
+
+        assert draft.parts[0].part_type == "rear_interior_light_bar"
+        assert draft.parts[0].components == [
+            {"part_number": "BS50ZT", "quantity": 1}
+        ]
+        assert draft.parts[0].picker_config == {"coverage": "full"}
 
     def test_blank_custom_used_when_no_preset(self, tmp_path):
         paths = _paths(tmp_path)

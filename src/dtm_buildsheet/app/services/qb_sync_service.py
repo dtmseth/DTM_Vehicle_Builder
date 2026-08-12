@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from . import quickbooks_service
 logger = logging.getLogger(__name__)
 
 _CACHE_FILENAME = "quickbooks_items_cache.json"
+_SYNC_LOCK = threading.Lock()
 
 
 def _cache_path(paths: AppPaths) -> Path:
@@ -181,6 +183,23 @@ def get_cached_items(paths: AppPaths) -> dict:
     }
 
 
+def find_cached_active_item_by_name(paths: AppPaths, name: str) -> dict | None:
+    """Return one exact-name active Item from the latest local QB pull."""
+    wanted = str(name or "").strip()
+    if not wanted:
+        return None
+    items = _read_cache(paths).get("items", [])
+    # Prefer literal case as QBO can contain both "MISC PART" and "Misc Part".
+    for item in items:
+        if str(item.get("name") or "").strip() == wanted:
+            return item
+    matches = [item for item in items
+               if str(item.get("name") or "").strip().casefold() == wanted.casefold()]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 # ── reconciliation (Slice C) ─────────────────────────────────────────────────
 #
 # Reconciliation is the "live catalog" half: it pushes QBO's authoritative
@@ -314,11 +333,24 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
 
 def run_full_sync(paths: AppPaths) -> dict:
     """Pull active Items, then reconcile linked parts. Route + poller entry point."""
-    pull = sync_items(paths)
-    if not pull.get("ok"):
-        return pull
-    recon = reconcile_linked_parts(paths)
-    return {**pull, "reconciled": recon}
+    # The startup poller and an estimate request can arrive together. Serialize
+    # the pull/reconcile pair so neither reads a half-written cache or catalog.
+    with _SYNC_LOCK:
+        pull = sync_items(paths)
+        if not pull.get("ok"):
+            return pull
+        recon = reconcile_linked_parts(paths)
+        return {**pull, "reconciled": recon}
+
+
+def refresh_estimate_catalog(paths: AppPaths) -> dict:
+    """Refresh authoritative QB Item prices, blocking estimates on stale data."""
+    result = run_full_sync(paths)
+    reconciled = result.get("reconciled") if isinstance(result, dict) else None
+    if not result.get("ok") or not isinstance(reconciled, dict) or not reconciled.get("ok"):
+        logger.warning("QuickBooks estimate catalog refresh failed")
+        return {"ok": False, "error": "pricing_refresh_failed"}
+    return {"ok": True, "last_sync_utc": result.get("last_sync_utc")}
 
 
 # ── customer → agency down-sync (Phase 3, first cut) ─────────────────────────
@@ -339,12 +371,20 @@ def preview_customer_import(paths: AppPaths) -> dict:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+    ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
+    customers = [
+        customer for customer in customers
+        if str(customer.get("qb_customer_id") or "") not in ignored_ids
+    ]
     return agency_service.preview_qb_customer_import(customers, paths)
 
 
 def import_customers(paths: AppPaths) -> dict:
     """Fetch QB customers and upsert them into agencies. Returns created/updated."""
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
     client, err = _build_client(paths)
     if err:
         return err
@@ -354,7 +394,12 @@ def import_customers(paths: AppPaths) -> dict:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+    ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
+    customers = [
+        customer for customer in customers
+        if str(customer.get("qb_customer_id") or "") not in ignored_ids
+    ]
     result = agency_service.upsert_agencies_from_qb(customers, paths)
     logger.info(
         "QB customer import: %d created, %d updated",
@@ -378,9 +423,9 @@ def get_pricing_status(paths: AppPaths) -> dict:
         "ok": True,
         "using_price_levels": using_levels,
         "warning": (
-            "Customer price levels are enabled. The QuickBooks API does not expose "
-            "custom price-level rates; estimate lines will use the synced sandbox "
-            "item prices unless you adjust them in QuickBooks."
+            "QuickBooks customer price levels are enabled. Vehicle Builder uses the "
+            "reviewed local customer-pricing rule calculated from current Production "
+            "Item list prices, because the Accounting API does not expose QBO's rule tables."
             if using_levels else ""
         ),
     }
@@ -490,7 +535,10 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     or ``{"ok": False, "error": ...}``. Safe to call directly (tests) or via
     ``push_agency_in_background``.
     """
-    from . import agency_service
+    from . import agency_service, qb_customer_migration_service
+
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
 
     record = agency_service.get_agency(paths, agency_id)
     if record is None:
@@ -503,6 +551,12 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     fields = agency_service.customer_profile_fields(record)
 
     try:
+        # CustomerType IDs are company-local, so resolve Retail by name instead
+        # of persisting or hard-coding the production company's current ID.
+        retail_type_id = client.find_customer_type_by_name("Retail")
+        if not retail_type_id:
+            return {"ok": False, "error": "retail_customer_type_not_found"}
+        fields["customer_type_id"] = retail_type_id
         existing_id = (record.qb_customer_id or "").strip()
         if existing_id:
             current = client.read_customer(existing_id)
@@ -521,6 +575,13 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
         if matched:
             matched_id = str(matched.get("qb_customer_id", "")).strip()
             if matched_id:
+                current = client.read_customer(matched_id)
+                if current is not None:
+                    client.update_customer(
+                        matched_id,
+                        current.get("SyncToken", "0"),
+                        {"customer_type_id": retail_type_id},
+                    )
                 agency_service.merge_missing_customer_profile(record, matched)
                 agency_service.set_qb_customer_id(paths, agency_id, matched_id)
                 logger.info("QB agency push: linked existing customer")
@@ -546,6 +607,9 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
 
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return
     try:
         if not quickbooks_service.get_status(paths).get("connected"):
             return
@@ -559,6 +623,22 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
             logger.warning("QuickBooks agency background push failed")
 
     threading.Thread(target=_run, name="qb-agency-push", daemon=True).start()
+
+
+def push_agency_after_save(paths: AppPaths, agency_id: str) -> dict:
+    """Synchronously mirror one saved agency so the UI can report failures."""
+    import os
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return {"ok": True, "skipped": "pytest"}
+    from . import qb_customer_migration_service
+    if qb_customer_migration_service.customer_writes_blocked(paths):
+        return {"ok": False, "error": "production_customer_migration_required"}
+    try:
+        if not quickbooks_service.get_status(paths).get("connected"):
+            return {"ok": True, "skipped": "not_connected"}
+    except Exception:
+        return {"ok": False, "error": "quickbooks_status_unavailable"}
+    return push_agency(paths, agency_id)
 
 
 def _normalized_customer_from_raw(raw: dict) -> dict:
@@ -658,7 +738,12 @@ def ensure_top_level_customer(
                 "missing_fields": missing,
             }
         try:
-            created = client.create_customer(effective_fields)
+            retail_type_id = client.find_customer_type_by_name("Retail")
+            if not retail_type_id:
+                return {"ok": False, "error": "retail_customer_type_not_found"}
+            created = client.create_customer({
+                **effective_fields, "customer_type_id": retail_type_id,
+            })
         except QuickBooksApiError as exc:
             logger.warning("QuickBooks customer create failed: %s", exc)
             return {"ok": False, "error": str(exc)}
@@ -686,7 +771,12 @@ def ensure_top_level_customer(
             try:
                 current = client.read_customer(customer_id)
                 sync_token = (current or {}).get("SyncToken", (customer or {}).get("sync_token", "0"))
-                client.update_customer(customer_id, sync_token, effective_fields)
+                retail_type_id = client.find_customer_type_by_name("Retail")
+                if not retail_type_id:
+                    return {"ok": False, "error": "retail_customer_type_not_found"}
+                client.update_customer(customer_id, sync_token, {
+                    **effective_fields, "customer_type_id": retail_type_id,
+                })
             except QuickBooksApiError as exc:
                 logger.warning("QuickBooks customer profile update failed: %s", exc)
                 return {"ok": False, "error": str(exc)}

@@ -75,6 +75,19 @@ def test_post_uses_current_minor_version(monkeypatch):
     assert captured["params"]["minorversion"] == "75"
 
 
+def test_transport_failure_never_exposes_request_url(monkeypatch):
+    def _boom(*args, **kwargs):
+        raise RuntimeError("https://quickbooks.example/path?access_token=do-not-log")
+
+    monkeypatch.setattr(api_client.requests, "get", _boom)
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    with pytest.raises(api_client.QuickBooksApiError) as exc_info:
+        client.query("SELECT Id FROM Item")
+
+    assert str(exc_info.value) == "request_failed"
+
+
 def test_fetch_preferences_normalizes_enabled_sales_custom_fields(monkeypatch):
     client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
     monkeypatch.setattr(client, "query", lambda statement: {
@@ -104,6 +117,15 @@ def test_fetch_preferences_normalizes_enabled_sales_custom_fields(monkeypatch):
     ]
 
 
+def test_find_customer_type_by_name_returns_unique_active_exact_match(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "query", lambda statement: {
+        "CustomerType": [{"Id": "retail-id", "Name": "Retail", "Active": True}],
+    })
+
+    assert client.find_customer_type_by_name("Retail") == "retail-id"
+
+
 def test_create_estimate_uses_standard_legacy_custom_fields_request(monkeypatch):
     captured = {}
 
@@ -116,3 +138,104 @@ def test_create_estimate_uses_standard_legacy_custom_fields_request(monkeypatch)
 
     assert client.create_estimate({}) == {"qb_estimate_id": "1", "doc_number": "10"}
     assert captured["query_params"] is None
+
+
+def test_update_estimate_sends_id_sync_token_and_sparse_payload(monkeypatch):
+    captured = {}
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "_post", lambda entity, payload: (
+        captured.update({"entity": entity, "payload": payload}) or
+        {"Estimate": {"Id": "44", "DocNumber": "101"}}
+    ))
+
+    result = client.update_estimate("44", "7", {"Line": [{"Amount": 10}]})
+
+    assert result == {"qb_estimate_id": "44", "doc_number": "101"}
+    assert captured == {"entity": "estimate", "payload": {
+        "Id": "44", "SyncToken": "7", "sparse": True,
+        "Line": [{"Amount": 10}],
+    }}
+
+
+def test_upload_estimate_attachment_uses_paired_multipart_parts(tmp_path, monkeypatch):
+    pdf = tmp_path / "Build 123.pdf"
+    pdf.write_bytes(b"%PDF-1.7\n")
+    captured = {}
+
+    class Response(_Response):
+        status_code = 200
+
+        def json(self):
+            return {"AttachableResponse": [{"Attachable": {"Id": "ATT9"}}]}
+
+    def fake_post(url, **kwargs):
+        captured.update({"url": url, **kwargs})
+        return Response({})
+
+    monkeypatch.setattr(api_client.requests, "post", fake_post)
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    result = client.upload_estimate_attachment("EST4", str(pdf))
+
+    assert result == {"attachment_id": "ATT9", "file_name": "Build 123.pdf"}
+    assert captured["url"].endswith("/v3/company/realm/upload")
+    metadata = captured["files"]["file_metadata_01"]
+    content = captured["files"]["file_content_01"]
+    assert metadata[0] == "attachment.json" and '"type": "Estimate"' in metadata[1]
+    assert '"value": "EST4"' in metadata[1]
+    assert content[0] == "Build 123.pdf" and content[2] == "application/pdf"
+
+
+def test_upload_estimate_attachment_surfaces_fault_inside_http_200(tmp_path, monkeypatch):
+    pdf = tmp_path / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\n")
+
+    class Response(_Response):
+        status_code = 200
+
+        def json(self):
+            return {"AttachableResponse": [{"Fault": {"Error": [{
+                "code": "6041", "Message": "Invalid Uploaded File",
+                "Detail": "private filename and company data",
+            }]}}]}
+
+    monkeypatch.setattr(api_client.requests, "post", lambda *args, **kwargs: Response({}))
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    with pytest.raises(api_client.QuickBooksApiError) as exc_info:
+        client.upload_estimate_attachment("EST4", str(pdf))
+
+    assert str(exc_info.value) == "qb_6041: Invalid Uploaded File"
+
+
+def test_fetch_inactive_items_paginates_and_preserves_active_flag(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    statements = []
+
+    def fake_query(statement):
+        statements.append(statement)
+        if "STARTPOSITION 1" in statement:
+            return {"Item": [{
+                "Id": "old-1",
+                "Name": "OLD-1 (deleted)",
+                "Sku": "",
+                "Description": "Historical part",
+                "UnitPrice": 12.5,
+                "Type": "NonInventory",
+                "Active": False,
+            }]}
+        return {"Item": []}
+
+    monkeypatch.setattr(client, "query", fake_query)
+
+    assert client.fetch_inactive_items(page_size=1) == [{
+        "qb_item_id": "old-1",
+        "name": "OLD-1 (deleted)",
+        "sku": "",
+        "description": "Historical part",
+        "unit_price": 12.5,
+        "type": "NonInventory",
+        "active": False,
+    }]
+    assert len(statements) == 2
+    assert all("WHERE Active = false" in statement for statement in statements)

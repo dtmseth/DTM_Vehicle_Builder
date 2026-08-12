@@ -24,13 +24,14 @@ from dtm_buildsheet.paths import AppPaths
 
 @pytest.fixture
 def paths(tmp_path):
-    for sub in ("config", "projects", "drafts", "agencies"):
+    for sub in ("config", "projects", "drafts", "agencies", "output"):
         (tmp_path / sub).mkdir()
     return AppPaths(
         workspace_dir=tmp_path,
         workspace_config_dir=tmp_path / "config",
         workspace_projects_dir=tmp_path / "projects",
         workspace_drafts_dir=tmp_path / "drafts",
+        workspace_output_dir=tmp_path / "output",
     )
 
 
@@ -45,6 +46,8 @@ def _no_cloud(monkeypatch):
     ):
         monkeypatch.setattr(sw, name, lambda *a, **k: None)
     parts_db_service.reset_for_testing()
+    monkeypatch.setattr(sync, "refresh_estimate_catalog",
+                        lambda paths: {"ok": True, "last_sync_utc": "2026-08-12T00:00:00Z"})
 
 
 class FakeClient:
@@ -55,10 +58,16 @@ class FakeClient:
         self.updated_customers = []
         self.created_jobs = []
         self.created_estimates = []
+        self.updated_estimates = []
+        self.estimate_attachments = []
+        self.uploaded_attachments = []
         self.name_lookups = []
 
     def read_customer(self, customer_id):
         return None
+
+    def find_customer_type_by_name(self, name):
+        return "retail-type-id" if name == "Retail" else ""
 
     def find_top_level_customer_by_display_name(self, name):
         # The estimate flow must reuse the agency Customer and never create a
@@ -84,6 +93,20 @@ class FakeClient:
     def create_estimate(self, payload):
         self.created_estimates.append(payload)
         return {"qb_estimate_id": "EST1", "doc_number": "1001"}
+
+    def read_estimate(self, estimate_id):
+        return {"Id": estimate_id, "SyncToken": "7", "DocNumber": "1001"}
+
+    def update_estimate(self, estimate_id, sync_token, payload):
+        self.updated_estimates.append((estimate_id, sync_token, payload))
+        return {"qb_estimate_id": estimate_id, "doc_number": "1001"}
+
+    def fetch_estimate_attachments(self, estimate_id):
+        return self.estimate_attachments
+
+    def upload_estimate_attachment(self, estimate_id, pdf_path):
+        self.uploaded_attachments.append((estimate_id, pdf_path))
+        return {"attachment_id": "ATT1", "file_name": "build.pdf"}
 
 
 def _use_fake(monkeypatch):
@@ -161,6 +184,56 @@ def test_resolve_links_priced_active_part(paths):
     assert problems == []
     assert lines[0]["qb_item_id"] == "847"
     assert lines[0]["qty"] == 2 and lines[0]["amount"] == 2498.0
+
+
+def test_resolve_uses_builder_sku_with_production_id_price_and_description(paths):
+    _write_parts_db(paths, {
+        "p1": {
+            "manufacturer_id": "mfg",
+            "model": "K5011",
+            "part_numbers": [{
+                "part_number": "K5011",
+                "qb_item_id": "production-847",
+                "qb_sku": "",
+                "qb_sales_description": "Sandbox description",
+                "qb_unit_price": 100.0,
+            }],
+        },
+    })
+    sync._write_cache(paths, {
+        "items": [{
+            "qb_item_id": "production-847",
+            "name": "K5011-B",
+            "sku": "",
+            "description": "Production description\nwith formatting",
+            "unit_price": 124.5,
+            "type": "NonInventory",
+        }],
+    })
+    draft = new_draft(parts=[DraftPart(name="Axe hanger", part_number="K5011", quantity=2)])
+
+    lines, problems = est.resolve_build_lines(paths, draft)
+
+    assert problems == []
+    assert lines == [{
+        "product_id": "p1",
+        "qb_item_id": "production-847",
+        "qb_sku": "",
+        "description": "Production description\nwith formatting",
+        "manufacturer": "mfg",
+        "manufacturer_id": "mfg",
+        "unit_price": 124.5,
+        "pending": False,
+        "name": "Axe hanger",
+        "part_number": "K5011",
+        "qty": 2,
+        "amount": 249.0,
+    }]
+    payload = est._build_estimate_payload("customer-1", lines)
+    assert payload["Line"][0]["SalesItemLineDetail"]["ItemRef"] == {
+        "value": "production-847",
+    }
+    assert payload["Line"][0]["Description"] == "Production description\nwith formatting"
 
 
 def test_resolve_uses_concrete_component_skus_for_picker_parent(paths):
@@ -369,7 +442,7 @@ def test_pending_part_posts_as_description_only_line(paths):
     assert "NOT IN QB INVENTORY" in qb_lines[1]["Description"]
 
 
-def test_custom_part_bills_with_entered_price_as_distinct_qb_note(paths):
+def test_custom_part_bills_with_entered_price_through_misc_item(paths, monkeypatch):
     draft = new_draft(parts=[DraftPart(
         name="Vendor supplied cable kit", part_number="VND-042", quantity=2,
         picker_config={"custom_part": {
@@ -387,13 +460,55 @@ def test_custom_part_bills_with_entered_price_as_distinct_qb_note(paths):
     assert line["description"] == "Vendor supplied cable kit"
     assert line["manufacturer"] == "Custom"
     assert line["unit_price"] == 42.5 and line["amount"] == 85.0
-    assert line["qty"] == 2 and line["pending"] is True and line["custom"] is True
+    assert line["qty"] == 2 and line["pending"] is False and line["custom"] is True
+    monkeypatch.setattr(sync, "find_cached_active_item_by_name",
+                        lambda paths, name: {"qb_item_id": "557", "name": "MISC PART"})
+    assert est._attach_custom_parts_to_misc_item(paths, lines) == []
     payload = est._build_estimate_payload("CUST1", lines)
     note = payload["Line"][0]
-    assert note["DetailType"] == "DescriptionOnly"
-    assert "CUSTOM PART" in note["Description"]
+    assert note["DetailType"] == "SalesItemLineDetail"
+    assert note["Amount"] == 85.0
+    assert note["SalesItemLineDetail"] == {
+        "ItemRef": {"value": "557"}, "Qty": 2, "UnitPrice": 42.5,
+    }
     assert "VND-042" in note["Description"]
-    assert "2 × $42.50 (= $85.00)" in note["Description"]
+    assert "Vendor supplied cable kit" in note["Description"]
+
+
+def test_custom_part_blocks_if_misc_item_is_unavailable(paths, monkeypatch):
+    lines = [{"custom": True, "name": "One-off", "part_number": "CUSTOM-1"}]
+    monkeypatch.setattr(sync, "find_cached_active_item_by_name", lambda paths, name: None)
+    assert est._attach_custom_parts_to_misc_item(paths, lines) == [{
+        "name": "One-off", "part_number": "CUSTOM-1", "reason": "custom_item_unavailable",
+    }]
+
+
+def test_validate_blocks_when_current_prices_cannot_refresh(paths, monkeypatch):
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 100.0)})
+    aid = _make_agency(paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    monkeypatch.setattr(sync, "refresh_estimate_catalog",
+                        lambda paths: {"ok": False, "error": "pricing_refresh_failed"})
+    assert est.validate_estimate(paths, project_id=pid, individual_id="ind1") == {
+        "ok": False, "error": "pricing_refresh_failed",
+    }
+
+
+def test_project_tax_status_is_aligned_to_non_taxable_agency():
+    class Client:
+        def __init__(self):
+            self.updated = []
+
+        def read_customer(self, customer_id):
+            return {"Id": customer_id, "SyncToken": "4", "Taxable": True}
+
+        def update_customer(self, customer_id, sync_token, fields):
+            self.updated.append((customer_id, sync_token, fields))
+
+    client = Client()
+    agency = type("Agency", (), {"taxable": False})()
+    assert est._ensure_project_tax_status(client, "434", agency) == {"ok": True, "changed": True}
+    assert client.updated == [("434", "4", {"taxable": False})]
 
 
 def test_validate_reports_pending_but_can_create(paths):
@@ -421,6 +536,50 @@ def test_validate_can_create_when_clean(paths):
     res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
     assert res["can_create"] is True
     assert res["line_count"] == 1 and res["total"] == 300.0 and res["problems"] == []
+
+
+def test_validate_applies_default_whelen_discount_from_qb_list_price(paths):
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["total"] == 124.0
+    assert res["pricing"] == {
+        "rule_name": "Default",
+        "source": "default",
+        "list_total": 200.0,
+        "customer_total": 124.0,
+        "savings": 76.0,
+        "applied_discounts": [{
+            "manufacturer_id": "whelen",
+            "manufacturer": "whelen",
+            "discount_percent": 38.0,
+            "override": False,
+        }],
+    }
+
+
+def test_validate_applies_sparse_agency_pricing_override(paths):
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths)
+    agc.handle_save_agency({
+        "agency_id": aid,
+        "name": "Lakeville PD",
+        "pricing_overrides": {"whelen": 10},
+    }, paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["total"] == 180.0
+    assert res["pricing"]["source"] == "customer_override"
+    assert res["pricing"]["applied_discounts"][0]["override"] is True
 
 
 def test_validate_blocks_with_problems(paths):
@@ -515,6 +674,126 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     assert unit.qb_job_id == "" and unit.qb_estimate_id == "EST1"
     assert unit.qb_project_id == "447322633"
     assert unit.qb_project_name
+
+
+def test_existing_estimate_requires_explicit_update_or_create_new(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    blocked = est.create_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert blocked == {
+        "ok": False,
+        "error": "duplicate_estimate_confirmation_required",
+        "existing_estimate_id": "EST-OLD",
+    }
+    assert fake.created_estimates == [] and fake.updated_estimates == []
+
+
+def test_existing_estimate_can_be_updated_in_place(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", existing_action="update",
+    )
+
+    assert result["ok"] is True and result["action"] == "updated"
+    assert result["qb_estimate_id"] == "EST-OLD"
+    assert fake.created_estimates == []
+    assert fake.updated_estimates[0][0:2] == ("EST-OLD", "7")
+
+
+def test_existing_estimate_can_create_deliberate_new_version(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", existing_action="create_new",
+    )
+
+    assert result["ok"] is True and result["action"] == "created"
+    assert result["qb_estimate_id"] == "EST1"
+    assert fake.created_estimates and fake.updated_estimates == []
+
+
+def test_build_pdf_is_attached_after_estimate_creation(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    pdf = paths.workspace_output_dir / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\nvalid test pdf")
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].pdf_path = str(pdf)
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", attach_pdf=True,
+    )
+
+    assert result["ok"] is True
+    assert result["attachment"] == {
+        "ok": True, "attachment_id": "ATT1", "file_name": "build.pdf",
+    }
+    assert fake.uploaded_attachments == [("EST1", str(pdf))]
+
+
+def test_attachment_failure_does_not_retry_or_fail_created_estimate(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    fake.upload_estimate_attachment = lambda estimate_id, pdf_path: (_ for _ in ()).throw(
+        QuickBooksApiError("attachment_upload_failed")
+    )
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    pdf = paths.workspace_output_dir / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\nvalid test pdf")
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].pdf_path = str(pdf)
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", attach_pdf=True,
+    )
+
+    assert result["ok"] is True and result["qb_estimate_id"] == "EST1"
+    assert result["attachment"] == {
+        "ok": False, "error": "attachment_upload_failed",
+    }
+    assert len(fake.created_estimates) == 1
+
+
+def test_create_estimate_sends_discounted_unit_price_without_invoice_only_ach_field(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.create_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert res["ok"] is True and res["total"] == 124.0
+    payload = fake.created_estimates[0]
+    assert payload["Line"][0]["SalesItemLineDetail"]["UnitPrice"] == 62.0
+    assert payload["Line"][0]["Amount"] == 124.0
+    assert "AllowOnlineACHPayment" not in payload
 
 
 def test_create_estimate_does_not_write_custom_fields_with_accounting_only_access(paths, monkeypatch):
@@ -664,6 +943,7 @@ def test_create_estimate_requires_customer_confirmation_then_creates_top_level_c
     )
     assert created["ok"] is True
     assert fake.created_customers[0]["name"] == "Lakeville Police Department"
+    assert fake.created_customers[0]["customer_type_id"] == "retail-type-id"
     assert fake.created_estimates[0]["CustomerRef"]["value"] == "CUST1"
     saved = project_entry.load_project(pid, paths)
     assert saved.customer.agency == "Lakeville Police Department"
@@ -719,6 +999,7 @@ def test_confirmed_profile_updates_linked_customer_before_estimate(paths, monkey
     assert result["ok"] is True
     assert fake.updated_customers[0][0] == "CUST9"
     assert fake.updated_customers[0][2]["bill_address_line1"] == "123 Main Street"
+    assert fake.updated_customers[0][2]["customer_type_id"] == "retail-type-id"
     assert fake.created_estimates
 
 

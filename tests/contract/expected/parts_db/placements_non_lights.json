@@ -7,21 +7,21 @@
         "label": "Chicago Barrier",
         "name_pattern": "Chicago Barrier",
         "part_type_id": "chicago_barrier",
-        "product_count": 2
+        "product_count": 1
       },
       {
         "base_label": "Console",
         "label": "Console",
         "name_pattern": "Center Console",
         "part_type_id": "console",
-        "product_count": 35
+        "product_count": 34
       },
       {
         "base_label": "Floor Pan",
         "label": "Floor Pan",
         "name_pattern": "Floor Pan",
         "part_type_id": "floor_pan",
-        "product_count": 3
+        "product_count": 2
       },
       {
         "base_label": "Front Partition",
@@ -56,7 +56,7 @@
         "label": "Push Bumper",
         "name_pattern": "Push Bumper",
         "part_type_id": "push_bumper",
-        "product_count": 11
+        "product_count": 10
       },
       {
         "base_label": "Rear Partition",
@@ -70,7 +70,7 @@
         "label": "Rear Seat Divider",
         "name_pattern": "Rear Seat Divider",
         "part_type_id": "rear_seat_divider",
-        "product_count": 2
+        "product_count": 1
       },
       {
         "base_label": "Rear Window Bars",

@@ -144,8 +144,8 @@ class QuickBooksOAuthClient:
         }
         try:
             resp = requests.post(endpoint, headers=headers, data=data, timeout=_HTTP_TIMEOUT)
-        except Exception as exc:  # noqa: BLE001
-            raise QuickBooksOAuthError(f"token_request_failed: {exc}") from exc
+        except Exception:  # noqa: BLE001 — transport text may contain a request URL
+            raise QuickBooksOAuthError("token_request_failed") from None
         if resp.status_code != 200:
             # Surface Intuit's error code without logging tokens or bodies.
             try:

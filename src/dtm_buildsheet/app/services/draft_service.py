@@ -152,7 +152,17 @@ def _custom_part_fields(body: dict) -> tuple[dict | None, str]:
         "description": description,
         "unit_price": float(cents),
         "quantity": quantity,
+        "part_type": str(body.get("part_type") or "").strip(),
     }, ""
+
+
+def _validated_custom_part_type(paths: AppPaths, part_type: str) -> tuple[str, str]:
+    """Return a real manifest part type, or the custom fallback when omitted."""
+    if not part_type or part_type == "custom_part":
+        return "custom_part", ""
+    if get_parts_db_service(paths).get_part_type(part_type) is None:
+        return "", "unknown custom part category"
+    return part_type, ""
 
 
 def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
@@ -169,6 +179,9 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
         if error:
             return {"ok": False, "error": error}
         assert fields is not None
+        part_type, category_error = _validated_custom_part_type(paths, fields["part_type"])
+        if category_error:
+            return {"ok": False, "error": category_error}
         catalog_match = get_parts_db_service(paths).find_sku(fields["sku"])
         if catalog_match and not bool(body.get("allow_existing_duplicate")):
             return {
@@ -183,7 +196,7 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
             "manufacturer": "Custom",
             "part_number": fields["sku"],
             "quantity": fields["quantity"],
-            "part_type": "custom_part",
+            "part_type": part_type,
             "picker_config": {
                 "custom_part": {
                     "sku": fields["sku"],
@@ -222,6 +235,58 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
             "history_saved": history_saved,
             "draft_summary": draft_summary(draft),
         }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_update_custom_part_in_draft(
+    draft_id: str, line_id: str, body: dict, paths: AppPaths,
+) -> dict:
+    """Update one draft-local custom part without routing through the catalog picker."""
+    try:
+        if safe_id(draft_id) != draft_id or safe_id(line_id) != line_id:
+            return {"ok": False, "error": "invalid id"}
+        fields, error = _custom_part_fields(body)
+        if error:
+            return {"ok": False, "error": error}
+        assert fields is not None
+        part_type, category_error = _validated_custom_part_type(paths, fields["part_type"])
+        if category_error:
+            return {"ok": False, "error": category_error}
+        catalog_match = get_parts_db_service(paths).find_sku(fields["sku"])
+        if catalog_match and not bool(body.get("allow_existing_duplicate")):
+            return {"ok": False, "error": "catalog_sku_exists", "catalog_part": catalog_match}
+        draft = load_draft_for_request(draft_id, paths)
+        found = find_part_by_line_id(draft, line_id)
+        if found is None:
+            return {"ok": False, "error": f"Part not found: {line_id}"}
+        _idx, part = found
+        if not isinstance((part.picker_config or {}).get("custom_part"), dict):
+            return {"ok": False, "error": "part is not a custom part"}
+        part.name = fields["description"]
+        part.part_number = fields["sku"]
+        part.quantity = fields["quantity"]
+        part.part_type = part_type
+        part.picker_config["custom_part"] = {
+            "sku": fields["sku"],
+            "description": fields["description"],
+            "unit_price": fields["unit_price"],
+        }
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "custom_part_updated", "line_id": line_id,
+            "name": part.name, "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        try:
+            remember_custom_part(paths, sku=fields["sku"], description=fields["description"],
+                                 unit_price=fields["unit_price"])
+        except Exception:
+            _log.exception("Could not remember updated custom part")
+        return {"ok": True, "draft_id": draft_id, "line_id": line_id,
+                "name": part.name, "draft_summary": draft_summary(draft)}
     except FileNotFoundError:
         return {"ok": False, "error": f"Draft not found: {draft_id}"}
     except Exception as exc:

@@ -30,7 +30,18 @@ from ..adapters.quickbooks.oauth_client import QuickBooksOAuthClient, QuickBooks
 
 logger = logging.getLogger(__name__)
 
-_CONFIG_FILENAME = "quickbooks_config.json"
+_DEFAULT_PROFILE = "default"
+PRODUCTION_PREVIEW_PROFILE = "production_preview"
+_PROFILE_FILES = {
+    _DEFAULT_PROFILE: {
+        "config": "quickbooks_config.json",
+        "credentials": "quickbooks_credentials.bin",
+    },
+    PRODUCTION_PREVIEW_PROFILE: {
+        "config": "quickbooks_production_preview_config.json",
+        "credentials": "quickbooks_production_preview_credentials.bin",
+    },
+}
 _ACCESS_TOKEN_SKEW_SECONDS = 300        # refresh 5 minutes before expiry
 _DEFAULT_ACCESS_TTL = 3600              # 1 hour, per Intuit
 _DEFAULT_REFRESH_TTL = 8726400         # ~101 days, per Intuit
@@ -40,13 +51,20 @@ _HARD_EXPIRY_DAYS = 5 * 365             # Intuit's 5-year hard cap
 # URL is generated, consumed once on callback. A module global is sufficient
 # for a single-process desktop app.
 _pending_state: str | None = None
+_pending_states: dict[str, str] = {}
 
 
 # ── config metadata (non-secret) ───────────────────────────────────────────
 
 
-def _config_path(paths: AppPaths) -> Path:
-    return paths.workspace_dir / _CONFIG_FILENAME
+def _profile_name(profile: str) -> str:
+    if profile in _PROFILE_FILES:
+        return profile
+    raise ValueError("unknown_quickbooks_profile")
+
+
+def _config_path(paths: AppPaths, profile: str = _DEFAULT_PROFILE) -> Path:
+    return paths.workspace_dir / _PROFILE_FILES[_profile_name(profile)]["config"]
 
 
 def _default_config() -> dict:
@@ -62,15 +80,15 @@ def _default_config() -> dict:
     }
 
 
-def _load_config(paths: AppPaths) -> dict:
-    path = _config_path(paths)
+def _load_config(paths: AppPaths, profile: str = _DEFAULT_PROFILE) -> dict:
+    path = _config_path(paths, profile)
     merged = _default_config()
     if not path.exists():
         return merged
     try:
         data = json.loads(path.read_text("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError):
-        logger.warning("quickbooks_config.json unreadable; using defaults")
+        logger.warning("QuickBooks connection metadata unreadable; using defaults")
         return merged
     if isinstance(data, dict):
         for key in merged:
@@ -79,14 +97,46 @@ def _load_config(paths: AppPaths) -> dict:
     return merged
 
 
-def _save_config(paths: AppPaths, config: dict) -> None:
-    path = _config_path(paths)
+def _save_config(paths: AppPaths, config: dict, profile: str = _DEFAULT_PROFILE) -> None:
+    path = _config_path(paths, profile)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
-def _store() -> QuickBooksCredentialStore:
-    return QuickBooksCredentialStore()
+def _store(profile: str = _DEFAULT_PROFILE) -> QuickBooksCredentialStore:
+    """Return the profile's isolated OS-keychain store."""
+    return QuickBooksCredentialStore(filename=_PROFILE_FILES[_profile_name(profile)]["credentials"])
+
+
+def _profile_store(profile: str) -> QuickBooksCredentialStore:
+    """Preserve the default store call shape for existing integrations/tests."""
+    return _store() if profile == _DEFAULT_PROFILE else _store(profile)
+
+
+def _set_pending_state(profile: str, state: str) -> None:
+    global _pending_state
+    if profile == _DEFAULT_PROFILE:
+        _pending_state = state
+    else:
+        _pending_states[profile] = state
+
+
+def _take_pending_state(profile: str) -> str | None:
+    global _pending_state
+    if profile == _DEFAULT_PROFILE:
+        expected = _pending_state
+        _pending_state = None
+        return expected
+    return _pending_states.pop(profile, None)
+
+
+def _profile_for_pending_state(state: str) -> str:
+    if state and _pending_state and _secrets.compare_digest(state, _pending_state):
+        return _DEFAULT_PROFILE
+    for profile, expected in _pending_states.items():
+        if state and _secrets.compare_digest(state, expected):
+            return profile
+    return _DEFAULT_PROFILE
 
 
 # ── time helpers ────────────────────────────────────────────────────────────
@@ -116,6 +166,7 @@ def save_settings(
     client_secret: str = "",
     environment: str = "production",
     redirect_uri: str = "",
+    profile: str = _DEFAULT_PROFILE,
 ) -> dict:
     """Persist the app-registration details entered by the owner.
 
@@ -123,60 +174,71 @@ def save_settings(
     metadata. An empty ``client_secret`` leaves any existing one untouched
     so re-saving other fields doesn't wipe it.
     """
-    config = _load_config(paths)
+    profile = _profile_name(profile)
+    if profile == PRODUCTION_PREVIEW_PROFILE and environment != "production":
+        return {"ok": False, "error": "Production catalog preview only accepts production credentials."}
+
+    config = _load_config(paths, profile)
     config["client_id"] = (client_id or "").strip()
     config["environment"] = environment if environment in ("production", "sandbox") else "production"
     config["redirect_uri"] = (redirect_uri or "").strip()
-    _save_config(paths, config)
+    _save_config(paths, config, profile)
 
     secret = (client_secret or "").strip()
     if secret:
-        store = _store()
+        store = _profile_store(profile)
         blob = store.load()
         blob["client_secret"] = secret
         store.save(blob)
 
-    return get_status(paths)
+    return get_status(paths, profile=profile)
 
 
 # ── OAuth handshake ─────────────────────────────────────────────────────────
 
 
-def generate_auth_url(paths: AppPaths) -> dict:
+def generate_auth_url(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     """Create a CSRF state value and return the Intuit authorization URL."""
-    global _pending_state
-    config = _load_config(paths)
-    secret = _store().load().get("client_secret", "")
+    profile = _profile_name(profile)
+    config = _load_config(paths, profile)
+    secret = _profile_store(profile).load().get("client_secret", "")
     if not config["client_id"] or not secret:
         return {"ok": False, "error": "Set your QuickBooks Client ID and Client Secret first."}
     if not config["redirect_uri"]:
         return {"ok": False, "error": "Set the redirect URI first."}
 
-    _pending_state = _secrets.token_urlsafe(32)
+    state = _secrets.token_urlsafe(32)
+    _set_pending_state(profile, state)
     client = QuickBooksOAuthClient(config["client_id"], secret, environment=config["environment"])
-    url = client.build_authorization_url(redirect_uri=config["redirect_uri"], state=_pending_state)
+    url = client.build_authorization_url(redirect_uri=config["redirect_uri"], state=state)
     return {"ok": True, "url": url}
 
 
-def validate_state(state: str) -> bool:
+def validate_state(state: str, *, profile: str = _DEFAULT_PROFILE) -> bool:
     """Constant-time, single-use validation of the OAuth state parameter."""
-    global _pending_state
-    expected = _pending_state
-    _pending_state = None  # consume once regardless of outcome
+    expected = _take_pending_state(_profile_name(profile))
     if not expected or not state:
         return False
     return _secrets.compare_digest(expected, state)
 
 
-def complete_authorization(paths: AppPaths, *, code: str, realm_id: str, state: str) -> dict:
+def complete_authorization(
+    paths: AppPaths,
+    *,
+    code: str,
+    realm_id: str,
+    state: str,
+    profile: str | None = None,
+) -> dict:
     """Validate state, exchange the code for tokens, and store them."""
-    if not validate_state(state):
+    profile = _profile_name(profile or _profile_for_pending_state(state))
+    if not validate_state(state, profile=profile):
         return {"ok": False, "error": "Invalid OAuth state — authorization rejected."}
     if not code:
         return {"ok": False, "error": "Missing authorization code."}
 
-    config = _load_config(paths)
-    store = _store()
+    config = _load_config(paths, profile)
+    store = _profile_store(profile)
     secret = store.load().get("client_secret", "")
     client = QuickBooksOAuthClient(config["client_id"], secret, environment=config["environment"])
     try:
@@ -185,9 +247,9 @@ def complete_authorization(paths: AppPaths, *, code: str, realm_id: str, state: 
         logger.warning("QuickBooks code exchange failed: %s", exc)
         return {"ok": False, "error": str(exc)}
 
-    _store_token(paths, store, token, realm_id=realm_id, fresh=True)
-    logger.info("QuickBooks connected")
-    return {"ok": True}
+    _store_token(paths, store, token, realm_id=realm_id, fresh=True, profile=profile)
+    logger.info("QuickBooks connected: profile=%s", profile)
+    return {"ok": True, "profile": profile}
 
 
 def _store_token(
@@ -197,6 +259,7 @@ def _store_token(
     *,
     realm_id: str | None = None,
     fresh: bool = False,
+    profile: str = _DEFAULT_PROFILE,
 ) -> None:
     """Persist a token response. Rotates the refresh token every time."""
     now = datetime.now(timezone.utc)
@@ -207,7 +270,7 @@ def _store_token(
         blob["realm_id"] = realm_id
     store.save(blob)
 
-    config = _load_config(paths)
+    config = _load_config(paths, profile)
     access_ttl = int(token.get("expires_in", _DEFAULT_ACCESS_TTL))
     refresh_ttl = int(token.get("x_refresh_token_expires_in", _DEFAULT_REFRESH_TTL))
     config["token_expiry_utc"] = _iso(now + timedelta(seconds=access_ttl))
@@ -215,18 +278,19 @@ def _store_token(
     if fresh or not config.get("hard_expiry_utc"):
         config["hard_expiry_utc"] = _iso(now + timedelta(days=_HARD_EXPIRY_DAYS))
     config["connection_status"] = "connected"
-    _save_config(paths, config)
+    _save_config(paths, config, profile)
 
 
-def ensure_access_token(paths: AppPaths) -> str:
+def ensure_access_token(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> str:
     """Return a valid access token, refreshing (and rotating) if needed.
 
     Raises ``QuickBooksOAuthError`` when not connected or when the refresh
     token is dead; the connection is marked disconnected on invalid_grant
     so the UI can prompt a reconnect.
     """
-    config = _load_config(paths)
-    store = _store()
+    profile = _profile_name(profile)
+    config = _load_config(paths, profile)
+    store = _profile_store(profile)
     blob = store.load()
     access = blob.get("access_token")
     refresh = blob.get("refresh_token")
@@ -243,44 +307,46 @@ def ensure_access_token(paths: AppPaths) -> str:
         token = client.refresh(refresh_token=refresh)
     except QuickBooksOAuthError as exc:
         if "invalid_grant" in str(exc).lower():
-            _mark_disconnected(paths)
+            _mark_disconnected(paths, profile=profile)
         raise
-    _store_token(paths, store, token)
+    _store_token(paths, store, token, profile=profile)
     return token["access_token"]
 
 
-def get_realm_id(paths: AppPaths) -> str:
+def get_realm_id(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> str:
     """Return the connected company's realm ID (empty if not connected)."""
-    return _store().load().get("realm_id", "")
+    profile = _profile_name(profile)
+    return _profile_store(profile).load().get("realm_id", "")
 
 
-def set_last_sync(paths: AppPaths, when_iso: str) -> None:
+def set_last_sync(paths: AppPaths, when_iso: str, *, profile: str = _DEFAULT_PROFILE) -> None:
     """Record the timestamp of the most recent successful data sync."""
-    config = _load_config(paths)
+    config = _load_config(paths, profile)
     config["last_sync_utc"] = when_iso
-    _save_config(paths, config)
+    _save_config(paths, config, profile)
 
 
 # ── disconnect / status ─────────────────────────────────────────────────────
 
 
-def _mark_disconnected(paths: AppPaths) -> None:
-    config = _load_config(paths)
+def _mark_disconnected(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> None:
+    config = _load_config(paths, profile)
     config["connection_status"] = "disconnected"
     config["token_expiry_utc"] = ""
     config["refresh_expiry_utc"] = ""
-    _save_config(paths, config)
+    _save_config(paths, config, profile)
 
 
-def disconnect(paths: AppPaths) -> dict:
+def disconnect(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     """Revoke the refresh token and clear stored user tokens.
 
     Keeps the app-registration credentials (client_id / client_secret) so
     reconnecting is a single click; only the per-user tokens and realm are
     cleared.
     """
-    config = _load_config(paths)
-    store = _store()
+    profile = _profile_name(profile)
+    config = _load_config(paths, profile)
+    store = _profile_store(profile)
     blob = store.load()
     refresh = blob.get("refresh_token")
     if refresh and config.get("client_id"):
@@ -299,15 +365,16 @@ def disconnect(paths: AppPaths) -> dict:
     config["refresh_expiry_utc"] = ""
     config["hard_expiry_utc"] = ""
     config["connection_status"] = "disconnected"
-    _save_config(paths, config)
-    logger.info("QuickBooks disconnected")
-    return {"ok": True}
+    _save_config(paths, config, profile)
+    logger.info("QuickBooks disconnected: profile=%s", profile)
+    return {"ok": True, "profile": profile}
 
 
-def get_status(paths: AppPaths) -> dict:
+def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     """Connection state for the Settings UI. Never includes secret values."""
-    config = _load_config(paths)
-    blob = _store().load()
+    profile = _profile_name(profile)
+    config = _load_config(paths, profile)
+    blob = _profile_store(profile).load()
     has_secret = bool(blob.get("client_secret"))
     connected = config.get("connection_status") == "connected" and bool(blob.get("refresh_token"))
     return {
@@ -323,4 +390,6 @@ def get_status(paths: AppPaths) -> dict:
         "refresh_expiry_utc": config.get("refresh_expiry_utc", ""),
         "hard_expiry_utc": config.get("hard_expiry_utc", ""),
         "last_sync_utc": config.get("last_sync_utc"),
+        "profile": profile,
+        "preview_only": profile == PRODUCTION_PREVIEW_PROFILE,
     }

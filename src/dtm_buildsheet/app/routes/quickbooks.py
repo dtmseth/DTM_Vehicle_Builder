@@ -7,6 +7,8 @@ GET:
 - /api/quickbooks/items     — locally cached pulled items (no network)
 - /api/quickbooks/customers/preview — dry-run count of a customer import
 - /api/quickbooks/pricing-status — read-only price-level capability check
+- /api/quickbooks/customer-pricing — shared Default manufacturer discounts
+- /api/quickbooks/production-preview/* — isolated production catalog mapping preview
 
 POST:
 - /api/quickbooks/settings    — save client_id / client_secret / env / redirect
@@ -15,6 +17,8 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
+- /api/quickbooks/customer-pricing/default — save the reviewed shared Default rule
+- /api/quickbooks/production-preview/create-snapshot — create/select a local immutable baseline
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
@@ -35,7 +39,13 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
-from ..services import qb_estimate_service, qb_sync_service, quickbooks_service
+from ..services import (
+    customer_pricing_service,
+    qb_estimate_service,
+    qb_production_preview_service,
+    qb_sync_service,
+    quickbooks_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +77,15 @@ def route_quickbooks(
     if method == "GET" and path == "/api/quickbooks/status":
         _send_json(handler, quickbooks_service.get_status(paths))
         return True
+    if method == "GET" and path == "/api/quickbooks/production-preview/status":
+        _send_json(handler, qb_production_preview_service.get_status(paths))
+        return True
+    if method == "GET" and path == "/api/quickbooks/production-preview/snapshots":
+        _send_json(handler, qb_production_preview_service.list_snapshots(paths))
+        return True
+    if method == "GET" and path == "/api/quickbooks/production-preview/report":
+        _send_json(handler, qb_production_preview_service.get_mapping_report(paths))
+        return True
     if method == "GET" and path == "/api/quickbooks/auth-url":
         _send_json(handler, quickbooks_service.generate_auth_url(paths))
         return True
@@ -77,6 +96,9 @@ def route_quickbooks(
         return True
     if method == "GET" and path == "/api/quickbooks/pricing-status":
         _send_json(handler, qb_sync_service.get_pricing_status(paths))
+        return True
+    if method == "GET" and path == "/api/quickbooks/customer-pricing":
+        _send_json(handler, customer_pricing_service.get_default_rule(paths))
         return True
     if method == "GET" and path == "/api/quickbooks/estimate-field-setup":
         _send_json(handler, qb_sync_service.get_estimate_field_setup(paths))
@@ -92,6 +114,50 @@ def route_quickbooks(
         return True
     if method == "POST" and path == "/api/quickbooks/sync":
         _send_json(handler, qb_sync_service.run_full_sync(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/customer-pricing/default":
+        _send_json(handler, customer_pricing_service.save_default_rule(paths, body))
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/select-snapshot":
+        _send_json(
+            handler,
+            qb_production_preview_service.select_snapshot(paths, body.get("snapshot_name", "")),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/create-snapshot":
+        _send_json(
+            handler,
+            qb_production_preview_service.create_baseline_snapshot(paths, body.get("label", "")),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/settings":
+        _send_json(
+            handler,
+            qb_production_preview_service.save_connection(
+                paths,
+                client_id=body.get("client_id", ""),
+                client_secret=body.get("client_secret", ""),
+                redirect_uri=body.get("redirect_uri", ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/auth-url":
+        _send_json(handler, qb_production_preview_service.generate_auth_url(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/pull":
+        _send_json(handler, qb_production_preview_service.pull_production_catalog(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/mapping-field":
+        _send_json(
+            handler,
+            qb_production_preview_service.set_mapping_field(paths, body.get("field", "")),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/prepare-plan":
+        _send_json(handler, qb_production_preview_service.prepare_auto_mapping_plan(paths))
+        return True
+    if method == "POST" and path == "/api/quickbooks/production-preview/disconnect":
+        _send_json(handler, qb_production_preview_service.disconnect(paths))
         return True
     if method == "POST" and path == "/api/quickbooks/link-item":
         _send_json(
@@ -151,6 +217,8 @@ def route_quickbooks(
                 memo=body.get("memo", ""),
                 customer_confirmed=bool(body.get("customer_confirmed", False)),
                 customer_fields=body.get("customer_fields") or None,
+                existing_action=body.get("existing_action", ""),
+                attach_pdf=bool(body.get("attach_pdf", False)),
             ),
         )
         return True
@@ -195,8 +263,9 @@ def _handle_callback(handler: BaseHTTPRequestHandler, paths: AppPaths) -> bool:
         _redirect(handler, "/?qb=error")
         return True
 
-    result = quickbooks_service.complete_authorization(
-        paths, code=code, realm_id=realm_id, state=state
-    )
-    _redirect(handler, "/?qb=connected" if result.get("ok") else "/?qb=error")
+    result = quickbooks_service.complete_authorization(paths, code=code, realm_id=realm_id, state=state)
+    if result.get("ok") and result.get("profile") == quickbooks_service.PRODUCTION_PREVIEW_PROFILE:
+        _redirect(handler, "/?qb=production-preview-connected")
+    else:
+        _redirect(handler, "/?qb=connected" if result.get("ok") else "/?qb=error")
     return True

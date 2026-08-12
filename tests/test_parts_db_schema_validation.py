@@ -54,6 +54,37 @@ class TestPartsDbValidator:
         with pytest.raises(ValueError, match="'products' must be an object"):
             validate_config_payload("parts_db.json", {"products": []})
 
+    def test_accepts_customer_pricing_default_rule(self):
+        result = validate_config_payload("parts_db.json", {
+            "manufacturers": {"whelen": {"label": "Whelen"}},
+            "products": {},
+            "customer_pricing": {
+                "default_rule": {
+                    "name": "Default",
+                    "manufacturer_discounts": {"whelen": 38},
+                },
+            },
+        })
+        assert result["customer_pricing"]["default_rule"]["manufacturer_discounts"] == {"whelen": 38}
+
+    @pytest.mark.parametrize(("manufacturer", "discount", "message"), [
+        ("missing", 38, "unknown manufacturer"),
+        ("whelen", 101, "0 through 100"),
+        ("whelen", True, "0 through 100"),
+    ])
+    def test_rejects_invalid_customer_pricing_default_rule(self, manufacturer, discount, message):
+        with pytest.raises(ValueError, match=message):
+            validate_config_payload("parts_db.json", {
+                "manufacturers": {"whelen": {"label": "Whelen"}},
+                "products": {},
+                "customer_pricing": {
+                    "default_rule": {
+                        "name": "Default",
+                        "manufacturer_discounts": {manufacturer: discount},
+                    },
+                },
+            })
+
     def test_rejects_product_missing_manufacturer_id(self):
         with pytest.raises(ValueError, match="manufacturer_id"):
             validate_config_payload("parts_db.json", {
@@ -90,7 +121,7 @@ class TestPartsDbValidator:
                 }},
             })
 
-    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required"])
+    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt"])
     def test_rejects_invalid_product_location_and_pa_metadata(self, field):
         with pytest.raises(ValueError, match=field):
             validate_config_payload("parts_db.json", {

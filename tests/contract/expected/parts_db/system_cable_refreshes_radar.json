@@ -11,7 +11,7 @@
             "part_number": "155-2591-02",
             "price": 99.6,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "35",
+            "qb_item_id": "1210",
             "vehicle_tags": [
               "any"
             ]
@@ -23,7 +23,7 @@
             "part_number": "155-2591-04",
             "price": 124.8,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "36",
+            "qb_item_id": "1211",
             "vehicle_tags": [
               "any"
             ]
@@ -35,7 +35,7 @@
             "part_number": "155-2591-08",
             "price": 124.8,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "37",
+            "qb_item_id": "845",
             "vehicle_tags": [
               "any"
             ]
@@ -45,9 +45,9 @@
             "manufacturer_label": "Stalker",
             "model": "Antenna Cable",
             "part_number": "155-2591-16",
-            "price": 168,
+            "price": 168.0,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "38",
+            "qb_item_id": "1212",
             "vehicle_tags": [
               "any"
             ]
@@ -59,7 +59,7 @@
             "part_number": "155-2591-20",
             "price": 188.4,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "39",
+            "qb_item_id": "846",
             "vehicle_tags": [
               "any"
             ]
@@ -71,7 +71,7 @@
             "part_number": "155-2591-25",
             "price": 188.4,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "40",
+            "qb_item_id": "1213",
             "vehicle_tags": [
               "any"
             ]
@@ -92,7 +92,7 @@
             "part_number": "155-2591-02",
             "price": 99.6,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "35",
+            "qb_item_id": "1210",
             "vehicle_tags": [
               "any"
             ]
@@ -104,7 +104,7 @@
             "part_number": "155-2591-04",
             "price": 124.8,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "36",
+            "qb_item_id": "1211",
             "vehicle_tags": [
               "any"
             ]
@@ -116,7 +116,7 @@
             "part_number": "155-2591-08",
             "price": 124.8,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "37",
+            "qb_item_id": "845",
             "vehicle_tags": [
               "any"
             ]
@@ -126,9 +126,9 @@
             "manufacturer_label": "Stalker",
             "model": "Antenna Cable",
             "part_number": "155-2591-16",
-            "price": 168,
+            "price": 168.0,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "38",
+            "qb_item_id": "1212",
             "vehicle_tags": [
               "any"
             ]
@@ -140,7 +140,7 @@
             "part_number": "155-2591-20",
             "price": 188.4,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "39",
+            "qb_item_id": "846",
             "vehicle_tags": [
               "any"
             ]
@@ -152,7 +152,7 @@
             "part_number": "155-2591-25",
             "price": 188.4,
             "product_id": "stalker_antenna_cable",
-            "qb_item_id": "40",
+            "qb_item_id": "1213",
             "vehicle_tags": [
               "any"
             ]
@@ -171,9 +171,9 @@
             "manufacturer_label": "Stalker",
             "model": "Radar Remote Display Cable",
             "part_number": "155-2211-00",
-            "price": 79,
+            "price": 79.0,
             "product_id": "stalker_remote_display_cable",
-            "qb_item_id": "33",
+            "qb_item_id": "57",
             "vehicle_tags": [
               "any"
             ]
@@ -185,7 +185,7 @@
             "part_number": "155-2211-25",
             "price": 134.4,
             "product_id": "stalker_remote_display_cable",
-            "qb_item_id": "34",
+            "qb_item_id": "1222",
             "vehicle_tags": [
               "any"
             ]
@@ -204,9 +204,9 @@
             "manufacturer_label": "Stalker",
             "model": "Radar VSS Installation Kit",
             "part_number": "200-0622-00",
-            "price": 168,
+            "price": 168.0,
             "product_id": "stalker_200_0622_00",
-            "qb_item_id": "71",
+            "qb_item_id": "847",
             "vehicle_tags": [
               "any"
             ]

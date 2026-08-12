@@ -88,19 +88,33 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector("#tab-projects:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
 
-    # General Settings + its public stabs. QuickBooks remains available in the
-    # codebase for the later controlled launch but must not appear in this
-    # release's public interface, including via a stale deep-link attempt.
+    # General Settings + its public stabs, including the production-enabled
+    # QuickBooks connection surface.
     page.click(".htab[data-tab='general-settings']")
     page.wait_for_selector("#stab-bar-general:not([hidden])")
-    assert page.evaluate("() => window.DTM_QUICKBOOKS_UI_ENABLED === false")
-    assert page.locator(".stab[data-stab='quickbooks']").is_hidden()
-    assert page.locator("#stab-quickbooks").is_hidden()
-    page.evaluate("() => _showOuterStab('quickbooks')")
-    assert page.locator("#stab-projects-defaults").is_visible()
-    for stab in ("projects-defaults", "agencies", "sales-reps", "presets"):
+    assert page.evaluate("() => window.DTM_QUICKBOOKS_UI_ENABLED === true")
+    assert page.locator(".stab[data-stab='quickbooks']").is_visible()
+    for stab in ("projects-defaults", "agencies", "sales-reps", "presets", "quickbooks"):
         page.click(f".stab[data-stab='{stab}']")
         page.wait_for_timeout(_SETTLE_MS)
+        if stab == "agencies":
+            page.click("#btn-add-agency")
+            page.wait_for_selector("#agency-create-modal.open")
+            page.wait_for_selector("[data-agency-pricing='whelen']", state="attached")
+            assert page.locator("#ac-pricing-use-default").is_checked()
+            page.uncheck("#ac-pricing-use-default")
+            assert page.locator("#ac-pricing-overrides").is_visible()
+            assert page.locator("[data-agency-pricing='whelen']").input_value() == "38"
+            page.click("#ac-cancel")
+        if stab == "quickbooks":
+            page.wait_for_selector("[data-pricing-default='whelen']")
+            expected = {
+                "gamber_johnson": "40", "havis": "20", "pac_tool": "5",
+                "santa_cruz": "25", "setina": "20", "westin": "15", "whelen": "38",
+            }
+            for manufacturer_id, discount in expected.items():
+                actual = page.locator(f"[data-pricing-default='{manufacturer_id}']").input_value()
+                assert actual == discount, f"{manufacturer_id} default pricing: expected {discount}, got {actual}"
 
     # Advanced Settings + its stabs (+ inner stabs for the two grouped ones)
     page.click(".htab[data-tab='advanced-settings']")
@@ -409,6 +423,37 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     SKUs before the accessory description."""
     _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
     _open_build_editor(page, base_url)
+
+    # A draft-local custom line edits in its own priced form, and can opt into
+    # an existing manifest category without becoming a managed catalog SKU.
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.click("[data-picker-custom-part]")
+    page.wait_for_selector("#picker-custom-part-modal.open")
+    page.fill("#picker-custom-part-sku", "SMOKE-CUSTOM")
+    page.fill("#picker-custom-part-description", "Smoke custom part")
+    page.fill("#picker-custom-part-price", "12.50")
+    page.fill("#picker-custom-part-qty", "2")
+    category_value = page.locator("#picker-custom-part-category option").nth(1).get_attribute("value")
+    assert category_value
+    page.select_option("#picker-custom-part-category", category_value)
+    page.click("#picker-custom-part-save")
+    page.wait_for_selector("#picker-custom-part-modal.open", state="hidden")
+    custom_draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    custom = next(p for p in custom_draft["draft"]["parts"] if p.get("part_number") == "SMOKE-CUSTOM")
+    assert custom.get("part_type") == category_value
+    page.click(f".me-edit-btn[data-lid='{custom['line_id']}']")
+    page.wait_for_selector("#picker-custom-part-modal.open")
+    assert not page.locator("#picker-panel.open").is_visible()
+    assert page.input_value("#picker-custom-part-price") == "12.5"
+    page.fill("#picker-custom-part-description", "Edited smoke custom part")
+    page.fill("#picker-custom-part-price", "15.75")
+    page.click("#picker-custom-part-save")
+    page.wait_for_selector("#picker-custom-part-modal.open", state="hidden")
+    custom_draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    custom = next(p for p in custom_draft["draft"]["parts"] if p.get("part_number") == "SMOKE-CUSTOM")
+    assert custom["name"] == "Edited smoke custom part"
+    assert custom["picker_config"]["custom_part"]["unit_price"] == 15.75
 
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
@@ -1110,9 +1155,11 @@ def flow_part_details_and_console(page, base_url: str) -> None:
 
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
-    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    if page.locator(".pbt-cat-head[data-cat='equipment'].open").count() == 0:
+        page.click(".pbt-cat-caret-btn[data-cat='equipment']")
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
-    page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+    if not page.locator(".pbt-fam-select[data-family='light_control_system']").is_visible():
+        page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
     page.wait_for_selector(".pbt-fam-select[data-family='light_control_system']")
 
     # Manifest Add opens the complete Light Control System family, not a
@@ -1200,6 +1247,42 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     manifest_mag_mic = manifest_children.filter(has_text="Mag Mic")
     assert manifest_mag_mic.is_visible(), "the billable Mag Mic must remain a visible child line"
     assert "Passenger kick panel" in manifest_mag_mic.text_content()
+
+    # The hand-held CCTL5 has no separate PA-mic/bracket setup. Its Details
+    # step asks only whether to add the bracket-free MMSU-1 Mag Mic.
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    if page.locator(".pbt-cat-head[data-cat='equipment'].open").count() == 0:
+        page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    if not page.locator(".pbt-fam-select[data-family='light_control_system']").is_visible():
+        page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+    page.wait_for_selector(".pbt-fam-select[data-family='light_control_system']")
+    page.click(".pbt-fam-select[data-family='light_control_system']")
+    page.wait_for_timeout(_SETTLE_MS)
+    if page.locator("#pp-veh-only").is_checked():
+        page.click("#pp-veh-only")
+        page.wait_for_timeout(200)
+    assert page.locator(".pp-head[data-pid='whelen_cctl5']").count() == 1
+    page.click(".pp-head[data-pid='whelen_cctl5']")
+    page.click(".pp-sku [data-pick][data-pid='whelen_cctl5'] >> nth=0")
+    page.click("#picker-add-btn")
+    page.wait_for_timeout(_SETTLE_MS)
+    assert page.locator("[data-handheld-mag-mic='true']").count() == 1
+    assert page.locator("[data-pa-mic-location]").count() == 0
+    assert page.locator("[data-pa-mic-clip]").count() == 0
+    assert page.locator("#picker-add-btn").is_disabled()
+    page.click("[data-handheld-mag-mic='true']")
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel", state="hidden")
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", _draft_id)
+    handheld = next(p for p in draft["draft"]["parts"]
+                    if any(c.get("part_number") == "CCTL5" for c in p.get("components", [])))
+    handheld_mag_mic = next((p for p in draft["draft"]["parts"]
+                             if p.get("parent_line_id") == handheld["line_id"]
+                             and p.get("accessory_category") == "magnetic_mic"), None)
+    assert handheld_mag_mic and handheld_mag_mic.get("part_number") == "MMSU-1"
 
     # A Center Console has one physical location, but its selected SKU leads
     # to the dedicated Details setup rather than a generic placement step.
@@ -1795,6 +1878,109 @@ def flow_preview_drag_mirroring(page, base_url: str) -> None:
     assert positions("horizontal:top") == horizontal["after"]
 
 
+def flow_howler_routing_and_dual_tone_siren(page, base_url: str) -> None:
+    """Vehicle-specific Howlers and optional CEXAMP survive picker round-trip."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="PIU")
+    _open_build_editor(page, base_url)
+
+    routed = page.evaluate("""() => {
+      const product = {
+        product_id: 'whelen_wcx_howler',
+        skus: [
+          {part_number: 'CHWLDD36'},
+          {part_number: 'CHWLFE29'},
+          {part_number: 'CHWLUNI'},
+        ],
+      };
+      const routes = Object.fromEntries(['DURANGO', 'PIU', 'TAHOE'].map(vehicle => [
+        vehicle,
+        _pickerHowlerVehicleSkus(product, product.skus, vehicle).map(sku => sku.part_number),
+      ]));
+      const priorEditLineId = _pickerState.editLineId;
+      const priorSelection = _pickerState.sel;
+      _pickerState.editLineId = 'historical-line';
+      _pickerState.sel = {product_id: product.product_id, sku: 'CHWLDD36'};
+      const historical = _pickerHowlerVehicleSkus(
+        product,
+        product.skus.filter(sku => ['CHWLFE29', 'CHWLUNI'].includes(sku.part_number)),
+        'PIU',
+      ).map(sku => sku.part_number);
+      _pickerState.editLineId = priorEditLineId;
+      _pickerState.sel = priorSelection;
+      return {routes, historical};
+    }""")
+    assert routed["routes"] == {
+        "DURANGO": ["CHWLDD36"],
+        "PIU": ["CHWLFE29"],
+        "TAHOE": ["CHWLUNI"],
+    }, routed
+    assert routed["historical"] == ["CHWLFE29", "CHWLDD36"], routed
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "CHWL")
+    page.wait_for_selector(".pp-head[data-pid='whelen_wcx_howler']")
+    page.click(".pp-head[data-pid='whelen_wcx_howler']")
+    page.wait_for_selector("[data-pick='CHWLFE29']")
+    visible_howler_skus = page.locator(
+        ".pp-row[data-pid='whelen_wcx_howler'] [data-pick]"
+    ).evaluate_all("els => els.map(el => el.dataset.pick)")
+    assert visible_howler_skus == ["CHWLFE29"], visible_howler_skus
+    page.click("[data-pick='CHWLFE29']")
+    page.wait_for_timeout(_SETTLE_MS)
+    assert page.locator("select[data-cat='bracket_mount']").count() == 0, (
+        "current CHWL assemblies already include their bracket"
+    )
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "SA315P")
+    page.wait_for_selector(".pp-head[data-pid='whelen_sa315p']")
+    page.click(".pp-head[data-pid='whelen_sa315p']")
+    page.wait_for_selector("[data-pick='SA315P'][data-pid='whelen_sa315p']")
+    page.click("[data-pick='SA315P'][data-pid='whelen_sa315p']")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click("[data-siren-qty='2']")
+    page.wait_for_selector("[data-siren-dual-tone='yes']")
+    bracket_selects = page.locator("select[data-cat='bracket_mount']")
+    for index in range(bracket_selects.count()):
+        bracket_selects.nth(index).select_option("none")
+    page.click("[data-siren-dual-tone='yes']")
+    assert "active" in (page.get_attribute("[data-siren-dual-tone='yes']", "class") or "")
+    page.click("#picker-tab-btn-location")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.wait_for_selector(".picker-dot[data-name='BEHIND GRILL (CENTER)']")
+    page.locator(".picker-dot[data-name='BEHIND GRILL (CENTER)']").first.click(force=True)
+    save_state = page.evaluate("""() => ({
+      disabled: document.querySelector('#picker-add-btn').disabled,
+      selected: _pickerState.loc.selected,
+      textCustom: _pickerState.loc.textCustom,
+      sel: _pickerState.sel,
+      filters: _pickerState.filters,
+      accessories: _pickerState.accessories,
+      accessoryChoices: _pickerState.accessoryChoices,
+    })""")
+    assert save_state["disabled"] is False, save_state
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    speaker = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "siren_speaker")
+    assert speaker["quantity"] == 2
+    assert speaker["picker_config"]["siren_dual_tones"] is True
+    component_qty = {component["part_number"]: component["quantity"] for component in speaker["components"]}
+    assert component_qty["SA315P"] == 2
+    assert component_qty["CEXAMP"] == 1
+
+    page.evaluate("(lineId) => openPartEditModal(lineId)", speaker["line_id"])
+    page.wait_for_selector("[data-siren-dual-tone='yes']")
+    assert page.evaluate("_pickerState.sirenDualTones") is True
+    assert "active" in (page.get_attribute("[data-siren-dual-tone='yes']", "class") or "")
+    page.evaluate("pickerClose()")
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -1811,6 +1997,7 @@ FLOWS = {
     "scene_light_qty_only": flow_scene_light_qty_only,
     "picker_multi_add": flow_picker_multi_add,
     "preview_drag_mirroring": flow_preview_drag_mirroring,
+    "howler_routing_and_dual_tone_siren": flow_howler_routing_and_dual_tone_siren,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,

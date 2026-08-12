@@ -2238,26 +2238,26 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "HAVIS  ·  SKU: VEHICLE SPECIFIC"
+                          "text": "HAVIS  ·  VEHICLE SPECIFIC"
                         }
                       ]
                     }
                   ],
-                  "text": "Center Console\nHAVIS  ·  SKU: VEHICLE SPECIFIC"
+                  "text": "Center Console\nHAVIS  ·  VEHICLE SPECIFIC"
                 },
                 {
                   "paragraphs": [
                     {
                       "runs": [
                         {
-                          "color": "#1A1A1A",
+                          "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                          "text": "—"
                         }
                       ]
                     }
                   ],
-                  "text": "Placeholder hidden from picker until an exact Havis console series and vehicle application are curated."
+                  "text": "—"
                 },
                 {
                   "paragraphs": [
@@ -6063,12 +6063,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "HAVIS  ·  SKU: CUP HOLDERS"
+                          "text": "HAVIS  ·  CUP HOLDERS"
                         }
                       ]
                     }
                   ],
-                  "text": "Special Face Plate 4\nHAVIS  ·  SKU: CUP HOLDERS"
+                  "text": "Special Face Plate 4\nHAVIS  ·  CUP HOLDERS"
                 },
                 {
                   "paragraphs": [
@@ -6479,12 +6479,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "WESTIN  ·  SKU: WESTIN 4 LIGHT TUBE"
+                          "text": "WESTIN  ·  WESTIN 4 LIGHT TUBE"
                         }
                       ]
                     }
                   ],
-                  "text": "FW 1 Bracket\nWESTIN  ·  SKU: WESTIN 4 LIGHT TUBE"
+                  "text": "FW 1 Bracket\nWESTIN  ·  WESTIN 4 LIGHT TUBE"
                 },
                 {
                   "paragraphs": [

@@ -321,6 +321,15 @@ location" rows.
 - **Westin push bumpers.** Base Westin bumpers can add wire-cover and light-channel accessory rows.
   Westin does not sell pre-lighted bumpers; the later billed-light choice for a selected channel is
   still a product/workflow follow-up.
+- **Howler WCX vehicle routing.** With vehicle filtering enabled, the picker recommends exactly one
+  current Howler assembly: `CHWLDD36` for Durango, `CHWLFE29` for PIU, and the untagged universal
+  `CHWLUNI` for every other vehicle. These assemblies already include their mounting bracket, so
+  the picker suppresses the legacy extra-bracket prompt for them. A historical saved SKU remains
+  visible while editing so the user can review and deliberately migrate it.
+- **Two-speaker dual tones.** A siren-speaker selection with quantity two asks whether the
+  agency wants dual siren tones. Choosing Yes adds one linked `CEXAMP` as a concrete child component;
+  estimates therefore bill two speaker SKUs plus one external amplifier, while rendering remains
+  driven by the two-speaker parent quantity.
 - **Guided systems.** Radio, radar, and camera families first select the system on the
   SKU tab. Radio uses the selected radio-unit SKU as that identity and opens its setup details
   immediately; radar and camera select a platform before their Details tab. The guided workflow
@@ -361,7 +370,8 @@ location" rows.
     in the control-head detail rather than as its own manifest line. A Magnetic mic additionally
     creates its real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains
     shop detail only.
-    CCTL5 declares `pa_mic_required: false`, so it skips that setup entirely. A single control head
+    CCTL5 declares `pa_mic_required: false` and `handheld_mag_mic_prompt: true`, so Details asks
+    whether to add an MMSU-1 Mag Mic without offering a bracket accessory. A single control head
     is named **Control Head**; adding a second renames the pair **Control Head 1** and
     **Control Head 2** (and child-row prefixes track that change). Removing back to one drops the
     numeric suffix again.
@@ -430,18 +440,22 @@ price, and quantity are required and are saved in the draft row's
 `picker_config.custom_part` snapshot. The row stays in the manifest but intentionally has no
 vehicle placement or render asset.
 
+Custom rows reopen this same form from the manifest Edit button. SKU, description, quantity, price,
+and an optional manifest category can be changed without entering the managed Part Picker. The
+category uses an existing manifest section for organization only; it does not turn the row into a
+catalog product or change its draft-local pricing snapshot.
+
 - An exact SKU match in `parts_db.json` is detected case-insensitively. The picker offers to open
   the catalog SKU's normal setup/placement flow; the operator can explicitly keep a distinct custom
   line only when that is intentional.
 - Recent custom entries are retained locally in `workspace/custom_parts.json` for fast re-entry.
   This convenience history is not inventory, is not a settings change, and is not cloud-synced;
   the authoritative quote data remains with the shared draft.
-- Estimate resolution makes the saved unit price and quantity a `custom: true`, pending line. QBO
-  receives the SKU, description, unit price, quantity, and extended total in a clearly flagged
-  `DescriptionOnly` quote line: `⚠ CUSTOM PART — NOT IN QB INVENTORY …`. QBO does not add a
-  DescriptionOnly line to its document total; the builder's validation total includes it and the
-  reviewer sees it as pending. If it must increase the QBO total before a real item exists, the
-  business needs a pre-approved generic non-inventory QB ItemRef (not created by this flow).
+- Estimate resolution makes the saved unit price and quantity a `custom: true` sales line through
+  the literal active QuickBooks `MISC PART` Item (case-sensitive because this company also contains
+  a distinct `Misc Part` Item). The entered SKU, description, quantity, unit price,
+  and extended amount remain visible on the estimate line, so QBO includes it in the document total.
+  If `MISC PART` is unavailable, estimate creation is blocked instead of silently posting a $0 note.
 
 ---
 

@@ -101,7 +101,28 @@ class TestValidatePresetPayload:
 
     def test_schema_version_normalised(self):
         result = validate_preset_payload(_MINIMAL_PRESET)
-        assert result["schema_version"] == 1
+        assert result["schema_version"] == 3
+
+    def test_picker_and_renderer_fields_preserved(self):
+        component = {"part_number": "BSFW50ZT", "quantity": 1}
+        preset = {
+            **_MINIMAL_PRESET,
+            "parts": [{
+                "name": "Front Interior Light Bar",
+                "part_type": "front_interior_light_bar",
+                "components": [component],
+                "picker_config": {"coverage": "full"},
+                "line_id": "parent-1",
+                "parent_line_id": "",
+                "new_or_used": "Reused",
+            }],
+        }
+        part = validate_preset_payload(preset)["parts"][0]
+        assert part["part_type"] == "front_interior_light_bar"
+        assert part["components"] == [component]
+        assert part["picker_config"] == {"coverage": "full"}
+        assert part["line_id"] == "parent-1"
+        assert part["new_or_used"] == "Reused"
 
     def test_vehicle_types_preserved(self):
         result = validate_preset_payload(_MINIMAL_PRESET)

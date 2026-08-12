@@ -1,5 +1,21 @@
 # Session Handoff — Picker flaw-fix pass (2026-07-13/14)
 
+## 2026-08-12 QuickBooks production-release handoff
+
+PR #11 is the v3.1.0 production candidate. The owner approved promotion after the production
+catalog/customer migration and the estimate-pricing comparison workflow were completed. The branch
+now includes production item/customer links, current-price estimate preparation, Retail/non-taxable
+agency creation, custom-part editing and pricing, Howler/CEXAMP and Mag Mic guided choices, estimate
+duplicate protection, and optional build-PDF attachment. Deferred per-user OAuth attribution and
+QuickBooks Project creation remain documented future work; they are not part of this release.
+
+Release safety remains unchanged: credentials are keychain-only, `.hermes/` is unrelated untracked
+scratch data, and no live QuickBooks write should be made for release validation. The three golden
+PPTX differences were reviewed: placeholder pseudo-SKUs lost the misleading `SKU:` label, obsolete
+placeholder prose became an em dash, and repeated placement notes were consolidated with quantities.
+Plan digests did not change. See `docs/PRODUCTION_RELEASE_PLAN.md` for the merge/build/publish record
+and `docs/QUICKBOOKS.md` for the operational invariants.
+
 ## 2026-08-06 continuation update
 
 This continuation preserved the already-dirty tree, did not stage/commit/reset anything, and ran

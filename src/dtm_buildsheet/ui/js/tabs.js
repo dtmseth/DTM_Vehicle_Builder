@@ -35,6 +35,7 @@ const ALL_STAB_CONTENTS = [
   "stab-sales-reps",
   "stab-presets",
   "stab-quickbooks",
+  "stab-quickbooks-production-preview",
   "stab-workbook-tools",
 ];
 
@@ -51,6 +52,8 @@ const HEADER_DEFAULT_STAB = {
   "advanced-settings": "placements",
 };
 const QUICKBOOKS_UI_ENABLED = window.DTM_QUICKBOOKS_UI_ENABLED === true;
+const _quickBooksStabButton = document.querySelector(".stab[data-stab='quickbooks']");
+if (_quickBooksStabButton) _quickBooksStabButton.hidden = !QUICKBOOKS_UI_ENABLED;
 
 let _activeHeaderTab = null;
 const _stabPerHeader = { "general-settings": null, "advanced-settings": null };
@@ -107,6 +110,7 @@ function _runStabSideEffects(stab) {
   if (stab === "sku-grid" && typeof initSkuGridTab === "function") initSkuGridTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
   if (stab === "quickbooks" && QUICKBOOKS_UI_ENABLED && typeof initQuickBooksTab === "function") initQuickBooksTab();
+  if (stab === "quickbooks-production-preview" && typeof initQuickBooksProductionPreview === "function") initQuickBooksProductionPreview();
 }
 
 function switchTab(t) {

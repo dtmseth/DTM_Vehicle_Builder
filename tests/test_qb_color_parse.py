@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
-from qb_apply_links import _parse_color_from_item  # noqa: E402
+from qb_apply_links import _parse_color_from_item, apply_mapping  # noqa: E402
 
 
 def c(desc, sku=""):
@@ -110,3 +110,38 @@ def test_blk_not_a_color():
 def test_wecanx_programmable_no_color():
     r = c("WHELEN I-E RST WCX 10-LT TRIO DURANGO", "BS44ZT")
     assert r["color"] == "" and r["secondary_color"] == ""
+
+
+def test_apply_mapping_preserves_explicit_universal_vehicle_tags_and_qb_description():
+    parts_db = {
+        "part_types": {"howler": {"type_id": "equipment"}},
+        "products": {
+            "whelen_wcx_howler": {
+                "manufacturer_id": "whelen",
+                "model": "Howler WCX",
+                "fits_part_types": ["howler"],
+                "part_numbers": [],
+            }
+        },
+    }
+    mapping = {
+        "links": [{
+            "sku": "CHWLUNI",
+            "product": "whelen_wcx_howler",
+            "vehicle_tags": [],
+        }]
+    }
+    cache = {
+        "CHWLUNI": {
+            "qb_item_id": "1290",
+            "sku": "",
+            "description": "WHELEN WCX LOW FREQ SIREN AMP UNIV MT",
+            "unit_price": 756.0,
+        }
+    }
+
+    apply_mapping(parts_db, mapping, cache)
+
+    entry = parts_db["products"]["whelen_wcx_howler"]["part_numbers"][0]
+    assert entry["vehicle_tags"] == []
+    assert entry["qb_sales_description"] == cache["CHWLUNI"]["description"]

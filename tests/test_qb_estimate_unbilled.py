@@ -80,6 +80,8 @@ def test_guided_system_parent_is_unbilled_but_its_refresh_cable_is_billable(tmp_
 
         assert not problems
         assert [line["part_number"] for line in lines] == ["Radio Refresh Kit"]
-        assert lines[0]["qb_item_id"] == "956"
+        # The production migration changes the opaque QBO Item ID while the
+        # Builder part number remains stable.
+        assert lines[0]["qb_item_id"] == "1496"
     finally:
         parts_db_service.reset_for_testing()

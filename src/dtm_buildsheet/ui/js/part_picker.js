@@ -25,7 +25,8 @@ let _pickerState = {
   expanded: new Set(),     // product_ids whose SKU list is open
   sel: null,               // { product_id, model, mfr, sku? }  current selection
   loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" },
-  partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" },
+  partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null },
+  sirenDualTones: false,  // qty-2 Whelen speaker option; adds CEXAMP as a billed component
   comment: "",             // user-authored text shown in the build manifest
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
@@ -261,7 +262,7 @@ function pickerClose() {
 // ── One-off billable custom parts ──────────────────────
 // These remain draft-local billable rows.  The small recent list is only a
 // convenience for this app installation; it never turns into QB inventory.
-const _pickerCustomPartState = { wired: false, conflict: null, recent: [] };
+const _pickerCustomPartState = { wired: false, conflict: null, recent: [], editLineId: "", categoriesLoaded: false, returnToPicker: false };
 
 function _pickerCustomPartInputs() {
   return {
@@ -269,6 +270,7 @@ function _pickerCustomPartInputs() {
     description: $("picker-custom-part-description"),
     price: $("picker-custom-part-price"),
     quantity: $("picker-custom-part-qty"),
+    category: $("picker-custom-part-category"),
   };
 }
 
@@ -326,6 +328,29 @@ async function _pickerCustomLoadRecent() {
   _pickerCustomRenderRecent();
 }
 
+async function _pickerCustomLoadCategories() {
+  if (_pickerCustomPartState.categoriesLoaded) return;
+  const select = $("picker-custom-part-category");
+  if (!select) return;
+  try {
+    const result = await api("/api/parts-db/manifest-groups");
+    const options = [`<option value="">Other / Custom Parts</option>`];
+    for (const group of (result?.groups || [])) {
+      const rows = (group.subgroups || []).filter(row => (row.part_types || []).length);
+      if (!rows.length) continue;
+      options.push(`<optgroup label="${esc(group.label || group.group_id)}">`);
+      for (const row of rows) {
+        options.push(`<option value="${esc(row.part_types[0])}">${esc(row.label || row.subgroup_id)}</option>`);
+      }
+      options.push(`</optgroup>`);
+    }
+    select.innerHTML = options.join("");
+    _pickerCustomPartState.categoriesLoaded = true;
+  } catch (error) {
+    console.warn("Custom part categories failed to load", error);
+  }
+}
+
 async function _pickerCustomCheckSku() {
   const sku = _pickerCustomPartInputs().sku?.value.trim() || "";
   if (!sku) { _pickerCustomClearConflict(); return; }
@@ -354,23 +379,42 @@ function _pickerCustomWire() {
   _pickerCustomPartState.wired = true;
 }
 
-async function pickerCustomPartOpen() {
+async function pickerCustomPartOpen(part = null) {
   const draftId = (typeof _meDraftId !== "undefined") ? _meDraftId : null;
   if (!draftId) { toast("No active build", "error"); return; }
   _pickerCustomWire();
   _pickerCustomClearConflict();
+  _pickerCustomPartState.editLineId = part?.line_id || "";
+  const pickerPanel = $("picker-panel");
+  _pickerCustomPartState.returnToPicker = !!pickerPanel?.classList.contains("open");
+  if (_pickerCustomPartState.returnToPicker) pickerPanel.classList.remove("open");
   const form = $("picker-custom-part-form");
   form?.reset();
-  const quantity = $("picker-custom-part-qty");
-  if (quantity) quantity.value = "1";
+  await _pickerCustomLoadCategories();
+  const inputs = _pickerCustomPartInputs();
+  const custom = part?.picker_config?.custom_part || {};
+  inputs.sku.value = custom.sku || part?.part_number || "";
+  inputs.description.value = custom.description || part?.name || "";
+  inputs.price.value = custom.unit_price ?? "";
+  inputs.quantity.value = part?.quantity || 1;
+  inputs.category.value = part?.part_type && part.part_type !== "custom_part" ? part.part_type : "";
+  const editing = !!_pickerCustomPartState.editLineId;
+  const title = $("picker-custom-part-title");
+  const save = $("picker-custom-part-save");
+  if (title) title.textContent = editing ? "Edit Custom Part" : "Add Custom Part";
+  if (save) save.textContent = editing ? "Save custom part" : "Add billable custom part";
   $("picker-custom-part-modal")?.classList.add("open");
   $("picker-custom-part-sku")?.focus();
   await _pickerCustomLoadRecent();
 }
 
-function pickerCustomPartClose() {
+function pickerCustomPartClose(options = {}) {
+  const reopenPicker = options?.reopen !== false;
   $("picker-custom-part-modal")?.classList.remove("open");
   _pickerCustomClearConflict();
+  _pickerCustomPartState.editLineId = "";
+  if (reopenPicker && _pickerCustomPartState.returnToPicker) $("picker-panel")?.classList.add("open");
+  _pickerCustomPartState.returnToPicker = false;
 }
 
 async function _pickerCustomUseExisting() {
@@ -431,11 +475,16 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
   const save = $("picker-custom-part-save");
   if (save) save.disabled = true;
   try {
-    const result = await api(`/api/draft/${draftId}/custom-part`, {
+    const editLineId = _pickerCustomPartState.editLineId;
+    const endpoint = editLineId
+      ? `/api/draft/${draftId}/custom-part/${editLineId}/update`
+      : `/api/draft/${draftId}/custom-part`;
+    const result = await api(endpoint, {
       sku: inputs.sku.value.trim(),
       description: inputs.description.value.trim(),
       unit_price: inputs.price.value,
       quantity: inputs.quantity.value,
+      part_type: inputs.category.value,
       allow_existing_duplicate: !!allowExistingDuplicate,
     });
     if (result?.error === "catalog_sku_exists") {
@@ -446,8 +495,8 @@ async function _pickerCustomSubmit(allowExistingDuplicate) {
       toast(result?.error || "Could not add custom part", "error");
       return;
     }
-    pickerCustomPartClose();
-    toast("Billable custom part added", "success");
+    pickerCustomPartClose({ reopen: false });
+    toast(editLineId ? "Custom part updated" : "Billable custom part added", "success");
     await _pickerFinalize(draftId, false);
   } catch (error) {
     console.error("Custom part save failed", error);
@@ -469,6 +518,7 @@ function _pickerClearSelection() {
   _pickerState.systemSetup = { active: false, kind: "", product: null };
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
+  _pickerState.sirenDualTones = false;
   _pickerState.accessories = []; _pickerState.accessoryChoices = {}; _pickerState.accLoadedFor = null;
   _pickerResetLocation();
   _pickerRenderProducts();
@@ -588,7 +638,9 @@ async function _pickerOpenEdit(part) {
     paMicLocation: pc.details?.paMicLocation || "",
     paMicLocationCustom: pc.details?.paMicLocationCustom || "",
     paMicClip: pc.details?.paMicClip || "",
+    handheldMagMic: typeof pc.details?.handheldMagMic === "boolean" ? pc.details.handheldMagMic : null,
   };
+  _pickerState.sirenDualTones = pc.siren_dual_tones === true;
   if (pc.westin) {
     _pickerState.westin = {
       ..._pickerNewWestinState(), active: true,
@@ -668,7 +720,8 @@ function _pickerResetState() {
   _pickerState.skuChoices = {};   // "head_N" → chosen part_number (per-head override, Step 3)
   _pickerState.optionsRemoved = false;
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" };
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
+  _pickerState.sirenDualTones = false;
   _pickerState.comment = "";
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
@@ -1342,14 +1395,57 @@ function _pickerIsSirenSpeakerContext() {
   return _pickerResolvedPartTypeId(_pickerState.filters) === "siren_speaker";
 }
 
+function _pickerSirenSupportsDualTones() {
+  return _pickerIsSirenSpeakerContext();
+}
+
 function _pickerSirenQtyHtml() {
   const q = Math.min(2, Math.max(1, _pickerState.config.count || 1));
+  const dualTone = q === 2 && _pickerState.sirenDualTones && _pickerSirenSupportsDualTones();
+  const toneChoice = q === 2 && _pickerSirenSupportsDualTones()
+    ? `<div class="pf-group pp-siren-tone"><span class="pf-label">Dual siren tones?</span><div class="pf-pills">
+         <button class="pf-pill${dualTone ? "" : " active"}" data-siren-dual-tone="no">No</button>
+         <button class="pf-pill${dualTone ? " active" : ""}" data-siren-dual-tone="yes">Yes — add CEXAMP</button>
+       </div><span class="pp-siren-note">Adds one WeCanX® External Amplifier so the two speakers can run dual siren tones.</span></div>`
+    : "";
   return `<div class="pp-prod-options pp-siren-options">
     <div class="pf-group"><span class="pf-label">Speakers</span><div class="pf-pills">
       <button class="pf-pill${q === 1 ? " active" : ""}" data-siren-qty="1">1</button>
       <button class="pf-pill${q === 2 ? " active" : ""}" data-siren-qty="2">2</button>
-    </div></div>
+    </div></div>${toneChoice}
   </div>`;
+}
+
+function _pickerSirenDualToneComponent() {
+  if (_pickerState.config.count !== 2
+      || !_pickerState.sirenDualTones
+      || !_pickerSirenSupportsDualTones()) return null;
+  return {
+    label: "WeCanX External Amplifier",
+    part_number: "CEXAMP",
+    part_type: "external_amp",
+    color: "",
+    quantity: 1,
+    price: null,
+  };
+}
+
+function _pickerHowlerVehicleSkus(product, skus, vehicle) {
+  if (product?.product_id !== "whelen_wcx_howler" || !vehicle) return skus;
+  const vehicleKey = String(vehicle).toUpperCase();
+  const preferredPartNumber = vehicleKey === "DURANGO"
+    ? "CHWLDD36"
+    : vehicleKey === "PIU" ? "CHWLFE29" : "CHWLUNI";
+  const productSkus = product.skus || skus;
+  const preferred = productSkus.find(sku => sku.part_number === preferredPartNumber);
+  if (!preferred) return skus;
+  // Preserve a historical saved choice while editing so it can be reviewed
+  // and intentionally changed to the recommended current vehicle SKU.
+  const savedPartNumber = _pickerState.editLineId && _pickerState.sel?.product_id === product.product_id
+    ? _pickerState.sel.sku : "";
+  const saved = savedPartNumber && savedPartNumber !== preferredPartNumber
+    ? productSkus.find(sku => sku.part_number === savedPartNumber) : null;
+  return saved ? [preferred, saved] : [preferred];
 }
 
 function _pickerIsWestinBasePushBumper(product) {
@@ -1690,8 +1786,9 @@ function _pickerRenderProducts() {
     const open = _pickerState.expanded.has(p.product_id);
     const selected = _pickerState.sel && _pickerState.sel.product_id === p.product_id;
     // SKUs shown for this product, narrowed to the selected vehicle when filtering.
-    const skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
+    let skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
       .filter(s => _pickerSkuAllowedForCurrentFlow(s, p));
+    if (vehFiltering) skus = _pickerHowlerVehicleSkus(p, skus, veh);
     const prices = skus.map(s => s.price).filter(v => v != null);
     const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
     const qb = skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
@@ -1823,9 +1920,15 @@ function _pickerRenderProducts() {
   }));
   el.querySelectorAll("[data-siren-qty]").forEach(btn => btn.addEventListener("click", () => {
     _pickerState.config.count = Math.min(2, Math.max(1, parseInt(btn.dataset.sirenQty || "1", 10)));
+    if (_pickerState.config.count !== 2) _pickerState.sirenDualTones = false;
     _pickerPlaceDots();
     _pickerRenderProducts();
     _pickerRenderAccessories();
+    _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-siren-dual-tone]").forEach(btn => btn.addEventListener("click", () => {
+    _pickerState.sirenDualTones = btn.dataset.sirenDualTone === "yes";
+    _pickerRenderProducts();
     _pickerUpdateFooter();
   }));
   const vt = el.querySelector("#pp-veh-only");
@@ -2164,7 +2267,15 @@ function _pickerControlHeadRequiresPaMic() {
     && _pickerSelectedProduct()?.pa_mic_required !== false;
 }
 
+function _pickerControlHeadOffersHandheldMagMic() {
+  return _pickerResolvedPartTypeId(_pickerState.filters) === "control_head"
+    && _pickerSelectedProduct()?.handheld_mag_mic_prompt === true;
+}
+
 function _pickerPartDetailsSatisfied() {
+  if (_pickerControlHeadOffersHandheldMagMic()) {
+    return typeof (_pickerState.partDetails || {}).handheldMagMic === "boolean";
+  }
   if (!_pickerControlHeadRequiresPaMic()) return true;
   const details = _pickerState.partDetails || {};
   const hasLocation = details.paMicLocation === "drivers_door"
@@ -2243,6 +2354,21 @@ function _pickerRenderPartDetails() {
   // A manifest subgroup opens the whole Light Control System family. In that
   // path the filter has no leaf yet, so derive the concrete type from the
   // selected product just as resolve/add does. Edit mode already has a leaf.
+  if (_pickerControlHeadOffersHandheldMagMic()) {
+    const details = _pickerState.partDetails || {};
+    panel.hidden = false;
+    panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">Hand-held control head</div>`
+      + `<h3>Add a Mag Mic?</h3><p>The hand-held control head does not need a separate bracket accessory. Choosing Yes adds one MMSU-1 Mag Mic.</p>`
+      + `<div class="picker-location-grid picker-detail-choice-grid">`
+      + `<button type="button" class="picker-location-card${details.handheldMagMic === true ? " is-selected" : ""}" data-handheld-mag-mic="true" aria-pressed="${details.handheldMagMic === true ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === true ? "✓" : ""}</span><span>Yes, add Mag Mic</span></button>`
+      + `<button type="button" class="picker-location-card${details.handheldMagMic === false ? " is-selected" : ""}" data-handheld-mag-mic="false" aria-pressed="${details.handheldMagMic === false ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === false ? "✓" : ""}</span><span>No Mag Mic</span></button></div></section>`;
+    panel.querySelectorAll("[data-handheld-mag-mic]").forEach(button => button.addEventListener("click", () => {
+      _pickerState.partDetails.handheldMagMic = button.dataset.handheldMagMic === "true";
+      _pickerRenderPartDetails();
+      _pickerUpdateFooter();
+    }));
+    return;
+  }
   if (!_pickerControlHeadRequiresPaMic()) {
     panel.hidden = true; panel.innerHTML = "";
     return;
@@ -3050,6 +3176,14 @@ function _pickerVisibleAccessoryGroups() {
   groups = groups.filter(group => !(group.recommendations || []).length
     || _pickerRecommendationForGroup(group) || _pickerRecommendationHasSavedChoice(group));
   const selected = _pickerState.sel && _pickerState.products.find(product => product.product_id === _pickerState.sel.product_id);
+  const integratedHowlerAssembly = selected?.product_id === "whelen_wcx_howler"
+    && ["CHWLDD36", "CHWLFE29", "CHWLUNI"].includes(_pickerState.sel?.sku || "");
+  if (integratedHowlerAssembly) {
+    // These current Howler assemblies include their vehicle-specific or
+    // universal bracket. The legacy inactive CHOWLER item did not, so retain
+    // its historical optional mount prompt when reviewing an old build.
+    groups = groups.filter(group => group.category !== "bracket_mount");
+  }
   if (_pickerIsWestinBasePushBumper(selected)) {
     // The Westin controls beside the bumper own both specific Westin
     // accessory categories; never duplicate them in the generic panel.
@@ -3509,7 +3643,7 @@ function _pickerResetLocation() {
   loc.selected = null; loc.textCustom = false; loc.renderLocation = ""; loc.customStage = ""; loc.autoLocation = "";
   loc.customPlacementMode = "vehicle"; loc.customPlacements = {};
   loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
 }
 
 function _pickerSelIsFixture() {
@@ -5620,8 +5754,10 @@ async function _pickerDoAdd(addAndContinue) {
     custom: c.custom.map(a => [...a]), _noColor: c._noColor || false,
     count: c.count, lens: f.lens || "",
     skuChoices: { ..._pickerState.skuChoices },
-    details: _pickerControlHeadRequiresPaMic() ? { ..._pickerState.partDetails } : {},
+    details: (_pickerControlHeadRequiresPaMic() || _pickerControlHeadOffersHandheldMagMic())
+      ? { ..._pickerState.partDetails } : {},
   };
+  if (_pickerIsSirenSpeakerContext()) pickerConfig.siren_dual_tones = _pickerState.sirenDualTones === true;
   if (_pickerState.westin?.active) {
     pickerConfig.westin = {
       wire: _pickerState.westin.wire,
@@ -5727,12 +5863,17 @@ async function _pickerDoAdd(addAndContinue) {
       // Include picker_config so Edit can pre-fill exactly (Step 6).
       const detailNote = _pickerPartDetailsNote();
       const detailComponent = _pickerPartDetailsComponent();
+      const sirenDualToneComponent = _pickerSirenDualToneComponent();
       const payload = {
         ...row,
         new_or_used: _pickerState.partStatus,
         comment: _pickerState.comment || "",
         ...(detailNote ? { notes: detailNote } : {}),
-        ...(detailComponent ? { components: [...(row.components || []), detailComponent] } : {}),
+        components: [
+          ...(row.components || []),
+          ...(detailComponent ? [detailComponent] : []),
+          ...(sirenDualToneComponent ? [sirenDualToneComponent] : []),
+        ],
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };
@@ -5765,10 +5906,13 @@ async function _pickerDoAdd(addAndContinue) {
 
   if (partTypeId === "control_head") {
     try {
+      const magMicSelection = _pickerControlHeadOffersHandheldMagMic()
+        ? (_pickerState.partDetails?.handheldMagMic === true ? "magnetic_mic" : "")
+        : (_pickerControlHeadRequiresPaMic() ? _pickerState.partDetails?.paMicClip : "");
       await _pickerReplaceMagneticMicChild(
         draftId, parentLineId, baseName,
-        _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : "",
-        _pickerControlHeadRequiresPaMic() ? _pickerState.partDetails?.paMicClip : "",
+        _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : locName,
+        magMicSelection,
       );
     } catch (error) {
       console.error("PA magnetic mic save failed:", error);

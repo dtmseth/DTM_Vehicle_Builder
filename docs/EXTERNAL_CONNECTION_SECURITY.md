@@ -195,6 +195,7 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | Discovery document | ✅ | `oauth_client._discover()` with static fallback |
 | Cache-Control: no-store on QB routes | ✅ | Set on all `/api/quickbooks/*` responses |
 | HTTPS relay for production redirect URI | Pending | Hosted relay to deploy before go-live |
+| Isolated production catalog preview | ✅ | Separate metadata/keychain/cache; preview cannot reconcile, poll, or write Builder catalog data |
 | textContent for QB data in UI | Pending — Phase 2 | Enforced when the parts UI lands |
 
 ---

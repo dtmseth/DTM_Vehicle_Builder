@@ -16,6 +16,7 @@ from ..services.draft_service import (
     handle_save_override,
     handle_save_overrides_batch,
     handle_update_part_in_draft,
+    handle_update_custom_part_in_draft,
 )
 from ...paths import AppPaths
 from .http import send_json
@@ -43,6 +44,15 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
     if method == "POST" and path == "/api/draft/generate":
         send_json(handler, handle_generate_from_draft(body, paths))
         return True
+
+    # POST /api/draft/{id}/part/{line_id}/update
+    if method == "POST" and path.startswith("/api/draft/") and "/custom-part/" in path and path.endswith("/update"):
+        rest = path[len("/api/draft/"):-len("/update")]
+        if "/custom-part/" in rest:
+            draft_id, line_id = rest.split("/custom-part/", 1)
+            if draft_id and line_id and "/" not in draft_id and "/" not in line_id:
+                send_json(handler, handle_update_custom_part_in_draft(draft_id, line_id, body, paths))
+                return True
 
     # POST /api/draft/{id}/part/{line_id}/update
     if method == "POST" and path.startswith("/api/draft/") and "/part/" in path and path.endswith("/update"):

@@ -312,6 +312,29 @@ def _validate_parts_db(normalized: dict) -> None:
     if not isinstance(products, dict):
         raise ValueError("parts_db.json 'products' must be an object keyed by product_id")
 
+    customer_pricing = normalized.get("customer_pricing")
+    if customer_pricing is not None:
+        if not isinstance(customer_pricing, dict):
+            raise ValueError("parts_db.json customer_pricing must be an object")
+        default_rule = customer_pricing.get("default_rule")
+        if not isinstance(default_rule, dict):
+            raise ValueError("parts_db.json customer_pricing.default_rule must be an object")
+        if not isinstance(default_rule.get("name"), str) or not default_rule["name"].strip():
+            raise ValueError("parts_db.json customer_pricing.default_rule requires a name")
+        discounts = default_rule.get("manufacturer_discounts")
+        if not isinstance(discounts, dict) or not discounts:
+            raise ValueError("parts_db.json customer_pricing.default_rule requires manufacturer_discounts")
+        manufacturers = normalized.get("manufacturers") or {}
+        for manufacturer_id, discount in discounts.items():
+            if manufacturer_id not in manufacturers:
+                raise ValueError(
+                    f"parts_db.json customer pricing references unknown manufacturer '{manufacturer_id}'"
+                )
+            if isinstance(discount, bool) or not isinstance(discount, (int, float)) or not 0 <= discount <= 100:
+                raise ValueError(
+                    f"parts_db.json customer pricing discount for '{manufacturer_id}' must be 0 through 100"
+                )
+
     for product_id, spec in products.items():
         if not isinstance(spec, dict):
             raise ValueError(f"parts_db.json product '{product_id}' must be an object")
@@ -385,7 +408,7 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
             )
-        for field in ("allow_custom_location", "pa_mic_required"):
+        for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt"):
             value = spec.get(field)
             if value is not None and not isinstance(value, bool):
                 raise ValueError(

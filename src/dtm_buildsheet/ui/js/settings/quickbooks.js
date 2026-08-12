@@ -15,6 +15,11 @@
   let _products = [];          // [{id, label, search}]
   let _linkingItemId = null;   // qb_item_id currently being linked
   let _lastItems = [];         // last rendered item list (for the link button)
+  let _pricingRule = null;
+
+  const escAttr = (value) => String(value == null ? "" : value)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   function _fmtDate(iso) {
     if (!iso) return "—";
@@ -78,6 +83,63 @@
     const v = Number(n);
     if (isNaN(v)) return "";
     return "$" + v.toFixed(2);
+  }
+
+  function _renderPricing() {
+    const box = $("qb-pricing-default-rows");
+    if (!box) return;
+    const rows = _pricingRule?.discounts || [];
+    if (!rows.length) {
+      box.innerHTML = '<div class="qb-pricing-empty">Default pricing is unavailable.</div>';
+      return;
+    }
+    box.innerHTML = rows.map((row) =>
+      `<div class="qb-pricing-row">
+        <label for="qb-pricing-${escAttr(row.manufacturer_id)}">${esc(row.manufacturer)}</label>
+        <input id="qb-pricing-${escAttr(row.manufacturer_id)}" type="number" min="0" max="100" step="0.1"
+          value="${escAttr(row.discount_percent)}" data-pricing-default="${escAttr(row.manufacturer_id)}" />
+        <span class="qb-pricing-percent">% off</span>
+      </div>`
+    ).join("");
+  }
+
+  async function _loadPricing() {
+    try {
+      _pricingRule = await api("/api/quickbooks/customer-pricing");
+    } catch (_) {
+      _pricingRule = null;
+    }
+    _renderPricing();
+  }
+
+  async function _savePricing() {
+    const manufacturerDiscounts = {};
+    for (const input of document.querySelectorAll("[data-pricing-default]")) {
+      const value = Number(input.value);
+      if (!Number.isFinite(value) || value < 0 || value > 100) {
+        toast("Every discount must be from 0% through 100%", "error");
+        input.focus();
+        return;
+      }
+      manufacturerDiscounts[input.getAttribute("data-pricing-default")] = value;
+    }
+    const button = $("qb-pricing-save");
+    if (button) button.disabled = true;
+    try {
+      const res = await apiSave("/api/quickbooks/customer-pricing/default", {
+        rule_name: "Default",
+        manufacturer_discounts: manufacturerDiscounts,
+      });
+      if (!res?.ok) {
+        toast(res?.error || "Could not save the Default rule", "error");
+        return;
+      }
+      _pricingRule = res;
+      _renderPricing();
+      if (!res.proposed) toast("Default customer pricing saved", "success");
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   function _renderItems(data) {
@@ -303,11 +365,11 @@
   }
 
   async function _load() {
-    try {
-      _status = await api("/api/quickbooks/status");
-    } catch (e) {
-      _status = null;
-    }
+    const [status] = await Promise.all([
+      api("/api/quickbooks/status").catch(() => null),
+      _loadPricing(),
+    ]);
+    _status = status;
     _render();
     if (_status?.connected) await _loadItems();
   }
@@ -363,6 +425,7 @@
     $("qb-disconnect-btn")?.addEventListener("click", _disconnect);
     $("qb-sync-btn")?.addEventListener("click", _sync);
     $("qb-customers-btn")?.addEventListener("click", _pullCustomers);
+    $("qb-pricing-save")?.addEventListener("click", _savePricing);
 
     // Delegated link/unlink buttons on the item list.
     $("qb-items-list")?.addEventListener("click", (e) => {

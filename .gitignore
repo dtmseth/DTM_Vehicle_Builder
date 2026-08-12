@@ -38,6 +38,13 @@ quickbooks_config.json
 src/dtm_buildsheet/resources/config/quickbooks_config.json
 quickbooks_items_cache.json
 src/dtm_buildsheet/resources/config/quickbooks_items_cache.json
+quickbooks_production_preview_config.json
+quickbooks_production_preview_items_cache.json
+quickbooks_production_mapping_state.json
+quickbooks_production_mapping_report.json
+quickbooks_production_mapping_plan.json
+quickbooks_*credentials.bin
+quickbooks_migration_snapshots/
 
 # Generated QB inventory review artifacts (contain company part data)
 tools/qb_match_proposals.md
