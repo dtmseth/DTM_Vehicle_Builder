@@ -6,6 +6,20 @@ The owner approved PR #11 for production after completing the Intuit assessment,
 connection, catalog comparison, item-link migration, and agency/customer migration. This is the
 next desktop release after v3.0.0 and is a backward-compatible **minor release: v3.1.0**.
 
+### Published result
+
+- **Published:** 2026-08-12 as [DTM Vehicle Builder v3.1.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.1.0).
+- **Release tag/commit:** `v3.1.0` at `796058a` (the automated 3.0.0 → 3.1.0 version commit).
+- **Application integration:** PR #11 merged at `2001055`; the CI cleanup followed through PRs #12
+  and #13, with the final pre-version release commit at `95c5664`.
+- **Verification:** 1,986 tests passed and 1 skipped locally; 16/16 hermetic UI smoke flows passed;
+  hosted tests, import boundaries, dependency audit, and the enforcing high-severity security scan
+  passed on `main`.
+- **Artifacts:** macOS DMG and Windows EXE were rebuilt and attached to the GitHub release. The
+  versioned installers and release notes were also uploaded successfully to SharePoint `/Releases/`.
+- **QuickBooks safety:** release validation made no live QuickBooks transaction and introduced no
+  repository-stored credentials.
+
 ### Included scope
 
 - Production QuickBooks catalog linkage and guarded price refresh, using QuickBooks item `Name` as
@@ -35,14 +49,14 @@ next desktop release after v3.0.0 and is a backward-compatible **minor release: 
 - Before merge, require the hosted test, import-boundary, dependency-audit, security-scan, and
   Netlify checks to pass. After merge, require both installer builds to pass.
 
-### Publish sequence
+### Publish sequence — complete
 
-1. Merge [PR #11](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/11) normally into `main`.
-2. Confirm the post-merge Checks and Build workflows succeed.
-3. Run the manual Build workflow on `main` with `minor`; it bumps 3.0.0 to 3.1.0, tags the release,
+1. **Complete:** merge [PR #11](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/11) normally into `main`.
+2. **Complete:** confirm the post-merge Checks and Build workflows succeed.
+3. **Complete:** run the manual Build workflow on `main` with `minor`; it bumps 3.0.0 to 3.1.0, tags the release,
    builds both installers, publishes the GitHub release, and stages the release files for SharePoint.
-4. Confirm the published tag and both installers point to the release commit before rollout.
-5. Smoke-test connection status and estimate preparation, but do not create a live estimate merely
+4. **Complete:** confirm the published tag and both installers point to the release commit before rollout.
+5. **Operational follow-up:** smoke-test connection status and estimate preparation, but do not create a live estimate merely
    as a release test. A real estimate still requires the user's explicit in-app confirmation.
 
 ## Purpose

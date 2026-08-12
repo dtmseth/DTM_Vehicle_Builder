@@ -2,9 +2,9 @@
 
 ## 2026-08-12 QuickBooks production-release handoff
 
-PR #11 is the v3.1.0 production candidate. The owner approved promotion after the production
-catalog/customer migration and the estimate-pricing comparison workflow were completed. The branch
-now includes production item/customer links, current-price estimate preparation, Retail/non-taxable
+PR #11 was merged and published as v3.1.0 on 2026-08-12 after the owner approved promotion and the
+production catalog/customer migration and estimate-pricing comparison workflow were completed. The
+release includes production item/customer links, current-price estimate preparation, Retail/non-taxable
 agency creation, custom-part editing and pricing, Howler/CEXAMP and Mag Mic guided choices, estimate
 duplicate protection, and optional build-PDF attachment. Deferred per-user OAuth attribution and
 QuickBooks Project creation remain documented future work; they are not part of this release.
