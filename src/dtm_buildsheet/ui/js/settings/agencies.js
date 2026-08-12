@@ -169,7 +169,7 @@
       const input = _inputFor(field);
       if (input) input.value = agency?.[field] || "";
     }
-    $("ac-taxable").value       = agency?.taxable === true ? "true" : agency?.taxable === false ? "false" : "";
+    $("ac-taxable").value       = agency?.taxable === true ? "true" : "false";
     $("ac-ship-same").checked   = _shippingMatchesBilling(agency);
     $("ac-since").value         = agency?.customer_since || "";
     _populateDefaultPreferences(agency);
@@ -234,7 +234,7 @@
       contact_phone: $("ac-contact-phone").value.trim(),
       contact_email: $("ac-contact-email").value.trim(),
       customer_since: $("ac-since").value.trim(),
-      taxable: $("ac-taxable").value === "" ? null : $("ac-taxable").value === "true",
+      taxable: $("ac-taxable").value === "true",
       default_preferences: _ptPreferencePayload("ac"),
       pricing_overrides: {},
     };

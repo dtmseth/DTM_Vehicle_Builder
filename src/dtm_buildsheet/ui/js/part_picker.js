@@ -25,7 +25,7 @@ let _pickerState = {
   expanded: new Set(),     // product_ids whose SKU list is open
   sel: null,               // { product_id, model, mfr, sku? }  current selection
   loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" },
-  partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" },
+  partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null },
   sirenDualTones: false,  // qty-2 Whelen speaker option; adds CEXAMP as a billed component
   comment: "",             // user-authored text shown in the build manifest
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
@@ -590,6 +590,7 @@ async function _pickerOpenEdit(part) {
     paMicLocation: pc.details?.paMicLocation || "",
     paMicLocationCustom: pc.details?.paMicLocationCustom || "",
     paMicClip: pc.details?.paMicClip || "",
+    handheldMagMic: typeof pc.details?.handheldMagMic === "boolean" ? pc.details.handheldMagMic : null,
   };
   _pickerState.sirenDualTones = pc.siren_dual_tones === true;
   if (pc.westin) {
@@ -671,7 +672,7 @@ function _pickerResetState() {
   _pickerState.skuChoices = {};   // "head_N" → chosen part_number (per-head override, Step 3)
   _pickerState.optionsRemoved = false;
   _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" };
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
   _pickerState.sirenDualTones = false;
   _pickerState.comment = "";
   _pickerState.accessories = [];
@@ -2218,7 +2219,15 @@ function _pickerControlHeadRequiresPaMic() {
     && _pickerSelectedProduct()?.pa_mic_required !== false;
 }
 
+function _pickerControlHeadOffersHandheldMagMic() {
+  return _pickerResolvedPartTypeId(_pickerState.filters) === "control_head"
+    && _pickerSelectedProduct()?.handheld_mag_mic_prompt === true;
+}
+
 function _pickerPartDetailsSatisfied() {
+  if (_pickerControlHeadOffersHandheldMagMic()) {
+    return typeof (_pickerState.partDetails || {}).handheldMagMic === "boolean";
+  }
   if (!_pickerControlHeadRequiresPaMic()) return true;
   const details = _pickerState.partDetails || {};
   const hasLocation = details.paMicLocation === "drivers_door"
@@ -2297,6 +2306,21 @@ function _pickerRenderPartDetails() {
   // A manifest subgroup opens the whole Light Control System family. In that
   // path the filter has no leaf yet, so derive the concrete type from the
   // selected product just as resolve/add does. Edit mode already has a leaf.
+  if (_pickerControlHeadOffersHandheldMagMic()) {
+    const details = _pickerState.partDetails || {};
+    panel.hidden = false;
+    panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">Hand-held control head</div>`
+      + `<h3>Add a Mag Mic?</h3><p>The hand-held control head does not need a separate bracket accessory. Choosing Yes adds one MMSU-1 Mag Mic.</p>`
+      + `<div class="picker-location-grid picker-detail-choice-grid">`
+      + `<button type="button" class="picker-location-card${details.handheldMagMic === true ? " is-selected" : ""}" data-handheld-mag-mic="true" aria-pressed="${details.handheldMagMic === true ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === true ? "✓" : ""}</span><span>Yes, add Mag Mic</span></button>`
+      + `<button type="button" class="picker-location-card${details.handheldMagMic === false ? " is-selected" : ""}" data-handheld-mag-mic="false" aria-pressed="${details.handheldMagMic === false ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === false ? "✓" : ""}</span><span>No Mag Mic</span></button></div></section>`;
+    panel.querySelectorAll("[data-handheld-mag-mic]").forEach(button => button.addEventListener("click", () => {
+      _pickerState.partDetails.handheldMagMic = button.dataset.handheldMagMic === "true";
+      _pickerRenderPartDetails();
+      _pickerUpdateFooter();
+    }));
+    return;
+  }
   if (!_pickerControlHeadRequiresPaMic()) {
     panel.hidden = true; panel.innerHTML = "";
     return;
@@ -3571,7 +3595,7 @@ function _pickerResetLocation() {
   loc.selected = null; loc.textCustom = false; loc.renderLocation = ""; loc.customStage = ""; loc.autoLocation = "";
   loc.customPlacementMode = "vehicle"; loc.customPlacements = {};
   loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
-  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "" };
+  _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
 }
 
 function _pickerSelIsFixture() {
@@ -5682,7 +5706,8 @@ async function _pickerDoAdd(addAndContinue) {
     custom: c.custom.map(a => [...a]), _noColor: c._noColor || false,
     count: c.count, lens: f.lens || "",
     skuChoices: { ..._pickerState.skuChoices },
-    details: _pickerControlHeadRequiresPaMic() ? { ..._pickerState.partDetails } : {},
+    details: (_pickerControlHeadRequiresPaMic() || _pickerControlHeadOffersHandheldMagMic())
+      ? { ..._pickerState.partDetails } : {},
   };
   if (_pickerIsSirenSpeakerContext()) pickerConfig.siren_dual_tones = _pickerState.sirenDualTones === true;
   if (_pickerState.westin?.active) {
@@ -5833,10 +5858,13 @@ async function _pickerDoAdd(addAndContinue) {
 
   if (partTypeId === "control_head") {
     try {
+      const magMicSelection = _pickerControlHeadOffersHandheldMagMic()
+        ? (_pickerState.partDetails?.handheldMagMic === true ? "magnetic_mic" : "")
+        : (_pickerControlHeadRequiresPaMic() ? _pickerState.partDetails?.paMicClip : "");
       await _pickerReplaceMagneticMicChild(
         draftId, parentLineId, baseName,
-        _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : "",
-        _pickerControlHeadRequiresPaMic() ? _pickerState.partDetails?.paMicClip : "",
+        _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : locName,
+        magMicSelection,
       );
     } catch (error) {
       console.error("PA magnetic mic save failed:", error);

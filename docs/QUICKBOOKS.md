@@ -147,6 +147,9 @@ snapshot-and-cache-pinned historical plan is written to
 - Production price and sales description are authoritative after activation. Normal production
   reconciliation refreshes those fields by Item ID, so price changes and whitespace/newline
   differences do not break Builder part selection.
+- Estimate validation and creation each perform a fresh Item pull and reconciliation first. If
+  current production prices cannot be refreshed, the estimate is blocked instead of using stale
+  cached prices.
 
 Activation stopped the running desktop process before the profile swap, promoted the keychain-held
 production credentials into the standard profile, seeded the standard active Item cache, applied

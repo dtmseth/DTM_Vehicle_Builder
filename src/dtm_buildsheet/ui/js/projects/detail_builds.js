@@ -724,6 +724,7 @@ const _QB_EST_REASON = {
   not_linked: "Not linked to a QuickBooks item",
   qb_inactive: "Inactive in QuickBooks",
   no_price: "No price in QuickBooks",
+  custom_item_unavailable: "The active MISC PART item was not found in QuickBooks",
 };
 
 function _ptEstError(code) {
@@ -746,6 +747,7 @@ function _ptEstError(code) {
     invalid_qb_project_ref: "QuickBooks rejected the saved Project link — set it up again below",
     validation_failed: "Some parts aren't linked to QuickBooks",
     validation_unavailable: "Could not check this vehicle right now",
+    pricing_refresh_failed: "Could not refresh current QuickBooks Item prices — the estimate was not created",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }
@@ -920,7 +922,7 @@ function _ptCustomerEditor(customer, linked, missingFields = []) {
       <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Country</label><input type="text" id="qb-est-customer-ship-country" value="${esc(c.ship_country || "")}" autocomplete="shipping country-name" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks taxable</label><select id="qb-est-customer-taxable" style="width:100%;box-sizing:border-box;margin-top:4px"><option value="" ${c.taxable == null ? "selected" : ""}>Not set</option><option value="true" ${c.taxable === true ? "selected" : ""}>Taxable</option><option value="false" ${c.taxable === false ? "selected" : ""}>Not taxable</option></select></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks taxable</label><select id="qb-est-customer-taxable" style="width:100%;box-sizing:border-box;margin-top:4px"><option value="false" ${c.taxable !== true ? "selected" : ""}>Not taxable</option><option value="true" ${c.taxable === true ? "selected" : ""}>Taxable</option></select></div>
       <div style="flex:2"><label style="font-size:12px;font-weight:600;color:var(--navy)">Customer notes</label><input type="text" id="qb-est-customer-notes" value="${esc(c.notes || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
     </div>
     <label style="display:flex;gap:7px;align-items:center;margin-top:10px;font-size:12px;color:var(--navy)"><input type="checkbox" id="qb-est-customer-confirm" /> Confirm customer details and allow customer creation or profile update</label>
@@ -964,7 +966,7 @@ function _ptCustomerFieldsFromEditor() {
     }
   }
   const taxable = value("qb-est-customer-taxable");
-  fields.taxable = taxable === "" ? null : taxable === "true";
+  fields.taxable = taxable === "true";
   return fields;
 }
 
@@ -1078,7 +1080,7 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
     return;
   }
   const statusEl = $("proj-action-status");
-  if (statusEl) _ptSetStatus(statusEl, "Checking parts against QuickBooks…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Refreshing prices and checking parts against QuickBooks…", "ok");
   let v;
   try {
     v = await api("/api/quickbooks/estimates/validate",

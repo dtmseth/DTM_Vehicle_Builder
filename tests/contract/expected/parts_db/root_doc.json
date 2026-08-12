@@ -3460,8 +3460,8 @@
             "price_usd": 50,
             "qb_inactive": false,
             "qb_item_id": "887",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "DTM OVER HEAD GUN LOCK BRACKET",
+            "qb_last_synced": "2026-08-12T15:13:28Z",
+            "qb_sales_description": "DTM OVER HEAD GUN LOCK BRACKET (PAIR)",
             "qb_sku": "",
             "qb_unit_price": 50.0,
             "vehicle_tags": [
@@ -24161,6 +24161,7 @@
         "fits_part_types": [
           "control_head"
         ],
+        "handheld_mag_mic_prompt": true,
         "images": {},
         "manufacturer_id": "whelen",
         "model": "CCTL5 WeCanX Hand-Held Control Head",

@@ -264,9 +264,29 @@ def _resolve_custom_part(draft_part) -> tuple[dict | None, str]:
         "description": description,
         "manufacturer": "Custom",
         "unit_price": price,
-        "pending": True,
+        "pending": False,
         "custom": True,
     }, ""
+
+
+def _attach_custom_parts_to_misc_item(paths: AppPaths, lines: list[dict]) -> list[dict]:
+    """Bill one-off priced parts through the exact active ``MISC PART`` Item."""
+    custom_lines = [line for line in lines if line.get("custom")]
+    if not custom_lines:
+        return []
+    misc_item = qb_sync_service.find_cached_active_item_by_name(paths, "MISC PART")
+    item_id = str((misc_item or {}).get("qb_item_id") or "").strip()
+    if not item_id:
+        return [{
+            "name": line["name"],
+            "part_number": line.get("part_number", ""),
+            "reason": "custom_item_unavailable",
+        } for line in custom_lines]
+    for line in custom_lines:
+        line["qb_item_id"] = item_id
+        line["qb_item_name"] = str(misc_item.get("name") or "MISC PART")
+        line["pending"] = False
+    return []
 
 
 def _component_quantity(component: dict) -> int:
@@ -448,7 +468,10 @@ def _build_estimate_payload(
             # This is the QB item's Sales Description, not the manifest row
             # name. The latter is only our local fallback when QB has no
             # description available yet.
-            "Description": ln.get("description") or ln["name"],
+            "Description": (
+                f"{ln.get('part_number') or ln.get('qb_sku')} — {ln.get('description') or ln['name']}"
+                if ln.get("custom") else ln.get("description") or ln["name"]
+            ),
             "SalesItemLineDetail": {
                 "ItemRef": {"value": ln["qb_item_id"]},
                 "Qty": ln["qty"],
@@ -512,15 +535,20 @@ def _load_individual(paths: AppPaths, project_id: str, individual_id: str):
 def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -> dict:
     """Dry run: resolve the build and report whether an estimate can be created.
 
-    No network, no writes. ``can_create`` is True only when there are billable
-    lines and zero problems.
+    Refreshes the read-only QB Item catalog first. ``can_create`` is True only
+    when there are billable lines and zero problems.
     """
     loaded = _load_unit_draft(paths, project_id, individual_id)
     if isinstance(loaded, dict):
         return loaded
     project, build_unit, unit, draft = loaded
 
+    refresh = qb_sync_service.refresh_estimate_catalog(paths)
+    if not refresh.get("ok"):
+        return refresh
+
     lines, problems = resolve_build_lines(paths, draft)
+    problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
     from . import agency_service, customer_pricing_service
     agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
     lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
@@ -543,6 +571,7 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "line_count": len(lines),
         "total": total,
         "pricing": pricing,
+        "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "problems": problems,
         # Billable but not yet a QB inventory item — created as a flagged note.
         "pending": pending,
@@ -678,7 +707,12 @@ def create_estimate(
         return loaded
     project, _build_unit, unit, draft = loaded
 
+    refresh = qb_sync_service.refresh_estimate_catalog(paths)
+    if not refresh.get("ok"):
+        return refresh
+
     lines, problems = resolve_build_lines(paths, draft)
+    problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
     from . import agency_service, customer_pricing_service
     agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
     lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
@@ -764,6 +798,7 @@ def create_estimate(
         "pending_count": pending_count,
         "total": total,
         "pricing": pricing,
+        "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "qb_project_id": unit.qb_project_id,
         "project_name": project_name,
     }

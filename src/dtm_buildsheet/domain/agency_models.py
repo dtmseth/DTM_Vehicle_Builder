@@ -85,7 +85,7 @@ class AgencyRecord:
     ship_postal_code: str = ""
     ship_country: str = ""
     notes: str = ""
-    taxable: bool | None = None
+    taxable: bool = False
     customer_since: str = ""
     # These are the agency's normal equipment choices.  New projects copy
     # them once; a project can then keep a different choice for an exception.

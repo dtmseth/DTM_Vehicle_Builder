@@ -522,6 +522,7 @@ must refer to a live QB-linked SKU.
       "fixed_location": "<single shop-reference location>",
       "allow_custom_location": true,
       "pa_mic_required": false,
+      "handheld_mag_mic_prompt": true,
       "default_colors": ["red", "white"],
       "accessories_disabled": true,
       "console_kit": {
@@ -591,6 +592,8 @@ light's colors for a new picker selection; it never overwrites an existing line'
 `allow_custom_location` lets a product retain the Custom choice even when it has exactly one
 curated location. `pa_mic_required` applies to `control_head` products and defaults to `true`;
 set it to `false` for a control head that does not include a PA microphone.
+`handheld_mag_mic_prompt` replaces that PA-mic setup with a simple Mag Mic yes/no choice and
+adds MMSU-1 directly, without asking about a bracket accessory.
 `picker_primary_part_type` is optional and chooses the product's semantic part-picker context;
 it must also be listed in that product's `fits_part_types`. It applies no matter how the product
 was reached, so a product with multiple physical homes consistently opens the right configurator.

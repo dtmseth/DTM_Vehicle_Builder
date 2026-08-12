@@ -87,9 +87,9 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
     taxable = rec.get("taxable")
     if isinstance(taxable, str):
         normalized_taxable = taxable.strip().lower()
-        taxable = normalized_taxable in {"true", "yes", "1"} if normalized_taxable else None
+        taxable = normalized_taxable in {"true", "yes", "1"} if normalized_taxable else False
     elif not isinstance(taxable, bool):
-        taxable = None
+        taxable = False
 
     return AgencyRecord(
         agency_id=str(rec.get("agency_id", "")),
@@ -223,7 +223,7 @@ def _clean_agency_field(field: str, value: object) -> object:
         return _clean_pricing_overrides(value)
     if field == "taxable":
         if value is None or value == "":
-            return None
+            return False
         if isinstance(value, bool):
             return value
         if isinstance(value, str):

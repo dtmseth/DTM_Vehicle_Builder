@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from . import quickbooks_service
 logger = logging.getLogger(__name__)
 
 _CACHE_FILENAME = "quickbooks_items_cache.json"
+_SYNC_LOCK = threading.Lock()
 
 
 def _cache_path(paths: AppPaths) -> Path:
@@ -181,6 +183,17 @@ def get_cached_items(paths: AppPaths) -> dict:
     }
 
 
+def find_cached_active_item_by_name(paths: AppPaths, name: str) -> dict | None:
+    """Return one exact-name active Item from the latest local QB pull."""
+    wanted = str(name or "").strip().casefold()
+    if not wanted:
+        return None
+    for item in _read_cache(paths).get("items", []):
+        if str(item.get("name") or "").strip().casefold() == wanted:
+            return item
+    return None
+
+
 # ── reconciliation (Slice C) ─────────────────────────────────────────────────
 #
 # Reconciliation is the "live catalog" half: it pushes QBO's authoritative
@@ -314,11 +327,24 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
 
 def run_full_sync(paths: AppPaths) -> dict:
     """Pull active Items, then reconcile linked parts. Route + poller entry point."""
-    pull = sync_items(paths)
-    if not pull.get("ok"):
-        return pull
-    recon = reconcile_linked_parts(paths)
-    return {**pull, "reconciled": recon}
+    # The startup poller and an estimate request can arrive together. Serialize
+    # the pull/reconcile pair so neither reads a half-written cache or catalog.
+    with _SYNC_LOCK:
+        pull = sync_items(paths)
+        if not pull.get("ok"):
+            return pull
+        recon = reconcile_linked_parts(paths)
+        return {**pull, "reconciled": recon}
+
+
+def refresh_estimate_catalog(paths: AppPaths) -> dict:
+    """Refresh authoritative QB Item prices, blocking estimates on stale data."""
+    result = run_full_sync(paths)
+    reconciled = result.get("reconciled") if isinstance(result, dict) else None
+    if not result.get("ok") or not isinstance(reconciled, dict) or not reconciled.get("ok"):
+        logger.warning("QuickBooks estimate catalog refresh failed")
+        return {"ok": False, "error": "pricing_refresh_failed"}
+    return {"ok": True, "last_sync_utc": result.get("last_sync_utc")}
 
 
 # ── customer → agency down-sync (Phase 3, first cut) ─────────────────────────

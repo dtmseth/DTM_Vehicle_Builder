@@ -99,6 +99,12 @@ def test_import_links_existing_by_name_without_clobbering(paths):
     assert a.contact_email == "a@pd.gov"     # empty field filled from QB
 
 
+def test_new_local_agency_defaults_to_not_taxable(paths):
+    saved = agc.handle_save_agency({"name": "Default Non-Taxable PD"}, paths)
+    agency = agc.get_agency(paths, saved["agency"]["agency_id"])
+    assert agency.taxable is False
+
+
 def test_import_fills_missing_extended_profile_without_erasing_existing(paths):
     saved = agc.handle_save_agency({
         "name": "Alpha PD",

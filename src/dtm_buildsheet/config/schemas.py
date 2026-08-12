@@ -408,7 +408,7 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
             )
-        for field in ("allow_custom_location", "pa_mic_required"):
+        for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt"):
             value = spec.get(field)
             if value is not None and not isinstance(value, bool):
                 raise ValueError(

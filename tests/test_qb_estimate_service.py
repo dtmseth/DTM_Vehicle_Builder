@@ -45,6 +45,8 @@ def _no_cloud(monkeypatch):
     ):
         monkeypatch.setattr(sw, name, lambda *a, **k: None)
     parts_db_service.reset_for_testing()
+    monkeypatch.setattr(sync, "refresh_estimate_catalog",
+                        lambda paths: {"ok": True, "last_sync_utc": "2026-08-12T00:00:00Z"})
 
 
 class FakeClient:
@@ -419,7 +421,7 @@ def test_pending_part_posts_as_description_only_line(paths):
     assert "NOT IN QB INVENTORY" in qb_lines[1]["Description"]
 
 
-def test_custom_part_bills_with_entered_price_as_distinct_qb_note(paths):
+def test_custom_part_bills_with_entered_price_through_misc_item(paths, monkeypatch):
     draft = new_draft(parts=[DraftPart(
         name="Vendor supplied cable kit", part_number="VND-042", quantity=2,
         picker_config={"custom_part": {
@@ -437,13 +439,38 @@ def test_custom_part_bills_with_entered_price_as_distinct_qb_note(paths):
     assert line["description"] == "Vendor supplied cable kit"
     assert line["manufacturer"] == "Custom"
     assert line["unit_price"] == 42.5 and line["amount"] == 85.0
-    assert line["qty"] == 2 and line["pending"] is True and line["custom"] is True
+    assert line["qty"] == 2 and line["pending"] is False and line["custom"] is True
+    monkeypatch.setattr(sync, "find_cached_active_item_by_name",
+                        lambda paths, name: {"qb_item_id": "557", "name": "MISC PART"})
+    assert est._attach_custom_parts_to_misc_item(paths, lines) == []
     payload = est._build_estimate_payload("CUST1", lines)
     note = payload["Line"][0]
-    assert note["DetailType"] == "DescriptionOnly"
-    assert "CUSTOM PART" in note["Description"]
+    assert note["DetailType"] == "SalesItemLineDetail"
+    assert note["Amount"] == 85.0
+    assert note["SalesItemLineDetail"] == {
+        "ItemRef": {"value": "557"}, "Qty": 2, "UnitPrice": 42.5,
+    }
     assert "VND-042" in note["Description"]
-    assert "2 × $42.50 (= $85.00)" in note["Description"]
+    assert "Vendor supplied cable kit" in note["Description"]
+
+
+def test_custom_part_blocks_if_misc_item_is_unavailable(paths, monkeypatch):
+    lines = [{"custom": True, "name": "One-off", "part_number": "CUSTOM-1"}]
+    monkeypatch.setattr(sync, "find_cached_active_item_by_name", lambda paths, name: None)
+    assert est._attach_custom_parts_to_misc_item(paths, lines) == [{
+        "name": "One-off", "part_number": "CUSTOM-1", "reason": "custom_item_unavailable",
+    }]
+
+
+def test_validate_blocks_when_current_prices_cannot_refresh(paths, monkeypatch):
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 100.0)})
+    aid = _make_agency(paths)
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    monkeypatch.setattr(sync, "refresh_estimate_catalog",
+                        lambda paths: {"ok": False, "error": "pricing_refresh_failed"})
+    assert est.validate_estimate(paths, project_id=pid, individual_id="ind1") == {
+        "ok": False, "error": "pricing_refresh_failed",
+    }
 
 
 def test_validate_reports_pending_but_can_create(paths):

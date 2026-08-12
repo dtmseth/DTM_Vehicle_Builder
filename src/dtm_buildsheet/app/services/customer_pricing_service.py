@@ -139,8 +139,9 @@ def apply_customer_pricing(paths: AppPaths, lines: list[dict], agency=None) -> t
         list_unit_price = float(line.get("unit_price") or 0)
         quantity = int(line.get("qty") or 1)
         manufacturer_id = str(line.get("manufacturer_id") or "").strip()
-        # Pending/custom rows are not backed by a current QB Item list price,
-        # so never infer a discount for them.
+        # Pending rows and one-off custom prices are not manufacturer list
+        # prices, so never infer a catalog discount for them. Custom rows may
+        # carry the generic MISC PART ItemRef solely so QBO can bill the amount.
         discount = (
             rule["manufacturer_discounts"].get(manufacturer_id, 0.0)
             if line.get("qb_item_id") else 0.0

@@ -370,7 +370,8 @@ location" rows.
     in the control-head detail rather than as its own manifest line. A Magnetic mic additionally
     creates its real, QB-linked Mag Mic SKU as a billable child line; a Manufacturer clip remains
     shop detail only.
-    CCTL5 declares `pa_mic_required: false`, so it skips that setup entirely. A single control head
+    CCTL5 declares `pa_mic_required: false` and `handheld_mag_mic_prompt: true`, so Details asks
+    whether to add an MMSU-1 Mag Mic without offering a bracket accessory. A single control head
     is named **Control Head**; adding a second renames the pair **Control Head 1** and
     **Control Head 2** (and child-row prefixes track that change). Removing back to one drops the
     numeric suffix again.
@@ -445,12 +446,10 @@ vehicle placement or render asset.
 - Recent custom entries are retained locally in `workspace/custom_parts.json` for fast re-entry.
   This convenience history is not inventory, is not a settings change, and is not cloud-synced;
   the authoritative quote data remains with the shared draft.
-- Estimate resolution makes the saved unit price and quantity a `custom: true`, pending line. QBO
-  receives the SKU, description, unit price, quantity, and extended total in a clearly flagged
-  `DescriptionOnly` quote line: `⚠ CUSTOM PART — NOT IN QB INVENTORY …`. QBO does not add a
-  DescriptionOnly line to its document total; the builder's validation total includes it and the
-  reviewer sees it as pending. If it must increase the QBO total before a real item exists, the
-  business needs a pre-approved generic non-inventory QB ItemRef (not created by this flow).
+- Estimate resolution makes the saved unit price and quantity a `custom: true` sales line through
+  the exact active QuickBooks `MISC PART` Item. The entered SKU, description, quantity, unit price,
+  and extended amount remain visible on the estimate line, so QBO includes it in the document total.
+  If `MISC PART` is unavailable, estimate creation is blocked instead of silently posting a $0 note.
 
 ---
 

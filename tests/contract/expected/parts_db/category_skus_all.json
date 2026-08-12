@@ -5224,6 +5224,7 @@
         "fits_part_types": [
           "control_head"
         ],
+        "handheld_mag_mic_prompt": true,
         "is_fixture": false,
         "manufacturer_id": "whelen",
         "manufacturer_label": "Whelen",

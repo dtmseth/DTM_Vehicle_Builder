@@ -1004,6 +1004,7 @@ def test_cctl5_skips_pa_mic_and_keeps_custom_location_alongside_console():
     assert h.status == 200
     product = next(row for row in h.body_json()["products"] if row["product_id"] == "whelen_cctl5")
     assert product["pa_mic_required"] is False
+    assert product["handheld_mag_mic_prompt"] is True
     assert product["allow_custom_location"] is True
 
 

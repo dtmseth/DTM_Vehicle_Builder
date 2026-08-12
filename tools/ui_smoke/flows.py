@@ -1124,9 +1124,11 @@ def flow_part_details_and_console(page, base_url: str) -> None:
 
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
-    page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    if page.locator(".pbt-cat-head[data-cat='equipment'].open").count() == 0:
+        page.click(".pbt-cat-caret-btn[data-cat='equipment']")
     page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
-    page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+    if not page.locator(".pbt-fam-select[data-family='light_control_system']").is_visible():
+        page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
     page.wait_for_selector(".pbt-fam-select[data-family='light_control_system']")
 
     # Manifest Add opens the complete Light Control System family, not a
@@ -1214,6 +1216,42 @@ def flow_part_details_and_console(page, base_url: str) -> None:
     manifest_mag_mic = manifest_children.filter(has_text="Mag Mic")
     assert manifest_mag_mic.is_visible(), "the billable Mag Mic must remain a visible child line"
     assert "Passenger kick panel" in manifest_mag_mic.text_content()
+
+    # The hand-held CCTL5 has no separate PA-mic/bracket setup. Its Details
+    # step asks only whether to add the bracket-free MMSU-1 Mag Mic.
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    if page.locator(".pbt-cat-head[data-cat='equipment'].open").count() == 0:
+        page.click(".pbt-cat-caret-btn[data-cat='equipment']")
+    page.wait_for_selector(".pbt-cat-head[data-cat='equipment'].open")
+    if not page.locator(".pbt-fam-select[data-family='light_control_system']").is_visible():
+        page.click(".pbt-fam-caret-btn[data-fam='light_control_system']")
+    page.wait_for_selector(".pbt-fam-select[data-family='light_control_system']")
+    page.click(".pbt-fam-select[data-family='light_control_system']")
+    page.wait_for_timeout(_SETTLE_MS)
+    if page.locator("#pp-veh-only").is_checked():
+        page.click("#pp-veh-only")
+        page.wait_for_timeout(200)
+    assert page.locator(".pp-head[data-pid='whelen_cctl5']").count() == 1
+    page.click(".pp-head[data-pid='whelen_cctl5']")
+    page.click(".pp-sku [data-pick][data-pid='whelen_cctl5'] >> nth=0")
+    page.click("#picker-add-btn")
+    page.wait_for_timeout(_SETTLE_MS)
+    assert page.locator("[data-handheld-mag-mic='true']").count() == 1
+    assert page.locator("[data-pa-mic-location]").count() == 0
+    assert page.locator("[data-pa-mic-clip]").count() == 0
+    assert page.locator("#picker-add-btn").is_disabled()
+    page.click("[data-handheld-mag-mic='true']")
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel", state="hidden")
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", _draft_id)
+    handheld = next(p for p in draft["draft"]["parts"]
+                    if any(c.get("part_number") == "CCTL5" for c in p.get("components", [])))
+    handheld_mag_mic = next((p for p in draft["draft"]["parts"]
+                             if p.get("parent_line_id") == handheld["line_id"]
+                             and p.get("accessory_category") == "magnetic_mic"), None)
+    assert handheld_mag_mic and handheld_mag_mic.get("part_number") == "MMSU-1"
 
     # A Center Console has one physical location, but its selected SKU leads
     # to the dedicated Details setup rather than a generic placement step.

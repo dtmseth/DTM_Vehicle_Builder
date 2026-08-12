@@ -103,6 +103,19 @@ def test_get_cached_items_without_sync_is_empty(paths):
     assert res["last_sync_utc"] is None
 
 
+def test_find_cached_active_item_by_name_requires_exact_name(paths):
+    sync.sync_items(paths)
+    assert sync.find_cached_active_item_by_name(paths, " whelen liberty ii ")["qb_item_id"] == "1"
+    assert sync.find_cached_active_item_by_name(paths, "Whelen Liberty") is None
+
+
+def test_refresh_estimate_catalog_hides_low_level_failure(paths, monkeypatch):
+    monkeypatch.setattr(sync, "run_full_sync", lambda paths: {"ok": False, "error": "token detail"})
+    assert sync.refresh_estimate_catalog(paths) == {
+        "ok": False, "error": "pricing_refresh_failed",
+    }
+
+
 def test_sync_not_connected_returns_error(paths, monkeypatch):
     from dtm_buildsheet.app.adapters.quickbooks.oauth_client import QuickBooksOAuthError
 
