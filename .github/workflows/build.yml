@@ -11,9 +11,6 @@ on:
         options: [current, patch, minor, major]
         default: current
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   version:
     runs-on: ubuntu-latest
@@ -99,7 +96,7 @@ jobs:
             -ov -format UDZO \
             "dist/DTM_Vehicle_Builder.dmg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: DTM-Vehicle-Builder-Mac
           path: dist/DTM_Vehicle_Builder.dmg
@@ -134,7 +131,7 @@ jobs:
         env:
           APP_VERSION: ${{ needs.version.outputs.version }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: DTM-Vehicle-Builder-Windows
           path: dist/DTM_Vehicle_Builder_Setup.exe
@@ -150,12 +147,12 @@ jobs:
         with:
           fetch-depth: 0  # full history so we can `git log` between tags
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: DTM-Vehicle-Builder-Mac
           path: dist
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: DTM-Vehicle-Builder-Windows
           path: dist
@@ -196,7 +193,7 @@ jobs:
           cat "${NOTES_FILE}"
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.version.outputs.version }}
           name: DTM Vehicle Builder v${{ needs.version.outputs.version }}
