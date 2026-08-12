@@ -1,5 +1,50 @@
 # Production Release Plan
 
+## QuickBooks production integration release — 2026-08-12
+
+The owner approved PR #11 for production after completing the Intuit assessment, production OAuth
+connection, catalog comparison, item-link migration, and agency/customer migration. This is the
+next desktop release after v3.0.0 and is a backward-compatible **minor release: v3.1.0**.
+
+### Included scope
+
+- Production QuickBooks catalog linkage and guarded price refresh, using QuickBooks item `Name` as
+  the SKU identity while preserving Builder-owned catalog, picker, vehicle-fit, and render metadata.
+- Production customer/agency linking, new-customer creation as non-taxable Retail customers, and
+  clear sync status/error feedback in Agency Settings.
+- Estimate creation with current production item pricing, customer pricing rules, explicit
+  confirmation, actionable error toasts, and duplicate protection that asks whether to update the
+  linked estimate or create a separate estimate.
+- Optional attachment of the exported build PDF to the resulting estimate. Attachment failure is
+  reported separately and never causes a successfully created estimate to be retried.
+- Editable custom parts with retained user-entered prices and optional manifest categories.
+- Vehicle-specific CHWLDD36/CHWLFE29 Howlers, universal CHWLUNI fallback, CEXAMP dual-tone option,
+  and the handheld-control-head Mag Mic question.
+- Saved-template rendering preservation and the documented manual QuickBooks project workflow.
+
+### Safety and verification record
+
+- Production secrets remain outside the repository in the OS keychain; no credentials are included
+  in the release diff or documentation.
+- The production catalog transition retains its recoverable baseline and explicit mapping records.
+- No background inventory reconciliation is enabled by this release. Price refresh is bounded to
+  application/estimate preparation paths described in `docs/QUICKBOOKS.md`.
+- The three previously known golden-master drifts were reviewed on 2026-08-12. They contain only the
+  approved cleanup of placeholder SKU labels/prose and consolidation of duplicated placement notes;
+  plan digests are unchanged. The refreshed snapshots are committed separately from implementation.
+- Before merge, require the hosted test, import-boundary, dependency-audit, security-scan, and
+  Netlify checks to pass. After merge, require both installer builds to pass.
+
+### Publish sequence
+
+1. Merge [PR #11](https://github.com/dtmseth/DTM_Vehicle_Builder/pull/11) normally into `main`.
+2. Confirm the post-merge Checks and Build workflows succeed.
+3. Run the manual Build workflow on `main` with `minor`; it bumps 3.0.0 to 3.1.0, tags the release,
+   builds both installers, publishes the GitHub release, and stages the release files for SharePoint.
+4. Confirm the published tag and both installers point to the release commit before rollout.
+5. Smoke-test connection status and estimate preparation, but do not create a live estimate merely
+   as a release test. A real estimate still requires the user's explicit in-app confirmation.
+
 ## Purpose
 
 This is the working checklist for moving the current Part Picker / project-workflow update from
@@ -167,7 +212,8 @@ disabled, or visibly labelled as internal/sandbox-only. Do not imply that produc
 
 ## Owner decisions still needed
 
-- Approve the pull request's final merge to `main` and the manual release workflow/version bump.
+- The owner approved PR #11 promotion and documentation on 2026-08-12. No release decision remains
+  pending for v3.1.0; only the automated gates and post-build installer verification remain.
 
 ## Related references
 
