@@ -140,6 +140,74 @@ def test_create_estimate_uses_standard_legacy_custom_fields_request(monkeypatch)
     assert captured["query_params"] is None
 
 
+def test_update_estimate_sends_id_sync_token_and_sparse_payload(monkeypatch):
+    captured = {}
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "_post", lambda entity, payload: (
+        captured.update({"entity": entity, "payload": payload}) or
+        {"Estimate": {"Id": "44", "DocNumber": "101"}}
+    ))
+
+    result = client.update_estimate("44", "7", {"Line": [{"Amount": 10}]})
+
+    assert result == {"qb_estimate_id": "44", "doc_number": "101"}
+    assert captured == {"entity": "estimate", "payload": {
+        "Id": "44", "SyncToken": "7", "sparse": True,
+        "Line": [{"Amount": 10}],
+    }}
+
+
+def test_upload_estimate_attachment_uses_paired_multipart_parts(tmp_path, monkeypatch):
+    pdf = tmp_path / "Build 123.pdf"
+    pdf.write_bytes(b"%PDF-1.7\n")
+    captured = {}
+
+    class Response(_Response):
+        status_code = 200
+
+        def json(self):
+            return {"AttachableResponse": [{"Attachable": {"Id": "ATT9"}}]}
+
+    def fake_post(url, **kwargs):
+        captured.update({"url": url, **kwargs})
+        return Response({})
+
+    monkeypatch.setattr(api_client.requests, "post", fake_post)
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    result = client.upload_estimate_attachment("EST4", str(pdf))
+
+    assert result == {"attachment_id": "ATT9", "file_name": "Build 123.pdf"}
+    assert captured["url"].endswith("/v3/company/realm/upload")
+    metadata = captured["files"]["file_metadata_01"]
+    content = captured["files"]["file_content_01"]
+    assert metadata[0] == "attachment.json" and '"type": "Estimate"' in metadata[1]
+    assert '"value": "EST4"' in metadata[1]
+    assert content[0] == "Build 123.pdf" and content[2] == "application/pdf"
+
+
+def test_upload_estimate_attachment_surfaces_fault_inside_http_200(tmp_path, monkeypatch):
+    pdf = tmp_path / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\n")
+
+    class Response(_Response):
+        status_code = 200
+
+        def json(self):
+            return {"AttachableResponse": [{"Fault": {"Error": [{
+                "code": "6041", "Message": "Invalid Uploaded File",
+                "Detail": "private filename and company data",
+            }]}}]}
+
+    monkeypatch.setattr(api_client.requests, "post", lambda *args, **kwargs: Response({}))
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+
+    with pytest.raises(api_client.QuickBooksApiError) as exc_info:
+        client.upload_estimate_attachment("EST4", str(pdf))
+
+    assert str(exc_info.value) == "qb_6041: Invalid Uploaded File"
+
+
 def test_fetch_inactive_items_paginates_and_preserves_active_flag(monkeypatch):
     client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
     statements = []

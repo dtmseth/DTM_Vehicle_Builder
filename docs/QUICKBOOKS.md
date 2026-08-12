@@ -238,6 +238,11 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   linked/active/priced; uses QB sales descriptions, consolidates duplicate SKUs, sorts by brand,
   resolves the top-level customer, requires a true QBO Project, writes `ProjectRef`, and writes
   `qb_estimate_id` back), `create_estimates_batch()`.
+  A vehicle with a stored `qb_estimate_id` cannot silently create another form. The review asks the
+  user to either **update the existing Estimate** (read current `SyncToken`, then sparse-update the
+  complete Builder-owned line array and header fields) or deliberately **create a separate new
+  Estimate**. The new ID replaces the vehicle's current local Estimate link; the older QBO form is
+  retained in QuickBooks.
   The standard Accounting-only connection deliberately does not write
   sales-form custom fields: modern QuickBooks fields require their paid Custom
   Fields API to resolve the company-specific field IDs. This keeps a custom
@@ -262,15 +267,15 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   does not return or document a writable field for this Estimate-form switch (including on existing
   production Estimates), so estimate creation cannot set or verify it. The create review explicitly
   instructs the user to turn it on in QBO after creation; the app must not send an invented field.
-  QBO's standard Accounting API **does** support attaching the generated build-sheet PDF to an
+  QBO's standard Accounting API supports attaching the generated build-sheet PDF to an
   existing Estimate. This is a second request after Estimate creation: multipart `POST /upload`
   with `application/pdf` content and Attachable metadata whose `EntityRef` type is `Estimate` and
   value is the returned Estimate ID. QBO requires the Estimate to exist first and permits up to
-  100 MB total per upload request. The app already retains both required inputs on the vehicle
-  (`pdf_path` and `qb_estimate_id`). A future guarded implementation should offer **Attach build
-  PDF**, show the exact filename, verify that it is a readable PDF, avoid accidental duplicate
-  uploads, and report attachment failure separately—the successfully created Estimate must never
-  be represented as failed or retried just because its subsequent upload failed.
+  100 MB total per upload request. The estimate review now offers **Attach build PDF**, shows the
+  exact filename, verifies a readable PDF inside an approved output directory, and skips an
+  already-linked file with the same name and byte size. Upload failure is reported separately—the
+  successfully created or updated Estimate is never represented as failed or retried merely
+  because its subsequent attachment upload failed.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
@@ -523,7 +528,7 @@ migration are complete. The remaining controlled activation steps are:
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
 (manual button today, owner chose reviewed-first); automatic QBO Project creation after a future
-Silver+ developer-tier upgrade; generated build-PDF attachment to an existing Estimate.
+Silver+ developer-tier upgrade.
 
 **Deferred multi-user identity/audit design:** keep one administrator-controlled company OAuth
 connection rather than distributing its refresh token to every workstation. Individual Builder

@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import math
 import re
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
@@ -597,6 +598,9 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "pending_count": len(pending),
         "customer": customer,
         "customer_linked": customer_linked,
+        "existing_estimate_id": str(unit.qb_estimate_id or "").strip(),
+        "pdf_available": bool(str(unit.pdf_path or "").strip()),
+        "pdf_name": Path(unit.pdf_path).name if str(unit.pdf_path or "").strip() else "",
         "project": _project_binding_summary(paths, project, build_unit, unit),
     }
 
@@ -715,6 +719,8 @@ def create_estimate(
     memo: str = "",
     customer_confirmed: bool = False,
     customer_fields: dict | None = None,
+    existing_action: str = "",
+    attach_pdf: bool = False,
 ) -> dict:
     """Create a QBO Estimate for one vehicle. Blocks if any part is unbillable.
 
@@ -725,6 +731,34 @@ def create_estimate(
     if isinstance(loaded, dict):
         return loaded
     project, _build_unit, unit, draft = loaded
+
+    existing_action = str(existing_action or "").strip()
+    existing_estimate_id = str(unit.qb_estimate_id or "").strip()
+    if existing_estimate_id and existing_action not in {"update", "create_new"}:
+        return {
+            "ok": False,
+            "error": "duplicate_estimate_confirmation_required",
+            "existing_estimate_id": existing_estimate_id,
+        }
+    if existing_action == "update" and not existing_estimate_id:
+        return {"ok": False, "error": "existing_estimate_not_found"}
+
+    pdf_path = Path(unit.pdf_path) if str(unit.pdf_path or "").strip() else None
+    if attach_pdf:
+        from .export_service import _allowed_roots, _check_allowed
+        if pdf_path is not None and _check_allowed(pdf_path, _allowed_roots(paths)):
+            return {"ok": False, "error": "build_pdf_outside_output"}
+        if pdf_path is None or not pdf_path.is_file():
+            return {"ok": False, "error": "build_pdf_missing"}
+        if pdf_path.suffix.lower() != ".pdf":
+            return {"ok": False, "error": "build_pdf_invalid"}
+        try:
+            with pdf_path.open("rb") as stream:
+                signature = stream.read(5)
+            if pdf_path.stat().st_size > 100 * 1024 * 1024 or signature != b"%PDF-":
+                return {"ok": False, "error": "build_pdf_invalid"}
+        except OSError:
+            return {"ok": False, "error": "build_pdf_missing"}
 
     refresh = qb_sync_service.refresh_estimate_catalog(paths)
     if not refresh.get("ok"):
@@ -791,9 +825,25 @@ def create_estimate(
     # field that Intuit may silently ignore.
     payload["PrivateNote"] = f"DTM vehicle project: {project_name}"
     try:
-        result = client.create_estimate(payload)
+        if existing_action == "update":
+            current_estimate = client.read_estimate(existing_estimate_id)
+            if current_estimate is None:
+                return {
+                    "ok": False,
+                    "error": "existing_estimate_not_found",
+                    "existing_estimate_id": existing_estimate_id,
+                }
+            result = client.update_estimate(
+                existing_estimate_id,
+                current_estimate.get("SyncToken", "0"),
+                payload,
+            )
+            estimate_action = "updated"
+        else:
+            result = client.create_estimate(payload)
+            estimate_action = "created"
     except QuickBooksApiError as exc:
-        logger.warning("QuickBooks estimate create failed: %s", exc)
+        logger.warning("QuickBooks estimate write failed: %s", exc)
         # Do not leave a locally stored, rejected project reference looking
         # usable. Keep it intact for auditability, but give the UI the binding
         # context it needs to send the user straight back to Project setup.
@@ -810,11 +860,32 @@ def create_estimate(
     unit.qb_project_name = project_name
     from ...inputs import project_entry
     project_entry.save_project(project, paths)
+    attachment = None
+    if attach_pdf and pdf_path is not None:
+        try:
+            existing_attachments = client.fetch_estimate_attachments(estimate_id)
+            pdf_size = pdf_path.stat().st_size
+            duplicate = next((row for row in existing_attachments if
+                row.get("file_name") == pdf_path.name and row.get("size") == pdf_size), None)
+            if duplicate:
+                attachment = {
+                    "ok": True,
+                    "skipped": "already_attached",
+                    "attachment_id": duplicate.get("id", ""),
+                    "file_name": pdf_path.name,
+                }
+            else:
+                uploaded = client.upload_estimate_attachment(estimate_id, str(pdf_path))
+                attachment = {"ok": True, **uploaded}
+        except (OSError, QuickBooksApiError) as exc:
+            logger.warning("QuickBooks build PDF attachment failed: %s", exc)
+            attachment = {"ok": False, "error": str(exc)}
     total = round(sum(ln["amount"] for ln in lines), 2)
     pending_count = sum(1 for ln in lines if ln.get("pending"))
-    logger.info("QB estimate created: %d lines (%d pending)", len(lines), pending_count)
+    logger.info("QB estimate %s: %d lines (%d pending)", estimate_action, len(lines), pending_count)
     return {
         "ok": True,
+        "action": estimate_action,
         "qb_estimate_id": estimate_id,
         "doc_number": result.get("doc_number", ""),
         "line_count": len(lines),
@@ -824,6 +895,7 @@ def create_estimate(
         "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "qb_project_id": unit.qb_project_id,
         "project_name": project_name,
+        "attachment": attachment,
     }
 
 

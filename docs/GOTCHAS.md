@@ -163,3 +163,7 @@ you're touching. New gotchas get appended to the bottom with a date.
     picker edit round-tripping, and QuickBooks estimate resolution. Reducing a saved build to the
     legacy workbook columns makes a newly created vehicle look similar in the manifest while losing
     its renderer identity and billable SKUs.
+33. **Estimate creation and PDF attachment are separate QBO writes.** A successful Estimate must
+    remain successful if its later Attachable upload fails. Never automatically retry the Estimate
+    write after an attachment error; doing so creates duplicate financial forms. Existing vehicle
+    estimates require an explicit update-vs-create-new choice before any Estimate write.

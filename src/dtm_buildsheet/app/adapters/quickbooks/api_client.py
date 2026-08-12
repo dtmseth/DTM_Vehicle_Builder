@@ -13,8 +13,10 @@ and Intuit's ``intuit_tid`` trace header are logged.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
+from pathlib import Path
 
 import requests
 
@@ -369,6 +371,97 @@ class QuickBooksApiClient:
             "qb_estimate_id": str(raw.get("Id", "")),
             "doc_number": str(raw.get("DocNumber", "")),
         }
+
+    def read_estimate(self, estimate_id: str) -> dict | None:
+        """Return an existing Estimate including its current SyncToken."""
+        eid = str(estimate_id or "").strip()
+        if not eid:
+            return None
+        qr = self.query(f"SELECT * FROM Estimate WHERE Id = '{eid}'")
+        batch = qr.get("Estimate", []) or []
+        return batch[0] if batch else None
+
+    def update_estimate(self, estimate_id: str, sync_token: str, payload: dict) -> dict:
+        """Replace the Builder-owned fields and lines of an existing Estimate."""
+        raw = (self._post("estimate", {
+            "Id": str(estimate_id),
+            "SyncToken": str(sync_token),
+            "sparse": True,
+            **payload,
+        }) or {}).get("Estimate", {}) or {}
+        return {
+            "qb_estimate_id": str(raw.get("Id", estimate_id)),
+            "doc_number": str(raw.get("DocNumber", "")),
+        }
+
+    def fetch_estimate_attachments(self, estimate_id: str) -> list[dict]:
+        """Return attachment identity metadata for one Estimate."""
+        eid = str(estimate_id or "").strip()
+        if not eid:
+            return []
+        qr = self.query(
+            "SELECT * FROM Attachable WHERE "
+            "AttachableRef.EntityRef.Type = 'Estimate' AND "
+            f"AttachableRef.EntityRef.value = '{eid}'"
+        )
+        return [{
+            "id": str(row.get("Id", "")),
+            "file_name": str(row.get("FileName", "")),
+            "size": int(row.get("Size") or 0),
+        } for row in (qr.get("Attachable", []) or [])]
+
+    def upload_estimate_attachment(self, estimate_id: str, pdf_path: str) -> dict:
+        """Upload one local PDF and link it to an existing Estimate."""
+        path = Path(pdf_path)
+        metadata = {
+            "AttachableRef": [{
+                "EntityRef": {"type": "Estimate", "value": str(estimate_id)},
+            }],
+            "FileName": path.name,
+            "ContentType": "application/pdf",
+        }
+        url = f"{self._base()}/v3/company/{self._realm_id}/upload"
+        headers = self._headers()
+        try:
+            with path.open("rb") as stream:
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    params={"minorversion": _MINOR_VERSION},
+                    files={
+                        "file_metadata_01": (
+                            "attachment.json", json.dumps(metadata), "application/json",
+                        ),
+                        "file_content_01": (path.name, stream, "application/pdf"),
+                    },
+                    timeout=_HTTP_TIMEOUT,
+                )
+        except OSError:
+            raise QuickBooksApiError("attachment_file_unreadable") from None
+        except Exception:  # noqa: BLE001 — transport text may expose request data
+            raise QuickBooksApiError("request_failed") from None
+        tid = response.headers.get("intuit_tid", "")
+        logger.info("QB attachment upload: status=%s intuit_tid=%s", response.status_code, tid)
+        if response.status_code != 200:
+            raise _http_error(response, tid)
+        try:
+            entries = response.json().get("AttachableResponse", []) or []
+            first = entries[0] or {} if entries else {}
+            if first.get("Fault"):
+                errors = first["Fault"].get("Error", []) or []
+                error = errors[0] if isinstance(errors, list) and errors else {}
+                code = str(error.get("code") or "").strip()
+                message = " ".join(str(error.get("Message") or "").split())[:180]
+                summary = f"qb_{code}: {message}" if code and message else "attachment_upload_failed"
+                raise QuickBooksApiError(summary)
+            raw = first.get("Attachable", {})
+            if not raw.get("Id"):
+                raise QuickBooksApiError("attachment_upload_failed")
+            return {"attachment_id": str(raw.get("Id", "")), "file_name": path.name}
+        except QuickBooksApiError:
+            raise
+        except Exception:  # noqa: BLE001
+            raise QuickBooksApiError("unparseable_response") from None
 
 
 def _sales_form_custom_fields(sales_preferences: object) -> list[dict]:

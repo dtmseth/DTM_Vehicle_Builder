@@ -750,6 +750,13 @@ function _ptEstError(code) {
     pricing_refresh_failed: "Could not refresh current QuickBooks Item prices — the estimate was not created",
     project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
     retail_customer_type_not_found: "QuickBooks does not have an active Retail customer type",
+    duplicate_estimate_confirmation_required: "Choose whether to update the existing estimate or create a new one",
+    existing_estimate_not_found: "The saved QuickBooks estimate no longer exists — choose Create new estimate",
+    build_pdf_missing: "Export the build PDF before attaching it to QuickBooks",
+    build_pdf_invalid: "The selected build attachment is not a valid PDF",
+    build_pdf_outside_output: "The build PDF is outside the app's approved output folder",
+    attachment_file_unreadable: "The build PDF could not be read",
+    attachment_upload_failed: "QuickBooks rejected the build PDF attachment",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
 }
@@ -1138,28 +1145,46 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
      </div>
+     ${v.existing_estimate_id ? `<div class="qb-est-bank-note"><strong>An estimate already exists for this vehicle.</strong><br>
+       <label><input type="radio" name="qb-est-existing-action" value="update" checked> Update existing estimate ${esc(v.existing_estimate_id)}</label><br>
+       <label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate</label></div>` : ""}
+     ${v.pdf_available
+       ? `<label class="qb-est-pdf-option"><input type="checkbox" id="qb-est-attach-pdf" checked> Attach build PDF: <strong>${esc(v.pdf_name || "build.pdf")}</strong></label>`
+       : `<div class="qb-est-bank-note"><strong>Build PDF:</strong> Export the PDF first if you want it attached to this estimate.</div>`}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
      ${_ptCustomerEditor(customer, customerLinked, customerMissing)}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
      <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
-    customerLinked && !customerMissing.length ? "Create estimate" : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
+    customerLinked && !customerMissing.length
+      ? (v.existing_estimate_id ? "Continue" : "Create estimate")
+      : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
   const e = _ptEstModalEls();
   if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
 };
 
-async function _ptDoCreateEstimate(projectId, individualId) {
+async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null) {
   const e = _ptEstModalEls();
   const memo = $("qb-est-memo")?.value || "";
   const customerFields = _ptCustomerFieldsFromEditor();
   const customerConfirmed = !!$("qb-est-customer-confirm")?.checked;
+  const existingAction = chosenAction ?? document.querySelector('input[name="qb-est-existing-action"]:checked')?.value ?? "";
+  const attachPdf = chosenAttachPdf ?? !!$("qb-est-attach-pdf")?.checked;
   if (e.create) { e.create.disabled = true; e.create.textContent = "Creating…"; }
   try {
     const res = await api("/api/quickbooks/estimates/create",
       { project_id: projectId, individual_id: individualId, memo,
-        customer_confirmed: customerConfirmed, customer_fields: customerFields });
+        customer_confirmed: customerConfirmed, customer_fields: customerFields,
+        existing_action: existingAction, attach_pdf: attachPdf });
     if (res?.ok) {
       e.modal?.classList.remove("open");
-      toast(`Estimate created${res.doc_number ? " #" + res.doc_number : ""} · ${_ptMoney2(res.total)}`, "success");
+      const verb = res.action === "updated" ? "updated" : "created";
+      const attachment = res.attachment;
+      if (attachment?.ok === false) {
+        toast(`Estimate ${verb}${res.doc_number ? " #" + res.doc_number : ""}, but the build PDF could not be attached: ${_ptEstError(attachment.error)}`, "error");
+      } else {
+        const attached = attachment?.skipped === "already_attached" ? " · PDF already attached" : attachment?.ok ? " · PDF attached" : "";
+        toast(`Estimate ${verb}${res.doc_number ? " #" + res.doc_number : ""} · ${_ptMoney2(res.total)}${attached}`, "success");
+      }
       await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === projectId);
       if (updated) { _PT.viewProject = updated; _ptRenderBuildsTab(updated); }
@@ -1175,18 +1200,18 @@ async function _ptDoCreateEstimate(projectId, individualId) {
           <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`;
         e.create.disabled = false;
         e.create.textContent = "Create customer & estimate";
-        e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+        e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId, existingAction, attachPdf);
       } else if (res?.error === "invalid_qb_project_ref") {
         toast(_ptEstError(res.error), "error");
         _ptOpenProjectBindingModal(projectId, individualId, res.project);
       } else {
         toast(_ptEstError(res?.error), "error");
-        if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+        if (e.create) { e.create.disabled = false; e.create.textContent = "Try again"; }
       }
     }
   } catch (err) {
     toast("Estimate creation failed — QuickBooks did not complete the request", "error");
-    if (e.create) { e.create.disabled = false; e.create.textContent = "Create estimate"; }
+    if (e.create) { e.create.disabled = false; e.create.textContent = "Try again"; }
   }
 }
 

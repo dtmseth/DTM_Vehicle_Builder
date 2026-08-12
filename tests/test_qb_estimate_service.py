@@ -24,13 +24,14 @@ from dtm_buildsheet.paths import AppPaths
 
 @pytest.fixture
 def paths(tmp_path):
-    for sub in ("config", "projects", "drafts", "agencies"):
+    for sub in ("config", "projects", "drafts", "agencies", "output"):
         (tmp_path / sub).mkdir()
     return AppPaths(
         workspace_dir=tmp_path,
         workspace_config_dir=tmp_path / "config",
         workspace_projects_dir=tmp_path / "projects",
         workspace_drafts_dir=tmp_path / "drafts",
+        workspace_output_dir=tmp_path / "output",
     )
 
 
@@ -57,6 +58,9 @@ class FakeClient:
         self.updated_customers = []
         self.created_jobs = []
         self.created_estimates = []
+        self.updated_estimates = []
+        self.estimate_attachments = []
+        self.uploaded_attachments = []
         self.name_lookups = []
 
     def read_customer(self, customer_id):
@@ -89,6 +93,20 @@ class FakeClient:
     def create_estimate(self, payload):
         self.created_estimates.append(payload)
         return {"qb_estimate_id": "EST1", "doc_number": "1001"}
+
+    def read_estimate(self, estimate_id):
+        return {"Id": estimate_id, "SyncToken": "7", "DocNumber": "1001"}
+
+    def update_estimate(self, estimate_id, sync_token, payload):
+        self.updated_estimates.append((estimate_id, sync_token, payload))
+        return {"qb_estimate_id": estimate_id, "doc_number": "1001"}
+
+    def fetch_estimate_attachments(self, estimate_id):
+        return self.estimate_attachments
+
+    def upload_estimate_attachment(self, estimate_id, pdf_path):
+        self.uploaded_attachments.append((estimate_id, pdf_path))
+        return {"attachment_id": "ATT1", "file_name": "build.pdf"}
 
 
 def _use_fake(monkeypatch):
@@ -656,6 +674,109 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     assert unit.qb_job_id == "" and unit.qb_estimate_id == "EST1"
     assert unit.qb_project_id == "447322633"
     assert unit.qb_project_name
+
+
+def test_existing_estimate_requires_explicit_update_or_create_new(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    blocked = est.create_estimate(paths, project_id=pid, individual_id="ind1")
+
+    assert blocked == {
+        "ok": False,
+        "error": "duplicate_estimate_confirmation_required",
+        "existing_estimate_id": "EST-OLD",
+    }
+    assert fake.created_estimates == [] and fake.updated_estimates == []
+
+
+def test_existing_estimate_can_be_updated_in_place(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", existing_action="update",
+    )
+
+    assert result["ok"] is True and result["action"] == "updated"
+    assert result["qb_estimate_id"] == "EST-OLD"
+    assert fake.created_estimates == []
+    assert fake.updated_estimates[0][0:2] == ("EST-OLD", "7")
+
+
+def test_existing_estimate_can_create_deliberate_new_version(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = "EST-OLD"
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", existing_action="create_new",
+    )
+
+    assert result["ok"] is True and result["action"] == "created"
+    assert result["qb_estimate_id"] == "EST1"
+    assert fake.created_estimates and fake.updated_estimates == []
+
+
+def test_build_pdf_is_attached_after_estimate_creation(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    pdf = paths.workspace_output_dir / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\nvalid test pdf")
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].pdf_path = str(pdf)
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", attach_pdf=True,
+    )
+
+    assert result["ok"] is True
+    assert result["attachment"] == {
+        "ok": True, "attachment_id": "ATT1", "file_name": "build.pdf",
+    }
+    assert fake.uploaded_attachments == [("EST1", str(pdf))]
+
+
+def test_attachment_failure_does_not_retry_or_fail_created_estimate(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    fake.upload_estimate_attachment = lambda estimate_id, pdf_path: (_ for _ in ()).throw(
+        QuickBooksApiError("attachment_upload_failed")
+    )
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    pdf = paths.workspace_output_dir / "build.pdf"
+    pdf.write_bytes(b"%PDF-1.7\nvalid test pdf")
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].pdf_path = str(pdf)
+    project_entry.save_project(project, paths)
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", attach_pdf=True,
+    )
+
+    assert result["ok"] is True and result["qb_estimate_id"] == "EST1"
+    assert result["attachment"] == {
+        "ok": False, "error": "attachment_upload_failed",
+    }
+    assert len(fake.created_estimates) == 1
 
 
 def test_create_estimate_sends_discounted_unit_price_without_invoice_only_ach_field(paths, monkeypatch):

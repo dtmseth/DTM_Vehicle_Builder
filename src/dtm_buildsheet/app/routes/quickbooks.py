@@ -217,6 +217,8 @@ def route_quickbooks(
                 memo=body.get("memo", ""),
                 customer_confirmed=bool(body.get("customer_confirmed", False)),
                 customer_fields=body.get("customer_fields") or None,
+                existing_action=body.get("existing_action", ""),
+                attach_pdf=bool(body.get("attach_pdf", False)),
             ),
         )
         return True
