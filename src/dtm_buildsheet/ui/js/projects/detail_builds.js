@@ -851,6 +851,14 @@ function _ptMoney2(n) {
   return isNaN(v) ? "$0.00" : "$" + v.toFixed(2);
 }
 
+function _ptEscAttr(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function _ptEstimatePricingSummary(pricing) {
   const p = pricing || {};
   if (!p.rule_name) return "";
@@ -874,8 +882,8 @@ function _ptEstimatePricingControls(pricing) {
   const inputs = rows.map((row) => `<label class="qb-pricing-row">
     <span>${esc(row.manufacturer)}</span>
     <input type="number" min="0" max="100" step="0.1"
-      value="${escAttr(row.custom_discount_percent)}"
-      data-qb-est-custom-price="${escAttr(row.manufacturer_id)}" />
+      value="${_ptEscAttr(row.custom_discount_percent)}"
+      data-qb-est-custom-price="${_ptEscAttr(row.manufacturer_id)}" />
     <span class="qb-pricing-percent">% off</span>
   </label>`).join("");
   return `<div class="qb-est-bank-note" style="margin-bottom:14px">
@@ -1192,14 +1200,12 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
     toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
     return;
   }
-  const statusEl = $("proj-action-status");
-  if (statusEl) _ptSetStatus(statusEl, "Refreshing prices and checking parts against QuickBooks…", "ok");
+  toast("Refreshing prices and checking parts against QuickBooks…");
   let v;
   try {
     v = await api("/api/quickbooks/estimates/validate",
       { project_id: projectId, individual_id: individualId });
   } catch (e) { toast("Estimate not created — QuickBooks validation could not be completed", "error"); return; }
-  if (statusEl) statusEl.style.display = "none";
   if (!v?.ok) { toast(_ptEstError(v?.error), "error"); return; }
 
   if (!v.project?.ready) {
@@ -1241,8 +1247,9 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
     toast(`Estimate not created yet — ${detail}`, "error");
   }
 
-  _ptOpenEstModal("Create QuickBooks estimate",
-    `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
+  try {
+    _ptOpenEstModal("Create QuickBooks estimate",
+      `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
      ${_ptEstimatePricingSummary(v.pricing)}
      ${_ptEstimatePricingControls(v.pricing)}
      ${_ptBankTransferEstimateNote()}
@@ -1259,13 +1266,17 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
      <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
      ${_ptCustomerEditor(customer, customerLinked, customerMissing)}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
-     <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
-    customerLinked && !customerMissing.length
-      ? (v.existing_estimate_id ? "Continue" : "Create estimate")
-      : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
-  const e = _ptEstModalEls();
-  _ptWireEstimatePricing(v.pricing);
-  if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+       <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
+      customerLinked && !customerMissing.length
+        ? (v.existing_estimate_id ? "Continue" : "Create estimate")
+        : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
+    const e = _ptEstModalEls();
+    _ptWireEstimatePricing(v.pricing);
+    if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+  } catch (error) {
+    console.error("Could not render QuickBooks estimate review", error);
+    toast("Could not open the estimate review: " + (error?.message || "unknown display error"), "error");
+  }
 };
 
 async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null, chosenPricing = null) {
