@@ -1,5 +1,19 @@
 # Session Handoff — Picker flaw-fix pass (2026-07-13/14)
 
+## 2026-08-13 startup/update resilience hotfix
+
+Cross-version startup stalls were traced to blocking Microsoft/SharePoint calls running through
+the desktop app's single-request HTTP server. The local server is now concurrent, background
+startup never launches interactive Microsoft OAuth, and `/api/cloud/status` no longer performs a
+remote release check. The updater now checks before the larger settings/work reconciliation,
+reports `downloading` only during an actual installer transfer, exposes a manual Download action
+when a release is merely available or an automatic transfer fails, and backs failed downloads off
+for 15 minutes instead of retrying every minute. Regression coverage includes concurrent-server,
+non-interactive startup, local-only status, truthful update state, and failed-download backoff.
+
+Validation: `DTM_CLOUD=0 .venv/bin/python -m pytest` → 2000 passed, 1 skipped;
+`DTM_CLOUD=0 .venv/bin/python tools/ui_smoke/run_smoke.py` → 16/16 flows passed.
+
 ## 2026-08-12 QuickBooks production-release handoff
 
 PR #11 was merged and published as v3.1.0 on 2026-08-12 after the owner approved promotion and the

@@ -169,3 +169,12 @@ you're touching. New gotchas get appended to the bottom with a date.
     remain successful if its later Attachable upload fails. Never automatically retry the Estimate
     write after an attachment error; doing so creates duplicate financial forms. Existing vehicle
     estimates require an explicit update-vs-create-new choice before any Estimate write.
+34. **The local UI server must remain concurrent and status polling must remain local-only.**
+    Microsoft identity, SharePoint, QuickBooks, and installer transfers can block until a network
+    timeout. Serving them through a single-threaded `HTTPServer`, or adding a remote provider call
+    to `/api/cloud/status`, freezes every UI request behind the slow call. Background startup sync
+    must never launch interactive OAuth; only the explicit Sign In / Force Sync actions may prompt.
+35. **An available update is not necessarily downloading.** Only
+    `update_check_service.is_download_in_progress()` may produce the `downloading` UI state.
+    Remote availability without an active transfer is `available`; a failed transfer backs off
+    before retrying and keeps the manual Download action visible.

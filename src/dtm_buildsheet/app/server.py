@@ -6,7 +6,7 @@ import socket
 import threading
 import time
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -248,8 +248,17 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, json.dumps(data).encode("utf-8"), "application/json")
 
 
-class _ReuseHTTPServer(HTTPServer):
+class _ReuseHTTPServer(ThreadingHTTPServer):
+    """Local UI server that keeps slow integrations off the request queue.
+
+    Cloud identity, SharePoint, and QuickBooks calls can each take tens of
+    seconds when a provider is offline or throttling.  A single-threaded
+    HTTPServer made one such request block every UI API call, which looked
+    like a frozen desktop application.
+    """
+
     allow_reuse_address = True
+    daemon_threads = True
 
 
 def _port_is_busy(port: int) -> bool:
@@ -467,7 +476,33 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             # Sign-in step is included so "Force Sync Now" can also recover
             # an app that lost its cached token between launches.
             from .adapters.wiring import ensure_signed_in_for_cloud
-            ensure_signed_in_for_cloud()
+            signed_in = ensure_signed_in_for_cloud(interactive=not quiet)
+            if not signed_in:
+                return {
+                    "ok": False,
+                    "error": "Cloud sign-in is required before syncing.",
+                }
+
+            # Check/download the app update before the larger settings/work
+            # reconciliation.  A throttled SharePoint collection must not
+            # leave an available installer waiting indefinitely behind it.
+            update_changed = False
+            update_report: dict = {}
+            try:
+                from .adapters.wiring import get_active_bundle
+                from .services.update_check_service import download_pending_update_if_any
+                from ..config.store import load_config
+                _settings = load_config("app_settings.json", active_paths) or {}
+                _dismissed = list(_settings.get("dismissed_update_versions", []) or [])
+                update_report = download_pending_update_if_any(
+                    get_active_bundle().storage,
+                    active_paths,
+                    dismissed_versions=_dismissed,
+                )
+                report["update"] = update_report
+                update_changed = bool(update_report.get("queued"))
+            except Exception:
+                logger.exception("Sync: background update check failed")
 
             settings_report = sync_shared_settings_at_startup(active_paths)
             settings_changed = bool(settings_report and settings_report.updated)
@@ -522,28 +557,6 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
                 report["pending_cleanup"] = pending_cleanup
             except Exception:
                 logger.exception("PendingChanges cleanup failed")
-
-            # Background download of any newer release into the queue dir
-            # so the next restart (or explicit "Restart now" click) installs
-            # it silently. Pulls the user's dismissed-versions list so a
-            # dismissed update doesn't keep getting re-fetched.
-            update_changed = False
-            update_report: dict = {}
-            try:
-                from .adapters.wiring import get_active_bundle
-                from .services.update_check_service import download_pending_update_if_any
-                from ..config.store import load_config
-                _settings = load_config("app_settings.json", active_paths) or {}
-                _dismissed = list(_settings.get("dismissed_update_versions", []) or [])
-                update_report = download_pending_update_if_any(
-                    get_active_bundle().storage,
-                    active_paths,
-                    dismissed_versions=_dismissed,
-                )
-                report["update"] = update_report
-                update_changed = bool(update_report.get("queued"))
-            except Exception:
-                logger.exception("Sync: background update check failed")
 
             if settings_changed or work_changed or queue_changed or update_changed:
                 _bump_data_version()

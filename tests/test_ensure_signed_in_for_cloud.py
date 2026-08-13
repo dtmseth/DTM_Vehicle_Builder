@@ -116,6 +116,13 @@ def test_triggers_interactive_signin_when_no_cached_account(cloud_on):
     assert identity.is_signed_in()
 
 
+def test_background_check_never_triggers_interactive_signin(cloud_on):
+    identity = _StubIdentity(signed_in=False)
+    set_active_bundle(_make_bundle(identity=identity))
+    assert ensure_signed_in_for_cloud(interactive=False) is False
+    assert identity.signin_calls == 0
+
+
 def test_swallows_signin_failure(cloud_on):
     """User cancels OAuth, network is down, etc. — startup must not crash."""
     identity = _StubIdentity(

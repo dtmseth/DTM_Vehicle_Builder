@@ -137,6 +137,19 @@ def test_status_reports_connected_when_signed_in(cloud_on, paths):
     assert cached.read_bytes() == b"\xff\xd8\xff\xe0fake-jpeg"
 
 
+def test_status_does_not_check_remote_release_folder(cloud_on, paths, monkeypatch):
+    """Header polling must remain local even when SharePoint is slow."""
+    from dtm_buildsheet.app.services import update_check_service
+
+    monkeypatch.setattr(
+        update_check_service,
+        "check_for_update",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("remote call")),
+    )
+    set_active_bundle(_make_bundle(identity=_StubIdentity(photo_bytes=None)))
+    assert cloud_status_service.get_status(paths)["signed_in"] is True
+
+
 def test_status_handles_user_with_no_photo(cloud_on, paths):
     """Graph 404 → fetch_user_photo returns None → cache stays a zero-byte
     sentinel so we don't ask again every poll."""
