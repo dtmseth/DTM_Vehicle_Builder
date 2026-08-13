@@ -55,14 +55,29 @@ def test_agency_override_changes_only_named_manufacturer(paths):
          "qb_item_id": "2", "unit_price": 100, "qty": 1},
     ]
 
-    priced, summary = pricing.apply_customer_pricing(paths, lines, agency)
+    priced, summary = pricing.apply_customer_pricing(
+        paths, lines, agency, pricing_mode="custom"
+    )
 
     assert [line["unit_price"] for line in priced] == [90.0, 80.0]
-    assert summary["source"] == "customer_override"
+    assert summary["source"] == "custom"
     assert {row["manufacturer_id"]: row["override"] for row in summary["applied_discounts"]} == {
         "havis": False,
         "whelen": True,
     }
+
+
+def test_retail_mode_ignores_saved_agency_custom_defaults(paths):
+    agency = SimpleNamespace(pricing_overrides={"whelen": 10})
+    lines = [{"name": "Light", "manufacturer": "Whelen", "manufacturer_id": "whelen",
+              "qb_item_id": "1", "unit_price": 100, "qty": 1}]
+
+    priced, summary = pricing.apply_customer_pricing(paths, lines, agency)
+
+    assert priced[0]["unit_price"] == 62.0
+    assert summary["source"] == "retail"
+    whelen = next(row for row in summary["editable_discounts"] if row["manufacturer_id"] == "whelen")
+    assert whelen["custom_discount_percent"] == 10.0
 
 
 def test_save_default_rule_uses_validated_parts_db_path(paths, monkeypatch):
@@ -71,7 +86,7 @@ def test_save_default_rule_uses_validated_parts_db_path(paths, monkeypatch):
         lambda *args, **kwargs: None,
     )
     result = pricing.save_default_rule(paths, {
-        "rule_name": "Default",
+        "rule_name": "Retail",
         "manufacturer_discounts": {"havis": 25, "whelen": 35},
     })
 

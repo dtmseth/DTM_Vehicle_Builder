@@ -117,6 +117,37 @@ def test_fetch_preferences_normalizes_enabled_sales_custom_fields(monkeypatch):
     ]
 
 
+def test_next_estimate_number_defers_to_qbo_when_custom_numbers_are_off(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "fetch_preferences", lambda: {"custom_txn_numbers": False})
+    monkeypatch.setattr(client, "query", lambda _statement: pytest.fail("Estimate query not expected"))
+
+    assert client.next_estimate_doc_number() == ""
+
+
+def test_next_estimate_number_advances_highest_numeric_value(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "fetch_preferences", lambda: {"custom_txn_numbers": True})
+    pages = iter([
+        {"Estimate": [{"Id": "1", "DocNumber": "1990"}, {"Id": "2", "DocNumber": ""}]},
+        {"Estimate": [{"Id": "3", "DocNumber": "manual-text"}]},
+    ])
+    monkeypatch.setattr(client, "query", lambda _statement: next(pages))
+
+    assert client.next_estimate_doc_number(page_size=2) == "1991"
+
+
+def test_next_estimate_number_blocks_when_no_numeric_sequence_exists(monkeypatch):
+    client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
+    monkeypatch.setattr(client, "fetch_preferences", lambda: {"custom_txn_numbers": True})
+    monkeypatch.setattr(client, "query", lambda _statement: {
+        "Estimate": [{"Id": "1", "DocNumber": "manual-text"}],
+    })
+
+    with pytest.raises(api_client.QuickBooksApiError, match="estimate_number_unavailable"):
+        client.next_estimate_doc_number()
+
+
 def test_find_customer_type_by_name_returns_unique_active_exact_match(monkeypatch):
     client = api_client.QuickBooksApiClient(access_token="token", realm_id="realm")
     monkeypatch.setattr(client, "query", lambda statement: {

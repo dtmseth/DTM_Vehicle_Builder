@@ -748,6 +748,8 @@ function _ptEstError(code) {
     validation_failed: "Some parts aren't linked to QuickBooks",
     validation_unavailable: "Could not check this vehicle right now",
     pricing_refresh_failed: "Could not refresh current QuickBooks Item prices — the estimate was not created",
+    invalid_pricing: "Custom pricing must use discounts from 0% through 100%",
+    estimate_number_unavailable: "QuickBooks could not determine the next estimate number — no estimate was created",
     project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
     retail_customer_type_not_found: "QuickBooks does not have an active Retail customer type",
     duplicate_estimate_confirmation_required: "Choose whether to update the existing estimate or create a new one",
@@ -804,7 +806,7 @@ function _ptEstimatePricingSummary(pricing) {
   const applied = (p.applied_discounts || []).map((row) =>
     `${esc(row.manufacturer)} ${Number(row.discount_percent).toFixed(1).replace(/\.0$/, "")}%${row.override ? " (customer)" : ""}`
   ).join(" · ");
-  const source = p.source === "customer_override" ? "Default + customer override" : "Default";
+  const source = p.source === "custom" ? "Custom" : "Retail";
   return `<div class="qb-est-pricing-summary">
     <div class="qb-est-pricing-title"><strong>${esc(source)} pricing</strong><span>${esc(p.rule_name)}</span></div>
     ${applied ? `<div class="qb-est-pricing-discounts">${applied}</div>` : ""}
@@ -814,6 +816,57 @@ function _ptEstimatePricingSummary(pricing) {
       <span>Customer <strong>${_ptMoney2(p.customer_total)}</strong></span>
     </div>
   </div>`;
+}
+
+function _ptEstimatePricingControls(pricing) {
+  const rows = pricing?.editable_discounts || [];
+  const inputs = rows.map((row) => `<label class="qb-pricing-row">
+    <span>${esc(row.manufacturer)}</span>
+    <input type="number" min="0" max="100" step="0.1"
+      value="${escAttr(row.custom_discount_percent)}"
+      data-qb-est-custom-price="${escAttr(row.manufacturer_id)}" />
+    <span class="qb-pricing-percent">% off</span>
+  </label>`).join("");
+  return `<div class="qb-est-bank-note" style="margin-bottom:14px">
+    <strong>Customer pricing</strong><br>
+    <label><input type="radio" name="qb-est-pricing-mode" value="retail" checked> Retail pricing</label><br>
+    <label><input type="radio" name="qb-est-pricing-mode" value="custom"> Custom pricing for this estimate</label>
+    <div id="qb-est-custom-pricing" class="qb-pricing-grid" hidden style="margin-top:10px">${inputs}</div>
+  </div>`;
+}
+
+function _ptReadEstimatePricing() {
+  const mode = document.querySelector('input[name="qb-est-pricing-mode"]:checked')?.value || "retail";
+  const custom = {};
+  for (const input of document.querySelectorAll("[data-qb-est-custom-price]")) {
+    custom[input.getAttribute("data-qb-est-custom-price")] = Number(input.value);
+  }
+  return { mode, custom };
+}
+
+function _ptWireEstimatePricing(pricing) {
+  const update = () => {
+    const chosen = _ptReadEstimatePricing();
+    const customBox = $("qb-est-custom-pricing");
+    if (customBox) customBox.hidden = chosen.mode !== "custom";
+    let total = 0;
+    for (const line of (pricing?.pricing_basis || [])) {
+      const list = Number(line.list_unit_price || 0);
+      const qty = Number(line.qty || 1);
+      const retail = (pricing?.editable_discounts || []).find(
+        row => row.manufacturer_id === line.manufacturer_id)?.retail_discount_percent || 0;
+      const discount = line.discountable
+        ? (chosen.mode === "custom" ? Number(chosen.custom[line.manufacturer_id] ?? retail) : Number(retail))
+        : 0;
+      total += Math.round((list * (1 - discount / 100) + Number.EPSILON) * 100) / 100 * qty;
+    }
+    const totalEl = $("qb-est-estimated-total");
+    if (totalEl) totalEl.textContent = _ptMoney2(Math.round((total + Number.EPSILON) * 100) / 100);
+  };
+  document.querySelectorAll('input[name="qb-est-pricing-mode"], [data-qb-est-custom-price]').forEach(
+    input => input.addEventListener("input", update)
+  );
+  update();
 }
 
 function _ptBankTransferEstimateNote() {
@@ -1140,10 +1193,11 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   _ptOpenEstModal("Create QuickBooks estimate",
     `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
      ${_ptEstimatePricingSummary(v.pricing)}
+     ${_ptEstimatePricingControls(v.pricing)}
      ${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:24px;font-size:13px;margin-bottom:14px">
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
-       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
+       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div id="qb-est-estimated-total" style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
      </div>
      ${v.existing_estimate_id ? `<div class="qb-est-bank-note"><strong>An estimate already exists for this vehicle.</strong><br>
        <label><input type="radio" name="qb-est-existing-action" value="update" checked> Update existing estimate ${esc(v.existing_estimate_id)}</label><br>
@@ -1159,22 +1213,31 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
       ? (v.existing_estimate_id ? "Continue" : "Create estimate")
       : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
   const e = _ptEstModalEls();
+  _ptWireEstimatePricing(v.pricing);
   if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
 };
 
-async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null) {
+async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null, chosenPricing = null) {
   const e = _ptEstModalEls();
   const memo = $("qb-est-memo")?.value || "";
   const customerFields = _ptCustomerFieldsFromEditor();
   const customerConfirmed = !!$("qb-est-customer-confirm")?.checked;
   const existingAction = chosenAction ?? document.querySelector('input[name="qb-est-existing-action"]:checked')?.value ?? "";
   const attachPdf = chosenAttachPdf ?? !!$("qb-est-attach-pdf")?.checked;
+  const estimatePricing = chosenPricing || _ptReadEstimatePricing();
+  if (estimatePricing.mode === "custom" && Object.values(estimatePricing.custom).some(
+    value => !Number.isFinite(value) || value < 0 || value > 100
+  )) {
+    toast("Every custom discount must be from 0% through 100%", "error");
+    return;
+  }
   if (e.create) { e.create.disabled = true; e.create.textContent = "Creating…"; }
   try {
     const res = await api("/api/quickbooks/estimates/create",
       { project_id: projectId, individual_id: individualId, memo,
         customer_confirmed: customerConfirmed, customer_fields: customerFields,
-        existing_action: existingAction, attach_pdf: attachPdf });
+        existing_action: existingAction, attach_pdf: attachPdf,
+        pricing_mode: estimatePricing.mode, custom_pricing: estimatePricing.custom });
     if (res?.ok) {
       e.modal?.classList.remove("open");
       const verb = res.action === "updated" ? "updated" : "created";
@@ -1200,7 +1263,9 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
           <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`;
         e.create.disabled = false;
         e.create.textContent = "Create customer & estimate";
-        e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId, existingAction, attachPdf);
+        e.create.onclick = () => _ptDoCreateEstimate(
+          projectId, individualId, existingAction, attachPdf, estimatePricing
+        );
       } else if (res?.error === "invalid_qb_project_ref") {
         toast(_ptEstError(res.error), "error");
         _ptOpenProjectBindingModal(projectId, individualId, res.project);
@@ -1285,8 +1350,8 @@ async function _ptOpenBatchEstimateSetup(project) {
   const batchListTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.list_total || 0), 0);
   const batchCustomerTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.customer_total || 0), 0);
   const batchPricing = ready.length ? {
-    rule_name: "Default",
-    source: ready.some((check) => check.validation?.pricing?.source === "customer_override") ? "customer_override" : "default",
+    rule_name: "Retail",
+    source: "retail",
     list_total: batchListTotal,
     customer_total: batchCustomerTotal,
     savings: batchListTotal - batchCustomerTotal,

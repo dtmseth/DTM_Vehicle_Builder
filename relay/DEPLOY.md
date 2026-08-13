@@ -1,6 +1,6 @@
-# QuickBooks OAuth Relay — Deployment Guide
+# QuickBooks OAuth Relay and Token Broker — Deployment Guide
 
-Intuit Production keys require an **HTTPS redirect URI on a real domain** — `localhost` is not accepted. This tiny relay endpoint acts as a pass-through: it accepts the callback from Intuit and immediately 302s to the local DTM Vehicle Builder server. It never reads, stores, or logs the authorization code.
+Intuit Production keys require an **HTTPS redirect URI on a real domain** — `localhost` is not accepted. The callback function immediately 302s to the local DTM Vehicle Builder server. A second stateless function performs token exchange/refresh/revoke so the Intuit client secret is never embedded in the desktop installer. Neither function stores or logs tokens or request bodies.
 
 ```
 Intuit → https://your-relay-url/qb-callback?code=...&state=...&realmId=...
@@ -15,6 +15,8 @@ Intuit → https://your-relay-url/qb-callback?code=...&state=...&realmId=...
 ## Option A — Netlify (Recommended)
 
 Netlify's free tier is more than enough. You can deploy from this repo or drag-drop a folder.
+
+The verified production site is `https://dtmvehiclebuilder.netlify.app`.
 
 ### Deploy via Netlify CLI
 
@@ -35,6 +37,19 @@ The live URL will look like `https://magical-name-12345.netlify.app`.
 5. Leave Build command empty
 6. Set **Publish directory** to `public`
 7. Click **Deploy site**
+
+### Required protected environment
+
+In Netlify → Site configuration → Environment variables, add:
+
+| Variable | Value |
+|---|---|
+| `INTUIT_CLIENT_SECRET` | Current Intuit Production client secret |
+| `INTUIT_CLIENT_ID` | `ABxAw3sNZdGuVr4twlYRJ9oCp0AtlllPTOupxGKdaoya7in6ga` (optional; this verified public ID is also the code default) |
+| `INTUIT_REDIRECT_URI` | `https://dtmvehiclebuilder.netlify.app/.netlify/functions/qb-callback` (optional; this verified URI is also the code default) |
+
+Mark the secret as a secret value. Never put it in `netlify.toml`, a local `.env`, a build command,
+or the repository. Trigger a new production deploy after changing an environment variable.
 
 ### Redirect URI to register in Intuit
 
@@ -69,9 +84,8 @@ https://<your-vercel-project>.vercel.app/api/qb-callback
 
 ## After Deploying
 
-1. Copy the deployed origin exactly, without a trailing slash (for example,
-   `https://dtm-qb-relay.netlify.app`). Do not invent or pre-enter a hostname before the provider
-   has assigned it.
+1. Use the verified production origin exactly, without a trailing slash:
+   `https://dtmvehiclebuilder.netlify.app`.
 2. Verify all public assessment routes and the callback response:
 
    ```bash
@@ -94,20 +108,19 @@ https://<your-vercel-project>.vercel.app/api/qb-callback
 
 4. In the Intuit Developer Dashboard → **Production** → **Redirect URIs**, add the verified
    Production redirect URI.
-5. After Intuit approves the app and issues Production credentials, enter them only in DTM Vehicle
-   Builder → Advanced Settings → **QB Catalog Preview**. Paste the same Production redirect URI.
-   Do not switch the standard QuickBooks profile to Production.
-6. Stop before selecting **Connect production preview** until the owner is ready to authorize and
-   review the production mapping workflow.
+5. Store the Production secret only in Netlify's protected environment. Released desktops contain
+   the public client ID and broker URL, so users click **Connect to QuickBooks** and sign in; they
+   never enter or receive the client secret.
 
 ---
 
 ## Security Notes
 
-- The relay function issues only HTTP 302 — it never returns HTML
+- The callback function issues only HTTP 302 — it never returns HTML
 - `Cache-Control: no-store` is set on every response
-- The function never reads, stores, or logs `code`, `state`, or `realmId`
-- The authorization code is valid for only a few minutes and is useless without the client secret, which never leaves your machine
+- The callback never reads, stores, or logs `code`, `state`, or `realmId`
+- The token broker never stores or logs codes, tokens, or response bodies
+- The Intuit client secret exists only in Netlify's protected environment and is never shipped
 
 ---
 

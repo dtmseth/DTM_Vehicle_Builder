@@ -64,8 +64,10 @@ you're touching. New gotchas get appended to the bottom with a date.
 
 ## QuickBooks
 
-12. **QuickBooks secrets never touch disk or cloud** — keys/tokens live ONLY in the OS keychain via
-    `adapters/quickbooks/credential_store.py`. `quickbooks_config.json` holds non-secret metadata
+12. **QuickBooks user tokens never touch disk or cloud** — access/refresh tokens and realm binding
+    live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py`. The shared Intuit
+    app secret is not shipped; it lives only in Netlify's protected environment for the stateless
+    token broker. `quickbooks_config.json` holds non-secret metadata
     and is deliberately NOT in any cloud-mirror set.
 13. **QuickBooks OAuth callback** (`routes/quickbooks.py`) MUST stay 302-only — never echo the
     code/token as HTML. All `/api/quickbooks/*` responses set `Cache-Control: no-store`.
@@ -152,7 +154,7 @@ you're touching. New gotchas get appended to the bottom with a date.
     production Customers. Migration matches unique normalized names first and permanently filters
     owner-rejected duplicate production Customer IDs from future imports.
 31. **QBO Item prices are list prices; estimate prices are calculated separately.** Never reconcile
-    Default/customer discounts into `qb_unit_price` or the Item cache. Apply the shared
+    Retail/Custom discounts into `qb_unit_price` or the Item cache. Apply the shared
     `customer_pricing.default_rule`, then sparse `AgencyRecord.pricing_overrides`, only to resolved
     estimate lines and send the reviewed unit price explicitly. The Estimate form's **Discounts and
     fees → Bank transfer — 1% per transaction, max $20** switch is separate from the Invoice-only

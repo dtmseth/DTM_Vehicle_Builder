@@ -82,7 +82,7 @@ Contact info comes from the agency record — no separate contact field on the p
 `default_preferences` stores the agency's normal equipment choices. They are copied to a new
 project once; editing a project never changes the agency defaults or another project's choices.
 `pricing_overrides` is a sparse `manufacturer_id → percent off list` map. An empty map inherits
-the shared Default customer-pricing rule; only values that differ from Default are stored.
+the shared Retail customer-pricing rule; only values that differ from Retail are stored.
 
 ## SalesRepRecord
 

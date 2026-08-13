@@ -721,6 +721,8 @@ def create_estimate(
     customer_fields: dict | None = None,
     existing_action: str = "",
     attach_pdf: bool = False,
+    pricing_mode: str = "retail",
+    custom_pricing: dict | None = None,
 ) -> dict:
     """Create a QBO Estimate for one vehicle. Blocks if any part is unbillable.
 
@@ -768,7 +770,16 @@ def create_estimate(
     problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
     from . import agency_service, customer_pricing_service
     agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
-    lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
+    try:
+        lines, pricing = customer_pricing_service.apply_customer_pricing(
+            paths,
+            lines,
+            agency,
+            pricing_mode=pricing_mode,
+            custom_discounts=custom_pricing,
+        )
+    except ValueError as exc:
+        return {"ok": False, "error": "invalid_pricing", "detail": str(exc)}
     if problems:
         return {"ok": False, "error": "validation_failed",
                 "problems": problems, "line_count": len(lines)}
@@ -840,6 +851,9 @@ def create_estimate(
             )
             estimate_action = "updated"
         else:
+            next_doc_number = client.next_estimate_doc_number()
+            if next_doc_number:
+                payload["DocNumber"] = next_doc_number
             result = client.create_estimate(payload)
             estimate_action = "created"
     except QuickBooksApiError as exc:

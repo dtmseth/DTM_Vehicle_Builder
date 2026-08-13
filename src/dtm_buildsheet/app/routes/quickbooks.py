@@ -7,7 +7,7 @@ GET:
 - /api/quickbooks/items     — locally cached pulled items (no network)
 - /api/quickbooks/customers/preview — dry-run count of a customer import
 - /api/quickbooks/pricing-status — read-only price-level capability check
-- /api/quickbooks/customer-pricing — shared Default manufacturer discounts
+- /api/quickbooks/customer-pricing — shared Retail manufacturer discounts
 - /api/quickbooks/production-preview/* — isolated production catalog mapping preview
 
 POST:
@@ -17,7 +17,7 @@ POST:
 - /api/quickbooks/link-item   — attach a QB item to an existing VB product
 - /api/quickbooks/unlink-item — detach a QB item from its VB product
 - /api/quickbooks/customers/import — upsert QB customers into agencies
-- /api/quickbooks/customer-pricing/default — save the reviewed shared Default rule
+- /api/quickbooks/customer-pricing/default — save the reviewed shared Retail rule
 - /api/quickbooks/production-preview/create-snapshot — create/select a local immutable baseline
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
@@ -219,6 +219,8 @@ def route_quickbooks(
                 customer_fields=body.get("customer_fields") or None,
                 existing_action=body.get("existing_action", ""),
                 attach_pdf=bool(body.get("attach_pdf", False)),
+                pricing_mode=body.get("pricing_mode", "retail"),
+                custom_pricing=body.get("custom_pricing") or None,
             ),
         )
         return True

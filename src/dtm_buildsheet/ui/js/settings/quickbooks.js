@@ -55,6 +55,7 @@
         ? "•••••••• saved — leave blank to keep"
         : "Paste client secret";
     }
+    if ($("qb-creds-card")) $("qb-creds-card").hidden = !!s.managed_connection;
 
     // Connection panels.
     if ($("qb-connected-panel")) $("qb-connected-panel").hidden = !s.connected;
@@ -90,7 +91,7 @@
     if (!box) return;
     const rows = _pricingRule?.discounts || [];
     if (!rows.length) {
-      box.innerHTML = '<div class="qb-pricing-empty">Default pricing is unavailable.</div>';
+      box.innerHTML = '<div class="qb-pricing-empty">Retail pricing is unavailable.</div>';
       return;
     }
     box.innerHTML = rows.map((row) =>
@@ -127,16 +128,16 @@
     if (button) button.disabled = true;
     try {
       const res = await apiSave("/api/quickbooks/customer-pricing/default", {
-        rule_name: "Default",
+        rule_name: "Retail",
         manufacturer_discounts: manufacturerDiscounts,
       });
       if (!res?.ok) {
-        toast(res?.error || "Could not save the Default rule", "error");
+        toast(res?.error || "Could not save Retail pricing", "error");
         return;
       }
       _pricingRule = res;
       _renderPricing();
-      if (!res.proposed) toast("Default customer pricing saved", "success");
+      if (!res.proposed) toast("Retail pricing saved", "success");
     } finally {
       if (button) button.disabled = false;
     }
