@@ -40,10 +40,11 @@
 <!-- ══ CLOUD STATUS MODAL ══ -->
 <div class="modal-overlay" id="cloud-modal" role="dialog" aria-modal="true" aria-labelledby="cloud-modal-title">
   <div class="modal" style="max-width:440px">
-    <div class="modal-title" id="cloud-modal-title">Cloud Connection
+    <div class="modal-title" id="cloud-modal-title">Connections
       <button class="modal-close" id="cloud-modal-close" aria-label="Close">✕</button>
     </div>
 
+    <div class="connection-modal-heading">Microsoft 365</div>
     <!-- Signed-in panel: who you are + actions -->
     <div id="cloud-modal-signed-in" hidden>
       <div class="cloud-modal-identity">
@@ -63,6 +64,17 @@
     <!-- Signed-out / local-mode panel -->
     <div id="cloud-modal-signed-out" hidden>
       <p class="cloud-modal-meta" id="cloud-modal-signed-out-text">Not signed in to Microsoft.</p>
+    </div>
+
+    <div class="connection-modal-divider"></div>
+    <div class="connection-modal-heading">QuickBooks Online</div>
+    <div class="connection-modal-row">
+      <span class="connection-modal-dot" id="cloud-modal-qb-dot"></span>
+      <div class="connection-modal-copy">
+        <div class="cloud-modal-name" id="cloud-modal-qb-status">Checking connection…</div>
+        <div class="cloud-modal-email" id="cloud-modal-qb-detail"></div>
+      </div>
+      <button class="btn btn-secondary" id="cloud-modal-qb-action" type="button">Manage</button>
     </div>
 
     <div class="modal-actions" style="flex-wrap:wrap;gap:8px">

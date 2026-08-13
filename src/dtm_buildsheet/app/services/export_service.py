@@ -78,6 +78,29 @@ def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
         pass
 
 
+def _finish_pdf_export(result: dict, pdf_path: Path, body: dict, paths: AppPaths | None) -> dict:
+    """Upload/stamp a completed PDF and apply explicit version cleanup."""
+    _maybe_upload_pdf(pdf_path, body)
+    _stamp_export_on_project(body, pdf_path, paths)
+    if body.get("replace_previous_exports") and paths is not None:
+        try:
+            from .exports_upload_service import cleanup_previous_exports
+            result["cleanup"] = cleanup_previous_exports(
+                paths,
+                agency=str(body.get("agency", "") or ""),
+                year=str(body.get("year", "") or ""),
+                filenames=[
+                    str(value or "") for value in body.get("previous_export_paths", [])
+                    if str(value or "").strip()
+                ],
+                keep_filenames=[str(body.get("output_path", "") or ""), pdf_path.name],
+            )
+        except Exception:
+            _log.exception("Could not clean up previous PDF export versions")
+            result["cleanup"] = {"ok": False, "errors": ["shared_export_delete_failed"]}
+    return result
+
+
 # ── LibreOffice discovery ──────────────────────────────────────────────────────
 
 _SOFFICE_CANDIDATES = [
@@ -216,6 +239,18 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
 
     pptx_path = Path(pptx_path_str)
     _log.info("export_to_pdf start: %s", pptx_path)
+    if not pptx_path.exists() and paths is not None:
+        agency = str(body.get("agency", "") or "").strip()
+        year = str(body.get("year", "") or "").strip()
+        if agency or year:
+            from .exports_upload_service import download_export
+            hydrated = download_export(
+                paths, source_path=pptx_path_str, agency=agency, year=year,
+            )
+            if hydrated.get("ok"):
+                pptx_path = Path(hydrated["path"])
+            else:
+                return hydrated
     if not pptx_path.exists():
         return {"ok": False, "error": f"PPTX file not found: {pptx_path.name}"}
     if pptx_path.suffix.lower() != ".pptx":
@@ -245,10 +280,11 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
                 timeout=120,
             )
             if result.returncode == 0 and pdf_path.exists():
-                _maybe_upload_pdf(pdf_path, body)
-                _stamp_export_on_project(body, pdf_path, paths)
-                return {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
-                        "previous_versions": _find_previous_pdf_versions(pdf_path)}
+                return _finish_pdf_export(
+                    {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
+                     "previous_versions": _find_previous_pdf_versions(pdf_path)},
+                    pdf_path, body, paths,
+                )
             stderr = result.stderr.decode("utf-8", errors="replace").strip()
             if stderr:
                 return {"ok": False, "error": f"LibreOffice conversion failed: {stderr}"}
@@ -261,9 +297,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     if sys.platform == "darwin":
         result = _export_via_applescript(pptx_path, pdf_path)
         if result["ok"]:
-            _maybe_upload_pdf(pdf_path, body)
-            _stamp_export_on_project(body, pdf_path, paths)
-            return result
+            return _finish_pdf_export(result, pdf_path, body, paths)
         # Fall through to final error so the AppleScript failure message is surfaced
         # only when PowerPoint itself isn't available.
         if "not running" not in result.get("error", "").lower() and \
@@ -274,8 +308,7 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     if sys.platform == "win32":
         result = _export_via_powerpoint_com(pptx_path, pdf_path)
         if result.get("ok"):
-            _maybe_upload_pdf(pdf_path, body)
-            _stamp_export_on_project(body, pdf_path, paths)
+            result = _finish_pdf_export(result, pdf_path, body, paths)
         _log.info("export_to_pdf finish (COM) total=%.2fs ok=%s",
                   time.monotonic() - _t_export_start, result.get("ok"))
         return result
@@ -365,6 +398,18 @@ def _do_export(
 def open_file(body: dict, paths: AppPaths | None = None) -> dict:
     """Open a file with the OS default application."""
     path = body.get("path", "")
+    if (not path or not Path(path).exists()) and paths is not None:
+        agency = str(body.get("agency", "") or "").strip()
+        year = str(body.get("year", "") or "").strip()
+        if path and (agency or year):
+            from .exports_upload_service import download_export
+            hydrated = download_export(
+                paths, source_path=str(path), agency=agency, year=year,
+            )
+            if hydrated.get("ok"):
+                path = hydrated["path"]
+            else:
+                return hydrated
     if not path or not Path(path).exists():
         return {"ok": False, "error": "File not found"}
 
@@ -378,6 +423,6 @@ def open_file(body: dict, paths: AppPaths | None = None) -> dict:
             os.startfile(path)  # type: ignore[attr-defined]
         else:
             subprocess.Popen(["xdg-open", path])
-        return {"ok": True}
+        return {"ok": True, "path": str(path)}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}

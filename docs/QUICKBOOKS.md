@@ -284,6 +284,11 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   already-linked file with the same name and byte size. Upload failure is reported separately—the
   successfully created or updated Estimate is never represented as failed or retried merely
   because its subsequent attachment upload failed.
+  A PDF path stored by another app instance is treated as a portable export identity, not as a
+  usable local path. Before attachment, the app retrieves the agency/year/filename from the shared
+  Microsoft export library and validates the downloaded PDF. Estimate routes always return a safe
+  JSON reason; unexpected failures include a short support reference written with the full
+  exception to the local log, without exposing credentials or third-party response detail.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
 - UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
@@ -293,6 +298,9 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   and creates only the ready estimates after an explicit confirmation.
   (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (35) and
   `tests/test_customer_pricing_service.py`.
+- The header **Connections** modal shows Microsoft 365 and QuickBooks Online together. QuickBooks
+  status is checked when the modal opens; disconnected users can start OAuth there, while connected
+  users can open the full QuickBooks settings panel. Credentials remain in the isolated OS keychain.
 
 ### Full route list (`/api/quickbooks/*`)
 `GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·

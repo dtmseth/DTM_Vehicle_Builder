@@ -30,6 +30,7 @@ import re
 import threading
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 import requests
 
@@ -45,6 +46,9 @@ logger = logging.getLogger(__name__)
 # minutes of upload bandwidth on a flaky link.
 _UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB
 _GRAPH = "https://graph.microsoft.com/v1.0"
+_MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024
+_EXPORT_SUFFIXES = {".pdf", ".pptx"}
+_EXPORT_TIMESTAMP = re.compile(r"_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$")
 
 # Memoized drive_id lookup so we don't re-list /sites/{site_id}/drives on
 # every export. Cleared by reset_cache() during tests.
@@ -69,6 +73,27 @@ def _sanitize_segment(value: str) -> str:
     """
     cleaned = re.sub(r"[^A-Za-z0-9 _.\-]+", " ", value).strip(" .")
     return cleaned or "Unassigned"
+
+
+def portable_export_filename(value: str) -> str:
+    """Return a basename from a path saved by macOS, Windows, or Linux."""
+    return str(value or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+
+
+def stable_export_stem(value: str) -> str:
+    """Return the vehicle-specific portion of a timestamped export name."""
+    return _EXPORT_TIMESTAMP.sub("", Path(portable_export_filename(value)).stem)
+
+
+def _remote_export_path(config, *, agency: str, year: str, filename: str) -> str:
+    base = (config.exports_base_folder or "").strip().strip("/")
+    segments = [base] if base else []
+    segments.extend((
+        _sanitize_segment(agency),
+        _sanitize_segment(year or "Unassigned"),
+        filename,
+    ))
+    return "/".join(segment for segment in segments if segment)
 
 
 def _bundle_or_none(*, log_reason: bool = False):
@@ -282,12 +307,12 @@ def upload_export(
         logger.exception("Token acquisition failed during export upload")
         return False
 
-    base = (config.exports_base_folder or "").strip().strip("/")
-    segments = [base] if base else []
-    segments.append(_sanitize_segment(agency))
-    segments.append(_sanitize_segment(year or "Unassigned"))
-    segments.append(filename or local_pptx.name)
-    remote_path = "/".join(s for s in segments if s)
+    remote_path = _remote_export_path(
+        config,
+        agency=agency,
+        year=year,
+        filename=filename or local_pptx.name,
+    )
 
     try:
         data = local_pptx.read_bytes()
@@ -296,6 +321,224 @@ def upload_export(
         return False
 
     return _upload_via_session(token, drive_id, remote_path, data)
+
+
+def download_export(
+    paths,
+    *,
+    source_path: str = "",
+    filename: str = "",
+    agency: str,
+    year: str,
+) -> dict:
+    """Hydrate a shared export into this install's approved output folder.
+
+    Project records are shared, but their historical absolute paths are not
+    portable between computers. The portable identity is the export filename
+    plus the same agency/year folder layout used by ``upload_export``.
+    """
+    safe_name = portable_export_filename(filename or source_path)
+    suffix = Path(safe_name).suffix.lower()
+    if not safe_name or safe_name in {".", ".."} or suffix not in _EXPORT_SUFFIXES:
+        return {"ok": False, "error": "invalid_shared_export"}
+
+    bundle = _bundle_or_none(log_reason=True)
+    if bundle is None:
+        return {"ok": False, "error": "shared_exports_unavailable"}
+
+    from ..adapters.cloud.config import load_cloud_config_from_env
+    try:
+        config = load_cloud_config_from_env()
+    except Exception:
+        logger.exception("Could not load cloud config for shared export download")
+        return {"ok": False, "error": "shared_exports_unavailable"}
+    if not config.exports_enabled:
+        return {"ok": False, "error": "shared_exports_not_configured"}
+
+    drive_id = _get_export_drive_id(bundle, config)
+    token_provider = getattr(bundle.storage, "_token_provider", None)
+    if not drive_id or token_provider is None:
+        return {"ok": False, "error": "shared_exports_unavailable"}
+    try:
+        token = token_provider()
+    except Exception:
+        logger.exception("Token acquisition failed during shared export download")
+        return {"ok": False, "error": "shared_exports_unavailable"}
+
+    remote_path = _remote_export_path(
+        config, agency=agency, year=year, filename=safe_name,
+    )
+    encoded_path = quote(remote_path, safe="/")
+    url = f"{_GRAPH}/drives/{drive_id}/root:/{encoded_path}:/content"
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=120,
+        )
+    except Exception:
+        logger.exception("Shared export download request failed")
+        return {"ok": False, "error": "shared_export_download_failed"}
+    if response.status_code == 404:
+        return {"ok": False, "error": "shared_export_not_found"}
+    if response.status_code != 200:
+        logger.warning("Shared export download failed: HTTP %s", response.status_code)
+        return {"ok": False, "error": "shared_export_download_failed"}
+    data = response.content
+    if not data or len(data) > _MAX_DOWNLOAD_BYTES:
+        return {"ok": False, "error": "shared_export_invalid"}
+    if suffix == ".pdf" and not data.startswith(b"%PDF-"):
+        return {"ok": False, "error": "shared_export_invalid"}
+    if suffix == ".pptx" and not data.startswith(b"PK"):
+        return {"ok": False, "error": "shared_export_invalid"}
+
+    target = paths.workspace_output_dir / safe_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(target.name + ".download")
+    try:
+        temporary.write_bytes(data)
+        temporary.replace(target)
+    except OSError:
+        logger.exception("Could not save shared export into the local output folder")
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return {"ok": False, "error": "shared_export_save_failed"}
+    logger.info("Downloaded shared export %s", safe_name)
+    return {"ok": True, "path": str(target), "downloaded": True}
+
+
+def delete_shared_exports(
+    *, agency: str, year: str, filenames: list[str],
+    keep_filename: str = "", keep_filenames: list[str] | None = None,
+) -> dict:
+    """Delete explicitly named prior exports from the shared library."""
+    safe_keep = {
+        portable_export_filename(name)
+        for name in [keep_filename, *(keep_filenames or [])]
+        if portable_export_filename(name)
+    }
+    safe_names = {
+        portable_export_filename(name) for name in filenames
+        if portable_export_filename(name)
+        and portable_export_filename(name) != safe_keep
+        and Path(portable_export_filename(name)).suffix.lower() in _EXPORT_SUFFIXES
+    }
+    stable_stems = {stable_export_stem(name) for name in safe_names}
+    if not safe_names:
+        return {"ok": True, "deleted": [], "errors": []}
+    bundle = _bundle_or_none(log_reason=True)
+    if bundle is None:
+        return {"ok": False, "deleted": [], "errors": ["shared_exports_unavailable"]}
+    from ..adapters.cloud.config import load_cloud_config_from_env
+    try:
+        config = load_cloud_config_from_env()
+        drive_id = _get_export_drive_id(bundle, config)
+        token_provider = getattr(bundle.storage, "_token_provider", None)
+        token = token_provider() if token_provider is not None else ""
+    except Exception:
+        logger.exception("Could not prepare shared export cleanup")
+        return {"ok": False, "deleted": [], "errors": ["shared_export_delete_failed"]}
+    if not config.exports_enabled or not drive_id or not token:
+        return {"ok": False, "deleted": [], "errors": ["shared_exports_unavailable"]}
+
+    # Include every older timestamped version for the same vehicle, not just
+    # the last paths retained on the project record.
+    folder_path = _remote_export_path(
+        config, agency=agency, year=year, filename="",
+    ).rstrip("/")
+    list_url = f"{_GRAPH}/drives/{drive_id}/root:/{quote(folder_path, safe='/')}:/children"
+    try:
+        while list_url:
+            listing = requests.get(
+                list_url,
+                headers={"Authorization": f"Bearer {token}"},
+                params={"$select": "name,file", "$top": "999"},
+                timeout=30,
+            )
+            if listing.status_code == 404:
+                break
+            if listing.status_code != 200:
+                logger.warning("Shared export listing failed: HTTP %s", listing.status_code)
+                break
+            envelope = listing.json()
+            for item in envelope.get("value", []):
+                candidate = portable_export_filename(item.get("name", ""))
+                if (
+                    isinstance(item.get("file"), dict)
+                    and Path(candidate).suffix.lower() in _EXPORT_SUFFIXES
+                    and stable_export_stem(candidate) in stable_stems
+                ):
+                    safe_names.add(candidate)
+            list_url = str(envelope.get("@odata.nextLink") or "")
+    except Exception:
+        logger.exception("Could not list prior shared export versions")
+
+    deleted, errors = [], []
+    for safe_name in sorted(safe_names):
+        if safe_name in safe_keep:
+            continue
+        remote_path = _remote_export_path(
+            config, agency=agency, year=year, filename=safe_name,
+        )
+        url = f"{_GRAPH}/drives/{drive_id}/root:/{quote(remote_path, safe='/')}"
+        try:
+            response = requests.delete(
+                url, headers={"Authorization": f"Bearer {token}"}, timeout=30,
+            )
+            if response.status_code in (204, 404):
+                deleted.append(safe_name)
+            else:
+                logger.warning("Shared export delete failed: HTTP %s", response.status_code)
+                errors.append(safe_name)
+        except Exception:
+            logger.exception("Shared export delete request failed")
+            errors.append(safe_name)
+    return {"ok": not errors, "deleted": deleted, "errors": errors}
+
+
+def cleanup_previous_exports(
+    paths,
+    *,
+    agency: str,
+    year: str,
+    filenames: list[str],
+    keep_filenames: list[str],
+) -> dict:
+    """Remove all older local/shared versions for explicitly identified vehicles."""
+    old_stems = {stable_export_stem(value) for value in filenames if value}
+    keep_names = {portable_export_filename(value) for value in keep_filenames if value}
+    deleted_local, errors = [], []
+    try:
+        candidates = [
+            candidate for candidate in paths.workspace_output_dir.iterdir()
+            if candidate.is_file()
+            and candidate.suffix.lower() in _EXPORT_SUFFIXES
+            and stable_export_stem(candidate.name) in old_stems
+            and candidate.name not in keep_names
+        ]
+    except OSError:
+        candidates = []
+    for candidate in sorted(candidates):
+        try:
+            candidate.unlink()
+            deleted_local.append(candidate.name)
+        except OSError:
+            errors.append(candidate.name)
+    shared = delete_shared_exports(
+        agency=agency,
+        year=year,
+        filenames=filenames,
+        keep_filenames=list(keep_names),
+    )
+    errors.extend(shared.get("errors", []))
+    return {
+        "ok": not errors,
+        "deleted_local": deleted_local,
+        "deleted_shared": shared.get("deleted", []),
+        "errors": errors,
+    }
 
 
 def upload_export_in_background(

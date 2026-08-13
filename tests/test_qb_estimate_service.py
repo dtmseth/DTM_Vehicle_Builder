@@ -759,6 +759,29 @@ def test_build_pdf_is_attached_after_estimate_creation(paths, monkeypatch):
     assert fake.uploaded_attachments == [("EST1", str(pdf))]
 
 
+def test_foreign_build_pdf_is_downloaded_before_estimate_attachment(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA")])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].pdf_path = r"C:\other\build.pdf"
+    project_entry.save_project(project, paths)
+    local_pdf = paths.workspace_output_dir / "build.pdf"
+    local_pdf.write_bytes(b"%PDF-1.7\nshared test pdf")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.exports_upload_service.download_export",
+        lambda *args, **kwargs: {"ok": True, "path": str(local_pdf), "downloaded": True},
+    )
+
+    result = est.create_estimate(
+        paths, project_id=pid, individual_id="ind1", attach_pdf=True,
+    )
+
+    assert result["ok"] is True
+    assert fake.uploaded_attachments == [("EST1", str(local_pdf))]
+
+
 def test_attachment_failure_does_not_retry_or_fail_created_estimate(paths, monkeypatch):
     fake = _use_fake(monkeypatch)
     fake.upload_estimate_attachment = lambda estimate_id, pdf_path: (_ for _ in ()).throw(

@@ -71,7 +71,11 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 6. **Export PDF** — "📄 Export PDF" runs the same staleness check, regenerates if needed, then exports the PDF and uploads it to the SharePoint exports library. Updates `pdf_path`, `last_exported_at`, `last_exported_by` on the project record.
 
-7. **View PDF / Show in folder** — visible once the corresponding artifact exists. "View PDF" opens the local PDF; "Show in folder" tries an OneDrive-synced path first, falling back to the SharePoint web URL via Graph's `drives/{id}.webUrl`.
+7. **View PDF / Show in folder** — visible once the corresponding artifact exists. If a shared
+   project contains an absolute export path from another computer, View PDF / Preview downloads the
+   matching agency/year/filename from the SharePoint exports library into this install's approved
+   output folder before opening it. "Show in folder" tries an OneDrive-synced path first, falling
+   back to the SharePoint web URL via Graph's `drives/{id}.webUrl`.
 
 ---
 
@@ -85,6 +89,11 @@ When cloud mode and the export library are configured, successful exports are al
 ```
 
 The `project_id` is passed with every `/api/draft/generate` call so the backend can refresh unit labels and agency/year metadata from the current project record before rendering. Custom per-project output folders and the old standalone export-folder picker are no longer used.
+
+Before replacing an existing vehicle export, the Builds UI asks whether to replace the prior
+PPTX/PDF pair or keep both and create a version. Replace is the default. Cleanup runs only after the
+new PPTX and project record save succeed, and removes every older timestamped PPTX/PDF sharing that
+vehicle's stable filename prefix, both locally and in the SharePoint exports library.
 
 ---
 

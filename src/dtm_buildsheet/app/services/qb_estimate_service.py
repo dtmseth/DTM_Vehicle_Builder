@@ -585,6 +585,7 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
             "contact_phone": agency.contact_phone,
         }
         customer_linked = bool(agency.qb_customer_id)
+    from .exports_upload_service import portable_export_filename
     return {
         "ok": True,
         "can_create": not problems and bool(lines),
@@ -600,7 +601,8 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "customer_linked": customer_linked,
         "existing_estimate_id": str(unit.qb_estimate_id or "").strip(),
         "pdf_available": bool(str(unit.pdf_path or "").strip()),
-        "pdf_name": Path(unit.pdf_path).name if str(unit.pdf_path or "").strip() else "",
+        "pdf_name": portable_export_filename(str(unit.pdf_path))
+        if str(unit.pdf_path or "").strip() else "",
         "project": _project_binding_summary(paths, project, build_unit, unit),
     }
 
@@ -748,6 +750,22 @@ def create_estimate(
     pdf_path = Path(unit.pdf_path) if str(unit.pdf_path or "").strip() else None
     if attach_pdf:
         from .export_service import _allowed_roots, _check_allowed
+        if pdf_path is not None and not pdf_path.is_file():
+            from .exports_upload_service import download_export
+            hydrated = download_export(
+                paths,
+                source_path=str(unit.pdf_path),
+                agency=str(project.customer.agency or ""),
+                year=str(project.customer.build_year or ""),
+            )
+            if hydrated.get("ok"):
+                pdf_path = Path(hydrated["path"])
+            else:
+                return {
+                    "ok": False,
+                    "error": "build_pdf_shared_unavailable",
+                    "detail": hydrated.get("error", "shared_export_download_failed"),
+                }
         if pdf_path is not None and _check_allowed(pdf_path, _allowed_roots(paths)):
             return {"ok": False, "error": "build_pdf_outside_output"}
         if pdf_path is None or not pdf_path.is_file():
@@ -867,7 +885,11 @@ def create_estimate(
                 "error": "invalid_qb_project_ref",
                 "project": {**binding, "project_ref_invalid": True},
             }
-        return {"ok": False, "error": str(exc)}
+        return {
+            "ok": False,
+            "error": "quickbooks_rejected_estimate",
+            "detail": str(exc),
+        }
 
     estimate_id = result.get("qb_estimate_id", "")
     unit.qb_estimate_id = estimate_id
