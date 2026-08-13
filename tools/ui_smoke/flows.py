@@ -2036,6 +2036,80 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     # The smoke flow deliberately stops at review; it never clicks Create.
 
 
+def flow_quickbooks_batch_project_checklist(page, base_url: str) -> None:
+    """Project setup returns to the batch checklist and rechecks readiness."""
+    linked = set()
+    project = {
+        "project_id": "batch-project-1",
+        "build_units": [{
+            "unit_id": "unit-1", "vehicle_model": "PIU",
+            "individuals": [
+                {"individual_id": "vehicle-1", "draft_id": "draft-1", "unit_number": "101"},
+                {"individual_id": "vehicle-2", "draft_id": "draft-2", "unit_number": "102"},
+            ],
+        }],
+    }
+
+    def quickbooks_route(route):
+        path = route.request.url.split("?", 1)[0]
+        body = route.request.post_data_json or {}
+        if path.endswith("/api/quickbooks/estimates/validate"):
+            individual_id = body.get("individual_id")
+            ready = individual_id in linked
+            payload = {
+                "ok": True, "can_create": ready, "line_count": 1, "total": 100,
+                "problems": [] if ready else [],
+                "project": {
+                    "ready": ready, "identity_ready": True,
+                    "project_name": f"UI Smoke PD | Unit {individual_id[-1]}",
+                    "customer_name": "UI Smoke PD",
+                },
+                "pricing": {
+                    "rule_name": "Retail", "source": "retail", "list_total": 100,
+                    "customer_total": 100, "savings": 0, "applied_discounts": [],
+                },
+            }
+        elif path.endswith("/api/quickbooks/estimates/customer-preview"):
+            payload = {
+                "ok": True, "customer_linked": True, "customer_complete": True,
+                "customer": {"name": "UI Smoke PD"},
+            }
+        elif path.endswith("/api/quickbooks/projects/bind"):
+            linked.add(body.get("individual_id"))
+            payload = {"ok": True, "qb_project_id": "447322633"}
+        else:
+            route.continue_()
+            return
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(payload))
+
+    page.route("**/api/quickbooks/**", quickbooks_route)
+    page.goto(base_url, wait_until="load")
+    page.evaluate("(project) => _ptOpenBatchEstimateSetup(project)", project)
+    page.wait_for_selector("#qb-est-modal.open")
+    page.wait_for_selector("[data-qb-batch-link]")
+    assert page.locator("[data-qb-batch-link]").count() == 2
+
+    page.locator("[data-qb-batch-link]").first.click()
+    page.wait_for_selector("#qb-project-id")
+    assert page.locator("#qb-est-back").is_visible()
+    assert page.locator("#qb-est-back").inner_text() == "← Back to vehicle checklist"
+
+    page.click("#qb-est-back")
+    page.wait_for_function("() => document.querySelector('#qb-est-title')?.textContent === 'Prepare batch QuickBooks estimates'")
+    assert page.locator("[data-qb-batch-link]").count() == 2
+
+    page.locator("[data-qb-batch-link]").first.click()
+    page.wait_for_selector("#qb-project-id")
+    page.fill("#qb-project-id", "https://qbo.intuit.com/app/project?projectId=447322633")
+    page.click("#qb-est-create")
+
+    page.wait_for_function("() => document.querySelector('#qb-est-title')?.textContent === 'Prepare batch QuickBooks estimates'")
+    ready_rows = page.locator("#qb-est-body").get_by_text("✓ Ready", exact=True)
+    assert ready_rows.count() == 1
+    assert page.locator("[data-qb-batch-link]").count() == 1
+    # The smoke flow stops at preparation; it never clicks Create estimates.
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -2054,6 +2128,7 @@ FLOWS = {
     "preview_drag_mirroring": flow_preview_drag_mirroring,
     "howler_routing_and_dual_tone_siren": flow_howler_routing_and_dual_tone_siren,
     "quickbooks_estimate_review_modal": flow_quickbooks_estimate_review_modal,
+    "quickbooks_batch_project_checklist": flow_quickbooks_batch_project_checklist,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
