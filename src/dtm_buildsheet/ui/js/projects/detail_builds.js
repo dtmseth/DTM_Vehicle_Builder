@@ -943,6 +943,7 @@ function _ptEstModalEls() {
     title:  $("qb-est-title"),
     body:   $("qb-est-body"),
     create: $("qb-est-create"),
+    back:   $("qb-est-back"),
     cancel: $("qb-est-cancel"),
   };
 }
@@ -968,6 +969,12 @@ function _ptOpenEstModal(title, bodyHtml, createLabel) {
     e.create.disabled = false;
     e.create.onclick = null;
     if (createLabel) e.create.textContent = createLabel;
+  }
+  if (e.back) {
+    e.back.style.display = "none";
+    e.back.disabled = false;
+    e.back.onclick = null;
+    e.back.textContent = "Back";
   }
   e.modal?.removeAttribute("hidden");
   e.modal?.classList.add("open");
@@ -1110,7 +1117,9 @@ async function _ptCopyProjectName(text) {
   }
 }
 
-function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked = null, validation = null) {
+function _ptOpenProjectBindingModal(
+  projectId, individualId, binding, onLinked = null, validation = null, onBack = null
+) {
   const b = binding || {};
   const projectName = b.project_name || "Vehicle project";
   const customerName = b.customer_name || "the correct customer";
@@ -1147,6 +1156,21 @@ function _ptOpenProjectBindingModal(projectId, individualId, binding, onLinked =
      <p class="qb-setup-identity">${identityHint}</p>${rejectedRefNotice}${_ptProjectProblemNotice(validation)}${instructions}`,
     identityReady ? "Save project link" : "");
   const e = _ptEstModalEls();
+  if (onBack && e.back) {
+    e.back.style.display = "";
+    e.back.textContent = "← Back to vehicle checklist";
+    e.back.onclick = async () => {
+      e.back.disabled = true;
+      e.back.textContent = "Checking…";
+      try {
+        await onBack();
+      } catch (_) {
+        toast("Could not refresh the vehicle checklist", "error");
+        e.back.disabled = false;
+        e.back.textContent = "← Back to vehicle checklist";
+      }
+    };
+  }
   $("qb-project-open-details")?.addEventListener("click", () => {
     const project = _PT.projects.find(p => p.project_id === projectId);
     const unit = (project?.build_units || []).find(u =>
@@ -1433,12 +1457,16 @@ async function _ptOpenBatchEstimateSetup(project) {
       if (!button) return;
       const check = attention[Number(button.getAttribute("data-qb-batch-link"))];
       if (!check?.validation?.project) return;
-      _ptOpenProjectBindingModal(project.project_id, check.individualId, check.validation.project, async () => {
+      const returnToChecklist = async () => {
         await _ptLoadAll();
         const updated = _PT.projects.find((p) => p.project_id === project.project_id) || project;
         _PT.viewProject = updated;
         await _ptOpenBatchEstimateSetup(updated);
-      });
+      };
+      _ptOpenProjectBindingModal(
+        project.project_id, check.individualId, check.validation.project,
+        returnToChecklist, check.validation, returnToChecklist
+      );
     };
   }
   if (e.create && customerReady && ready.length) {
