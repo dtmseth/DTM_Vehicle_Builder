@@ -10,8 +10,10 @@ Responsibilities:
 - Hand out a valid access token, refreshing automatically and saving the
   rotated refresh token on every refresh.
 
-Secrets (``client_secret``, ``access_token``, ``refresh_token``,
-``realm_id``) live ONLY in the keychain. This module never logs them.
+Per-user secrets (``access_token``, ``refresh_token``, ``realm_id``) live ONLY
+in the keychain. Managed Production installs use a stateless HTTPS broker whose
+Intuit app secret exists only in the hosted environment. This module never logs
+any secret.
 
 See ``docs/QUICKBOOKS.md``.
 """
@@ -32,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_PROFILE = "default"
 PRODUCTION_PREVIEW_PROFILE = "production_preview"
+PRODUCTION_CLIENT_ID = "ABxAw3sNZdGuVr4twlYRJ9oCp0AtlllPTOupxGKdaoya7in6ga"
+PRODUCTION_REDIRECT_URI = "https://dtmvehiclebuilder.netlify.app/.netlify/functions/qb-callback"
+PRODUCTION_TOKEN_BROKER_URL = "https://dtmvehiclebuilder.netlify.app/.netlify/functions/qb-token"
 _PROFILE_FILES = {
     _DEFAULT_PROFILE: {
         "config": "quickbooks_config.json",
@@ -67,11 +72,13 @@ def _config_path(paths: AppPaths, profile: str = _DEFAULT_PROFILE) -> Path:
     return paths.workspace_dir / _PROFILE_FILES[_profile_name(profile)]["config"]
 
 
-def _default_config() -> dict:
+def _default_config(profile: str = _DEFAULT_PROFILE) -> dict:
+    managed = profile == _DEFAULT_PROFILE
     return {
-        "client_id": "",
+        "client_id": PRODUCTION_CLIENT_ID if managed else "",
         "environment": "production",
-        "redirect_uri": "",
+        "redirect_uri": PRODUCTION_REDIRECT_URI if managed else "",
+        "token_broker_url": PRODUCTION_TOKEN_BROKER_URL if managed else "",
         "token_expiry_utc": "",
         "refresh_expiry_utc": "",
         "hard_expiry_utc": "",
@@ -82,7 +89,7 @@ def _default_config() -> dict:
 
 def _load_config(paths: AppPaths, profile: str = _DEFAULT_PROFILE) -> dict:
     path = _config_path(paths, profile)
-    merged = _default_config()
+    merged = _default_config(profile)
     if not path.exists():
         return merged
     try:
@@ -166,6 +173,7 @@ def save_settings(
     client_secret: str = "",
     environment: str = "production",
     redirect_uri: str = "",
+    token_broker_url: str | None = None,
     profile: str = _DEFAULT_PROFILE,
 ) -> dict:
     """Persist the app-registration details entered by the owner.
@@ -182,6 +190,11 @@ def save_settings(
     config["client_id"] = (client_id or "").strip()
     config["environment"] = environment if environment in ("production", "sandbox") else "production"
     config["redirect_uri"] = (redirect_uri or "").strip()
+    if token_broker_url is not None:
+        config["token_broker_url"] = str(token_broker_url or "").strip()
+    elif config["environment"] == "sandbox":
+        # The managed broker is registered only for the production callback.
+        config["token_broker_url"] = ""
     _save_config(paths, config, profile)
 
     secret = (client_secret or "").strip()
@@ -202,14 +215,18 @@ def generate_auth_url(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> di
     profile = _profile_name(profile)
     config = _load_config(paths, profile)
     secret = _profile_store(profile).load().get("client_secret", "")
-    if not config["client_id"] or not secret:
+    if not config["client_id"] or not (secret or config.get("token_broker_url")):
         return {"ok": False, "error": "Set your QuickBooks Client ID and Client Secret first."}
     if not config["redirect_uri"]:
         return {"ok": False, "error": "Set the redirect URI first."}
 
     state = _secrets.token_urlsafe(32)
     _set_pending_state(profile, state)
-    client = QuickBooksOAuthClient(config["client_id"], secret, environment=config["environment"])
+    client = QuickBooksOAuthClient(
+        config["client_id"], secret,
+        environment=config["environment"],
+        token_broker_url=config.get("token_broker_url", ""),
+    )
     url = client.build_authorization_url(redirect_uri=config["redirect_uri"], state=state)
     return {"ok": True, "url": url}
 
@@ -240,7 +257,11 @@ def complete_authorization(
     config = _load_config(paths, profile)
     store = _profile_store(profile)
     secret = store.load().get("client_secret", "")
-    client = QuickBooksOAuthClient(config["client_id"], secret, environment=config["environment"])
+    client = QuickBooksOAuthClient(
+        config["client_id"], secret,
+        environment=config["environment"],
+        token_broker_url=config.get("token_broker_url", ""),
+    )
     try:
         token = client.exchange_code(code=code, redirect_uri=config["redirect_uri"])
     except QuickBooksOAuthError as exc:
@@ -301,7 +322,9 @@ def ensure_access_token(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> 
         return access
 
     client = QuickBooksOAuthClient(
-        config["client_id"], blob.get("client_secret", ""), environment=config["environment"]
+        config["client_id"], blob.get("client_secret", ""),
+        environment=config["environment"],
+        token_broker_url=config.get("token_broker_url", ""),
     )
     try:
         token = client.refresh(refresh_token=refresh)
@@ -352,7 +375,9 @@ def disconnect(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     if refresh and config.get("client_id"):
         try:
             QuickBooksOAuthClient(
-                config["client_id"], blob.get("client_secret", ""), environment=config["environment"]
+                config["client_id"], blob.get("client_secret", ""),
+                environment=config["environment"],
+                token_broker_url=config.get("token_broker_url", ""),
             ).revoke(token=refresh)
         except Exception:  # noqa: BLE001 — best effort; local clear still proceeds
             logger.warning("QuickBooks revoke failed during disconnect")
@@ -376,16 +401,18 @@ def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
     config = _load_config(paths, profile)
     blob = _profile_store(profile).load()
     has_secret = bool(blob.get("client_secret"))
+    managed_connection = bool(config.get("token_broker_url"))
     connected = config.get("connection_status") == "connected" and bool(blob.get("refresh_token"))
     return {
         "ok": True,
-        "configured": bool(config.get("client_id")) and has_secret,
+        "configured": bool(config.get("client_id")) and (has_secret or managed_connection),
         "connected": connected,
         "connection_status": config.get("connection_status", "disconnected"),
         "client_id": config.get("client_id", ""),
         "environment": config.get("environment", "production"),
         "redirect_uri": config.get("redirect_uri", ""),
         "has_client_secret": has_secret,
+        "managed_connection": managed_connection,
         "token_expiry_utc": config.get("token_expiry_utc", ""),
         "refresh_expiry_utc": config.get("refresh_expiry_utc", ""),
         "hard_expiry_utc": config.get("hard_expiry_utc", ""),

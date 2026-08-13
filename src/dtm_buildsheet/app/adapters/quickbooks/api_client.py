@@ -229,8 +229,40 @@ class QuickBooksApiClient:
         sales = raw.get("SalesFormsPrefs") or raw.get("SalesAndCustomersPrefs") or {}
         return {
             "using_price_levels": bool(sales.get("UsingPriceLevels", False)),
+            "custom_txn_numbers": bool(sales.get("CustomTxnNumbers", False)),
             "sales_custom_fields": _sales_form_custom_fields(sales),
         }
+
+    def next_estimate_doc_number(self, *, page_size: int = 1000) -> str:
+        """Return the next numeric Estimate number when QBO requires one.
+
+        With ``CustomTxnNumbers`` disabled, omitting ``DocNumber`` tells QBO to
+        use its native sequence, so this returns an empty string. When enabled,
+        QBO leaves API-created Estimates blank unless the client supplies the
+        value. Read the complete Estimate number set immediately before create
+        and advance the highest numeric value, matching the company's normal
+        manually-created sequence.
+        """
+        if not self.fetch_preferences().get("custom_txn_numbers"):
+            return ""
+        highest: int | None = None
+        start = 1
+        while True:
+            qr = self.query(
+                "SELECT Id, DocNumber FROM Estimate "
+                f"STARTPOSITION {start} MAXRESULTS {page_size}"
+            )
+            batch = qr.get("Estimate", []) or []
+            for row in batch:
+                value = str(row.get("DocNumber") or "").strip()
+                if re.fullmatch(r"[0-9]+", value):
+                    highest = max(highest or 0, int(value))
+            if len(batch) < page_size:
+                break
+            start += page_size
+        if highest is None:
+            raise QuickBooksApiError("estimate_number_unavailable")
+        return str(highest + 1)
 
     # ── Customer writes (Phase 3 up-sync) ────────────────────────────────────
     #

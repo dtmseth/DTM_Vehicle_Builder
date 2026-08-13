@@ -941,10 +941,10 @@
       <div id="qb-pricing-panel" class="qb-pricing-panel">
         <div class="qb-pricing-heading">
           <div>
-            <strong>Default customer pricing</strong>
-            <p>Discounts are calculated from the current QuickBooks Item list price. Agencies inherit this rule unless they have an override.</p>
+            <strong>Retail pricing</strong>
+            <p>Discounts are calculated from the current QuickBooks Item list price. Every estimate defaults to Retail; Custom pricing can be selected in the estimate window.</p>
           </div>
-          <button class="btn btn-primary btn-sm" id="qb-pricing-save">Save Default Rule</button>
+          <button class="btn btn-primary btn-sm" id="qb-pricing-save">Save Retail Pricing</button>
         </div>
         <div id="qb-pricing-default-rows" class="qb-pricing-grid"></div>
       </div>
@@ -957,7 +957,7 @@
         </p>
         <button class="btn btn-primary" id="qb-connect-btn">🔗 Connect to QuickBooks</button>
         <p id="qb-connect-hint" style="font-size:12px;color:var(--orange,#b45309);margin:8px 0 0" hidden>
-          Enter your Client ID, Client Secret, and Redirect URI below first.
+          QuickBooks sign-in is temporarily unavailable. Check your connection or contact the app administrator.
         </p>
       </div>
     </div>
@@ -1560,11 +1560,11 @@
     </div>
     <div class="modal-section">
       <div class="modal-section-title">Customer pricing</div>
-      <p class="field-hint">The Default rule is calculated from QuickBooks list prices. Turn it off only when this agency has different terms.</p>
-      <label class="agency-pricing-toggle"><input id="ac-pricing-use-default" type="checkbox" checked /> Use Default rule</label>
+      <p class="field-hint">Retail pricing is calculated from QuickBooks list prices. Agency values below only prefill Custom pricing in the estimate window.</p>
+      <label class="agency-pricing-toggle"><input id="ac-pricing-use-default" type="checkbox" checked /> No saved Custom pricing</label>
       <div id="ac-pricing-overrides" class="agency-pricing-overrides" hidden>
         <div id="ac-pricing-rows" class="qb-pricing-grid"></div>
-        <p class="field-hint">Only values that differ from the Default rule are stored on this agency.</p>
+        <p class="field-hint">Only values that differ from Retail pricing are stored on this agency.</p>
       </div>
     </div>
     <div class="modal-actions">

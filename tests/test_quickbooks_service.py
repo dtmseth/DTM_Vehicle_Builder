@@ -33,10 +33,11 @@ class _MemStore:
 class _FakeClient:
     """Stand-in for QuickBooksOAuthClient."""
 
-    def __init__(self, client_id, client_secret, *, environment="production"):
+    def __init__(self, client_id, client_secret, *, environment="production", token_broker_url=""):
         self.client_id = client_id
         self.client_secret = client_secret
         self.environment = environment
+        self.token_broker_url = token_broker_url
 
     def build_authorization_url(self, *, redirect_uri, state):
         return f"https://appcenter.example/connect?state={state}&redirect_uri={redirect_uri}"
@@ -73,7 +74,7 @@ def paths(tmp_path):
 @pytest.fixture(autouse=True)
 def _fakes(monkeypatch):
     store = _MemStore()
-    monkeypatch.setattr(svc, "_store", lambda: store)
+    monkeypatch.setattr(svc, "_store", lambda _profile=svc._DEFAULT_PROFILE: store)
     monkeypatch.setattr(svc, "QuickBooksOAuthClient", _FakeClient)
     monkeypatch.setattr(svc, "_pending_state", None, raising=False)
     return store
@@ -88,9 +89,11 @@ def _connect(paths):
 # ── settings ────────────────────────────────────────────────────────────────
 
 
-def test_initial_status_unconfigured(paths):
+def test_initial_status_uses_managed_production_connection(paths):
     st = svc.get_status(paths)
-    assert st["configured"] is False
+    assert st["configured"] is True
+    assert st["managed_connection"] is True
+    assert st["client_id"] == svc.PRODUCTION_CLIENT_ID
     assert st["connected"] is False
     assert st["connection_status"] == "disconnected"
 
@@ -120,7 +123,13 @@ def test_save_settings_empty_secret_preserves_existing(paths, _fakes):
 
 
 def test_auth_url_requires_credentials(paths):
-    assert svc.generate_auth_url(paths)["ok"] is False
+    assert svc.generate_auth_url(paths, profile=svc.PRODUCTION_PREVIEW_PROFILE)["ok"] is False
+
+
+def test_production_preview_remains_isolated_and_unconfigured(paths):
+    st = svc.get_status(paths, profile=svc.PRODUCTION_PREVIEW_PROFILE)
+    assert st["configured"] is False
+    assert st["managed_connection"] is False
 
 
 def test_auth_url_sets_pending_state(paths):

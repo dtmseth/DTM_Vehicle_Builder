@@ -62,6 +62,7 @@ class FakeClient:
         self.estimate_attachments = []
         self.uploaded_attachments = []
         self.name_lookups = []
+        self.next_doc_number = "1001"
 
     def read_customer(self, customer_id):
         return None
@@ -93,6 +94,9 @@ class FakeClient:
     def create_estimate(self, payload):
         self.created_estimates.append(payload)
         return {"qb_estimate_id": "EST1", "doc_number": "1001"}
+
+    def next_estimate_doc_number(self):
+        return self.next_doc_number
 
     def read_estimate(self, estimate_id):
         return {"Id": estimate_id, "SyncToken": "7", "DocNumber": "1001"}
@@ -548,22 +552,20 @@ def test_validate_applies_default_whelen_discount_from_qb_list_price(paths):
     res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
 
     assert res["total"] == 124.0
-    assert res["pricing"] == {
-        "rule_name": "Default",
-        "source": "default",
-        "list_total": 200.0,
-        "customer_total": 124.0,
-        "savings": 76.0,
-        "applied_discounts": [{
-            "manufacturer_id": "whelen",
-            "manufacturer": "whelen",
-            "discount_percent": 38.0,
-            "override": False,
-        }],
-    }
+    assert res["pricing"]["rule_name"] == "Retail"
+    assert res["pricing"]["source"] == "retail"
+    assert res["pricing"]["list_total"] == 200.0
+    assert res["pricing"]["customer_total"] == 124.0
+    assert res["pricing"]["savings"] == 76.0
+    assert res["pricing"]["applied_discounts"] == [{
+        "manufacturer_id": "whelen",
+        "manufacturer": "whelen",
+        "discount_percent": 38.0,
+        "override": False,
+    }]
 
 
-def test_validate_applies_sparse_agency_pricing_override(paths):
+def test_validate_defaults_to_retail_despite_saved_custom_agency_pricing(paths):
     product = _linked_product("A", "AA", "1", 100.0)
     product["manufacturer_id"] = "whelen"
     _write_parts_db(paths, {"p1": product})
@@ -577,9 +579,11 @@ def test_validate_applies_sparse_agency_pricing_override(paths):
 
     res = est.validate_estimate(paths, project_id=pid, individual_id="ind1")
 
-    assert res["total"] == 180.0
-    assert res["pricing"]["source"] == "customer_override"
-    assert res["pricing"]["applied_discounts"][0]["override"] is True
+    assert res["total"] == 124.0
+    assert res["pricing"]["source"] == "retail"
+    whelen = next(row for row in res["pricing"]["editable_discounts"]
+                   if row["manufacturer_id"] == "whelen")
+    assert whelen["custom_discount_percent"] == 10.0
 
 
 def test_validate_blocks_with_problems(paths):
@@ -661,6 +665,7 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     # New estimates do not create a vehicle sub-customer.
     assert fake.created_jobs == [] and fake.created_estimates
     payload = fake.created_estimates[0]
+    assert payload["DocNumber"] == "1001"
     assert payload["CustomerRef"]["value"] == "CUST9"
     assert payload["ProjectRef"]["value"] == "447322633"
     assert payload["Line"][0]["SalesItemLineDetail"]["ItemRef"]["value"] == "1"
@@ -794,6 +799,28 @@ def test_create_estimate_sends_discounted_unit_price_without_invoice_only_ach_fi
     assert payload["Line"][0]["SalesItemLineDetail"]["UnitPrice"] == 62.0
     assert payload["Line"][0]["Amount"] == 124.0
     assert "AllowOnlineACHPayment" not in payload
+
+
+def test_create_estimate_can_use_temporary_custom_pricing(paths, monkeypatch):
+    fake = _use_fake(monkeypatch)
+    product = _linked_product("A", "AA", "1", 100.0)
+    product["manufacturer_id"] = "whelen"
+    _write_parts_db(paths, {"p1": product})
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [DraftPart(name="a", part_number="AA", quantity=2)])
+
+    res = est.create_estimate(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        pricing_mode="custom",
+        custom_pricing={"whelen": 10},
+    )
+
+    assert res["ok"] is True
+    assert res["total"] == 180.0
+    assert res["pricing"]["source"] == "custom"
+    assert fake.created_estimates[0]["Line"][0]["SalesItemLineDetail"]["UnitPrice"] == 90.0
 
 
 def test_create_estimate_does_not_write_custom_fields_with_accounting_only_access(paths, monkeypatch):

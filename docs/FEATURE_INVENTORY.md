@@ -573,7 +573,7 @@ The project detail view has three sub-tabs:
 | `contact_info` | Required on creation (phone or email) |
 | `customer_since` | Free text year / best guess |
 | `default_preferences` | Equipment defaults copied into new projects |
-| `pricing_overrides` | Sparse manufacturer discount exceptions; empty inherits Default pricing |
+| `pricing_overrides` | Sparse manufacturer discounts that prefill the estimate modal's optional Custom pricing; estimates still default to Retail |
 | `qb_customer_id` | Company-local QuickBooks Customer ID |
 | `created_at` / `updated_at` | ISO timestamps |
 

@@ -26,10 +26,10 @@ Project. Older estimates may still point at legacy vehicle sub-customers/jobs.
 
 | Phase | What | Status |
 |-------|------|--------|
-| **1 — OAuth + tokens** | Connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted relay | ✅ Built. Connect/disconnect/reconnect **tested in sandbox by the owner.** |
+| **1 — OAuth + tokens** | One-click managed connect/disconnect/reconnect, keychain token storage, CSRF, 302 callback, hosted token broker | ✅ Built. Production app registration is bundled without its secret; users only sign in. |
 | **2 — Parts sync** | Pull Items → cache (A), link items to parts (B), reconcile linked parts + 30-min background sync (C) | ✅ Production activated 2026-08-11. Production pull/reconciliation verified read-only against 1,335 active Items. |
 | **3 — Customers ↔ Agencies + estimate customer flow** | Down-sync, agency→QB up-sync, top-level customer resolution, legacy job bridge | ✅ Production customer migration completed 2026-08-11: all 214 agencies linked to existing production Customers; reviewed duplicate Customers excluded. |
-| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Backend + UI built. Blocks unless every part is QB-linked. Default/customer pricing is calculated before create. Not yet exercised live. |
+| **Estimates** | Non-posting Estimate per vehicle; validate/create/batch + Builds-tab UI | ✅ Production exercised. Blocks unless every part is QB-linked. Retail/Custom pricing and estimate numbering are calculated immediately before create. |
 | **Production catalog preview** | Snapshot-pinned production Item pull, Name/SKU column comparison, intentional-exclusion carry-forward, exact-match plan | ✅ Migration plan reviewed and applied 2026-08-11. The duplicate preview token was retired locally without revoking the promoted standard production authorization. |
 | **4 — Questionnaire submission** | Submit Intuit App Assessment for Production keys | ✅ Approved; Production keys obtained and stored through the isolated preview profile. |
 
@@ -74,8 +74,9 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 
 ### Phase 1 — OAuth + token management
 - `app/adapters/quickbooks/credential_store.py` — `QuickBooksCredentialStore`: OS-keychain secret
-  blob via `msal-extensions` (in-memory fallback). Stores `client_secret`, `access_token`,
-  `refresh_token`, `realm_id`. **Never plaintext on disk.**
+  blob via `msal-extensions` (in-memory fallback). Stores per-user `access_token`,
+  `refresh_token`, and `realm_id` (plus an optional owner-entered secret for sandbox/manual
+  diagnostics). **Never plaintext on disk.**
 - `app/adapters/quickbooks/oauth_client.py` — OIDC discovery (prod + sandbox), code exchange,
   refresh, revoke. Process-wide discovery cache, 10s timeout. Never logs token values.
 - `app/services/quickbooks_service.py` — orchestration: `save_settings`, `generate_auth_url`
@@ -87,7 +88,8 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
   callback is **302-only** (never echoes code/token).
 - `ui/index.html` + `ui/js/settings/quickbooks.js` — Settings → General → QuickBooks tab.
 - `relay/` — hosted HTTPS OAuth relay (Netlify primary, Vercel alt). The production relay is live at
-  `dtmvehiclebuilder.netlify.app`; see `relay/DEPLOY.md`.
+  `dtmvehiclebuilder.netlify.app`. Its `qb-token` function holds the shared Intuit app secret only
+  in Netlify's protected environment; it never persists user tokens. See `relay/DEPLOY.md`.
 - Tests: `tests/test_quickbooks_service.py` (13, hermetic).
 
 ### Phase 2 — Parts sync
@@ -250,15 +252,21 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   phone, vehicle, sales-ID, and unit header fields therefore remain managed in
   QuickBooks unless that paid scope is enabled later.
   Production QBO `Item.UnitPrice` is treated as list price. Before validation or creation, the app
-  applies the shared **Default** manufacturer rule: Gamber-Johnson 40%, Havis 20%, PAC Tool 5%,
+  applies the shared **Retail** manufacturer rule: Gamber-Johnson 40%, Havis 20%, PAC Tool 5%,
   Santa Cruz 25%, Setina 20%, Westin 15%, and Whelen 38% off list. An Agency stores only sparse
-  manufacturer exceptions in `pricing_overrides`; missing values continue to inherit Default.
-  The create dialog shows list total, savings, customer total, and any customer-specific values.
+  manufacturer exceptions in `pricing_overrides`; these prefill Custom pricing but never silently
+  replace Retail. The create dialog defaults to **Retail pricing** and offers explicit, temporary
+  **Custom pricing** for that estimate, with live list/savings/customer totals.
   The Estimate payload sends the calculated `UnitPrice` and `Amount` explicitly, so QBO's internal
   item/rule formatting cannot change the reviewed price. Production estimate inspection confirms
   these discounted values are stored as each line's raw `UnitPrice`/`Amount`; QBO does not add a
   second discount layer over app-supplied rates. Catalog reconciliation still refreshes
   list prices only and never writes customer prices back into Item data.
+  This production company has `SalesFormsPrefs.CustomTxnNumbers` enabled. QBO therefore leaves
+  API-created Estimate numbers blank unless `DocNumber` is supplied. Immediately before each new
+  create (never an update), the app reads the complete Estimate number set, advances the highest
+  numeric value, and sends it. If no safe numeric sequence can be determined, creation blocks with
+  a visible error instead of producing an unnumbered form.
   The Accounting API does not expose QBO's price-rule tables, so these reviewed local rules are
   deliberately authoritative for Vehicle Builder estimates. See Intuit's
   [platform release notes](https://developer.intuit.com/app/developer/qbo/docs/release-notes/platform-release-notes).
@@ -284,7 +292,7 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   The batch screen first checks every configured vehicle, lets the user set up missing Projects,
   and creates only the ready estimates after an explicit confirmation.
   (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (35) and
-  `tests/test_customer_pricing_service.py` (4).
+  `tests/test_customer_pricing_service.py`.
 
 ### Full route list (`/api/quickbooks/*`)
 `GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
@@ -303,22 +311,23 @@ customer-pricing (4), seed-sandbox (5).
 
 ### OAuth redirect — hosted relay required for Production
 Intuit Production keys require an **HTTPS redirect URI on a real domain**; `http://localhost` is
-only accepted for sandbox/development. The relay is a dumb serverless 302 pass-through (Netlify
-function `relay/netlify/functions/qb-callback.js`, Vercel alt `relay/api/qb-callback.js`):
+only accepted for sandbox/development. Netlify provides a 302-only callback plus a stateless token
+broker (`relay/netlify/functions/qb-callback.js` and `qb-token.js`):
 
 ```
 QBO auth page → https://<domain>/.netlify/functions/qb-callback?code=...&state=...&realmId=...
              → HTTP 302 → http://localhost:7655/api/quickbooks/callback?... → local app captures tokens
 ```
 
-The relay never reads, stores, or logs the code. The code is short-lived and useless without the
-client secret, which never leaves the local machine. For sandbox, register
+The callback never reads, stores, or logs the code. The desktop forwards the one-time code over
+HTTPS to `qb-token`; that function exchanges it using the Intuit secret held only in Netlify's
+protected environment and never persists/logs either code or tokens. For sandbox, register
 `http://localhost:7655/api/quickbooks/callback` under the Development tab.
 
 ### Token storage — OS keychain via `msal-extensions`
 Reuses the exact mechanism the M365/SharePoint integration uses (`adapters/cloud/msal_client.py`):
 `msal-extensions` encrypted persistence backed by the OS-native credential store. **Zero new
-dependencies.** All sensitive values (`access_token`, `refresh_token`, `realm_id`, `client_secret`)
+dependencies.** Per-user sensitive values (`access_token`, `refresh_token`, `realm_id`)
 live as one encrypted blob; plaintext never touches disk. Fallback to a process-lifetime in-memory
 map when the keychain backend is unavailable (losing it on restart forces re-auth — correct secure
 behavior). Satisfies Intuit's AES-at-rest requirement (OS manages encryption + key natively).
@@ -393,7 +402,7 @@ intentionally an explicit user step in the QBO UI (a guarded in-app convert is a
 
 ### `quickbooks_config.json` (non-secret metadata only)
 Plain JSON in workspace root, git-ignored, never written to the config-store or SharePoint mirror.
-Holds `client_id` (not a secret), `environment`, `redirect_uri`, expiry timestamps, `last_sync_utc`,
+Holds `client_id` (not a secret), `environment`, `redirect_uri`, `token_broker_url`, expiry timestamps, `last_sync_utc`,
 `connection_status`. No credential values.
 
 ---
@@ -403,8 +412,9 @@ Holds `client_id` (not a secret), `environment`, `redirect_uri`, expiry timestam
 These are enforced today (see [EXTERNAL_CONNECTION_SECURITY.md](EXTERNAL_CONNECTION_SECURITY.md) and
 GOTCHAS):
 
-- **Secrets only in the OS keychain.** `client_secret`, `access_token`, `refresh_token`, `realm_id`
-  via `credential_store.py`. Never in any file, never logged. `quickbooks_config.json` = non-secret
+- **Per-user tokens only in the OS keychain.** `access_token`, `refresh_token`, `realm_id`
+  via `credential_store.py`. The shared Intuit app secret is only a protected Netlify environment
+  variable and is never shipped. No secret is in a repo/file/log. `quickbooks_config.json` = non-secret
   metadata only, managed directly by `quickbooks_service` (NOT `config_service`; NOT in
   `REQUIRED_CONFIG_FILES` or any cloud-mirror set).
 - **OAuth callback is 302-only.** Never echo the code/token in HTML (Referer-leak prevention).
@@ -537,7 +547,7 @@ the Builder keeps its own immutable user/action/QBO-entity audit trail. QBO reco
 writes as `System Administration`, so separate user sign-ins do not make QBO's native audit log
 attribute those writes to each employee. If this becomes a multi-workstation feature, move the
 single company refresh token and API execution into an authenticated central service; the current
-redirect-only Netlify relay is deliberately not such a backend.
+OAuth-only Netlify broker is deliberately not an Accounting API backend.
 
 > **Go-live is externally gated** (relay + questionnaire + Intuit approval). It is *not* advanced by
 > the parts-import grind and should not block it. Run it as its own track when ready.
@@ -555,21 +565,21 @@ country US; **1 realm** (our company only); Intuit Single Sign-on **No**; scope
 (desktop app). Deploy the relay before entering any Production URL. Use the provider-assigned HTTPS
 origin exactly; do not invent a host domain.
 
-For a verified deployed origin such as `https://dtm-qb-relay.netlify.app`, enter:
+The verified deployed origin is `https://dtmvehiclebuilder.netlify.app`:
 
 | Intuit field | Value |
 |---|---|
-| App host domain | `dtm-qb-relay.netlify.app` (hostname only) |
-| Launch URL | `https://dtm-qb-relay.netlify.app/` |
-| Connect URL | `https://dtm-qb-relay.netlify.app/connect/` |
-| Reconnect URL | `https://dtm-qb-relay.netlify.app/reconnect/` |
-| Disconnect URL | `https://dtm-qb-relay.netlify.app/disconnect/` |
-| Production redirect URI (Netlify) | `https://dtm-qb-relay.netlify.app/.netlify/functions/qb-callback` |
+| App host domain | `dtmvehiclebuilder.netlify.app` (hostname only) |
+| Launch URL | `https://dtmvehiclebuilder.netlify.app/` |
+| Connect URL | `https://dtmvehiclebuilder.netlify.app/connect/` |
+| Reconnect URL | `https://dtmvehiclebuilder.netlify.app/reconnect/` |
+| Disconnect URL | `https://dtmvehiclebuilder.netlify.app/disconnect/` |
+| Production redirect URI (Netlify) | `https://dtmvehiclebuilder.netlify.app/.netlify/functions/qb-callback` |
 | Production redirect URI (Vercel alternative) | `https://<verified-vercel-host>/api/qb-callback` |
 | Development redirect URI | `http://localhost:7655/api/quickbooks/callback` |
 
-The hostname above is an example shape, not a reserved or deployed DTM hostname. Substitute the
-actual origin only after `relay/verify_deployment.sh <origin> netlify` (or `vercel`) passes. The public connect/reconnect pages are
+The hostname above is the live DTM Netlify site and must not be substituted without a reviewed
+deployment change. The public connect/reconnect pages are
 instructions for this non-SSO internal desktop app; OAuth itself starts only from the isolated
 **QB Catalog Preview** profile on the authorized workstation.
 
@@ -588,10 +598,11 @@ non-posting Estimates**; **never** writes Invoices/Payments/journal entries or a
 transaction; minimum scope `com.intuit.quickbooks.accounting`; handles HTTP errors with
 user-visible messages; logs `intuit_tid` only.
 
-**§4 Authorization:** OAuth 2.0 auth-code; one-time browser authorization; tokens in OS keychain via
+**§4 Authorization:** OAuth 2.0 auth-code; one-time browser authorization; user tokens in OS keychain via
 `msal-extensions`; **refresh-token rotation** on every refresh (new token re-encrypted + saved
 atomically); **CSRF** via `state` (`secrets.token_urlsafe(32)` + `compare_digest`, rejected on
-mismatch with 400); connect/disconnect/reconnect tested in sandbox.
+mismatch with 400); shared client secret only in the protected stateless Netlify token-broker
+environment, never in the desktop installer; connect/disconnect/reconnect tested in sandbox.
 
 **§5 Error handling:** graceful plain-language API error messages (no raw responses/stack traces);
 captures `intuit_tid` from every response header into a structured local log with operation name +
@@ -622,4 +633,5 @@ is roughly **"More than once a day"** (30-min background poll when connected).
 
 > **Implementation note:** earlier drafts referenced a manual AES key file (`quickbooks_key.bin`).
 > That was replaced before implementation with the OS-native credential store via `msal-extensions`.
-> All secret values live ONLY in the keychain; `quickbooks_config.json` is non-secret metadata.
+> Per-user token values live ONLY in the keychain; the shared Intuit app secret lives only in the
+> protected Netlify environment; `quickbooks_config.json` is non-secret metadata.

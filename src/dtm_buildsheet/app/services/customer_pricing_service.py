@@ -16,7 +16,9 @@ from .config_service import save_config_file
 from .parts_db_service import get_parts_db_service
 
 
-DEFAULT_RULE_NAME = "Default"
+RETAIL_RULE_NAME = "Retail"
+# Kept as an import-compatible alias for older callers and stored documents.
+DEFAULT_RULE_NAME = RETAIL_RULE_NAME
 DEFAULT_MANUFACTURER_DISCOUNTS = {
     "gamber_johnson": 40.0,
     "havis": 20.0,
@@ -53,7 +55,7 @@ def _pricing_doc(paths: AppPaths) -> tuple[dict, dict]:
     if not discounts:
         discounts = dict(DEFAULT_MANUFACTURER_DISCOUNTS)
     return doc, {
-        "name": str(rule.get("name") or DEFAULT_RULE_NAME).strip() or DEFAULT_RULE_NAME,
+        "name": RETAIL_RULE_NAME,
         "manufacturer_discounts": discounts,
     }
 
@@ -76,7 +78,7 @@ def get_default_rule(paths: AppPaths) -> dict:
 
 def save_default_rule(paths: AppPaths, body: dict) -> dict:
     """Persist a reviewed shared default through the normal config mirror path."""
-    doc, current = _pricing_doc(paths)
+    doc, _current = _pricing_doc(paths)
     incoming = body.get("manufacturer_discounts")
     if not isinstance(incoming, dict) or not incoming:
         return {"ok": False, "error": "At least one manufacturer discount is required"}
@@ -91,7 +93,7 @@ def save_default_rule(paths: AppPaths, body: dict) -> dict:
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
 
-    name = str(body.get("rule_name") or current["name"] or DEFAULT_RULE_NAME).strip()
+    name = RETAIL_RULE_NAME
     doc["customer_pricing"] = {
         "default_rule": {
             "name": name or DEFAULT_RULE_NAME,
@@ -114,22 +116,52 @@ def normalize_overrides(value: object) -> dict[str, float]:
     return {str(key).strip(): _discount(discount) for key, discount in value.items() if str(key).strip()}
 
 
-def effective_rule(paths: AppPaths, agency=None) -> dict:
-    """Return default discounts overlaid by one agency's sparse exceptions."""
+def effective_rule(
+    paths: AppPaths,
+    agency=None,
+    *,
+    pricing_mode: str = "retail",
+    custom_discounts: dict | None = None,
+) -> dict:
+    """Return Retail discounts, or explicit per-estimate Custom discounts."""
     _doc, default = _pricing_doc(paths)
-    overrides = normalize_overrides(getattr(agency, "pricing_overrides", {}) if agency else {})
+    mode = str(pricing_mode or "retail").strip().casefold()
+    if mode not in {"retail", "custom"}:
+        raise ValueError("Pricing must be Retail or Custom")
+    agency_overrides = normalize_overrides(
+        getattr(agency, "pricing_overrides", {}) if agency else {}
+    )
+    incoming = normalize_overrides(custom_discounts) if mode == "custom" else {}
+    unknown = sorted(set(incoming) - set(default["manufacturer_discounts"]))
+    if unknown:
+        raise ValueError(f"Unknown pricing manufacturer: {unknown[0]}")
+    overrides = {**agency_overrides, **incoming} if mode == "custom" else {}
     effective = {**default["manufacturer_discounts"], **overrides}
     return {
         "rule_name": default["name"],
-        "source": "customer_override" if overrides else "default",
+        "mode": mode,
+        "source": mode,
         "manufacturer_discounts": effective,
         "overrides": overrides,
+        "agency_overrides": agency_overrides,
+        "retail_discounts": default["manufacturer_discounts"],
     }
 
 
-def apply_customer_pricing(paths: AppPaths, lines: list[dict], agency=None) -> tuple[list[dict], dict]:
+def apply_customer_pricing(
+    paths: AppPaths,
+    lines: list[dict],
+    agency=None,
+    *,
+    pricing_mode: str = "retail",
+    custom_discounts: dict | None = None,
+) -> tuple[list[dict], dict]:
     """Apply the effective rule to resolved estimate lines and return a summary."""
-    rule = effective_rule(paths, agency)
+    pricing_doc, _stored_rule = _pricing_doc(paths)
+    manufacturers = pricing_doc.get("manufacturers") or {}
+    rule = effective_rule(
+        paths, agency, pricing_mode=pricing_mode, custom_discounts=custom_discounts
+    )
     priced_lines: list[dict] = []
     applied: dict[str, dict] = {}
     list_total = 0.0
@@ -177,4 +209,24 @@ def apply_customer_pricing(paths: AppPaths, lines: list[dict], agency=None) -> t
         "customer_total": customer_total,
         "savings": _money(list_total - customer_total),
         "applied_discounts": sorted(applied.values(), key=lambda row: str(row["manufacturer"]).casefold()),
+        "editable_discounts": [
+            {
+                "manufacturer_id": manufacturer_id,
+                "manufacturer": str((manufacturers.get(manufacturer_id) or {}).get("label") or manufacturer_id),
+                "retail_discount_percent": discount,
+                "custom_discount_percent": rule["agency_overrides"].get(manufacturer_id, discount),
+            }
+            for manufacturer_id, discount in sorted(
+                rule["retail_discounts"].items(), key=lambda row: row[0].casefold()
+            )
+        ],
+        "pricing_basis": [
+            {
+                "manufacturer_id": str(line.get("manufacturer_id") or ""),
+                "list_unit_price": float(line.get("list_unit_price") or 0),
+                "qty": int(line.get("qty") or 1),
+                "discountable": bool(line.get("qb_item_id")),
+            }
+            for line in priced_lines
+        ],
     }

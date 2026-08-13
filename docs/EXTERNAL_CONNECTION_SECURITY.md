@@ -1,7 +1,7 @@
 # External Connection Security Standards
 
 **Applies to**: All external API integrations in DTM Vehicle Builder  
-**Last updated**: 2026-08-10
+**Last updated**: 2026-08-13
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
 
@@ -13,7 +13,7 @@ This document defines the mandatory security standard for every external connect
 |------------|-------------|--------|
 | Microsoft 365 / SharePoint | OAuth 2.0 via MSAL + OS keychain | ✅ Compliant |
 | GitHub | GitHub Actions secrets (server-side only) | ✅ Compliant |
-| QuickBooks Online | OAuth 2.0 via `msal-extensions` encrypted persistence + OS keychain | ✅ Backend implemented (Phase 1) |
+| QuickBooks Online | OAuth 2.0; per-user tokens in OS keychain; app secret in stateless Netlify broker environment | ✅ Compliant |
 
 ---
 
@@ -21,7 +21,7 @@ This document defines the mandatory security standard for every external connect
 
 ### Rule: Use OS Keychain for All OAuth Tokens
 
-OAuth access tokens, refresh tokens, and client secrets must be stored in the OS-native credential store — not in plaintext files and not in manually managed encryption files.
+Desktop OAuth access tokens and refresh tokens must be stored in the OS-native credential store — not in plaintext files and not in manually managed encryption files. A confidential-client secret must never be embedded in a distributed desktop app. When a provider requires one, it belongs only in a protected server-side deployment environment.
 
 | Platform | Storage Mechanism |
 |----------|------------------|
@@ -51,13 +51,13 @@ When the keychain backend is unavailable (e.g. headless Linux without libsecret)
 
 Config values that are not credentials — tenant IDs, client IDs, site IDs, realm IDs used only for routing — may be stored in plain JSON config files. These are publicly discoverable identifiers, not secrets. Examples from the M365 integration: `tenant_id`, `client_id`, `sharepoint_site_id`.
 
-For QuickBooks, `client_id` and non-sensitive metadata (last sync timestamp, connection status) may live in `quickbooks_config.json` as plaintext. Secrets go to the OS keychain.
+For QuickBooks, `client_id`, managed broker URL, and non-sensitive metadata (last sync timestamp, connection status) may live in `quickbooks_config.json` as plaintext. User tokens go to the OS keychain; the Intuit app secret exists only in Netlify's protected environment.
 
 ### Rule: No Hardcoded Credentials in Source Code
 
 No credential value of any kind may appear as a literal string in source code or be committed to the repository. Credentials enter the app only through:
-1. OS keychain (runtime read)
-2. Environment variables (for CI/deployment contexts)
+1. OS keychain (desktop runtime read)
+2. Protected environment variables (server-side CI/deployment contexts only)
 3. User-initiated OAuth flows
 
 ---
@@ -113,6 +113,15 @@ The OAuth callback endpoint must never return HTML content that echoes the autho
 ### HTTPS Redirect URI for Production
 
 OAuth redirect URIs registered for production environments must use HTTPS on a real domain. `http://localhost` is acceptable for development/sandbox environments only. For desktop apps that run on localhost, a hosted relay endpoint (a minimal serverless function that issues a 302 to localhost) satisfies this requirement.
+
+### Confidential Desktop Clients
+
+Never ship a provider client secret inside an installer. The managed QuickBooks flow uses two small
+HTTPS functions on the verified Netlify origin: `qb-callback` remains a redirect-only 302 relay,
+and `qb-token` performs exchange/refresh/revoke using the Intuit secret from Netlify's protected
+environment. The broker is stateless, uses `Cache-Control: no-store`, never logs bodies, and never
+stores a user token. Returned tokens go directly to the requesting desktop and are immediately
+saved in that workstation's OS keychain.
 
 ### Token Rotation
 

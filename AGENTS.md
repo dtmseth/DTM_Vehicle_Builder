@@ -59,4 +59,6 @@ the legacy `parts_library.json`/`part_catalog.json`/`asset_manifest.json`, and n
 If working on QuickBooks: read [docs/QUICKBOOKS.md](docs/QUICKBOOKS.md) (single hub — status,
 design, security invariants, App Assessment answers).
 
-Secrets never touch disk/cloud — OS keychain only via `credential_store.py`.
+Per-user QuickBooks tokens never touch disk/cloud — OS keychain only via `credential_store.py`.
+The shared Intuit app secret is never shipped to desktops; it exists only as a protected Netlify
+environment variable used by the stateless OAuth token broker.

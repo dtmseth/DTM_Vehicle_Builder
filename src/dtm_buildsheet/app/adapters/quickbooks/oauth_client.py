@@ -52,13 +52,15 @@ class QuickBooksOAuthClient:
     def __init__(
         self,
         client_id: str,
-        client_secret: str,
+        client_secret: str = "",
         *,
         environment: str = "production",
+        token_broker_url: str = "",
     ) -> None:
         self._client_id = client_id
         self._client_secret = client_secret
         self._environment = environment if environment in _DISCOVERY_URLS else "production"
+        self._token_broker_url = str(token_broker_url or "").strip()
         self._endpoints: dict | None = None
 
     # ── endpoint discovery ──────────────────────────────────────────────────
@@ -116,6 +118,13 @@ class QuickBooksOAuthClient:
         )
 
     def revoke(self, *, token: str) -> bool:
+        if self._token_broker_url:
+            try:
+                self._broker_request({"action": "revoke", "token": token})
+                return True
+            except QuickBooksOAuthError:
+                logger.warning("QuickBooks token revocation request failed")
+                return False
         endpoint = self._discover()["revocation_endpoint"]
         headers = {
             "Authorization": self._basic_auth(),
@@ -136,6 +145,14 @@ class QuickBooksOAuthClient:
         return "Basic " + base64.b64encode(raw).decode()
 
     def _token_request(self, data: dict) -> dict:
+        if self._token_broker_url:
+            action = "exchange" if data.get("grant_type") == "authorization_code" else "refresh"
+            payload = {"action": action}
+            if action == "exchange":
+                payload.update({"code": data.get("code", ""), "redirect_uri": data.get("redirect_uri", "")})
+            else:
+                payload["refresh_token"] = data.get("refresh_token", "")
+            return self._broker_request(payload)
         endpoint = self._discover()["token_endpoint"]
         headers = {
             "Authorization": self._basic_auth(),
@@ -154,3 +171,35 @@ class QuickBooksOAuthClient:
                 err = ""
             raise QuickBooksOAuthError(err or f"http_{resp.status_code}")
         return resp.json()
+
+    def _broker_request(self, payload: dict) -> dict:
+        """Use the hosted confidential-client broker without exposing its secret.
+
+        The broker is stateless: it never stores tokens and returns them only to
+        the requesting desktop app over HTTPS. Response bodies are never logged.
+        """
+        if not self._token_broker_url.startswith("https://"):
+            raise QuickBooksOAuthError("invalid_token_broker")
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        try:
+            resp = requests.post(
+                self._token_broker_url,
+                headers=headers,
+                json=payload,
+                timeout=_HTTP_TIMEOUT,
+            )
+        except Exception:  # noqa: BLE001 — transport text may contain request data
+            raise QuickBooksOAuthError("token_broker_unavailable") from None
+        if resp.status_code != 200:
+            try:
+                err = resp.json().get("error", "")
+            except Exception:  # noqa: BLE001
+                err = ""
+            raise QuickBooksOAuthError(err or f"broker_http_{resp.status_code}")
+        try:
+            result = resp.json()
+        except Exception:  # noqa: BLE001
+            raise QuickBooksOAuthError("unparseable_broker_response") from None
+        if not isinstance(result, dict):
+            raise QuickBooksOAuthError("unparseable_broker_response")
+        return result
