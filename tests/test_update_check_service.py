@@ -22,6 +22,10 @@ from dtm_buildsheet.storage.base import StorageProvider
 @pytest.fixture(autouse=True)
 def _force_bundled_mode(monkeypatch):
     monkeypatch.setattr("dtm_buildsheet.paths._DEV", False)
+    from dtm_buildsheet.app.services import update_check_service as service
+    service._download_in_progress.clear()  # noqa: SLF001
+    service._last_known_available = None  # noqa: SLF001
+    service._last_download_failure = None  # noqa: SLF001
 
 
 # ── Fakes ────────────────────────────────────────────────────────────────────
@@ -448,6 +452,42 @@ def test_download_pending_update_runs_on_mac(tmp_path: Path, monkeypatch):
     assert result.get("queued") == "1.4.0"
 
 
+def test_failed_auto_download_backs_off_and_remains_manually_available(
+    tmp_path: Path, monkeypatch
+):
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
+        lambda: "1.0.0",
+    )
+
+    class FailingRemote(_FakeRemote):
+        def __init__(self):
+            super().__init__({
+                f"{RELEASES_REMOTE_FOLDER}/DTM_Vehicle_Builder-1.4.0.dmg": b"D",
+            })
+            self.read_calls = 0
+
+        def read_bytes(self, path: str) -> bytes:
+            self.read_calls += 1
+            raise TimeoutError("simulated slow installer transfer")
+
+    from dtm_buildsheet.app.services.update_check_service import (
+        describe_update_state,
+        download_pending_update_if_any,
+    )
+
+    remote = FailingRemote()
+    paths = _paths_with_workspace(tmp_path)
+    assert download_pending_update_if_any(remote, paths).get("error") == "download failed"
+    assert download_pending_update_if_any(remote, paths).get("retry_scheduled") == "1.4.0"
+    assert remote.read_calls == 1
+    state = describe_update_state(paths)
+    assert state["state"] == "available"
+    assert state["available_version"] == "1.4.0"
+    assert state["automatic_retry_pending"] is True
+
+
 def test_consume_queued_installer_dispatches_mac(tmp_path: Path, monkeypatch):
     """consume_queued_installer must invoke the Mac path and not the
     Windows one when running on darwin."""
@@ -477,10 +517,8 @@ def test_consume_queued_installer_dispatches_mac(tmp_path: Path, monkeypatch):
     assert calls == {"win": 0, "mac": 1}
 
 
-def test_describe_update_state_mac_with_available_returns_downloading(tmp_path, monkeypatch):
-    """Mac auto-update shipped in v2.2.11. describe_update_state used to
-    hardcode `sys.platform.startswith("win")` so Mac with an available
-    version got "available" (Download banner) instead of "downloading"."""
+def test_describe_update_state_mac_with_available_returns_available(tmp_path, monkeypatch):
+    """Availability alone must not be mislabeled as an active download."""
     monkeypatch.setattr("sys.platform", "darwin")
     monkeypatch.setattr(
         "dtm_buildsheet.app.services.update_check_service.get_embedded_version",
@@ -492,8 +530,8 @@ def test_describe_update_state_mac_with_available_returns_downloading(tmp_path, 
         paths,
         available_info={"version": "2.2.12", "filename": "DTM_Vehicle_Builder-2.2.12.dmg"},
     )
-    assert state["state"] == "downloading"
-    assert state["downloading_version"] == "2.2.12"
+    assert state["state"] == "available"
+    assert state["available_version"] == "2.2.12"
 
 
 def test_describe_update_state_mac_no_available_returns_up_to_date(tmp_path, monkeypatch):

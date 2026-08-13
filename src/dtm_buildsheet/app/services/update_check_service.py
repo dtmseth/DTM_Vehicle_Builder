@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
@@ -499,6 +500,9 @@ def install_now(paths) -> dict:
 
 
 _download_in_progress: set[str] = set()  # version strings currently downloading
+_last_known_available: dict | None = None
+_last_download_failure: dict | None = None
+_DOWNLOAD_RETRY_DELAY_SECONDS = 15 * 60
 
 
 def is_download_in_progress() -> str | None:
@@ -528,13 +532,31 @@ def download_pending_update_if_any(storage, paths, dismissed_versions: list[str]
         return {"skipped": "dev build"}
     if _expected_installer_suffix() is None:
         return {"skipped": f"no auto-update for {sys.platform}"}
+    global _last_known_available, _last_download_failure
+
+    # A failed large-installer transfer should not restart every 60 seconds.
+    # Keep ordinary cloud sync moving and retry on a modest backoff instead.
+    if _last_download_failure:
+        retry_at = float(_last_download_failure.get("retry_at", 0))
+        if time.monotonic() < retry_at:
+            return {
+                "retry_scheduled": _last_download_failure.get("version", ""),
+            }
+
     try:
         info = check_for_update(storage, dismissed_versions=dismissed_versions or [])
     except Exception:
         logger.exception("update-poll: check_for_update raised")
         return {"error": "check failed"}
     if info is None:
+        _last_known_available = None
+        _last_download_failure = None
         return {"newer": False}
+
+    _last_known_available = {
+        "version": info.version,
+        "filename": info.filename,
+    }
 
     # Don't re-download if the queued installer is already this version or
     # newer.
@@ -550,12 +572,21 @@ def download_pending_update_if_any(storage, paths, dismissed_versions: list[str]
             local = download_update(storage, info)
         except Exception:
             logger.exception("update-poll: download_update raised")
+            _last_download_failure = {
+                "version": info.version,
+                "retry_at": time.monotonic() + _DOWNLOAD_RETRY_DELAY_SECONDS,
+            }
             return {"error": "download failed"}
         try:
             queue_installer_for_next_launch(local, paths)
         except Exception:
             logger.exception("update-poll: queue raised")
+            _last_download_failure = {
+                "version": info.version,
+                "retry_at": time.monotonic() + _DOWNLOAD_RETRY_DELAY_SECONDS,
+            }
             return {"error": "queue failed"}
+        _last_download_failure = None
         return {"queued": info.version}
     finally:
         _download_in_progress.discard(info.version)
@@ -587,25 +618,17 @@ def describe_update_state(paths, *, available_info: dict | None = None) -> dict:
     in_progress = is_download_in_progress()
     if in_progress:
         return {"state": "downloading", "current": current, "downloading_version": in_progress}
-    # Platforms with a known installer suffix (.exe on Windows, .dmg on
-    # macOS) get the auto-download path: if check_for_update found
-    # something newer, the sync is about to fetch it — show "downloading"
-    # so the UI doesn't redundantly invite the user to click Download.
-    if _expected_installer_suffix() is not None:
-        if available_info:
-            return {
-                "state": "downloading",
-                "current": current,
-                "downloading_version": available_info.get("version", ""),
-            }
-        return {"state": "up_to_date", "current": current}
-    # Linux / other: no installer pattern, fall back to manual download.
-    if available_info:
+    known_available = available_info or _last_known_available
+    if known_available:
         return {
             "state": "available",
             "current": current,
-            "available_version": available_info.get("version", ""),
+            "available_version": known_available.get("version", ""),
+            "automatic_retry_pending": bool(_last_download_failure),
         }
+    if _expected_installer_suffix() is not None:
+        return {"state": "up_to_date", "current": current}
+    # Linux / other: no installer pattern and no cached release result.
     return {"state": "platform_unsupported", "current": current}
 
 

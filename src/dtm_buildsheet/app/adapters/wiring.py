@@ -131,8 +131,8 @@ def set_active_bundle(bundle: AdapterBundle) -> None:
     _active_bundle = bundle
 
 
-def ensure_signed_in_for_cloud() -> bool:
-    """Trigger interactive M365 sign-in at boot if needed.
+def ensure_signed_in_for_cloud(*, interactive: bool = True) -> bool:
+    """Ensure M365 has a usable session, optionally without prompting.
 
     Without this, a fresh cloud-mode install (no cached MSAL token) silently
     falls through to "not signed in" because the storage adapter's token
@@ -143,8 +143,12 @@ def ensure_signed_in_for_cloud() -> bool:
     Behavior:
       - Cloud disabled or bundle unavailable → no-op, returns False.
       - Cached account present (silent SSO works) → no-op, returns True.
-      - No cached account → calls ``identity.signin()`` which opens the
+      - No cached account and ``interactive=True`` → calls
+        ``identity.signin()`` which opens the
         OAuth browser flow (or device-code fallback in headless mode).
+      - No cached account and ``interactive=False`` → returns False. This
+        is the startup/background path; only an explicit user action may
+        open an authentication flow.
         Returns True on success, False if the user cancels / OAuth fails.
 
     Errors are logged but never propagate — startup must succeed even when
@@ -170,7 +174,11 @@ def ensure_signed_in_for_cloud() -> bool:
             return True
     except Exception:
         logger.exception("is_signed_in check failed during startup")
-        # Fall through to interactive — the user clearly wanted cloud mode.
+        # An explicit action may still recover through interactive sign-in.
+
+    if not interactive:
+        logger.info("No usable cached M365 session; background sync deferred")
+        return False
 
     try:
         logger.info("No cached M365 account — launching interactive sign-in")

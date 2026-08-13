@@ -133,20 +133,13 @@ def _update_state(paths: AppPaths) -> dict:
     'ready', 'available', 'platform_unsupported'). Falls back to
     'up_to_date' on any error so the status response stays useful."""
     try:
-        from .update_check_service import describe_update_state, check_for_update
-        from ..adapters.wiring import _cloud_flag_enabled, get_active_bundle  # noqa: SLF001
-        from ...config.store import load_config
-        available = None
-        if _cloud_flag_enabled():
-            try:
-                settings = load_config("app_settings.json", paths) or {}
-                dismissed = list(settings.get("dismissed_update_versions", []) or [])
-                info = check_for_update(get_active_bundle().storage, dismissed_versions=dismissed)
-                if info is not None:
-                    available = {"version": info.version, "filename": info.filename}
-            except Exception:
-                logger.exception("update_state: check_for_update failed")
-        return describe_update_state(paths, available_info=available)
+        from .update_check_service import describe_update_state
+
+        # Status is polled at boot and every minute, so it must be local-only.
+        # The periodic worker records availability/download state separately;
+        # doing a SharePoint check here previously froze the single request
+        # queue and falsely rendered any available version as "downloading".
+        return describe_update_state(paths)
     except Exception:
         logger.exception("update_state lookup failed")
         from .update_check_service import get_embedded_version
