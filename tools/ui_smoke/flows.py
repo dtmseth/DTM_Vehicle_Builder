@@ -1981,6 +1981,61 @@ def flow_howler_routing_and_dual_tone_siren(page, base_url: str) -> None:
     page.evaluate("pickerClose()")
 
 
+def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
+    """A successful read-only validation must open the estimate review modal."""
+    validation = {
+        "ok": True, "can_create": True, "line_count": 2, "total": 162,
+        "existing_estimate_id": "", "pdf_available": False,
+        "customer_linked": True,
+        "customer": {"name": "UI Smoke PD", "contact_name": "Test User"},
+        "project": {"ready": True, "identity_ready": True},
+        "pricing": {
+            "rule_name": "Retail", "source": "retail", "list_total": 200,
+            "customer_total": 162, "savings": 38,
+            "applied_discounts": [{
+                "manufacturer_id": "whelen", "manufacturer": "Whelen",
+                "discount_percent": 38, "override": False,
+            }],
+            "editable_discounts": [{
+                "manufacturer_id": "whelen", "manufacturer": "Whelen",
+                "retail_discount_percent": 38, "custom_discount_percent": 38,
+            }],
+            "pricing_basis": [{
+                "manufacturer_id": "whelen", "list_unit_price": 100,
+                "qty": 2, "discountable": True,
+            }],
+        },
+    }
+    customer = {
+        "ok": True, "customer_linked": True, "customer_complete": True,
+        "missing_fields": [],
+        "customer": {"name": "UI Smoke PD", "contact_name": "Test User"},
+    }
+
+    def quickbooks_route(route):
+        path = route.request.url.split("?", 1)[0]
+        if path.endswith("/api/quickbooks/status"):
+            payload = {"connected": True}
+        elif path.endswith("/api/quickbooks/estimates/validate"):
+            payload = validation
+        elif path.endswith("/api/quickbooks/estimates/customer-preview"):
+            payload = customer
+        else:
+            route.continue_()
+            return
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(payload))
+
+    page.route("**/api/quickbooks/**", quickbooks_route)
+    page.goto(base_url, wait_until="load")
+    page.wait_for_selector("#qb-est-modal", state="attached")
+    page.evaluate("() => window.PT_buildCreateEstimate('project-1', 'unit-1', 'vehicle-1')")
+    page.wait_for_selector("#qb-est-modal.open")
+    assert page.locator("#qb-est-title").inner_text() == "Create QuickBooks estimate"
+    assert page.locator("[data-qb-est-custom-price='whelen']").input_value() == "38"
+    assert page.locator("#qb-est-create").inner_text() == "Create estimate"
+    # The smoke flow deliberately stops at review; it never clicks Create.
+
+
 FLOWS = {
     "tab_load": flow_tab_load,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
@@ -1998,6 +2053,7 @@ FLOWS = {
     "picker_multi_add": flow_picker_multi_add,
     "preview_drag_mirroring": flow_preview_drag_mirroring,
     "howler_routing_and_dual_tone_siren": flow_howler_routing_and_dual_tone_siren,
+    "quickbooks_estimate_review_modal": flow_quickbooks_estimate_review_modal,
     # Implementation session (UI_SMOKE_SPEC.md §5):
     # "part_picker": flow_part_picker,
     # "manifest_add_remove": flow_manifest_add_remove,
