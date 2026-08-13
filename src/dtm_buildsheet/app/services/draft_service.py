@@ -905,7 +905,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         _ts_pat = _re.compile(r'_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$')
         _existing_path_str = body.get("existing_output_path", "")
         name_changed: dict | None = None
-        if _existing_path_str:
+        if _existing_path_str and not body.get("replace_previous_exports"):
             _old = _Path(_existing_path_str)
             _new = _Path(export["output_path"])
             _old_prefix = _ts_pat.sub("", _old.stem)
@@ -953,6 +953,28 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             except Exception:
                 _log.exception("Could not update project record after generate")
 
+        # Replacement is an explicit user choice made before generation. Only
+        # clean up after the new PPTX has been written and its project record
+        # saved, so a failed render can never destroy the previous exports.
+        cleanup: dict | None = None
+        if body.get("replace_previous_exports"):
+            _old_paths = [
+                str(value or "") for value in body.get("previous_export_paths", [])
+                if str(value or "").strip()
+            ]
+            try:
+                from .exports_upload_service import cleanup_previous_exports
+                cleanup = cleanup_previous_exports(
+                    paths,
+                    agency=_agency or project.info.get("Agency", ""),
+                    year=_year or project.info.get("BuildYear", "") or _ind_year,
+                    filenames=_old_paths,
+                    keep_filenames=[export["output_name"]],
+                )
+            except Exception:
+                _log.exception("Could not clean up previous shared exports")
+                cleanup = {"deleted_local": [], "errors": ["shared_export_delete_failed"]}
+
         result: dict = {
             "ok": True,
             "output_name": export["output_name"],
@@ -970,6 +992,8 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         }
         if name_changed:
             result["name_changed"] = name_changed
+        if cleanup is not None:
+            result["cleanup"] = cleanup
         return result
     except FileNotFoundError as exc:
         return {"ok": False, "error": str(exc), "log": "\n".join(log_lines)}

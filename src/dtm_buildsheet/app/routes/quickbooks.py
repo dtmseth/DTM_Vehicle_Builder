@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
+import secrets
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
@@ -48,6 +49,21 @@ from ..services import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _estimate_call(operation: str, callback, *args, **kwargs) -> dict:
+    """Keep estimate route failures JSON-shaped without exposing internals."""
+    try:
+        return callback(*args, **kwargs)
+    except Exception:  # noqa: BLE001 - this is the HTTP safety boundary
+        reference = secrets.token_hex(4)
+        logger.exception("QuickBooks estimate %s failed [reference=%s]", operation, reference)
+        return {
+            "ok": False,
+            "error": "estimate_request_failed",
+            "detail": "The app could not complete the QuickBooks estimate request.",
+            "reference": reference,
+        }
 
 
 def _send_json(handler: BaseHTTPRequestHandler, payload: dict, status: int = 200) -> None:
@@ -200,7 +216,9 @@ def route_quickbooks(
     if method == "POST" and path == "/api/quickbooks/estimates/validate":
         _send_json(
             handler,
-            qb_estimate_service.validate_estimate(
+            _estimate_call(
+                "validation",
+                qb_estimate_service.validate_estimate,
                 paths,
                 project_id=body.get("project_id", ""),
                 individual_id=body.get("individual_id", ""),
@@ -210,7 +228,9 @@ def route_quickbooks(
     if method == "POST" and path == "/api/quickbooks/estimates/create":
         _send_json(
             handler,
-            qb_estimate_service.create_estimate(
+            _estimate_call(
+                "creation",
+                qb_estimate_service.create_estimate,
                 paths,
                 project_id=body.get("project_id", ""),
                 individual_id=body.get("individual_id", ""),
@@ -227,7 +247,9 @@ def route_quickbooks(
     if method == "POST" and path == "/api/quickbooks/estimates/create-batch":
         _send_json(
             handler,
-            qb_estimate_service.create_estimates_batch(
+            _estimate_call(
+                "batch creation",
+                qb_estimate_service.create_estimates_batch,
                 paths,
                 project_id=body.get("project_id", ""),
                 individual_ids=body.get("individual_ids") or None,

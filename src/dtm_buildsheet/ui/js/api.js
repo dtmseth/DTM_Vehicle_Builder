@@ -437,8 +437,41 @@ function _refreshCloudModalBody(){
   }
 }
 
+let _lastQbConnectionStatus = null;
+
+function _refreshQbConnectionBody(){
+  const status = _lastQbConnectionStatus;
+  const dot = $("cloud-modal-qb-dot");
+  const label = $("cloud-modal-qb-status");
+  const detail = $("cloud-modal-qb-detail");
+  const action = $("cloud-modal-qb-action");
+  dot?.classList.toggle("connected", !!status?.connected);
+  dot?.classList.toggle("disconnected", status != null && !status?.connected);
+  if (!status) {
+    if (label) label.textContent = "Could not check QuickBooks";
+    if (detail) detail.textContent = "Open QuickBooks settings for details.";
+    if (action) action.textContent = "Manage";
+    return;
+  }
+  if (label) label.textContent = status.connected ? "Connected" : "Not connected";
+  if (detail) {
+    const environment = status.environment === "sandbox" ? "Sandbox company" : "Production company";
+    detail.textContent = status.connected
+      ? `${environment}${status.last_sync_utc ? " · Catalog synced" : ""}`
+      : "Connect to create estimates and refresh catalog pricing.";
+  }
+  if (action) action.textContent = status.connected ? "Manage" : "Connect";
+}
+
+async function _refreshQbConnectionStatus(){
+  try { _lastQbConnectionStatus = await api("/api/quickbooks/status"); }
+  catch (_) { _lastQbConnectionStatus = null; }
+  _refreshQbConnectionBody();
+}
+
 function openCloudModal(){
   refreshCloudStatus().then(_refreshCloudModalBody);
+  _refreshQbConnectionStatus();
   $("cloud-modal").classList.add("open");
 }
 
@@ -516,6 +549,26 @@ async function _doSignin(){
   }
 }
 
+async function _doQuickBooksAction(){
+  const btn = $("cloud-modal-qb-action");
+  if (_lastQbConnectionStatus?.connected) {
+    closeCloudModal();
+    if (typeof switchTab === "function") switchTab("general-settings");
+    document.querySelector('.stab[data-stab="quickbooks"]')?.click();
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const res = await api("/api/quickbooks/auth-url");
+    if (res?.ok && res.url) window.location.href = res.url;
+    else toast(res?.error || "Could not start QuickBooks sign-in", "error");
+  } catch (e) {
+    toast(e?.message || "Could not start QuickBooks sign-in", "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 // Boot + 60s polling. The status endpoint is cheap (no Graph hit on the
 // hot path — only on first-call photo fetch) so polling won't be noticed.
 document.addEventListener("DOMContentLoaded", () => {
@@ -529,6 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("cloud-modal-sync")?.addEventListener("click", _doForceSync);
   $("cloud-modal-switch")?.addEventListener("click", _doSwitchUser);
   $("cloud-modal-signin")?.addEventListener("click", _doSignin);
+  $("cloud-modal-qb-action")?.addEventListener("click", _doQuickBooksAction);
   // Close-on-backdrop-click parity with other modals.
   $("cloud-modal")?.addEventListener("click", (e) => {
     if(e.target.id === "cloud-modal") closeCloudModal();

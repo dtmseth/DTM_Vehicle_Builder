@@ -64,6 +64,31 @@ class TestExportToPdf:
         assert result["ok"] is False
         assert "not found" in result["error"].lower()
 
+    def test_foreign_pptx_is_downloaded_before_pdf_conversion(self, tmp_path):
+        pptx = tmp_path / "output" / "shared.pptx"
+        pptx.parent.mkdir()
+        pptx.write_bytes(b"PK\x03\x04shared")
+        paths = MagicMock()
+        paths.workspace_output_dir = pptx.parent
+        with patch(
+            "dtm_buildsheet.app.services.exports_upload_service.download_export",
+            return_value={"ok": True, "path": str(pptx), "downloaded": True},
+        ) as download, patch(
+            "dtm_buildsheet.app.services.export_service._find_soffice",
+            return_value=None,
+        ), patch(
+            "dtm_buildsheet.app.services.export_service._export_via_applescript",
+            return_value={"ok": False, "error": "Microsoft PowerPoint not installed"},
+        ), patch("sys.platform", "darwin"):
+            result = export_to_pdf({
+                "output_path": r"C:\other\shared.pptx",
+                "agency": "Test Agency",
+                "year": "2026",
+            }, paths)
+        download.assert_called_once()
+        assert result["ok"] is False
+        assert "libreoffice" in result["error"].lower()
+
     def test_wrong_extension_returns_error(self, tmp_path):
         f = tmp_path / "file.docx"
         f.write_bytes(b"dummy")
@@ -215,6 +240,25 @@ class TestOpenFile:
             result = open_file({"path": str(f)})
         assert result["ok"] is True
         mock_popen.assert_called_once()
+
+    def test_missing_foreign_path_downloads_shared_copy_before_opening(self, tmp_path):
+        hydrated = tmp_path / "output" / "shared.pdf"
+        hydrated.parent.mkdir()
+        hydrated.write_bytes(b"%PDF-1.7\nshared")
+        paths = MagicMock()
+        paths.workspace_output_dir = hydrated.parent
+        with patch(
+            "dtm_buildsheet.app.services.exports_upload_service.download_export",
+            return_value={"ok": True, "path": str(hydrated), "downloaded": True},
+        ) as download, patch("subprocess.Popen") as popen, patch("sys.platform", "darwin"):
+            result = open_file({
+                "path": r"C:\other\shared.pdf",
+                "agency": "Test Agency",
+                "year": "2026",
+            }, paths)
+        assert result["ok"] is True
+        download.assert_called_once()
+        popen.assert_called_once()
 
 
 # ── route integration ─────────────────────────────────────────────────────────

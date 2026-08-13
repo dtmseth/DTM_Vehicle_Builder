@@ -751,7 +751,7 @@ Duplicate detection: if a preset already exists with the same agency + build_typ
 | `/api/template/generate` | Regenerate Excel template workbook |
 | `/api/validate` | Run build rule validation |
 | `/api/preview/plan` | Build preview data from draft/session state |
-| `/api/export/pdf` | Export generated PPTX to PDF when platform tooling is available |
+| `/api/export/pdf` | Export generated PPTX to PDF; hydrates a shared cross-instance PPTX first when necessary |
 | `/api/draft/*` | Save, load, update, or delete GUI drafts |
 | `/api/agency/save` | Create or update agency |
 | `/api/sales-rep/save` | Create or update sales rep |

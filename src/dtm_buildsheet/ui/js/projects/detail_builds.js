@@ -369,7 +369,9 @@ async function _ptDecidePlan(ctx, statusEl) {
     return "regen";
   }
   ctx._status = status;
-  if (!status?.pptx_exists) return "regen";
+  // A shared project may contain a valid path from another computer. Opening
+  // it hydrates the SharePoint copy into this install; don't regenerate it.
+  if (!status?.pptx_exists) return "open";
   if (!status.is_stale && !status.manually_edited) return "open";
   if (status.is_stale && !status.manually_edited) return "regen";
   // Stale AND manually edited → ask user
@@ -388,16 +390,28 @@ async function _ptGenerateAndPersist(ctx, statusEl) {
     return null;
   }
   if (statusEl) _ptSetStatus(statusEl, "Preparing build sheet…", "ok");
+  if (ctx._replacePreviousExports === undefined && (ctx.outputPath || ctx.pdfPath)) {
+    ctx._replacePreviousExports = confirm(
+      "This vehicle already has an exported build sheet.\n\n" +
+      "OK (default) = Replace the prior PowerPoint and PDF\n" +
+      "Cancel = Keep the prior files and create another version"
+    );
+  }
   const res = await api("/api/draft/generate", {
     draft_id: ctx.draftId,
     project_id: ctx.project.project_id,
     existing_output_path: ctx.outputPath,
+    replace_previous_exports: ctx._replacePreviousExports === true,
+    previous_export_paths: [ctx.outputPath, ctx.pdfPath].filter(Boolean),
   });
   if (!res?.ok) {
     const msg = res?.error || "Generation failed";
     toast(msg, "error");
     if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
     return null;
+  }
+  if (res.cleanup?.errors?.length) {
+    toast("The new export was saved, but some prior files could not be removed", "error");
   }
   if (res.name_changed) {
     const nc = res.name_changed;
@@ -438,7 +452,12 @@ window.PT_buildOpenPptx = async function (projectId, unitId, individualId, type)
   if (!target) { toast("No build sheet available", "error"); return; }
   if (statusEl) _ptSetStatus(statusEl, "Opening in PowerPoint…", "ok");
   try {
-    const res = await api("/open", { path: target });
+    const customer = ctx.project?.customer || {};
+    const res = await api("/open", {
+      path: target,
+      agency: customer.agency || "",
+      year: customer.build_year || "",
+    });
     if (res?.ok) {
       if (statusEl) statusEl.style.display = "none";
     } else {
@@ -457,6 +476,18 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
   const plan = await _ptDecidePlan(ctx, statusEl);
   if (!plan) return;
   let pptxPath = ctx.outputPath;
+  if (plan === "open" && ctx.pdfPath) {
+    ctx._replacePreviousExports = confirm(
+      "This vehicle already has an exported PDF.\n\n" +
+      "OK (default) = Replace the prior PDF\n" +
+      "Cancel = Keep it and create another PowerPoint/PDF version"
+    );
+    if (!ctx._replacePreviousExports) {
+      const result = await _ptGenerateAndPersist(ctx, statusEl);
+      if (!result) return;
+      pptxPath = result;
+    }
+  }
   if (plan === "regen") {
     const result = await _ptGenerateAndPersist(ctx, statusEl);
     if (!result) return;
@@ -473,6 +504,8 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       project_id: ctx.project.project_id,
       unit_id: unitId,
       individual_id: individualId || "",
+      replace_previous_exports: ctx._replacePreviousExports === true,
+      previous_export_paths: [ctx.outputPath, ctx.pdfPath].filter(Boolean),
     });
     if (!res?.ok) {
       const msg = res?.error || "Export failed";
@@ -481,6 +514,9 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       return;
     }
     toast("PDF exported", "success");
+    if (res.cleanup?.errors?.length) {
+      toast("PDF saved, but some prior files could not be removed", "error");
+    }
     // Backend stamped pdf_path + last_exported_at/by on the project
     // record itself, so just reload to refresh the UI.
     await _ptLoadAll();
@@ -503,7 +539,12 @@ window.PT_buildOpenPdf = async function (projectId, unitId, individualId, type) 
   if (!ctx) return;
   if (!ctx.pdfPath) { toast("Export the PDF first", "error"); return; }
   try {
-    const res = await api("/open", { path: ctx.pdfPath });
+    const customer = ctx.project?.customer || {};
+    const res = await api("/open", {
+      path: ctx.pdfPath,
+      agency: customer.agency || "",
+      year: customer.build_year || "",
+    });
     if (!res?.ok) toast(res?.error || "Could not open PDF", "error");
   } catch (e) {
     toast(e.message || "Open failed", "error");
@@ -755,12 +796,22 @@ function _ptEstError(code) {
     duplicate_estimate_confirmation_required: "Choose whether to update the existing estimate or create a new one",
     existing_estimate_not_found: "The saved QuickBooks estimate no longer exists — choose Create new estimate",
     build_pdf_missing: "Export the build PDF before attaching it to QuickBooks",
+    build_pdf_shared_unavailable: "The shared build PDF could not be downloaded from Microsoft 365",
     build_pdf_invalid: "The selected build attachment is not a valid PDF",
     build_pdf_outside_output: "The build PDF is outside the app's approved output folder",
     attachment_file_unreadable: "The build PDF could not be read",
     attachment_upload_failed: "QuickBooks rejected the build PDF attachment",
+    quickbooks_rejected_estimate: "QuickBooks rejected the estimate",
+    estimate_request_failed: "The app could not complete the QuickBooks estimate request",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
+}
+
+function _ptEstimateFailureText(res) {
+  const base = _ptEstError(res?.error);
+  const detail = String(res?.detail || "").trim();
+  const reference = String(res?.reference || "").trim();
+  return `${base}${detail ? ": " + detail : ""}${reference ? " (reference " + reference + ")" : ""}`;
 }
 
 function _ptEstimateProblemText(problem) {
@@ -1270,12 +1321,12 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
         toast(_ptEstError(res.error), "error");
         _ptOpenProjectBindingModal(projectId, individualId, res.project);
       } else {
-        toast(_ptEstError(res?.error), "error");
+        toast(_ptEstimateFailureText(res), "error");
         if (e.create) { e.create.disabled = false; e.create.textContent = "Try again"; }
       }
     }
   } catch (err) {
-    toast("Estimate creation failed — QuickBooks did not complete the request", "error");
+    toast("Estimate creation failed: " + (err?.message || "the request did not complete"), "error");
     if (e.create) { e.create.disabled = false; e.create.textContent = "Try again"; }
   }
 }
