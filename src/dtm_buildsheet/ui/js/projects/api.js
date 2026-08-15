@@ -125,7 +125,10 @@ window.PT_setPreferencesAsAgencyDefault = async function(prefix, agencyIdControl
   const originalLabel = button?.textContent;
   if (button) { button.disabled = true; button.textContent = "Saving defaults…"; }
   try {
-    const res = await apiSave("/api/agency/default-preferences", {
+    // This endpoint is a direct agency-record update, not a settings proposal.
+    // Keep it off apiSave(): proposal/cloud-status side effects must not be able
+    // to turn a successful local agency save into an error toast.
+    const res = await api("/api/agency/default-preferences", {
       agency_id: agencyId,
       default_preferences: _ptPreferencePayload(prefix),
     });
@@ -136,11 +139,19 @@ window.PT_setPreferencesAsAgencyDefault = async function(prefix, agencyIdControl
     _PT.agencies = (_PT.agencies || []).map(item =>
       item.agency_id === agencyId ? res.agency : item
     );
-    window.refreshAgenciesTab?.();
     toast(`Saved as ${agency.name}'s defaults for future projects`, "success");
+    // Refreshing the Settings view is secondary to this save.  Do it after
+    // confirming success and contain any refresh failure so it cannot replace
+    // the success message with the generic save error.
+    try {
+      await window.refreshAgenciesTab?.();
+    } catch (refreshError) {
+      console.warn("Project preferences: agency tab refresh failed", refreshError);
+    }
   } catch (error) {
     console.error("Project preferences: agency default save failed", error);
-    toast("Could not save agency defaults", "error");
+    const detail = String(error?.message || "").trim();
+    toast(detail ? `Could not save agency defaults: ${detail}` : "Could not save agency defaults", "error");
   } finally {
     if (button) { button.disabled = false; button.textContent = originalLabel; }
   }

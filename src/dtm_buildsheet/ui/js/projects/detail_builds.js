@@ -468,13 +468,13 @@ window.PT_buildOpenPptx = async function (projectId, unitId, individualId, type)
   }
 };
 
-window.PT_buildExportPdf = async function (projectId, unitId, individualId, type) {
+window.PT_buildExportPdf = async function (projectId, unitId, individualId, type, options = {}) {
   const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
-  if (!ctx) return;
+  if (!ctx) return false;
   ctx.individualId = individualId || "";
-  const statusEl = $("proj-action-status");
+  const statusEl = options.statusEl || $("proj-action-status");
   const plan = await _ptDecidePlan(ctx, statusEl);
-  if (!plan) return;
+  if (!plan) return false;
   let pptxPath = ctx.outputPath;
   if (plan === "open" && ctx.pdfPath) {
     ctx._replacePreviousExports = confirm(
@@ -484,16 +484,16 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
     );
     if (!ctx._replacePreviousExports) {
       const result = await _ptGenerateAndPersist(ctx, statusEl);
-      if (!result) return;
+      if (!result) return false;
       pptxPath = result;
     }
   }
   if (plan === "regen") {
     const result = await _ptGenerateAndPersist(ctx, statusEl);
-    if (!result) return;
+    if (!result) return false;
     pptxPath = result;
   }
-  if (!pptxPath) { toast("No build sheet available", "error"); return; }
+  if (!pptxPath) { toast("No build sheet available", "error"); return false; }
   const customer = ctx.project?.customer || {};
   if (statusEl) _ptSetStatus(statusEl, "Exporting PDF…", "ok");
   try {
@@ -511,7 +511,7 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       const msg = res?.error || "Export failed";
       toast(msg, "error");
       if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
-      return;
+      return false;
     }
     toast("PDF exported", "success");
     if (res.cleanup?.errors?.length) {
@@ -526,11 +526,16 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       _ptRenderBuildsTab(updated);
     }
     if (statusEl) _ptSetStatus(statusEl, "✅ PDF exported", "good");
-    // Open the PDF after export so the user sees it immediately
-    try { await api("/open", { path: res.pdf_path }); } catch (_) {}
+    // Ordinary exports open for review. Estimate preparation stays in the
+    // modal and attaches the file immediately afterward.
+    if (options.openAfter !== false) {
+      try { await api("/open", { path: res.pdf_path }); } catch (_) {}
+    }
+    return true;
   } catch (e) {
     toast(e.message || "Export failed", "error");
     if (statusEl) _ptSetStatus(statusEl, "❌ " + (e.message || "Error"), "err");
+    return false;
   }
 };
 
@@ -783,7 +788,7 @@ function _ptEstError(code) {
     customer_is_sub: "The linked QuickBooks customer is a sub-customer; relink the agency to a top-level customer",
     customer_create_failed: "QuickBooks did not return the new customer id",
     project_not_linked: "Set up this vehicle's QuickBooks Project before creating the estimate",
-    project_identity_required: "Add a unit number before setting up the QuickBooks Project",
+    project_identity_required: "Enter a unit number or accept the automatic build name before setting up the QuickBooks Project",
     invalid_project_id: "Paste the QuickBooks Project web address or project number",
     invalid_qb_project_ref: "QuickBooks rejected the saved Project link — set it up again below",
     validation_failed: "Some parts aren't linked to QuickBooks",
@@ -827,7 +832,7 @@ function _ptToastEstimateBlockers(validation) {
   if (!v.project?.ready) {
     blockers.push(v.project?.identity_ready
       ? "link this vehicle to its QuickBooks Project"
-      : "add a unit number, then link the vehicle to its QuickBooks Project");
+      : "enter a unit number or accept its automatic build name, then link the vehicle to its QuickBooks Project");
   }
   const problems = v.problems || [];
   if (problems.length === 1) {
@@ -1118,7 +1123,8 @@ async function _ptCopyProjectName(text) {
 }
 
 function _ptOpenProjectBindingModal(
-  projectId, individualId, binding, onLinked = null, validation = null, onBack = null
+  projectId, individualId, binding, onLinked = null, validation = null, onBack = null,
+  acceptAutoName = false
 ) {
   const b = binding || {};
   const projectName = b.project_name || "Vehicle project";
@@ -1127,7 +1133,7 @@ function _ptOpenProjectBindingModal(
   const projectRefInvalid = !!b.project_ref_invalid;
   const identityHint = (b.identity_labels || []).length
     ? `This project is for ${esc((b.identity_labels || []).join(" · "))}.`
-    : "Add a unit number in the vehicle details first, then come back here.";
+    : `No unit number is recorded yet. You can enter one, or use ${esc(b.auto_label || "the automatic build name")} for now.`;
   const rejectedRefNotice = projectRefInvalid
     ? `<div class="qb-setup-warning"><strong>QuickBooks rejected the saved Project link.</strong> The Project may have been deleted, or it may belong to a different customer. Re-open or create the Project under <strong>${esc(customerName)}</strong>, then paste its Project page address here.</div>`
     : "";
@@ -1142,13 +1148,14 @@ function _ptOpenProjectBindingModal(
        <input id="qb-project-id" class="qb-setup-input" autocomplete="off" placeholder="Paste the web address here" />
        <p class="qb-setup-hint">If you have the project number instead, you can paste that too.</p>`
     : `<div class="qb-setup-first">
-         <strong>First, identify this vehicle.</strong>
+         <strong>Choose how to name this build.</strong>
          <ol class="qb-setup-steps">
-           <li>Choose <strong>Open vehicle details</strong> below.</li>
-           <li>Enter the vehicle's <strong>Unit number</strong>, then save.</li>
-           <li>Choose <strong>QB Estimate</strong> again. This walkthrough will give you the exact QuickBooks Project name and ask for its Project page link.</li>
+           <li>Enter the vehicle's <strong>Unit number</strong> if it is known, or</li>
+           <li>accept <strong>${esc(b.auto_label || "the automatic build name")}</strong> for now.</li>
          </ol>
-         <button type="button" class="btn btn-primary" id="qb-project-open-details">Open vehicle details</button>
+         <div class="qb-setup-name-actions"><button type="button" class="btn btn-primary" id="qb-project-open-details">Enter unit number</button>
+         <button type="button" class="btn btn-secondary" id="qb-project-use-auto-name">Use ${esc(b.auto_label || "automatic name")}</button></div>
+         <p class="qb-setup-hint">The build stays linked by its internal vehicle ID. Adding a unit number later will not lose its files, draft, or Estimate association.</p>
        </div>`;
 
   _ptOpenEstModal("Set up the QuickBooks Project",
@@ -1182,6 +1189,22 @@ function _ptOpenProjectBindingModal(
     e.modal?.classList.remove("open");
     window.PT_openDetailIndModal(projectId, unit.unit_id, individualId);
   });
+  $("qb-project-use-auto-name")?.addEventListener("click", () => {
+    _ptOpenProjectBindingModal(
+      projectId,
+      individualId,
+      {
+        ...b,
+        identity_ready: true,
+        identity_labels: [b.auto_label || "Automatic build name"],
+        project_name: b.auto_project_name || b.project_name,
+      },
+      onLinked,
+      validation,
+      onBack,
+      true,
+    );
+  });
   $("qb-project-name-copy")?.addEventListener("click", async () => {
     const copied = await _ptCopyProjectName(projectName);
     const label = $("qb-project-name-copy-label");
@@ -1198,6 +1221,7 @@ function _ptOpenProjectBindingModal(
           project_id: projectId,
           individual_id: individualId,
           qb_project_id: qbProjectId,
+          accept_auto_name: acceptAutoName,
         });
         if (!res?.ok) {
           toast(_ptEstError(res?.error), "error");
@@ -1220,6 +1244,12 @@ function _ptOpenProjectBindingModal(
 
 window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {
   if (!individualId) { toast("Estimates are created per individual unit", "error"); return; }
+  if (!unitId) {
+    const project = _PT.projects.find(p => p.project_id === projectId) || _PT.viewProject;
+    unitId = (project?.build_units || []).find(unit =>
+      (unit.individuals || []).some(individual => individual.individual_id === individualId)
+    )?.unit_id || "";
+  }
   if (!(await _ptQbConnected())) {
     toast("Connect QuickBooks first (Settings → QuickBooks)", "error");
     return;
@@ -1285,18 +1315,38 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
        <label><input type="radio" name="qb-est-existing-action" value="update" checked> Update existing estimate ${esc(v.existing_estimate_id)}</label><br>
        <label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate</label></div>` : ""}
      ${v.pdf_available
-       ? `<label class="qb-est-pdf-option"><input type="checkbox" id="qb-est-attach-pdf" checked> Attach build PDF: <strong>${esc(v.pdf_name || "build.pdf")}</strong></label>`
-       : `<div class="qb-est-bank-note"><strong>Build PDF:</strong> Export the PDF first if you want it attached to this estimate.</div>`}
+       ? `<label class="qb-est-pdf-option"><input type="checkbox" id="qb-est-attach-pdf" checked disabled> Build PDF will be attached: <strong>${esc(v.pdf_name || "build.pdf")}</strong></label>`
+       : `<div class="qb-est-pdf-required"><strong>A build PDF is required.</strong><p>Create it now so Vehicle Builder can attach it to the Estimate. Exporting may take several seconds.</p><button type="button" class="btn btn-primary" id="qb-est-export-pdf">Create build PDF</button><div id="qb-est-pdf-progress" class="qb-est-pdf-progress" hidden></div></div>`}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
      ${_ptCustomerEditor(customer, customerLinked, customerMissing)}
      <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
        <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`,
-      customerLinked && !customerMissing.length
+      v.pdf_available && customerLinked && !customerMissing.length
         ? (v.existing_estimate_id ? "Continue" : "Create estimate")
-        : customerLinked ? "Update customer & estimate" : "Create customer & estimate");
+        : v.pdf_available ? (customerLinked ? "Update customer & estimate" : "Create customer & estimate") : "");
     const e = _ptEstModalEls();
     _ptWireEstimatePricing(v.pricing);
     if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
+    $("qb-est-export-pdf")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      const progress = $("qb-est-pdf-progress");
+      button.disabled = true;
+      button.textContent = "Creating PDF…";
+      if (progress) {
+        progress.hidden = false;
+        _ptSetStatus(progress, "Creating the PowerPoint and PDF… please wait", "ok");
+      }
+      const exported = await window.PT_buildExportPdf(
+        projectId, unitId, individualId, "ind", { openAfter: false, statusEl: progress }
+      );
+      if (!exported) {
+        button.disabled = false;
+        button.textContent = "Try creating the build PDF again";
+        return;
+      }
+      if (progress) _ptSetStatus(progress, "✅ PDF ready — refreshing estimate review…", "good");
+      await window.PT_buildCreateEstimate(projectId, unitId, individualId);
+    });
   } catch (error) {
     console.error("Could not render QuickBooks estimate review", error);
     toast("Could not open the estimate review: " + (error?.message || "unknown display error"), "error");
@@ -1385,6 +1435,7 @@ function _ptBatchIssue(check) {
     const count = (v.problems || []).length;
     return count ? `${count} part${count === 1 ? "" : "s"} need attention` : "Build needs attention";
   }
+  if (!v.pdf_available) return "Build PDF must be created and attached";
   return "Needs attention";
 }
 
@@ -1417,9 +1468,13 @@ async function _ptOpenBatchEstimateSetup(project) {
   const customerReady = !!(customer?.ok && customer.customer_linked && customer.customer_complete);
   const ready = checks.filter((check) => {
     const v = check.validation || {};
-    return v.ok && v.can_create && v.project?.ready;
+    return v.ok && v.can_create && v.project?.ready && v.pdf_available;
   });
   const attention = checks.filter((check) => !ready.includes(check));
+  const missingPdfs = checks.filter((check) => {
+    const v = check.validation || {};
+    return v.ok && v.can_create && v.project?.ready && !v.pdf_available;
+  });
   const readyRows = ready.length
     ? ready.map((check) => `<div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px"><strong style="color:var(--navy)">${esc(check.label)}</strong><span style="color:var(--green);margin-left:7px">✓ Ready</span></div>`).join("")
     : `<div style="padding:10px;font-size:12px;color:var(--muted)">No vehicles are ready yet.</div>`;
@@ -1433,6 +1488,9 @@ async function _ptOpenBatchEstimateSetup(project) {
   const customerStatus = customerReady
     ? `<div style="padding:8px 10px;margin-bottom:12px;border:1px solid #86c99a;border-radius:6px;background:#f0fbf3;font-size:12px;color:var(--green)">✓ Customer is ready in QuickBooks.</div>`
     : `<div style="padding:9px 11px;margin-bottom:12px;border:1px solid #f0c36d;border-radius:6px;background:#fff7e6;font-size:12px;line-height:1.45"><strong>Customer setup needed first.</strong> Create an estimate for one vehicle first to review and confirm the customer details. Then return here to create the rest as a batch.</div>`;
+  const pdfStatus = missingPdfs.length
+    ? `<div class="qb-est-pdf-required"><strong>${missingPdfs.length} build PDF${missingPdfs.length === 1 ? " is" : "s are"} required.</strong><p>Create ${missingPdfs.length === 1 ? "it" : "them"} now so every Estimate can include its build attachment. This can take several seconds per build.</p><button type="button" class="btn btn-primary" data-qb-batch-export-pdfs>Create missing PDF${missingPdfs.length === 1 ? "" : "s"}</button><div id="qb-est-batch-pdf-progress" class="qb-est-pdf-progress" hidden></div></div>`
+    : `<div class="qb-est-pdf-ready">✓ Every ready build has a PDF attachment.</div>`;
   const batchListTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.list_total || 0), 0);
   const batchCustomerTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.customer_total || 0), 0);
   const batchPricing = ready.length ? {
@@ -1445,7 +1503,7 @@ async function _ptOpenBatchEstimateSetup(project) {
   } : null;
 
   _ptOpenEstModal("Prepare batch QuickBooks estimates",
-    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}${_ptEstimatePricingSummary(batchPricing)}${_ptBankTransferEstimateNote()}
+    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate with its build PDF attached. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}${pdfStatus}${_ptEstimatePricingSummary(batchPricing)}${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:12px;margin-bottom:12px"><div style="flex:1;padding:10px;border:1px solid #86c99a;border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Ready to create</div><strong style="font-size:20px;color:var(--green)">${ready.length}</strong></div><div style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Still needs setup</div><strong style="font-size:20px;color:var(--navy)">${attention.length}</strong></div></div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Ready vehicles</div><div style="max-height:140px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px">${readyRows}</div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Vehicles needing attention</div><div style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px">${attentionRows}</div>`,
@@ -1453,6 +1511,37 @@ async function _ptOpenBatchEstimateSetup(project) {
   const e = _ptEstModalEls();
   if (e.body) {
     e.body.onclick = (event) => {
+      const exportButton = event.target.closest("[data-qb-batch-export-pdfs]");
+      if (exportButton) {
+        void (async () => {
+          const progress = $("qb-est-batch-pdf-progress");
+          exportButton.disabled = true;
+          for (let index = 0; index < missingPdfs.length; index++) {
+            const target = missingPdfs[index];
+            const unit = (project.build_units || []).find(item =>
+              (item.individuals || []).some(individual => individual.individual_id === target.individualId)
+            );
+            if (progress) {
+              progress.hidden = false;
+              _ptSetStatus(progress, `Creating PDF ${index + 1} of ${missingPdfs.length}: ${target.label}…`, "ok");
+            }
+            const ok = unit && await window.PT_buildExportPdf(
+              project.project_id, unit.unit_id, target.individualId, "ind",
+              { openAfter: false, statusEl: progress },
+            );
+            if (!ok) {
+              exportButton.disabled = false;
+              exportButton.textContent = "Try missing PDFs again";
+              return;
+            }
+          }
+          if (progress) _ptSetStatus(progress, "✅ PDFs ready — refreshing checklist…", "good");
+          await _ptLoadAll();
+          const updated = _PT.projects.find(p => p.project_id === project.project_id) || project;
+          await _ptOpenBatchEstimateSetup(updated);
+        })();
+        return;
+      }
       const button = event.target.closest("[data-qb-batch-link]");
       if (!button) return;
       const check = attention[Number(button.getAttribute("data-qb-batch-link"))];
@@ -1484,7 +1573,7 @@ async function _ptRunBatchEstimates(project, individualIds) {
   let res;
   try {
     res = await api("/api/quickbooks/estimates/create-batch", {
-      project_id: project.project_id, individual_ids: individualIds,
+      project_id: project.project_id, individual_ids: individualIds, attach_pdf: true,
     });
   } catch (_) {
     toast("Batch estimate failed", "error");

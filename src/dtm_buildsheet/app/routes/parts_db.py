@@ -672,14 +672,27 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 
     groups: dict[str, dict] = {}
 
-    def add(category: str, acc_pid: str, required: bool, recommendation: dict | None = None) -> None:
+    def add(
+        category: str,
+        acc_pid: str,
+        required: bool,
+        recommendation: dict | None = None,
+        automatic: bool = False,
+    ) -> None:
         if not category or not acc_pid or acc_pid == product_id or acc_pid not in products:
             return
-        g = groups.setdefault(category, {"required": False, "option_ids": [], "recommendations": []})
+        g = groups.setdefault(category, {
+            "required": False,
+            "option_ids": [],
+            "recommendations": [],
+            "automatic_option_ids": [],
+        })
         if required:
             g["required"] = True
         if acc_pid not in g["option_ids"]:
             g["option_ids"].append(acc_pid)
+        if automatic and acc_pid not in g["automatic_option_ids"]:
+            g["automatic_option_ids"].append(acc_pid)
         if recommendation:
             payload = {
                 "product_id": acc_pid,
@@ -733,7 +746,12 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
 
     # 1. Product-level accessories.
     for a in prod.get("accessories") or []:
-        add(a.get("category"), a.get("product_id"), bool(a.get("required")))
+        add(
+            a.get("category"),
+            a.get("product_id"),
+            bool(a.get("required")),
+            automatic=bool(a.get("automatic")),
+        )
 
     # 2. Part_type-level: accessory part_types whose parent is one of our fits.
     fits = set(prod.get("fits_part_types") or [])
@@ -763,7 +781,12 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
     #    product-level Accessory Role (accessory_of_products on the child).
     for apid, ap in products.items():
         if product_id in (ap.get("accessory_of_products") or []):
-            add(ap.get("accessory_category") or "other", apid, bool(ap.get("accessory_required")))
+            add(
+                ap.get("accessory_category") or "other",
+                apid,
+                bool(ap.get("accessory_required")),
+                automatic=bool(ap.get("accessory_automatic")),
+            )
 
     # 4. Contextual recommendations are authored on a parent part type rather
     # than duplicated across every product that fits it.  The client knows the
@@ -807,6 +830,8 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
             "category": cat_id, "label": acc_cats[cat_id].get("label", cat_id),
             "required": g["required"], "options": options,
         }
+        if g["automatic_option_ids"]:
+            entry["automatic_option_ids"] = list(g["automatic_option_ids"])
         if g["recommendations"]:
             entry["recommendations"] = g["recommendations"]
         out.append(entry)

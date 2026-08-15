@@ -1007,6 +1007,48 @@ def flow_light_options_in_product_box(page, base_url: str) -> None:
         page.wait_for_selector(".pp-override")   # must still render without JS error
 
 
+def flow_agency_default_preferences(page, base_url: str) -> None:
+    """Saving project choices as agency defaults must finish with success.
+
+    This drives the real Project Details button and guards the client-side
+    success path as well as the narrowly scoped agency endpoint.
+    """
+    saved_agency = _api(base_url, "/api/agency/save", {"name": "UI Smoke PD"})
+    assert saved_agency.get("ok"), saved_agency
+    agency_id = saved_agency["agency"]["agency_id"]
+    project = _api(base_url, "/api/project/save", {
+        "customer": {
+            "name": "UI Smoke PD",
+            "agency": "UI Smoke PD",
+            "agency_id": agency_id,
+            "build_year": "2026",
+        },
+        "preferences": {"lighting_brands": ["Whelen"]},
+        "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
+    })
+    assert project.get("ok"), project
+
+    page.goto(base_url, wait_until="load")
+    page.click(".htab[data-tab='projects']")
+    page.wait_for_selector(".proj-row-clickable")
+    page.click(".proj-row-clickable")
+    page.wait_for_selector("#proj-detail-view:not([hidden])")
+    page.click(".proj-dtab[data-ptab='edit']")
+    page.wait_for_selector("#proj-ptab-edit .btn-primary")
+    page.click("#proj-ptab-edit .btn-primary")
+    page.wait_for_selector("#et-agency-id", state="attached")
+    page.click("button[onclick*=\"PT_setPreferencesAsAgencyDefault\"]")
+
+    page.wait_for_function(
+        "() => document.querySelector('#toast')?.classList.contains('success')"
+    )
+    toast_text = page.locator("#toast").text_content() or ""
+    assert "Saved as UI Smoke PD's defaults" in toast_text, toast_text
+    stored = _api(base_url, "/api/agencies")["agencies"]
+    agency = next(item for item in stored if item["agency_id"] == agency_id)
+    assert agency["default_preferences"]["lighting_brands"] == ["Whelen"]
+
+
 def flow_brand_preference_collapse(page, base_url: str) -> None:
     """Owner flaw #5 regression guard: a project's brand preference (here,
     lighting) must auto-select for the matching part type, render first as a
@@ -2032,7 +2074,9 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     page.wait_for_selector("#qb-est-modal.open")
     assert page.locator("#qb-est-title").inner_text() == "Create QuickBooks estimate"
     assert page.locator("[data-qb-est-custom-price='whelen']").input_value() == "38"
-    assert page.locator("#qb-est-create").inner_text() == "Create estimate"
+    assert not page.locator("#qb-est-create").is_visible()
+    assert page.locator("#qb-est-export-pdf").is_visible()
+    assert "A build PDF is required" in page.locator("#qb-est-body").inner_text()
     # The smoke flow deliberately stops at review; it never clicks Create.
 
 
@@ -2058,6 +2102,7 @@ def flow_quickbooks_batch_project_checklist(page, base_url: str) -> None:
             ready = individual_id in linked
             payload = {
                 "ok": True, "can_create": ready, "line_count": 1, "total": 100,
+                "pdf_available": True, "pdf_name": f"vehicle-{individual_id[-1]}.pdf",
                 "problems": [] if ready else [],
                 "project": {
                     "ready": ready, "identity_ready": True,
@@ -2121,6 +2166,7 @@ FLOWS = {
     "camera_system_workflow": flow_camera_system_workflow,
     "light_options_in_product_box": flow_light_options_in_product_box,
     "brand_preference_collapse": flow_brand_preference_collapse,
+    "agency_default_preferences": flow_agency_default_preferences,
     "part_details_and_console": flow_part_details_and_console,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,

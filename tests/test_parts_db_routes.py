@@ -1053,6 +1053,33 @@ def test_second_control_head_recommends_the_pending_harness_accessory():
     assert group["options"][0]["skus"][0]["qb_pending"] is True
 
 
+def test_lcphoto_is_automatic_for_interior_light_bars_and_not_cencom_core():
+    core = FakeHandler("/api/parts-db/accessories?product_id=whelen_core")
+    route_parts_db(core, "GET", "/api/parts-db/accessories", {}, AppPaths())
+    assert all(
+        option["product_id"] != "whelen_lcphoto"
+        for group in core.body_json()["accessories"]
+        for option in group["options"]
+    )
+
+    interior_products = {
+        "whelen_fst", "whelen_xlp", "whelen_rst",
+        "soundoff_enftc001bw", "soundoff_enfwb0005k", "soundoff_enfwb003mp",
+        "soundoff_enfwbfs", "qb_unassigned_enfwbrf", "qb_unassigned_fn_1409",
+    }
+    for product_id in interior_products:
+        handler = FakeHandler(f"/api/parts-db/accessories?product_id={product_id}")
+        route_parts_db(handler, "GET", "/api/parts-db/accessories", {}, AppPaths())
+        group = next(
+            row for row in handler.body_json()["accessories"]
+            if "whelen_lcphoto" in row.get("automatic_option_ids", [])
+        )
+        assert group["required"] is True
+        assert group["automatic_option_ids"] == ["whelen_lcphoto"]
+        lcphoto = next(option for option in group["options"] if option["product_id"] == "whelen_lcphoto")
+        assert lcphoto["skus"][0]["part_number"] == "LCPHOTO"
+
+
 @pytest.mark.parametrize("product_id", ["whelen_t_series", "whelen_mega_t_series"])
 @pytest.mark.parametrize("route", [
     "/api/parts-db/category-skus?all=1",

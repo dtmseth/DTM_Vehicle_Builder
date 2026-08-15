@@ -2267,9 +2267,19 @@ function _pickerControlHeadRequiresPaMic() {
     && _pickerSelectedProduct()?.pa_mic_required !== false;
 }
 
+function _pickerIsSecondaryWhelenControlHead() {
+  if (_pickerResolvedPartTypeId(_pickerState.filters) !== "control_head") return false;
+  const product = _pickerSelectedProduct();
+  if (String(product?.manufacturer_id || "").toLowerCase() !== "whelen") return false;
+  const parts = (typeof _meDraft !== "undefined" && _meDraft?.parts) || [];
+  const count = parts.filter(part => !part.parent_line_id && part.part_type === "control_head").length;
+  return _pickerState.editLineId ? count >= 2 : count >= 1;
+}
+
 function _pickerControlHeadOffersHandheldMagMic() {
   return _pickerResolvedPartTypeId(_pickerState.filters) === "control_head"
-    && _pickerSelectedProduct()?.handheld_mag_mic_prompt === true;
+    && (_pickerSelectedProduct()?.handheld_mag_mic_prompt === true
+      || _pickerIsSecondaryWhelenControlHead());
 }
 
 function _pickerPartDetailsSatisfied() {
@@ -2356,9 +2366,10 @@ function _pickerRenderPartDetails() {
   // selected product just as resolve/add does. Edit mode already has a leaf.
   if (_pickerControlHeadOffersHandheldMagMic()) {
     const details = _pickerState.partDetails || {};
+    const secondary = _pickerIsSecondaryWhelenControlHead();
     panel.hidden = false;
-    panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">Hand-held control head</div>`
-      + `<h3>Add a Mag Mic?</h3><p>The hand-held control head does not need a separate bracket accessory. Choosing Yes adds one MMSU-1 Mag Mic.</p>`
+    panel.innerHTML = `<section class="picker-location-chooser picker-part-details"><div class="picker-location-kicker">${secondary ? "Secondary Whelen control head" : "Hand-held control head"}</div>`
+      + `<h3>Add a Mag Mic?</h3><p>${secondary ? "Choose whether this second control head needs its own" : "The hand-held control head does not need a separate bracket accessory. Choosing Yes adds one"} MMSU-1 Mag Mic.</p>`
       + `<div class="picker-location-grid picker-detail-choice-grid">`
       + `<button type="button" class="picker-location-card${details.handheldMagMic === true ? " is-selected" : ""}" data-handheld-mag-mic="true" aria-pressed="${details.handheldMagMic === true ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === true ? "✓" : ""}</span><span>Yes, add Mag Mic</span></button>`
       + `<button type="button" class="picker-location-card${details.handheldMagMic === false ? " is-selected" : ""}" data-handheld-mag-mic="false" aria-pressed="${details.handheldMagMic === false ? "true" : "false"}"><span class="picker-location-card-check">${details.handheldMagMic === false ? "✓" : ""}</span><span>No Mag Mic</span></button></div></section>`;
@@ -2931,6 +2942,20 @@ function _pickerApplyAccessoryRecommendations() {
   }
 }
 
+function _pickerApplyAutomaticAccessories() {
+  const vehicle = _pickerVehicle();
+  const useVehicleFilter = _pickerState.vehicleOnly && !!vehicle;
+  for (const group of (_pickerState.accessories || [])) {
+    const automaticIds = new Set(group.automatic_option_ids || []);
+    if (!automaticIds.size) continue;
+    const option = (group.options || []).find(item => automaticIds.has(item.product_id));
+    const sku = (option?.skus || []).find(item => !useVehicleFilter || _skuCompatible(item, vehicle));
+    if (option && sku) {
+      _pickerState.accessoryChoices[group.category] = `${option.product_id}::${sku.part_number}`;
+    }
+  }
+}
+
 async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = {}) {
   if (!productId) {
     _pickerState.accessories = []; _pickerState.accessoryChoices = {};
@@ -2947,6 +2972,7 @@ async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = 
   _pickerState.accessoryChoices = restoreFromDraft
     ? _pickerRestoreAccessoryChoices(productId, _pickerState.accessories)
     : Object.fromEntries(_pickerState.accessories.map(g => [g.category, ""]));
+  _pickerApplyAutomaticAccessories();
   _pickerApplyAccessoryRecommendations();
   await _pickerApplyLicensePlateLocation();
   _pickerRenderAccessories();
@@ -3099,6 +3125,7 @@ function _pickerRenderAccessories() {
     return opts;
   };
   const rows = groups.map(g => {
+    const automatic = (g.automatic_option_ids || []).length > 0;
     const recommendation = _pickerRecommendationForGroup(g);
     const recommendationNote = recommendation
       ? `<span class="pa-recommendation">${esc(recommendation.message || "Recommended accessory")}</span>`
@@ -3125,9 +3152,9 @@ function _pickerRenderAccessories() {
       const remove = indexed && vals.length > 1
         ? `<button type="button" class="pa-accessory-remove" data-accessory-remove="${esc(g.category)}" data-idx="${idx}" title="Remove this accessory">×</button>`
         : "";
-      return `<div class="pa-subrow"><select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""}>${_optionsHtml(g, val)}</select>${remove}</div>`;
+      return `<div class="pa-subrow"><select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""}${automatic ? " disabled" : ""}>${_optionsHtml(g, val)}</select>${automatic ? '<span class="pa-recommendation">Automatically included</span>' : remove}</div>`;
     }).join("");
-    const add = `<button type="button" class="pa-accessory-add" data-accessory-add="${esc(g.category)}"${canAdd ? "" : " disabled"}>+ Add another ${esc(g.label)}</button>`;
+    const add = automatic ? "" : `<button type="button" class="pa-accessory-add" data-accessory-add="${esc(g.category)}"${canAdd ? "" : " disabled"}>+ Add another ${esc(g.label)}</button>`;
     return `<div class="pa-row pa-row-stack"><label>${esc(g.label)}${recommendationNote}${g.required ? '<span class="pa-req">*</span>' : ""}</label><div class="pa-subrows">${selects}</div>${add}</div>`;
   }).join("");
   const pending = !_accessoriesSatisfied();
@@ -3762,9 +3789,10 @@ function _pickerNewConsoleSetup(saved = null) {
       dockingStation: copyChoice(source.dockingStation),
       radioMicClip: copyChoice(source.radioMicClip),
       radioMicClipRelation: source.radioMicClipRelation || "",
-      // A separate clip bracket needs a matching magnetic mic in nearly every
-      // install. Keep the explicit opt-out, but make the first selection Yes.
-      addMagMic: source.addMagMic !== false,
+      // Without a selected bracket, a saved true value means the user chose a
+      // standalone Mag Mic (the Gamber-Johnson flow). Havis retains its
+      // bracket-plus-Mag-Mic behavior after a bracket is selected.
+      addMagMic: source.radioMicClip ? source.addMagMic !== false : source.addMagMic === true,
       // A printer armrest is designed around a PocketJet.  Ask explicitly so
       // a shop can still record an armrest-only build, but start from the
       // usual installation: include the printer and then choose its cables.
@@ -4119,6 +4147,16 @@ function _pickerConsoleRadioMicReconciliationQuestion(setup) {
 }
 
 function _pickerConsoleMagMicQuestion(setup) {
+  const gamber = _pickerConsoleBrand().toLowerCase() === "gamber johnson";
+  if (gamber) {
+    const bracket = !!setup?.choices?.radioMicClip;
+    const magMic = !bracket && setup?.choices?.addMagMic === true;
+    return `<div class="console-motion-location"><span>Choose one microphone mount option</span><div>`
+      + `<button type="button" class="console-location-choice${bracket ? " is-selected" : ""}" data-console-mic-hardware="bracket"${bracket ? "" : " disabled"}>${bracket ? "Use selected mic clip bracket" : "Choose a bracket above"}</button>`
+      + `<button type="button" class="console-location-choice${magMic ? " is-selected" : ""}" data-console-mic-hardware="mag_mic">Use Mag Mic instead</button>`
+      + `<button type="button" class="console-location-choice${!bracket && !magMic ? " is-selected" : ""}" data-console-mic-hardware="none">No mic hardware</button>`
+      + `</div><small>The available Gamber-Johnson bracket does not support a Mag Mic, so the bracket and Mag Mic cannot be added together.</small></div>`;
+  }
   if (!setup?.choices?.radioMicClip) return "";
   const addMagMic = setup.choices.addMagMic !== false;
   return `<div class="console-motion-location"><span>Add a Mag Mic with this clip?</span><div><button type="button" class="console-location-choice${addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="yes">Yes — add Mag Mic</button><button type="button" class="console-location-choice${!addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="no">No Mag Mic</button></div></div>`;
@@ -4285,7 +4323,9 @@ function _pickerRenderConsoleSetup() {
     }
     if (key === "radioMicClip") {
       setup.choices.radioMicClipRelation = "";
-      if (!setup.choices.radioMicClip) setup.choices.addMagMic = true;
+      if (setup.choices.radioMicClip) {
+        setup.choices.addMagMic = _pickerConsoleBrand().toLowerCase() !== "gamber johnson";
+      }
     }
     if (key === "armRest" && !_pickerConsoleHasPrinterArmrest(setup)) {
       setup.choices.addPrinter = true;
@@ -4308,6 +4348,22 @@ function _pickerRenderConsoleSetup() {
   }));
   details.querySelectorAll("[data-console-add-mag-mic]").forEach(button => button.addEventListener("click", () => {
     setup.choices.addMagMic = button.dataset.consoleAddMagMic === "yes";
+    _pickerRenderConsoleSetup();
+    _pickerUpdateFooter();
+  }));
+  details.querySelectorAll("[data-console-mic-hardware]").forEach(button => button.addEventListener("click", () => {
+    const choice = button.dataset.consoleMicHardware;
+    if (choice === "mag_mic") {
+      setup.choices.radioMicClip = null;
+      setup.choices.radioMicClipRelation = "";
+      setup.choices.addMagMic = true;
+    } else if (choice === "none") {
+      setup.choices.radioMicClip = null;
+      setup.choices.radioMicClipRelation = "";
+      setup.choices.addMagMic = false;
+    } else if (choice === "bracket" && setup.choices.radioMicClip) {
+      setup.choices.addMagMic = false;
+    }
     _pickerRenderConsoleSetup();
     _pickerUpdateFooter();
   }));
@@ -4396,7 +4452,9 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   }
   add("Docking Station", choices.dockingStation, "docking_station", "IN CENTER CONSOLE", "dockingStation");
   add("Radio Mic Clip", choices.radioMicClip, "radio_mic_clip", "ON CENTER CONSOLE", "radioMicClip");
-  if (choices.radioMicClip && choices.addMagMic !== false) {
+  if (choices.addMagMic === true && (
+    choices.radioMicClip || _pickerConsoleBrand().toLowerCase() === "gamber johnson"
+  )) {
     add("Mag Mic", _pickerConsoleMagMicChoice(), "radio_mic_clip", "ON CENTER CONSOLE", "magneticMic");
   }
   return rows;

@@ -613,7 +613,29 @@ def _project_identity_labels(unit) -> list[str]:
     return [f"Unit {unit_number}"] if unit_number else []
 
 
-def _estimate_project_name(project, build_unit, unit, customer_name: str = "") -> str:
+def _automatic_build_label(project, build_unit, unit) -> str:
+    """Return a deterministic display label without replacing vehicle identity.
+
+    The individual_id remains the durable association for drafts, files, and
+    estimates.  This label is only the owner-approved name used when a unit
+    number is not known yet.
+    """
+    build_type = str(getattr(build_unit, "build_type", "") or "Build").strip() or "Build"
+    ordinal = 0
+    target_id = str(getattr(unit, "individual_id", "") or "")
+    for candidate_build in project.build_units:
+        if str(candidate_build.build_type or "Build").strip() != build_type:
+            continue
+        for candidate in candidate_build.individuals:
+            ordinal += 1
+            if str(candidate.individual_id) == target_id:
+                return f"{build_type} #{ordinal}"
+    return f"{build_type} #1"
+
+
+def _estimate_project_name(
+    project, build_unit, unit, customer_name: str = "", *, use_auto_name: bool = False,
+) -> str:
     """Return a stable, self-identifying name for one real QBO Project.
 
     The simple order is agency, build year, then unit number. Those are the
@@ -629,7 +651,10 @@ def _estimate_project_name(project, build_unit, unit, customer_name: str = "") -
     parts = [customer]
     if build_year:
         parts.append(f"Build {build_year}")
-    parts.extend(_project_identity_labels(unit))
+    labels = _project_identity_labels(unit)
+    if not labels and use_auto_name:
+        labels = [_automatic_build_label(project, build_unit, unit)]
+    parts.extend(labels)
     return " | ".join(p for p in parts if p)
 
 
@@ -645,15 +670,22 @@ def _project_customer_name(paths: AppPaths, project) -> str:
 def _project_binding_summary(paths: AppPaths, project, build_unit, unit) -> dict:
     """Describe the local link to the real QBO Project for the estimate UI."""
     labels = _project_identity_labels(unit)
+    stored_name = str(getattr(unit, "qb_project_name", "") or "").strip()
+    stored_id = str(getattr(unit, "qb_project_id", "") or "").strip()
+    auto_label = _automatic_build_label(project, build_unit, unit)
     return {
-        "qb_project_id": str(getattr(unit, "qb_project_id", "") or "").strip(),
+        "qb_project_id": stored_id,
         "customer_name": _project_customer_name(paths, project),
         "project_name": _estimate_project_name(
             project, build_unit, unit, _project_customer_name(paths, project)
         ),
-        "identity_ready": bool(labels),
-        "identity_labels": labels,
-        "ready": bool(str(getattr(unit, "qb_project_id", "") or "").strip()),
+        "identity_ready": bool(labels or (stored_id and stored_name)),
+        "identity_labels": labels or ([auto_label] if stored_id and stored_name else []),
+        "auto_label": auto_label,
+        "auto_project_name": _estimate_project_name(
+            project, build_unit, unit, _project_customer_name(paths, project), use_auto_name=True,
+        ),
+        "ready": bool(stored_id),
     }
 
 
@@ -682,7 +714,8 @@ def _normalize_qb_project_id(value: str) -> str:
 
 
 def bind_project(
-    paths: AppPaths, *, project_id: str, individual_id: str, qb_project_id: str
+    paths: AppPaths, *, project_id: str, individual_id: str, qb_project_id: str,
+    accept_auto_name: bool = False,
 ) -> dict:
     """Store the ID of a real QBO Project created manually in QuickBooks.
 
@@ -700,7 +733,9 @@ def bind_project(
         return {"ok": False, "error": "invalid_project_id"}
     binding = _project_binding_summary(paths, project, build_unit, unit)
     if not binding["identity_ready"]:
-        return {"ok": False, "error": "project_identity_required", "project": binding}
+        if not accept_auto_name:
+            return {"ok": False, "error": "project_identity_required", "project": binding}
+        binding["project_name"] = binding["auto_project_name"]
 
     unit.qb_project_id = raw_id
     unit.qb_project_name = binding["project_name"]
@@ -936,7 +971,8 @@ def create_estimate(
 
 
 def create_estimates_batch(
-    paths: AppPaths, *, project_id: str, individual_ids: list[str] | None = None, memo: str = ""
+    paths: AppPaths, *, project_id: str, individual_ids: list[str] | None = None, memo: str = "",
+    attach_pdf: bool = False,
 ) -> dict:
     """Create estimates for several vehicles. Each is validated independently.
 
@@ -963,7 +999,13 @@ def create_estimates_batch(
     results = []
     created = 0
     for ind_id in targets:
-        res = create_estimate(paths, project_id=project_id, individual_id=ind_id, memo=memo)
+        res = create_estimate(
+            paths,
+            project_id=project_id,
+            individual_id=ind_id,
+            memo=memo,
+            attach_pdf=attach_pdf,
+        )
         if res.get("ok"):
             created += 1
         results.append({"individual_id": ind_id, **res})

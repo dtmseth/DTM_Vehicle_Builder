@@ -396,15 +396,13 @@ def handle_save_agency_default_preferences(body: dict, paths: AppPaths) -> dict:
         record.updated_at = _utcnow()
         _write_record(record, paths)
         serialized = json.dumps(asdict(record), indent=2) + "\n"
-        proposal_result = save_via_proposal(
-            target_file=f"agencies/{record.agency_id}.json",
-            serialized_content=serialized,
-            summary=f"Update agency equipment defaults: {record.name}",
-            category="general",
-        )
         from .shared_work_service import save_setting_to_cloud_in_background
         save_setting_to_cloud_in_background(f"agencies/{record.agency_id}.json", serialized)
-        return {"ok": True, "agency": asdict(record), **proposal_result}
+        # Agencies are live per-record settings whose authoritative cloud path
+        # is the direct SharePoint mirror.  This narrow action must not depend
+        # on the settings-repository proposal pipeline to report a successful
+        # local/default save to project users.
+        return {"ok": True, "agency": asdict(record)}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:

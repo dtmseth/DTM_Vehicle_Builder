@@ -169,7 +169,7 @@ def _make_project(paths, agency_id, draft_parts, *, quote="26-043"):
         qb_project_id="447322633",
         qb_project_name="Lakeville PD | Build 2026 | Unit 12",
     )
-    bu = BuildUnit(unit_id="bu1", vehicle_model="Tahoe", individuals=[unit])
+    bu = BuildUnit(unit_id="bu1", vehicle_model="Tahoe", build_type="Patrol", individuals=[unit])
     project = project_entry.new_project(
         customer=CustomerInfo(agency_id=agency_id, build_year="2026", quote_number=quote),
         build_units=[bu],
@@ -948,7 +948,7 @@ def test_bind_project_persists_true_project_id_and_stable_name(paths):
     assert current_url["ok"] is True and current_url["qb_project_id"] == "70995"
 
 
-def test_bind_project_requires_project_id_and_unit_number(paths):
+def test_bind_project_offers_stable_automatic_name_when_unit_number_is_missing(paths):
     aid = _make_agency(paths, qb_customer_id="CUST9")
     pid = _make_project(paths, aid, [])
     assert est.bind_project(paths, project_id=pid, individual_id="ind1", qb_project_id="not-an-id") == {
@@ -958,10 +958,34 @@ def test_bind_project_requires_project_id_and_unit_number(paths):
     project = project_entry.load_project(pid, paths)
     unit = project.build_units[0].individuals[0]
     unit.unit_number = ""
+    unit.qb_project_id = ""
+    unit.qb_project_name = ""
     unit.vin = "VIN123456"
     project_entry.save_project(project, paths)
     result = est.bind_project(paths, project_id=pid, individual_id="ind1", qb_project_id="123")
     assert result["ok"] is False and result["error"] == "project_identity_required"
+    assert result["project"]["auto_label"] == "Patrol #1"
+
+    accepted = est.bind_project(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_project_id="123",
+        accept_auto_name=True,
+    )
+    assert accepted == {
+        "ok": True,
+        "qb_project_id": "123",
+        "project_name": "Lakeville PD | Build 2026 | Patrol #1",
+    }
+
+    project = project_entry.load_project(pid, paths)
+    unit = project.build_units[0].individuals[0]
+    unit.unit_number = "77"
+    project_entry.save_project(project, paths)
+    saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
+    assert saved.qb_project_id == "123"
+    assert saved.qb_project_name == "Lakeville PD | Build 2026 | Patrol #1"
 
 
 def test_create_estimate_requires_customer_confirmation_then_creates_top_level_customer(paths, monkeypatch):
@@ -1054,7 +1078,7 @@ def test_confirmed_profile_updates_linked_customer_before_estimate(paths, monkey
 
 
 def test_create_estimates_batch_mixed(paths, monkeypatch):
-    _use_fake(monkeypatch)
+    fake = _use_fake(monkeypatch)
     _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 100.0)})
     aid = _make_agency(paths, qb_customer_id="CUST9")
     # Two units: one billable, one with an unmatched part.
@@ -1062,11 +1086,15 @@ def test_create_estimates_batch_mixed(paths, monkeypatch):
     d_bad = new_draft(parts=[DraftPart(name="z", part_number="ZZ")])
     save_draft(d_ok, paths.workspace_drafts_dir)
     save_draft(d_bad, paths.workspace_drafts_dir)
+    ok_pdf = paths.workspace_output_dir / "patrol-1.pdf"
+    bad_pdf = paths.workspace_output_dir / "patrol-2.pdf"
+    ok_pdf.write_bytes(b"%PDF-1.7\nvalid batch pdf")
+    bad_pdf.write_bytes(b"%PDF-1.7\nvalid batch pdf")
     units = [
         IndividualUnit(individual_id="ok", unit_number="1", model="Tahoe", draft_id=d_ok.draft_id,
-                       qb_project_id="447322633"),
+                       qb_project_id="447322633", pdf_path=str(ok_pdf)),
         IndividualUnit(individual_id="bad", unit_number="2", model="Tahoe", draft_id=d_bad.draft_id,
-                       qb_project_id="447322634"),
+                       qb_project_id="447322634", pdf_path=str(bad_pdf)),
     ]
     project = project_entry.new_project(
         customer=CustomerInfo(agency_id=aid, build_year="2026", quote_number="Q1"),
@@ -1074,8 +1102,9 @@ def test_create_estimates_batch_mixed(paths, monkeypatch):
     )
     project_entry.save_project(project, paths)
 
-    res = est.create_estimates_batch(paths, project_id=project.project_id)
+    res = est.create_estimates_batch(paths, project_id=project.project_id, attach_pdf=True)
     assert res["created"] == 1 and res["blocked"] == 1
     by_id = {r["individual_id"]: r for r in res["results"]}
     assert by_id["ok"]["ok"] is True
     assert by_id["bad"]["ok"] is False and by_id["bad"]["error"] == "validation_failed"
+    assert fake.uploaded_attachments == [("EST1", str(ok_pdf))]

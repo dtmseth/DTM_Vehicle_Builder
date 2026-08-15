@@ -157,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/presets/save" or path == "/api/presets/import-workbook" or (path.startswith("/api/presets/") and path.endswith("/clone")):
             if not preset_routes.route_presets(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
-        elif path == "/api/agency/save":
+        elif path in {"/api/agency/save", "/api/agency/default-preferences"}:
             if not agency_routes.route_agencies(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):

@@ -210,6 +210,7 @@ def route_quickbooks(
                 project_id=body.get("project_id", ""),
                 individual_id=body.get("individual_id", ""),
                 qb_project_id=body.get("qb_project_id", ""),
+                accept_auto_name=bool(body.get("accept_auto_name", False)),
             ),
         )
         return True
@@ -254,6 +255,7 @@ def route_quickbooks(
                 project_id=body.get("project_id", ""),
                 individual_ids=body.get("individual_ids") or None,
                 memo=body.get("memo", ""),
+                attach_pdf=bool(body.get("attach_pdf", False)),
             ),
         )
         return True

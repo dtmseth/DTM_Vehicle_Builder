@@ -101,7 +101,7 @@ class TestPerRecordStorage:
         assert result["ok"] is False
         assert "0 through 100" in result["error"]
 
-    def test_project_choices_can_update_only_agency_default_preferences(self, tmp_path):
+    def test_project_choices_can_update_only_agency_default_preferences(self, tmp_path, monkeypatch):
         paths = _paths(tmp_path)
         saved = handle_save_agency({
             "name": "Alpha PD",
@@ -109,6 +109,11 @@ class TestPerRecordStorage:
             "default_preferences": {"lighting_brands": ["Whelen"]},
         }, paths)
 
+        monkeypatch.setattr(
+            agency_service,
+            "save_via_proposal",
+            lambda **kwargs: (_ for _ in ()).throw(AssertionError("proposal path must not run")),
+        )
         result = handle_save_agency_default_preferences({
             "agency_id": saved["agency"]["agency_id"],
             "default_preferences": {
