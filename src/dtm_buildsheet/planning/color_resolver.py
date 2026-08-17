@@ -92,7 +92,18 @@ def resolve_color_token(
             "passenger": _normalize_token(part.passenger_color),
             "center": _normalize_token(part.center_color),
         }
-        return role_map.get(slot_role) or role_map.get("center") or raw_color_token
+        # A free custom-placement point has no authored driver/passenger role,
+        # so geometry labels it "center". Split lights commonly carry only
+        # driver/passenger colors; fall back to either concrete side rather
+        # than returning an empty token and forcing the preview's red-dot
+        # placeholder.
+        return (
+            role_map.get(slot_role)
+            or role_map.get("center")
+            or role_map.get("driver")
+            or role_map.get("passenger")
+            or raw_color_token
+        )
     if profile_id == "legacy_uniform":
         return raw_color_token
 

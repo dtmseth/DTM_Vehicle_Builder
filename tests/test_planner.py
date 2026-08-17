@@ -739,6 +739,33 @@ def test_direct_ion_sku_at_custom_point_resolves_its_colored_asset(config):
     assert instance.asset_path == "lights/sm_red-blue_h.png"
 
 
+def test_split_ion_at_neutral_custom_point_uses_a_concrete_side_asset(config):
+    """Edina regression: a center-role free point must not become a red dot."""
+    part = PartInput(
+        name="Forward Warning 1", part_type="warning_light", part_number="ION",
+        raw_color="Red/White / Blue/White", driver_color="Red/White",
+        passenger_color="Blue/White", location="Front Center Grill", quantity=4,
+        line_id="edina-front-ion",
+        components=[
+            {"part_number": "XI2D", "color": "Red/White", "quantity": 2},
+            {"part_number": "XI2E", "color": "Blue/White", "quantity": 2},
+        ],
+        picker_config={"custom_location": {
+            "label": "Front Center Grill",
+            "placements": {"front": [{"x": 0.4938, "y": 0.6122}]},
+        }},
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "EDINA-FRONT-ION"},
+        parts=[part], notes={},
+    )
+
+    instance = build_plan(project, config).planned_parts[0].placements[0].instances[0]
+    assert instance.slot_role == "center"
+    assert instance.color_token == "red-white"
+    assert instance.asset_path == "lights/sm_red-white_h.png"
+
+
 def test_guided_radio_antenna_uses_its_individual_condition(config):
     parent = PartInput(
         name="Radio Control Head", part_type="radio_head", new_or_used="New", line_id="radio-system",
