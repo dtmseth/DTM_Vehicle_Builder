@@ -1049,6 +1049,31 @@ def flow_agency_default_preferences(page, base_url: str) -> None:
     assert agency["default_preferences"]["lighting_brands"] == ["Whelen"]
 
 
+def flow_part_picker_search_stays_collapsed(page, base_url: str) -> None:
+    """SKU search finds its parent product without filtering or opening it."""
+    _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "GK0068E")
+    row = page.locator(".pp-row[data-pid='setina_single_weapon_lock']")
+    row.wait_for()
+
+    assert page.locator("#picker-products .pp-skus").count() == 0, (
+        "search results must render as collapsed product cards"
+    )
+    assert page.evaluate("() => _pickerState.expanded.size") == 0
+
+    row.locator(".pp-head").click()
+    row.locator(".pp-skus").wait_for()
+    assert row.locator(".pp-sku").count() == 3, (
+        "opening a SKU-matched product must show its complete SKU list"
+    )
+    assert row.get_by_text("GK0069M", exact=True).count() == 1, (
+        "a sibling SKU that does not match the query must remain visible"
+    )
+
+
 def flow_brand_preference_collapse(page, base_url: str) -> None:
     """Owner flaw #5 regression guard: a project's brand preference (here,
     lighting) must auto-select for the matching part type, render first as a
@@ -2167,6 +2192,7 @@ FLOWS = {
     "light_options_in_product_box": flow_light_options_in_product_box,
     "brand_preference_collapse": flow_brand_preference_collapse,
     "agency_default_preferences": flow_agency_default_preferences,
+    "part_picker_search_stays_collapsed": flow_part_picker_search_stays_collapsed,
     "part_details_and_console": flow_part_details_and_console,
     "sku_dropdown_rework": flow_sku_dropdown_rework,
     "scene_light_qty_only": flow_scene_light_qty_only,

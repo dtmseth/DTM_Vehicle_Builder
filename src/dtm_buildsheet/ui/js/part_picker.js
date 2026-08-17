@@ -922,8 +922,13 @@ async function _pickerFetchProducts() {
     const preferred = _pickerPreferredBrand(f);
     if (preferred) { f.brand = preferred; _pickerState._brandAutoSet = true; }
   }
-  // Auto-expand when only one product remains.
-  if (_pickerState.products.length === 1) _pickerState.expanded.add(_pickerState.products[0].product_id);
+  // A search result is a product-level result list, even when only one card
+  // matches through a child SKU.  Leave it collapsed until the user chooses
+  // to inspect the product; normal filtered browsing keeps its convenience
+  // auto-expand behavior.
+  if (!_pickerState.search.trim() && _pickerState.products.length === 1) {
+    _pickerState.expanded.add(_pickerState.products[0].product_id);
+  }
 }
 
 function _pickerUseGlobalSearch() {
@@ -1201,12 +1206,17 @@ function _pickerWireFilters() {
   if (!el) return;
   $("pf-search")?.addEventListener("input", async e => {
     _pickerState.search = e.target.value;
+    // Search changes which product cards are relevant, not which SKU rows are
+    // visible inside them.  Start every new result set collapsed; a subsequent
+    // product click may expand it and show that product's complete SKU list.
+    _pickerState.expanded = new Set();
     await _pickerFetchProducts();
     _pickerRenderProducts();
     _pickerUpdateFooter();
   });
   $("pf-search-current")?.addEventListener("change", async e => {
     _pickerState.searchGlobal = !e.target.checked;
+    _pickerState.expanded = new Set();
     await _pickerFetchProducts();
     _pickerRenderProducts();
     _pickerUpdateFooter();
@@ -1780,7 +1790,7 @@ function _pickerRenderProducts() {
   });
 
   if (!list.length) { el.innerHTML = header + `<div style="color:var(--muted);text-align:center;padding:40px">No products match these filters.</div>`; _pickerWireBrand(el); return; }
-  if (list.length === 1) _pickerState.expanded.add(list[0].product_id);
+  if (!q && list.length === 1) _pickerState.expanded.add(list[0].product_id);
 
   el.innerHTML = header + list.map(p => {
     const open = _pickerState.expanded.has(p.product_id);
