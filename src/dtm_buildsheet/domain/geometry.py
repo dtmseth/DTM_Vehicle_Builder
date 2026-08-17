@@ -47,7 +47,10 @@ def slot_roles(
         return ["driver"] * slot_count
     if pattern == "inner_edge_front_passenger":
         return ["passenger"] * slot_count
-    if pattern in ("inner_edge_front", "inner_edge_rear"):
+    if pattern == "inner_edge_rear":
+        driver_count = (slot_count + 1) // 2
+        return ["driver"] * driver_count + ["passenger"] * (slot_count - driver_count)
+    if pattern == "inner_edge_front":
         passenger_count = slot_count // 2
         return ["passenger"] * passenger_count + ["driver"] * (slot_count - passenger_count)
 

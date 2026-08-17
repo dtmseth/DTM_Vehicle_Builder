@@ -305,12 +305,13 @@ function _meMakeRows(parts, columns) {
       const price = (cm.price != null) ? ` · $${cm.price}` : "";
       const label = cm.label || cm.name || cm.part_number || "Component";
       const detail = cm.detail || cm.value || "";
+      const componentStatus = cm.new_or_used ? ` · ${cm.new_or_used}` : "";
       html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
         <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(label)}</td>
         ${columns.showLocation ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.location || "—")}</td>` : ""}
         ${columns.showColor ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>` : ""}
         <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
-        <td colspan="3" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${price}</td>
+        <td colspan="3" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${esc(componentStatus)}${price}</td>
       </tr>`;
     }
     // Accessory child lines — real parts, individually editable/removable.

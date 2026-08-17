@@ -312,6 +312,10 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     for dp in draft.parts:
         if not dp.include:
             continue
+        # Used and reused hardware remains on the build manifest but is not a
+        # purchase for this estimate.
+        if str(getattr(dp, "new_or_used", "") or "").strip().lower() in {"used", "reused"}:
+            continue
         picker_config = getattr(dp, "picker_config", {}) or {}
         # Console kits include some physical rows (for example a cup holder or
         # OEM relocation plate). Keep those in the build manifest, but the kit

@@ -121,7 +121,7 @@ class TestPartsDbValidator:
                 }},
             })
 
-    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt"])
+    @pytest.mark.parametrize("field", ["allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku"])
     def test_rejects_invalid_product_location_and_pa_metadata(self, field):
         with pytest.raises(ValueError, match=field):
             validate_config_payload("parts_db.json", {

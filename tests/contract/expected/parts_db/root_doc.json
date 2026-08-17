@@ -20832,6 +20832,7 @@
             "secondary_color": "red"
           }
         ],
+        "picker_direct_sku": true,
         "reviewed": true,
         "tag_ids": [
           "light"

@@ -265,6 +265,11 @@ class TestSlotRelativePositions:
         positions = slot_relative_positions("inner_edge_rear", 4, 0.5, 0.2, 0.02)
         assert [x for x, _ in positions] == pytest.approx([0.47, 0.49, 0.51, 0.53])
 
+    def test_inner_edge_rear_duo_orders_driver_red_before_passenger_blue(self):
+        assert slot_roles("inner_edge_rear", 4, VIEW_CFG) == [
+            "driver", "driver", "passenger", "passenger",
+        ]
+
     def test_outer_edge_pillars_are_two_centered_vertical_stacks(self):
         positions = slot_relative_positions(
             "outer_edge_pillars", 6, 0.5, 0.22, h_spacing=0.59, v_spacing=0.045,

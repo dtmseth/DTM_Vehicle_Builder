@@ -7204,6 +7204,7 @@
         "manufacturer_id": "soundoff",
         "manufacturer_label": "Soundoff",
         "model": "Dome Light",
+        "picker_direct_sku": true,
         "primary_category_id": "interior",
         "primary_family_id": "interior_lighting",
         "primary_family_label": "Interior Lighting",

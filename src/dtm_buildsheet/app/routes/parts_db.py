@@ -905,7 +905,7 @@ def _resolve_system_cable_refreshes(svc, system_id: str, vehicle: str = "") -> l
 
 _PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
                         "location_options", "fixed_location", "default_colors", "accessories_disabled",
-                        "allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt",
+                        "allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku",
                         "reviewed", "accessory_category",
                         "accessory_of_products", "accessory_required"}
 _SKU_EDIT_FIELDS = {
@@ -1819,7 +1819,7 @@ def route_parts_db(
                 # without expanding the established general catalog response.
                 if include_accessory_links and product_spec.get("accessory_of_products"):
                     entry["accessory_of_products"] = list(product_spec["accessory_of_products"])
-                for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt"):
+                for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku"):
                     if field in product_spec:
                         entry[field] = bool(product_spec[field])
                 if p.console_kit:

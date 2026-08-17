@@ -722,6 +722,44 @@ def test_custom_picker_location_renders_each_free_point_across_views(config):
     ]
 
 
+def test_direct_ion_sku_at_custom_point_resolves_its_colored_asset(config):
+    part = PartInput(
+        name="Side Warning 1", part_type="warning_light", part_number="IONJ",
+        raw_color="Red/Blue", location="Custom ION mount", quantity=1, line_id="custom-ion",
+        picker_config={"custom_location": {
+            "label": "Custom ION mount",
+            "placements": {"side": [{"x": 0.42, "y": 0.31}]},
+        }},
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CUSTOM-ION"}, parts=[part], notes={},
+    )
+
+    instance = build_plan(project, config).planned_parts[0].placements[0].instances[0]
+    assert instance.asset_path == "lights/sm_red-blue_h.png"
+
+
+def test_guided_radio_antenna_uses_its_individual_condition(config):
+    parent = PartInput(
+        name="Radio Control Head", part_type="radio_head", new_or_used="New", line_id="radio-system",
+        components=[{
+            "label": "Radio antenna", "part_type": "radio_antenna_top",
+            "location": "Rear left roof", "detail": "Whip style", "quantity": 1,
+            "new_or_used": "Reused",
+        }],
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "RADIO-COMPONENT-CONDITION"},
+        parts=[parent], notes={},
+    )
+
+    antenna = next(
+        planned for planned in build_plan(project, config).planned_parts
+        if planned.raw.part_type == "radio_antenna_top"
+    )
+    assert antenna.raw.new_or_used == "Reused"
+
+
 def test_picker_opticom_uses_preemption_parts_db_render_metadata(config):
     from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
     proj = ProjectInput(

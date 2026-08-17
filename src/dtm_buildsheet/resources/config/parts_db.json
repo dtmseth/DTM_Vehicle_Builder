@@ -15665,6 +15665,7 @@
     "soundoff_soundoff_dome_light_2": {
       "manufacturer_id": "soundoff",
       "model": "Dome Light",
+      "picker_direct_sku": true,
       "description": "",
       "fits_part_types": [
         "front_dome_light",

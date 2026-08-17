@@ -395,6 +395,18 @@ def test_resolve_skips_excluded_and_defaults_qty(paths):
     assert len(lines) == 1 and lines[0]["qty"] == 1 and lines[0]["amount"] == 5.0
 
 
+def test_resolve_skips_used_and_reused_parts(paths):
+    _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 5.0)})
+    draft = new_draft(parts=[
+        DraftPart(name="new", part_number="AA", new_or_used="New"),
+        DraftPart(name="used", part_number="AA", new_or_used="Used"),
+        DraftPart(name="reused", part_number="AA", new_or_used="Reused"),
+    ])
+    lines, problems = est.resolve_build_lines(paths, draft)
+    assert problems == []
+    assert [line["name"] for line in lines] == ["new"]
+
+
 def test_resolve_skips_console_parts_included_with_kit(paths):
     _write_parts_db(paths, {
         "kit": _linked_product("Console kit", "KIT", "1", 500.0),

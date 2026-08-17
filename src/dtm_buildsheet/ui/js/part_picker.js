@@ -1392,6 +1392,7 @@ function _pickerComboLabel(hs) { return hs.length ? hs.map(x => x[0].toUpperCase
 // A product is color-configured only if at least one SKU carries a color.
 // Programmable (WeCanX) bars have none → picked directly by SKU.
 function _pickerProductHasColor(p) {
+  if (p?.picker_direct_sku === true) return false;
   return (p.skus || []).some(s => s.color || s.secondary_color || s.tertiary_color);
 }
 
@@ -2343,18 +2344,18 @@ const _MAGNETIC_MIC_ITEMS = {
   magnetic_with_bracket: { part_number: "MMSU-1B", model: "Mag Mic with Bracket", manufacturer: "Magnetic Mic" },
 };
 
-function _pickerMagneticMicRow(parentLineId, parentName, location, selection) {
+function _pickerMagneticMicRow(parentLineId, parentName, location, selection, condition = "New") {
   const item = _MAGNETIC_MIC_ITEMS[selection];
   if (!item || !parentLineId) return null;
   return {
     name: `${parentName} · ${item.model}`,
     location: location || "", manufacturer: item.manufacturer, part_number: item.part_number,
-    quantity: 1, new_or_used: "New", source: "", parent_line_id: parentLineId,
+    quantity: 1, new_or_used: _pickerNormalPartStatus(condition), source: "", parent_line_id: parentLineId,
     accessory_category: "magnetic_mic", accessory_parent_product: "", part_type: "radio_mic_clip",
   };
 }
 
-async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName, location, selection) {
+async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName, location, selection, condition = "New") {
   const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
     part.parent_line_id === parentLineId && part.accessory_category === "magnetic_mic"
   );
@@ -2362,7 +2363,7 @@ async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName,
     const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace the magnetic mic line");
   }
-  const row = _pickerMagneticMicRow(parentLineId, parentName, location, selection);
+  const row = _pickerMagneticMicRow(parentLineId, parentName, location, selection, condition);
   if (!row) return;
   const result = await api(`/api/draft/${draftId}/part`, row);
   if (!result?.ok) throw new Error(result?.error || "could not add the magnetic mic line");
@@ -3785,7 +3786,9 @@ const _CONSOLE_STYLE_LABELS = {
 
 function _pickerNewConsoleSetup(saved = null) {
   const source = saved?.choices || saved || {};
-  const copyChoice = value => value && typeof value === "object" ? { ...value } : null;
+  const copyChoice = value => value && typeof value === "object"
+    ? { ...value, new_or_used: _pickerNormalPartStatus(value.new_or_used) }
+    : null;
   return {
     active: false, loading: false, catalog: {}, error: "",
     choices: {
@@ -3803,6 +3806,7 @@ function _pickerNewConsoleSetup(saved = null) {
       // standalone Mag Mic (the Gamber-Johnson flow). Havis retains its
       // bracket-plus-Mag-Mic behavior after a bracket is selected.
       addMagMic: source.radioMicClip ? source.addMagMic !== false : source.addMagMic === true,
+      magMicCondition: _pickerNormalPartStatus(source.magMicCondition),
       // A printer armrest is designed around a PocketJet.  Ask explicitly so
       // a shop can still record an armrest-only build, but start from the
       // usual installation: include the printer and then choose its cables.
@@ -3828,6 +3832,7 @@ function _pickerConsoleChoiceFromProduct(product, autoFor = "") {
     manufacturer_label: product.manufacturer_label || "",
     part_number: sku.part_number,
     price: sku.price ?? null,
+    new_or_used: "New",
     ...(autoFor ? { auto_for: autoFor } : {}),
   };
 }
@@ -3898,8 +3903,12 @@ function _pickerConsoleKitMatchesFeature(included, wanted) {
 function _pickerResolveConsoleKit(setup) {
   const style = setup.choices.style;
   if (!style) return null;
-  const wantedArmrest = _pickerConsoleFeatureRole(setup.choices.armRest, "armrest");
-  const wantedMotion = _pickerConsoleFeatureRole(setup.choices.motionAttachment, "motion");
+  // Reused accessories already exist and must not cause selection of a kit
+  // that bundles another copy of that accessory.
+  const wantedArmrest = setup.choices.armRest?.new_or_used === "Reused"
+    ? "" : _pickerConsoleFeatureRole(setup.choices.armRest, "armrest");
+  const wantedMotion = setup.choices.motionAttachment?.new_or_used === "Reused"
+    ? "" : _pickerConsoleFeatureRole(setup.choices.motionAttachment, "motion");
   const candidates = _pickerConsoleCatalogProducts(setup).filter(product => _pickerConsoleStyleForProduct(product) === style);
   const eligible = candidates.filter(product => {
     const included = product.console_kit?.included || {};
@@ -3918,6 +3927,7 @@ function _pickerResolveConsoleKit(setup) {
   const product = [...eligible].sort((a, b) => rank(b) - rank(a) || String(a.model || "").localeCompare(String(b.model || "")))[0] || null;
   const choice = _pickerConsoleChoiceFromProduct(product);
   if (!choice) return null;
+  choice.new_or_used = _pickerNormalPartStatus(setup.choices.consoleChoice?.new_or_used);
   setup.choices.consoleChoice = choice;
   _pickerState.sel = { product_id: choice.product_id, model: choice.model, mfr: choice.manufacturer_label, sku: choice.part_number };
   return choice;
@@ -3946,7 +3956,11 @@ function _pickerConsoleSyncFaceplates(setup) {
   ].filter(Boolean);
   const automaticIds = new Set(automatic.map(choice => choice.product_id));
   const extras = (setup.choices.faceplates || []).filter(choice => !choice.auto_kind && !automaticIds.has(choice.product_id));
-  setup.choices.faceplates = [...automatic, ...extras];
+  const priorCondition = new Map((setup.choices.faceplates || []).map(choice => [choice.product_id, choice.new_or_used]));
+  setup.choices.faceplates = [...automatic, ...extras].map(choice => ({
+    ...choice,
+    new_or_used: _pickerNormalPartStatus(priorCondition.get(choice.product_id) || choice.new_or_used),
+  }));
 }
 
 function _pickerConsoleHasCompatibleSku(product) {
@@ -4092,9 +4106,20 @@ function _pickerConsoleOrderCards(setup) {
   if (!faceplates.length) return `<div class="console-order-empty">Add the faceplates the console needs, then drag them into shop order.</div>`;
   return faceplates.map((choice, index) => `<article class="console-faceplate-order-card" draggable="true" data-console-faceplate-index="${index}">
     <span class="console-drag-handle" title="Drag to reorder">⠿</span><span class="console-faceplate-number">${index + 1}</span>
-    <div class="console-faceplate-copy"><strong>Face Plate ${index + 1} · ${esc(choice.model || choice.part_number)}</strong><small>${esc(choice.manufacturer_label || "")} · ${esc(choice.part_number || "")}${choice.auto_for ? ` · auto-added for ${esc(choice.auto_for)}` : ""}</small></div>
+    <div class="console-faceplate-copy"><strong>Face Plate ${index + 1} · ${esc(choice.model || choice.part_number)}</strong><small>${esc(choice.manufacturer_label || "")} · ${esc(choice.part_number || "")}${choice.auto_for ? ` · auto-added for ${esc(choice.auto_for)}` : ""}</small>${_pickerConsoleConditionHtml(choice, { faceplateIndex: index })}</div>
     <div class="console-faceplate-actions"><button type="button" class="console-order-move" data-console-faceplate-move="-1" data-console-faceplate-index="${index}" title="Move up"${index === 0 ? " disabled" : ""}>↑</button><button type="button" class="console-order-move" data-console-faceplate-move="1" data-console-faceplate-index="${index}" title="Move down"${index === faceplates.length - 1 ? " disabled" : ""}>↓</button>${choice.required ? `<span class="console-order-included">Required</span>` : `<button type="button" class="console-order-remove" data-console-faceplate-remove="${index}" title="Remove faceplate">×</button>`}</div>
   </article>`).join("");
+}
+
+function _pickerConsoleConditionHtml(choice, { key = "", faceplateIndex = null, magMic = false } = {}) {
+  if (!choice && !magMic) return "";
+  const current = _pickerNormalPartStatus(magMic ? _pickerState.consoleSetup?.choices?.magMicCondition : choice?.new_or_used);
+  const attrs = faceplateIndex !== null
+    ? `data-console-condition-faceplate="${faceplateIndex}"`
+    : magMic ? "data-console-condition-mag-mic" : `data-console-condition-key="${esc(key)}"`;
+  return `<div class="console-part-condition"><span>Condition</span>${["New", "Used", "Reused"].map(status =>
+    `<button type="button" class="console-location-choice${current === status ? " is-selected" : ""}" ${attrs} data-console-condition-value="${status}">${status}</button>`
+  ).join("")}</div>`;
 }
 
 function _pickerConsoleComponentSection(
@@ -4118,7 +4143,7 @@ function _pickerConsoleComponentSection(
   const sectionKicker = required
     ? (requiredKicker || "Required console component")
     : "Optional console component";
-  return `<section class="console-component-section"><div class="console-component-summary"><div><div class="console-section-kicker">${esc(sectionKicker)}</div><h3>${esc(label)}</h3><p>${esc(help)}</p></div><button type="button" class="console-component-current" data-console-component-open="${esc(key)}"><strong>${esc(selectedLabel)}</strong><span>${isOpen ? "Close choices" : choice ? "Change" : "Choose"}</span></button></div>${picker}${motionLocation}</section>`;
+  return `<section class="console-component-section"><div class="console-component-summary"><div><div class="console-section-kicker">${esc(sectionKicker)}</div><h3>${esc(label)}</h3><p>${esc(help)}</p></div><button type="button" class="console-component-current" data-console-component-open="${esc(key)}"><strong>${esc(selectedLabel)}</strong><span>${isOpen ? "Close choices" : choice ? "Change" : "Choose"}</span></button></div>${picker}${choice ? _pickerConsoleConditionHtml(choice, { key }) : ""}${motionLocation}</section>`;
 }
 
 function _pickerConsolePedestalRequired(setup = _pickerState.consoleSetup) {
@@ -4165,11 +4190,11 @@ function _pickerConsoleMagMicQuestion(setup) {
       + `<button type="button" class="console-location-choice${bracket ? " is-selected" : ""}" data-console-mic-hardware="bracket"${bracket ? "" : " disabled"}>${bracket ? "Use selected mic clip bracket" : "Choose a bracket above"}</button>`
       + `<button type="button" class="console-location-choice${magMic ? " is-selected" : ""}" data-console-mic-hardware="mag_mic">Use Mag Mic instead</button>`
       + `<button type="button" class="console-location-choice${!bracket && !magMic ? " is-selected" : ""}" data-console-mic-hardware="none">No mic hardware</button>`
-      + `</div><small>The available Gamber-Johnson bracket does not support a Mag Mic, so the bracket and Mag Mic cannot be added together.</small></div>`;
+      + `</div><small>The available Gamber-Johnson bracket does not support a Mag Mic, so the bracket and Mag Mic cannot be added together.</small>${magMic ? _pickerConsoleConditionHtml(null, { magMic: true }) : ""}</div>`;
   }
   if (!setup?.choices?.radioMicClip) return "";
   const addMagMic = setup.choices.addMagMic !== false;
-  return `<div class="console-motion-location"><span>Add a Mag Mic with this clip?</span><div><button type="button" class="console-location-choice${addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="yes">Yes — add Mag Mic</button><button type="button" class="console-location-choice${!addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="no">No Mag Mic</button></div></div>`;
+  return `<div class="console-motion-location"><span>Add a Mag Mic with this clip?</span><div><button type="button" class="console-location-choice${addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="yes">Yes — add Mag Mic</button><button type="button" class="console-location-choice${!addMagMic ? " is-selected" : ""}" data-console-add-mag-mic="no">No Mag Mic</button></div>${addMagMic ? _pickerConsoleConditionHtml(null, { magMic: true }) : ""}</div>`;
 }
 
 function _pickerConsoleHasPrinterArmrest(setup) {
@@ -4260,7 +4285,7 @@ function _pickerRenderConsoleSetup() {
   const selectedKit = setup.choices.consoleChoice;
   const included = _pickerConsoleIncludedFeatures(setup);
   const kitSummary = selectedKit
-    ? `<div class="console-kit-summary"><strong>Selected kit: ${esc(_pickerConsoleChoiceLabel(selectedKit))}</strong><span>${Object.keys(included).length ? `Includes ${esc(Object.keys(included).map(key => ({ cup_holder: "cup holder faceplate", oem_relocation_plate: "OEM relocation plate", armrest: "armrest", motion_attachment: "motion attachment" }[key] || key.replace(/_/g, " "))).join(", "))}. Included items stay on the shop manifest but are not billed separately.` : "This kit has no recorded included add-ons."}</span></div>`
+    ? `<div class="console-kit-summary"><strong>Selected kit: ${esc(_pickerConsoleChoiceLabel(selectedKit))}</strong><span>${Object.keys(included).length ? `Includes ${esc(Object.keys(included).map(key => ({ cup_holder: "cup holder faceplate", oem_relocation_plate: "OEM relocation plate", armrest: "armrest", motion_attachment: "motion attachment" }[key] || key.replace(/_/g, " "))).join(", "))}. Included items stay on the shop manifest but are not billed separately.` : "This kit has no recorded included add-ons."}</span>${_pickerConsoleConditionHtml(selectedKit, { key: "consoleChoice" })}</div>`
     : `<div class="console-kit-summary console-kit-summary--empty">Choose a console style to match a compatible kit from QuickBooks.</div>`;
   details.innerHTML = `<section class="console-setup" data-console-setup>
     <header class="console-setup-header"><div><span class="guided-chip">CONSOLE</span><h2>Build a Center Console Kit</h2><p>Choose the console style and needed features. The picker selects the matching kit and bills only hardware that is not already included with it.</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></header>${error}
@@ -4350,6 +4375,26 @@ function _pickerRenderConsoleSetup() {
     _pickerRenderConsoleSetup();
     _pickerUpdateFooter();
   }));
+  details.querySelectorAll("[data-console-condition-value]").forEach(button => button.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    const status = _pickerNormalPartStatus(button.dataset.consoleConditionValue);
+    if (button.hasAttribute("data-console-condition-faceplate")) {
+      const choice = setup.choices.faceplates[Number(button.dataset.consoleConditionFaceplate)];
+      if (choice) choice.new_or_used = status;
+    } else if (button.hasAttribute("data-console-condition-mag-mic")) {
+      setup.choices.magMicCondition = status;
+    } else {
+      const key = button.dataset.consoleConditionKey;
+      if (setup.choices[key]) setup.choices[key].new_or_used = status;
+      if (["armRest", "motionAttachment"].includes(key)) {
+        _pickerResolveConsoleKit(setup);
+        _pickerConsoleSyncFaceplates(setup);
+      }
+    }
+    _pickerRenderConsoleSetup();
+    _pickerUpdateFooter();
+  }));
   details.querySelectorAll("[data-console-motion-location]").forEach(button => button.addEventListener("click", () => {
     setup.choices.motionLocation = button.dataset.consoleMotionLocation;
     if (setup.choices.motionLocation !== "mounted_to_pedestal") setup.choices.pedestalMount = null;
@@ -4405,6 +4450,7 @@ function _pickerConsoleSetupSnapshot() {
     radioMicClip: copy(choices.radioMicClip),
     radioMicClipRelation: choices.radioMicClipRelation || "",
     addMagMic: choices.addMagMic !== false,
+    magMicCondition: _pickerNormalPartStatus(choices.magMicCondition),
     addPrinter: choices.addPrinter !== false,
     printer: copy(choices.printer),
     printerPower: copy(choices.printerPower),
@@ -4419,7 +4465,7 @@ function _pickerConsoleChildRows(parentLineId, parentName) {
   const add = (name, choice, partType, location, category) => {
     if (!choice?.part_number) return;
     rows.push({ name, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: "New", source: "", parent_line_id: parentLineId,
+      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: parentLineId,
       // These are selected build parts, not catalog accessories. Keep the
       // relationship for manifest nesting, but let their normal edit path
       // open the Part Picker instead of an accessory-only chooser.
@@ -4443,7 +4489,7 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   const add = (name, choice, partType, location, componentKey) => {
     if (!choice?.part_number) return;
     rows.push({ name: `${ownerName} · ${name}`, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: "New", source: "", parent_line_id: ownerLineId,
+      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: ownerLineId,
       // These are real, billed console components. Keep them under the
       // console in the manifest while preserving one owner marker so any
       // component edit returns to the unified console setup.
@@ -4465,7 +4511,7 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   if (choices.addMagMic === true && (
     choices.radioMicClip || _pickerConsoleBrand().toLowerCase() === "gamber johnson"
   )) {
-    add("Mag Mic", _pickerConsoleMagMicChoice(), "radio_mic_clip", "ON CENTER CONSOLE", "magneticMic");
+    add("Mag Mic", { ..._pickerConsoleMagMicChoice(), new_or_used: _pickerNormalPartStatus(choices.magMicCondition) }, "radio_mic_clip", "ON CENTER CONSOLE", "magneticMic");
   }
   return rows;
 }
@@ -4480,7 +4526,7 @@ function _pickerConsolePrinterRow(ownerLineId) {
       // child (the manifest deliberately has a clear one-level expansion).
       return {
         name: "Printer", location: "PRINTER ARMREST MOUNT", manufacturer: choice.manufacturer_label || "",
-        part_number: choice.part_number, quantity: 1, new_or_used: "New", source: "", part_type: "printer",
+        part_number: choice.part_number, quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", part_type: "printer",
         picker_config: { console_setup_owner_line_id: ownerLineId, console_component_key: "printer" },
       };
     }
@@ -4497,7 +4543,7 @@ function _pickerConsolePrinterCableRows(printerLineId, printerName) {
     rows.push({
       name: `${printerName} · ${name}`, location: "PRINTER ARMREST MOUNT",
       manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: "New", source: "", parent_line_id: printerLineId,
+      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: printerLineId,
       accessory_category: category, accessory_parent_product: choices.printer?.product_id || "",
       part_type: partType, picker_config: { console_component_key: componentKey },
     });
@@ -4732,7 +4778,7 @@ const _SYSTEM_DEFS = {
     primaryName: "Radio Control Head", primaryPartType: "radio_head",
     intro: "Answer one install question at a time. Customer-supplied hardware only needs the decisions the shop must build around.",
     defaults: {
-      systemProduct: null, condition: "", provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
+      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
       format: "split", brickLoc: "",
       antennaStyle: "", antennaLoc: "", speakerLoc: "",
       micClipRelation: "", micMount: "", micLoc: "",
@@ -4772,7 +4818,7 @@ const _SYSTEM_DEFS = {
     primaryName: "Radar Display Unit", primaryPartType: "radar_display_unit",
     intro: "Capture the radar’s ownership, cable work, and exact antenna/counting-unit locations for the shop.",
     defaults: {
-      systemProduct: null, condition: "", provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", split: "",
+      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", split: "",
       frontLoc: "", frontBracket: "short_a_bracket", rearLoc: "", rearBracket: "tall_a_bracket", countingLoc: "",
     },
     steps(c) {
@@ -4805,7 +4851,7 @@ const _SYSTEM_DEFS = {
     primaryName: "Camera DVR", primaryPartType: "camera_dvr",
     intro: "Record the kit ownership and the camera/DVR locations the shop needs. Only DTM purchases need ordering text.",
     defaults: {
-      systemProduct: null, condition: "", provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
+      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
       cameraParts: [], rearSeatLoc: "",
       bodyDockLoc: "", wirelessMicLoc: "",
     },
@@ -4881,7 +4927,8 @@ function _systemDefaults(kind, existing = {}) {
   const def = _SYSTEM_DEFS[kind];
   const base = { ...(def?.defaults || {}) };
   for (const [key, value] of Object.entries(existing || {})) {
-    base[key] = Array.isArray(value) ? [...value] : value;
+    base[key] = Array.isArray(value) ? [...value]
+      : value && typeof value === "object" ? { ...value } : value;
   }
   // Saved guided systems from the first pass used bracket names as radar
   // locations and shorter mic-mount values. Keep them editable after the
@@ -4912,7 +4959,13 @@ function _systemDefaults(kind, existing = {}) {
 
 function _systemSteps() {
   const def = _systemDef(), c = _pickerState.radio?.choices || {};
-  return def ? def.steps(c) : [];
+  if (!def) return [];
+  return [...def.steps(c), {
+    key: "componentConditions", type: "component_conditions",
+    title: "What is the condition of each individual part?",
+    help: "Used and reused parts stay on the build but are excluded from the estimate.",
+    options: [], required: true,
+  }];
 }
 
 function _systemOption(step, value) {
@@ -4920,6 +4973,7 @@ function _systemOption(step, value) {
 }
 
 function _systemAnswerLabel(step, value, choices = _pickerState.radio?.choices || {}) {
+  if (step.type === "component_conditions") return "Each component condition recorded";
   if (step.type === "textarea") return String(value || "").trim();
   if (step.type === "multi") {
     return (Array.isArray(value) ? value : []).map(v => _systemOption(step, v)?.label || v).join(", ");
@@ -4931,8 +4985,19 @@ function _systemAnswerLabel(step, value, choices = _pickerState.radio?.choices |
 }
 
 function _systemStepSatisfied(step) {
-  const choices = _pickerState.radio?.choices || {}, value = choices[step.key];
+  const choices = _pickerState.radio?.choices || {};
   if (!step.required) return true;
+  if (step.type === "component_conditions") {
+    if (!choices.componentConditions || typeof choices.componentConditions !== "object") choices.componentConditions = {};
+    const rows = _systemComponentRows(_pickerState.radio?.kind, choices);
+    for (const row of rows) {
+      if (!["New", "Used", "Reused"].includes(choices.componentConditions[row.key])) {
+        choices.componentConditions[row.key] = row.new_or_used;
+      }
+    }
+    return rows.length > 0;
+  }
+  const value = choices[step.key];
   if (step.type === "multi") return Array.isArray(value) && value.length > 0;
   if (step.allowCustom && value === "__custom__") return Boolean(String(choices[step.customKey] || "").trim());
   return String(value || "").trim().length > 0;
@@ -5138,6 +5203,23 @@ function _systemOptionGrid(step, value) {
     }).join("") + `</div>`;
 }
 
+function _systemComponentConditionsHtml() {
+  const state = _pickerState.radio || {}, choices = state.choices || {};
+  if (!choices.componentConditions || typeof choices.componentConditions !== "object") choices.componentConditions = {};
+  const rows = _systemComponentRows(state.kind, choices);
+  for (const row of rows) {
+    if (!["New", "Used", "Reused"].includes(choices.componentConditions[row.key])) {
+      choices.componentConditions[row.key] = row.new_or_used;
+    }
+  }
+  return `<div class="guided-component-conditions">${rows.map(row => {
+    const current = choices.componentConditions[row.key];
+    return `<section class="guided-component-condition"><div><strong>${esc(row.label)}</strong><small>${esc(row.location || row.detail || "System component")}</small></div><div>${["New", "Used", "Reused"].map(status =>
+      `<button type="button" class="console-location-choice${current === status ? " is-selected" : ""}" data-system-component-condition="${esc(row.key)}" data-system-component-status="${status}">${status}</button>`
+    ).join("")}</div></section>`;
+  }).join("")}</div>`;
+}
+
 function _systemSummaryHtml(steps, currentKey) {
   const c = _pickerState.radio?.choices || {};
   const rows = steps.filter(s => s.key !== currentKey && _systemStepSatisfied(s)).map(s =>
@@ -5157,31 +5239,37 @@ function _systemDetails(def, choices) {
 }
 
 function _systemComponentRows(kind, c) {
-  const rows = [], add = (label, partType, location, detail) => rows.push({ label, part_type: partType, location: location || "", detail: detail || "", quantity: 1 });
-  const stepFor = key => _systemSteps().find(s => s.key === key) || { options: [] };
+  const defaultCondition = c.condition === "reused" ? "Reused" : c.condition === "used" ? "Used" : "New";
+  const conditions = c.componentConditions || {};
+  const rows = [], add = (key, label, partType, location, detail) => rows.push({
+    key, label, part_type: partType, location: location || "", detail: detail || "", quantity: 1,
+    new_or_used: _pickerNormalPartStatus(conditions[key] || defaultCondition),
+  });
+  const baseSteps = _SYSTEM_DEFS[kind]?.steps(c) || [];
+  const stepFor = key => baseSteps.find(s => s.key === key) || { options: [] };
   const answer = key => _systemAnswerLabel(stepFor(key), c[key], c);
   if (kind === "radio") {
-    add("Radio control head", "radio_head", "", c.format === "split" ? "Split radio layout — console position is set with the center console." : "All-in-one radio — console position is set with the center console.");
-    if (c.format === "split") add("Radio brick", "radio_brick", answer("brickLoc"), "Separate electronics module");
-    add("Radio antenna", "radio_antenna_top", answer("antennaLoc"), answer("antennaStyle"));
-    add("Radio speaker", "radio_speaker", answer("speakerLoc"), "Shop mounting location");
+    add("radio_control_head", "Radio control head", "radio_head", "", c.format === "split" ? "Split radio layout — console position is set with the center console." : "All-in-one radio — console position is set with the center console.");
+    if (c.format === "split") add("radio_brick", "Radio brick", "radio_brick", answer("brickLoc"), "Separate electronics module");
+    add("radio_antenna", "Radio antenna", "radio_antenna_top", answer("antennaLoc"), answer("antennaStyle"));
+    add("radio_speaker", "Radio speaker", "radio_speaker", answer("speakerLoc"), "Shop mounting location");
     const usesConsoleClip = c.micClipRelation === "use_console_clip" && !!_pickerExistingConsoleRadioMicClip();
     add(
-      "Radio microphone", "radio_mic_clip",
+      "radio_microphone", "Radio microphone", "radio_mic_clip",
       usesConsoleClip ? "ON CENTER CONSOLE" : answer("micLoc"),
       usesConsoleClip ? "Uses the selected center-console mic clip" : answer("micMount"),
     );
   } else if (kind === "radar") {
     if (c.split === "yes") {
-      add("Radar display unit", "radar_display_unit", "", "Separate display unit");
-      add("Radar counting unit", "radar_counting_unit", answer("countingLoc"), "Separate counting unit");
+      add("radar_display", "Radar display unit", "radar_display_unit", "", "Separate display unit");
+      add("radar_counting", "Radar counting unit", "radar_counting_unit", answer("countingLoc"), "Separate counting unit");
     } else {
-      add("Radar display / counting unit", "radar_display_unit", "Integrated display unit", "Integrated unit");
+      add("radar_display", "Radar display / counting unit", "radar_display_unit", "Integrated display unit", "Integrated unit");
     }
-    add("Front radar antenna", "front_radar_antenna_mount", answer("frontLoc"), answer("frontBracket"));
-    add("Rear radar antenna", "rear_radar_antenna_mount", answer("rearLoc"), answer("rearBracket"));
+    add("radar_front_antenna", "Front radar antenna", "front_radar_antenna_mount", answer("frontLoc"), answer("frontBracket"));
+    add("radar_rear_antenna", "Rear radar antenna", "rear_radar_antenna_mount", answer("rearLoc"), answer("rearBracket"));
   } else if (kind === "camera") {
-    add("Camera DVR / recorder", "camera_dvr", answer("dvrLoc"), `Platform: ${_systemProductLabel(c) || _systemCameraPlatform(c)}`);
+    add("camera_dvr", "Camera DVR / recorder", "camera_dvr", answer("dvrLoc"), `Platform: ${_systemProductLabel(c) || _systemCameraPlatform(c)}`);
     const map = {
       front: ["Front-facing camera", "front_camera", "Upper windshield", "Fixed location"],
       rear_seat: ["Prisoner / rear-seat camera", "rear_seat_camera", answer("rearSeatLoc"), "Selected camera component"],
@@ -5192,7 +5280,7 @@ function _systemComponentRows(kind, c) {
     for (const key of (c.cameraParts || [])) {
       const item = map[key]; if (!item) continue;
       const location = key === "wireless_mic" ? answer("wirelessMicLoc") : item[2];
-      add(item[0], item[1], location, item[3] || "Selected camera component");
+      add(`camera_${key}`, item[0], item[1], location, item[3] || "Selected camera component");
     }
   }
   return rows;
@@ -5284,13 +5372,16 @@ function _pickerRenderSystemIn(el) {
   const value = state.choices?.[step.key];
   const complete = _systemSatisfied();
   const progress = steps.length ? Math.round(((index + 1) / steps.length) * 100) : 0;
-  const nextOk = _systemStepSatisfied(step);
+  let nextOk = _systemStepSatisfied(step);
   const customLocation = step.allowCustom && value === "__custom__"
     ? `<label class="guided-custom-field"><span>Custom shop location</span><input class="guided-text-input" data-system-custom="${esc(step.customKey)}" value="${esc(state.choices?.[step.customKey] || "")}" placeholder="Enter the exact shop-reference location"></label>`
     : "";
-  const stepBody = step.type === "textarea"
+  const stepBody = step.type === "component_conditions"
+    ? _systemComponentConditionsHtml()
+    : step.type === "textarea"
     ? `<textarea class="guided-textarea" data-system-text="${esc(step.key)}" rows="6" placeholder="Enter purchasing details for Sales…">${esc(value || "")}</textarea><div class="guided-field-note">This note is saved with the system line for purchasing.</div>`
     : _systemOptionGrid(step, value) + customLocation;
+  nextOk = _systemStepSatisfied(step);
   el.innerHTML = `<section class="guided-system guided-system--${esc(state.kind)}" data-system-kind="${esc(state.kind)}">
     <div class="guided-system-header"><div><span class="guided-chip">${esc(def.chip)}</span><span class="guided-system-title">${esc(def.label)}</span><p>${esc(def.intro)}</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></div>
     <div class="guided-progress-head"><span>Step ${index + 1} of ${steps.length}</span><strong>${progress}%</strong></div><div class="guided-progress"><span style="width:${progress}%"></span></div>
@@ -5310,7 +5401,7 @@ function _pickerRenderSystemIn(el) {
       }
     } else {
       target[key] = selected;
-      if (key === "condition") { target.refresh = ""; _systemClearCableRefreshSelections(target); target.provider = "customer"; target.purchaseDetails = ""; }
+      if (key === "condition") { target.componentConditions = {}; target.refresh = ""; _systemClearCableRefreshSelections(target); target.provider = "customer"; target.purchaseDetails = ""; }
       if (key === "refresh" && selected !== "yes") _systemClearCableRefreshSelections(target);
       if (key === "provider" && selected === "customer") target.purchaseDetails = "";
       if (key === "micClipRelation" && selected === "use_console_clip") {
@@ -5325,6 +5416,12 @@ function _pickerRenderSystemIn(el) {
       }
     }
     _systemClampStep(); _pickerRefreshSystemView();
+  }));
+  el.querySelectorAll("[data-system-component-condition]").forEach(button => button.addEventListener("click", () => {
+    const target = _pickerState.radio.choices;
+    if (!target.componentConditions || typeof target.componentConditions !== "object") target.componentConditions = {};
+    target.componentConditions[button.dataset.systemComponentCondition] = _pickerNormalPartStatus(button.dataset.systemComponentStatus);
+    _pickerRefreshSystemView();
   }));
   el.querySelectorAll("[data-system-text]").forEach(input => input.addEventListener("input", () => {
     _pickerState.radio.choices[input.dataset.systemText] = input.value;
@@ -5384,6 +5481,7 @@ async function _pickerAddSystem(addAndContinue) {
       await _pickerReplaceMagneticMicChild(
         draftId, parentLineId, row.name, micLocation,
         c.micClipRelation === "use_console_clip" ? "" : c.micMount,
+        c.componentConditions?.radio_microphone || components.find(item => item.key === "radio_microphone")?.new_or_used || row.new_or_used,
       );
     }
     toast(editing ? `${def.label} updated` : `${def.label} added`, "success");
@@ -5901,10 +5999,22 @@ async function _pickerDoAdd(addAndContinue) {
     const sku = sel.sku || (product && product.skus[0] && product.skus[0].part_number);
     if (!sku) { toast("Pick a SKU", "error"); return; }
     const skuObj = product.skus.find(s => s.part_number === sku) || {};
+    const skuColors = [skuObj.color, skuObj.secondary_color, skuObj.tertiary_color].filter(Boolean);
     const qty = _pickerIsSirenSpeakerContext()
       ? Math.min(2, Math.max(1, _pickerState.config.count || 1))
       : 1;
-    combos = [{ colors: [], part_number: sku, quantity: qty, price: skuObj.price || null }];
+    // Concrete SKUs can still have fixed colors. Preserve them so direct SKU
+    // picks resolve the same preview asset as the color-guided path.
+    combos = [{ colors: skuColors, part_number: sku, quantity: qty, price: skuObj.price || null }];
+    if (skuColors.length) {
+      const cap = value => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+      const renderColors = [...skuColors].sort((a, b) => {
+        const ai = _PICKER_COLOR_ORDER.indexOf(String(a).toLowerCase());
+        const bi = _PICKER_COLOR_ORDER.indexOf(String(b).toLowerCase());
+        return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+      });
+      colorFields = { raw_color: renderColors.map(cap).join("/") };
+    }
     totalHeads = qty;
   }
 
@@ -5934,7 +6044,9 @@ async function _pickerDoAdd(addAndContinue) {
       const sirenDualToneComponent = _pickerSirenDualToneComponent();
       const payload = {
         ...row,
-        new_or_used: _pickerState.partStatus,
+        new_or_used: _pickerState.consoleSetup?.active
+          ? _pickerNormalPartStatus(_pickerState.consoleSetup.choices?.consoleChoice?.new_or_used)
+          : _pickerState.partStatus,
         comment: _pickerState.comment || "",
         ...(detailNote ? { notes: detailNote } : {}),
         components: [
@@ -5981,6 +6093,7 @@ async function _pickerDoAdd(addAndContinue) {
         draftId, parentLineId, baseName,
         _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : locName,
         magMicSelection,
+        _pickerState.partStatus,
       );
     } catch (error) {
       console.error("PA magnetic mic save failed:", error);

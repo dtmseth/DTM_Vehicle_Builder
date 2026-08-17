@@ -997,6 +997,18 @@ def test_category_skus_all_searches_all_categories_with_metadata():
     assert "preemption" in search_text
 
 
+def test_soundoff_dome_light_is_a_fixed_direct_sku_product():
+    h = FakeHandler("/api/parts-db/category-skus?type=lights&category=interior")
+    route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
+
+    product = next(
+        row for row in h.body_json()["products"]
+        if row["product_id"] == "soundoff_soundoff_dome_light_2"
+    )
+    assert product["picker_direct_sku"] is True
+    assert [sku["part_number"] for sku in product["skus"]] == ["ECVDMLTAL00"]
+
+
 def test_cctl5_skips_pa_mic_and_keeps_custom_location_alongside_console():
     h = FakeHandler("/api/parts-db/category-skus?type=equipment&part_type=control_head")
     route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())

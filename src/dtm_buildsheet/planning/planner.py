@@ -410,7 +410,7 @@ def _renderable_system_components(part: PartInput) -> list[PartInput]:
         rendered.append(PartInput(
             name="Radio Antenna",
             include=True,
-            new_or_used=part.new_or_used,
+            new_or_used=str(component.get("new_or_used", "") or part.new_or_used),
             source=part.source,
             manufacturer="Laird" if is_whip else "",
             part_number="QWB800" if is_whip else "",
