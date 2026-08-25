@@ -1124,10 +1124,9 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
   part type or product and a rare concrete-SKU `size_rule_id` override. The planner now considers
   component SKUs when hydrating product render metadata, and size profiles resolve explicitly
   before the legacy text table. The old manifest map remains preserved for legacy workbook lines.
-- **Related still-open siren work (this session, not started):** qty(1/2) selector + Top/Under
-  Push-Bumper mirrored-slot render (qty=1 CENTERED, qty=2 both) + dot count; bracket-nesting fix
-  (accessory child lands in "Other" — group children into the parent's section in
-  `manifest_editor.js`); qty=2 → two brackets. See `docs/audit/SESSION_HANDOFF_2026-07-13.md` §B/§C.
+- **Related work:** the siren quantity, centered/mirrored rendering, per-speaker brackets, and
+  manifest nesting were completed in the later picker work recorded below. Current status is
+  summarized in `docs/CURRENT_STATE.md` and `docs/PARTS_DB_AND_PICKER.md`.
 
 ## Session 2026-07-14 — Codex continuation
 

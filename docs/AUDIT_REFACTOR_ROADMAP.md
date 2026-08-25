@@ -326,8 +326,8 @@ rather than inventing new policy.
   | Cloud sync (SHIPPED v2.2.9+) | **preserve**: all persistence through the `StorageProvider`/adapter ports; the dual write path (direct SP write *and* proposal enqueue) and its ordering; outbound-queue junk guards; eTag-based 60s sync; no direct `open()` in feature code; file formats merge-tolerant |
   | GitHub invisible review layer (SHIPPED) | **preserve**: settings changes remain serializable, diffable proposals; audit record still fires even though SP is authoritative |
   | QB Pass-2 / kit SKUs | parts_db access behind one repository module; SKU model composable (a SKU can reference SKUs); **preserve the shipped three-axis model** (`part_type.category` = what it is · zone = where on the vehicle · build section = how it groups) — never conflate the axes |
-  | Parts-DB conventions (SHIPPED, load-bearing) | **preserve**: `location_mode` + `location_options` on every part_type; accessory roles/categories; pending-QB parts flow; light/unbilled tags; warning-light single-home semantics; the "no part-type home" curation queue (~673 of 932 products still unhomed — refactors must not strand or reset curation state) |
-  | Picker/placement cluster (NEXT on critical path) | placement data lives in domain models, not workbook remnants or JS state; route-layer placement logic in `app/routes/parts_db.py` extracted to services so the cluster lands on clean ground |
+  | Parts-DB conventions (SHIPPED, load-bearing) | **preserve**: `location_mode` + `location_options` on every part_type; accessory roles/categories; pending-QB parts flow; light/unbilled tags; warning-light single-home semantics; the "no part-type home" curation queue (43 of 772 products as of v3.3.2 — refactors must not strand or reset curation state) |
+  | Picker/placement cluster (SHIPPED) | placement data lives in domain models, not workbook remnants or JS state; continue extracting route-layer placement logic in `app/routes/parts_db.py` as Phase 4 establishes the repository seam |
   | Pipeline inversion (Phase 4 / owner decision 2026-07-06) | canonical plan input is domain/parts_db-shaped end to end; the workbook import adapter converts to domain shape at the `inputs/` boundary and nothing downstream knows it existed; workbook-era rules/naming/placement logic ported into domain/planning with parity proofs; `workbook-shape` assumptions in consumers are ledgered as defects, not compatibility |
   | Extensible views | no "exactly four" constants; views iterated from data |
   | Inventory/serial tracking, parts-manager app | parts_db read/write importable without the GUI app (library-first packaging) |
@@ -336,8 +336,8 @@ rather than inventing new policy.
   phase easier, neutral, or harder?" *Harder* requires an explicit `ROADMAP.md` decision-log
   entry before proceeding — silent contradiction of the roadmap is prohibited (its own rule).
 - **Exit criterion**: at engagement end, `ARCHITECTURE.md`, `DATA_MODELS.md`, and
-  `FEATURE_INVENTORY.md` describe the actual repo with zero known drift, and this document is
-  archived into `docs/archive/` with its ledger.
+  `FEATURE_INVENTORY.md` describe the actual repo with zero known drift, and the durable decisions
+  remain in this roadmap and the findings ledger rather than a transient session handoff.
 
 ---
 

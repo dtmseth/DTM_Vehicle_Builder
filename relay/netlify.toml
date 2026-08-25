@@ -3,8 +3,15 @@
   publish   = "public"
 
 [functions]
-  # No bundler needed — plain CommonJS with no dependencies.
+  # The compatibility relay remains CommonJS. The central service uses ESM
+  # plus bundled jose/@netlify-blobs deployment adapters.
   node_bundler = "nft"
+
+[[redirects]]
+  from = "/v1/quickbooks/*"
+  to = "/.netlify/functions/qb-central"
+  status = 200
+  force = true
 
 [[headers]]
   for = "/*"

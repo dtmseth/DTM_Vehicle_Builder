@@ -47,6 +47,29 @@ function _ptRenderTimelineRow(holder) {
   return `<div class="proj-build-card-timeline">${lines.join(" ")}</div>`;
 }
 
+function _ptFinalizationBadge(holder) {
+  const status = holder.status || "draft";
+  if (status === "finalized") {
+    const who = _ptFirstName(holder.finalized_by);
+    const when = _ptShortAgo(holder.finalized_at);
+    return `<span class="proj-final-badge proj-final-badge--final">✓ Finalized${who ? ` by ${esc(who)}` : ""}${when ? ` · ${when}` : ""}</span>`;
+  }
+  if (status === "reopened") {
+    return `<span class="proj-final-badge proj-final-badge--reopened">Reopened for changes</span>`;
+  }
+  return `<span class="proj-final-badge">Draft</span>`;
+}
+
+function _ptUnitNotesMarkup(notes, individualId) {
+  const text = String(notes || "").trim();
+  if (!text) return "";
+  return `<div class="proj-unit-notes" data-unit-notes-card data-individual-id="${esc(individualId)}" aria-label="Unit notes">
+    <strong>Unit notes</strong>
+    <p class="proj-unit-notes-preview">${esc(text)}</p>
+    <button type="button" class="proj-unit-notes-more" data-unit-notes-more hidden>Read more</button>
+  </div>`;
+}
+
 function _ptBuildCardsMarkup(p) {
   const units = p.build_units || [];
   const pid   = esc(p.project_id);
@@ -79,7 +102,7 @@ function _ptBuildCardsMarkup(p) {
         return `<div class="proj-build-card proj-build-card--openable" id="build-card-${iid}" tabindex="0"
           role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(label)}"
           data-build-kind="ind" data-project-id="${pid}" data-unit-id="${uid}"
-          data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}">
+          data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}" data-final-status="${esc(ind.status || "draft")}">
           <div class="proj-build-card-top">
             <div class="proj-build-card-label">${esc(label)}</div>
             <button class="btn btn-secondary btn-sm proj-build-details-btn"
@@ -88,9 +111,11 @@ function _ptBuildCardsMarkup(p) {
           <div class="proj-ind-card-badges">
             ${hasDraft  ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
+            ${_ptFinalizationBadge(ind)}
             ${_PT_QUICKBOOKS_UI_ENABLED ? ((ind.qb_project_id || "").trim() ? `<span class="proj-confirmed-badge">◆ QB project</span>` : `<span class="proj-ind-not-setup">QB project needed</span>`) : ""}
             ${_PT_QUICKBOOKS_UI_ENABLED && (ind.qb_estimate_id || "").trim() ? `<span class="proj-confirmed-badge">📋 estimate</span>` : ""}
           </div>
+          ${_ptUnitNotesMarkup(ind.notes, ind.individual_id)}
           ${_ptRenderTimelineRow(ind)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
             ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
@@ -106,12 +131,18 @@ function _ptBuildCardsMarkup(p) {
             </button>
             ${hasPdf ? `<button class="btn btn-secondary btn-sm"
               onclick="PT_buildOpenPdf('${pid}','${uid}','${iid}','ind')">📑 View PDF</button>` : ""}
+            ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm"
+              onclick="PT_setupQbProject('${pid}','${iid}')">
+              ◆ ${(ind.qb_project_id || "").trim() ? "Manage QB Project" : "Set up QB Project"}
+            </button>` : ""}
             ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm"${buildDis}
               onclick="PT_buildCreateEstimate('${pid}','${uid}','${iid}')">
               📋 ${(ind.qb_estimate_id || "").trim() ? "Re-estimate" : "QB Estimate"}
             </button>` : ""}
             <button class="btn btn-secondary btn-sm"
               onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Show in folder</button>
+            <button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
+              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
           </div>
         </div>`;
       }).join("");
@@ -123,10 +154,11 @@ function _ptBuildCardsMarkup(p) {
 
       cards = `<div class="proj-build-card proj-build-card--openable" id="build-card-unit-${uid}" tabindex="0"
         role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(u.build_type || "Unit")}" data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
-        data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}">
+        data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}" data-final-status="${esc(u.status || "draft")}">
         <div class="proj-build-card-label">${esc(u.build_type || "Unit")} ×${u.quantity}</div>
         <div class="proj-ind-card-badges">
           ${hasDraft ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
+          ${_ptFinalizationBadge(u)}
         </div>
         ${_ptRenderTimelineRow(u)}
         <div class="proj-build-card-stats" id="build-stats-unit-${uid}">
@@ -145,6 +177,8 @@ function _ptBuildCardsMarkup(p) {
             onclick="PT_buildOpenPdf('${pid}','${uid}','','unit')">📑 View PDF</button>` : ""}
           <button class="btn btn-secondary btn-sm"
             onclick="PT_buildShowFolder('${pid}','${uid}','','unit')">📂 Show in folder</button>
+          <button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
+            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
         </div>
       </div>`;
     }
@@ -168,12 +202,67 @@ function _ptBuildCardsMarkup(p) {
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
 }
 
+function _ptCloseUnitNotesModal() {
+  $("unit-notes-modal")?.classList.remove("open");
+}
+
+window.PT_openUnitNotes = function (individualId) {
+  let selected = null;
+  let label = "Unit";
+  for (const buildUnit of (_PT.viewProject?.build_units || [])) {
+    const index = (buildUnit.individuals || []).findIndex(
+      individual => individual.individual_id === individualId
+    );
+    if (index >= 0) {
+      selected = buildUnit.individuals[index];
+      label = _ptUnitLabel(buildUnit, selected, index);
+      break;
+    }
+  }
+  const notes = String(selected?.notes || "").trim();
+  if (!notes) return;
+
+  const modal = $("unit-notes-modal");
+  if (!_PT._unitNotesModalWired) {
+    _PT._unitNotesModalWired = true;
+    $("unit-notes-modal-close")?.addEventListener("click", _ptCloseUnitNotesModal);
+    $("unit-notes-modal-done")?.addEventListener("click", _ptCloseUnitNotesModal);
+    modal?.addEventListener("click", event => {
+      if (event.target === modal) _ptCloseUnitNotesModal();
+    });
+  }
+  if ($("unit-notes-modal-title")) $("unit-notes-modal-title").textContent = `${label} — Unit notes`;
+  if ($("unit-notes-modal-body")) $("unit-notes-modal-body").textContent = notes;
+  modal?.removeAttribute("hidden");
+  modal?.classList.add("open");
+  $("unit-notes-modal-close")?.focus();
+};
+
+function _ptBindUnitNoteCards(container) {
+  requestAnimationFrame(() => {
+    container.querySelectorAll("[data-unit-notes-card]").forEach(card => {
+      const preview = card.querySelector(".proj-unit-notes-preview");
+      const readMore = card.querySelector("[data-unit-notes-more]");
+      if (!preview || !readMore) return;
+      const overflowing = preview.scrollHeight > preview.clientHeight + 1;
+      readMore.hidden = !overflowing;
+      if (!overflowing) return;
+
+      card.classList.add("proj-unit-notes--overflowing");
+      const open = () => window.PT_openUnitNotes(card.dataset.individualId || "");
+      card.addEventListener("click", open);
+    });
+  });
+}
+
 function _ptOpenBuildCard(card) {
   const projectId = card.dataset.projectId;
   const unitId = card.dataset.unitId;
   const draftId = card.dataset.draftId || "";
   const unitIndex = Number(card.dataset.unitIndex);
-  if (card.dataset.buildKind === "ind") {
+  if (card.dataset.finalStatus === "finalized") {
+    PT_reviewFinalization(projectId, unitId, card.dataset.individualId || "", card.dataset.buildKind || "unit", true);
+  } else if (card.dataset.buildKind === "ind") {
     PT_setupOrEditBuildInd(projectId, unitId, card.dataset.individualId, draftId, unitIndex);
   } else {
     PT_setupOrEditBuildUnit(projectId, unitId, draftId, unitIndex);
@@ -181,9 +270,10 @@ function _ptOpenBuildCard(card) {
 }
 
 function _ptBindBuildCardOpeners(container) {
+  _ptBindUnitNoteCards(container);
   container.querySelectorAll(".proj-build-card--openable").forEach(card => {
     card.addEventListener("click", event => {
-      if (event.target.closest("button, a, input, select, textarea")) return;
+      if (event.target.closest("button, a, input, select, textarea, [data-unit-notes-card]")) return;
       _ptOpenBuildCard(card);
     });
     card.addEventListener("keydown", event => {
@@ -193,6 +283,123 @@ function _ptBindBuildCardOpeners(container) {
     });
   });
 }
+
+function _ptFinalizationUrl(projectId, unitId, individualId, action) {
+  const individual = individualId ? `/individual/${encodeURIComponent(individualId)}` : "";
+  return `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unitId)}${individual}/finalization/${action}`;
+}
+
+function _ptCloseFinalizationModal() {
+  $("build-finalization-modal")?.classList.remove("open");
+}
+
+function _ptOpenFinalizationModal(title, bodyHtml, saveLabel, onSave) {
+  const modal = $("build-finalization-modal");
+  const titleEl = $("build-finalization-title");
+  const body = $("build-finalization-body");
+  const save = $("build-finalization-save");
+  if (!_PT._finalizationWired) {
+    _PT._finalizationWired = true;
+    $("build-finalization-close")?.addEventListener("click", _ptCloseFinalizationModal);
+    $("build-finalization-cancel")?.addEventListener("click", _ptCloseFinalizationModal);
+    modal?.addEventListener("click", event => { if (event.target === modal) _ptCloseFinalizationModal(); });
+  }
+  if (titleEl) titleEl.textContent = title;
+  if (body) body.innerHTML = bodyHtml;
+  if (save) {
+    save.style.display = saveLabel ? "" : "none";
+    save.textContent = saveLabel || "";
+    save.disabled = false;
+    save.onclick = onSave || null;
+  }
+  modal?.removeAttribute("hidden");
+  modal?.classList.add("open");
+}
+
+function _ptFinalizationChecksHtml(checks) {
+  const items = Array.isArray(checks) ? checks : [];
+  if (!items.length) return "";
+  const passed = items.filter(item => item.status === "passed").length;
+  const allPassed = passed === items.length;
+  const rows = items.map(item => {
+    const status = ["passed", "warning", "blocked"].includes(item.status) ? item.status : "warning";
+    const mark = status === "passed" ? "✓" : "!";
+    return `<div class="build-final-check build-final-check--${status}"><span class="build-final-check-mark" aria-hidden="true">${mark}</span><span><strong>${esc(item.title || "Final check")}</strong><small>${esc(item.message || "")}</small></span></div>`;
+  }).join("");
+  return `<details class="build-final-checks${allPassed ? " build-final-checks--clear" : ""}"><summary><span class="build-final-check-summary-mark" aria-hidden="true">${allPassed ? "✓" : "!"}</span><span><strong>${passed} of ${items.length} final checks passed</strong><small>Show checks run</small></span><span class="build-final-check-chevron" aria-hidden="true">⌄</span></summary><div class="build-final-check-list">${rows}</div></details>`;
+}
+
+async function _ptOpenBuildAfterReopen(projectId, unitId, individualId, type) {
+  await _ptLoadAll();
+  const project = _PT.projects.find(item => item.project_id === projectId);
+  const unit = (project?.build_units || []).find(item => item.unit_id === unitId);
+  if (!project || !unit) return;
+  if (type === "ind") {
+    const individual = (unit.individuals || []).find(item => item.individual_id === individualId);
+    if (individual?.draft_id) await _ptShowBuildEditor(individual.draft_id, unit, project, "overview", individual);
+  } else if (unit.draft_id) {
+    await _ptShowBuildEditor(unit.draft_id, unit, project, "overview");
+  }
+}
+
+window.PT_reviewFinalization = async function (projectId, unitId, individualId, type, openAfterReopen = false) {
+  let check;
+  try {
+    check = await api(_ptFinalizationUrl(projectId, unitId, individualId, "check"));
+  } catch (error) {
+    toast(error.message || "Could not run final checks", "error");
+    return;
+  }
+  if (!check?.ok) { toast(check?.error || "Could not run final checks", "error"); return; }
+
+  if (check.status === "finalized") {
+    const finalizedBy = check.finalized_by ? ` by ${esc(check.finalized_by)}` : "";
+    const finalizedAt = check.finalized_at ? new Date(check.finalized_at).toLocaleString() : "";
+    _ptOpenFinalizationModal("Build finalized", `<section class="build-final-summary"><div class="build-final-seal">✓</div><div><h3>Final sign-off complete</h3><p>Signed off${finalizedBy}${finalizedAt ? ` on ${esc(finalizedAt)}` : ""}. The build is locked against accidental edits.</p></div></section>${_ptFinalizationChecksHtml(check.checks)}<label class="build-reopen-reason"><span>Reason for reopening</span><textarea id="build-reopen-reason" rows="3" placeholder="What needs to change?"></textarea></label>`, "Reopen for changes", async () => {
+      const reason = $("build-reopen-reason")?.value.trim() || "";
+      if (reason.length < 3) { toast("Enter a brief reason for reopening", "error"); return; }
+      const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "reopen"), { reason });
+      if (!result?.ok) { toast(result?.error || "Could not reopen build", "error"); return; }
+      _ptCloseFinalizationModal();
+      toast("Build reopened for changes", "success");
+      if (openAfterReopen) await _ptOpenBuildAfterReopen(projectId, unitId, individualId, type);
+      else {
+        await _ptLoadAll();
+        const updated = _PT.projects.find(item => item.project_id === projectId);
+        if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
+      }
+    });
+    return;
+  }
+
+  if ((check.blocking || []).length) {
+    const blockingHtml = check.blocking.map(item => `<div class="build-final-block"><strong>PDF required</strong><span>${esc(item.message)}</span></div>`).join("");
+    _ptOpenFinalizationModal("Final build sign-off", `<div class="build-final-intro"><span class="build-final-step">1</span><div><h3>Export the final PDF</h3><p>The signed-off PDF must match the current build settings.</p></div></div>${blockingHtml}${_ptFinalizationChecksHtml(check.checks)}`, "Export PDF now", async () => {
+      const exported = await PT_buildExportPdf(projectId, unitId, individualId, type, { openAfter: false });
+      if (exported) {
+        _ptCloseFinalizationModal();
+        await PT_reviewFinalization(projectId, unitId, individualId, type);
+      }
+    });
+    return;
+  }
+
+  const warnings = check.warnings || [];
+  const warningHtml = warnings.length
+    ? warnings.map(warning => `<label class="build-final-warning"><span><strong>${esc(warning.title)}</strong><small>${esc(warning.message)}</small></span><textarea data-final-warning="${esc(warning.id)}" rows="2" placeholder="Acknowledge why this is correct for this build…"></textarea></label>`).join("")
+    : `<div class="build-final-clear"><strong>✓ Equipment checks clear</strong><span>No review warnings were found.</span></div>`;
+  _ptOpenFinalizationModal("Final build sign-off", `<div class="build-final-intro"><span class="build-final-step">2</span><div><h3>Review and lock this build</h3><p>The PDF is current. Resolve each warning with a short note, then finalize.</p></div></div>${warningHtml}${_ptFinalizationChecksHtml(check.checks)}<div class="build-final-lock-note">Finalizing records the signed-in user and time, then locks build-setting edits until someone reopens it with a reason.</div>`, "Finalize build", async () => {
+    const acknowledgements = [...document.querySelectorAll("[data-final-warning]")].map(textarea => ({ id: textarea.dataset.finalWarning, note: textarea.value.trim() }));
+    if (acknowledgements.some(item => item.note.length < 3)) { toast("Add a short acknowledgement for every warning", "error"); return; }
+    const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "finalize"), { fingerprint: check.fingerprint, acknowledgements });
+    if (!result?.ok) { toast(result?.message || result?.error || "Could not finalize build", "error"); return; }
+    _ptCloseFinalizationModal();
+    toast("Build finalized and locked", "success");
+    await _ptLoadAll();
+    const updated = _PT.projects.find(item => item.project_id === projectId);
+    if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
+  });
+};
 
 function _ptRenderBuildsTab(p) {
   // Kept as a compatibility entry point for project actions that refresh the
@@ -771,6 +978,9 @@ const _QB_EST_REASON = {
   qb_inactive: "Inactive in QuickBooks",
   no_price: "No price in QuickBooks",
   custom_item_unavailable: "The active MISC PART item was not found in QuickBooks",
+  labor_amount_required: "Enter an installation labor amount below",
+  install_supplies_amount_required: "Enter an install supplies amount below",
+  additional_charge_item_missing: "Required Additional charges item is missing or inactive in QuickBooks",
 };
 
 function _ptEstError(code) {
@@ -799,6 +1009,8 @@ function _ptEstError(code) {
     project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
     retail_customer_type_not_found: "QuickBooks does not have an active Retail customer type",
     duplicate_estimate_confirmation_required: "Choose whether to update the existing estimate or create a new one",
+    existing_estimate_modified: "QuickBooks changed this estimate after Vehicle Builder last wrote it",
+    existing_estimate_change_unverified: "Vehicle Builder could not verify the saved QuickBooks estimate against a prior baseline",
     existing_estimate_not_found: "The saved QuickBooks estimate no longer exists — choose Create new estimate",
     build_pdf_missing: "Export the build PDF before attaching it to QuickBooks",
     build_pdf_shared_unavailable: "The shared build PDF could not be downloaded from Microsoft 365",
@@ -807,6 +1019,10 @@ function _ptEstError(code) {
     attachment_file_unreadable: "The build PDF could not be read",
     attachment_upload_failed: "QuickBooks rejected the build PDF attachment",
     quickbooks_rejected_estimate: "QuickBooks rejected the estimate",
+    central_service_limit_reached: "The Estimate was not created because DTM's Netlify monthly usage limit has been reached. Your build is safe. Ask a Builder Admin to open Netlify → Usage & billing, then retry after service is restored or the monthly limit resets",
+    central_service_unavailable: "The managed QuickBooks service is temporarily unavailable. The Estimate was not created; try again shortly or contact a Builder Admin",
+    central_auth_unavailable: "Sign in to Microsoft 365 again before creating the Estimate",
+    forbidden: "Your Microsoft 365 account is not assigned permission to create QuickBooks Estimates",
     estimate_request_failed: "The app could not complete the QuickBooks estimate request",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));
@@ -908,7 +1124,42 @@ function _ptReadEstimatePricing() {
   return { mode, custom };
 }
 
-function _ptWireEstimatePricing(pricing) {
+function _ptAdditionalChargesHtml(charges) {
+  const c = charges || {};
+  if (!c.enabled) return "";
+  const options = Object.entries(c.presets || {}).map(([id, preset]) =>
+    `<option value="${_ptEscAttr(id)}"${id === c.preset_id ? " selected" : ""}>${esc(preset.label || id)}</option>`
+  ).join("");
+  const deliveryEnabled = Number(c.delivery_amount || 0) > 0;
+  return `<section class="qb-est-additional" aria-labelledby="qb-est-additional-title">
+    <div class="qb-est-additional-heading">
+      <div><strong id="qb-est-additional-title">Additional charges</strong><span>Confirm these before exporting to QuickBooks.</span></div>
+      <label>Build preset<select id="qb-est-charge-preset">${options}</select></label>
+    </div>
+    <div class="qb-est-charge-grid">
+      <label><span>Installation labor</span><input id="qb-est-labor-amount" type="number" min="0" step="0.01" value="${_ptEscAttr(c.labor_amount)}"><small>QB item: ${esc(c.service_items?.labor || "LABOR INSTALL")}</small></label>
+      <label><span>DTM install supplies</span><input id="qb-est-supplies-amount" type="number" min="0" step="0.01" value="${_ptEscAttr(c.install_supplies_amount)}"><small>QB item: ${esc(c.service_items?.install_supplies || "INSTALL SUPPLIES")}</small></label>
+      <label class="qb-est-delivery-toggle"><span><input id="qb-est-delivery-enabled" type="checkbox"${deliveryEnabled ? " checked" : ""}> Add delivery fee</span><input id="qb-est-delivery-amount" type="number" min="0" step="0.01" value="${_ptEscAttr(c.delivery_amount || 0)}"${deliveryEnabled ? "" : " hidden"}><small>QB item: ${esc(c.service_items?.delivery || "TRAVEL")}</small></label>
+      <div class="qb-est-auto-fee"><span>${Number(c.card_fee_percent || 4).toFixed(2).replace(/\.00$/, "")}% credit card fee</span><strong id="qb-est-card-fee-amount">${_ptMoney2(c.card_fee_amount)}</strong><small>Calculated from parts and all charges; never compounded.</small></div>
+    </div>
+    <div class="qb-est-charge-totals"><span>Materials <strong id="qb-est-materials-total">${_ptMoney2(c.materials_total)}</strong></span><span>Additional charges <strong id="qb-est-additional-total">${_ptMoney2(c.additional_total)}</strong></span></div>
+  </section>`;
+}
+
+function _ptReadAdditionalCharges() {
+  const preset = $("qb-est-charge-preset");
+  if (!preset) return null;
+  return {
+    preset_id: preset.value,
+    labor_amount: Number($("qb-est-labor-amount")?.value || 0),
+    install_supplies_amount: Number($("qb-est-supplies-amount")?.value || 0),
+    delivery_amount: $("qb-est-delivery-enabled")?.checked
+      ? Number($("qb-est-delivery-amount")?.value || 0) : 0,
+  };
+}
+
+function _ptWireEstimatePricing(pricing, charges, materialLineCount = 0) {
+  const moneyRound = value => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
   const update = () => {
     const chosen = _ptReadEstimatePricing();
     const customBox = $("qb-est-custom-pricing");
@@ -924,17 +1175,76 @@ function _ptWireEstimatePricing(pricing) {
         : 0;
       total += Math.round((list * (1 - discount / 100) + Number.EPSILON) * 100) / 100 * qty;
     }
-    const totalEl = $("qb-est-estimated-total");
-    if (totalEl) totalEl.textContent = _ptMoney2(Math.round((total + Number.EPSILON) * 100) / 100);
+    const materialsTotal = moneyRound(total);
+    const chosenCharges = _ptReadAdditionalCharges();
+    const labor = moneyRound(chosenCharges?.labor_amount || 0);
+    const supplies = moneyRound(chosenCharges?.install_supplies_amount || 0);
+    const delivery = moneyRound(chosenCharges?.delivery_amount || 0);
+    const feePercent = Number(charges?.card_fee_percent || 4);
+    const fee = moneyRound((materialsTotal + labor + supplies + delivery) * feePercent / 100);
+    const additional = moneyRound(labor + supplies + delivery + fee);
+    const estimate = moneyRound(materialsTotal + additional);
+    if ($("qb-est-materials-total")) $("qb-est-materials-total").textContent = _ptMoney2(materialsTotal);
+    if ($("qb-est-card-fee-amount")) $("qb-est-card-fee-amount").textContent = _ptMoney2(fee);
+    if ($("qb-est-additional-total")) $("qb-est-additional-total").textContent = _ptMoney2(additional);
+    if ($("qb-est-estimated-total")) $("qb-est-estimated-total").textContent = _ptMoney2(estimate);
+    if ($("qb-est-line-count")) {
+      const chargeLines = (labor > 0 ? 1 : 0) + (supplies > 0 ? 1 : 0)
+        + (delivery > 0 ? 1 : 0) + (fee > 0 ? 1 : 0);
+      $("qb-est-line-count").textContent = String(Number(materialLineCount || 0) + chargeLines);
+    }
   };
-  document.querySelectorAll('input[name="qb-est-pricing-mode"], [data-qb-est-custom-price]').forEach(
+  document.querySelectorAll('input[name="qb-est-pricing-mode"], [data-qb-est-custom-price], #qb-est-labor-amount, #qb-est-supplies-amount, #qb-est-delivery-amount').forEach(
     input => input.addEventListener("input", update)
   );
+  $("qb-est-delivery-enabled")?.addEventListener("change", event => {
+    const amount = $("qb-est-delivery-amount");
+    if (amount) amount.hidden = !event.currentTarget.checked;
+    update();
+  });
+  $("qb-est-charge-preset")?.addEventListener("change", event => {
+    const preset = charges?.presets?.[event.currentTarget.value] || {};
+    if ($("qb-est-labor-amount")) $("qb-est-labor-amount").value = Number(preset.labor_amount || 0).toFixed(2);
+    if ($("qb-est-supplies-amount")) $("qb-est-supplies-amount").value = Number(preset.install_supplies_amount || 0).toFixed(2);
+    update();
+  });
   update();
 }
 
 function _ptBankTransferEstimateNote() {
   return `<div class="qb-est-bank-note"><strong>QuickBooks follow-up:</strong> After creating this estimate, open <strong>Discounts and fees</strong> in QuickBooks and turn on <strong>Bank transfer — 1% per transaction, max $20</strong>. QuickBooks does not expose this Estimate-form switch through the Accounting API, so Vehicle Builder cannot set or verify it automatically.</div>`;
+}
+
+function _ptEstimateChangeHtml(estimateId, change) {
+  const status = change?.status || "untracked";
+  const modified = status === "modified";
+  const unavailable = ["untracked", "check_failed"].includes(status);
+  const missing = status === "missing";
+  const needsChoice = modified || unavailable || missing;
+  const differences = change?.differences || [];
+  const diffRows = differences.map(item => `<div class="qb-est-diff-row"><strong>${esc(item.field || "Change")}</strong><span><small>Vehicle Builder last wrote</small>${esc(item.before || "—")}</span><span><small>QuickBooks now has</small>${esc(item.after || "—")}</span></div>`).join("");
+  let alert = "";
+  if (modified) {
+    alert = `<div class="qb-est-change-alert qb-est-change-alert--danger" role="alert"><strong>⚠ QuickBooks estimate ${esc(estimateId)} was changed outside Vehicle Builder</strong><p>Nothing will be overwritten until you choose what to do.</p>${differences.length ? `<details><summary>View ${differences.length} difference${differences.length === 1 ? "" : "s"}</summary><div class="qb-est-diff-list">${diffRows}</div></details>` : ""}</div>`;
+  } else if (unavailable) {
+    alert = `<div class="qb-est-change-alert" role="alert"><strong>⚠ QuickBooks change history is unavailable</strong><p>${esc(change?.message || "The app could not verify whether this existing estimate was edited in QuickBooks.")}</p></div>`;
+  } else if (missing) {
+    alert = `<div class="qb-est-change-alert qb-est-change-alert--danger" role="alert"><strong>⚠ The linked QuickBooks estimate was not found</strong><p>Create a separate new estimate; the saved link will be replaced only after creation succeeds.</p></div>`;
+  }
+  return `<div class="qb-est-existing-choice${modified ? " qb-est-change-conflict" : ""}" data-needs-choice="${needsChoice ? "true" : "false"}" data-modified="${modified ? "true" : "false"}">${alert}<div class="qb-est-action-choices"><strong>An estimate already exists for this vehicle.</strong>${missing ? "" : `<label><input type="radio" name="qb-est-existing-action" value="update"${needsChoice ? "" : " checked"}> ${modified ? "Overwrite the QuickBooks changes and update this estimate" : unavailable ? "Update the existing estimate anyway" : `Update existing estimate ${esc(estimateId)}`}</label>`}<label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate</label></div></div>`;
+}
+
+function _ptWireEstimateChangeChoice(createButton) {
+  const box = document.querySelector(".qb-est-existing-choice[data-needs-choice='true']");
+  if (!box || !createButton) return;
+  const refresh = () => {
+    const action = document.querySelector('input[name="qb-est-existing-action"]:checked')?.value || "";
+    createButton.disabled = !action;
+    createButton.textContent = !action ? "Choose an action above"
+      : action === "update" ? "Overwrite and update estimate" : "Create separate estimate";
+  };
+  box.querySelectorAll('input[name="qb-est-existing-action"]').forEach(input => input.addEventListener("change", refresh));
+  refresh();
 }
 
 async function _ptQbConnected() {
@@ -1130,6 +1440,8 @@ function _ptOpenProjectBindingModal(
   const projectName = b.project_name || "Vehicle project";
   const customerName = b.customer_name || "the correct customer";
   const identityReady = !!b.identity_ready;
+  const alreadyLinked = !!b.ready;
+  const saveLabel = alreadyLinked ? "Update project link" : "Save project link";
   const projectRefInvalid = !!b.project_ref_invalid;
   const identityHint = (b.identity_labels || []).length
     ? `This project is for ${esc((b.identity_labels || []).join(" · "))}.`
@@ -1145,7 +1457,7 @@ function _ptOpenProjectBindingModal(
          <li>Open that Project, copy the web address from your browser's address bar, and paste it below. Do not use a customer page address or customer number.</li>
        </ol>
        <label class="qb-setup-label">QuickBooks project link</label>
-       <input id="qb-project-id" class="qb-setup-input" autocomplete="off" placeholder="Paste the web address here" />
+       <input id="qb-project-id" class="qb-setup-input" autocomplete="off" placeholder="Paste the web address here" value="${_ptEscAttr(b.qb_project_id || "")}" />
        <p class="qb-setup-hint">If you have the project number instead, you can paste that too.</p>`
     : `<div class="qb-setup-first">
          <strong>Choose how to name this build.</strong>
@@ -1158,10 +1470,10 @@ function _ptOpenProjectBindingModal(
          <p class="qb-setup-hint">The build stays linked by its internal vehicle ID. Adding a unit number later will not lose its files, draft, or Estimate association.</p>
        </div>`;
 
-  _ptOpenEstModal("Set up the QuickBooks Project",
+  _ptOpenEstModal(alreadyLinked ? "Manage the QuickBooks Project" : "Set up the QuickBooks Project",
     `<p class="qb-setup-intro">Do this once for this vehicle. It only connects the vehicle to the Project you create in QuickBooks; it does not create an estimate or send anything to the customer.</p>
      <p class="qb-setup-identity">${identityHint}</p>${rejectedRefNotice}${_ptProjectProblemNotice(validation)}${instructions}`,
-    identityReady ? "Save project link" : "");
+    identityReady ? saveLabel : "");
   const e = _ptEstModalEls();
   if (onBack && e.back) {
     e.back.style.display = "";
@@ -1226,7 +1538,7 @@ function _ptOpenProjectBindingModal(
         if (!res?.ok) {
           toast(_ptEstError(res?.error), "error");
           e.create.disabled = false;
-          e.create.textContent = "Save project link";
+          e.create.textContent = saveLabel;
           return;
         }
         e.modal?.classList.remove("open");
@@ -1236,11 +1548,40 @@ function _ptOpenProjectBindingModal(
       } catch (_) {
         toast("Could not link the QuickBooks Project", "error");
         e.create.disabled = false;
-        e.create.textContent = "Save project link";
+        e.create.textContent = saveLabel;
       }
     };
   }
 }
+
+window.PT_setupQbProject = async function (projectId, individualId) {
+  if (!individualId) {
+    toast("QuickBooks Projects are linked to individual units", "error");
+    return;
+  }
+  let preview;
+  try {
+    preview = await api("/api/quickbooks/projects/preview", {
+      project_id: projectId,
+      individual_id: individualId,
+    });
+  } catch (_) {
+    toast("Could not load the QuickBooks Project setup", "error");
+    return;
+  }
+  if (!preview?.ok) {
+    toast(_ptEstError(preview?.error), "error");
+    return;
+  }
+  _ptOpenProjectBindingModal(projectId, individualId, preview.project, async () => {
+    await _ptLoadAll();
+    const updated = _PT.projects.find(project => project.project_id === projectId);
+    if (updated) {
+      _PT.viewProject = updated;
+      _ptRenderOverview(updated);
+    }
+  });
+};
 
 window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {
   if (!individualId) { toast("Estimates are created per individual unit", "error"); return; }
@@ -1269,18 +1610,23 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   }
 
   if (!v.can_create) {
-    const probs = v.problems || [];
-    if (!probs.length) { toast("No billable parts in this build", "error"); return; }
-    _ptToastEstimateBlockers(v);
-    const rows = probs.map(p =>
-      `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
-        <span style="font-weight:600;color:var(--navy);min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(p.name || "(unnamed)")}${p.part_number ? ` <span style="color:var(--muted);font-weight:400">${esc(p.part_number)}</span>` : ""}</span>
-        <span style="color:var(--red);white-space:nowrap">${esc(_QB_EST_REASON[p.reason] || p.reason)}</span>
-      </div>`).join("");
-    _ptOpenEstModal("Estimate blocked",
-      `<p style="font-size:13px;margin:0 0 12px">This build can't be turned into an estimate yet — ${probs.length} part${probs.length === 1 ? "" : "s"} need attention. Link them to QuickBooks items in <strong>Settings → QuickBooks</strong>, re-pull, then try again.</p>
-       <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
-    return;
+    const editableChargeReasons = new Set(["labor_amount_required", "install_supplies_amount_required"]);
+    const probs = (v.problems || []).filter(problem => !editableChargeReasons.has(problem.reason));
+    if (!probs.length && Number(v.material_line_count || 0) > 0) {
+      // Labor and supplies are intentionally editable in the review below.
+    } else {
+      if (!probs.length) { toast("No billable parts in this build", "error"); return; }
+      _ptToastEstimateBlockers(v);
+      const rows = probs.map(p =>
+        `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="font-weight:600;color:var(--navy);min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(p.name || "(unnamed)")}${p.part_number ? ` <span style="color:var(--muted);font-weight:400">${esc(p.part_number)}</span>` : ""}</span>
+          <span style="color:var(--red);white-space:nowrap">${esc(_QB_EST_REASON[p.reason] || p.reason)}</span>
+        </div>`).join("");
+      _ptOpenEstModal("Estimate blocked",
+        `<p style="font-size:13px;margin:0 0 12px">This build can't be turned into an estimate yet — ${probs.length} part${probs.length === 1 ? "" : "s"} need attention. Link them to QuickBooks items in <strong>Settings → QuickBooks</strong>, re-pull, then try again.</p>
+         <div style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:6px">${rows}</div>`);
+      return;
+    }
   }
 
   let customer = v.customer;
@@ -1306,14 +1652,13 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
       `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
      ${_ptEstimatePricingSummary(v.pricing)}
      ${_ptEstimatePricingControls(v.pricing)}
+     ${_ptAdditionalChargesHtml(v.additional_charges)}
      ${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:24px;font-size:13px;margin-bottom:14px">
-       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
+       <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Line items</div><div id="qb-est-line-count" style="font-weight:700;color:var(--navy);font-size:18px">${v.line_count}</div></div>
        <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Estimated total</div><div id="qb-est-estimated-total" style="font-weight:700;color:var(--navy);font-size:18px">${_ptMoney2(v.total)}</div></div>
      </div>
-     ${v.existing_estimate_id ? `<div class="qb-est-bank-note"><strong>An estimate already exists for this vehicle.</strong><br>
-       <label><input type="radio" name="qb-est-existing-action" value="update" checked> Update existing estimate ${esc(v.existing_estimate_id)}</label><br>
-       <label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate</label></div>` : ""}
+     ${v.existing_estimate_id ? _ptEstimateChangeHtml(v.existing_estimate_id, v.estimate_change) : ""}
      ${v.pdf_available
        ? `<label class="qb-est-pdf-option"><input type="checkbox" id="qb-est-attach-pdf" checked disabled> Build PDF will be attached: <strong>${esc(v.pdf_name || "build.pdf")}</strong></label>`
        : `<div class="qb-est-pdf-required"><strong>A build PDF is required.</strong><p>Create it now so Vehicle Builder can attach it to the Estimate. Exporting may take several seconds.</p><button type="button" class="btn btn-primary" id="qb-est-export-pdf">Create build PDF</button><div id="qb-est-pdf-progress" class="qb-est-pdf-progress" hidden></div></div>`}
@@ -1325,7 +1670,8 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
         ? (v.existing_estimate_id ? "Continue" : "Create estimate")
         : v.pdf_available ? (customerLinked ? "Update customer & estimate" : "Create customer & estimate") : "");
     const e = _ptEstModalEls();
-    _ptWireEstimatePricing(v.pricing);
+    _ptWireEstimatePricing(v.pricing, v.additional_charges, v.material_line_count);
+    _ptWireEstimateChangeChoice(e.create);
     if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
     $("qb-est-export-pdf")?.addEventListener("click", async (event) => {
       const button = event.currentTarget;
@@ -1353,18 +1699,42 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   }
 };
 
-async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null, chosenPricing = null) {
+async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null, chosenAttachPdf = null, chosenPricing = null, chosenOverwrite = null, chosenAdditionalCharges = null) {
   const e = _ptEstModalEls();
   const memo = $("qb-est-memo")?.value || "";
   const customerFields = _ptCustomerFieldsFromEditor();
   const customerConfirmed = !!$("qb-est-customer-confirm")?.checked;
   const existingAction = chosenAction ?? document.querySelector('input[name="qb-est-existing-action"]:checked')?.value ?? "";
+  if (document.querySelector(".qb-est-existing-choice") && !existingAction) {
+    toast("Choose whether to overwrite the existing QuickBooks estimate or create a separate one", "error");
+    return;
+  }
+  const overwriteQbChanges = chosenOverwrite ?? (
+    existingAction === "update"
+    && document.querySelector(".qb-est-existing-choice")?.dataset.needsChoice === "true"
+  );
   const attachPdf = chosenAttachPdf ?? !!$("qb-est-attach-pdf")?.checked;
   const estimatePricing = chosenPricing || _ptReadEstimatePricing();
+  const estimateCharges = chosenAdditionalCharges || _ptReadAdditionalCharges();
   if (estimatePricing.mode === "custom" && Object.values(estimatePricing.custom).some(
     value => !Number.isFinite(value) || value < 0 || value > 100
   )) {
     toast("Every custom discount must be from 0% through 100%", "error");
+    return;
+  }
+  if (estimateCharges && (!Number.isFinite(estimateCharges.labor_amount) || estimateCharges.labor_amount <= 0)) {
+    toast("Enter the total installation labor charge before creating the estimate", "error");
+    $("qb-est-labor-amount")?.focus();
+    return;
+  }
+  if (estimateCharges && (!Number.isFinite(estimateCharges.install_supplies_amount) || estimateCharges.install_supplies_amount <= 0)) {
+    toast("Enter the DTM install supplies charge before creating the estimate", "error");
+    $("qb-est-supplies-amount")?.focus();
+    return;
+  }
+  if (estimateCharges && (!Number.isFinite(estimateCharges.delivery_amount) || estimateCharges.delivery_amount < 0)) {
+    toast("Enter a valid delivery fee", "error");
+    $("qb-est-delivery-amount")?.focus();
     return;
   }
   if (e.create) { e.create.disabled = true; e.create.textContent = "Creating…"; }
@@ -1373,7 +1743,9 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
       { project_id: projectId, individual_id: individualId, memo,
         customer_confirmed: customerConfirmed, customer_fields: customerFields,
         existing_action: existingAction, attach_pdf: attachPdf,
-        pricing_mode: estimatePricing.mode, custom_pricing: estimatePricing.custom });
+        overwrite_qb_changes: overwriteQbChanges,
+        pricing_mode: estimatePricing.mode, custom_pricing: estimatePricing.custom,
+        additional_charges: estimateCharges });
     if (res?.ok) {
       e.modal?.classList.remove("open");
       const verb = res.action === "updated" ? "updated" : "created";
@@ -1400,11 +1772,26 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
         e.create.disabled = false;
         e.create.textContent = "Create customer & estimate";
         e.create.onclick = () => _ptDoCreateEstimate(
-          projectId, individualId, existingAction, attachPdf, estimatePricing
+          projectId, individualId, existingAction, attachPdf, estimatePricing, overwriteQbChanges,
+          estimateCharges
         );
       } else if (res?.error === "invalid_qb_project_ref") {
         toast(_ptEstError(res.error), "error");
         _ptOpenProjectBindingModal(projectId, individualId, res.project);
+      } else if (["existing_estimate_modified", "existing_estimate_change_unverified"].includes(res?.error)) {
+        toast(_ptEstError(res.error) + " — review the differences before continuing", "error");
+        e.body.querySelector(".qb-est-existing-choice")?.remove();
+        e.body.insertAdjacentHTML("afterbegin", _ptEstimateChangeHtml(
+          res.existing_estimate_id || "", res.estimate_change || { status: "modified" }
+        ));
+        if (e.create) {
+          e.create.disabled = false;
+          e.create.onclick = () => _ptDoCreateEstimate(
+            projectId, individualId, null, attachPdf, estimatePricing, true,
+            estimateCharges
+          );
+          _ptWireEstimateChangeChoice(e.create);
+        }
       } else {
         toast(_ptEstimateFailureText(res), "error");
         if (e.create) { e.create.disabled = false; e.create.textContent = "Try again"; }
@@ -1432,7 +1819,14 @@ function _ptBatchIssue(check) {
   if (!v.ok) return _ptEstError(v.error);
   if (!v.project?.ready) return "QuickBooks Project still needs to be set up";
   if (!v.can_create) {
-    const count = (v.problems || []).length;
+    const problems = v.problems || [];
+    if (problems.some(problem => ["labor_amount_required", "install_supplies_amount_required"].includes(problem.reason))) {
+      return "Set this build preset's labor and supplies in Settings → Projects";
+    }
+    if (problems.some(problem => problem.reason === "additional_charge_item_missing")) {
+      return "A required QuickBooks Additional charges item is missing";
+    }
+    const count = problems.length;
     return count ? `${count} part${count === 1 ? "" : "s"} need attention` : "Build needs attention";
   }
   if (!v.pdf_available) return "Build PDF must be created and attached";
@@ -1493,6 +1887,8 @@ async function _ptOpenBatchEstimateSetup(project) {
     : `<div class="qb-est-pdf-ready">✓ Every ready build has a PDF attachment.</div>`;
   const batchListTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.list_total || 0), 0);
   const batchCustomerTotal = ready.reduce((sum, check) => sum + Number(check.validation?.pricing?.customer_total || 0), 0);
+  const batchAdditionalTotal = ready.reduce((sum, check) => sum + Number(check.validation?.additional_charges?.additional_total || 0), 0);
+  const batchEstimateTotal = ready.reduce((sum, check) => sum + Number(check.validation?.total || 0), 0);
   const batchPricing = ready.length ? {
     rule_name: "Retail",
     source: "retail",
@@ -1503,7 +1899,7 @@ async function _ptOpenBatchEstimateSetup(project) {
   } : null;
 
   _ptOpenEstModal("Prepare batch QuickBooks estimates",
-    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate with its build PDF attached. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}${pdfStatus}${_ptEstimatePricingSummary(batchPricing)}${_ptBankTransferEstimateNote()}
+    `<p style="font-size:13px;margin:0 0 12px">Each vehicle gets its own non-posting QuickBooks estimate with its build PDF attached. Nothing is created until you choose <strong>Create estimates</strong>.</p>${customerStatus}${pdfStatus}${_ptEstimatePricingSummary(batchPricing)}${ready.length ? `<div class="qb-est-charge-totals"><span>Additional charges <strong>${_ptMoney2(batchAdditionalTotal)}</strong></span><span>Batch estimate total <strong>${_ptMoney2(batchEstimateTotal)}</strong></span></div>` : ""}${_ptBankTransferEstimateNote()}
      <div style="display:flex;gap:12px;margin-bottom:12px"><div style="flex:1;padding:10px;border:1px solid #86c99a;border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Ready to create</div><strong style="font-size:20px;color:var(--green)">${ready.length}</strong></div><div style="flex:1;padding:10px;border:1px solid var(--border);border-radius:6px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Still needs setup</div><strong style="font-size:20px;color:var(--navy)">${attention.length}</strong></div></div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Ready vehicles</div><div style="max-height:140px;overflow:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px">${readyRows}</div>
      <div style="font-size:12px;font-weight:700;color:var(--navy);margin:0 0 4px">Vehicles needing attention</div><div style="max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:6px">${attentionRows}</div>`,

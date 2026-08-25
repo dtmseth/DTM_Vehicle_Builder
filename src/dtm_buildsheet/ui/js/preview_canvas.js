@@ -156,6 +156,31 @@ function pvVerticalMirrorSlotIsReflected(pl, slotIdx) {
 }
 
 function pvRenderPlacement(frame, pp, pl, basePl = pl) {
+  if (pl.compound_group_style === "dual_shroud") {
+    const instances = pl.instances || [];
+    const groupSize = Math.max(2, Number(pl.compound_group_size) || 2);
+    for (let start = 0; start < instances.length; start += groupSize) {
+      const group = instances.slice(start, start + groupSize);
+      if (!group.length) continue;
+      const left = Math.min(...group.map(inst => (inst.x_pct ?? 0) - (inst.w_pct ?? pl.icon_w_pct ?? 0.04) / 2));
+      const right = Math.max(...group.map(inst => (inst.x_pct ?? 0) + (inst.w_pct ?? pl.icon_w_pct ?? 0.04) / 2));
+      const top = Math.min(...group.map(inst => (inst.y_pct ?? 0) - (inst.h_pct ?? pl.icon_h_pct ?? 0.02) / 2));
+      const bottom = Math.max(...group.map(inst => (inst.y_pct ?? 0) + (inst.h_pct ?? pl.icon_h_pct ?? 0.02) / 2));
+      const padX = Math.max(0.004, (right - left) * 0.07);
+      const padY = Math.max(0.004, (bottom - top) * 0.3);
+      const housing = document.createElement("div");
+      housing.className = "pv-accessory-housing pv-accessory-housing--dual-shroud";
+      housing.title = `Dual shroud — ${pl.location_key}`;
+      housing.style.cssText = [
+        `left:${((left - padX) * 100).toFixed(3)}%`,
+        `top:${((top - padY) * 100).toFixed(3)}%`,
+        `width:${((right - left + padX * 2) * 100).toFixed(3)}%`,
+        `height:${((bottom - top + padY * 2) * 100).toFixed(3)}%`,
+        `z-index:${(pl.layer || 0) + 99}`,
+      ].join(";");
+      frame.appendChild(housing);
+    }
+  }
   (pl.instances || []).forEach((inst, slotIdx) => {
     const xPct     = (inst.x_pct ?? 0) * 100;
     const yPct     = (inst.y_pct ?? 0) * 100;
@@ -191,6 +216,7 @@ function pvRenderPlacement(frame, pp, pl, basePl = pl) {
 
     const icon = document.createElement("div");
     icon.className = "pv-icon";
+    if (pl.mount_visibility) icon.classList.add("pv-icon--concealed");
     icon.title = `${pp.part_name} — ${pl.location_key}`;
     icon.dataset.overrideKey = pl.override_key;
     icon.dataset.groupKey = pl.group_key || "";
@@ -218,6 +244,13 @@ function pvRenderPlacement(frame, pp, pl, basePl = pl) {
       const dot = document.createElement("div");
       dot.className = "pv-dot pv-dot-" + (pp.render_kind || "light");
       icon.appendChild(dot);
+    }
+
+    if (slotIdx === 0 && pl.callout_label) {
+      const callout = document.createElement("span");
+      callout.className = "pv-concealed-callout";
+      callout.textContent = pl.callout_label;
+      icon.appendChild(callout);
     }
 
     icon.addEventListener("mousedown", e => {

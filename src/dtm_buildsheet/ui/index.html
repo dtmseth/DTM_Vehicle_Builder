@@ -135,6 +135,16 @@
         Build sheets are saved in the local app output folder and uploaded automatically to the company SharePoint export library by agency and year.
       </p>
     </div>
+    <div class="card estimate-defaults-card">
+      <div class="card-title estimate-defaults-title">
+        <div><span>QuickBooks estimate defaults</span><small>Additional charges by build type</small></div>
+        <button class="btn btn-primary btn-sm" id="estimate-defaults-save" type="button">Save defaults</button>
+      </div>
+      <p class="estimate-defaults-intro">Set the total installation labor and DTM install supplies charge for each build type. The estimate review can still override either amount for one vehicle.</p>
+      <div id="estimate-defaults-status" class="estimate-defaults-status">Loading estimate defaults…</div>
+      <div id="estimate-defaults-grid" class="estimate-defaults-grid" hidden></div>
+      <div id="estimate-defaults-qb-items" class="estimate-defaults-items" hidden></div>
+    </div>
   </div>
 
   <!-- ── PLACEMENTS ── -->
@@ -901,12 +911,17 @@
         <span id="qb-status-badge" style="font-size:13px;font-weight:600;color:var(--muted)">● Not configured</span>
       </div>
 
+      <p id="qb-managed-message" style="font-size:13px;color:var(--muted);margin:0 0 12px" hidden>
+        QuickBooks is managed by DTM. Sign in to Vehicle Builder with Microsoft 365; only a
+        Builder Admin can authorize or repair the company connection.
+      </p>
+
       <!-- Connected state -->
       <div id="qb-connected-panel" hidden>
         <div style="font-size:13px;color:var(--muted);margin-bottom:6px">
           Environment: <span id="qb-environment-label" style="color:var(--navy);font-weight:600">—</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">
+        <div id="qb-token-details" style="font-size:13px;color:var(--muted);margin-bottom:10px">
           Token renews: <span id="qb-token-renews" style="color:var(--navy);font-weight:600">—</span>
           · Hard expiry: <span id="qb-hard-expiry" style="color:var(--navy);font-weight:600">—</span>
         </div>
@@ -1336,6 +1351,10 @@
             <label>Lighting Brand</label>
             <select id="proj-lighting"></select>
           </div>
+          <div class="form-group">
+            <label>Default Lightheads</label>
+            <select id="proj-lighting-mode"><option value="duo">DUO</option><option value="trio">TRIO</option></select>
+          </div>
         </div>
         <div class="form-group">
           <label>Project-specific preference notes</label>
@@ -1387,6 +1406,7 @@
         <div class="card-title">
           Build Preview
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" id="pbe-load-preset-top">Load Preset</button>
             <button class="btn btn-secondary btn-sm" id="pbe-create-preset-top" style="display:none">Save as New Preset?</button>
             <button class="btn btn-secondary btn-sm" id="pbe-apply-group-top" style="display:none">Apply to Entire Unit Group</button>
             <span class="pv-spinner spinner" id="pv-spinner" style="display:none;border-color:rgba(30,39,97,.25);border-top-color:var(--navy)"></span>
@@ -1489,7 +1509,8 @@
     </div>
 
     <div id="pbe-footer">
-      <div id="pbe-action-row" style="display:none;gap:8px;margin-bottom:8px">
+      <div id="pbe-action-row" style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn btn-secondary" id="pbe-load-preset-btn" style="flex:1">Load Preset</button>
         <button class="btn btn-secondary" id="pbe-create-preset-btn" style="flex:1">Save as New Preset?</button>
         <button class="btn btn-secondary" id="pbe-apply-group-btn" style="flex:1">Apply to Entire Unit Group</button>
       </div>
@@ -1498,6 +1519,25 @@
   </div><!-- end proj-build-editor -->
 
 </div><!-- end tab-projects -->
+
+<div class="modal-overlay" id="pbe-load-preset-modal" role="dialog" aria-modal="true" aria-labelledby="pbe-load-preset-title">
+  <div class="modal pbe-load-preset-modal">
+    <div class="modal-title">
+      <span id="pbe-load-preset-title">Load Preset</span>
+      <button class="modal-close" id="pbe-load-preset-close" aria-label="Close preset picker">✕</button>
+    </div>
+    <p class="pbe-load-preset-warning"><strong>This replaces the current parts and placements.</strong> Unit details, final-page notes, and project notes stay unchanged.</p>
+    <div class="pbe-load-preset-search-row">
+      <input id="pbe-load-preset-search" type="search" placeholder="Search compatible presets…" autocomplete="off">
+      <span id="pbe-load-preset-count" aria-live="polite"></span>
+    </div>
+    <div id="pbe-load-preset-options" class="pbe-load-preset-options"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="pbe-load-preset-cancel">Cancel</button>
+      <button class="btn btn-primary" id="pbe-load-preset-confirm" disabled>Load and Replace Build</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ AGENCY CREATE MODAL ══ -->
 <div class="modal-overlay" id="agency-create-modal" role="dialog" aria-modal="true">
@@ -1562,6 +1602,7 @@
       <div class="form-row">
         <div class="form-group"><label>Camera System</label><select id="ac-camera-brand"></select></div>
         <div class="form-group"><label>Lighting Brand</label><select id="ac-lighting"></select></div>
+        <div class="form-group"><label>Default Lightheads</label><select id="ac-lighting-mode"><option value="duo">DUO</option><option value="trio">TRIO</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Push Bumper Brand</label><select id="ac-push-bumper-brand"></select></div>
@@ -1615,6 +1656,33 @@
       <button class="btn btn-secondary" id="qb-est-back" style="display:none">Back</button>
       <button class="btn btn-secondary" id="qb-est-cancel">Close</button>
       <button class="btn btn-primary" id="qb-est-create" style="display:none">Create estimate</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="build-finalization-modal" role="dialog" aria-modal="true" aria-labelledby="build-finalization-title" hidden>
+  <div class="modal build-finalization-modal">
+    <div class="modal-title">
+      <span id="build-finalization-title">Final build sign-off</span>
+      <button class="modal-close" id="build-finalization-close">×</button>
+    </div>
+    <div id="build-finalization-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="build-finalization-cancel">Close</button>
+      <button class="btn btn-primary" id="build-finalization-save" style="display:none">Finalize build</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="unit-notes-modal" role="dialog" aria-modal="true" aria-labelledby="unit-notes-modal-title" hidden>
+  <div class="modal proj-unit-notes-modal">
+    <div class="modal-title">
+      <span id="unit-notes-modal-title">Unit notes</span>
+      <button class="modal-close" id="unit-notes-modal-close" aria-label="Close unit notes">×</button>
+    </div>
+    <div id="unit-notes-modal-body" class="proj-unit-notes-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="unit-notes-modal-done">Done</button>
     </div>
   </div>
 </div>
@@ -2008,13 +2076,20 @@
     <div class="picker-accessories" id="picker-accessories" hidden></div>
     <div class="picker-footer" id="picker-footer">
       <span id="picker-footer-text" class="picker-footer-text">Select a part type to begin</span>
-      <div class="picker-part-status" id="picker-part-status" aria-label="Part condition">
-        <span class="picker-part-status-label">Condition</span>
-        <div class="picker-part-status-buttons" role="group" aria-label="Part condition">
-          <button type="button" class="picker-part-status-btn picker-part-status-btn--active" data-picker-part-status="New" aria-pressed="true">New</button>
-          <button type="button" class="picker-part-status-btn" data-picker-part-status="Used" aria-pressed="false">Used</button>
-          <button type="button" class="picker-part-status-btn" data-picker-part-status="Reused" aria-pressed="false">Reused</button>
+      <div class="picker-part-status" id="picker-part-status" aria-label="Part supply">
+        <span class="picker-part-status-label">Supply</span>
+        <div class="picker-part-status-buttons" role="group" aria-label="Part supply">
+          <button type="button" class="picker-part-status-btn picker-part-status-btn--active" data-picker-supply-type="new" aria-pressed="true">New</button>
+          <button type="button" class="picker-part-status-btn" data-picker-supply-type="customer_supplied" aria-pressed="false">Customer supplied</button>
         </div>
+        <div class="picker-part-status-buttons" id="picker-customer-condition" role="group" aria-label="Customer supplied condition" hidden>
+          <button type="button" class="picker-part-status-btn" data-picker-customer-condition="new" aria-pressed="false">New</button>
+          <button type="button" class="picker-part-status-btn" data-picker-customer-condition="used" aria-pressed="false">Used</button>
+        </div>
+        <label class="picker-customer-source" id="picker-customer-source-wrap" hidden>
+          <span>Source</span>
+          <input id="picker-customer-source" type="text" maxlength="240" placeholder="Required: agency, old vehicle, stock…">
+        </label>
       </div>
       <div class="picker-comment-step" id="picker-comment-step" hidden>
         <button type="button" class="btn btn-secondary btn-sm" id="picker-comment-toggle" aria-expanded="false">+ Add part notes</button>
@@ -2081,13 +2156,16 @@
       <button class="modal-close" onclick="meCancelModal()" title="Close">✕</button>
     </div>
 
-    <div class="me-status-row">
-      <button type="button" class="me-status-btn" data-value="New">New</button>
-      <button type="button" class="me-status-btn" data-value="Used">Used</button>
-      <button type="button" class="me-status-btn" data-value="Reused">Reused</button>
+    <div class="me-status-row" aria-label="Part supply">
+      <button type="button" class="me-status-btn" data-supply-type="new">New</button>
+      <button type="button" class="me-status-btn" data-supply-type="customer_supplied">Customer supplied</button>
+    </div>
+    <div id="me-customer-condition-row" class="me-status-row" style="display:none" aria-label="Customer supplied condition">
+      <button type="button" class="me-status-btn me-customer-condition-btn" data-customer-condition="new">New</button>
+      <button type="button" class="me-status-btn me-customer-condition-btn" data-customer-condition="used">Used</button>
     </div>
     <div id="me-reused-source-row" style="display:none;margin-bottom:12px">
-      <input id="me-source" type="text" placeholder="Where will this part come from?">
+      <input id="me-source" type="text" maxlength="240" placeholder="Required: agency, old vehicle, stock…">
     </div>
 
     <div class="form-group" style="margin-bottom:12px">
@@ -2175,8 +2253,12 @@
     <!-- Agency assignment -->
     <div class="form-group" style="margin-bottom:12px">
       <label>Agency Assignment <span style="font-weight:400;color:var(--muted)">(leave blank for universal)</span></label>
-      <div id="pem-agency-checks" style="max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:5px;padding:8px">
-        <p style="font-size:12px;color:var(--muted);margin:0">Loading agencies…</p>
+      <div class="pem-agency-search-row">
+        <input id="pem-agency-search" type="search" placeholder="Search agencies…" autocomplete="off">
+        <span id="pem-agency-count" aria-live="polite"></span>
+      </div>
+      <div id="pem-agency-checks" class="pem-agency-options">
+        <p class="pem-agency-empty">Loading agencies…</p>
       </div>
     </div>
 
@@ -2229,6 +2311,7 @@
 <script src="/ui/js/settings/agencies.js"></script>
 <script src="/ui/js/settings/sales_reps.js"></script>
 <script src="/ui/js/settings/presets_mgr.js"></script>
+<script src="/ui/js/settings/project_defaults.js"></script>
 <script src="/ui/js/settings/quickbooks.js"></script>
 <script src="/ui/js/settings/quickbooks_production_preview.js"></script>
 <script src="/ui/js/settings/fixtures.js"></script>

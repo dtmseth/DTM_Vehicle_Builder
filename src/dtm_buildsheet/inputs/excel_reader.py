@@ -5,6 +5,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from ..domain import PartInput, ProjectInput
+from ..domain.supply import normalized_supply_fields
 from ..naming import canonical_name, safe_project_id
 
 
@@ -177,12 +178,16 @@ def load_input(path: Path) -> ProjectInput:
         if not has_data:
             continue
 
+        supply = normalized_supply_fields({"new_or_used": new_or_used, "source": source})
         parts.append(
             PartInput(
                 name=name,
                 include=include,
-                new_or_used=new_or_used,
-                source=source,
+                new_or_used=supply["new_or_used"],
+                source=supply["source"],
+                supply_type=supply["supply_type"],
+                customer_condition=supply["customer_condition"],
+                customer_source=supply["customer_source"],
                 manufacturer=manufacturer,
                 part_number=part_number,
                 location=location,

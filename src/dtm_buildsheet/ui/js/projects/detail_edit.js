@@ -44,6 +44,7 @@ function _ptRenderEditTab(project, editable) {
     const prefPairs = [
       ["Camera",      pr.camera_brand],
       ["Lighting",    (pr.lighting_brands || []).join(", ")],
+      ["Lighting Setup", pr.lighting_mode === "trio" ? "TRIO" : "DUO"],
       ["Push Bumper", pr.push_bumper_brand],
       ["Cage",        pr.cage_brand],
       ["Console",     pr.console_brand],
@@ -144,6 +145,10 @@ function _ptRenderEditTab(project, editable) {
           <label>Lighting Brand</label>
           <select id="et-lighting">${_ptPreferenceSelectOptions("lighting", _ptPrimaryLightingBrand(pr))}</select>
         </div>
+        <div class="form-group">
+          <label>Default Lightheads</label>
+          <select id="et-lighting-mode"><option value="duo"${pr.lighting_mode === "trio" ? "" : " selected"}>DUO</option><option value="trio"${pr.lighting_mode === "trio" ? " selected" : ""}>TRIO</option></select>
+        </div>
       </div>
       <div class="form-group">
         <label>Preferences Notes</label>
@@ -191,7 +196,7 @@ function _ptRenderEditUnits() {
   listEl.innerHTML = _PT.editTabUnits.map((u, i) => {
     const btOpts = _ptBuildTypeOptions(u.build_type, u._customBuildTypeOpen);
 
-    const vpsts  = _ptCompatiblePresets(u);  // filtered by vehicle + build_type
+    const vpsts  = _ptVisiblePresets();
     const selPst = _ptVisiblePresets().find(p => p.preset_id === u.preset_id);
     const pstChip = selPst
       ? `<span class="proj-preset-chip">${esc(selPst.label)} <span class="proj-preset-chip-x" onclick="PT_clearEditPreset('${esc(u.uid)}')">×</span></span>`
@@ -532,7 +537,20 @@ window.PT_toggleEtPresetDD = function (uid) {
     if (dd.id !== `et-preset-dd-${uid}`) dd.style.display = "none";
   });
   const dd = $(`et-preset-dd-${uid}`);
-  if (dd) dd.style.display = dd.style.display === "none" ? "" : "none";
+  if (!dd) return;
+  if (dd.style.display !== "none") {
+    dd.style.display = "none";
+    return;
+  }
+  // Rebuild the unfiltered list every time. The agency shortcut replaces the
+  // same dropdown contents, so merely reopening the element would otherwise
+  // keep showing the previous filtered agency subset under the "All" label.
+  dd.innerHTML = _ptVisiblePresets().map(p =>
+    `<div class="proj-preset-option" onclick="PT_selectEditPreset('${esc(uid)}','${esc(p.preset_id)}')">
+      <strong>${esc(p.label)}</strong>
+    </div>`
+  ).join("") || `<div class="proj-preset-empty">No presets available</div>`;
+  dd.style.display = "";
 };
 
 window.PT_etAgencyPresets = function (uid) {

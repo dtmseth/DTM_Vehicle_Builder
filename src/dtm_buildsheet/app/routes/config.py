@@ -12,6 +12,7 @@ GET_ROUTES: dict[str, str] = {
     "/api/workbook-rules": "workbook_rules.json",
     "/api/app-settings": "app_settings.json",
     "/api/project-options": "project_options.json",
+    "/api/estimate-charges": "estimate_charges.json",
 }
 
 # Maps POST save path → config filename
@@ -22,6 +23,7 @@ POST_ROUTES: dict[str, str] = {
     "/api/parts-library/save": "parts_library.json",
     "/api/workbook-rules/save": "workbook_rules.json",
     "/api/app-settings/save": "app_settings.json",
+    "/api/estimate-charges/save": "estimate_charges.json",
 }
 
 

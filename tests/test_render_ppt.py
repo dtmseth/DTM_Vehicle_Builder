@@ -6,7 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 from pptx import Presentation
+from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
+from pptx.oxml.ns import qn
 
+from dtm_buildsheet.models import PartInput, ProjectInput
 from dtm_buildsheet.paths import AppPaths
 from dtm_buildsheet.planner import build_plan
 from dtm_buildsheet.render_ppt import (
@@ -23,6 +26,7 @@ from dtm_buildsheet.ppt_helpers import (
     SLIDE_W_EMU,
     _manifest_groups,
     _badge_label,
+    _legend_callouts,
     add_render_exception_slides,
     place_legend,
 )
@@ -119,6 +123,103 @@ def test_render_second_sample(tmp_path_factory, test_build_input, config):
     assert ppt_path.exists()
     prs = Presentation(str(ppt_path))
     assert len(prs.slides) > 0
+
+
+def test_dual_shroud_renders_housing_around_two_t_series_heads(tmp_path, config):
+    paths = AppPaths(
+        project_root=config.paths.project_root,
+        package_dir=config.paths.package_dir,
+        resources_dir=config.paths.resources_dir,
+        assets_dir=config.paths.assets_dir,
+        templates_dir=config.paths.templates_dir,
+        workspace_dir=config.paths.workspace_dir,
+        workspace_config_dir=config.paths.workspace_config_dir,
+        workspace_assets_dir=config.paths.workspace_assets_dir,
+        workspace_input_dir=config.paths.workspace_input_dir,
+        workspace_output_dir=tmp_path,
+        samples_dir=config.paths.samples_dir,
+    )
+    parent = PartInput(
+        name="Rear Warning 1", part_number="TST0D", part_type="warning_light",
+        location="LOWER CARGO WINDOW", raw_color="Red/White", quantity=4,
+        line_id="t-series-parent",
+        picker_config={
+            "mode": "uniform", "colorsPerHead": "duo",
+            "uniform": ["red", "white"], "count": 4,
+        },
+    )
+    shroud = PartInput(
+        name="Rear Warning 1 · T-Series Shroud", part_number="THSG2", quantity=2,
+        line_id="dual-shrouds", parent_line_id=parent.line_id,
+        accessory_category="shroud",
+        picker_config={"accessory_quantity": {
+            "parent_units_per_item": 2, "render_parent_group": "dual_shroud",
+        }},
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "DUAL-SHROUD"},
+        parts=[parent, shroud], notes={},
+    ), config)
+
+    prs = Presentation(str(render_plan_to_ppt(plan, paths)))
+    compound_groups = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if shape.shape_type != MSO_SHAPE_TYPE.GROUP:
+                continue
+            children = list(shape.shapes)
+            has_housing = any(
+                child.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE
+                and child.auto_shape_type == MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE
+                for child in children
+            )
+            picture_count = sum(child.shape_type == MSO_SHAPE_TYPE.PICTURE for child in children)
+            if has_housing and picture_count >= 2:
+                compound_groups.append(shape)
+
+    assert compound_groups, "expected a rounded shroud housing grouped with two T-Series pictures"
+
+
+def test_concealed_speaker_renders_translucent_with_mount_callout(tmp_path, config):
+    paths = AppPaths(
+        project_root=config.paths.project_root,
+        package_dir=config.paths.package_dir,
+        resources_dir=config.paths.resources_dir,
+        assets_dir=config.paths.assets_dir,
+        templates_dir=config.paths.templates_dir,
+        workspace_dir=config.paths.workspace_dir,
+        workspace_config_dir=config.paths.workspace_config_dir,
+        workspace_assets_dir=config.paths.workspace_assets_dir,
+        workspace_input_dir=config.paths.workspace_input_dir,
+        workspace_output_dir=tmp_path,
+        samples_dir=config.paths.samples_dir,
+    )
+    speaker = PartInput(
+        name="Siren Speaker", part_number="SA315P", part_type="siren_speaker",
+        location="BEHIND GRILL (CENTER)", quantity=1, line_id="concealed-speaker",
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CONCEALED-SPEAKER"},
+        parts=[speaker], notes={},
+    ), config)
+
+    prs = Presentation(str(render_plan_to_ppt(plan, paths)))
+    front_slide = next(
+        slide for slide in prs.slides
+        if any("FRONT VIEW" in getattr(shape, "text", "") for shape in slide.shapes)
+    )
+    alpha_values = [
+        alpha.get("amt")
+        for shape in front_slide.shapes
+        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE
+        for alpha in shape._element.findall(".//" + qn("a:alphaModFix"))
+    ]
+
+    assert "48000" in alpha_values
+    assert any(
+        getattr(shape, "text", "").strip() == "BEHIND GRILLE"
+        for shape in front_slide.shapes
+    )
 
 
 def test_render_failure_legend_only_lists_failed_current_view_components():
@@ -280,6 +381,35 @@ def test_manifest_promotes_selected_skus_and_keeps_guided_components_and_accesso
     assert selected_sku.comment == "Confirm final aiming with the customer."
 
 
+def test_manifest_combines_standard_duo_skus_into_one_compact_shop_row():
+    raw = SimpleNamespace(
+        name="Forward Warning 1", include=True, notes="", comment="Aim evenly",
+        part_number="ION", location="UPPER GRILLE", part_type="warning_light",
+        line_id="duo", parent_line_id="", manufacturer="Whelen",
+        raw_color="Red/White / Blue/White", driver_color="Red/White",
+        passenger_color="Blue/White", lens="Smoked", quantity=4,
+        new_or_used="New", source="",
+        picker_config={"colorsPerHead": "duo", "mode": "split"},
+        components=[
+            {"part_number": "3SBCCDCR", "quantity": 2, "color": "Blue/White"},
+            {"part_number": "3SRCCDCR", "quantity": 2, "color": "Red/White"},
+        ],
+    )
+    planned = SimpleNamespace(
+        category="warning", render_kind="light", placements=[], raw=raw,
+    )
+
+    entries = _manifest_groups([planned])[0][1]
+
+    assert len(entries) == 1
+    assert entries[0].name == "Forward Warning 1"
+    assert entries[0].part_number == "3SBCCDCR / 3SRCCDCR"
+    assert entries[0].quantity == 4
+    assert entries[0].location == "UPPER GRILLE"
+    assert entries[0].detail == "Blue/White (passenger)  ·  Red/White (driver)  ·  Lens: Smoked"
+    assert "\n" not in entries[0].detail
+
+
 def test_build_legend_groups_direct_child_parts_with_their_parent():
     def planned(name, *, line_id, parent_line_id="", part_number="", accessory_of=None):
         return SimpleNamespace(
@@ -434,12 +564,25 @@ def test_ppt_vehicle_stays_below_negative_layer_bumper_and_lights():
     assert elements.index(vehicle._element) < elements.index(bumper._element) < elements.index(light._element)
 
 
-def test_customer_supplied_part_without_condition_is_not_labeled_reused():
+def test_blank_legacy_status_maps_to_new_even_when_old_source_text_is_present():
     text, _ = _badge_label(SimpleNamespace(
         new_or_used="", source="Customer supplied", is_reused=False,
     ))
 
-    assert text == "■ CUSTOMER SUPPLIED"
+    assert text == "■ NEW"
+
+
+def test_visual_part_callouts_show_comment_and_used_source():
+    part = SimpleNamespace(
+        supply_type="customer_supplied", customer_condition="used",
+        customer_source="Retired Unit 12", new_or_used="Used", source="Retired Unit 12",
+        comment="Confirm antenna routing with customer.",
+    )
+
+    assert _legend_callouts(part) == [
+        "NOTE: Confirm antenna routing with customer.",
+        "USED SOURCE: Retired Unit 12",
+    ]
 
 
 def test_render_exception_detail_pages_paginate_without_crossing_footer():

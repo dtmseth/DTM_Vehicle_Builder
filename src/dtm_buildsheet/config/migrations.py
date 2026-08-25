@@ -29,6 +29,7 @@ _MIGRATIONS: dict[str, list] = {
     # Hook point for future field changes (Phase 5 light naming, etc.).
     "parts_db.json": [],
     "legacy_workbook_index.json": [],
+    "estimate_charges.json": [],
 }
 
 

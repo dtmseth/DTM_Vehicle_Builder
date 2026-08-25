@@ -34,6 +34,37 @@
     return agencyIds.map(id => _agencyName(id)).join(", ");
   }
 
+  function _renderAgencyChoices(selectedId = "") {
+    const agContainer = $("pem-agency-checks");
+    if (!agContainer) return;
+    const query = ($("pem-agency-search")?.value || "").trim().toLocaleLowerCase();
+    const selectedExists = _agencies.some(agency => agency.agency_id === selectedId);
+    const matching = query
+      ? _agencies.filter(agency => agency.name.toLocaleLowerCase().includes(query))
+      : _agencies;
+    const selectedAgency = _agencies.find(agency => agency.agency_id === selectedId);
+    const visible = selectedAgency && !matching.some(agency => agency.agency_id === selectedId)
+      ? [selectedAgency, ...matching]
+      : matching;
+    const count = $("pem-agency-count");
+    if (count) {
+      count.textContent = query
+        ? `${matching.length} of ${_agencies.length}`
+        : `${_agencies.length} agenc${_agencies.length === 1 ? "y" : "ies"}`;
+    }
+    agContainer.innerHTML =
+      `<label class="pem-agency-option pem-agency-option--general">
+        <input type="radio" name="pem-agency-radio" value="" ${!selectedExists ? "checked" : ""}>
+        <em>None (General preset)</em>
+      </label>` +
+      (visible.map(a => `
+        <label class="pem-agency-option">
+          <input type="radio" name="pem-agency-radio" value="${esc(a.agency_id)}"
+            ${selectedId === a.agency_id ? "checked" : ""}>
+          ${esc(a.name)}
+        </label>`).join("") || `<div class="pem-agency-empty">No agencies match “${esc(query)}”.</div>`);
+  }
+
   function _vehicleLabels(keys) {
     if (!keys || !keys.length) return "(any)";
     return keys.map(k => {
@@ -110,14 +141,42 @@
 
   // ── load data ─────────────────────────────────────────────────────────────
 
+  async function _refreshAgencies({ notifyOnFailure = false } = {}) {
+    try {
+      const response = await api("/api/agencies/choices");
+      if (!response?.ok || !Array.isArray(response.agencies)) {
+        throw new Error(response?.error || "Invalid agency response");
+      }
+      const selectedId = _getSelectedAgency()[0] || "";
+      _agencies = response.agencies;
+      if ($("preset-edit-modal")?.classList.contains("open")) {
+        _renderAgencyChoices(selectedId);
+        _updateNamePreview();
+      }
+      return true;
+    } catch (error) {
+      console.warn("Preset manager: agencies refresh failed", error);
+      if (notifyOnFailure) {
+        toast("Could not refresh the agency list — showing the last loaded copy", "error");
+      }
+      return false;
+    }
+  }
+
+  async function _prepareModal() {
+    await Promise.all([
+      _refreshAgencies({ notifyOnFailure: true }),
+      _loadVehicles(),
+    ]);
+  }
+
   async function _load() {
-    const [pr, ar, opts] = await Promise.all([
+    const [pr, , opts] = await Promise.all([
       api("/api/presets").catch(() => null),
-      api("/api/agencies").catch(() => null),
+      _refreshAgencies(),
       api("/api/project-options").catch(() => null),
     ]);
     _presets  = pr?.presets  || [];
-    _agencies = ar?.agencies || [];
     if (opts && (opts.build_types || []).length) {
       _BT_OPTIONS = opts.build_types;
     }
@@ -144,22 +203,12 @@
   function _openModal(preset) {
     _editId = preset?.preset_id || null;
 
-    // Populate agency radio buttons (single selection, or None for general preset)
-    const agContainer = $("pem-agency-checks");
-    if (agContainer) {
-      const selectedId = (preset?.agency_ids || [])[0] || "";
-      agContainer.innerHTML =
-        `<label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
-          <input type="radio" name="pem-agency-radio" value="" ${!selectedId ? "checked" : ""}>
-          <em style="color:var(--muted)">None (General preset)</em>
-        </label>` +
-        (_agencies.map(a => `
-          <label style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:13px;cursor:pointer">
-            <input type="radio" name="pem-agency-radio" value="${esc(a.agency_id)}"
-              ${selectedId === a.agency_id ? "checked" : ""}>
-            ${esc(a.name)}
-          </label>`).join("") || "");
-    }
+    // Agency state is refreshed immediately before every modal open. If a
+    // cloud sync or another Settings action changes it while this modal is
+    // open, _refreshAgencies() redraws these choices without losing selection.
+    const agencySearch = $("pem-agency-search");
+    if (agencySearch) agencySearch.value = "";
+    _renderAgencyChoices((preset?.agency_ids || [])[0] || "");
 
     // Populate vehicle multi-select
     const vContainer = $("pem-vehicle-checks");
@@ -323,7 +372,7 @@
   // ── public actions (called from table buttons + HTML) ─────────────────────
 
   window.pmEdit = async function (presetId) {
-    await _loadVehicles();
+    await _prepareModal();
     const preset = _presets.find(p => p.preset_id === presetId);
     _openModal(preset || { preset_id: presetId });
   };
@@ -417,7 +466,7 @@
           tag: "",
           description: "",
         };
-        await _loadVehicles();
+        await _prepareModal();
         _openModal(scaffold);
       };
     }
@@ -439,7 +488,7 @@
     const addBtn = $("pm-add-btn");
     if (addBtn) {
       addBtn.onclick = async () => {
-        await _loadVehicles();
+        await _prepareModal();
         _importParts = null;
         _openModal(null);
       };
@@ -484,10 +533,26 @@
       tagEl._pmWired = true;
       tagEl.oninput = _updateNamePreview;
     }
+    const agencySearch = $("pem-agency-search");
+    if (agencySearch && !agencySearch._pmWired) {
+      agencySearch._pmWired = true;
+      agencySearch.addEventListener("input", () => {
+        _renderAgencyChoices(_getSelectedAgency()[0] || "");
+      });
+    }
   }
 
   // Wire immediately so the modal works even if Settings tab is never visited
   _wireModalButtons();
+
+  // Agency creation, deletion, rename, or QuickBooks import can happen while
+  // the Presets tab stays mounted. Refresh both its table labels and any open
+  // creator modal immediately instead of waiting for a tab change.
+  window.addEventListener("dtm:agencies-changed", () => {
+    _refreshAgencies().then(_filterAndRender).catch(error => {
+      console.warn("Preset manager: agency-change refresh failed", error);
+    });
+  });
 
   // ── util ──────────────────────────────────────────────────────────────────
 

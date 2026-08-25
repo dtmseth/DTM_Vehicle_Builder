@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
 from ..services.config_service import save_config_file
+from ..services.customer_pricing_service import retail_catalog_unit_price
 from ..services.parts_db_service import get_parts_db_service
 from .http import send_json
 
@@ -811,16 +812,28 @@ def _resolve_accessories(svc, product_id: str) -> list[dict]:
         for apid in g["option_ids"]:
             ap = products.get(apid) or {}
             mfr = mfrs.get(ap.get("manufacturer_id"), {})
-            skus = [{
-                "part_number": pn.get("part_number"),
-                "friendly_name": pn.get("friendly_name", ""),
-                "price": pn.get("qb_unit_price") if pn.get("qb_unit_price") is not None else pn.get("price_usd"),
-                "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
-                "tertiary_color": pn.get("tertiary_color", ""),
-                "lens_type": pn.get("lens_type", ""),
-                "vehicle_tags": list(pn.get("vehicle_tags") or []),
-                "qb_pending": bool(pn.get("qb_pending")),
-            } for pn in (ap.get("part_numbers") or [])]
+            skus = []
+            for pn in (ap.get("part_numbers") or []):
+                sku = {
+                    "part_number": pn.get("part_number"),
+                    "friendly_name": pn.get("friendly_name", ""),
+                    "price": retail_catalog_unit_price(doc, ap.get("manufacturer_id", ""), pn),
+                    "color": pn.get("color", ""), "secondary_color": pn.get("secondary_color", ""),
+                    "tertiary_color": pn.get("tertiary_color", ""),
+                    "lens_type": pn.get("lens_type", ""),
+                    "vehicle_tags": list(pn.get("vehicle_tags") or []),
+                    "qb_pending": bool(pn.get("qb_pending")),
+                }
+                # Accessory quantities are user-editable, but selected SKUs may
+                # declare how many parent units one accessory physically covers.
+                # Keeping the rule beside the concrete SKU handles products such
+                # as the one-head and two-head T-Series shrouds without parsing
+                # marketing text in the browser. Omit the field entirely for
+                # ordinary accessories so their established API shape is stable.
+                quantity_rule = pn.get("accessory_quantity") or ap.get("accessory_quantity")
+                if quantity_rule:
+                    sku["accessory_quantity"] = dict(quantity_rule)
+                skus.append(sku)
             options.append({
                 "product_id": apid, "model": ap.get("model", apid),
                 "manufacturer_label": mfr.get("label", ap.get("manufacturer_id", "")),
@@ -882,7 +895,7 @@ def _resolve_system_cable_refreshes(svc, system_id: str, vehicle: str = "") -> l
                 "manufacturer_label": (manufacturers.get(manufacturer_id) or {}).get("label", manufacturer_id),
                 "part_number": sku.get("part_number", ""),
                 "friendly_name": sku.get("friendly_name", ""),
-                "price": sku.get("qb_unit_price") if sku.get("qb_unit_price") is not None else sku.get("price_usd"),
+                "price": retail_catalog_unit_price(doc, manufacturer_id, sku),
                 "qb_item_id": str(sku.get("qb_item_id", "")),
                 "vehicle_tags": tags,
             })
@@ -904,8 +917,9 @@ def _resolve_system_cable_refreshes(svc, system_id: str, vehicle: str = "") -> l
 # mirror). Tiny network payload, no fragile whole-document round-trips.
 
 _PRODUCT_EDIT_FIELDS = {"model", "manufacturer_id", "description", "fits_part_types", "tag_ids",
-                        "location_options", "fixed_location", "default_colors", "accessories_disabled",
+                        "location_options", "fixed_location", "picker_form", "default_colors", "accessories_disabled",
                         "allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku",
+                        "picker_location_allocation",
                         "reviewed", "accessory_category",
                         "accessory_of_products", "accessory_required"}
 _SKU_EDIT_FIELDS = {
@@ -1299,6 +1313,16 @@ def route_parts_db(
             send_json(handler, {"ok": False, "error": "sku required"}, status=400)
             return True
         match = svc.find_sku(sku)
+        if match:
+            product = (svc.raw_doc().get("products") or {}).get(match["product_id"]) or {}
+            source_sku = next(
+                (item for item in (product.get("part_numbers") or [])
+                 if str(item.get("part_number", "")).casefold() == str(sku).strip().casefold()),
+                {},
+            )
+            match["price"] = retail_catalog_unit_price(
+                svc.raw_doc(), product.get("manufacturer_id", ""), source_sku,
+            )
         send_json(handler, {"ok": True, "found": bool(match), "part": match})
         return True
 
@@ -1439,6 +1463,9 @@ def route_parts_db(
                 entry["manufacturer_id"] = mid
                 entry["product_id"] = product.product_id
                 entry["product_model"] = product.model
+                entry["retail_price"] = retail_catalog_unit_price(
+                    svc.raw_doc(), mid, pn,
+                )
                 part_numbers.append(entry)
         if not manufacturers:
             labels_list = svc.manufacturers_by_legacy_name(label)
@@ -1707,7 +1734,7 @@ def route_parts_db(
                         "friendly_name": pn.friendly_name,
                         "color": pn.color, "secondary_color": pn.secondary_color,
                         "tertiary_color": pn.tertiary_color, "lens_type": pn.lens_type,
-                        "price": pn.qb_unit_price or pn.price_usd,
+                        "price": retail_catalog_unit_price(doc, p.manufacturer_id, pn),
                         "qb": bool(pn.qb_item_id),
                         "qb_pending": bool(pn.qb_pending),
                         "vehicle_tags": list(pn.vehicle_tags or []),
@@ -1813,13 +1840,15 @@ def route_parts_db(
                     entry["fixed_location"] = primary_family["fixed_location"]
                 if product_spec.get("default_colors"):
                     entry["default_colors"] = list(product_spec["default_colors"])
+                if product_spec.get("picker_form"):
+                    entry["picker_form"] = str(product_spec["picker_form"])
                 # Focused picker flows can opt into product-scoped accessory
                 # links. For example, a console printer armrest can show only
                 # the power/USB cables authored for the selected printer,
                 # without expanding the established general catalog response.
                 if include_accessory_links and product_spec.get("accessory_of_products"):
                     entry["accessory_of_products"] = list(product_spec["accessory_of_products"])
-                for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku"):
+                for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku", "picker_location_allocation"):
                     if field in product_spec:
                         entry[field] = bool(product_spec[field])
                 if p.console_kit:
@@ -1932,7 +1961,7 @@ def route_parts_db(
             mfr = mfrs_doc.get(p.manufacturer_id, {})
             price_min = None
             for pn in p.part_numbers:
-                pp = pn.qb_unit_price or pn.price_usd
+                pp = retail_catalog_unit_price(svc.raw_doc(), p.manufacturer_id, pn)
                 if price_min is None or (pp is not None and pp < price_min):
                     price_min = pp
             qb_count = sum(1 for pn in p.part_numbers if pn.qb_item_id)

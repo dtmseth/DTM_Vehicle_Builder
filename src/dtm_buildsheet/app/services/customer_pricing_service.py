@@ -34,6 +34,38 @@ def _money(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
+def retail_unit_price(
+    list_unit_price: float,
+    manufacturer_id: str,
+    manufacturer_discounts: dict[str, float],
+    *,
+    discountable: bool = True,
+) -> float:
+    """Return the normal Retail selling price for one catalog item."""
+    discount = float(manufacturer_discounts.get(str(manufacturer_id or ""), 0.0)) if discountable else 0.0
+    return _money(float(list_unit_price) * (1 - discount / 100))
+
+
+def retail_catalog_unit_price(doc: dict, manufacturer_id: str, sku) -> float | None:
+    """Price one parts-db SKU exactly as the default Retail estimate does.
+
+    Picker and manifest APIs use this read-only projection; the stored
+    ``qb_unit_price`` remains the untouched QuickBooks list price.
+    """
+    getter = sku.get if isinstance(sku, dict) else lambda key, default=None: getattr(sku, key, default)
+    raw_price = getter("qb_unit_price")
+    if raw_price is None:
+        raw_price = getter("price_usd")
+    if raw_price is None:
+        return None
+    rule = ((doc.get("customer_pricing") or {}).get("default_rule") or {})
+    discounts = rule.get("manufacturer_discounts") or DEFAULT_MANUFACTURER_DISCOUNTS
+    return retail_unit_price(
+        float(raw_price), str(manufacturer_id or ""), discounts,
+        discountable=bool(getter("qb_item_id")),
+    )
+
+
 def _discount(value: object) -> float:
     try:
         discount = float(value)
@@ -178,7 +210,12 @@ def apply_customer_pricing(
             rule["manufacturer_discounts"].get(manufacturer_id, 0.0)
             if line.get("qb_item_id") else 0.0
         )
-        customer_unit_price = _money(list_unit_price * (1 - discount / 100))
+        customer_unit_price = retail_unit_price(
+            list_unit_price,
+            manufacturer_id,
+            rule["manufacturer_discounts"],
+            discountable=bool(line.get("qb_item_id")),
+        )
         list_amount = _money(list_unit_price * quantity)
         customer_amount = _money(customer_unit_price * quantity)
         line.update({

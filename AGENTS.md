@@ -21,6 +21,7 @@ bash packaging/build_macos.sh                  # package Mac app
 | Doc | When to read |
 |-----|-------------|
 | [docs/GOTCHAS.md](docs/GOTCHAS.md) | Before any edit — footguns by module |
+| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | **Start here** — live release, verification baseline, roadmap position, next work |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, test commands, CI, packaging |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime shape, design rules, central flow |
 | [docs/REPOSITORY_PRINCIPLES.md](docs/REPOSITORY_PRINCIPLES.md) | Engineering philosophy, do/don't |
@@ -37,22 +38,19 @@ bash packaging/build_macos.sh                  # package Mac app
 | [docs/AUDIT_REFACTOR_ROADMAP.md](docs/AUDIT_REFACTOR_ROADMAP.md) | Audit/refactor meta-plan, working method, model allocation |
 | [docs/audit/LEDGER.md](docs/audit/LEDGER.md) | Findings ledger (FINDING-nnn) — check before treating a flaw as new |
 | [docs/audit/PICKER_REDESIGN.md](docs/audit/PICKER_REDESIGN.md) | Part Picker redesign spec (browse tree, options-in-box, editor) |
-| [docs/audit/SESSION_HANDOFF_2026-07-13.md](docs/audit/SESSION_HANDOFF_2026-07-13.md) | **Current work** — what's shipped, what's open, where we're headed |
 
-## Current work (2026-07)
+## Current work (2026-08)
 
-Rebuilding the legacy name-based draft projects in the new Part Picker and fixing
-picker/placement flaws (owner flaw list). Status + next steps live in the session handoff
-above; findings in the ledger. **Working norms:** run cloud-off
-(`DTM_CLOUD=0 python -m dtm_buildsheet` or preview config "DTM App") — cloud-on triggers the 60s
-SharePoint sync that clobbers `parts_db.json`. Safety pins are `pytest tests/golden
-tests/contract` + `tools/ui_smoke/run_smoke.py` (currently 16 smoke flows). Golden masters must
-NOT move from authoring/DB changes; re-record contract snapshots only on intended DB/route
-changes, diff eyeballed. Current dirty-tree note: contract tests and UI smoke are green, but
-`pytest tests/golden tests/contract` has known golden digest drift pending owner review. Render
-**size + image** data now belongs in `parts_db` at the **part-type level** (owner directive), not
-the legacy `parts_library.json`/`part_catalog.json`/`asset_manifest.json`, and not per-SKU
-(see LEDGER FINDING-035).
+Production v3.4.0 is live. The immediate roadmap is Phase 4's remaining consumer migration,
+reviewed QuickBooks catalog-change governance, and completion of the visible parts-curation queue;
+see `docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m
+dtm_buildsheet` or preview config "DTM App") unless intentionally testing SharePoint — cloud sync
+can replace local `parts_db.json`. Safety pins are `pytest tests/golden tests/contract` plus
+`tools/ui_smoke/run_smoke.py` (currently 28 smoke flows). Golden masters must not move merely to make
+tests green; re-record intentional render changes only with focused behavioral coverage and a
+representative export check. Re-record contract snapshots only for intended DB/route changes after review.
+Render **size + image** data belongs in `parts_db` at the **part-type level**, not per SKU or in the
+legacy catalog files (see LEDGER FINDING-035).
 
 ## QuickBooks (conditionally relevant)
 

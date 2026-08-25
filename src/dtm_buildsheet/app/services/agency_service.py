@@ -305,8 +305,55 @@ def load_agencies(paths: AppPaths) -> list[AgencyRecord]:
     return sorted(_records(paths).values(), key=lambda r: r.name.lower())
 
 
+def load_agency_choices(paths: AppPaths) -> list[dict]:
+    """Return every stable agency identity that can own a preset.
+
+    The Agency database is primary, but older/current projects can retain a
+    valid ``customer.agency_id`` after the corresponding per-record agency file
+    is absent locally (for example after a migration or a delayed cloud pull).
+    Those project identities must remain selectable for presets; otherwise the
+    preset creator silently omits agencies that are visibly in active work.
+
+    Project-derived entries are read-only choices. Saving an agency with that
+    ID later naturally materializes the normal per-record Agency record.
+    """
+    choices: dict[str, dict] = {
+        record.agency_id: {
+            "agency_id": record.agency_id,
+            "name": record.name,
+            "choice_source": "agency",
+        }
+        for record in load_agencies(paths)
+        if record.agency_id and record.name.strip()
+    }
+
+    projects_dir = paths.workspace_projects_dir
+    if projects_dir.exists():
+        for project_path in projects_dir.glob("*/project.json"):
+            try:
+                project = json.loads(project_path.read_text("utf-8"))
+                customer = project.get("customer") or {}
+                agency_id = str(customer.get("agency_id", "")).strip()
+                name = str(customer.get("agency") or customer.get("name") or "").strip()
+                if agency_id and name and agency_id not in choices:
+                    choices[agency_id] = {
+                        "agency_id": agency_id,
+                        "name": name,
+                        "choice_source": "project",
+                    }
+            except Exception:
+                _log.exception("Skipping project agency choice from %s", project_path)
+
+    return sorted(choices.values(), key=lambda item: item["name"].casefold())
+
+
 def handle_list_agencies(paths: AppPaths) -> dict:
     return {"ok": True, "agencies": [asdict(r) for r in load_agencies(paths)]}
+
+
+def handle_list_agency_choices(paths: AppPaths) -> dict:
+    choices = load_agency_choices(paths)
+    return {"ok": True, "agencies": choices, "total": len(choices)}
 
 
 def get_agency(paths: AppPaths, agency_id: str) -> AgencyRecord | None:

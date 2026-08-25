@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from openpyxl import Workbook
 
 from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
 from dtm_buildsheet.inputs.excel_reader import load_input
@@ -46,6 +47,20 @@ class TestExcelReader:
         via_shim = shim_load(PRIMARY_XLS)
         assert direct.info["VehicleType"] == via_shim.info["VehicleType"]
         assert len(direct.parts) == len(via_shim.parts)
+
+    def test_legacy_used_and_source_map_to_canonical_supply(self, tmp_path):
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Build Sheet"
+        sheet.append(["Include", "Part", "New/Used", "Source", "Manufacturer", "Part #", "Location", "Color", "Qty"])
+        sheet.append(["Yes", "Radio", "Used", "Retired Unit 8", "Motorola", "M500", "Console", "", 1])
+        path = tmp_path / "legacy-used.xlsx"
+        workbook.save(path)
+
+        part = load_input(path).parts[0]
+        assert part.supply_type == "customer_supplied"
+        assert part.customer_condition == "used"
+        assert part.customer_source == "Retired Unit 8"
 
 
 # ── gui_entry ─────────────────────────────────────────────────────────────────
@@ -143,6 +158,20 @@ class TestGuiEntry:
         form["parts"][0]["qty"] = 3
         project = project_input_from_form(form)
         assert project.parts[0].quantity == 3
+
+    def test_canonical_customer_supply_fields_and_comment_pass_through(self):
+        form = self._minimal_form()
+        form["parts"][0].update({
+            "supply_type": "customer_supplied",
+            "customer_condition": "new",
+            "customer_source": "Agency stock",
+            "comment": "Keep packaging with vehicle.",
+        })
+        part = project_input_from_form(form).parts[0]
+        assert part.supply_type == "customer_supplied"
+        assert part.customer_condition == "new"
+        assert part.customer_source == "Agency stock"
+        assert part.comment == "Keep packaging with vehicle."
 
     def test_notes_parsed(self):
         project = project_input_from_form(self._minimal_form())

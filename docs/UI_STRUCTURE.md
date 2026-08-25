@@ -10,18 +10,18 @@ Two main tabs: **Projects** and **Settings**.
 ### Projects tab
 ```
 #proj-list-view        — scrollable project list
-#proj-detail-view      — detail view with three sub-tabs:
-    Overview           — read-only customer + prefs cards (2-col), fleet groups below
+#proj-detail-view      — detail view with two sub-tabs:
+    Overview           — customer + prefs cards (2-col), fleet/build cards below; long unit notes open in a modal
     Edit               — read-only by default; [✏️ Edit] enters edit mode with inputs
-    Builds             — per-unit cards with these buttons:
-                         [Setup/Edit Build] [📊 Preview/Edit in PowerPoint] [📄 Export PDF]
-                         [📑 View PDF] [📂 Show in folder] + per-card author tags
+                         Build cards expose [📊 Preview/Edit in PowerPoint] [📄 Export PDF]
+                         [📑 View PDF] [◆ Set up/Manage QB Project] [📋 QB Estimate]
+                         [📂 Show in folder] [✓ Final review] + per-card author tags
 #proj-editor           — 4-step wizard (new projects only: Customer → Preferences → Fleet → Review)
 #proj-build-editor     — embedded build editor (in-place, no tab switch)
     #pbe-header        — unit context bar + "← Back to Project" button
     #pbe-preview-section — preview canvas (pvLoad / pvReload)
     #pbe-manifest-section — draft manifest editor (loadDraftManifest)
-    #pbe-footer        — "💾 Save & Return to Project" button
+    #pbe-footer        — Load Preset / Save as New Preset / Apply to Group actions + Return button
 ```
 
 **There is no Generate button** on build cards. Preview and Export both auto-regenerate when

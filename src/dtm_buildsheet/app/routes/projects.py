@@ -13,6 +13,11 @@ from ..services.project_service import (
     handle_list_projects,
     handle_save_project,
 )
+from ..services.finalization_service import (
+    handle_finalization_check,
+    handle_finalize_build,
+    handle_reopen_build,
+)
 from .http import send_json
 
 
@@ -24,6 +29,28 @@ def route_projects(
     paths: AppPaths,
 ) -> bool:
     """Return True if the request was handled."""
+
+    if path.startswith("/api/project/") and "/finalization/" in path:
+        inner, action = path[len("/api/project/"):].rsplit("/finalization/", 1)
+        individual_id = ""
+        if "/individual/" in inner:
+            unit_part, individual_id = inner.rsplit("/individual/", 1)
+        else:
+            unit_part = inner
+        parts = unit_part.split("/unit/", 1)
+        if len(parts) == 2:
+            project_id, unit_id = parts
+            valid = all(value and "/" not in value for value in (project_id, unit_id))
+            valid = valid and (not individual_id or "/" not in individual_id)
+            if valid and method == "GET" and action == "check":
+                send_json(handler, handle_finalization_check(project_id, unit_id, individual_id, paths))
+                return True
+            if valid and method == "POST" and action == "finalize":
+                send_json(handler, handle_finalize_build(project_id, unit_id, individual_id, body, paths))
+                return True
+            if valid and method == "POST" and action == "reopen":
+                send_json(handler, handle_reopen_build(project_id, unit_id, individual_id, body, paths))
+                return True
 
     # GET /api/projects
     if method == "GET" and path == "/api/projects":

@@ -210,6 +210,7 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
     pref_notes: list[str] = []
     if prefs.lighting_brands:
         pref_notes.append("Lighting brands: " + ", ".join(prefs.lighting_brands))
+    pref_notes.append(f"Default lightheads: {str(prefs.lighting_mode or 'duo').upper()}")
     if prefs.camera_brand:
         pref_notes.append(f"Camera brand: {prefs.camera_brand}")
     if prefs.push_bumper_brand:
@@ -313,6 +314,7 @@ def handle_create_individual_draft(
     pref_notes: list[str] = []
     if prefs.lighting_brands:
         pref_notes.append("Lighting brands: " + ", ".join(prefs.lighting_brands))
+    pref_notes.append(f"Default lightheads: {str(prefs.lighting_mode or 'duo').upper()}")
     if prefs.camera_brand:
         pref_notes.append(f"Camera brand: {prefs.camera_brand}")
     if prefs.push_bumper_brand:

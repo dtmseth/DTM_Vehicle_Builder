@@ -18,6 +18,7 @@ const _PBE_NOTE_CATEGORIES = [
 ];
 let _pbeNotesSaveTimer = null;
 let _pbeNotesDraftId = "";
+let _pbeLoadPresetSelection = "";
 
 function _pbeNotesMarkup(notes, projectNotes) {
   const shared = (projectNotes || "").trim();
@@ -104,6 +105,10 @@ function _pbePartsMatchPreset(draftParts, presetParts) {
 function _pbeMarkDirty() {
   const actionRow = $("pbe-action-row");
   if (actionRow) actionRow.style.display = "flex";
+  const footerPreset = $("pbe-create-preset-btn");
+  if (footerPreset) footerPreset.style.display = "";
+  const footerGroup = $("pbe-apply-group-btn");
+  if (footerGroup) footerGroup.style.display = "";
   const topPreset = $("pbe-create-preset-top");
   if (topPreset) topPreset.style.display = "";
   const topGroup = $("pbe-apply-group-top");
@@ -112,11 +117,133 @@ function _pbeMarkDirty() {
 
 function _pbeSetActionRowVisible(visible) {
   const actionRow = $("pbe-action-row");
-  if (actionRow) actionRow.style.display = visible ? "flex" : "none";
+  // Load Preset is always available. Only the dirty-build actions disappear
+  // when the current draft exactly matches its assigned preset.
+  if (actionRow) actionRow.style.display = "flex";
+  const footerPreset = $("pbe-create-preset-btn");
+  if (footerPreset) footerPreset.style.display = visible ? "" : "none";
+  const footerGroup = $("pbe-apply-group-btn");
+  if (footerGroup) footerGroup.style.display = visible ? "" : "none";
   const topPreset = $("pbe-create-preset-top");
   if (topPreset) topPreset.style.display = visible ? "" : "none";
   const topGroup = $("pbe-apply-group-top");
   if (topGroup) topGroup.style.display = visible ? "" : "none";
+}
+
+function _pbePresetScopeLabel(preset) {
+  const agencyIds = preset.agency_ids || [];
+  const currentAgencyId = _PT.pbeProject?.customer?.agency_id || "";
+  if (!agencyIds.length) return "General preset";
+  if (currentAgencyId && agencyIds.includes(currentAgencyId)) {
+    return `${_PT.pbeProject?.customer?.agency || "Current agency"} preset`;
+  }
+  return "Other agency preset";
+}
+
+function _pbeRenderLoadPresetOptions() {
+  const container = $("pbe-load-preset-options");
+  if (!container) return;
+  const query = ($("pbe-load-preset-search")?.value || "").trim().toLocaleLowerCase();
+  const compatible = _ptCompatiblePresets(_PT.pbeUnit)
+    .filter(preset => {
+      const haystack = [preset.label, preset.description, _pbePresetScopeLabel(preset)]
+        .filter(Boolean).join(" ").toLocaleLowerCase();
+      return !query || haystack.includes(query);
+    })
+    .sort((a, b) => {
+      const rank = preset => {
+        const ids = preset.agency_ids || [];
+        const currentAgencyId = _PT.pbeProject?.customer?.agency_id || "";
+        if (currentAgencyId && ids.includes(currentAgencyId)) return 0;
+        if (!ids.length) return 1;
+        return 2;
+      };
+      return rank(a) - rank(b) || (a.label || "").localeCompare(b.label || "");
+    });
+  const total = _ptCompatiblePresets(_PT.pbeUnit).length;
+  const count = $("pbe-load-preset-count");
+  if (count) count.textContent = query ? `${compatible.length} of ${total}` : `${total} preset${total === 1 ? "" : "s"}`;
+
+  if (!compatible.length) {
+    container.innerHTML = `<p class="pbe-load-preset-empty">${query
+      ? `No compatible presets match “${esc(query)}”.`
+      : "No presets are compatible with this vehicle and build type."}</p>`;
+    return;
+  }
+  container.innerHTML = compatible.map(preset => `
+    <label class="pbe-load-preset-option">
+      <input type="radio" name="pbe-load-preset-choice" value="${esc(preset.preset_id)}"
+        ${preset.preset_id === _pbeLoadPresetSelection ? "checked" : ""}>
+      <strong>${esc(preset.label || preset.preset_id)}</strong>
+      <span>${esc([_pbePresetScopeLabel(preset), preset.description || ""].filter(Boolean).join(" · "))}</span>
+    </label>`).join("");
+}
+
+function _pbeCloseLoadPreset() {
+  $("pbe-load-preset-modal")?.classList.remove("open");
+}
+
+async function _ptOpenLoadPresetFromBuild() {
+  const modal = $("pbe-load-preset-modal");
+  if (!modal || !_PT.pbeDraftId || !_PT.pbeUnit) {
+    toast("No active build available", "error");
+    return;
+  }
+  try {
+    const response = await api("/api/presets");
+    if (!response?.ok || !Array.isArray(response.presets)) {
+      throw new Error(response?.error || "Could not load presets");
+    }
+    _PT.presets = response.presets;
+  } catch (error) {
+    toast(error.message || "Could not refresh presets", "error");
+    return;
+  }
+
+  _pbeLoadPresetSelection = "";
+  const search = $("pbe-load-preset-search");
+  if (search) search.value = "";
+  const confirmBtn = $("pbe-load-preset-confirm");
+  if (confirmBtn) confirmBtn.disabled = true;
+  _pbeRenderLoadPresetOptions();
+  modal.classList.add("open");
+  search?.focus();
+}
+
+async function _pbeApplySelectedPreset() {
+  const presetId = _pbeLoadPresetSelection;
+  const draftId = _PT.pbeDraftId;
+  const confirmBtn = $("pbe-load-preset-confirm");
+  if (!presetId || !draftId || !confirmBtn) return;
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = "Loading…";
+  try {
+    if (typeof pvApplyChanges === "function") {
+      const saved = await pvApplyChanges();
+      if (saved === false) return;
+    }
+    const result = await api(`/api/draft/${encodeURIComponent(draftId)}/apply-preset`, {
+      preset_id: presetId,
+    });
+    if (!result?.ok) {
+      throw new Error(result?.message || result?.error || "Could not load preset");
+    }
+    _pbeCloseLoadPreset();
+    await Promise.all([
+      Promise.resolve(loadDraftManifest(draftId)),
+      Promise.resolve(pvLoad(draftId)),
+    ]);
+    // Compare against the preset just loaded for this screen. Loading is a
+    // copy operation; it intentionally does not change the unit-group preset
+    // assignment or silently alter sibling vehicles.
+    await _pbeCheckPresetButton(draftId, { ..._PT.pbeUnit, preset_id: presetId });
+    toast(`Loaded preset: ${result.preset_label}`, "success");
+  } catch (error) {
+    toast(error.message || "Could not load preset", "error");
+  } finally {
+    confirmBtn.textContent = "Load and Replace Build";
+    confirmBtn.disabled = !_pbeLoadPresetSelection;
+  }
 }
 
 async function _pbeCheckPresetButton(draftId, unit) {
@@ -159,6 +286,7 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   hide("proj-detail-view");
   hide("proj-editor");
   show("proj-build-editor");
+  _pbeSetActionRowVisible(false);
 
   const vm      = _PT.vehicleMap[unit.vehicle_model] || {};
   const vmLabel = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "Vehicle");
@@ -193,7 +321,7 @@ async function _ptApplyToUnitGroup() {
     return;
   }
 
-  if (!confirm(`Apply this build configuration to all ${siblings.length} other unit(s) in this group?\n\nThis will copy all parts, quantities, colors, placement overrides, and part status (New / Used / Reused) to every other unit — overwriting any existing build changes and setting up any units that haven't been configured yet.`)) return;
+  if (!confirm(`Apply this build configuration to all ${siblings.length} other unit(s) in this group?\n\nThis will copy all parts, quantities, colors, placement overrides, and supply status (New / Customer supplied, including condition and source) to every other unit — overwriting any existing build changes and setting up any units that haven't been configured yet.`)) return;
 
   const draftRes = await api(`/api/draft/${encodeURIComponent(currentDraftId)}`);
   if (!draftRes?.ok) { toast("Could not load current draft", "error"); return; }
@@ -325,6 +453,22 @@ function _ptBindBuildEditor() {
   if (createPresetTop) {
     createPresetTop.addEventListener("click", _ptOpenCreatePresetFromBuild);
   }
+
+  [$("pbe-load-preset-btn"), $("pbe-load-preset-top")].forEach(button => {
+    if (button) button.addEventListener("click", _ptOpenLoadPresetFromBuild);
+  });
+
+  $("pbe-load-preset-close")?.addEventListener("click", _pbeCloseLoadPreset);
+  $("pbe-load-preset-cancel")?.addEventListener("click", _pbeCloseLoadPreset);
+  $("pbe-load-preset-search")?.addEventListener("input", _pbeRenderLoadPresetOptions);
+  $("pbe-load-preset-options")?.addEventListener("change", event => {
+    const input = event.target.closest("input[name='pbe-load-preset-choice']");
+    if (!input) return;
+    _pbeLoadPresetSelection = input.value;
+    const confirmBtn = $("pbe-load-preset-confirm");
+    if (confirmBtn) confirmBtn.disabled = false;
+  });
+  $("pbe-load-preset-confirm")?.addEventListener("click", _pbeApplySelectedPreset);
 
   const applyGroupBtn = $("pbe-apply-group-btn");
   if (applyGroupBtn) {

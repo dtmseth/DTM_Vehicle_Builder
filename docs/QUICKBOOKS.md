@@ -108,6 +108,85 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
 
+### Centralization Phase 3A — deferred; core and Netlify adapter remain local only
+
+**Owner decision, 2026-08-20:** table this phase. Keep every central-QBO flag off. Do not register
+the Entra API, configure protected service variables, deploy the new functions, authorize the owner
+connection, move tokens, or retire the existing desktop/keychain path unless the owner explicitly
+resumes the work. The code below is retained as reviewed, default-off groundwork only.
+
+The first safe migration slice now exists behind a default-off feature flag. It is not deployed and
+does not change the live per-workstation connection:
+
+- `app/quickbooks_central/` is a framework- and provider-neutral service core. Its narrow contracts
+  cover User connection health, Admin-detailed connection health, and normalized active Item reads.
+  It requires a signature-verifying Entra adapter, validates tenant/audience/expiry/subject, enforces
+  `Builder.User` / `Builder.Admin`, coordinates one atomic refresh-token writer per realm, and emits
+  append-only attribution records.
+- `app/adapters/quickbooks/gateway.py` separates desktop services from the transport. The existing
+  OS-keychain/direct-QBO implementation is retained as `LocalQuickBooksCompatibilityGateway`.
+  `CentralQuickBooksGateway` uses the narrow Builder API client.
+- `builder_api_config.py`, `builder_api_token.py`, and `central_client.py` add the non-secret central
+  config, request a delegated token for the Builder API scope (never a Graph token), and call only
+  `/v1/quickbooks/health` and `/v1/quickbooks/items`.
+- Central mode routes health and the active-Item pull through the new client. All other QBO routes
+  return `central_operation_not_migrated`; no surviving local token is used. The central Item slice
+  updates only the disposable local cache and deliberately skips `parts_db` reconciliation until
+  catalog governance is behind an Admin endpoint.
+- The Settings and Connections UI says **QuickBooks managed by DTM**, hides Intuit connect,
+  disconnect, credential, and production-preview controls, and directs outages to a Builder Admin.
+- Hermetic identity, credential, lock, audit, and QBO adapters refuse `environment="production"`.
+  Focused tests cover authorization failures, Admin-only access, a 24-caller refresh race, safe
+  redaction, audit attribution, Builder-API token scope, central fail-closed behavior, and disabled-
+  mode compatibility.
+- `relay/netlify/functions/qb-central.mjs` and `_shared/netlify-central.mjs` are the selected,
+  default-off deployment adapter. They validate signed Entra v2 access tokens against tenant JWKS,
+  issuer, audience, expiry, subject, object ID, and roles; keep the Intuit secret and a separate
+  256-bit token-encryption key in protected Netlify environment variables; store only AES-256-GCM
+  credential ciphertext in Netlify Blobs; use strong reads plus ETag compare-and-swap for the
+  per-realm refresh lease/latest rotating token; consume encrypted Admin OAuth state once; and
+  append payload-free audit records. The existing `qb-token` relay remains unchanged while central
+  mode is off.
+- The desktop treats a normal central JSON capacity error and Netlify's own paused-site HTML as the
+  single safe code `central_service_limit_reached`. It never echoes or logs that HTML. Connection
+  status and Estimate UI explain that no Estimate was created, the build is safe, and a Builder
+  Admin should check **Netlify → Usage & billing** or wait for the monthly reset before retrying.
+
+Configuration is the `central_qbo` object in local-only `quickbooks_config.json`, with environment
+overrides. It contains no secrets:
+
+```json
+{
+  "central_qbo": {
+    "enabled": false,
+    "base_url": "https://<builder-api-host>",
+    "tenant_id": "<entra-tenant-id>",
+    "audience": "<builder-api-application-client-id>",
+    "delegated_scope": "api://<builder-api-application-client-id>/Builder.Access"
+  }
+}
+```
+
+Environment overrides are `DTM_QB_CENTRAL_ENABLED`, `DTM_BUILDER_API_BASE_URL`,
+`DTM_BUILDER_API_TENANT_ID`, `DTM_BUILDER_API_AUDIENCE`, and `DTM_BUILDER_API_SCOPE`. Enabled mode
+requires HTTPS and a delegated scope matching the configured audience.
+
+**Platform decision:** reuse the existing DTM Netlify account/site; do not add Azure or another
+provider. Netlify's Free plan is a hard monthly credit pool: exhaustion pauses the site instead of
+silently billing overage. That avoids surprise charges but makes the central QBO path unavailable
+until an Admin restores service or the allowance resets, which is why the explicit desktop failure
+path above is a release requirement.
+
+**Next slice only if resumed:** register the single-tenant Builder API in Entra, add delegated
+`Builder.Access`, define/assign `Builder.User` and `Builder.Admin`, grant the desktop app that API
+permission with admin consent, and supply the public tenant/audience/scope identifiers. Configure
+the protected Netlify variables only in an isolated test context, deploy with
+`CENTRAL_QBO_ENABLED=false`, then explicitly enable and compare health/company/active Items with the
+existing local path. Review audit retention, recovery, usage alerts, and an encryption-key backup/
+rotation procedure before the owner's one-time authorization. Customer writes, Estimates, Estimate
+updates, PDF attachment, and live token retirement remain later guarded slices; Estimate creation
+and attachment must remain two separate writes.
+
 ### Production catalog preview — read-only migration gate
 
 The production company may organize Items differently from sandbox. Therefore production does not
@@ -209,8 +288,15 @@ all write operations still require their backend checks and explicit confirmatio
 **Current estimate customer rule:** an estimate always uses the agency's top-level `CustomerRef`
 and the vehicle's true QBO `ProjectRef`. The free-tier workflow creates the Project manually in
 QuickBooks, then stores its Project ID (or a Project page URL) on the individual vehicle through `POST /projects/bind`;
-the app does not create a sub-customer. Project names are stable and self-identifying:
-`Agency | Build {build year} | Unit {number}`. A unit number is required before binding a Project.
+the app does not create a sub-customer. This local link can be previewed and saved before the unit
+has a configured build draft; only Estimate validation waits for configuration. Project names are
+stable per vehicle. The generated/copied format is `Unit {number} | Build {build year}`; QBO already
+shows the parent Customer, so the agency is intentionally omitted. When a unit number is unavailable,
+the app uses a deterministic build-type label such as `Patrol #1 | Build {build year}`.
+The fallback is derived from the vehicle's stable `individual_id`, so adding a unit number later
+does not lose its stored Project, Estimate, PPTX, or PDF associations. Removing the redundant agency
+prefix from new generated names, plus migrating stored display names, is planned in
+`NEXT_FEATURE_PLAN.md`.
 The app requires agency name, contact name/email/phone, and billing street/city/state/postal code
 before it can create an estimate. If the agency is not linked, it first reuses an exact top-level
 Customer name match; otherwise it asks the user to confirm the complete customer profile before
@@ -244,7 +330,14 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   user to either **update the existing Estimate** (read current `SyncToken`, then sparse-update the
   complete Builder-owned line array and header fields) or deliberately **create a separate new
   Estimate**. The new ID replaces the vehicle's current local Estimate link; the older QBO form is
-  retained in QuickBooks.
+  retained in QuickBooks. After every successful create or update, the vehicle stores a canonical
+  snapshot of the Builder-owned Estimate header and material lines. Validation and update read the
+  current QBO form and compare it with that snapshot. If QBO was edited, the review raises a loud
+  conflict warning, exposes the field/line differences, and requires an explicit choice to
+  **overwrite the QBO changes** or **create a separate new Estimate**. The update service repeats
+  the comparison immediately before writing, so a change made after the review cannot be silently
+  overwritten. Older linked estimates without a baseline are visibly marked untracked and still
+  require an explicit choice.
   The standard Accounting-only connection deliberately does not write
   sales-form custom fields: modern QuickBooks fields require their paid Custom
   Fields API to resolve the company-specific field IDs. This keeps a custom
@@ -257,6 +350,16 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   manufacturer exceptions in `pricing_overrides`; these prefill Custom pricing but never silently
   replace Retail. The create dialog defaults to **Retail pricing** and offers explicit, temporary
   **Custom pricing** for that estimate, with live list/savings/customer totals.
+  After material pricing, `estimate_charges_service.py` appends a separate **Additional charges**
+  block. Patrol, Undercover, Admin, and Custom presets supply total labor and install-supplies
+  amounts; the reviewer can override them for one vehicle and optionally add delivery. The app then
+  calculates a 4% card fee from materials + labor + supplies + delivery (never fee-on-fee). These
+  lines resolve the active QBO Service items named `LABOR INSTALL`, `INSTALL SUPPLIES`,
+  `Convenience Fee`, and `TRAVEL` from the freshly pulled company cache. A missing item or a zero
+  required amount blocks creation with a visible reason. Shared defaults live in
+  `estimate_charges.json` and are edited under Settings → Projects. An older manually selected
+  install-supplies draft row stays on the shop manifest but is removed from estimate materials so
+  the managed Additional charges line cannot bill it twice.
   The Estimate payload sends the calculated `UnitPrice` and `Amount` explicitly, so QBO's internal
   item/rule formatting cannot change the reviewed price. Production estimate inspection confirms
   these discounted values are stored as each line's raw `UnitPrice`/`Amount`; QBO does not add a
@@ -290,14 +393,21 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   JSON reason; unexpected failures include a short support reference written with the full
   exception to the local log, without exposing credentials or third-party response detail.
   Pending-QB parts post as a `DescriptionOnly` line (flagged, non-blocking).
-- UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab.
+- UI: per-vehicle **📋 QB Estimate** + footer **Prepare QB Estimates** on the Builds tab. Estimate
+  preparation requires a current PDF and offers the export operation in the Estimate flow, with a
+  visible progress state while the PDF is generated; batch creation carries the resulting PDF path
+  into each Estimate request.
   A blocked per-vehicle attempt raises a copyable error toast naming the Project/customer/catalog
   issue instead of failing silently. Missing Project links open a numbered manual-QBO walkthrough;
   if the unit number is missing, its first action opens that vehicle's Details form directly.
   The batch screen first checks every configured vehicle, lets the user set up missing Projects,
-  and creates only the ready estimates after an explicit confirmation.
-  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (35) and
-  `tests/test_customer_pricing_service.py`.
+  and creates only the ready estimates after an explicit confirmation. Project setup includes a
+  **Back to vehicle checklist** action; returning or saving a valid Project link reloads the project,
+  reruns every vehicle's validation, moves the linked vehicle to **Ready**, and leaves the next
+  setup action available. The price-refresh notice is a toast, and any unexpected review-modal
+  rendering failure is surfaced instead of silently stopping.
+  (`detail_builds.js`, `#qb-est-modal`). Tests: `tests/test_qb_estimate_service.py` (52),
+  `tests/test_estimate_charges_service.py` (4), and `tests/test_customer_pricing_service.py`.
 - The header **Connections** modal shows Microsoft 365 and QuickBooks Online together. QuickBooks
   status is checked when the modal opens; disconnected users can start OAuth there, while connected
   users can open the full QuickBooks settings panel. Credentials remain in the isolated OS keychain.
@@ -306,11 +416,11 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
 `GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
 `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` ·
 `POST customer-pricing/default` · `POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
-`POST projects/bind` ·
+`POST projects/preview` · `POST projects/bind` ·
 `POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
 
-**Test totals**: full suite 1963 pass, 1 skipped, plus 3 known owner-review golden-digest drifts.
-QB-specific: service (15), sync (24), customer-sync (14), agency-push (13), estimate (35),
+**Test totals (v3.3.2)**: full suite 2,009 pass, 1 skipped; hermetic browser smoke 18/18.
+QB-specific: service (15), sync (24), customer-sync (14), agency-push (13), estimate (54),
 customer-pricing (4), seed-sandbox (5).
 
 ---
@@ -532,33 +642,47 @@ it does not replace the initial migration review.
 
 ---
 
-## 7. What's left before Production go-live (Phase 4)
+## 7. Production operations and remaining improvements
 
-The relay, App Assessment, Production credentials, isolated catalog migration, and customer
-migration are complete. The remaining controlled activation steps are:
+Production go-live is complete. The relay, App Assessment, Production credentials, catalog and
+customer migrations, representative Estimate comparison, normal reconciliation, and Estimate UI
+are active. Connected installations reconcile linked Item data at startup and every 30 minutes;
+each Estimate preparation also refreshes prices and blocks rather than using stale values if the
+refresh fails.
 
-- Use the enabled estimate UI to validate a representative configured vehicle, without creating
-  anything, and review its customer/project resolution and every line item.
-- After owner approval, create one non-posting production Estimate and compare it manually in QBO.
-- Enable normal background sync only after that first Estimate and the resulting production state
-  have been reviewed. Background sync remains disabled until then.
+Operationally, users still create true QBO Projects manually, paste the Project page URL/ID into
+the Builder, review every Estimate, and turn on **Bank transfer — 1% per transaction, max $20** in
+QBO after creation when required. Those are explicit product/API constraints, not incomplete
+connection setup.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
 (manual button today, owner chose reviewed-first); automatic QBO Project creation after a future
 Silver+ developer-tier upgrade.
 
-**Deferred multi-user identity/audit design:** keep one administrator-controlled company OAuth
-connection rather than distributing its refresh token to every workstation. Individual Builder
-users may later authenticate with OpenID Connect (or the existing Microsoft 365 identity), while
-the Builder keeps its own immutable user/action/QBO-entity audit trail. QBO records third-party API
-writes as `System Administration`, so separate user sign-ins do not make QBO's native audit log
-attribute those writes to each employee. If this becomes a multi-workstation feature, move the
-single company refresh token and API execution into an authenticated central service; the current
-OAuth-only Netlify broker is deliberately not an Accounting API backend.
+**Planned multi-user identity/audit migration:** keep one owner/admin-authorized company OAuth
+connection in a protected backend rather than distributing rotating refresh tokens to workstations.
+Employees authenticate to the Builder backend with their existing Microsoft 365/Entra identities;
+they do not sign in to Intuit or know the owner's QBO credentials. Only an authorized Builder Admin
+can complete initial Intuit consent or emergency reconnection. The backend validates tenant,
+audience, user, and app role, serializes refresh-token rotation, makes narrowly scoped QBO calls, and
+keeps its own append-only user/action/entity audit trail. QBO records third-party API writes as
+`System Administration`, so the Builder audit supplies employee attribution that QBO does not.
 
-> **Go-live is externally gated** (relay + questionnaire + Intuit approval). It is *not* advanced by
-> the parts-import grind and should not block it. Run it as its own track when ready.
+This applies to operations inside Vehicle Builder. Manual creation or renaming of true QBO Projects
+still requires an employee's own QBO access or owner/admin handling until the app is eligible for the
+restricted Projects API scope.
+
+The currently deployed stateless Netlify token broker is not an Accounting API backend and cannot
+solve the multi-workstation refresh race by itself. The repository now also contains a separate
+default-off central Accounting API adapter with encrypted durable storage and CAS locking, but it is
+not deployed or commissioned. The target cutover sequence, role model, failure behavior, and
+acceptance tests are specified in `NEXT_FEATURE_PLAN.md` Phase 3A. Until that migration is complete,
+the existing per-user OS-keychain connection remains the live behavior.
+
+The next QuickBooks architecture improvement is the reviewed catalog-change queue described above.
+Routine reconciliation may update QB-owned fields on already-linked SKUs, but must not silently
+create or materially reshape Builder products.
 
 ---
 

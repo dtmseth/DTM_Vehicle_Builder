@@ -13,6 +13,7 @@ function _ptRenderOverview(project) {
   const prefPairs = [
     ["Camera",      pr.camera_brand],
     ["Lighting",    (pr.lighting_brands || []).join(", ")],
+    ["Lighting Setup", pr.lighting_mode === "trio" ? "TRIO" : "DUO"],
     ["Push Bumper", pr.push_bumper_brand],
     ["Cage",        pr.cage_brand],
     ["Console",     pr.console_brand],

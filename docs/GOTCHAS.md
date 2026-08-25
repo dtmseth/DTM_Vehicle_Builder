@@ -64,22 +64,29 @@ you're touching. New gotchas get appended to the bottom with a date.
 
 ## QuickBooks
 
-12. **QuickBooks user tokens never touch disk or cloud** — access/refresh tokens and realm binding
-    live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py`. The shared Intuit
-    app secret is not shipped; it lives only in Netlify's protected environment for the stateless
-    token broker. `quickbooks_config.json` holds non-secret metadata
+12. **Current-production QuickBooks user tokens never touch disk or cloud** — access/refresh tokens
+    and realm binding live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py`.
+    The default-off central design is the deliberate exception: one owner-authorized token is kept
+    server-side only as AES-GCM ciphertext in Netlify Blobs, with its separate encryption key and
+    the Intuit secret held in protected Netlify environment variables. Neither value may reach the
+    desktop, SharePoint, logs, or repository. `quickbooks_config.json` holds only non-secret metadata
     and is deliberately NOT in any cloud-mirror set.
 13. **QuickBooks OAuth callback** (`routes/quickbooks.py`) MUST stay 302-only — never echo the
     code/token as HTML. All `/api/quickbooks/*` responses set `Cache-Control: no-store`.
+14. **Netlify usage exhaustion bypasses application JSON** — a paused Free-plan site returns a
+    platform-owned HTML page because the function cannot run. Central clients must keep the bounded,
+    redacted paused-page detector and map it to `central_service_limit_reached`; never log or display
+    the HTML. The Estimate message must say no Estimate was created, the build is safe, and an Admin
+    should check **Netlify → Usage & billing** before retrying.
 
 ---
 
 ## Testing
 
-14. **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud
+15. **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud
     I/O, and `wiring.save_via_proposal` refuses to enqueue when `PYTEST_CURRENT_TEST` is set.
     Bypassing these guards reintroduces the abc.json resurrection bug.
-15. **Placement math is single-source**: `domain/geometry.py`. If you change it, update the
+16. **Placement math is single-source**: `domain/geometry.py`. If you change it, update the
     preview canvas JS too.
 
 ---
@@ -178,3 +185,14 @@ you're touching. New gotchas get appended to the bottom with a date.
     `update_check_service.is_download_in_progress()` may produce the `downloading` UI state.
     Remote availability without an active transfer is `available`; a failed transfer backs off
     before retrying and keeps the manual Download action visible.
+36. **Preset agency choices must not reuse Settings-tab initialization state.** Agencies can change
+    through the Agencies tab, project wizard, QuickBooks import, or background SharePoint sync while
+    the Presets tab remains mounted. Refetch `/api/agencies/choices` immediately before every preset
+    modal open and preserve the `dtm:agencies-changed` refresh path for already-open preset UI.
+37. **Project-manager “All Presets” is not a compatibility view.** Both the new-project wizard and
+    Project Details editor must render `_ptVisiblePresets()` for All. Vehicle/build filtering belongs
+    only to narrower convenience views; do not reuse `_ptCompatiblePresets()` under an All label.
+38. **Round-light allocations own comments per location.** The 3-inch round-light picker creates one
+    manifest row per nonzero location, so it must read/write `locationAllocation.comments[location]`
+    and each row's `comment`. Do not route this flow through the shared footer comment or one note
+    will overwrite every allocated line.

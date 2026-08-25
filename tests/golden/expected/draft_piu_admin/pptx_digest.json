@@ -79,7 +79,7 @@
           ],
           "text": "Sample Agency 2",
           "top_emu": 960120,
-          "width_emu": 9326880
+          "width_emu": 10972800
         },
         {
           "fill": {
@@ -801,7 +801,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 3895344,
+          "height_emu": 4032504,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -926,12 +926,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Standard Lense"
+                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Standard Lense"
+                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1017,12 +1017,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Standard Lense"
+                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Standard Lense"
+                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1108,12 +1108,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Clear"
+                          "text": "Red/Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Clear"
+                  "text": "Red/Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1199,12 +1199,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/Amber\nLens: Clear"
+                          "text": "Red/Blue/Amber  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/Amber\nLens: Clear"
+                  "text": "Red/Blue/Amber  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1290,12 +1290,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Standard Lense"
+                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Standard Lense"
+                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1381,12 +1381,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White\nLens: Clear"
+                          "text": "White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "White\nLens: Clear"
+                  "text": "White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1472,12 +1472,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE\nLens: Clear"
+                          "text": "RED/WHITE  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE\nLens: Clear"
+                  "text": "RED/WHITE  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1563,12 +1563,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Clear"
+                          "text": "Red/Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Clear"
+                  "text": "Red/Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1654,12 +1654,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/Amber\nLens: Clear"
+                          "text": "Red/Blue/Amber  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/Amber\nLens: Clear"
+                  "text": "Red/Blue/Amber  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1736,12 +1736,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White\nLens: Clear"
+                          "text": "Red/Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White\nLens: Clear"
+                  "text": "Red/Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1827,12 +1827,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE\nLens: Clear"
+                          "text": "RED/WHITE  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE\nLens: Clear"
+                  "text": "RED/WHITE  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1897,17 +1897,17 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              283464,
+              347472
             ],
             "rows": 12
           },
@@ -2036,7 +2036,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 1920240,
+          "height_emu": 2011680,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -2595,11 +2595,11 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
             ],
             "rows": 6
           },
@@ -2728,7 +2728,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 5212080,
+          "height_emu": 4791456,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -4003,6 +4003,251 @@
                   ],
                   "text": "■  New"
                 }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
+            ],
+            "rows": 14
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "EQUIPMENT & ELECTRONICS — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "EQUIPMENT & ELECTRONICS — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 4"
+                }
+              ]
+            }
+          ],
+          "text": "Page 4",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 5212079,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
+                }
               ],
               [
                 {
@@ -4193,253 +4438,6 @@
                     }
                   ],
                   "text": "■  New"
-                }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
-            ],
-            "rows": 16
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "EQUIPMENT & ELECTRONICS — Continued"
-                }
-              ]
-            }
-          ],
-          "text": "EQUIPMENT & ELECTRONICS — Continued",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 4"
-                }
-              ]
-            }
-          ],
-          "text": "Page 4",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 5340096,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
                 }
               ],
               [
@@ -5524,6 +5522,252 @@
                   ],
                   "text": "■  New"
                 }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              484631,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              283464,
+              347472
+            ],
+            "rows": 15
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "EQUIPMENT & ELECTRONICS — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "EQUIPMENT & ELECTRONICS — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 5"
+                }
+              ]
+            }
+          ],
+          "text": "Page 5",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 2148839,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
+                }
               ],
               [
                 {
@@ -5797,253 +6041,6 @@
                   ],
                   "text": "■  New"
                 }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200,
-              329184,
-              329184
-            ],
-            "rows": 16
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "EQUIPMENT & ELECTRONICS — Continued"
-                }
-              ]
-            }
-          ],
-          "text": "EQUIPMENT & ELECTRONICS — Continued",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 5"
-                }
-              ]
-            }
-          ],
-          "text": "Page 5",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 932688,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
-                }
               ],
               [
                 {
@@ -6238,10 +6235,13 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184
+              484631,
+              347472,
+              347472,
+              347472,
+              347472
             ],
-            "rows": 3
+            "rows": 6
           },
           "top_emu": 978408,
           "width_emu": 11274551
@@ -6368,7 +6368,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 932688,
+          "height_emu": 969264,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -6654,8 +6654,8 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184
+              347472,
+              347472
             ],
             "rows": 3
           },

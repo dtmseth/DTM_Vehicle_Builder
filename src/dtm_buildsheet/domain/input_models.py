@@ -10,6 +10,9 @@ class PartInput:
     include: bool = True
     new_or_used: str = ""
     source: str = ""
+    supply_type: str = ""
+    customer_condition: str = ""
+    customer_source: str = ""
     manufacturer: str = ""
     part_number: str = ""
     location: str = ""

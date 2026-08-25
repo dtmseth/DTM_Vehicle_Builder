@@ -244,7 +244,7 @@ function _ptPresetDDHtml(presets, uid) {
           ${p.description ? `<span class="proj-preset-desc"> — ${esc(p.description)}</span>` : ""}
         </div>`
       ).join("")
-    : `<div class="proj-preset-empty">No compatible presets — use the Presets tab to create one.</div>`;
+    : `<div class="proj-preset-empty">No presets available — use the Presets tab to create one.</div>`;
 }
 
 window.PT_togglePresetDD = function (uid) {
@@ -254,7 +254,9 @@ window.PT_togglePresetDD = function (uid) {
   const dd = $(`preset-dd-${uid}`);
   if (!dd) return;
   if (dd.style.display !== "none") { dd.style.display = "none"; return; }
-  dd.innerHTML = _ptPresetDDHtml(_ptCurrentCompatiblePresets(uid), uid);
+  // "All Presets" is intentionally literal. Vehicle/build compatibility is
+  // useful for the agency shortcut, but must never hide choices from All.
+  dd.innerHTML = _ptPresetDDHtml(_ptVisiblePresets(), uid);
   dd.style.display = "";
 };
 

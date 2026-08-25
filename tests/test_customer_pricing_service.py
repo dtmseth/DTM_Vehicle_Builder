@@ -80,6 +80,20 @@ def test_retail_mode_ignores_saved_agency_custom_defaults(paths):
     assert whelen["custom_discount_percent"] == 10.0
 
 
+def test_catalog_retail_projection_matches_estimate_rounding():
+    doc = {
+        "customer_pricing": {
+            "default_rule": {"manufacturer_discounts": {"whelen": 38}}
+        }
+    }
+    linked = {"qb_unit_price": 104, "qb_item_id": "123"}
+    pending = {"price_usd": 104, "qb_item_id": ""}
+
+    assert pricing.retail_catalog_unit_price(doc, "whelen", linked) == 64.48
+    assert pricing.retail_catalog_unit_price(doc, "whelen", pending) == 104.0
+    assert pricing.retail_unit_price(10.05, "whelen", {"whelen": 38}) == 6.23
+
+
 def test_save_default_rule_uses_validated_parts_db_path(paths, monkeypatch):
     monkeypatch.setattr(
         "dtm_buildsheet.app.services.shared_work_service.save_setting_to_cloud_in_background",

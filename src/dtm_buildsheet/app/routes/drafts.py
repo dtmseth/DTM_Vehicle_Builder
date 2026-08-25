@@ -5,12 +5,14 @@ from http.server import BaseHTTPRequestHandler
 from ..services.draft_service import (
     handle_add_custom_part_to_draft,
     handle_add_part_to_draft,
+    handle_apply_preset_to_draft,
     handle_delete_draft,
     handle_generate_from_draft,
     handle_get_draft,
     handle_list_drafts,
     handle_list_custom_parts,
     handle_remove_part_from_draft,
+    handle_replace_location_allocation,
     handle_replace_console_setup_parts,
     handle_save_draft,
     handle_save_override,
@@ -45,6 +47,13 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
         send_json(handler, handle_generate_from_draft(body, paths))
         return True
 
+    # POST /api/draft/{id}/apply-preset
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/apply-preset"):
+        draft_id = path[len("/api/draft/"):-len("/apply-preset")]
+        if draft_id and "/" not in draft_id:
+            send_json(handler, handle_apply_preset_to_draft(draft_id, body, paths))
+            return True
+
     # POST /api/draft/{id}/part/{line_id}/update
     if method == "POST" and path.startswith("/api/draft/") and "/custom-part/" in path and path.endswith("/update"):
         rest = path[len("/api/draft/"):-len("/update")]
@@ -78,6 +87,13 @@ def route_drafts(handler: BaseHTTPRequestHandler, method: str, path: str, body: 
         parent_line_id = body.get("parent_line_id", "")
         if draft_id and "/" not in draft_id:
             send_json(handler, handle_replace_console_setup_parts(draft_id, parent_line_id, body, paths))
+            return True
+
+    # POST /api/draft/{id}/location-allocation
+    if method == "POST" and path.startswith("/api/draft/") and path.endswith("/location-allocation"):
+        draft_id = path[len("/api/draft/"):-len("/location-allocation")]
+        if draft_id and "/" not in draft_id:
+            send_json(handler, handle_replace_location_allocation(draft_id, body, paths))
             return True
 
     # POST /api/draft/{id}/custom-part

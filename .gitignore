@@ -24,6 +24,7 @@ build/
 *.egg-info/
 .coverage
 htmlcov/
+relay/node_modules/
 
 existing_code.xml
 

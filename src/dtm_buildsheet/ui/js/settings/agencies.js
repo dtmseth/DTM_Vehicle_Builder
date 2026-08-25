@@ -190,6 +190,7 @@
       if (data.cloud_warning) toast(data.cloud_warning, "error");
       else toast(`Agency "${name}" deleted`, "success");
       await _load();
+      window.dispatchEvent(new CustomEvent("dtm:agencies-changed"));
     } else {
       toast(data?.error || "Delete failed", "error");
     }
@@ -276,6 +277,7 @@
       }
       if (_pendingOnSuccess) { _pendingOnSuccess(res.agency); _pendingOnSuccess = null; }
       await _load();
+      window.dispatchEvent(new CustomEvent("dtm:agencies-changed"));
     } else {
       toast(res?.error || "Save failed", "error");
     }

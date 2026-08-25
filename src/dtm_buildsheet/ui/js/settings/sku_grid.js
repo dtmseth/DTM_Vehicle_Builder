@@ -415,7 +415,7 @@ function _skgQbLine(pn, isUnbilled) {
     const it = _skgQb[String(pn.qb_item_id)];
     if (it) {
       const bits = [it.sku ? "sku " + it.sku : "", it.description ? `“${it.description}”` : "",
-        it.unit_price != null ? "$" + it.unit_price : "", it.type || ""].filter(Boolean).join(" · ");
+        it.unit_price != null ? "QBO list $" + it.unit_price : "", it.type || ""].filter(Boolean).join(" · ");
       return `<span class="skg-pill skg-pill-qb">In QB</span><span class="skg-qbtxt">${esc(it.name || "")}${bits ? " · " + esc(bits) : ""}</span>`;
     }
     return `<span class="skg-pill skg-pill-qb">In QB</span><span class="skg-qbtxt">item ${esc(pn.qb_item_id)} — sync to load its QB data</span>`;
@@ -445,7 +445,7 @@ function _skgSkuRow(pid, i, pn, isLight, isUnbilled) {
     <input class="skg-in" data-skg="sfield" data-field="part_number" data-pid="${esc(pid)}" data-idx="${i}" value="${esc(pn.part_number || "")}">
     <input class="skg-in" data-skg="sfield" data-field="friendly_name" data-pid="${esc(pid)}" data-idx="${i}" value="${esc(pn.friendly_name || "")}" placeholder="sales description (optional)">
     ${colorCells}
-    <input type="number" step="0.01" class="skg-in skg-price" data-skg="sfield" data-field="price_usd" data-pid="${esc(pid)}" data-idx="${i}" value="${price != null ? price : ""}" ${linked ? 'readonly title="Price synced from QuickBooks"' : ""}>
+    <input type="number" step="0.01" class="skg-in skg-price" data-skg="sfield" data-field="price_usd" data-pid="${esc(pid)}" data-idx="${i}" value="${price != null ? price : ""}" ${linked ? 'readonly title="QBO list price synced from QuickBooks"' : ""}>
     <label class="skg-pend" title="Pre-added before it exists in QuickBooks"><input type="checkbox" data-skg="sfield" data-field="qb_pending" data-pid="${esc(pid)}" data-idx="${i}" ${pn.qb_pending ? "checked" : ""} ${linked ? "disabled" : ""}></label>
     <span class="skg-sku-btns">
       <button data-skg="move-sku" data-pid="${esc(pid)}" data-idx="${i}" title="Move to another product">→</button>

@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 from ...paths import AppPaths
 from ..services.agency_service import (
     handle_delete_agency,
+    handle_list_agency_choices,
     handle_list_agencies,
     handle_save_agency,
     handle_save_agency_default_preferences,
@@ -20,6 +21,9 @@ def route_agencies(
     qs = parse_qs(urlparse(handler.path).query)
     if method == "GET" and path == "/api/agencies":
         send_json(handler, handle_list_agencies(paths))
+        return True
+    if method == "GET" and path == "/api/agencies/choices":
+        send_json(handler, handle_list_agency_choices(paths))
         return True
     if method == "GET" and path == "/api/agencies/search":
         send_json(handler, handle_search_agencies(qs.get("q", [""])[0], paths))

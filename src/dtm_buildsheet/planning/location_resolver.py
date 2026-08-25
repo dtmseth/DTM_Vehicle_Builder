@@ -49,7 +49,7 @@ def resolved_location_key(part, spec: dict) -> str:
     ).strip().upper()
 
 
-def custom_location_points(part) -> dict[str, list[dict[str, float]]]:
+def custom_location_points(part) -> dict[str, list[dict]]:
     """Return validated free-placement points saved by the picker, by view."""
     picker_config = getattr(part, "picker_config", {}) or {}
     custom = picker_config.get("custom_location") if isinstance(picker_config, dict) else None
@@ -60,7 +60,7 @@ def custom_location_points(part) -> dict[str, list[dict[str, float]]]:
     for view, points in raw.items():
         if not isinstance(view, str) or not isinstance(points, list):
             continue
-        cleaned: list[dict[str, float]] = []
+        cleaned: list[dict] = []
         for point in points:
             if not isinstance(point, dict):
                 continue
@@ -69,7 +69,14 @@ def custom_location_points(part) -> dict[str, list[dict[str, float]]]:
             except (TypeError, ValueError):
                 continue
             if math.isfinite(x) and math.isfinite(y) and 0 <= x <= 1 and 0 <= y <= 1:
-                cleaned.append({"x": x, "y": y})
+                clean: dict = {"x": x, "y": y}
+                head_index = point.get("head_index")
+                if isinstance(head_index, int) and not isinstance(head_index, bool) and head_index >= 0:
+                    clean["head_index"] = head_index
+                group_id = point.get("group_id")
+                if isinstance(group_id, str) and group_id.strip():
+                    clean["group_id"] = group_id.strip()[:40]
+                cleaned.append(clean)
         if cleaned:
             out[view.lower()] = cleaned
     return out

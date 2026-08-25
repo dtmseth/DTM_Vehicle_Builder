@@ -97,6 +97,12 @@ def flow_tab_load(page, base_url: str) -> None:
     for stab in ("projects-defaults", "agencies", "sales-reps", "presets", "quickbooks"):
         page.click(f".stab[data-stab='{stab}']")
         page.wait_for_timeout(_SETTLE_MS)
+        if stab == "projects-defaults":
+            page.wait_for_selector("[data-estimate-preset='patrol']")
+            assert page.locator("[data-estimate-preset]").count() == 4
+            assert page.locator("[data-estimate-preset='patrol'] [data-estimate-default='labor']").input_value() == "0.00"
+            assert page.locator("[data-estimate-preset='patrol'] [data-estimate-default='supplies']").input_value() == "450.00"
+            assert "4% credit card fee" in page.locator("#estimate-defaults-qb-items").inner_text()
         if stab == "agencies":
             page.click("#btn-add-agency")
             page.wait_for_selector("#agency-create-modal.open")
@@ -142,6 +148,217 @@ def flow_tab_load(page, base_url: str) -> None:
 
     # Let any in-flight fetches finish so their errors (if any) are captured.
     page.wait_for_load_state("networkidle")
+
+
+def flow_preset_agency_list_freshness(page, base_url: str) -> None:
+    """The Preset creator must refetch agencies every time it opens.
+
+    Regression for the old module-level ``_agencies`` cache: opening the
+    Presets tab initialized the array once, then later agency imports/creates
+    never appeared in Add/Edit Preset until the application restarted.
+    """
+    page.goto(base_url, wait_until="load")
+    page.click(".htab[data-tab='general-settings']")
+    page.wait_for_selector("#stab-bar-general:not([hidden])")
+    page.click(".stab[data-stab='presets']")
+    page.wait_for_selector("#pm-add-btn")
+    page.wait_for_timeout(_SETTLE_MS)
+
+    # Mutate the authoritative agency store only after Presets has populated
+    # its in-memory list. The next modal open must not reuse that stale copy.
+    created = _api(base_url, "/api/agency/save", {
+        "name": "Fresh Preset Agency",
+        "contact_name": "UI Smoke",
+    })
+    assert created["ok"] is True
+    agency_id = created["agency"]["agency_id"]
+    project_agency_id = "11111111-2222-4333-8444-555555555555"
+    project = _api(base_url, "/api/project/save", {
+        "customer": {
+            "name": "Project-Only Agency",
+            "agency": "Project-Only Agency",
+            "agency_id": project_agency_id,
+            "build_year": "2026",
+        },
+        "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
+    })
+    assert project["ok"] is True
+
+    page.click("#pm-add-btn")
+    page.wait_for_selector("#preset-edit-modal.open")
+    option = page.locator(f'#pem-agency-checks input[value="{agency_id}"]')
+    agency_text = page.locator("#pem-agency-checks").inner_text()
+    assert option.count() == 1, f"fresh agency id missing from preset modal: {agency_text!r}"
+    assert "FRESH PRESET AGENCY" in agency_text.upper(), f"fresh agency label missing: {agency_text!r}"
+
+    # Current projects remain valid agency choices even if their separate
+    # Agency record is missing. The search must reduce a 200+ item production
+    # list without dropping the selected/general choices.
+    page.fill("#pem-agency-search", "Project-Only")
+    project_option = page.locator(f'#pem-agency-checks input[value="{project_agency_id}"]')
+    assert project_option.count() == 1
+    assert page.locator("#pem-agency-checks input[type='radio']").count() == 2
+    assert "1 OF 2" in page.locator("#pem-agency-count").inner_text().upper()
+    project_option.check()
+    assert project_option.is_checked()
+    page.click("#pem-cancel")
+
+    # A later rename must also replace the prior label on the next open; this
+    # catches fixes that append new agencies but still retain stale records.
+    renamed = _api(base_url, "/api/agency/save", {
+        "agency_id": agency_id,
+        "name": "Renamed Preset Agency",
+        "contact_name": "UI Smoke",
+    })
+    assert renamed["ok"] is True
+    page.click("#pm-add-btn")
+    page.wait_for_selector("#preset-edit-modal.open")
+    page.fill("#pem-agency-search", "Renamed")
+    choices = page.locator("#pem-agency-checks")
+    renamed_text = choices.inner_text()
+    assert "RENAMED PRESET AGENCY" in renamed_text.upper(), renamed_text
+    assert "FRESH PRESET AGENCY" not in renamed_text.upper(), renamed_text
+    page.click("#pem-cancel")
+
+
+def flow_load_preset_from_build_editor(page, base_url: str) -> None:
+    """A configured build can replace its parts from a current compatible preset."""
+    saved = _api(base_url, "/api/presets/save", {
+        "schema_version": 4,
+        "preset_id": "smoke-load-preset",
+        "label": "Load Button Preset",
+        "description": "Load Button Regression",
+        "agency_ids": [],
+        "build_types": ["Patrol"],
+        "vehicle_types": ["PIU"],
+        "tag": "Load Button",
+        "parts": [{
+            "name": "Preset Loaded Light",
+            "manufacturer": "Whelen",
+            "part_number": "LOAD-TEST-1",
+            "part_type": "warning_light",
+            "quantity": 2,
+        }],
+        "placement_overrides": {"loaded:front": {"x": 0.25, "y": 0.5}},
+    })
+    assert saved["ok"], saved
+    preset_id = saved["preset_id"]
+
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url, vehicle_model="PIU")
+    original = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    seeded = _api(base_url, "/api/draft/save", {
+        "draft_id": draft_id,
+        "parts": [{
+            "name": "Configuration Being Replaced",
+            "manufacturer": "Old",
+            "part_number": "OLD-1",
+            "quantity": 1,
+        }],
+        "notes": {"CUSTOMER REQUESTS": ["Preserve this note"]},
+        "vehicle_info": original["vehicle_info"],
+    })
+    assert seeded["ok"], seeded
+
+    _open_build_editor(page, base_url)
+    page.wait_for_selector("#pbe-load-preset-top")
+    assert page.locator("#pbe-load-preset-top").is_visible()
+    assert page.locator("#pbe-load-preset-btn").is_visible()
+    assert page.evaluate("""
+        () => document.querySelector('#pbe-load-preset-top').nextElementSibling?.id
+            === 'pbe-create-preset-top'
+    """), "Load Preset must sit directly beside Save as New Preset in the build header"
+
+    page.click("#pbe-load-preset-top")
+    page.wait_for_selector("#pbe-load-preset-modal.open")
+    page.fill("#pbe-load-preset-search", "Load Button")
+    option = page.locator(f'#pbe-load-preset-options input[value="{preset_id}"]')
+    assert option.count() == 1
+    option.check()
+    assert not page.locator("#pbe-load-preset-confirm").is_disabled()
+    page.click("#pbe-load-preset-confirm")
+    page.wait_for_selector("#pbe-load-preset-modal.open", state="hidden")
+    page.wait_for_function("() => document.querySelector('#me-tbody-container')?.innerText.includes('Preset Loaded Light')")
+
+    loaded = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    assert [part["name"] for part in loaded["parts"]] == ["Preset Loaded Light"]
+    assert loaded["placement_overrides"] == {"loaded:front": {"x": 0.25, "y": 0.5}}
+    assert loaded["notes"] == {"CUSTOMER REQUESTS": ["Preserve this note"]}
+    assert loaded["audit_trail"][-1]["action"] == "preset_loaded"
+
+
+def flow_project_manager_all_presets_unfiltered(page, base_url: str) -> None:
+    """Both project-manager All controls expose every non-blank preset."""
+    incompatible = _api(base_url, "/api/presets/save", {
+        "schema_version": 4,
+        "preset_id": "smoke-unfiltered-tahoe-admin",
+        "label": "Unfiltered Tahoe Admin",
+        "description": "Must remain visible from All on a PIU Patrol unit",
+        "agency_ids": [],
+        "build_types": ["Admin"],
+        "vehicle_types": ["TAHOE"],
+        "tag": "Unfiltered Regression",
+        "parts": [],
+        "placement_overrides": {},
+    })
+    assert incompatible["ok"], incompatible
+    incompatible_id = incompatible["preset_id"]
+    project = _api(base_url, "/api/project/save", {
+        "customer": {"name": "All Presets PD", "agency": "All Presets PD", "build_year": "2026"},
+        "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
+    })
+    assert project["ok"], project
+
+    presets = _api(base_url, "/api/presets")["presets"]
+    expected_count = len([
+        preset for preset in presets
+        if preset["preset_id"] != "blank_custom"
+        and (preset.get("label") or "").lower() != "blank"
+    ])
+
+    # New-project wizard: PIU + Patrol must still show the intentionally
+    # incompatible TAHOE + Admin preset under the literal All Presets control.
+    page.goto(base_url, wait_until="load")
+    page.wait_for_function(
+        "expected => (window._PT?.presets || []).filter(p => p.preset_id !== 'blank_custom' && (p.label || '').toLowerCase() !== 'blank').length === expected",
+        arg=expected_count,
+    )
+    page.click("#btn-new-project")
+    page.wait_for_function("""
+        () => window._PT?.isWizard
+            && window._PT.units.length > 0
+            && document.querySelector('#proj-wizard-footer')?.style.display !== 'none'
+    """)
+    page.fill("#proj-agency", "Wizard All Presets PD")
+    page.fill("#proj-salesrep", "UI Smoke Rep")
+    page.click("#proj-btn-next")
+    page.wait_for_selector("#proj-etab-preferences.active")
+    page.click("#proj-btn-next")
+    page.wait_for_selector("#proj-etab-fleet.active")
+    page.select_option(".proj-u-vehicle", "PIU")
+    page.select_option(".proj-u-buildtype", "Patrol")
+    page.click(".proj-preset-btns button[onclick^='PT_togglePresetDD']")
+    wizard_dd = page.locator(".proj-preset-dropdown").first
+    wizard_count = wizard_dd.locator(".proj-preset-option").count()
+    assert wizard_count == expected_count, \
+        f"wizard All Presets showed {wizard_count} of {expected_count} presets"
+    assert wizard_dd.locator(f"[onclick*='{incompatible_id}']").count() == 1, \
+        "All Presets in the new-project wizard still filters by vehicle/build type"
+
+    # Existing Project Details editor has a separate picker implementation and
+    # must obey the same unfiltered All contract.
+    page.goto(base_url, wait_until="load")
+    page.click(".proj-row-clickable")
+    page.wait_for_selector("#proj-detail-view:not([hidden])")
+    page.click(".proj-dtab[data-ptab='edit']")
+    page.click("#proj-ptab-edit .btn-primary")
+    page.wait_for_selector("#proj-edit-units-list .proj-et-preset-row")
+    page.click("#proj-edit-units-list button:has-text('All ▾')")
+    edit_dd = page.locator(".proj-et-preset-dd").first
+    edit_count = edit_dd.locator(".proj-preset-option").count()
+    assert edit_count == expected_count, \
+        f"Project Details All showed {edit_count} of {expected_count} presets"
+    assert edit_dd.locator(f"[onclick*='{incompatible_id}']").count() == 1, \
+        "All in Project Details still filters by vehicle/build type"
 
 
 def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
@@ -204,6 +421,11 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
             f"motion attachments must follow the selected Gamber Johnson console, got {motion_brands!r}"
         )
         page.click("[data-console-component-choice='gamber_johnson_7160_0220']")
+        page.click("[data-console-condition-key='motionAttachment'][data-console-condition-value='customer_new']")
+        assert page.evaluate("() => _pickerState.consoleSetup.choices.consoleChoice.product_id") == "gamber_johnson_7170_0734_02", (
+            "customer-supplied New motion hardware must remain installed but must not select a kit that bills a duplicate"
+        )
+        assert page.evaluate("() => _pickerState.consoleSetup.choices.motionAttachment.customer_condition") == "new"
         page.click("[data-console-motion-location='mounted_to_pedestal']")
         page.click("[data-console-component-open='pedestalMount']")
         page.wait_for_selector("[data-console-component-choice='gamber_johnson_7160_1336']")
@@ -234,11 +456,14 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
     ], f"expected numbered auto-populated faceplates in the configured order, got {faceplates!r}"
     console_components = [p for p in children if p.get("accessory_category") == "console_component"]
     assert {p.get("part_type") for p in console_components} == {
-        "pedestal_mount", "docking_station",
+        "motion_attachment", "pedestal_mount", "docking_station",
     }, f"console hardware must nest with the console, got {console_components!r}"
     assert {p.get("part_type") for p in children} == {
-        "special_face_plate", "pedestal_mount", "docking_station",
+        "special_face_plate", "motion_attachment", "pedestal_mount", "docking_station",
     }
+    motion = next(p for p in console_components if p.get("part_type") == "motion_attachment")
+    assert motion["supply_type"] == "customer_supplied"
+    assert motion["customer_condition"] == "new"
     included_parts = {p["part_number"] for p in faceplates if p.get("picker_config", {}).get("console_kit_included")}
     assert included_parts == {"7160-0846", "15250"}, f"kit items must remain shop rows but be unbilled, got {faceplates!r}"
     related_parts = [
@@ -253,7 +478,7 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         "the printer must remain a top-level manifest parent for its own cable children"
     setup = console["picker_config"]["console_setup"]
     assert setup["style"] == "low_profile"
-    assert setup["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
+    assert setup["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_02"
 
     plan = page.evaluate(
         "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
@@ -274,10 +499,12 @@ def flow_add_text_mode_equipment_part(page, base_url: str) -> None:
         "gamber_johnson_7160_0846", "gamber_johnson_15250",
     ], f"console edit must restore its ordered faceplates, got {restored!r}"
     assert restored["style"] == "low_profile"
-    assert restored["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_09"
+    assert restored["consoleChoice"]["product_id"] == "gamber_johnson_7170_0734_02"
     assert restored["armRest"]["product_id"] == "gamber_johnson_7160_0430"
     assert restored["printer"]["product_id"] == "brother_pj_822"
     assert restored["motionAttachment"]["product_id"] == "gamber_johnson_7160_0220"
+    assert restored["motionAttachment"]["supply_type"] == "customer_supplied"
+    assert restored["motionAttachment"]["customer_condition"] == "new"
     assert restored["motionLocation"] == "mounted_to_pedestal"
     assert restored["dockingStation"]["product_id"] == "gamber_johnson_7160_1982_10"
     page.evaluate("pickerClose()")
@@ -344,7 +571,7 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
 
     selected_product_visible = page.evaluate("""() => {
         const list = document.querySelector('#picker-products');
-        const product = document.querySelector("#picker-products .pp-row[data-pid='whelen_ion']");
+        const product = document.querySelector("#picker-products .pp-row[data-pid='whelen_ion'] .pp-head");
         if (!list || !product) return false;
         const listRect = list.getBoundingClientRect();
         const productRect = product.getBoundingClientRect();
@@ -417,6 +644,386 @@ def flow_edit_preserves_fields(page, base_url: str) -> None:
     assert migrated_children[0].get("accessory_category") == "bracket_mount"
 
 
+def flow_custom_location_group_spacing(page, base_url: str) -> None:
+    """A custom light location places the selected quantity as one adjustable group."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    added = _api(base_url, f"/api/draft/{draft_id}/part", {
+        "name": "Forward Warning 1", "location": "Custom grille row",
+        "manufacturer": "Whelen", "part_number": "ION", "quantity": 4,
+        "new_or_used": "New", "source": "", "raw_color": "Red",
+        "part_type": "warning_light",
+        "components": [{"part_number": "IONR", "color": "Red", "quantity": 4}],
+        "picker_config": {
+            "mode": "uniform", "colorsPerHead": "single", "uniform": ["red"],
+            "splitSecondary": [], "custom": [["red"]] * 4, "_noColor": False,
+            "count": 4, "lens": "", "skuChoices": {},
+            "custom_location": {
+                "label": "Custom grille row", "render_location": "",
+                "placements": {"front": [
+                    {"x": 0.41, "y": 0.55}, {"x": 0.47, "y": 0.55},
+                    {"x": 0.53, "y": 0.55}, {"x": 0.59, "y": 0.55},
+                ]},
+                "anchors": {"front": {"x": 0.5, "y": 0.55}}, "spacing": 0.06,
+            },
+        },
+    })
+    line_id = added["line_id"]
+    _open_build_editor(page, base_url)
+    page.click(f".me-edit-btn[data-lid='{line_id}']")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function(
+        "document.querySelector('#picker-add-btn')?.textContent?.trim() === 'Save edits'"
+    )
+    page.click("#picker-tab-btn-location")
+    page.wait_for_selector("[data-custom-spacing]")
+
+    assert page.evaluate("() => _pickerCustomPlacementHeadCount()") == 4
+    assert page.locator("#picker-loc-dots .picker-custom-dot").count() == 4
+    assert "place all 4 light heads as one group" in page.locator(".picker-location-placement-controls").inner_text().lower()
+
+    page.locator("[data-custom-spacing]").evaluate("""element => {
+        element.value = '0.10';
+        element.dispatchEvent(new Event('input', {bubbles: true}));
+    }""")
+    points = page.evaluate("() => _pickerState.loc.customPlacements.front")
+    assert len(points) == 4
+    gaps = [round(points[index + 1]["x"] - points[index]["x"], 3) for index in range(3)]
+    assert gaps == [0.1, 0.1, 0.1], f"spacing must update the whole row, got {points!r}"
+
+    page.click("[data-custom-placement-layout='mirrored_pairs']")
+    page.wait_for_timeout(_SETTLE_MS)
+    assert "matching pair mirrors automatically" in page.locator(".picker-location-placement-controls").inner_text().lower()
+    paired = page.evaluate("() => _pickerState.loc.customPlacements.front")
+    assert [point["group_id"] for point in paired] == ["left_pair", "left_pair", "right_pair", "right_pair"]
+    assert [point["head_index"] for point in paired] == [0, 1, 2, 3]
+    assert abs(paired[0]["x"] + paired[3]["x"] - 1) < 0.001
+    assert abs(paired[1]["x"] + paired[2]["x"] - 1) < 0.001
+
+    overlay = page.locator("#picker-loc-dots").bounding_box()
+    assert overlay
+    page.mouse.click(overlay["x"] + overlay["width"] * 0.62, overlay["y"] + overlay["height"] * 0.42)
+    moved = page.evaluate("() => _pickerState.loc.customPlacements.front")
+    assert len(moved) == 4
+    assert all(abs(point["y"] - 0.42) < 0.02 for point in moved)
+    assert abs(moved[0]["x"] + moved[3]["x"] - 1) < 0.001
+    assert abs(moved[1]["x"] + moved[2]["x"] - 1) < 0.001
+    assert abs(sum(point["x"] for point in moved[2:]) / 2 - 0.62) < 0.02
+
+    page.evaluate("""() => {
+        for (const group of _pickerVisibleAccessoryGroups()) {
+            if (!_pickerState.accessoryChoices[group.category]) {
+                _pickerState.accessoryChoices[group.category] = 'none';
+            }
+        }
+        _pickerRenderAccessories();
+        _pickerUpdateFooter();
+    }""")
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+    saved = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    part = next(item for item in saved["parts"] if item["line_id"] == line_id)
+    custom_location = part["picker_config"]["custom_location"]
+    assert custom_location["spacing"] == 0.1
+    assert custom_location["layout"] == "mirrored_pairs"
+    assert len(custom_location["placements"]["front"]) == 4
+    assert abs(custom_location["anchors"]["front"]["x"] - 0.62) < 0.02
+
+
+def flow_tint_and_round_location_allocation(page, base_url: str) -> None:
+    """Tint and round-light specialty forms save their complete UI state."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "WINDOW TINT")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click(".pp-head[data-pid='qb_unassigned_tint']")
+    page.click("[data-pick][data-pid='qb_unassigned_tint']")
+    page.wait_for_selector("[data-tint-window='windshield_brow']")
+    assert page.locator("#picker-tab-btn-location").is_hidden()
+    for window in ("windshield_brow", "driver_front", "passenger_front"):
+        page.click(f"[data-tint-window='{window}']")
+    page.locator("[data-tint-percentage]").fill("35")
+    page.locator("[data-tint-percentage]").dispatch_event("input")
+    assert "Retail $65.00 × 3 = $195.00" in page.locator(".pp-tint-price").inner_text()
+    assert page.locator(".pp-tint-window").evaluate_all(
+        "buttons => buttons.every(button => button.scrollWidth <= button.clientWidth && button.scrollHeight <= button.clientHeight)"
+    )
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    saved = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    tint = next(part for part in saved["parts"] if part.get("part_type") == "window_tint")
+    assert tint["quantity"] == 3
+    assert tint["picker_config"]["window_tint"] == {
+        "windows": ["windshield_brow", "driver_front", "passenger_front"],
+        "percentage": 35,
+        "unit_price": 65,
+    }
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "3SBCCDCR")
+    page.wait_for_timeout(_SETTLE_MS)
+    page.click(".pp-head[data-pid='whelen_round_lighthead']")
+    page.wait_for_selector("[data-allocation-location='Lower Kick Panels'][data-allocation-delta='1']")
+    round_row = page.locator(".pp-row[data-pid='whelen_round_lighthead']")
+    assert round_row.locator("[data-k='count']").count() == 0
+    assert "Colors per head" not in round_row.inner_text()
+    assert "Lens" not in round_row.inner_text()
+    assert round_row.locator("[data-round-light-color='red'].active").count() == 1
+    assert page.locator("[data-allocation-comment='Lower Kick Panels']").is_disabled(), \
+        "inactive round-light locations must keep their line-note field disabled"
+    assert page.locator("#picker-comment-step").is_hidden(), \
+        "round-light allocations must not expose the old shared part-note field"
+    add_button = page.locator("[data-allocation-location='Lower Kick Panels'][data-allocation-delta='1']")
+    original_box = add_button.bounding_box()
+    page.click("[data-allocation-location='Lower Kick Panels'][data-allocation-delta='1']")
+    next_box = page.locator("[data-allocation-location='Lower Kick Panels'][data-allocation-delta='1']").bounding_box()
+    assert original_box and next_box
+    assert abs(original_box["x"] - next_box["x"]) < 1
+    assert abs(original_box["y"] - next_box["y"]) < 1
+    page.click("[data-allocation-location='Lower Kick Panels'][data-allocation-delta='1']")
+    page.click("[data-allocation-location='Prisoner Headliner'][data-allocation-delta='1']")
+    page.fill("[data-allocation-comment='Lower Kick Panels']", "Aim toward both door sills")
+    page.fill("[data-allocation-comment='Prisoner Headliner']", "Center over rear seat")
+    page.click("[data-round-light-color='blue']")
+    assert page.locator("[data-allocation-comment='Lower Kick Panels']").input_value() == "Aim toward both door sills", \
+        "kick-panel note was lost after round-light color re-render"
+    assert page.locator("[data-allocation-comment='Prisoner Headliner']").input_value() == "Center over rear seat", \
+        "headliner note was lost after round-light color re-render"
+    assert "3 lights" in page.locator(".pp-location-allocation .pp-tint-price").inner_text()
+    assert not page.locator("#picker-add-btn").is_disabled()
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    saved = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    allocated = [
+        part for part in saved["parts"]
+        if (part.get("picker_config") or {}).get("location_batch_id")
+    ]
+    assert [(part["location"], part["quantity"]) for part in allocated] == [
+        ("Lower Kick Panels", 2), ("Prisoner Headliner", 1),
+    ]
+    allocation_comments = {part["location"]: part["comment"] for part in allocated}
+    assert allocation_comments == {
+        "Lower Kick Panels": "Aim toward both door sills",
+        "Prisoner Headliner": "Center over rear seat",
+    }, f"allocated line comments were not saved independently: {allocation_comments!r}"
+    assert len({part["picker_config"]["location_batch_id"] for part in allocated}) == 1
+    assert all(part["raw_color"] == "Blue/White" for part in allocated)
+    assert all(part["components"][0]["part_number"] == "3SBCCDCR" for part in allocated)
+    assert all(part["picker_config"]["round_light"] == {"warning_color": "blue"} for part in allocated)
+    assert all(part["picker_config"]["location_allocation"]["comments"] == {
+        "Lower Kick Panels": "Aim toward both door sills",
+        "Prisoner Headliner": "Center over rear seat",
+    } for part in allocated), "allocation picker snapshot did not retain per-location comments"
+
+    # Editing either row reopens the full linked allocation with each line's
+    # own note restored. Updating one must not overwrite the other.
+    lower = next(part for part in allocated if part["location"] == "Lower Kick Panels")
+    page.click(f".me-edit-btn[data-lid='{lower['line_id']}']")
+    page.wait_for_selector("#picker-panel.open")
+    # The panel opens before its async edit hydration finishes.  Wait for the
+    # edit-only footer state so we do not interact with the previous add UI.
+    page.wait_for_function(
+        "document.querySelector('#picker-add-btn')?.textContent?.trim() === 'Save edits'"
+    )
+    page.wait_for_selector("[data-allocation-comment='Lower Kick Panels']")
+    assert page.locator("[data-allocation-comment='Lower Kick Panels']").input_value() == "Aim toward both door sills", \
+        "kick-panel comment did not restore on allocation edit"
+    assert page.locator("[data-allocation-comment='Prisoner Headliner']").input_value() == "Center over rear seat", \
+        "headliner comment did not restore on allocation edit"
+    assert page.locator("#picker-comment-step").is_hidden(), \
+        "shared part-note field reappeared while editing an allocation"
+    page.fill("[data-allocation-comment='Lower Kick Panels']", "Updated kick-panel direction")
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+    saved = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    edited_allocated = [
+        part for part in saved["parts"]
+        if (part.get("picker_config") or {}).get("location_batch_id")
+    ]
+    edited_comments = {part["location"]: part["comment"] for part in edited_allocated}
+    assert edited_comments == {
+        "Lower Kick Panels": "Updated kick-panel direction",
+        "Prisoner Headliner": "Center over rear seat",
+    }, f"editing one allocated line overwrote another line's comment: {edited_comments!r}"
+
+
+def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
+    """Long Overview notes open in a modal and QB setup works before a draft."""
+    long_note = (
+        "Transfer the existing radio, radar, camera, and rear equipment tray from the old unit. "
+        "Coordinate the installation date with the fleet supervisor before removing any equipment, "
+        "and call the agency contact if replacement hardware is needed."
+    )
+    saved = _api(base_url, "/api/project/save", {
+        "customer": {
+            "name": "Overview Notes PD",
+            "agency": "Overview Notes PD",
+            "build_year": "2026",
+        },
+        "build_units": [{
+            "unit_id": "overview-unit-1",
+            "vehicle_model": "PIU",
+            "build_type": "Patrol",
+            "quantity": 2,
+            "individuals": [
+                {
+                    "individual_id": "overview-ind-1",
+                    "unit_number": "214",
+                    "notes": long_note,
+                    "draft_id": None,
+                },
+                {
+                    "individual_id": "overview-ind-short",
+                    "unit_number": "215",
+                    "notes": "Install the customer-supplied radio.",
+                    "draft_id": None,
+                },
+            ],
+        }],
+    })
+    project_id = saved["project_id"]
+
+    page.goto(base_url, wait_until="load")
+    page.click(".htab[data-tab='projects']")
+    page.wait_for_selector("#tab-projects:not([hidden])")
+    page.evaluate("projectId => PT_open(projectId)", project_id)
+    card = page.locator("#build-card-overview-ind-1")
+    card.wait_for()
+
+    page.wait_for_selector("#build-card-overview-ind-1 .proj-unit-notes--overflowing")
+    notes = card.locator(".proj-unit-notes")
+    assert "Transfer the existing radio" in notes.locator(".proj-unit-notes-preview").inner_text()
+    metrics = notes.locator(".proj-unit-notes-preview").evaluate(
+        "el => ({clientHeight: el.clientHeight, scrollHeight: el.scrollHeight, "
+        "lineHeight: parseFloat(getComputedStyle(el).lineHeight), "
+        "clamp: getComputedStyle(el).webkitLineClamp})"
+    )
+    assert metrics["clamp"] == "2"
+    assert metrics["scrollHeight"] > metrics["clientHeight"]
+    assert metrics["clientHeight"] <= metrics["lineHeight"] * 2 + 1
+    assert notes.get_by_role("button", name="Read more").is_visible()
+    notes.get_by_role("button", name="Read more").click()
+    page.wait_for_selector("#unit-notes-modal.open")
+    assert "Patrol #214" in page.locator("#unit-notes-modal-title").inner_text()
+    assert page.locator("#unit-notes-modal-body").inner_text() == long_note
+    page.click("#unit-notes-modal-done")
+    page.wait_for_selector("#unit-notes-modal.open", state="hidden")
+    notes.locator("strong").click()
+    page.wait_for_selector("#unit-notes-modal.open")
+    page.click("#unit-notes-modal-done")
+    assert page.locator("#proj-build-editor").is_hidden()
+
+    short_notes = page.locator("#build-card-overview-ind-short .proj-unit-notes")
+    assert "proj-unit-notes--overflowing" not in (short_notes.get_attribute("class") or "")
+    assert short_notes.get_by_role("button", name="Read more").is_hidden()
+
+    qb_button = card.get_by_role("button", name="◆ Set up QB Project")
+    assert not qb_button.is_disabled()
+    assert card.get_by_role("button", name="📋 QB Estimate").is_disabled()
+    qb_button.click()
+    page.wait_for_selector("#qb-est-modal.open")
+    assert page.locator("#qb-est-title").inner_text() == "Set up the QuickBooks Project"
+    assert "Unit 214 | Build 2026" in page.locator("#qb-est-body").inner_text()
+    assert "Overview Notes PD |" not in page.locator("#qb-est-body").inner_text()
+    page.fill("#qb-project-id", "https://qbo.intuit.com/app/project?projectId=447322633")
+    page.click("#qb-est-create")
+    page.wait_for_selector("#qb-est-modal.open", state="hidden")
+    page.wait_for_selector("#build-card-overview-ind-1")
+    card = page.locator("#build-card-overview-ind-1")
+    assert card.get_by_role("button", name="◆ Manage QB Project").count() == 1
+    assert card.get_by_role("button", name="📋 QB Estimate").is_disabled()
+    detail = _api(base_url, f"/api/project/{project_id}")["project"]
+    saved_individual = detail["build_units"][0]["individuals"][0]
+    assert saved_individual["draft_id"] is None
+    assert saved_individual["qb_project_id"] == "447322633"
+
+    final_button = card.locator(".proj-final-review-btn")
+    assert final_button.is_disabled()
+    assert "proj-final-review-btn--finalized" not in (final_button.get_attribute("class") or "")
+    assert final_button.evaluate("button => button === button.parentElement.lastElementChild")
+
+
+def flow_final_build_signoff(page, base_url: str) -> None:
+    """Final review is clear, locks the build, and requires a reopen reason."""
+    project_id, unit_id, draft_id = _seed_project_with_draft(base_url)
+    for part in (
+        {"name": "Roof Light Bar", "part_type": "roof_light_bar"},
+        {"name": "Siren Speaker", "part_type": "siren_speaker"},
+        {"name": "Light Controller", "part_type": "light_controller"},
+        {"name": "Control Head", "part_type": "control_head"},
+        {"name": "Radio System", "part_type": "radio_system"},
+        {"name": "Radar System", "part_type": "radar_system"},
+        {"name": "Camera DVR", "part_type": "camera_dvr"},
+        {"name": "Front Partition", "part_type": "front_partition"},
+        {"name": "Rear Partition", "part_type": "rear_partition"},
+        {"name": "Expansion Module", "part_type": "expansion_module"},
+    ):
+        _api(base_url, f"/api/draft/{draft_id}/part", part)
+    detail = _api(base_url, f"/api/project/{project_id}")["project"]
+    unit = detail["build_units"][0]
+    unit["pdf_path"] = "output/ui-smoke-final.pdf"
+    unit["last_exported_at"] = "2999-01-01T00:00:00+00:00"
+    _api(base_url, "/api/project/save", {
+        "project_id": project_id,
+        "customer": detail["customer"],
+        "preferences": detail["preferences"],
+        "project_notes": detail.get("project_notes", ""),
+        "build_units": [unit],
+    })
+
+    page.goto(base_url, wait_until="load")
+    page.click(".htab[data-tab='projects']")
+    page.wait_for_selector("#tab-projects:not([hidden])")
+    page.evaluate("projectId => PT_open(projectId)", project_id)
+    page.wait_for_selector(f"#build-card-unit-{unit_id}")
+    final_button = page.locator(f"#build-card-unit-{unit_id} .proj-final-review-btn")
+    assert "proj-final-review-btn--finalized" not in (final_button.get_attribute("class") or "")
+    assert final_button.evaluate("button => button === button.parentElement.lastElementChild")
+    final_button.click()
+    page.wait_for_selector("#build-finalization-modal.open")
+    assert "Review and lock this build" in page.locator("#build-finalization-body").inner_text()
+    assert "Equipment checks clear" in page.locator("#build-finalization-body").inner_text()
+    checks = page.locator(".build-final-checks")
+    assert checks.count() == 1
+    assert not checks.get_attribute("open")
+    assert "17 of 17 final checks passed" in checks.locator("summary").inner_text()
+    checks.locator("summary").click()
+    assert checks.locator(".build-final-check").count() == 17
+    assert checks.locator(".build-final-check--passed").count() == 17
+    assert page.locator("#build-finalization-save").inner_text() == "Finalize build"
+    page.click("#build-finalization-save")
+    page.wait_for_selector("#build-finalization-modal.open", state="hidden")
+    page.wait_for_function(
+        "([projectId]) => fetch('/api/project/' + projectId).then(r => r.json()).then(r => r.project.build_units[0].status === 'finalized')",
+        arg=[project_id],
+    )
+    page.wait_for_selector(f"#build-card-unit-{unit_id} .proj-final-review-btn--finalized")
+    final_button = page.locator(f"#build-card-unit-{unit_id} .proj-final-review-btn--finalized")
+    assert final_button.inner_text() == "✓ Finalized"
+    assert final_button.evaluate("button => button === button.parentElement.lastElementChild")
+
+    final_button.click()
+    page.wait_for_selector("#build-finalization-modal.open")
+    assert "Final sign-off complete" in page.locator("#build-finalization-body").inner_text()
+    assert page.locator(".build-final-checks").count() == 1
+    assert page.locator("#build-finalization-save").inner_text() == "Reopen for changes"
+    page.fill("#build-reopen-reason", "Move grille lights")
+    page.click("#build-finalization-save")
+    page.wait_for_selector("#build-finalization-modal.open", state="hidden")
+    page.wait_for_function(
+        "([projectId]) => fetch('/api/project/' + projectId).then(r => r.json()).then(r => r.project.build_units[0].status === 'reopened')",
+        arg=[project_id],
+    )
+    page.wait_for_selector(f"#build-card-unit-{unit_id} .proj-final-review-btn:not(.proj-final-review-btn--finalized)")
+
+
 def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     """Printer accessories use distinct shop labels, survive a parent edit,
     can add another item from the same accessory group, and surface orderable
@@ -458,9 +1065,12 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     page.click("[onclick='addPart()'] >> nth=0")
     page.wait_for_selector("#picker-panel.open")
     assert page.locator("#picker-part-status").is_visible()
-    assert page.get_attribute("[data-picker-part-status='New']", "aria-pressed") == "true"
-    page.click("[data-picker-part-status='Used']")
-    assert page.get_attribute("[data-picker-part-status='Used']", "aria-pressed") == "true"
+    assert page.get_attribute("[data-picker-supply-type='new']", "aria-pressed") == "true"
+    page.click("[data-picker-supply-type='customer_supplied']")
+    page.click("[data-picker-customer-condition='used']")
+    page.fill("#picker-customer-source", "Retired patrol unit")
+    assert page.get_attribute("[data-picker-supply-type='customer_supplied']", "aria-pressed") == "true"
+    assert page.get_attribute("[data-picker-customer-condition='used']", "aria-pressed") == "true"
     page.fill("#pf-search", "PJ-822")
     page.wait_for_selector(".pp-head[data-pid='brother_pj_822']")
     if page.locator("#pp-veh-only").count() and page.locator("#pp-veh-only").is_checked():
@@ -502,6 +1112,9 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     printer = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "printer")
     assert printer["new_or_used"] == "Used"
+    assert printer["supply_type"] == "customer_supplied"
+    assert printer["customer_condition"] == "used"
+    assert printer["customer_source"] == "Retired patrol unit"
     children = [part for part in draft["draft"]["parts"] if part.get("parent_line_id") == printer["line_id"]]
     assert {part.get("accessory_category") for part in children} == {
         "printer_mount", "printer_power_cable", "printer_usb_cable",
@@ -518,9 +1131,11 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
 
     page.evaluate("(lineId) => openPartEditModal(lineId)", printer["line_id"])
     page.wait_for_selector("#picker-panel.open")
-    assert page.get_attribute("[data-picker-part-status='Used']", "aria-pressed") == "true", (
+    assert page.get_attribute("[data-picker-supply-type='customer_supplied']", "aria-pressed") == "true", (
         "editing a picker part must restore its saved condition"
     )
+    assert page.get_attribute("[data-picker-customer-condition='used']", "aria-pressed") == "true"
+    assert page.input_value("#picker-customer-source") == "Retired patrol unit"
     for category in ("printer_mount", "printer_power_cable", "printer_usb_cable"):
         selector = f"select[data-cat='{category}']"
         page.wait_for_selector(selector)
@@ -564,6 +1179,119 @@ def flow_printer_accessory_round_trip(page, base_url: str) -> None:
     assert len(mount_options) > 3, (
         f"Mega T-Series must keep compatible generic bracket choices too, got {mount_options!r}"
     )
+
+
+def flow_t_series_dual_shroud_quantity_and_render(page, base_url: str) -> None:
+    """Dual shrouds default from light quantity, reject odd pairings, allow a
+    manual quantity override, persist the chosen quantity, and render each
+    two-head shroud as one placement unit."""
+    _project_id, _unit_id, draft_id = _seed_project_with_draft(base_url)
+    _open_build_editor(page, base_url)
+
+    page.click("[onclick='addPart()'] >> nth=0")
+    page.wait_for_selector("#picker-panel.open")
+    page.fill("#pf-search", "T-Series")
+    page.wait_for_selector(".pp-head[data-pid='whelen_t_series']")
+    if page.locator("#pp-veh-only").count() and page.locator("#pp-veh-only").is_checked():
+        page.evaluate("""() => {
+            _pickerState.vehicleOnly = false;
+            localStorage.setItem('pp_vehicle_only', '0');
+            _pickerRenderProducts();
+            _pickerRenderAccessories();
+        }""")
+        page.wait_for_selector(".pp-head[data-pid='whelen_t_series']")
+    page.click(".pp-head[data-pid='whelen_t_series']")
+    page.wait_for_selector("select[data-cat='shroud']")
+
+    page.evaluate("""() => {
+        _pickerState.config.count = 4;
+        _pickerNormalizeConfig();
+        _pickerRenderProducts();
+        _pickerRenderAccessories();
+        _pickerUpdateFooter();
+    }""")
+    page.select_option("select[data-cat='shroud']", "whelen_ie_shroud::THSG2")
+    for category in page.locator("select[data-cat]").evaluate_all(
+        "selects => [...new Set(selects.map(select => select.dataset.cat))]"
+    ):
+        if category != "shroud":
+            page.select_option(f"select[data-cat='{category}']", "none")
+    quantity = page.locator("input[data-accessory-qty='shroud']")
+    assert quantity.input_value() == "2"
+    assert "Recommended 2 for 4 lights" in page.locator(".pa-coverage-note").inner_text()
+
+    page.evaluate("""() => {
+        _pickerState.config.count = 3;
+        _pickerNormalizeConfig();
+        _pickerRenderAccessories();
+        _pickerUpdateFooter();
+    }""")
+    assert page.locator(".pa-coverage-error").count() == 1
+    assert "cannot be fully paired" in page.locator(".pa-coverage-error").inner_text()
+    assert page.evaluate("() => _accessoriesSatisfied()") is False
+
+    page.evaluate("""() => {
+        _pickerState.config.count = 4;
+        _pickerNormalizeConfig();
+        _pickerRenderAccessories();
+        _pickerUpdateFooter();
+    }""")
+    quantity = page.locator("input[data-accessory-qty='shroud']")
+    quantity.fill("3")
+    quantity.dispatch_event("change")
+    assert page.evaluate("() => _pickerState.accessoryQuantities.shroud") == 3
+    quantity = page.locator("input[data-accessory-qty='shroud']")
+    quantity.fill("2")
+    quantity.dispatch_event("change")
+
+    page.click("#picker-tab-btn-location")
+    page.wait_for_timeout(1000)
+    page.evaluate("""() => {
+        const entry = _pickerState.loc.locByName['LOWER CARGO WINDOW'];
+        _pickerSetStandardLocation('LOWER CARGO WINDOW', entry || {
+            name_pattern: 'Rear Warning {n}', base_label: 'Rear Warning', catalog_names: [],
+        });
+        _pickerUpdateFooter();
+    }""")
+    readiness = page.evaluate("""() => ({
+        accessories: _accessoriesSatisfied(), tracer: _pickerTracerSatisfied(),
+        innerEdge: _pickerInnerEdgeSatisfied(), outerEdge: _pickerOuterEdgeSatisfied(),
+        lightbar: _pickerLightbarSatisfied(), radio: _pickerRadioSatisfied(),
+        details: _pickerPartDetailsSatisfied(), westin: _pickerWestinChannelSatisfied(),
+        tint: _pickerTintReady(), allocation: _pickerLocationAllocationReady(),
+        supply: _pickerSupplySatisfied(), customLocation: _pickerCustomLocationReady(),
+        selected: _pickerState.sel, location: _pickerState.loc.selected,
+        tab: _pickerState.tab, buttonDisabled: document.querySelector('#picker-add-btn')?.disabled,
+    })""")
+    assert all(value for key, value in readiness.items() if key not in {"selected", "location", "tab", "buttonDisabled"}), readiness
+    assert readiness["selected"] and readiness["location"], readiness
+    assert readiness["tab"] == "location" and readiness["buttonDisabled"] is False, readiness
+    page.evaluate("() => _pickerState.footerHandler()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+
+    draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    parent = next(part for part in draft["draft"]["parts"] if part.get("part_type") == "warning_light")
+    shroud = next(
+        part for part in draft["draft"]["parts"]
+        if part.get("parent_line_id") == parent["line_id"] and part.get("part_number") == "THSG2"
+    )
+    assert parent["quantity"] == 4
+    assert shroud["quantity"] == 2
+    assert shroud["picker_config"]["accessory_quantity"]["render_parent_group"] == "dual_shroud"
+
+    preview = page.evaluate(
+        "(id) => fetch('/api/preview/plan', {method:'POST', headers:{'Content-Type':'application/json'}, "
+        "body:JSON.stringify({draft_id:id})}).then(r => r.json())",
+        draft_id,
+    )
+    planned = next(part for part in preview["planned_parts"] if part.get("part_number") == parent["part_number"])
+    placements = {placement["view"]: placement for placement in planned["placements"]}
+    assert placements["side"]["compound_group_count"] == 1
+    assert len(placements["side"]["instances"]) == 2
+    side_x = [instance["x_pct"] for instance in placements["side"]["instances"]]
+    assert side_x[0] < placements["side"]["anchor"]["x"] < side_x[1]
+    assert placements["top"]["compound_group_count"] == 2
+    assert len(placements["top"]["instances"]) == 4
 
 
 def flow_picker_browse_tree(page, base_url: str) -> None:
@@ -640,8 +1368,8 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     assert page.locator("#picker-part-status").is_hidden(), \
         f"guided radio picker should hide part status, got {page.locator('#picker-part-status').text_content()!r}"
     page.wait_for_function("() => _pickerState?.radio?.active && !_pickerState.radio.loading")
-    assert page.evaluate("() => _pickerState.radio.choices.provider") == "customer", \
-        "new system provider should default to customer supplied"
+    assert page.evaluate("() => _pickerState.radio.choices.supplyType") == "", \
+        "a new system must require an explicit supply choice"
     assert page.evaluate("() => _pickerState.radio.choices.systemProduct.product_id") == "motorola_split_unit", \
         "radio setup should retain the selected Motorola split-radio product"
     assert page.evaluate("() => !!_pickerState.radio.choices.systemProduct.part_number"), \
@@ -655,9 +1383,7 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
         "expected the radio answer summary"
 
     # Exercise the DTM purchase branch so its free-text note is covered too.
-    _guided_pick(page, "condition", "new")
-    _guided_next(page)
-    _guided_pick(page, "provider", "dtm")
+    _guided_pick(page, "supplyType", "new")
     _guided_next(page)
     page.locator("textarea[data-system-text='purchaseDetails']").fill("Customer-specified Motorola mobile radio, split kit, include antenna and mic.")
     _guided_next(page)
@@ -694,6 +1420,7 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     radio = next((p for p in parts if p.get("picker_config", {}).get("system_type") == "radio"), None)
     assert radio is not None, "expected radio workflow to add one guided system line"
     assert radio.get("part_type") == "radio_head", "radio system line must retain its planner part type"
+    assert radio.get("supply_type") == "new" and radio.get("customer_condition") == ""
     assert radio.get("part_number") == "DTM PURCHASE — SEE DETAILS", \
         f"DTM-purchased radio should use the purchase-details SKU, got {radio.get('part_number')!r}"
     assert radio.get("notes") == "Customer-specified Motorola mobile radio, split kit, include antenna and mic.", \
@@ -705,6 +1432,8 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     assert expected.issubset(component_types), \
         f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
     mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
+    assert all(component.get("supply_type") == "new" for component in radio["components"]), \
+        f"new DTM system components should inherit New supply, got {radio['components']!r}"
     assert mic.get("location") == "Console sidecar", "custom shop location should populate the component row"
     magnetic_mic = next((p for p in parts if p.get("parent_line_id") == radio["line_id"]
                          and p.get("accessory_category") == "magnetic_mic"), None)
@@ -717,8 +1446,8 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radio edits must restart at the first question"
     edit_question = page.locator(".guided-question h2").text_content().lower()
-    assert "condition" in edit_question, \
-        f"guided radio edit should reopen at the condition question, got {edit_question!r}"
+    assert "supplying" in edit_question, \
+        f"guided radio edit should reopen at the supply question, got {edit_question!r}"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("purchaseDetails") == radio.get("notes") and restored.get("micLocCustom") == "Console sidecar", \
         f"guided radio edits must retain saved answers, got {restored!r}"
@@ -774,7 +1503,11 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     """Radar follows the shared system flow and exposes the requested cable,
     antenna, split-unit, and counting-unit branches."""
     draft_id = _open_guided_system(page, base_url, "radar", "radar")
-    _guided_pick(page, "condition", "reused")
+    _guided_pick(page, "supplyType", "customer_supplied")
+    _guided_next(page)
+    _guided_pick(page, "customerCondition", "used")
+    _guided_next(page)
+    page.locator("textarea[data-system-text='customerSource']").fill("Agency transfer stock")
     _guided_next(page)
     assert "Will the radar cables be refreshed?" in page.locator(".guided-question h2").text_content()
     _guided_pick(page, "refresh", "yes")
@@ -805,6 +1538,16 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     _guided_next(page)
     _guided_pick(page, "rearBracket", "tall_a_bracket")
     _guided_finish_defaults(page)
+    # One component can override the parent supply decision. This radar is
+    # customer-used overall, but its front antenna is customer-supplied New.
+    page.evaluate("""
+        () => {
+            _pickerState.radio.step = _systemSteps().findIndex(step => step.key === "componentConditions");
+            _pickerRefreshSystemView();
+        }
+    """)
+    page.locator("[data-system-component-supply='radar_front_antenna'][data-system-supply-value='customer_new']").click()
+    assert page.evaluate("() => _pickerRadioSatisfied()")
     integrated_components = page.evaluate("""
         () => _systemComponentRows("radar", {
             ..._pickerState.radio.choices,
@@ -820,9 +1563,17 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     radar = next((p for p in draft["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "radar"), None)
     assert radar and radar["picker_config"]["choices"]["frontLoc"] == "a_pillar"
+    assert radar["supply_type"] == "customer_supplied"
+    assert radar["customer_condition"] == "used"
+    assert radar["customer_source"] == "Agency transfer stock"
     assert radar["picker_config"]["choices"]["countingLoc"] == "center_console"
     assert radar["picker_config"]["choices"]["frontBracket"] == "swivel_arm"
     assert radar["picker_config"]["choices"]["rearBracket"] == "tall_a_bracket"
+    radar_components = {component["key"]: component for component in radar["components"]}
+    assert radar_components["radar_front_antenna"]["customer_condition"] == "new"
+    assert radar_components["radar_front_antenna"]["customer_source"] == ""
+    assert radar_components["radar_rear_antenna"]["customer_condition"] == "used"
+    assert radar_components["radar_rear_antenna"]["customer_source"] == "Agency transfer stock"
     radar_cable = next((p for p in draft["draft"]["parts"] if p.get("parent_line_id") == radar["line_id"]
                          and p.get("accessory_category") == "system_cable_refresh"), None)
     assert radar_cable and radar_cable.get("part_number") == "155-2591-08", \
@@ -850,8 +1601,8 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.radio?.active && _pickerState.radio.kind === 'radar'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
     assert page.evaluate("() => _pickerState.radio.step") == 0
-    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
-        "new radar setup should begin at the condition question"
+    assert "supplying" in page.locator(".guided-question h2").text_content().lower(), \
+        "new radar setup should begin at the supply question"
     page.evaluate("pickerClose()")
     page.wait_for_selector("#picker-panel.open", state="hidden")
 
@@ -860,18 +1611,66 @@ def flow_radar_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar' && Object.keys(_pickerState.radio.choices || {}).length > 0")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radar']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided radar edits must restart at the first question"
-    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
-        "guided radar edit should reopen at the condition question"
+    assert "supplying" in page.locator(".guided-question h2").text_content().lower(), \
+        "guided radar edit should reopen at the supply question"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("frontLoc") == "a_pillar" and restored.get("frontBracket") == "swivel_arm" and restored.get("countingLoc") == "center_console", \
         f"expected guided system edits to restore saved radar answers, got {restored!r}"
+
+    # A front-only radar is a deliberate saved configuration. The optional
+    # antenna question must require the explicit Not included answer, then its
+    # bracket dependency and manifest component must disappear together.
+    page.evaluate("""
+        () => {
+            const step = _systemSteps().findIndex(item => item.key === "rearLoc");
+            if (step < 0) throw new Error("rear radar location step is missing");
+            _pickerState.radio.step = step;
+            _pickerRefreshSystemView();
+        }
+    """)
+    rear_locations = page.locator(".guided-option[data-system-choice='rearLoc']").evaluate_all(
+        "els => els.map(el => ({value: el.dataset.systemValue, label: el.textContent.trim()}))"
+    )
+    assert any(option["value"] == "__none__" and "Not included" in option["label"] for option in rear_locations), \
+        f"optional rear radar step should expose a clear Not included choice, got {rear_locations!r}"
+    _guided_pick(page, "rearLoc", "__none__")
+    assert "rearBracket" not in page.evaluate("() => _systemSteps().map(step => step.key)"), \
+        "rear bracket must not remain required after omitting the rear antenna"
+    assert page.evaluate("() => _pickerRadioSatisfied()"), \
+        "the saved answers should remain complete after the explicit rear-antenna omission"
+    assert page.locator("#picker-add-btn").text_content().strip() == "Add and Finish"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden", timeout=5000)
+
+    updated = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
+    radar = next((p for p in updated["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "radar"), None)
+    assert radar and radar["picker_config"]["choices"].get("rearLoc") == "__none__"
+    assert not radar["picker_config"]["choices"].get("rearBracket"), \
+        "a removed rear antenna must not retain stale bracket data"
+    component_labels = [component.get("label") for component in radar.get("components", [])]
+    assert "Front radar antenna" in component_labels and "Rear radar antenna" not in component_labels, \
+        f"front-only radar should persist no phantom rear component, got {component_labels!r}"
+    assert not any(part.get("part_type") == "rear_radar_antenna_mount" for part in updated["draft"]["parts"]), \
+        "an omitted rear antenna must not create a billable draft line"
+
+    page.locator("tr.me-parent-row").filter(has_text="Radar System").locator(".me-edit-btn").click()
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'radar'")
+    assert page.evaluate("() => _pickerState.radio.choices.rearLoc") == "__none__", \
+        "Not included must round-trip through the saved guided-system configuration"
+    page.evaluate("pickerClose()")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
 
 
 def flow_camera_system_workflow(page, base_url: str) -> None:
     """Camera uses the same ownership/cable sequence and then asks only the
     location questions for the selected camera components."""
     draft_id = _open_guided_system(page, base_url, "camera_system", "camera")
-    _guided_pick(page, "condition", "reused")
+    _guided_pick(page, "supplyType", "customer_supplied")
+    _guided_next(page)
+    _guided_pick(page, "customerCondition", "used")
+    _guided_next(page)
+    page.locator("textarea[data-system-text='customerSource']").fill("Prior-generation camera system")
     _guided_next(page)
     _guided_pick(page, "refresh", "yes")
     _guided_next(page)
@@ -895,8 +1694,12 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     draft = page.evaluate("(id) => fetch('/api/draft/' + id).then(r => r.json())", draft_id)
     camera = next((p for p in draft["draft"]["parts"] if p.get("picker_config", {}).get("system_type") == "camera"), None)
     assert camera is not None, "expected camera workflow to add one guided system line"
+    assert camera["supply_type"] == "customer_supplied"
+    assert camera["customer_condition"] == "used"
+    assert camera["customer_source"] == "Prior-generation camera system"
     assert set(camera["picker_config"]["choices"]["cameraParts"]) == {"front", "rear_seat", "rear", "body_dock", "wireless_mic"}
     camera_components = {item["part_type"]: item for item in camera["components"]}
+    assert all(item.get("customer_source") == "Prior-generation camera system" for item in camera_components.values())
     assert camera_components["front_camera"]["location"] == "Upper windshield"
     assert camera_components["rear_camera"]["location"] == "Upper rear window"
     parent = page.locator("tr.me-parent-row").filter(has_text="Camera System")
@@ -905,8 +1708,8 @@ def flow_camera_system_workflow(page, base_url: str) -> None:
     page.wait_for_function("() => _pickerState?.editLineId && _pickerState?.radio?.active && _pickerState.radio.kind === 'camera'")
     page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='camera']")
     assert page.evaluate("() => _pickerState.radio.step") == 0, "guided camera edits must restart at the first question"
-    assert "condition" in page.locator(".guided-question h2").text_content().lower(), \
-        "guided camera edit should reopen at the condition question"
+    assert "supplying" in page.locator(".guided-question h2").text_content().lower(), \
+        "guided camera edit should reopen at the supply question"
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("systemProduct", {}).get("product_id") == "watchguard_m500" and restored.get("wirelessMicLoc") == "center_console", \
         f"guided camera edits must retain saved answers, got {restored!r}"
@@ -1023,7 +1826,7 @@ def flow_agency_default_preferences(page, base_url: str) -> None:
             "agency_id": agency_id,
             "build_year": "2026",
         },
-        "preferences": {"lighting_brands": ["Whelen"]},
+        "preferences": {"lighting_brands": ["Whelen"], "lighting_mode": "duo"},
         "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
     })
     assert project.get("ok"), project
@@ -1037,6 +1840,7 @@ def flow_agency_default_preferences(page, base_url: str) -> None:
     page.wait_for_selector("#proj-ptab-edit .btn-primary")
     page.click("#proj-ptab-edit .btn-primary")
     page.wait_for_selector("#et-agency-id", state="attached")
+    page.select_option("#et-lighting-mode", "trio")
     page.click("button[onclick*=\"PT_setPreferencesAsAgencyDefault\"]")
 
     page.wait_for_function(
@@ -1047,6 +1851,7 @@ def flow_agency_default_preferences(page, base_url: str) -> None:
     stored = _api(base_url, "/api/agencies")["agencies"]
     agency = next(item for item in stored if item["agency_id"] == agency_id)
     assert agency["default_preferences"]["lighting_brands"] == ["Whelen"]
+    assert agency["default_preferences"]["lighting_mode"] == "trio"
 
 
 def flow_part_picker_search_stays_collapsed(page, base_url: str) -> None:
@@ -1093,6 +1898,7 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
         base_url, preferences={
             "lighting_brands": ["Whelen"], "push_bumper_brand": "Setina",
             "cage_brand": "Setina", "console_brand": "Gamber Johnson",
+            "lighting_mode": "trio",
         }
     )
     _open_build_editor(page, base_url)
@@ -1121,6 +1927,12 @@ def flow_brand_preference_collapse(page, base_url: str) -> None:
         "expected _pickerState.filters.brand to auto-select the project's "
         f"preferred lighting brand 'Whelen', got {auto_brand!r}"
     )
+    page.click(".pp-head[data-pid='whelen_ion']")
+    page.wait_for_function("() => _pickerState?.sel?.product_id === 'whelen_ion'")
+    mode = page.evaluate("() => _pickerState.config.colorsPerHead")
+    colors = set(page.evaluate("() => _pickerState.config.uniform"))
+    assert mode == "trio", f"TRIO project preference did not default the picker, got {mode!r}"
+    assert colors == {"red", "blue", "white"}, f"expected Red/Blue/White TRIO default, got {colors!r}"
 
     if page.locator(".pp-brand-more").count() > 0:
         # Multi-brand context (requirement 3): the collapsed dropdown must
@@ -2051,7 +2863,8 @@ def flow_howler_routing_and_dual_tone_siren(page, base_url: str) -> None:
 def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     """A successful read-only validation must open the estimate review modal."""
     validation = {
-        "ok": True, "can_create": True, "line_count": 2, "total": 162,
+        "ok": True, "can_create": True, "material_line_count": 2, "line_count": 5,
+        "materials_total": 124, "total": 1636.96,
         "existing_estimate_id": "", "pdf_available": False,
         "customer_linked": True,
         "customer": {"name": "UI Smoke PD", "contact_name": "Test User"},
@@ -2071,6 +2884,23 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
                 "manufacturer_id": "whelen", "list_unit_price": 100,
                 "qty": 2, "discountable": True,
             }],
+        },
+        "additional_charges": {
+            "enabled": True, "preset_id": "patrol", "preset_label": "Patrol",
+            "card_fee_percent": 4, "materials_total": 124,
+            "labor_amount": 1000, "install_supplies_amount": 450,
+            "delivery_amount": 0, "card_fee_amount": 62.96,
+            "additional_total": 1512.96, "estimate_total": 1636.96,
+            "service_items": {
+                "labor": "LABOR INSTALL", "install_supplies": "INSTALL SUPPLIES",
+                "card_fee": "Convenience Fee", "delivery": "TRAVEL",
+            },
+            "presets": {
+                "patrol": {"label": "Patrol", "labor_amount": 1000, "install_supplies_amount": 450},
+                "undercover": {"label": "Undercover", "labor_amount": 800, "install_supplies_amount": 350},
+                "admin": {"label": "Admin", "labor_amount": 500, "install_supplies_amount": 250},
+                "custom": {"label": "Custom", "labor_amount": 0, "install_supplies_amount": 450},
+            },
         },
     }
     customer = {
@@ -2099,9 +2929,38 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     page.wait_for_selector("#qb-est-modal.open")
     assert page.locator("#qb-est-title").inner_text() == "Create QuickBooks estimate"
     assert page.locator("[data-qb-est-custom-price='whelen']").input_value() == "38"
+    assert page.locator("#qb-est-charge-preset").input_value() == "patrol"
+    assert page.locator("#qb-est-labor-amount").input_value() == "1000"
+    assert page.locator("#qb-est-card-fee-amount").inner_text() == "$62.96"
+    assert page.locator("#qb-est-estimated-total").inner_text() == "$1636.96"
     assert not page.locator("#qb-est-create").is_visible()
     assert page.locator("#qb-est-export-pdf").is_visible()
     assert "A build PDF is required" in page.locator("#qb-est-body").inner_text()
+    page.locator("#qb-est-modal").evaluate("modal => modal.classList.remove('open')")
+
+    validation.update({
+        "existing_estimate_id": "EST-42",
+        "pdf_available": True,
+        "pdf_name": "build.pdf",
+        "estimate_change": {
+            "status": "modified", "modified": True,
+            "differences": [{
+                "field": "Line 1",
+                "before": "Item 1 · qty 2 · unit $62.00",
+                "after": "Item 1 · qty 2 · unit $70.00",
+            }],
+        },
+    })
+    page.evaluate("() => window.PT_buildCreateEstimate('project-1', 'unit-1', 'vehicle-1')")
+    page.wait_for_selector("#qb-est-modal.open")
+    assert page.locator(".qb-est-change-alert--danger").count() == 1
+    assert "changed outside Vehicle Builder" in page.locator(".qb-est-change-alert--danger").inner_text()
+    page.locator(".qb-est-change-alert summary").click()
+    assert "unit $62.00" in page.locator(".qb-est-diff-list").inner_text()
+    assert page.locator("#qb-est-create").is_disabled()
+    page.check("input[name='qb-est-existing-action'][value='create_new']")
+    assert not page.locator("#qb-est-create").is_disabled()
+    assert page.locator("#qb-est-create").inner_text() == "Create separate estimate"
     # The smoke flow deliberately stops at review; it never clicks Create.
 
 
@@ -2182,9 +3041,17 @@ def flow_quickbooks_batch_project_checklist(page, base_url: str) -> None:
 
 FLOWS = {
     "tab_load": flow_tab_load,
+    "preset_agency_list_freshness": flow_preset_agency_list_freshness,
+    "load_preset_from_build_editor": flow_load_preset_from_build_editor,
+    "project_manager_all_presets_unfiltered": flow_project_manager_all_presets_unfiltered,
     "add_text_mode_equipment_part": flow_add_text_mode_equipment_part,
     "edit_preserves_fields": flow_edit_preserves_fields,
+    "custom_location_group_spacing": flow_custom_location_group_spacing,
+    "tint_and_round_location_allocation": flow_tint_and_round_location_allocation,
+    "overview_unit_notes_and_preconfig_qb": flow_overview_unit_notes_and_preconfig_qb,
+    "final_build_signoff": flow_final_build_signoff,
     "printer_accessory_round_trip": flow_printer_accessory_round_trip,
+    "t_series_dual_shroud_quantity_and_render": flow_t_series_dual_shroud_quantity_and_render,
     "picker_browse_tree": flow_picker_browse_tree,
     "radio_communications_workflow": flow_radio_communications_workflow,
     "radar_system_workflow": flow_radar_system_workflow,

@@ -79,7 +79,7 @@
           ],
           "text": "Sample Agency 1",
           "top_emu": 960120,
-          "width_emu": 9326880
+          "width_emu": 10972800
         },
         {
           "fill": {
@@ -958,7 +958,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 3236976,
+          "height_emu": 3401568,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -1083,12 +1083,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Standard Lense"
+                          "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Standard Lense"
+                  "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1174,12 +1174,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "R/W B/W\nLens: Clear"
+                          "text": "R/W B/W  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "R/W B/W\nLens: Clear"
+                  "text": "R/W B/W  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1265,12 +1265,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "R/W B/W\nLens: Clear"
+                          "text": "R/W B/W  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "R/W B/W\nLens: Clear"
+                  "text": "R/W B/W  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1356,12 +1356,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Standard Lense"
+                          "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Standard Lense"
+                  "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1447,12 +1447,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1538,12 +1538,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Standard Lense"
+                          "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Standard Lense"
+                  "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1629,12 +1629,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE\nLens: Clear"
+                          "text": "RED/WHITE  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE\nLens: Clear"
+                  "text": "RED/WHITE  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1720,12 +1720,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE\nLens: Clear"
+                          "text": "RED/WHITE  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE\nLens: Clear"
+                  "text": "RED/WHITE  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1811,12 +1811,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1881,15 +1881,15 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
             ],
             "rows": 10
           },
@@ -2018,7 +2018,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 3694176,
+          "height_emu": 3886199,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3032,16 +3032,16 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              484631
             ],
             "rows": 11
           },
@@ -3170,7 +3170,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 5340096,
+          "height_emu": 5056629,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3329,12 +3329,12 @@
                           "color": "#1A1A1A",
                           "italic": false,
                           "size_pt": 9.0,
-                          "text": "TOP OF PUSH BUMPER"
+                          "text": "BEHIND GRILL (CENTER)"
                         }
                       ]
                     }
                   ],
-                  "text": "TOP OF PUSH BUMPER"
+                  "text": "BEHIND GRILL (CENTER)"
                 },
                 {
                   "paragraphs": [
@@ -3615,16 +3615,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -4070,16 +4070,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -4262,6 +4262,249 @@
                     }
                   ],
                   "text": "■  New"
+                }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              347472,
+              347472,
+              484631,
+              621792,
+              347472,
+              484631,
+              347472,
+              347472,
+              621792,
+              484631,
+              347472
+            ],
+            "rows": 12
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "EQUIPMENT & ELECTRONICS — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "EQUIPMENT & ELECTRONICS — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 4"
+                }
+              ]
+            }
+          ],
+          "text": "Page 4",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 4919472,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
                 }
               ],
               [
@@ -4627,253 +4870,6 @@
                   ],
                   "text": "■  New"
                 }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
-            ],
-            "rows": 16
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "EQUIPMENT & ELECTRONICS — Continued"
-                }
-              ]
-            }
-          ],
-          "text": "EQUIPMENT & ELECTRONICS — Continued",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 4"
-                }
-              ]
-            }
-          ],
-          "text": "Page 4",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 4681728,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
-                }
               ],
               [
                 {
@@ -5136,16 +5132,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -5409,16 +5405,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -5491,16 +5487,259 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
+                }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              621792,
+              347472,
+              347472,
+              621792,
+              621792
+            ],
+            "rows": 12
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "EQUIPMENT & ELECTRONICS — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "EQUIPMENT & ELECTRONICS — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 5"
+                }
+              ]
+            }
+          ],
+          "text": "Page 5",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 1   •   2026 Ford Police Interceptor Utility   •   Patrol #02   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 2633470,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
                 }
               ],
               [
@@ -6060,21 +6299,14 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              484631,
+              347472,
+              484631,
+              347472,
+              347472
             ],
-            "rows": 14
+            "rows": 7
           },
           "top_emu": 978408,
           "width_emu": 11274551
@@ -6166,12 +6398,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "Page 5"
+                  "text": "Page 6"
                 }
               ]
             }
           ],
-          "text": "Page 5",
+          "text": "Page 6",
           "top_emu": 521207,
           "width_emu": 2331720
         },
@@ -6201,7 +6433,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 3419856,
+          "height_emu": 3886199,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -6335,12 +6567,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "R/W\nLens: Clear\nSWITCHED ON D-PILLAR"
+                          "text": "R/W  ·  Lens: Clear\nSWITCHED ON D-PILLAR"
                         }
                       ]
                     }
                   ],
-                  "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART\n(x2 REAR CARGO AREA, x3 CAGE LIGHT)\nR/W\nLens: Clear\nSWITCHED ON D-PILLAR"
+                  "text": "WHELEN 3\" ROUND SPLIT RED/WHT COMPART\n(x2 REAR CARGO AREA, x3 CAGE LIGHT)\nR/W  ·  Lens: Clear\nSWITCHED ON D-PILLAR"
                 },
                 {
                   "paragraphs": [
@@ -6464,16 +6696,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -6810,16 +7042,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  Reused"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Reused"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -7006,14 +7238,14 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              713232,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200
+              621792,
+              621792,
+              347472,
+              283464,
+              283464,
+              621792,
+              347472,
+              484631
             ],
             "rows": 9
           },
@@ -7135,14 +7367,13 @@
           "width_emu": 332801
         },
         {
-          "flip_v": true,
           "height_emu": 480713,
           "image_ext": "png",
           "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
           "kind": "PICTURE (13)",
           "left_emu": 2624236,
           "name": "Picture",
-          "top_emu": 3639348,
+          "top_emu": 3541355,
           "width_emu": 420809
         },
         {
@@ -7335,7 +7566,7 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "TOP OF PUSH BUMPER"
+                  "text": "BEHIND GRILL (CENTER)"
                 },
                 {
                   "bold": true,
@@ -7355,7 +7586,7 @@
               ]
             }
           ],
-          "text": "TOP OF PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
+          "text": "BEHIND GRILL (CENTER)  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
           "top_emu": 950976,
           "width_emu": 3242919
         },

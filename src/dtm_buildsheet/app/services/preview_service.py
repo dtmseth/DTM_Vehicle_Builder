@@ -4,7 +4,7 @@ import logging
 import traceback
 
 from ...config.loader import load_configs
-from ...domain.geometry import slot_relative_positions
+from ...domain.geometry import compound_slot_relative_positions, slot_relative_positions
 from ...inputs.project_drafts import draft_to_project_input
 from ...paths import AppPaths
 from ...planning.override_applier import apply_overrides
@@ -195,7 +195,19 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                 else:
                     eff_v_spacing = pl.v_spacing
 
-                if pl.position_slot_count and pl.slot_indices:
+                if pl.compound_group_style and pl.compound_group_count:
+                    positions = compound_slot_relative_positions(
+                        pl.pattern,
+                        pl.compound_group_count,
+                        pl.compound_group_size,
+                        slot_count,
+                        anchor_x,
+                        anchor_y,
+                        eff_h_spacing,
+                        icon_w_pct * pl.compound_item_spacing,
+                        v_spacing=eff_v_spacing,
+                    )
+                elif pl.position_slot_count and pl.slot_indices:
                     all_pos = slot_relative_positions(
                         pl.pattern, pl.position_slot_count,
                         anchor_x, anchor_y, eff_h_spacing,
@@ -246,6 +258,10 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "slot_count":         slot_count,
                     "position_slot_count": pl.position_slot_count,
                     "slot_indices":       pl.slot_indices,
+                    "compound_group_size": pl.compound_group_size,
+                    "compound_group_count": pl.compound_group_count,
+                    "compound_group_style": pl.compound_group_style,
+                    "compound_item_spacing": pl.compound_item_spacing,
                     "rotation":           pl.rotation,
                     "flip_h":             pl.flip_h,
                     "flip_v":             pl.flip_v,
@@ -255,6 +271,8 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "icon_w_in":          w_in if first_inst else None,
                     "icon_h_in":          h_in if first_inst else None,
                     "layer":              pl.layer,
+                    "mount_visibility":   pl.mount_visibility,
+                    "callout_label":      pl.callout_label,
                     "size":               pl.size_override,
                     "instances":          instances_out,
                     "override":           draft.placement_overrides.get(override_key, {}),

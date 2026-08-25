@@ -2,7 +2,7 @@
 
 Reference for all JSON configuration and data files. Config files live in `workspace/config/` (editable) and `src/dtm_buildsheet/resources/config/` (bundled defaults). Workspace data files (agencies, sales reps, projects, presets) live directly in `workspace/` or its sub-directories.
 
-Last updated: 2026-05-18 (Phases 1–5)
+Last updated: 2026-08-21 (Phases 1–5)
 
 ---
 
@@ -19,7 +19,8 @@ Last updated: 2026-05-18 (Phases 1–5)
 9. [sales_reps.json](#sales_repsjson)
 10. [Preset Files](#preset-files)
 11. [parts_db.json](#parts_dbjson)
-12. [Common Conventions](#common-conventions)
+12. [estimate_charges.json](#estimate_chargesjson)
+13. [Common Conventions](#common-conventions)
 
 ---
 
@@ -641,6 +642,66 @@ last-resort SKU override. Older rows whose `part_number` contains a model name c
 the product's explicit `model_aliases`. The planner resolves size in the order SKU → product →
 part type → `"sm"` default. This keeps the Size Rules page tied to real canonical identities
 rather than free-text matching.
+
+---
+
+## estimate_charges.json
+
+Shared defaults for the QuickBooks estimate review's **Additional charges** section. The Settings →
+Projects editor changes the two monetary preset fields; item names identify active company-local
+QBO Service items and are resolved from the refreshed Item cache immediately before estimate write.
+
+```json
+{
+  "schema_version": 1,
+  "card_fee_percent": 4,
+  "service_items": {
+    "labor": "LABOR INSTALL",
+    "install_supplies": "INSTALL SUPPLIES",
+    "card_fee": "Convenience Fee",
+    "delivery": "TRAVEL"
+  },
+  "presets": {
+    "patrol": {
+      "label": "Patrol",
+      "aliases": ["patrol"],
+      "labor_amount": 0,
+      "install_supplies_amount": 450
+    }
+  }
+}
+```
+
+All four preset IDs (`patrol`, `undercover`, `admin`, `custom`) are required. Amounts are
+non-negative, but estimate creation requires labor and install supplies to be greater than zero.
+Delivery is optional per estimate. The card fee is `card_fee_percent` of materials + labor + install
+supplies + delivery, excluding the card-fee line itself.
+
+---
+
+## Local Connection Metadata (outside workspace/config)
+
+### `quickbooks_config.json`
+
+This local-only, git-ignored file is managed directly by `quickbooks_service`; it is deliberately
+outside `workspace/config`, `REQUIRED_CONFIG_FILES`, schema migrations, and SharePoint mirroring.
+Existing top-level fields hold non-secret local QuickBooks connection metadata. OAuth tokens, the
+realm binding, and the Intuit client secret must never be placed here.
+
+The optional `central_qbo` object configures the default-off Builder API migration slice:
+
+| Field | Type | Rule |
+|---|---|---|
+| `enabled` | boolean | `false` preserves the local compatibility adapter; `true` fails closed on missing/invalid central config. |
+| `base_url` | string | HTTPS origin/base path only; no user info, query, or fragment. |
+| `tenant_id` | string | Expected DTM Entra tenant public identifier. |
+| `audience` | string | Builder API application/client ID used as the backend token audience. |
+| `delegated_scope` | string | Exact `api://<audience>/<scope>` permission requested by the desktop. Never use a Graph scope/token. |
+
+Environment variables override file values: `DTM_QB_CENTRAL_ENABLED`,
+`DTM_BUILDER_API_BASE_URL`, `DTM_BUILDER_API_TENANT_ID`, `DTM_BUILDER_API_AUDIENCE`, and
+`DTM_BUILDER_API_SCOPE`. None is a secret. Enabling the flag routes only connection health and the
+read-only active-Item query centrally in the first slice; all other QBO operations fail closed.
 
 ---
 

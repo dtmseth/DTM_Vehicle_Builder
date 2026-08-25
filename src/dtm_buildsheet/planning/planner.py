@@ -7,11 +7,13 @@ from pathlib import Path
 from ..config_loader import ConfigBundle
 from ..config.loader import model_lookup_keys
 from ..domain import BuildPlan, PartInput, PlannedPart, PlannedPlacement, RenderInstance, slot_roles
+from ..domain.geometry import view_side_role
 from ..domain.rules import RuleSeverity
+from ..domain.supply import normalized_supply_fields
 from ..naming import canonical_name
 from ..rules.engine import run_rules
 from .asset_resolver import resolve_asset_path, size_class_for_part
-from .color_resolver import resolve_color_token, resolve_profile
+from .color_resolver import resolve_color_token, resolve_custom_head_color_token, resolve_profile
 from .fixture_resolver import resolve_fixture_entry
 from .layer_policy import enforced_render_layer
 from .location_resolver import (
@@ -104,6 +106,18 @@ _WARNING_BASE_NAMES = {
     "mirror warning", "pit bar warning", "lower lift gate warning", "warning",
 }
 _NUMBERED_SIREN_SLOT_INDEX = {"SIREN SPEAKER 1": 0, "SIREN SPEAKER 2": 1}
+
+
+def _concealed_mount(part, location_key: str) -> tuple[str, str]:
+    """Return normalized hidden-mount metadata for a siren speaker."""
+    if getattr(part, "part_type", "") != "siren_speaker":
+        return "", ""
+    key = canonical_name(location_key).strip().upper()
+    if "BEHIND GRILL" in key or "BEHIND GRILLE" in key:
+        return "behind_grille", "BEHIND GRILLE"
+    if "BEHIND OEM BUMPER" in key:
+        return "behind_oem_bumper", "BEHIND OEM BUMPER"
+    return "", ""
 _SETINA_PB450L_PREFIX_COUNTS: dict[str, int] = {
     # Setina PB450L lighted bumper SKU families. The friendly names in
     # parts_db are authoritative where available; these keep legacy imports
@@ -378,6 +392,34 @@ def _outer_edge_render_config(part: PartInput) -> dict:
     return {"head_count": head_count}
 
 
+def _accessory_parent_render_groups(parts: list[PartInput]) -> dict[str, dict]:
+    """Return visual grouping declared by accessory child rows.
+
+    The relationship stays on the accessory line because that is the billable
+    SKU that determines the physical housing.  THSG2 is retained as a fallback
+    for drafts saved before the picker began snapshotting accessory metadata.
+    """
+    groups: dict[str, dict] = {}
+    for child in parts:
+        if not child.include or not child.parent_line_id:
+            continue
+        config = getattr(child, "picker_config", {}) or {}
+        rule = config.get("accessory_quantity") if isinstance(config, dict) else None
+        if not isinstance(rule, dict):
+            rule = {}
+        style = str(rule.get("render_parent_group") or "").strip()
+        if not style and str(child.part_number or "").strip().upper() == "THSG2":
+            style = "dual_shroud"
+            rule = {**rule, "parent_units_per_item": 2}
+        if style != "dual_shroud":
+            continue
+        groups[child.parent_line_id] = {
+            "style": style,
+            "size": max(2, int(rule.get("parent_units_per_item") or 2)),
+        }
+    return groups
+
+
 def _views_for_location(location_key: str, view_map: dict[str, dict]) -> list[str]:
     """Return the view names where *location_key* has coordinates.
 
@@ -407,11 +449,22 @@ def _renderable_system_components(part: PartInput) -> list[PartInput]:
             continue
         detail = str(component.get("detail", "") or "")
         is_whip = "whip" in detail.casefold()
+        supply = normalized_supply_fields({
+            **component,
+            "new_or_used": component.get("new_or_used", part.new_or_used),
+            "source": component.get("source", part.source),
+            "supply_type": component.get("supply_type", part.supply_type),
+            "customer_condition": component.get("customer_condition", part.customer_condition),
+            "customer_source": component.get("customer_source", part.customer_source),
+        })
         rendered.append(PartInput(
             name="Radio Antenna",
             include=True,
-            new_or_used=str(component.get("new_or_used", "") or part.new_or_used),
-            source=part.source,
+            new_or_used=supply["new_or_used"],
+            source=supply["source"],
+            supply_type=supply["supply_type"],
+            customer_condition=supply["customer_condition"],
+            customer_source=supply["customer_source"],
             manufacturer="Laird" if is_whip else "",
             part_number="QWB800" if is_whip else "",
             location=str(component.get("location", "") or ""),
@@ -453,6 +506,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
 
     planned_parts: list[PlannedPart] = []
     warnings: list[str] = []
+    accessory_render_groups = _accessory_parent_render_groups(project.parts)
 
     # Run the rule engine; fold results into the top-level warnings list
     rule_result = run_rules(project, config.build_rules)
@@ -677,6 +731,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
         spec_images: dict = spec.get("images", {})
         product_images: dict = product_render.get("images", {})
         merged_images = {**lib_images, **spec_images, **product_images}
+        accessory_render_group = accessory_render_groups.get(part.line_id, {})
 
         is_fixture = bool(spec.get("is_fixture"))
         co_overrides = apply_co_part_rules(spec, present_part_names)
@@ -830,17 +885,68 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
             if forced_side:
                 slot_count = 1
 
+            compound_group_size = 1
+            compound_group_count = 0
+            compound_group_style = ""
+            compound_item_spacing = 1.0
+            placement_unit_count = slot_count
+            if (
+                accessory_render_group.get("style") == "dual_shroud"
+                and spec.get("render_kind") == "light"
+                and custom_point is None
+            ):
+                compound_group_size = max(2, int(accessory_render_group.get("size") or 2))
+                requested_groups = max(
+                    1,
+                    (max(1, part.quantity or 1) + compound_group_size - 1)
+                    // compound_group_size,
+                )
+                # A side profile has one visible cargo-window position even
+                # though the order contains matching driver/passenger shrouds.
+                # Front/rear mirror locations expose both group positions.
+                compound_group_count = min(requested_groups, max(1, slot_count))
+                placement_unit_count = compound_group_count
+                compound_group_style = "dual_shroud"
+                compound_item_spacing = 1.05
+
             loc_asset_rules = spec.get("location_asset_rules", {})
             if not is_fixture and location_key in loc_asset_rules:
                 effective_asset_key = loc_asset_rules[location_key]
 
-            roles = slot_roles(
+            placement_roles = slot_roles(
                 effective_pattern,
-                slot_count,
+                placement_unit_count,
                 view_config,
                 forced_side,
                 uniform_color=bool(spec.get("group_shapes", False)),
             )
+            roles = (
+                [role for role in placement_roles for _ in range(compound_group_size)]
+                if compound_group_style
+                else placement_roles
+            )
+            slot_count = len(roles)
+
+            custom_head_index = None
+            if custom_point is not None:
+                raw_index = custom_point.get("head_index", custom_point_index - 1)
+                custom_head_index = raw_index if isinstance(raw_index, int) else custom_point_index - 1
+                x = float(custom_point["x"])
+                point_count = len(free_points.get(view.lower(), []))
+                if "head_index" in custom_point and point_count > 1:
+                    midpoint = (point_count - 1) / 2
+                    if custom_head_index < midpoint:
+                        roles = [view_side_role(view_config, "negative_x")]
+                    elif custom_head_index > midpoint:
+                        roles = [view_side_role(view_config, "positive_x")]
+                    else:
+                        roles = [view_config.get("default_slot_role", "center")]
+                elif x < 0.49:
+                    roles = [view_side_role(view_config, "negative_x")]
+                elif x > 0.51:
+                    roles = [view_side_role(view_config, "positive_x")]
+                else:
+                    roles = [view_config.get("default_slot_role", "center")]
 
             position_slot_count: int | None = None
             if slot_indices:
@@ -853,13 +959,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 0.5
                 if original_location_pattern == "mirror"
                 and not forced_side
-                and (slot_count == 1 or location.get("render_slot_count"))
+                and (placement_unit_count == 1 or location.get("render_slot_count"))
                 else location["x"]
             )
             anchor_y = (
                 0.5
                 if original_location_pattern == "vertical_mirror"
-                and slot_count == 1
+                and placement_unit_count == 1
                 and not forced_side
                 else location["y"]
             )
@@ -870,6 +976,7 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 else merged_size_per_view.get(view) or None
             )
 
+            mount_visibility, callout_label = _concealed_mount(part, location_key)
             placement = PlannedPlacement(
                 part_id=spec["part_id"],
                 part_name=part.name,
@@ -908,21 +1015,33 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 flip_v=bool(location.get("flip_v", False)),
                 flip_mirrored_h=bool(location.get("flip_mirrored_h", False)),
                 behind_vehicle=bool(location.get("behind_vehicle", False)),
+                mount_visibility=mount_visibility,
+                callout_label=callout_label,
                 layer=enforced_render_layer(
                     spec["part_id"], int(location.get("layer", 0))
                 ),
                 group_shapes=(
                     quantity_policy == "quantity_as_slots"
+                    or bool(compound_group_style)
                     or bool(spec.get("group_shapes", False))
                 ),
                 is_fixture=is_fixture,
                 slot_indices=slot_indices or None,
                 position_slot_count=position_slot_count,
+                compound_group_size=compound_group_size,
+                compound_group_count=compound_group_count,
+                compound_group_style=compound_group_style,
+                compound_item_spacing=compound_item_spacing,
                 line_id=part.line_id,
             )
 
             if quantity_policy == "location_slots":
-                if custom_point is None and part.quantity and part.quantity != placement.location_slot_count and not slot_indices:
+                placement_quantity = (
+                    max(1, (part.quantity + compound_group_size - 1) // compound_group_size)
+                    if compound_group_style and part.quantity
+                    else part.quantity
+                )
+                if custom_point is None and placement_quantity and placement_quantity != placement.location_slot_count and not slot_indices:
                     is_side_light = view == "side" and spec["render_kind"] in ("light", "bar")
                     if not is_side_light and location_key not in _SUPPRESS_QTY_MISMATCH_LOCATIONS:
                         placement.warnings.append(
@@ -940,6 +1059,10 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 color_token = resolve_color_token(
                     profile_id, raw_color_token, slot_role, part, manifest
                 )
+                if custom_head_index is not None:
+                    color_token = resolve_custom_head_color_token(part, custom_head_index) or color_token
+                elif compound_group_style:
+                    color_token = resolve_custom_head_color_token(part, index - 1) or color_token
                 asset_path = resolve_asset_path(
                     render_kind=spec["render_kind"],
                     asset_key=effective_asset_key,

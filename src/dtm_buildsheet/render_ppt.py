@@ -9,10 +9,12 @@ from types import SimpleNamespace
 
 from lxml import etree
 from pptx import Presentation
+from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
-from pptx.util import Inches
+from pptx.util import Inches, Pt
 
-from .domain.geometry import slot_relative_positions
+from .domain.geometry import compound_slot_relative_positions, slot_relative_positions
 from .paths import AppPaths, ensure_workspace
 from .ppt_helpers import (
     INLINE_RENDER_FAILURE_LIMIT,
@@ -55,6 +57,9 @@ def _project_shim(plan) -> SimpleNamespace:
             lens         = raw.lens,
             new_or_used  = raw.new_or_used,
             source       = raw.source,
+            supply_type  = raw.supply_type,
+            customer_condition = raw.customer_condition,
+            customer_source = raw.customer_source,
             location     = raw.location,
             category     = pp.category or "",
             render_kind  = pp.render_kind or "",
@@ -67,8 +72,10 @@ def _legend_item(part_name: str, location: str = "", notes: str = "",
                  manufacturer: str = "", part_number: str = "",
                  color: str = "", lens: str = "",
                  new_or_used: str = "", source: str = "",
+                 supply_type: str = "", customer_condition: str = "",
+                 customer_source: str = "",
                  is_reused: bool = False, line_id: str = "",
-                 quantity: object = "") -> SimpleNamespace:
+                 quantity: object = "", comment: str = "") -> SimpleNamespace:
     return SimpleNamespace(
         name         = part_name,
         location     = location,
@@ -80,6 +87,10 @@ def _legend_item(part_name: str, location: str = "", notes: str = "",
         lens         = lens,
         new_or_used  = new_or_used,
         source       = source,
+        supply_type  = supply_type,
+        customer_condition = customer_condition,
+        customer_source = customer_source,
+        comment      = comment,
         is_reused    = is_reused,
         line_id      = line_id,
         quantity     = quantity,
@@ -192,6 +203,47 @@ def _apply_shape_transforms(shape, rotation: float, flip_h: bool, flip_v: bool) 
         xfrm.set("flipH", "1")
     if flip_v:
         xfrm.set("flipV", "1")
+
+
+def _set_picture_opacity(shape, opacity: float) -> None:
+    """Apply a deterministic DrawingML alpha value to one picture."""
+    blip = shape._element.find(".//" + qn("a:blip"))
+    if blip is None:
+        return
+    for old in blip.findall(qn("a:alphaModFix")):
+        blip.remove(old)
+    alpha = etree.SubElement(blip, qn("a:alphaModFix"))
+    alpha.set("amt", str(int(max(0.0, min(1.0, opacity)) * 100000)))
+
+
+def _add_concealed_mount_callout(slide, x: int, y: int, label: str):
+    """Add a compact red shop callout next to a hidden speaker icon."""
+    width = Inches(1.42)
+    height = Inches(0.24)
+    shape = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE,
+        x - width // 2,
+        y,
+        width,
+        height,
+    )
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor(0xB8, 0x3A, 0x3A)
+    shape.line.fill.background()
+    tf = shape.text_frame
+    tf.clear()
+    tf.margin_left = Inches(0.04)
+    tf.margin_right = Inches(0.04)
+    tf.margin_top = 0
+    tf.margin_bottom = 0
+    p = tf.paragraphs[0]
+    p.alignment = 1
+    run = p.add_run()
+    run.text = label
+    run.font.size = Pt(7)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    return shape
 
 
 def _vertical_mirror_slot_is_reflected(placement, instance_index: int) -> bool:
@@ -556,7 +608,24 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                 else:
                     v_spacing_emu = h_spacing_emu
 
-                if placement.slot_indices and placement.position_slot_count:
+                if placement.compound_group_style and placement.compound_group_count:
+                    left, top, width, height = img_box
+                    norm_positions = compound_slot_relative_positions(
+                        placement.pattern,
+                        placement.compound_group_count,
+                        placement.compound_group_size,
+                        len(placement.instances),
+                        (base_cx - left) / width,
+                        (base_cy - top) / height,
+                        h_spacing_emu / width,
+                        (icon_w_emu * placement.compound_item_spacing) / width,
+                        v_spacing=v_spacing_emu / height,
+                    )
+                    positions = [
+                        (left + int(nx * width), top + int(ny * height))
+                        for nx, ny in norm_positions
+                    ]
+                elif placement.slot_indices and placement.position_slot_count:
                     all_positions = _slot_positions(
                         placement.pattern, placement.position_slot_count,
                         base_cx, base_cy, img_box,
@@ -579,6 +648,44 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     ]
 
                 placement_shapes: list = []
+
+                # The shroud itself is a visible physical part. Draw its dark
+                # rounded housing behind each pair instead of implying the
+                # accessory only through two nearby light icons.
+                if placement.compound_group_style == "dual_shroud":
+                    group_size = max(2, placement.compound_group_size)
+                    for group_start in range(0, len(positions), group_size):
+                        group_positions = positions[group_start:group_start + group_size]
+                        group_instances = placement.instances[group_start:group_start + group_size]
+                        if not group_positions or not group_instances:
+                            continue
+                        sizes = [
+                            _instance_icon_size(placement, part_size, instance, view,
+                                                active_paths, equip_scale)
+                            for instance in group_instances
+                        ]
+                        left_edge = min(
+                            point[0] - Inches(size[0]) // 2
+                            for point, size in zip(group_positions, sizes)
+                        )
+                        right_edge = max(
+                            point[0] + Inches(size[0]) // 2
+                            for point, size in zip(group_positions, sizes)
+                        )
+                        center_y = sum(point[1] for point in group_positions) // len(group_positions)
+                        housing_h = max(Inches(size[1]) for size in sizes) + Inches(0.10)
+                        pad_x = Inches(0.07)
+                        housing = slide.shapes.add_shape(
+                            MSO_SHAPE.ROUNDED_RECTANGLE,
+                            left_edge - pad_x,
+                            center_y - housing_h // 2,
+                            right_edge - left_edge + pad_x * 2,
+                            housing_h,
+                        )
+                        housing.fill.background()
+                        housing.line.color.rgb = RGBColor(0x1F, 0x29, 0x37)
+                        housing.line.width = Pt(1.7)
+                        placement_shapes.append(housing)
 
                 for instance_index, (instance, (px, py)) in enumerate(
                     zip(placement.instances, positions)
@@ -664,9 +771,20 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     )
                     _apply_shape_transforms(pic, inst_rot, inst_flip_h, placement.flip_v)
 
+                    if placement.mount_visibility:
+                        _set_picture_opacity(pic, 0.48)
+
                     layer = getattr(placement, "layer", 0)
                     placement_shapes.append(pic)
                     rendered_placement_keys.add(_placement_key(pp, placement))
+                    if instance_index == 0 and placement.callout_label:
+                        callout = _add_concealed_mount_callout(
+                            slide,
+                            ax,
+                            ay + ih // 2 + Inches(0.03),
+                            placement.callout_label,
+                        )
+                        rendered_part_elements.append((callout._element, layer + 1))
 
                 if placement.group_shapes and len(placement_shapes) >= 2:
                     group_element = _group_shapes(slide, placement_shapes)
@@ -709,6 +827,10 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                         lens         = raw.lens,
                         new_or_used  = raw.new_or_used,
                         source       = raw.source or "",
+                        supply_type  = raw.supply_type,
+                        customer_condition = raw.customer_condition,
+                        customer_source = raw.customer_source,
+                        comment       = getattr(raw, "comment", ""),
                         is_reused    = reused,
                         line_id      = line_id,
                         quantity     = raw.quantity,

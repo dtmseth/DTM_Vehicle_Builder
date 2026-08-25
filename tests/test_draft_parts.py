@@ -21,9 +21,11 @@ from dtm_buildsheet.inputs.project_drafts import (
 from dtm_buildsheet.app.services.draft_service import (
     handle_add_custom_part_to_draft,
     handle_add_part_to_draft,
+    handle_apply_preset_to_draft,
     handle_list_custom_parts,
     handle_remove_part_from_draft,
     handle_replace_console_setup_parts,
+    handle_replace_location_allocation,
     handle_update_part_in_draft,
     handle_update_custom_part_in_draft,
 )
@@ -38,7 +40,14 @@ def _paths(tmp_path: Path) -> AppPaths:
     d.mkdir()
     config = tmp_path / "config"
     config.mkdir()
-    return AppPaths(workspace_dir=tmp_path, workspace_drafts_dir=d, workspace_config_dir=config)
+    presets = tmp_path / "presets"
+    presets.mkdir()
+    return AppPaths(
+        workspace_dir=tmp_path,
+        workspace_drafts_dir=d,
+        workspace_config_dir=config,
+        workspace_presets_dir=presets,
+    )
 
 
 def _saved_draft(paths: AppPaths, parts: list[DraftPart] | None = None) -> BuildDraft:
@@ -55,6 +64,65 @@ def _part(**kwargs) -> DraftPart:
     defaults = dict(name="Light Bar", quantity=1, line_id=str(uuid.uuid4()))
     defaults.update(kwargs)
     return DraftPart(**defaults)
+
+
+def test_apply_preset_replaces_parts_and_placements_but_preserves_build_notes(tmp_path):
+    paths = _paths(tmp_path)
+    draft = new_draft(
+        vehicle_info={"VehicleType": "PIU", "Agency": "Test PD"},
+        parts=[_part(name="Old Light", part_number="OLD-1")],
+        notes={"CUSTOMER REQUESTS": ["Keep this note"]},
+        project_notes="Shared project instruction",
+    )
+    draft.placement_overrides = {"old:front": {"x": 0.1}}
+    save_draft(draft, paths.workspace_drafts_dir)
+
+    preset = {
+        "schema_version": 4,
+        "preset_id": "patrol-piu",
+        "label": "Test PD Patrol PIU",
+        "agency_ids": [],
+        "build_types": ["Patrol"],
+        "vehicle_types": ["PIU"],
+        "parts": [{
+            "name": "Preset Light",
+            "manufacturer": "Whelen",
+            "part_number": "NEW-1",
+            "part_type": "warning_light",
+            "quantity": 2,
+            "components": [{"part_number": "NEW-1", "quantity": 2}],
+            "picker_config": {"mode": "duo"},
+        }],
+        "placement_overrides": {"preset:front": {"x": 0.25, "y": 0.5}},
+    }
+    (paths.workspace_presets_dir / "patrol-piu.json").write_text(
+        json.dumps(preset), encoding="utf-8"
+    )
+
+    result = handle_apply_preset_to_draft(
+        draft.draft_id, {"preset_id": "patrol-piu"}, paths
+    )
+
+    assert result == {
+        "ok": True,
+        "draft_id": draft.draft_id,
+        "preset_id": "patrol-piu",
+        "preset_label": "Test PD Patrol PIU",
+        "part_count": 1,
+    }
+    loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+    assert [(part.name, part.part_number, part.quantity) for part in loaded.parts] == [
+        ("Preset Light", "NEW-1", 2),
+    ]
+    assert loaded.parts[0].components == [{"part_number": "NEW-1", "quantity": 2}]
+    assert loaded.parts[0].picker_config == {"mode": "duo"}
+    assert loaded.placement_overrides == {"preset:front": {"x": 0.25, "y": 0.5}}
+    assert loaded.vehicle_info["Agency"] == "Test PD"
+    assert loaded.notes == {"CUSTOMER REQUESTS": ["Keep this note"]}
+    assert loaded.project_notes == "Shared project instruction"
+    assert loaded.user_modified is True
+    assert loaded.audit_trail[-1]["action"] == "preset_loaded"
+    assert loaded.audit_trail[-1]["preset_id"] == "patrol-piu"
 
 
 # ── DraftPart.line_id ──────────────────────────────────────────────────────────
@@ -74,6 +142,46 @@ class TestLineId:
         dp = DraftPart(name="X", include=False, quantity=2)
         assert dp.name == "X"
         assert dp.quantity == 2
+
+
+def test_location_allocation_replaces_linked_rows_atomically(tmp_path):
+    paths = _paths(tmp_path)
+    draft = _saved_draft(paths)
+    rows = [
+        {
+            "name": "Rear Seat Cargo Lights", "part_number": "3SC0CDCR",
+            "manufacturer": "Whelen", "part_type": "rear_seat_cargo_lights",
+            "quantity": quantity, "location": location, "new_or_used": "New",
+            "comment": f"Notes for {location}",
+            "picker_config": {"location_allocation": {"quantities": {
+                "Lower Kick Panels": 2, "Prisoner Headliner": 3,
+            }, "comments": {
+                "Lower Kick Panels": "Notes for Lower Kick Panels",
+                "Prisoner Headliner": "Notes for Prisoner Headliner",
+            }}},
+        }
+        for location, quantity in (("Lower Kick Panels", 2), ("Prisoner Headliner", 3))
+    ]
+    created = handle_replace_location_allocation(draft.draft_id, {"rows": rows}, paths)
+    assert created["ok"]
+    batch_id = created["batch_id"]
+    loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+    assert [(part.location, part.quantity) for part in loaded.parts] == [
+        ("Lower Kick Panels", 2), ("Prisoner Headliner", 3),
+    ]
+    assert [part.comment for part in loaded.parts] == [
+        "Notes for Lower Kick Panels", "Notes for Prisoner Headliner",
+    ]
+    assert {part.picker_config["location_batch_id"] for part in loaded.parts} == {batch_id}
+
+    replacement = [{**rows[1], "quantity": 5, "picker_config": rows[1]["picker_config"]}]
+    updated = handle_replace_location_allocation(draft.draft_id, {
+        "batch_id": batch_id, "edit_line_id": created["line_id"], "rows": replacement,
+    }, paths)
+    assert updated["ok"]
+    loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+    assert [(part.location, part.quantity) for part in loaded.parts] == [("Prisoner Headliner", 5)]
+    assert loaded.parts[0].comment == "Notes for Prisoner Headliner"
 
 
 # ── _ensure_line_ids ───────────────────────────────────────────────────────────
@@ -205,11 +313,63 @@ class TestAddPart:
         paths = _paths(tmp_path)
         draft = _saved_draft(paths)
         result = handle_add_part_to_draft(
-            draft.draft_id, {"name": "Siren", "new_or_used": "Used"}, paths,
+            draft.draft_id, {
+                "name": "Siren", "supply_type": "customer_supplied",
+                "customer_condition": "used", "customer_source": "Retired unit",
+            }, paths,
         )
         assert result["ok"] is True
         loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
         assert loaded.parts[0].new_or_used == "Used"
+        assert loaded.parts[0].customer_source == "Retired unit"
+
+    def test_new_customer_used_part_requires_source(self, tmp_path):
+        paths = _paths(tmp_path)
+        draft = _saved_draft(paths)
+        result = handle_add_part_to_draft(draft.draft_id, {
+            "name": "Siren", "supply_type": "customer_supplied",
+            "customer_condition": "used",
+        }, paths)
+        assert result["ok"] is False
+        assert "where" in result["error"] and "come from" in result["error"]
+
+    def test_source_less_legacy_used_requires_source_on_next_edit(self, tmp_path):
+        paths = _paths(tmp_path)
+        draft = _saved_draft(paths)
+        # Compatibility clients can still create/read a legacy row. Loading
+        # exposes its canonical Source-needed meaning without rewriting it.
+        added = handle_add_part_to_draft(
+            draft.draft_id, {"name": "Legacy radio", "new_or_used": "Used"}, paths,
+        )
+        assert added["ok"] is True
+        loaded = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+        assert loaded.parts[0].supply_type == "customer_supplied"
+        assert loaded.parts[0].customer_condition == "used"
+        assert loaded.parts[0].customer_source == ""
+
+        update = handle_update_part_in_draft(
+            draft.draft_id, added["line_id"], {"quantity": 2}, paths,
+        )
+        assert update["ok"] is False
+        assert "where" in update["error"] and "come from" in update["error"]
+
+        repaired = handle_update_part_in_draft(
+            draft.draft_id, added["line_id"], {"customer_source": "Old Unit 3"}, paths,
+        )
+        assert repaired["ok"] is True
+
+    def test_guided_component_customer_used_requires_source(self, tmp_path):
+        paths = _paths(tmp_path)
+        draft = _saved_draft(paths)
+        result = handle_add_part_to_draft(draft.draft_id, {
+            "name": "Radio", "supply_type": "new",
+            "components": [{
+                "label": "Radio antenna", "supply_type": "customer_supplied",
+                "customer_condition": "used",
+            }],
+        }, paths)
+        assert result["ok"] is False
+        assert result["error"].startswith("Radio antenna:")
 
     def test_returns_draft_summary(self, tmp_path):
         paths = _paths(tmp_path)

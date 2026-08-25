@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import logging
 import traceback
+import uuid
 from decimal import Decimal, InvalidOperation
+
+from ...domain.supply import supply_state
 
 _log = logging.getLogger(__name__)
 
@@ -72,6 +75,20 @@ def load_draft_for_request(
         return load_draft(draft_id, paths.workspace_drafts_dir)
 
 
+def _finalized_edit_error(draft_id: str, paths: AppPaths) -> dict | None:
+    """Block source changes until the user explicitly reopens final sign-off."""
+    from .finalization_service import finalized_owner_for_draft
+    owner = finalized_owner_for_draft(draft_id, paths)
+    if owner is None:
+        return None
+    return {
+        "ok": False,
+        "error": "build_finalized",
+        "message": "This build is finalized. Reopen it with a reason before editing.",
+        "finalized_owner": owner,
+    }
+
+
 def _matching_single_speaker(draft: BuildDraft, part: DraftPart) -> DraftPart | None:
     """Find the one compatible speaker line that can become a pair.
 
@@ -96,7 +113,7 @@ def _matching_single_speaker(draft: BuildDraft, part: DraftPart) -> DraftPart | 
             existing.part_number.strip().upper() == part.part_number.strip().upper()
             and existing.location.strip().upper() == part.location.strip().upper()
             and existing.manufacturer.strip().upper() == part.manufacturer.strip().upper()
-            and existing.new_or_used.strip().upper() == part.new_or_used.strip().upper()
+            and supply_state(existing) == supply_state(part)
         ):
             return existing
     return None
@@ -175,6 +192,8 @@ def handle_add_custom_part_to_draft(draft_id: str, body: dict, paths: AppPaths) 
         clean_id = safe_id(draft_id)
         if not clean_id or clean_id != draft_id:
             return {"ok": False, "error": "invalid draft_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         fields, error = _custom_part_fields(body)
         if error:
             return {"ok": False, "error": error}
@@ -248,6 +267,8 @@ def handle_update_custom_part_in_draft(
     try:
         if safe_id(draft_id) != draft_id or safe_id(line_id) != line_id:
             return {"ok": False, "error": "invalid id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         fields, error = _custom_part_fields(body)
         if error:
             return {"ok": False, "error": error}
@@ -308,6 +329,8 @@ def handle_save_draft(body: dict, paths: AppPaths) -> dict:
     try:
         draft_id = body.get("draft_id")
         if draft_id:
+            if blocked := _finalized_edit_error(str(draft_id), paths):
+                return blocked
             try:
                 draft = load_draft_for_request(draft_id, paths)
             except FileNotFoundError:
@@ -333,8 +356,64 @@ def handle_save_draft(body: dict, paths: AppPaths) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
+def handle_apply_preset_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict:
+    """Replace one draft's equipment and placements with a preset snapshot.
+
+    Vehicle identity and build/project notes belong to the current unit, so a
+    preset load deliberately leaves those fields untouched.  Keeping this as
+    one server-side operation also prevents a partial replacement if preset
+    parsing fails or the build has already been finalized.
+    """
+    try:
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
+        preset_id = str(body.get("preset_id") or "").strip()
+        if not preset_id:
+            return {"ok": False, "error": "preset_id required"}
+
+        from datetime import datetime, timezone
+        from .preset_service import load_preset_dict
+
+        preset = load_preset_dict(preset_id, paths)
+        raw_parts = preset.get("parts") or []
+        raw_overrides = preset.get("placement_overrides") or {}
+        if not isinstance(raw_parts, list):
+            return {"ok": False, "error": "Preset parts must be a list"}
+        if not isinstance(raw_overrides, dict):
+            return {"ok": False, "error": "Preset placement overrides must be an object"}
+
+        draft = load_draft_for_request(draft_id, paths)
+        draft.parts = [draft_part_from_payload(part, paths) for part in raw_parts]
+        draft.placement_overrides = dict(raw_overrides)
+        draft.validation_messages = []
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "preset_loaded",
+            "preset_id": preset_id,
+            "preset_label": str(preset.get("label") or preset_id),
+            "part_count": len(draft.parts),
+            "at": datetime.now(timezone.utc).isoformat(),
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "preset_id": preset_id,
+            "preset_label": str(preset.get("label") or preset_id),
+            "part_count": len(draft.parts),
+        }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Preset or draft not found: {draft_id}"}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 def handle_delete_draft(draft_id: str, paths: AppPaths) -> dict:
     try:
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         delete_draft(draft_id, paths.workspace_drafts_dir)
         return {"ok": True}
     except FileNotFoundError:
@@ -350,6 +429,8 @@ def handle_save_override(draft_id: str, body: dict, paths: AppPaths) -> dict:
     An empty override dict removes that key (treated as a reset).
     """
     try:
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         draft = load_draft_for_request(draft_id, paths)
         key = body.get("key", "")
         override = body.get("override", {})
@@ -376,6 +457,8 @@ def handle_save_overrides_batch(draft_id: str, body: dict, paths: AppPaths) -> d
     Sets user_modified when at least one non-empty override is written.
     """
     try:
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         draft = load_draft_for_request(draft_id, paths)
         overrides = body.get("overrides", {})
         if not isinstance(overrides, dict):
@@ -506,6 +589,8 @@ def handle_replace_console_setup_parts(
     single local write and a single cloud-mirror event.
     """
     try:
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         clean_draft_id = safe_id(draft_id)
         clean_parent_line_id = safe_id(parent_line_id)
         if not clean_draft_id or clean_draft_id != draft_id:
@@ -633,10 +718,12 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
         clean_id = safe_id(draft_id)
         if not clean_id or clean_id != draft_id:
             return {"ok": False, "error": "invalid draft_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         if not body.get("name", "").strip():
             return {"ok": False, "error": "name is required"}
         draft = load_draft_for_request(draft_id, paths)
-        part = draft_part_from_payload(body, paths)
+        part = draft_part_from_payload(body, paths, require_complete_supply=True)
         matching_speaker = _matching_single_speaker(draft, part)
         if matching_speaker is not None:
             matching_speaker.quantity = 2
@@ -681,6 +768,76 @@ def handle_add_part_to_draft(draft_id: str, body: dict, paths: AppPaths) -> dict
         return {"ok": False, "error": str(exc)}
 
 
+def handle_replace_location_allocation(draft_id: str, body: dict, paths: AppPaths) -> dict:
+    """Atomically replace every line in one multi-location picker batch."""
+    try:
+        if safe_id(draft_id) != draft_id:
+            return {"ok": False, "error": "invalid draft_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
+        rows = body.get("rows")
+        if not isinstance(rows, list) or not rows or len(rows) > 20:
+            return {"ok": False, "error": "one to twenty allocated location rows are required"}
+        edit_line_id = str(body.get("edit_line_id") or "").strip()
+        requested_batch_id = str(body.get("batch_id") or "").strip()
+        if edit_line_id and safe_id(edit_line_id) != edit_line_id:
+            return {"ok": False, "error": "invalid edit_line_id"}
+        batch_id = requested_batch_id or str(uuid.uuid4())
+        if safe_id(batch_id) != batch_id:
+            return {"ok": False, "error": "invalid batch_id"}
+
+        prepared: list[DraftPart] = []
+        for raw in rows:
+            if not isinstance(raw, dict) or not str(raw.get("name") or "").strip():
+                return {"ok": False, "error": "every allocated row requires a name"}
+            payload = dict(raw)
+            picker_config = dict(payload.get("picker_config") or {})
+            picker_config["location_batch_id"] = batch_id
+            payload["picker_config"] = picker_config
+            prepared.append(draft_part_from_payload(
+                payload, paths, require_complete_supply=True,
+            ))
+
+        draft = load_draft_for_request(draft_id, paths)
+        removed_line_ids = {
+            part.line_id for part in draft.parts
+            if (
+                str((part.picker_config or {}).get("location_batch_id") or "") == batch_id
+                or (edit_line_id and part.line_id == edit_line_id)
+            )
+        }
+        if edit_line_id and not removed_line_ids:
+            return {"ok": False, "error": f"Part not found: {edit_line_id}"}
+        draft.parts = [
+            part for part in draft.parts
+            if part.line_id not in removed_line_ids and part.parent_line_id not in removed_line_ids
+        ]
+        draft.parts.extend(prepared)
+        renumber_parts(draft)
+        draft.user_modified = True
+        draft.audit_trail.append({
+            "action": "location_allocation_replaced",
+            "batch_id": batch_id,
+            "removed_count": len(removed_line_ids),
+            "added_count": len(prepared),
+            "at": draft.updated_at,
+        })
+        save_draft(draft, paths.workspace_drafts_dir)
+        return {
+            "ok": True,
+            "draft_id": draft_id,
+            "batch_id": batch_id,
+            "line_ids": [part.line_id for part in prepared],
+            "line_id": prepared[0].line_id,
+            "name": prepared[0].name,
+            "draft_summary": draft_summary(draft),
+        }
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Draft not found: {draft_id}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 def handle_update_part_in_draft(draft_id: str, line_id: str, body: dict, paths: AppPaths) -> dict:
     """Merge updated fields onto an existing part identified by line_id."""
     try:
@@ -690,6 +847,8 @@ def handle_update_part_in_draft(draft_id: str, line_id: str, body: dict, paths: 
         clean_line_id = safe_id(line_id)
         if not clean_line_id or clean_line_id != line_id:
             return {"ok": False, "error": "invalid line_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         draft = load_draft_for_request(draft_id, paths)
         result = find_part_by_line_id(draft, line_id)
         if result is None:
@@ -700,7 +859,9 @@ def handle_update_part_in_draft(draft_id: str, line_id: str, body: dict, paths: 
         merged = asdict(existing)
         merged.update({k: v for k, v in body.items() if k != "line_id"})
         merged["line_id"] = line_id
-        draft.parts[idx] = draft_part_from_payload(merged, paths)
+        draft.parts[idx] = draft_part_from_payload(
+            merged, paths, require_complete_supply=True,
+        )
         draft.user_modified = True
         draft.audit_trail.append({
             "action": "part_updated",
@@ -724,6 +885,8 @@ def handle_remove_part_from_draft(draft_id: str, line_id: str, paths: AppPaths) 
         clean_line_id = safe_id(line_id)
         if not clean_line_id or clean_line_id != line_id:
             return {"ok": False, "error": "invalid line_id"}
+        if blocked := _finalized_edit_error(draft_id, paths):
+            return blocked
         draft = load_draft_for_request(draft_id, paths)
         result = find_part_by_line_id(draft, line_id)
         if result is None:

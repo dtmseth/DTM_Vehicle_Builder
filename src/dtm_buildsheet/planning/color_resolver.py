@@ -25,6 +25,35 @@ def _normalize_token(value: str) -> str:
     return token.strip("-")
 
 
+_CUSTOM_COLOR_ORDER = {color: index for index, color in enumerate(
+    ("red", "blue", "white", "amber", "green")
+)}
+
+
+def resolve_custom_head_color_token(part, head_index: int) -> str:
+    """Return the exact palette saved for one picker-configured head.
+
+    Free-position placements are rendered one point at a time, so their
+    geometry no longer carries a multi-slot index.  The persisted head_index
+    connects each point back to the picker palette and prevents DUO/custom
+    heads from collapsing to a generic center color.
+    """
+    picker_config = getattr(part, "picker_config", {}) or {}
+    if not isinstance(picker_config, dict) or picker_config.get("mode") != "custom":
+        return ""
+    palettes = picker_config.get("custom")
+    if not isinstance(palettes, list) or not (0 <= head_index < len(palettes)):
+        return ""
+    raw = palettes[head_index]
+    if not isinstance(raw, list):
+        return ""
+    colors = sorted(
+        {_normalize_token(str(color)) for color in raw if _normalize_token(str(color))},
+        key=lambda color: (_CUSTOM_COLOR_ORDER.get(color, 99), color),
+    )
+    return "-".join(colors)
+
+
 def resolve_profile(part, spec: dict, asset_manifest: dict) -> tuple[str, str]:
     """Return (profile_id, raw_color_token) for a part."""
     color_profiles = asset_manifest.get("color_profiles", {})

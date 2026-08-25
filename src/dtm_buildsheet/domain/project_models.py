@@ -21,6 +21,7 @@ class CustomerInfo:
 @dataclass
 class EquipmentPreferences:
     lighting_brands: list[str] = field(default_factory=list)
+    lighting_mode: str = "duo"
     camera_brand: str = ""
     push_bumper_brand: str = ""
     cage_brand: str = ""
@@ -47,6 +48,15 @@ class IndividualUnit:
     output_path: str = ""
     confirmed: bool = False
     confirmed_at: str = ""
+    status: str = "draft"
+    finalized_at: str = ""
+    finalized_by: str = ""
+    finalized_draft_fingerprint: str = ""
+    final_check_version: str = ""
+    finalization_acknowledgements: list[dict[str, Any]] = field(default_factory=list)
+    reopened_at: str = ""
+    reopened_by: str = ""
+    reopen_reason: str = ""
     # ISO timestamp of the last successful PPTX render. Compared against
     # max(project.updated_at, draft.updated_at) to detect a stale output,
     # and against the PPTX file's mtime to detect a manual PowerPoint edit.
@@ -63,6 +73,8 @@ class IndividualUnit:
     qb_project_id: str = ""
     qb_project_name: str = ""
     qb_estimate_id: str = ""
+    qb_estimate_snapshot: dict[str, Any] = field(default_factory=dict)
+    qb_estimate_snapshot_at: str = ""
     qb_invoice_id: str = ""
 
 
@@ -81,6 +93,15 @@ class BuildUnit:
     pdf_path: str = ""
     last_exported_at: str = ""
     last_exported_by: str = ""
+    status: str = "draft"
+    finalized_at: str = ""
+    finalized_by: str = ""
+    finalized_draft_fingerprint: str = ""
+    final_check_version: str = ""
+    finalization_acknowledgements: list[dict[str, Any]] = field(default_factory=list)
+    reopened_at: str = ""
+    reopened_by: str = ""
+    reopen_reason: str = ""
 
 
 @dataclass

@@ -14,10 +14,12 @@ import pytest
 from dtm_buildsheet.app.services import agency_service
 from dtm_buildsheet.app.services.agency_service import (
     handle_delete_agency,
+    handle_list_agency_choices,
     handle_list_agencies,
     handle_save_agency,
     handle_save_agency_default_preferences,
     handle_search_agencies,
+    load_agency_choices,
     load_agencies,
 )
 from dtm_buildsheet.paths import AppPaths
@@ -71,6 +73,7 @@ class TestPerRecordStorage:
             "name": "Alpha PD",
             "default_preferences": {
                 "lighting_brands": ["Whelen"],
+                "lighting_mode": "trio",
                 "camera_brand": "Axon",
                 "push_bumper_brand": "Setina",
             },
@@ -79,6 +82,7 @@ class TestPerRecordStorage:
         agency = load_agencies(paths)[0]
         assert agency.agency_id == saved["agency"]["agency_id"]
         assert agency.default_preferences.lighting_brands == ["Whelen"]
+        assert agency.default_preferences.lighting_mode == "trio"
         assert agency.default_preferences.camera_brand == "Axon"
         assert agency.default_preferences.push_bumper_brand == "Setina"
 
@@ -118,6 +122,7 @@ class TestPerRecordStorage:
             "agency_id": saved["agency"]["agency_id"],
             "default_preferences": {
                 "lighting_brands": ["Code 3"],
+                "lighting_mode": "trio",
                 "camera_brand": "Axon",
                 "console_brand": "Havis",
             },
@@ -127,6 +132,7 @@ class TestPerRecordStorage:
         agency = load_agencies(paths)[0]
         assert agency.contact_email == "chief@alpha.gov"
         assert agency.default_preferences.lighting_brands == ["Code 3"]
+        assert agency.default_preferences.lighting_mode == "trio"
         assert agency.default_preferences.camera_brand == "Axon"
         assert agency.default_preferences.console_brand == "Havis"
 
@@ -275,3 +281,45 @@ class TestHandleListAgencies:
         assert res["ok"] is True
         assert "agencies" in res
         assert res["agencies"][0]["name"] == "Alpha PD"
+
+
+class TestAgencyChoices:
+    def test_includes_project_identity_missing_from_agency_records(self, tmp_path):
+        projects_dir = tmp_path / "projects"
+        project_dir = projects_dir / "project-1"
+        project_dir.mkdir(parents=True)
+        (project_dir / "project.json").write_text(json.dumps({
+            "project_id": "project-1",
+            "customer": {
+                "agency_id": "project-agency-id",
+                "agency": "Project-Only Agency",
+            },
+        }), "utf-8")
+        paths = AppPaths(workspace_dir=tmp_path, workspace_projects_dir=projects_dir)
+        handle_save_agency({"agency_id": "saved-id", "name": "Saved Agency"}, paths)
+
+        choices = load_agency_choices(paths)
+        assert [(choice["agency_id"], choice["name"], choice["choice_source"]) for choice in choices] == [
+            ("project-agency-id", "Project-Only Agency", "project"),
+            ("saved-id", "Saved Agency", "agency"),
+        ]
+        response = handle_list_agency_choices(paths)
+        assert response["ok"] is True
+        assert response["total"] == 2
+
+    def test_persisted_agency_wins_over_project_copy(self, tmp_path):
+        projects_dir = tmp_path / "projects"
+        project_dir = projects_dir / "project-1"
+        project_dir.mkdir(parents=True)
+        (project_dir / "project.json").write_text(json.dumps({
+            "customer": {"agency_id": "same-id", "agency": "Old Project Name"},
+        }), "utf-8")
+        paths = AppPaths(workspace_dir=tmp_path, workspace_projects_dir=projects_dir)
+        handle_save_agency({"agency_id": "same-id", "name": "Current Agency Name"}, paths)
+
+        choices = load_agency_choices(paths)
+        assert choices == [{
+            "agency_id": "same-id",
+            "name": "Current Agency Name",
+            "choice_source": "agency",
+        }]

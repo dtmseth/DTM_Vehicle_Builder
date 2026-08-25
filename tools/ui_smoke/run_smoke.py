@@ -82,6 +82,13 @@ def run_child(flow_name: str) -> int:
         except Exception as exc:  # noqa: BLE001 — reported in the verdict
             flow_error = f"{type(exc).__name__}: {exc}"
         finally:
+            # Some project-detail flows leave long-lived polling/fetch work in
+            # the page. Navigate away first so Chromium can shut down cleanly
+            # instead of waiting indefinitely on those page connections.
+            try:
+                page.goto("about:blank", wait_until="commit", timeout=5000)
+            except Exception:
+                pass
             browser.close()
 
     verdict = {

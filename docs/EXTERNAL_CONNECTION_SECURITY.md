@@ -1,7 +1,7 @@
 # External Connection Security Standards
 
 **Applies to**: All external API integrations in DTM Vehicle Builder  
-**Last updated**: 2026-08-13
+**Last updated**: 2026-08-19
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
 
@@ -14,6 +14,17 @@ This document defines the mandatory security standard for every external connect
 | Microsoft 365 / SharePoint | OAuth 2.0 via MSAL + OS keychain | ✅ Compliant |
 | GitHub | GitHub Actions secrets (server-side only) | ✅ Compliant |
 | QuickBooks Online | OAuth 2.0; per-user tokens in OS keychain; app secret in stateless Netlify broker environment | ✅ Compliant |
+
+The planned multi-user QuickBooks architecture replaces the desktop-held QBO tokens with one
+owner-authorized company connection in an authenticated backend. That target is documented in
+`NEXT_FEATURE_PLAN.md` Phase 3A; the table above describes the current production implementation.
+
+The default-off implementation is local and undeployed. In addition to the gateway/core boundary it
+now includes a Netlify adapter for production Entra JWKS verification, application-encrypted Blob
+credentials, strong-consistency ETag refresh locking, one-time Admin OAuth state, append-only audit,
+and narrow HTTP handlers. Central mode must remain disabled until Entra registration, protected
+environment configuration, isolated read-only comparison, retention/recovery review, and owner
+approval are complete.
 
 ---
 
@@ -46,6 +57,30 @@ Reference implementations:
 - QuickBooks secret blob: `adapters/quickbooks/credential_store.py` (`QuickBooksCredentialStore`)
 
 When the keychain backend is unavailable (e.g. headless Linux without libsecret), fall back to a process-lifetime **in-memory** store — never plaintext on disk.
+
+### Server-side OAuth credential exception
+
+When an integration is intentionally centralized, provider tokens must remain entirely server-side.
+Store them with application-level authenticated encryption whose key is held only by a protected
+deployment secret facility (or a managed key service such as Azure Key Vault), use an atomic durable
+store for the latest rotating token value, and restrict retrieval to the service runtime. Do not
+copy a centralized token into OS keychains, SharePoint, desktop configuration, browser storage, or
+logs. A rotating refresh token must have a single concurrency-safe writer per provider account/realm.
+
+Desktop users authenticate to the central API with a token issued specifically for that API. The
+API validates signature, audience, tenant, expiry, subject, and required app role/group. A Microsoft
+Graph access token is not a substitute for a Builder API access token.
+
+Hermetic central-service adapters must make production use impossible, not merely discouraged. The
+in-memory credential, lock, identity, audit, and QBO adapters in `app/quickbooks_central/hermetic.py`
+raise during construction for any environment other than `test` or `development`.
+
+The selected Netlify adapter uses a dedicated 256-bit `QBO_TOKEN_ENCRYPTION_KEY` from protected
+environment configuration and stores only AES-256-GCM envelopes in Netlify Blobs. Credentials use
+strong reads and conditional ETags; refresh acquires a short per-realm lease, reloads the credential,
+and atomically writes the newest rotated token before release. OAuth state is encrypted, expires in
+ten minutes, and is consumed with compare-and-swap. The encryption key must have an owner-controlled
+recovery copy and reviewed rotation procedure before production authorization.
 
 ### Rule: Non-Secret Identifiers May Live in Plain JSON
 
@@ -206,6 +241,10 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | HTTPS relay for production redirect URI | Pending | Hosted relay to deploy before go-live |
 | Isolated production catalog preview | ✅ | Separate metadata/keychain/cache; preview cannot reconcile, poll, or write Builder catalog data |
 | textContent for QB data in UI | Pending — Phase 2 | Enforced when the parts UI lands |
+| Central desktop gateway / fail-closed flag | ✅ Local slice | Health + active Items only; disabled by default |
+| Entra signature/tenant/audience/expiry/role core | ✅ Interface + hermetic tests | Production OIDC/JWKS adapter not yet selected/deployed |
+| Server credential store + per-realm refresh serialization | ✅ Interface + hermetic tests | Production managed-key/CAS/lock adapters still required |
+| Append-only Builder attribution audit | ✅ Interface + hermetic tests | Durable retention/monitoring adapter still required |
 
 ---
 

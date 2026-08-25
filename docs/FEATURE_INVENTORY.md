@@ -83,8 +83,11 @@ Each logical column (Manufacturer, Location, Color, etc.) has a list of known he
 |---|---|---|
 | `name` | Part | Normalized via `canonical_name()` |
 | `include` | ✓ | Defaults to True |
-| `new_or_used` | New/Used | Stored as-is |
-| `source` | Source | Stored as-is |
+| `new_or_used` | New/Used | Legacy compatibility input; normalized to canonical supply fields |
+| `source` | Source | Legacy compatibility input; preserved as `customer_source` |
+| `supply_type` | (none in base template) | Canonical `new` or `customer_supplied` |
+| `customer_condition` | (none in base template) | Canonical blank, `new`, or `used` |
+| `customer_source` | (none in base template) | Required for newly edited customer-supplied/used data |
 | `manufacturer` | Manufacturer | Stored as-is |
 | `part_number` | Model/Part# | Stored as-is |
 | `location` | Location | Stored as-is |
@@ -529,25 +532,45 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 **Modules**: `domain/project_models.py`, `inputs/project_entry.py`, `app/services/project_service.py`, `app/routes/projects.py`, `ui/js/projects/` (split UI: `detail_builds.js`, `detail_overview.js`, `detail_edit.js`, `list.js`, `wizard.js`, etc.)
 
 ### Project Record Structure
-Projects are stored as individual JSON files in `workspace/projects/{project_id}.json`.
+Projects are stored as individual JSON files in `workspace/projects/{project_id}/project.json` and
+mirrored to SharePoint as shared work records.
 
 | Field | Type | Notes |
 |---|---|---|
 | `project_id` | str | Derived from agency/quote via `safe_project_id()` |
 | `customer` | CustomerInfo | Agency name + agency_id + sales_rep_id + quote + year + notes |
-| `preferences` | EquipmentPreferences | Lighting, camera, bumper, cage, slick top, notes |
+| `preferences` | EquipmentPreferences | Lighting brand plus DUO/TRIO default, camera, bumper, cage, slick top, notes |
 | `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
 | `export_dir` | str | Empty = default output location; user-configurable |
 | `created_at` / `updated_at` | str | ISO timestamps |
 
 Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id` (links to `workspace/drafts/`) and `output_path` (set when the build sheet is generated).
 
-### Project Detail View (Overview / Edit / Builds)
-The project detail view has three sub-tabs:
+### Project Detail View
+The project detail view centers the Overview/build-card workflow, with editing available from the
+project controls and each configured vehicle opening its embedded build editor:
 
-- **Overview**: read-only two-column layout (customer info card left, preferences card right), fleet unit groups below.
+- **Overview**: read-only two-column layout (customer info card left, preferences card right), with
+  fleet unit groups below. Individual-unit notes appear directly on their build cards with a two-line
+  visual clamp; overflowing notes expose **Read more** and open the full instruction in a modal
+  without opening the build editor.
 - **Edit**: read-only by default; `[✏️ Edit]` button activates edit mode with full input fields. Save stays on the detail view; Cancel discards changes. The 4-step wizard (`#proj-editor`) is only for new projects.
-- **Builds**: per-unit cards with `[Setup Build]`/`[Edit Build]`, `[Generate ▶]` (disabled until draft_id set), and `[Export PDF]` (disabled until output_path set). Bottom row: `[⚡ Generate All]` and `[📄 Export All PDFs]`.
+- **Build actions**: per-vehicle build cards expose setup/edit, generation, PDF export, and
+  QuickBooks Estimate preparation. Individual units can open the manual QBO Project setup/link
+  walkthrough before a build draft exists. Final review is the last card action, shown light green
+  until finalization and solid green afterward. Project actions include generate/export-all and batch
+  **Prepare QB Estimates**. Missing QBO Project links are completed one vehicle at a time; Back or
+  Save returns to a revalidated checklist showing ready and remaining vehicles.
+- **Final sign-off**: the focused review includes an expandable checklist of every server-side
+  check, with passed, warning, and blocking states shown individually before the build is locked.
+  Advisory equipment checks cover front/side/rear warning, siren/controller relationships,
+  CenCom Core ScanPort/CANPORT, slick-top photo eye and primary light-bar coverage, docking-station
+  motion, radio, camera, expansion module, and Patrol radar/front/rear partitions. Every warning
+  requires a short acknowledgement; only a missing or stale PDF blocks finalization.
+- **Estimate Additional charges**: the per-vehicle QuickBooks review requires an installation-labor
+  total and install-supplies total, offers Patrol/Undercover/Admin/Custom presets, permits an
+  optional delivery fee, and automatically adds a 4% card fee without compounding the fee on
+  itself. Settings → Projects owns the shared per-build defaults.
 
 ### Create Draft Flow
 `POST /api/project/{project_id}/unit/{unit_id}/create-draft` — creates a new `BuildDraft` from the unit's preset (if assigned) and returns the draft_id. This wires the unit to the draft system. Individual units use a parallel endpoint that includes the `individual_id` segment.
@@ -559,10 +582,8 @@ The project detail view has three sub-tabs:
 **Modules**: `domain/agency_models.py`, `app/services/agency_service.py`, `app/routes/agencies.py`, `ui/js/settings/agencies.js`
 
 ### Storage
-`workspace/agencies.json`:
-```json
-{"schema_version": 1, "agencies": [AgencyRecord, ...]}
-```
+Agencies use per-record storage under `workspace/agencies/{agency_id}.json` and direct-mirror to
+SharePoint. The old monolithic `agencies.json` is migration input only.
 
 ### AgencyRecord Fields
 | Field | Notes |
@@ -601,10 +622,8 @@ The project wizard shows a live-search combo for agency. On blur, if matches exi
 **Modules**: `domain/sales_rep_models.py`, `app/services/sales_rep_service.py`, `app/routes/sales_reps.py`, `ui/js/settings/sales_reps.js`
 
 ### Storage
-`workspace/sales_reps.json`:
-```json
-{"schema_version": 1, "sales_reps": [SalesRepRecord, ...]}
-```
+Sales representatives use per-record storage under `workspace/sales_reps/{rep_id}.json` and
+direct-mirror to SharePoint. The old monolithic `sales_reps.json` is migration input only.
 
 ### REST Endpoints
 | Method | Path | Description |
@@ -622,12 +641,12 @@ The project wizard has a live-search combo for sales rep (same pattern as agency
 
 **Modules**: `app/services/preset_service.py`, `app/routes/presets.py`, `ui/js/settings/presets_mgr.js`
 
-### Preset Schema (v2)
+### Preset Schema (v4)
 Preset JSON files live in `src/dtm_buildsheet/resources/presets/` (dev) or `workspace/presets/` (bundled app).
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 4,
   "preset_id": "...",
   "label": "St. Cloud PD Patrol PIU/Tahoe",
   "agency_ids": [],     // [] = universal (any agency)
@@ -761,6 +780,9 @@ Duplicate detection: if a preset already exists with the same agency + build_typ
 | `/api/project/save` | Create or update project |
 | `/api/project/{id}/unit/{uid}/create-draft` | Create build draft for a BuildUnit |
 | `/api/project/{id}/unit/{uid}/individual/{iid}/create-draft` | Create build draft for an IndividualUnit |
+| `/api/project/{id}/unit/{uid}/finalization/check` | Evaluate PDF currency and final build warnings |
+| `/api/project/{id}/unit/{uid}/finalization/finalize` | Finalize the unit against its exact draft fingerprint |
+| `/api/project/{id}/unit/{uid}/finalization/reopen` | Reopen a finalized unit with actor and reason |
 | `/api/project/{id}/export-all-pdf` | Export all generated sheets for a project to PDF |
 
 ### DELETE Routes

@@ -351,7 +351,7 @@ function _pdbRenderProductDetail(id){
         }
         if(pn.lens_type) parts.push(`<span class="chip">${esc(pn.lens_type)}</span>`);
         const price = pn.qb_unit_price || pn.price_usd;
-        if(price) parts.push(`<span style="color:var(--accent);font-weight:500">$${esc(price)}</span>`);
+        if(price) parts.push(`<span style="color:var(--accent);font-weight:500">QBO list $${esc(price)}</span>`);
         if(pn.qb_item_id) parts.push('<span class="chip" style="background:var(--green);color:#fff">QB</span>');
         if(pn.vehicle_tags?.length && !(pn.vehicle_tags.length===1&&pn.vehicle_tags[0]==="any")) {
           parts.push(`<span class="chip">${esc(pn.vehicle_tags.join(", "))}</span>`);
@@ -555,9 +555,9 @@ function _pdbPartNumberRow(pn, idx){
   return `<div class="pdb-pn-row" data-idx="${idx}" data-pn-preserve="${preserve}">
     <input type="text" data-pn-field="part_number" placeholder="Part #" value="${esc(pn.part_number||"")}" />
     <input type="text" data-pn-field="friendly_name" placeholder="Friendly name" value="${esc(pn.friendly_name||"")}" />
-    <input type="number" data-pn-field="price_usd" placeholder="Price" step="0.01"
+    <input type="number" data-pn-field="price_usd" placeholder="QBO list price" step="0.01"
       value="${(pn.qb_unit_price ?? pn.price_usd) ?? ""}" style="max-width:90px"
-      ${linked?'readonly title="Price synced from QuickBooks (qb_unit_price)"':''} />
+      ${linked?'readonly title="QBO list price synced from QuickBooks (qb_unit_price)"':''} />
     <label class="pdb-pn-pending" title="Pre-added before it exists in QuickBooks — usable now, flagged on the estimate until the QB item is created">
       <input type="checkbox" data-pn-field="qb_pending" ${pn.qb_pending?"checked":""} ${linked?"disabled":""} /> Pending QB
     </label>

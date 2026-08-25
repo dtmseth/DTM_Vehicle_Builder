@@ -21,6 +21,9 @@ REQUIRED_CONFIG_FILES = {
     "workbook_rules.json",
     "build_rules.json",
     "project_options.json",
+    # [shared-settings] — per-build estimate labor/supplies presets and the
+    # exact QBO service item names used for Additional charges.
+    "estimate_charges.json",
     # [shared-settings, Phase 3] — canonical parts database. Direct-mirrored
     # to SharePoint on save (alongside the proposal pipeline). Workbook /
     # parts_library / vehicle_layouts remain as dual-read fallbacks during
@@ -361,6 +364,25 @@ def _validate_parts_db(normalized: dict) -> None:
                 raise ValueError(
                     f"parts_db.json product '{product_id}' part_numbers[{idx}] size_rule_id must be a string"
                 )
+            accessory_quantity = pn.get("accessory_quantity")
+            if accessory_quantity is not None:
+                if not isinstance(accessory_quantity, dict):
+                    raise ValueError(
+                        f"parts_db.json product '{product_id}' part_numbers[{idx}] "
+                        "accessory_quantity must be an object"
+                    )
+                mode = accessory_quantity.get("mode", "")
+                if mode not in {"", "cover_parent_quantity"}:
+                    raise ValueError(
+                        f"parts_db.json product '{product_id}' part_numbers[{idx}] "
+                        "accessory_quantity.mode is not supported"
+                    )
+                coverage = accessory_quantity.get("parent_units_per_item", 1)
+                if isinstance(coverage, bool) or not isinstance(coverage, int) or coverage < 1:
+                    raise ValueError(
+                        f"parts_db.json product '{product_id}' part_numbers[{idx}] "
+                        "accessory_quantity.parent_units_per_item must be a positive integer"
+                    )
         render = spec.get("render")
         if render is not None:
             if not isinstance(render, dict):
@@ -408,7 +430,12 @@ def _validate_parts_db(normalized: dict) -> None:
             raise ValueError(
                 f"parts_db.json product '{product_id}' 'fixed_location' must be a string"
             )
-        for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku"):
+        picker_form = spec.get("picker_form")
+        if picker_form is not None and picker_form not in {"window_tint"}:
+            raise ValueError(
+                f"parts_db.json product '{product_id}' has unsupported picker_form '{picker_form}'"
+            )
+        for field in ("allow_custom_location", "pa_mic_required", "handheld_mag_mic_prompt", "picker_direct_sku", "picker_location_allocation"):
             value = spec.get(field)
             if value is not None and not isinstance(value, bool):
                 raise ValueError(
@@ -746,6 +773,50 @@ def _validate_build_rules(normalized: dict) -> None:
         rules.setdefault(rule_type, [])
 
 
+def _validate_estimate_charges(normalized: dict) -> None:
+    try:
+        fee_percent = float(normalized.get("card_fee_percent", 4))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("estimate_charges.json card_fee_percent must be a number") from exc
+    if not 0 <= fee_percent <= 100:
+        raise ValueError("estimate_charges.json card_fee_percent must be between 0 and 100")
+    normalized["card_fee_percent"] = fee_percent
+
+    service_items = normalized.get("service_items")
+    if not isinstance(service_items, dict):
+        raise ValueError("estimate_charges.json service_items must be an object")
+    for key in ("labor", "install_supplies", "card_fee", "delivery"):
+        value = str(service_items.get(key) or "").strip()
+        if not value:
+            raise ValueError(f"estimate_charges.json service_items.{key} is required")
+        service_items[key] = value
+
+    presets = normalized.get("presets")
+    if not isinstance(presets, dict):
+        raise ValueError("estimate_charges.json presets must be an object")
+    for preset_id in ("patrol", "undercover", "admin", "custom"):
+        preset = presets.get(preset_id)
+        if not isinstance(preset, dict):
+            raise ValueError(f"estimate_charges.json presets.{preset_id} must be an object")
+        preset["label"] = str(preset.get("label") or preset_id.title()).strip()
+        aliases = preset.get("aliases", [])
+        if not isinstance(aliases, list) or not all(isinstance(value, str) for value in aliases):
+            raise ValueError(f"estimate_charges.json presets.{preset_id}.aliases must be an array of strings")
+        preset["aliases"] = [value.strip() for value in aliases if value.strip()]
+        for amount_key in ("labor_amount", "install_supplies_amount"):
+            try:
+                amount = round(float(preset.get(amount_key, 0)), 2)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"estimate_charges.json presets.{preset_id}.{amount_key} must be a number"
+                ) from exc
+            if amount < 0:
+                raise ValueError(
+                    f"estimate_charges.json presets.{preset_id}.{amount_key} cannot be negative"
+                )
+            preset[amount_key] = amount
+
+
 _VALIDATORS = {
     "part_catalog.json": _validate_part_catalog,
     "vehicle_layouts.json": _validate_vehicle_layouts,
@@ -755,6 +826,7 @@ _VALIDATORS = {
     "app_settings.json": _validate_app_settings,
     "build_rules.json": _validate_build_rules,
     "project_options.json": _validate_project_options,
+    "estimate_charges.json": _validate_estimate_charges,
     "parts_db.json": _validate_parts_db,
     "legacy_workbook_index.json": _validate_legacy_workbook_index,
 }

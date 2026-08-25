@@ -26,8 +26,9 @@ from pathlib import Path
 
 from ...paths import AppPaths
 from ..adapters.quickbooks.api_client import QuickBooksApiClient, QuickBooksApiError
+from ..adapters.quickbooks.gateway import QuickBooksGatewayError
 from ..adapters.quickbooks.oauth_client import QuickBooksOAuthError
-from . import quickbooks_service
+from . import quickbooks_gateway_service, quickbooks_service
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,14 @@ def _write_cache(paths: AppPaths, cache: dict) -> None:
 
 
 def _build_client(paths: AppPaths):
-    """Return (client, None) when connected, or (None, error_dict) otherwise."""
+    """Local compatibility client for operations not yet centrally migrated.
+
+    Central mode always fails closed here.  Only health and active-Item reads
+    use the central gateway in this slice; no operation may fall back to a
+    workstation's surviving keychain token once the feature flag is enabled.
+    """
+    if quickbooks_gateway_service.central_mode_enabled(paths):
+        return None, {"ok": False, "error": "central_operation_not_migrated"}
     try:
         access_token = quickbooks_service.ensure_access_token(paths)
     except QuickBooksOAuthError as exc:
@@ -132,20 +140,32 @@ def _build_client(paths: AppPaths):
     return client, None
 
 
+def _fetch_active_items_locally(paths: AppPaths) -> list[dict]:
+    client, error = _build_client(paths)
+    if error:
+        raise QuickBooksGatewayError(str(error.get("error") or "quickbooks_unavailable"))
+    try:
+        return client.fetch_active_items()
+    except QuickBooksApiError as exc:
+        # QuickBooksApiError is already reduced to its safe status/code/tid
+        # summary by the local compatibility adapter.
+        raise QuickBooksGatewayError(str(exc)) from None
+
+
 def sync_items(paths: AppPaths) -> dict:
     """Pull active Items from QBO into the local cache. Read-only re: parts_db.
 
     Returns a status dict: ``{"ok": True, "item_count": n, "linked": l,
     "unlinked": u, "last_sync_utc": iso}`` or ``{"ok": False, "error": ...}``.
     """
-    client, err = _build_client(paths)
-    if err:
-        return err
     try:
-        items = client.fetch_active_items()
-    except QuickBooksApiError as exc:
-        logger.warning("QuickBooks item sync failed: %s", exc)
-        return {"ok": False, "error": str(exc)}
+        items = quickbooks_gateway_service.fetch_active_items(
+            paths,
+            local_provider=lambda: _fetch_active_items_locally(paths),
+        )
+    except QuickBooksGatewayError as exc:
+        logger.warning("QuickBooks item sync failed: %s", exc.code)
+        return {"ok": False, "error": exc.code}
 
     enriched, linked_count = _enrich_with_links(items, _linked_map(paths))
 
@@ -339,6 +359,11 @@ def run_full_sync(paths: AppPaths) -> dict:
         pull = sync_items(paths)
         if not pull.get("ok"):
             return pull
+        if quickbooks_gateway_service.central_mode_enabled(paths):
+            # This first central endpoint is a read-only catalog slice.  Do
+            # not implicitly apply central data to parts_db until reviewed
+            # catalog governance is migrated behind an Admin endpoint.
+            return {**pull, "reconciled": {"ok": True, "skipped": "central_read_only_slice"}}
         recon = reconcile_linked_parts(paths)
         return {**pull, "reconciled": recon}
 
@@ -611,7 +636,7 @@ def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
     if qb_customer_migration_service.customer_writes_blocked(paths):
         return
     try:
-        if not quickbooks_service.get_status(paths).get("connected"):
+        if not quickbooks_gateway_service.connection_health(paths).get("connected"):
             return
     except Exception:  # noqa: BLE001 — never let a status read break the save
         return
@@ -634,7 +659,7 @@ def push_agency_after_save(paths: AppPaths, agency_id: str) -> dict:
     if qb_customer_migration_service.customer_writes_blocked(paths):
         return {"ok": False, "error": "production_customer_migration_required"}
     try:
-        if not quickbooks_service.get_status(paths).get("connected"):
+        if not quickbooks_gateway_service.connection_health(paths).get("connected"):
             return {"ok": True, "skipped": "not_connected"}
     except Exception:
         return {"ok": False, "error": "quickbooks_status_unavailable"}
@@ -936,7 +961,7 @@ def start_background_sync(paths: AppPaths, *, interval_seconds: int = _POLL_INTE
     def _loop():
         while True:
             try:
-                if quickbooks_service.get_status(paths).get("connected"):
+                if quickbooks_gateway_service.connection_health(paths).get("connected"):
                     run_full_sync(paths)
             except Exception:  # noqa: BLE001 — poller must never die
                 logger.warning("QuickBooks background sync pass failed")

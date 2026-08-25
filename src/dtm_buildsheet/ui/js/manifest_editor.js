@@ -6,6 +6,12 @@ let _meDraftId    = null;
 let _meDraft      = null;
 let _meEditLineId = null;   // null = add mode
 let _meCatalog     = null;
+let _meSupply      = { supplyType: "new", customerCondition: "", customerSource: "" };
+
+function _meRetailPrice(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? `Retail $${amount.toFixed(2)}` : "";
+}
 
 // ── public API ───────────────────────────────────────────
 
@@ -176,10 +182,31 @@ function _meTopLevelParts(parts) {
   });
 }
 
-function _meStatusRowStyle(status) {
-  if (status === "New")    return ' style="background:#eaf4fd"';
-  if (status === "Used" || status === "Reused") return ' style="background:#fff3e0"';
-  return "";
+function _meSupplyFromRecord(record = {}) {
+  if (typeof record === "string") record = { new_or_used: record };
+  const legacy = String(record.new_or_used || "").trim().toLowerCase();
+  const explicit = String(record.supply_type || "").trim().toLowerCase();
+  const customer = explicit === "customer_supplied" || (!explicit && ["used", "reused", "u", "r", "transfer", "transferred"].includes(legacy));
+  return {
+    supplyType: customer ? "customer_supplied" : "new",
+    customerCondition: customer
+      ? (["new", "used"].includes(String(record.customer_condition || "").trim().toLowerCase()) ? String(record.customer_condition).trim().toLowerCase() : "used")
+      : "",
+    customerSource: customer ? String(record.customer_source || record.source || "").trim() : "",
+  };
+}
+
+function _meSupplyLabel(record) {
+  const supply = _meSupplyFromRecord(record);
+  if (supply.supplyType === "new") return "New";
+  const condition = supply.customerCondition === "new" ? "New" : "Used";
+  const source = supply.customerSource || (condition === "Used" ? "Source needed" : "");
+  return `Customer supplied / ${condition}${source ? ` · ${source}` : ""}`;
+}
+
+function _meStatusRowStyle(part) {
+  return _meSupplyFromRecord(part).supplyType === "customer_supplied"
+    ? ' style="background:#fff3e0"' : ' style="background:#eaf4fd"';
 }
 
 function _meDisplayName(part) {
@@ -201,6 +228,15 @@ function _meIncludedControlHeadComponent(part, component) {
 function _meCommentMarkup(part) {
   const comment = String(part?.comment || "").trim();
   return comment ? `<div class="me-manifest-comment"><strong>Note:</strong> ${esc(comment)}</div>` : "";
+}
+
+function _meSupplyMarkup(record) {
+  const supply = _meSupplyFromRecord(record);
+  const label = _meSupplyLabel(record);
+  const used = supply.supplyType === "customer_supplied" && supply.customerCondition === "used";
+  return used
+    ? `<span class="me-supply-callout${supply.customerSource ? "" : " source-needed"}">${esc(label)}</span>`
+    : esc(label);
 }
 
 function _meSortParts(parts) {
@@ -274,9 +310,7 @@ function _meMakeRows(parts, columns) {
 
   return topLevel.map(p => {
     const mfgModel = [p.manufacturer, p.part_number].filter(Boolean).join(" / ") || "—";
-    const statusLabel = p.new_or_used
-      ? (p.new_or_used === "Reused" && p.source ? `Reused (${esc(p.source)})` : esc(p.new_or_used))
-      : "—";
+    const statusLabel = _meSupplyMarkup(p);
     const comps = (p.components || []).filter(cm => !_meIncludedControlHeadComponent(p, cm));
     const kids = childrenByParent[p.line_id] || [];
     // Guided systems expand into their concrete shop components, not a second
@@ -287,13 +321,13 @@ function _meMakeRows(parts, columns) {
       ? `<span class="me-expand-caret" data-lid="${esc(p.line_id)}">▸</span>`
       : `<span class="me-expand-spacer"></span>`;
     const rowAttrs = expandable ? ` class="me-parent-row" data-lid="${esc(p.line_id)}"` : "";
-    let html = `<tr${rowAttrs}${_meStatusRowStyle(p.new_or_used)}>
+    let html = `<tr${rowAttrs}${_meStatusRowStyle(p)}>
       <td style="font-weight:500;max-width:160px;word-break:break-word">${caret}${esc(_meDisplayName(p))}${expandable ? ` <span class="me-comp-count">(${childCount})</span>` : ""}${_meCommentMarkup(p)}</td>
       ${columns.showLocation ? `<td style="color:var(--muted)">${esc(_meIsFixture(p) ? "" : (p.location || "—"))}</td>` : ""}
       ${columns.showColor ? `<td>${esc(_meIsLight(p) ? (p.raw_color || "—") : "")}</td>` : ""}
       <td style="text-align:center">${p.quantity || "—"}</td>
       <td style="color:var(--muted);font-size:11px">${esc(mfgModel)}</td>
-      <td style="font-size:11px;color:var(--muted)">${statusLabel}</td>
+      <td class="me-supply-cell">${statusLabel}</td>
       <td class="me-row-actions">
         <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(p.line_id)}" title="${p.comment ? "Edit comment" : "Add comment"}">💬</button>
         <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(p.line_id)}" title="Edit">≡</button>
@@ -302,16 +336,16 @@ function _meMakeRows(parts, columns) {
     </tr>`;
     // Display-only SKU breakdown (the build sheet sees just the parent).
     for (const cm of comps) {
-      const price = (cm.price != null) ? ` · $${cm.price}` : "";
+      const price = (cm.price != null) ? ` · ${_meRetailPrice(cm.price)}` : "";
       const label = cm.label || cm.name || cm.part_number || "Component";
       const detail = cm.detail || cm.value || "";
-      const componentStatus = cm.new_or_used ? ` · ${cm.new_or_used}` : "";
+      const componentStatus = cm.new_or_used || cm.supply_type ? _meSupplyMarkup(cm) : "";
       html += `<tr class="me-comp-row" data-parent="${esc(p.line_id)}" hidden>
         <td style="padding-left:30px;color:var(--muted);font-size:12px">↳ ${esc(label)}</td>
         ${columns.showLocation ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.location || "—")}</td>` : ""}
         ${columns.showColor ? `<td style="font-size:12px;color:var(--muted)">${esc(cm.color || "")}</td>` : ""}
         <td style="text-align:center;font-size:12px;color:var(--muted)">${cm.quantity || ""}</td>
-        <td colspan="3" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${esc(componentStatus)}${price}</td>
+        <td colspan="3" style="font-size:11px;color:var(--muted)">${esc(detail)}${esc(cm.part_number ? ` · ${cm.part_number}` : "")}${componentStatus ? ` · ${componentStatus}` : ""}${price}</td>
       </tr>`;
     }
     // Accessory child lines — real parts, individually editable/removable.
@@ -328,7 +362,7 @@ function _meMakeRows(parts, columns) {
         ${columns.showColor ? "<td></td>" : ""}
         <td style="text-align:center;font-size:12px">${c.quantity || "—"}</td>
         <td style="font-size:11px;color:var(--muted)">${esc(cMfgModel)}</td>
-        <td></td>
+        <td class="me-supply-cell">${_meSupplyMarkup(c)}</td>
         <td class="me-row-actions">
           <button class="btn btn-secondary btn-sm me-comment-btn" data-lid="${esc(c.line_id)}" title="${c.comment ? "Edit comment" : "Add comment"}">💬</button>
           <button class="btn btn-secondary btn-sm me-edit-btn" data-lid="${esc(c.line_id)}" title="Edit">≡</button>
@@ -446,21 +480,43 @@ function _meRender() {
 
 // ── status radio buttons ──────────────────────────────────
 
-function _meSetStatus(value) {
-  document.querySelectorAll(".me-status-btn").forEach(btn => {
-    btn.classList.toggle("me-status-btn--active", btn.dataset.value === value);
+function _meRenderSupply() {
+  document.querySelectorAll("[data-supply-type]").forEach(btn => {
+    btn.classList.toggle("me-status-btn--active", btn.dataset.supplyType === _meSupply.supplyType);
   });
-  const sourceRow = $("me-reused-source-row");
-  if (sourceRow) sourceRow.style.display = value === "Reused" ? "" : "none";
-  if (value !== "Reused") {
-    const srcEl = $("me-source");
-    if (srcEl) srcEl.value = "";
+  const conditionRow = $("me-customer-condition-row");
+  if (conditionRow) conditionRow.style.display = _meSupply.supplyType === "customer_supplied" ? "" : "none";
+  document.querySelectorAll("[data-customer-condition]").forEach(btn => {
+    btn.classList.toggle("me-status-btn--active", btn.dataset.customerCondition === _meSupply.customerCondition);
+  });
+  const sourceNeeded = _meSupply.supplyType === "customer_supplied" && _meSupply.customerCondition === "used";
+  const sourceRow = $("me-reused-source-row"), source = $("me-source");
+  if (sourceRow) sourceRow.style.display = sourceNeeded ? "" : "none";
+  if (source) {
+    if (source.value !== (_meSupply.customerSource || "")) source.value = _meSupply.customerSource || "";
+    source.required = sourceNeeded;
   }
 }
 
+function _meSetStatus(value) {
+  _meSupply = _meSupplyFromRecord(value);
+  _meRenderSupply();
+}
+
 function _meGetStatus() {
-  const active = document.querySelector(".me-status-btn.me-status-btn--active");
-  return active?.dataset.value || "";
+  return _meSupply.supplyType === "customer_supplied" ? "Used" : "New";
+}
+
+function _meSupplyPayload() {
+  const customer = _meSupply.supplyType === "customer_supplied";
+  const source = customer ? String(_meSupply.customerSource || "").trim() : "";
+  return {
+    supply_type: customer ? "customer_supplied" : "new",
+    customer_condition: customer ? _meSupply.customerCondition : "",
+    customer_source: source,
+    new_or_used: customer ? "Used" : "New",
+    source,
+  };
 }
 
 // ── modal open/close ─────────────────────────────────────
@@ -530,7 +586,7 @@ async function _meEditAccessory(part) {
   const opts = [];
   for (const o of gOptions) for (const s of (o.skus || [])) {
     const colors = [s.color, s.secondary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
-    const label = `${o.model} · ${s.part_number}${colors ? " · " + colors : ""}${s.lens_type ? " · " + s.lens_type : ""}${s.price != null ? " · $" + s.price : ""}`;
+    const label = `${o.model} · ${s.part_number}${colors ? " · " + colors : ""}${s.lens_type ? " · " + s.lens_type : ""}${s.price != null ? " · " + _meRetailPrice(s.price) : ""}`;
     opts.push({ value: `${o.product_id}::${s.part_number}`, label, model: o.model, mfr: o.manufacturer_label || "", sku: s.part_number });
   }
   const cur = opts.find(o => o.sku === part.part_number);
@@ -598,9 +654,7 @@ async function openPartEditModal(lineId) {
   $("me-modal-title").textContent  = "Edit Part";
   $("me-name").value      = part.name          || "";
   $("me-include").checked = !!part.include;
-  _meSetStatus(part.new_or_used || "");
-  const srcEl = $("me-source");
-  if (srcEl) srcEl.value = part.source || "";
+  _meSetStatus(part);
   $("me-location").value  = part.location       || "";
   $("me-color").value     = part.raw_color      || "";
   $("me-qty").value       = part.quantity        ?? 0;
@@ -625,12 +679,18 @@ function meCancelModal() {
 async function savePartEdit() {
   const name = $("me-name").value.trim();
   if (!name) { toast("Part type is required", "error"); return; }
+  _meSupply.customerSource = ($("me-source")?.value || "").trim();
+  if (_meSupply.supplyType === "customer_supplied" && !["new", "used"].includes(_meSupply.customerCondition)) {
+    toast("Choose whether the customer-supplied part is New or Used", "error"); return;
+  }
+  if (_meSupply.supplyType === "customer_supplied" && _meSupply.customerCondition === "used" && !_meSupply.customerSource) {
+    toast("Enter where the customer-supplied used part will come from", "error"); return;
+  }
 
   const body = {
     name,
     include:      $("me-include").checked,
-    new_or_used:  _meGetStatus(),
-    source:       ($("me-source")?.value || "").trim(),
+    ..._meSupplyPayload(),
     location:     $("me-location").value.trim(),
     raw_color:    $("me-color").value.trim(),
     quantity:     parseInt($("me-qty").value, 10) || 0,
@@ -791,8 +851,8 @@ if (md?.part_numbers?.length) {
     pns = pns.filter(p => (p.product_model || "").toLowerCase() === prodFilter.toLowerCase());
   }
   pnList.innerHTML = pns.map(p => {
-    const price = p.qb_unit_price || p.price_usd;
-    const priceStr = price ? `  $${price}` : "";
+    const price = p.retail_price ?? p.qb_unit_price ?? p.price_usd;
+    const priceStr = price != null ? `  ${_meRetailPrice(price)}` : "";
     const qb = window.DTM_QUICKBOOKS_UI_ENABLED === true && p.qb_item_id ? " 🅀" : "";
     return `<option value="${esc(p.part_number)}">${esc(p.part_number)}${priceStr}${qb}</option>`;
   }).join("");
@@ -883,9 +943,23 @@ document.addEventListener("keydown", e => {
 });
 
 // Wire status radio buttons
-document.querySelectorAll(".me-status-btn").forEach(btn => {
-  btn.addEventListener("click", () => _meSetStatus(btn.dataset.value));
+document.querySelectorAll("[data-supply-type]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _meSupply.supplyType = btn.dataset.supplyType;
+    if (_meSupply.supplyType === "new") {
+      _meSupply.customerCondition = ""; _meSupply.customerSource = "";
+    }
+    _meRenderSupply();
+  });
 });
+document.querySelectorAll("[data-customer-condition]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    _meSupply.customerCondition = btn.dataset.customerCondition;
+    if (_meSupply.customerCondition !== "used") _meSupply.customerSource = "";
+    _meRenderSupply();
+  });
+});
+$("me-source")?.addEventListener("input", event => { _meSupply.customerSource = event.target.value; });
 
 // Wire me-name → location list, color visibility, manufacturer list, part number list
 (function() {

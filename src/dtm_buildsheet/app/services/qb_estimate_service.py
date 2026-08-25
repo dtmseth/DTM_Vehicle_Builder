@@ -27,9 +27,11 @@ from __future__ import annotations
 import logging
 import math
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from ...domain.supply import supply_state
 from ...paths import AppPaths
 from ..adapters.quickbooks.api_client import QuickBooksApiError
 from . import qb_sync_service
@@ -270,6 +272,45 @@ def _resolve_custom_part(draft_part) -> tuple[dict | None, str]:
     }, ""
 
 
+def _resolve_window_tint(draft_part) -> tuple[dict | None, str]:
+    """Resolve the app-owned per-window tint service through MISC PART."""
+    config = (getattr(draft_part, "picker_config", {}) or {}).get("window_tint")
+    if not isinstance(config, dict):
+        return None, "no_catalog_match"
+    windows = [str(value).strip() for value in config.get("windows", []) if str(value).strip()]
+    try:
+        percentage = int(config.get("percentage"))
+    except (TypeError, ValueError):
+        return None, "no_price"
+    if not windows or not 1 <= percentage <= 100:
+        return None, "no_price"
+    labels = {
+        "windshield": "Windshield",
+        "windshield_brow": "Windshield brow",
+        "driver_front": "Driver front window",
+        "passenger_front": "Passenger front window",
+        "driver_rear": "Driver rear window",
+        "passenger_rear": "Passenger rear window",
+        "driver_quarter": "Driver quarter / cargo window",
+        "passenger_quarter": "Passenger quarter / cargo window",
+        "rear_window": "Rear window",
+    }
+    description = f"Window tint — {percentage}% — " + ", ".join(labels.get(value, value) for value in windows)
+    return {
+        "product_id": "window_tint",
+        "qb_item_id": "",
+        "qb_sku": "TINT",
+        "description": description,
+        "manufacturer": "DTM Service",
+        "manufacturer_id": "",
+        "unit_price": 65.0,
+        "pending": False,
+        "custom": True,
+        "custom_kind": "window_tint",
+        "window_count": len(windows),
+    }, ""
+
+
 def _attach_custom_parts_to_misc_item(paths: AppPaths, lines: list[dict]) -> list[dict]:
     """Bill one-off priced parts through the exact active ``MISC PART`` Item."""
     custom_lines = [line for line in lines if line.get("custom")]
@@ -299,6 +340,25 @@ def _component_quantity(component: dict) -> int:
     return quantity if quantity > 0 else 1
 
 
+def _apply_quote_override(resolved: dict, picker_config: dict) -> dict:
+    """Apply an explicitly authored quote price without changing QB catalog data."""
+    if "quote_unit_price_override" not in picker_config:
+        return resolved
+    try:
+        price = float(picker_config["quote_unit_price_override"])
+    except (TypeError, ValueError):
+        return resolved
+    if not math.isfinite(price) or price < 0:
+        return resolved
+    out = dict(resolved)
+    out["unit_price"] = price
+    note = str(picker_config.get("quote_note") or "").strip()
+    if note:
+        description = str(out.get("description") or "").strip()
+        out["description"] = f"{description} — {note}" if description else note
+    return out
+
+
 def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]:
     """Split a build draft into (billable_lines, problems).
 
@@ -312,9 +372,9 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
     for dp in draft.parts:
         if not dp.include:
             continue
-        # Used and reused hardware remains on the build manifest but is not a
-        # purchase for this estimate.
-        if str(getattr(dp, "new_or_used", "") or "").strip().lower() in {"used", "reused"}:
+        # Customer-supplied hardware remains on the build manifest but is not
+        # a purchase for this estimate, regardless of physical condition.
+        if not supply_state(dp).is_billable:
             continue
         picker_config = getattr(dp, "picker_config", {}) or {}
         # Console kits include some physical rows (for example a cup holder or
@@ -326,6 +386,24 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
         # separately nested cable-refresh children are the only system rows
         # that are billable through QB.
         if picker_config.get("system_type"):
+            continue
+        if isinstance(picker_config.get("window_tint"), dict):
+            resolved, reason = _resolve_window_tint(dp)
+            if reason:
+                problems.append({
+                    "name": dp.name,
+                    "part_number": dp.part_number,
+                    "reason": reason,
+                })
+                continue
+            qty = int(resolved.pop("window_count"))
+            lines.append({
+                **resolved,
+                "name": "Window Tint",
+                "part_number": "TINT",
+                "qty": qty,
+                "amount": round(resolved["unit_price"] * qty, 2),
+            })
             continue
         if isinstance(picker_config.get("custom_part"), dict):
             resolved, reason = _resolve_custom_part(dp)
@@ -396,6 +474,7 @@ def resolve_build_lines(paths: AppPaths, draft) -> tuple[list[dict], list[dict]]
                 "reason": reason,
             })
             continue
+        resolved = _apply_quote_override(resolved, picker_config)
         qty = dp.quantity if (dp.quantity and dp.quantity > 0) else 1
         lines.append({
             **resolved,
@@ -493,6 +572,140 @@ def _build_estimate_payload(
     return payload
 
 
+def _estimate_ref_value(value: object) -> str:
+    if isinstance(value, dict):
+        return str(value.get("value", "") or "").strip()
+    return str(value or "").strip()
+
+
+def _estimate_text_value(value: object) -> str:
+    if isinstance(value, dict):
+        return str(value.get("value", "") or "").strip()
+    return str(value or "").strip()
+
+
+def _estimate_number(value: object) -> float | int | None:
+    if value in (None, ""):
+        return None
+    try:
+        number = round(float(value), 4)
+    except (TypeError, ValueError):
+        return None
+    return int(number) if number.is_integer() else number
+
+
+def _estimate_line_snapshot(line: object) -> dict:
+    if not isinstance(line, dict):
+        return {}
+    detail_type = str(line.get("DetailType", "") or "")
+    # QuickBooks may append calculated subtotal/tax rows. They are not
+    # Builder-authored material and must not create a false external-edit
+    # conflict after an otherwise unchanged create/update.
+    if detail_type not in {"SalesItemLineDetail", "DescriptionOnly"}:
+        return {}
+    detail = line.get("SalesItemLineDetail") or {}
+    return {
+        "detail_type": detail_type,
+        "item_id": _estimate_ref_value(detail.get("ItemRef")),
+        "description": str(line.get("Description", "") or "").strip(),
+        "quantity": _estimate_number(detail.get("Qty")),
+        "unit_price": _estimate_number(detail.get("UnitPrice")),
+        "amount": _estimate_number(line.get("Amount")),
+    }
+
+
+def _estimate_snapshot(estimate: object) -> dict:
+    """Keep only material Estimate fields owned by Vehicle Builder."""
+    if not isinstance(estimate, dict):
+        return {}
+    return {
+        "doc_number": str(estimate.get("DocNumber", "") or "").strip(),
+        "customer_id": _estimate_ref_value(estimate.get("CustomerRef")),
+        "project_id": _estimate_ref_value(estimate.get("ProjectRef")),
+        "customer_memo": _estimate_text_value(estimate.get("CustomerMemo")),
+        "private_note": str(estimate.get("PrivateNote", "") or "").strip(),
+        "lines": [
+            snapshot for snapshot in (
+                _estimate_line_snapshot(line) for line in (estimate.get("Line") or [])
+            ) if snapshot
+        ],
+    }
+
+
+def _estimate_line_label(line: dict) -> str:
+    if not line:
+        return "—"
+    description = str(line.get("description", "") or "").strip()
+    if line.get("detail_type") == "DescriptionOnly":
+        return description or "Description-only line"
+    item = f"Item {line.get('item_id')}" if line.get("item_id") else "Item line"
+    facts = [item]
+    if line.get("quantity") is not None:
+        facts.append(f"qty {line['quantity']}")
+    if line.get("unit_price") is not None:
+        facts.append(f"unit ${float(line['unit_price']):.2f}")
+    if line.get("amount") is not None:
+        facts.append(f"total ${float(line['amount']):.2f}")
+    if description:
+        facts.append(description)
+    return " · ".join(facts)
+
+
+def _estimate_differences(baseline: dict, current: dict) -> list[dict]:
+    differences: list[dict] = []
+    labels = {
+        "doc_number": "Estimate number",
+        "customer_id": "Customer",
+        "project_id": "QuickBooks Project",
+        "customer_memo": "Customer memo",
+        "private_note": "Private note",
+    }
+    for key, label in labels.items():
+        if baseline.get(key, "") != current.get(key, ""):
+            differences.append({
+                "field": label,
+                "before": str(baseline.get(key, "") or "—"),
+                "after": str(current.get(key, "") or "—"),
+            })
+    old_lines = baseline.get("lines") if isinstance(baseline.get("lines"), list) else []
+    new_lines = current.get("lines") if isinstance(current.get("lines"), list) else []
+    for index in range(max(len(old_lines), len(new_lines))):
+        before = old_lines[index] if index < len(old_lines) else {}
+        after = new_lines[index] if index < len(new_lines) else {}
+        if before != after:
+            differences.append({
+                "field": f"Line {index + 1}",
+                "before": _estimate_line_label(before),
+                "after": _estimate_line_label(after),
+            })
+    return differences[:50]
+
+
+def _estimate_change_status(unit, current_estimate: dict | None) -> dict:
+    estimate_id = str(getattr(unit, "qb_estimate_id", "") or "").strip()
+    if not estimate_id:
+        return {"status": "none", "modified": False, "differences": []}
+    baseline = getattr(unit, "qb_estimate_snapshot", {}) or {}
+    if current_estimate is None:
+        return {
+            "status": "missing", "modified": False, "differences": [],
+            "message": "The linked estimate could not be found in QuickBooks.",
+        }
+    if not isinstance(baseline, dict) or not baseline:
+        return {
+            "status": "untracked", "modified": False, "differences": [],
+            "message": "This estimate was linked before QuickBooks change tracking was enabled.",
+        }
+    current = _estimate_snapshot(current_estimate)
+    differences = _estimate_differences(baseline, current)
+    return {
+        "status": "modified" if differences else "unchanged",
+        "modified": bool(differences),
+        "differences": differences,
+        "snapshot_at": str(getattr(unit, "qb_estimate_snapshot_at", "") or ""),
+    }
+
+
 # ── load helper ───────────────────────────────────────────────────────────────
 
 
@@ -572,11 +785,21 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         return refresh
 
     lines, problems = resolve_build_lines(paths, draft)
+    from .estimate_charges_service import exclude_legacy_managed_lines
+    lines = exclude_legacy_managed_lines(paths, lines)
     problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
     from . import agency_service, customer_pricing_service
     agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
     lines, pricing = customer_pricing_service.apply_customer_pricing(paths, lines, agency)
-    total = round(sum(ln["amount"] for ln in lines), 2)
+    materials_total = round(sum(ln["amount"] for ln in lines), 2)
+    from .estimate_charges_service import calculate_additional_charges
+    additional_charges = calculate_additional_charges(
+        paths,
+        build_type=build_unit.build_type,
+        material_lines=lines,
+    )
+    problems.extend(additional_charges["problems"])
+    total = additional_charges["estimate_total"]
     pending = [{"name": ln["name"], "part_number": ln.get("part_number", ""),
                 "amount": ln["amount"]} for ln in lines if ln.get("pending")]
     customer = None
@@ -590,11 +813,31 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         }
         customer_linked = bool(agency.qb_customer_id)
     from .exports_upload_service import portable_export_filename
+    estimate_change = {"status": "none", "modified": False, "differences": []}
+    if str(unit.qb_estimate_id or "").strip():
+        client, client_error = qb_sync_service._build_client(paths)
+        if client_error:
+            estimate_change = {
+                "status": "check_failed", "modified": False, "differences": [],
+                "message": "QuickBooks changes could not be checked.",
+            }
+        else:
+            try:
+                current_estimate = client.read_estimate(str(unit.qb_estimate_id).strip())
+                estimate_change = _estimate_change_status(unit, current_estimate)
+            except QuickBooksApiError:
+                estimate_change = {
+                    "status": "check_failed", "modified": False, "differences": [],
+                    "message": "QuickBooks changes could not be checked.",
+                }
     return {
         "ok": True,
         "can_create": not problems and bool(lines),
-        "line_count": len(lines),
+        "material_line_count": len(lines),
+        "line_count": len(lines) + len(additional_charges["lines"]),
         "total": total,
+        "materials_total": materials_total,
+        "additional_charges": additional_charges,
         "pricing": pricing,
         "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "problems": problems,
@@ -604,6 +847,7 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
         "customer": customer,
         "customer_linked": customer_linked,
         "existing_estimate_id": str(unit.qb_estimate_id or "").strip(),
+        "estimate_change": estimate_change,
         "pdf_available": bool(str(unit.pdf_path or "").strip()),
         "pdf_name": portable_export_filename(str(unit.pdf_path))
         if str(unit.pdf_path or "").strip() else "",
@@ -637,28 +881,25 @@ def _automatic_build_label(project, build_unit, unit) -> str:
     return f"{build_type} #1"
 
 
-def _estimate_project_name(
-    project, build_unit, unit, customer_name: str = "", *, use_auto_name: bool = False,
-) -> str:
-    """Return a stable, self-identifying name for one real QBO Project.
+def _estimate_project_name(project, build_unit, unit, *, use_auto_name: bool = False) -> str:
+    """Return the canonical, self-identifying name for one real QBO Project.
 
-    The simple order is agency, build year, then unit number. Those are the
-    identifiers the owner uses operationally; vehicle specification, VIN, and
-    quote number are deliberately excluded to keep the QBO Project list clean.
+    QBO already displays the parent agency Customer, so repeating it in every
+    Project title is redundant. The operational order is unit number first,
+    then build year. Vehicle specification, VIN, and quote number are
+    deliberately excluded to keep the QBO Project list clean.
     """
-    if getattr(unit, "qb_project_id", "") and getattr(unit, "qb_project_name", ""):
-        return unit.qb_project_name.strip()
-    customer = (
-        customer_name or project.customer.agency or project.customer.name or "Customer"
-    ).strip()
+    labels = _project_identity_labels(unit)
+    has_stored_binding = bool(
+        str(getattr(unit, "qb_project_id", "") or "").strip()
+        and str(getattr(unit, "qb_project_name", "") or "").strip()
+    )
+    if not labels and (use_auto_name or has_stored_binding):
+        labels = [_automatic_build_label(project, build_unit, unit)]
+    parts = list(labels)
     build_year = (project.customer.build_year or "").strip()
-    parts = [customer]
     if build_year:
         parts.append(f"Build {build_year}")
-    labels = _project_identity_labels(unit)
-    if not labels and use_auto_name:
-        labels = [_automatic_build_label(project, build_unit, unit)]
-    parts.extend(labels)
     return " | ".join(p for p in parts if p)
 
 
@@ -680,16 +921,31 @@ def _project_binding_summary(paths: AppPaths, project, build_unit, unit) -> dict
     return {
         "qb_project_id": stored_id,
         "customer_name": _project_customer_name(paths, project),
-        "project_name": _estimate_project_name(
-            project, build_unit, unit, _project_customer_name(paths, project)
-        ),
+        "project_name": _estimate_project_name(project, build_unit, unit),
         "identity_ready": bool(labels or (stored_id and stored_name)),
         "identity_labels": labels or ([auto_label] if stored_id and stored_name else []),
         "auto_label": auto_label,
         "auto_project_name": _estimate_project_name(
-            project, build_unit, unit, _project_customer_name(paths, project), use_auto_name=True,
+            project, build_unit, unit, use_auto_name=True,
         ),
         "ready": bool(stored_id),
+    }
+
+
+def preview_project_binding(paths: AppPaths, *, project_id: str, individual_id: str) -> dict:
+    """Return QBO Project setup details without requiring a build draft.
+
+    Project linking is a vehicle-level step, so it can happen as soon as an
+    individual unit exists. Estimate validation remains separate because it
+    needs the configured build's billable parts.
+    """
+    loaded = _load_individual(paths, project_id, individual_id)
+    if isinstance(loaded, dict):
+        return loaded
+    project, build_unit, unit = loaded
+    return {
+        "ok": True,
+        "project": _project_binding_summary(paths, project, build_unit, unit),
     }
 
 
@@ -764,6 +1020,8 @@ def create_estimate(
     attach_pdf: bool = False,
     pricing_mode: str = "retail",
     custom_pricing: dict | None = None,
+    additional_charges: dict | None = None,
+    overwrite_qb_changes: bool = False,
 ) -> dict:
     """Create a QBO Estimate for one vehicle. Blocks if any part is unbillable.
 
@@ -824,6 +1082,8 @@ def create_estimate(
         return refresh
 
     lines, problems = resolve_build_lines(paths, draft)
+    from .estimate_charges_service import exclude_legacy_managed_lines
+    lines = exclude_legacy_managed_lines(paths, lines)
     problems.extend(_attach_custom_parts_to_misc_item(paths, lines))
     from . import agency_service, customer_pricing_service
     agency = agency_service.get_agency(paths, (project.customer.agency_id or "").strip())
@@ -837,11 +1097,20 @@ def create_estimate(
         )
     except ValueError as exc:
         return {"ok": False, "error": "invalid_pricing", "detail": str(exc)}
+    from .estimate_charges_service import calculate_additional_charges
+    charge_result = calculate_additional_charges(
+        paths,
+        build_type=_build_unit.build_type,
+        material_lines=lines,
+        overrides=additional_charges,
+    )
+    problems.extend(charge_result["problems"])
     if problems:
         return {"ok": False, "error": "validation_failed",
                 "problems": problems, "line_count": len(lines)}
     if not lines:
         return {"ok": False, "error": "no_billable_parts"}
+    lines.extend(charge_result["lines"])
 
     binding = _project_binding_summary(paths, project, _build_unit, unit)
     if not binding["identity_ready"]:
@@ -866,13 +1135,7 @@ def create_estimate(
     )
     if not customer_result.get("ok"):
         return customer_result
-    customer = customer_result.get("customer") or {}
-    project_name = _estimate_project_name(
-        project,
-        _build_unit,
-        unit,
-        str(customer.get("name", "")),
-    )
+    project_name = _estimate_project_name(project, _build_unit, unit)
     memo_parts = [project_name]
     vehicle_description = " ".join(
         value for value in (unit.year, unit.make, unit.model) if str(value or "").strip()
@@ -892,6 +1155,7 @@ def create_estimate(
     # Invoice-only AllowOnlineACHPayment field or send an invented Estimate
     # field that Intuit may silently ignore.
     payload["PrivateNote"] = f"DTM vehicle project: {project_name}"
+    current_estimate = None
     try:
         if existing_action == "update":
             current_estimate = client.read_estimate(existing_estimate_id)
@@ -900,6 +1164,19 @@ def create_estimate(
                     "ok": False,
                     "error": "existing_estimate_not_found",
                     "existing_estimate_id": existing_estimate_id,
+                }
+            estimate_change = _estimate_change_status(unit, current_estimate)
+            change_status = str(estimate_change.get("status") or "untracked")
+            if change_status != "unchanged" and not overwrite_qb_changes:
+                return {
+                    "ok": False,
+                    "error": (
+                        "existing_estimate_modified"
+                        if change_status == "modified"
+                        else "existing_estimate_change_unverified"
+                    ),
+                    "existing_estimate_id": existing_estimate_id,
+                    "estimate_change": estimate_change,
                 }
             result = client.update_estimate(
                 existing_estimate_id,
@@ -933,6 +1210,14 @@ def create_estimate(
     estimate_id = result.get("qb_estimate_id", "")
     unit.qb_estimate_id = estimate_id
     unit.qb_project_name = project_name
+    snapshot_source = result.get("_estimate")
+    if not isinstance(snapshot_source, dict) or not snapshot_source:
+        snapshot_source = {**(current_estimate or {}), **payload}
+        snapshot_source["DocNumber"] = (
+            result.get("doc_number") or snapshot_source.get("DocNumber", "")
+        )
+    unit.qb_estimate_snapshot = _estimate_snapshot(snapshot_source)
+    unit.qb_estimate_snapshot_at = datetime.now(timezone.utc).isoformat()
     from ...inputs import project_entry
     project_entry.save_project(project, paths)
     attachment = None
@@ -966,6 +1251,11 @@ def create_estimate(
         "line_count": len(lines),
         "pending_count": pending_count,
         "total": total,
+        "materials_total": charge_result["materials_total"],
+        "additional_charges": {
+            key: value for key, value in charge_result.items()
+            if key not in {"lines", "problems"}
+        },
         "pricing": pricing,
         "pricing_refreshed_at": refresh.get("last_sync_utc"),
         "qb_project_id": unit.qb_project_id,

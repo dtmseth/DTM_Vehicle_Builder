@@ -24,12 +24,17 @@ let _pickerState = {
   products: [],            // [{product_id, model, manufacturer_label, skus:[...]}]
   expanded: new Set(),     // product_ids whose SKU list is open
   sel: null,               // { product_id, model, mfr, sku? }  current selection
-  loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" },
+  loc: { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacementLayout: "even", customPlacements: {}, customPlacementAnchors: {}, customHeadSpacing: 0.06, autoLocation: "", name_pattern: "", base_label: "" },
   partDetails: { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null },
+  tint: { windows: [], percentage: 20 },
+  locationAllocation: { quantities: {}, comments: {}, batchId: "" },
+  roundLightColor: "red",
   sirenDualTones: false,  // qty-2 Whelen speaker option; adds CEXAMP as a billed component
   comment: "",             // user-authored text shown in the build manifest
   accessories: [],         // resolved [{category,label,required,options:[...]}] for current product
   accessoryChoices: {},    // category_id → select value ("" | "none" | "<product_id>::<sku>")
+  accessoryQuantities: {}, // category_id → quantity, or quantities aligned with multi-choice rows
+  accessoryQuantityManual: {}, // category_id → whether each quantity was explicitly overridden
   accLoadedFor: null,      // product_id accessories were loaded for
   tracer: { active: false, mode: "trio", secondary: "white", lens: "clear", custom: {}, preview: null, loading: false },
   innerEdge: { active: false, mode: "duo", secondary: "white", coverage: "both", preview: null, loading: false },
@@ -46,7 +51,8 @@ let _pickerState = {
   consoleSetup: { active: false, loading: false, catalog: {}, choices: {}, faceplateSearch: "", openComponent: "" },
   westin: { active: false, wire: "", channel: "", channelInfo: null, lightProduct: null, loading: false, error: "", lights: { mode: "duo", secondary: "white", lens: "clear" } },
   vehicleOnly: true,       // hide parts/accessories not compatible with the draft's vehicle
-  partStatus: "New",      // primary part condition; guided systems ask this themselves
+  partStatus: "New",      // legacy compatibility value derived from `supply`
+  supply: { supplyType: "new", customerCondition: "", customerSource: "" },
   footerHandler: null,
   footerHandlerAnother: null,  // Step 7: "Add another part" action (null in edit mode)
   _footerWired: false,
@@ -75,6 +81,16 @@ const _TYPE_ICONS = { lights: "💡", equipment: "🔧", structural: "🏗️", 
 // Roof bars are ordered as whole configured SKUs (colors baked in), so they're
 // NOT a color-config category — no head-color preview/matrix, just pick the SKU.
 const _COLOR_CATEGORIES = new Set(["warning", "scene", "interior", "interior_bar", "spotlight"]);
+
+function _pickerMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "";
+}
+
+function _pickerRetailPrice(value) {
+  const amount = _pickerMoney(value);
+  return amount ? `Retail ${amount}` : "";
+}
 
 // ── Brand-preference scopes (owner flaw #5) ────────────────────────────
 // Mirror the `preference_filters` block in parts_db.json (~line 31630),
@@ -519,7 +535,9 @@ function _pickerClearSelection() {
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
   _pickerState.sirenDualTones = false;
-  _pickerState.accessories = []; _pickerState.accessoryChoices = {}; _pickerState.accLoadedFor = null;
+  _pickerState.accessories = []; _pickerState.accessoryChoices = {};
+  _pickerState.accessoryQuantities = {}; _pickerState.accessoryQuantityManual = {};
+  _pickerState.accLoadedFor = null;
   _pickerResetLocation();
   _pickerRenderProducts();
   _pickerRenderTracer(); _pickerRenderInnerEdge(); _pickerRenderOuterEdge(); _pickerRenderLightbar(); _pickerRenderRadio(); _pickerRenderAccessories();
@@ -542,7 +560,7 @@ async function _pickerOpenEdit(part) {
   _pickerResetState();
   _pickerState.editLineId = part.line_id;
   _pickerState.editPart = part;
-  _pickerState.partStatus = _pickerNormalPartStatus(part.new_or_used);
+  _pickerSetSupplyFromRecord(part);
   _pickerState.comment = part.comment || "";
   _pickerOpenPanel("Edit Part");
   await _pickerLoadTypes();
@@ -640,6 +658,29 @@ async function _pickerOpenEdit(part) {
     paMicClip: pc.details?.paMicClip || "",
     handheldMagMic: typeof pc.details?.handheldMagMic === "boolean" ? pc.details.handheldMagMic : null,
   };
+  _pickerState.tint = {
+    windows: Array.isArray(pc.window_tint?.windows) ? [...pc.window_tint.windows] : [],
+    percentage: Math.min(100, Math.max(1, Number(pc.window_tint?.percentage) || 20)),
+  };
+  _pickerState.locationAllocation = {
+    quantities: { ...(pc.location_allocation?.quantities || {}) },
+    comments: { ...(pc.location_allocation?.comments || {}) },
+    batchId: String(pc.location_batch_id || pc.location_allocation?.batch_id || ""),
+  };
+  _pickerState.roundLightColor = pc.round_light?.warning_color === "blue"
+    || (!pc.round_light && String(part.raw_color || "").toLowerCase().includes("blue"))
+    ? "blue" : "red";
+  if (_pickerState.locationAllocation.batchId && typeof _meDraft !== "undefined") {
+    const siblings = (_meDraft?.parts || []).filter(candidate =>
+      String(candidate.picker_config?.location_batch_id || "") === _pickerState.locationAllocation.batchId
+    );
+    for (const sibling of siblings) {
+      if (sibling.location) _pickerState.locationAllocation.quantities[sibling.location] = Number(sibling.quantity) || 1;
+      if (sibling.location) _pickerState.locationAllocation.comments[sibling.location] = String(sibling.comment || "");
+    }
+    c.count = Math.max(1, Object.values(_pickerState.locationAllocation.quantities).reduce((sum, value) => sum + (Number(value) || 0), 0));
+    _pickerNormalizeConfig();
+  }
   _pickerState.sirenDualTones = pc.siren_dual_tones === true;
   if (pc.westin) {
     _pickerState.westin = {
@@ -655,6 +696,9 @@ async function _pickerOpenEdit(part) {
     _pickerState.loc.textCustom = true;
     _pickerState.loc.renderLocation = pc.custom_location.render_location || "";
     _pickerState.loc.customPlacements = _pickerNormalizeCustomPlacements(pc.custom_location.placements);
+    _pickerState.loc.customPlacementAnchors = _pickerNormalizeCustomAnchors(pc.custom_location.anchors);
+    _pickerState.loc.customHeadSpacing = _pickerNormalizeCustomSpacing(pc.custom_location.spacing);
+    _pickerState.loc.customPlacementLayout = pc.custom_location.layout === "mirrored_pairs" ? "mirrored_pairs" : "even";
     _pickerState.loc.customPlacementMode = _pickerCustomPlacementCount() ? "free" : "vehicle";
     _pickerState.loc.customStage = (_pickerState.loc.renderLocation || _pickerCustomPlacementCount()) ? "placement" : "name";
   }
@@ -719,12 +763,17 @@ function _pickerResetState() {
   _pickerState.sel = null;
   _pickerState.skuChoices = {};   // "head_N" → chosen part_number (per-head override, Step 3)
   _pickerState.optionsRemoved = false;
-  _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacements: {}, autoLocation: "", name_pattern: "", base_label: "" };
+  _pickerState.loc = { layouts: null, vehicle: "", view: "front", locByName: {}, dotNames: [], selected: null, textCustom: false, renderLocation: "", customStage: "", customPlacementMode: "vehicle", customPlacementLayout: "even", customPlacements: {}, customPlacementAnchors: {}, customHeadSpacing: 0.06, autoLocation: "", name_pattern: "", base_label: "" };
   _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
+  _pickerState.tint = { windows: [], percentage: 20 };
+  _pickerState.locationAllocation = { quantities: {}, comments: {}, batchId: "" };
+  _pickerState.roundLightColor = "red";
   _pickerState.sirenDualTones = false;
   _pickerState.comment = "";
   _pickerState.accessories = [];
   _pickerState.accessoryChoices = {};
+  _pickerState.accessoryQuantities = {};
+  _pickerState.accessoryQuantityManual = {};
   _pickerState.accLoadedFor = null;
   _pickerState.tracer = { active: false, mode: "trio", secondary: "white", lens: "clear", custom: {}, preview: null, loading: false };
   _pickerState.innerEdge = { active: false, mode: "duo", secondary: "white", coverage: "both", preview: null, loading: false };
@@ -735,6 +784,7 @@ function _pickerResetState() {
   _pickerState.consoleSetup = _pickerNewConsoleSetup();
   _pickerState.westin = _pickerNewWestinState();
   _pickerState.partStatus = "New";
+  _pickerState.supply = { supplyType: "new", customerCondition: "", customerSource: "" };
   try {                            // persisted toggle; default ON
     const v = localStorage.getItem("pp_vehicle_only");
     _pickerState.vehicleOnly = v === null ? true : v === "1";
@@ -763,8 +813,15 @@ function _pickerOpenPanel(title) {
     $("picker-add-another-btn")?.addEventListener("click", () => { if (_pickerState.footerHandlerAnother) _pickerState.footerHandlerAnother(); });
     $("picker-tab-btn-part")?.addEventListener("click", () => _pickerSwitchTab("part"));
     $("picker-tab-btn-location")?.addEventListener("click", () => _pickerSwitchTab("location"));
-    document.querySelectorAll("[data-picker-part-status]").forEach(btn => {
-      btn.addEventListener("click", () => _pickerSetPartStatus(btn.dataset.pickerPartStatus));
+    document.querySelectorAll("[data-picker-supply-type]").forEach(btn => {
+      btn.addEventListener("click", () => _pickerSetSupplyType(btn.dataset.pickerSupplyType));
+    });
+    document.querySelectorAll("[data-picker-customer-condition]").forEach(btn => {
+      btn.addEventListener("click", () => _pickerSetCustomerCondition(btn.dataset.pickerCustomerCondition));
+    });
+    $("picker-customer-source")?.addEventListener("input", event => {
+      _pickerState.supply.customerSource = event.target.value;
+      _pickerRenderPartStatus(); _pickerUpdateFooter();
     });
     $("picker-part-comment")?.addEventListener("input", event => {
       _pickerState.comment = event.target.value;
@@ -787,7 +844,10 @@ function _pickerSyncCommentStep() {
   const comment = $("picker-part-comment");
   if (!step || !entry || !toggle) return;
 
-  const available = !!_pickerState.sel;
+  // Multi-location round lights expose one note field per manifest row in the
+  // allocation grid. Hiding the shared footer note prevents one value from
+  // being misleadingly copied to every selected location.
+  const available = !!_pickerState.sel && !_pickerUsesLocationAllocation();
   step.hidden = !available;
   if (!available) {
     entry.hidden = true;
@@ -825,9 +885,66 @@ function _pickerNormalPartStatus(value) {
   return found || "New";
 }
 
+function _pickerSupplyFromRecord(record = {}) {
+  const legacy = String(record.new_or_used || "").trim().toLowerCase();
+  const explicit = String(record.supply_type || "").trim().toLowerCase();
+  const customer = explicit === "customer_supplied" || (!explicit && ["used", "reused", "u", "r", "transfer", "transferred"].includes(legacy));
+  return {
+    supplyType: customer ? "customer_supplied" : "new",
+    customerCondition: customer
+      ? (["new", "used"].includes(String(record.customer_condition || "").trim().toLowerCase())
+        ? String(record.customer_condition).trim().toLowerCase() : "used")
+      : "",
+    customerSource: customer ? String(record.customer_source || record.source || "").trim() : "",
+  };
+}
+
+function _pickerSetSupplyFromRecord(record = {}) {
+  _pickerState.supply = _pickerSupplyFromRecord(record);
+  _pickerState.partStatus = _pickerState.supply.supplyType === "new" ? "New" : "Used";
+}
+
+function _pickerSupplyPayload(supply = _pickerState.supply) {
+  const customer = supply?.supplyType === "customer_supplied";
+  const customerCondition = customer && ["new", "used"].includes(supply.customerCondition)
+    ? supply.customerCondition : "";
+  const customerSource = customer ? String(supply.customerSource || "").trim() : "";
+  return {
+    supply_type: customer ? "customer_supplied" : "new",
+    customer_condition: customerCondition,
+    customer_source: customerSource,
+    new_or_used: customer ? "Used" : "New",
+    source: customerSource,
+  };
+}
+
+function _pickerSupplySatisfied(supply = _pickerState.supply) {
+  if (supply?.supplyType !== "customer_supplied") return true;
+  if (!["new", "used"].includes(supply.customerCondition)) return false;
+  return supply.customerCondition !== "used" || Boolean(String(supply.customerSource || "").trim());
+}
+
+function _pickerSetSupplyType(value) {
+  const customer = value === "customer_supplied";
+  _pickerState.supply.supplyType = customer ? "customer_supplied" : "new";
+  if (!customer) {
+    _pickerState.supply.customerCondition = "";
+    _pickerState.supply.customerSource = "";
+  }
+  _pickerState.partStatus = customer ? "Used" : "New";
+  _pickerRenderPartStatus(); _pickerUpdateFooter();
+}
+
+function _pickerSetCustomerCondition(value) {
+  _pickerState.supply.customerCondition = ["new", "used"].includes(value) ? value : "";
+  if (value !== "used") _pickerState.supply.customerSource = "";
+  _pickerRenderPartStatus(); _pickerUpdateFooter();
+}
+
 function _pickerSetPartStatus(value) {
-  _pickerState.partStatus = _pickerNormalPartStatus(value);
-  _pickerRenderPartStatus();
+  const status = _pickerNormalPartStatus(value);
+  _pickerSetSupplyFromRecord({ new_or_used: status });
+  _pickerRenderPartStatus(); _pickerUpdateFooter();
 }
 
 function _pickerRenderPartStatus() {
@@ -835,12 +952,29 @@ function _pickerRenderPartStatus() {
   if (!control) return;
   // Guided radio/radar/camera flows have their own condition question because
   // it changes the rest of their install workflow (for example cable refresh).
-  control.hidden = !!(_pickerState.radio?.active || _pickerState.systemSetup?.active);
-  document.querySelectorAll("[data-picker-part-status]").forEach(btn => {
-    const active = btn.dataset.pickerPartStatus === _pickerState.partStatus;
+  control.hidden = !!(_pickerState.radio?.active || _pickerState.systemSetup?.active || _pickerState.consoleSetup?.active);
+  document.querySelectorAll("[data-picker-supply-type]").forEach(btn => {
+    const active = btn.dataset.pickerSupplyType === _pickerState.supply.supplyType;
     btn.classList.toggle("picker-part-status-btn--active", active);
     btn.setAttribute("aria-pressed", String(active));
   });
+  const condition = $("picker-customer-condition");
+  if (condition) condition.hidden = _pickerState.supply.supplyType !== "customer_supplied";
+  document.querySelectorAll("[data-picker-customer-condition]").forEach(btn => {
+    const active = btn.dataset.pickerCustomerCondition === _pickerState.supply.customerCondition;
+    btn.classList.toggle("picker-part-status-btn--active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+  const sourceWrap = $("picker-customer-source-wrap"), source = $("picker-customer-source");
+  const sourceNeeded = _pickerState.supply.supplyType === "customer_supplied" && _pickerState.supply.customerCondition === "used";
+  if (sourceWrap) {
+    sourceWrap.hidden = !sourceNeeded;
+    sourceWrap.classList.toggle("source-needed", sourceNeeded && !String(_pickerState.supply.customerSource || "").trim());
+  }
+  if (source) {
+    if (source.value !== (_pickerState.supply.customerSource || "")) source.value = _pickerState.supply.customerSource || "";
+    source.required = sourceNeeded;
+  }
 }
 
 function _pickerSwitchTab(tab) {
@@ -1314,7 +1448,7 @@ function _pickerWireFilters() {
     const k = b.dataset.k, v = b.dataset.v;
     const f = _pickerState.filters, c = _pickerState.config;
     if (k === "lens") { f.lens = v; _pickerRenderFilters(); _pickerRenderProducts(); return; }
-    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerRenderAccessories(); _pickerUpdateFooter(); return; }
     if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "mode") { c.mode = v; _pickerNormalizeConfig(); _pickerRenderFilters(); _pickerRenderProducts(); _pickerUpdateFooter(); return; }
   }));
@@ -1628,7 +1762,7 @@ function _pickerWestinBumperHtml(product) {
         const value = _pickerWestinOptValue(p);
         if (!value) return "";
         const sku = (p.skus || []).find(s => `${p.product_id}::${s.part_number}` === value) || {};
-        const price = sku.price != null ? ` · $${sku.price}` : "";
+        const price = sku.price != null ? ` · ${_pickerRetailPrice(sku.price)}` : "";
         return `<option value="${esc(value)}"${_pickerState.westin[kind] === value ? " selected" : ""}>${esc(p.model)} · ${esc(sku.part_number || "")}${price}</option>`;
       })
       .join("");
@@ -1658,14 +1792,74 @@ function _pickerActivateWestinBumper(product) {
 // Product-level color defaults are for a fresh selection only. An edited line
 // always retains its saved picker_config, even if the catalog's default changes.
 function _pickerApplyProductColorDefaults(product) {
-  const colors = (product?.default_colors || [])
+  const defaultColors = (product?.default_colors || [])
     .map(color => String(color).toLowerCase())
-    .filter(color => _pickerAllowedColors().includes(color));
-  if (!colors.length) return;
+    .filter(color => _pickerAllowedColors(product).includes(color));
   const c = _pickerState.config;
-  c.colorsPerHead = colors.length === 1 ? "single" : colors.length === 2 ? "duo" : "trio";
+  const productCategory = _pickerProductCategory(product);
+  const isSpecialFlow = productCategory === "scene" || _pickerUsesLocationAllocation(product);
+  const preference = (window._PT?.viewProject?.preferences?.lighting_mode === "trio") ? "trio" : "duo";
+  const skuColors = (product?.skus || []).map(sku => ({
+    sku,
+    colors: [sku.color, sku.secondary_color, sku.tertiary_color]
+      .filter(Boolean).map(color => String(color).toLowerCase()),
+  }));
+
+  if (!isSpecialFlow && preference === "trio") {
+    const trio = skuColors
+      .filter(item => item.colors.length === 3)
+      .sort((a, b) => {
+        const rank = item => item.colors.includes("red") && item.colors.includes("blue")
+          ? (item.colors.includes("white") ? 0 : 1) : 2;
+        return rank(a) - rank(b) || (a.sku.price ?? 9e9) - (b.sku.price ?? 9e9);
+      })[0];
+    if (trio) {
+      c.colorsPerHead = "trio";
+      c.mode = "uniform";
+      c.uniform = [...trio.colors];
+      c.splitSecondary = [];
+      c.custom = [];
+      c._noColor = false;
+      _pickerNormalizeConfig(product);
+      return;
+    }
+  }
+
+  if (!isSpecialFlow && preference === "duo") {
+    const duo = skuColors.filter(item => item.colors.length === 2);
+    const driver = duo.find(item => item.colors.includes("red") && !item.colors.includes("blue"));
+    const passenger = duo.find(item => item.colors.includes("blue") && !item.colors.includes("red"));
+    const sharedSecondary = driver?.colors.find(color => color !== "red"
+      && passenger?.colors.includes(color));
+    if (driver && passenger && sharedSecondary) {
+      c.colorsPerHead = "duo";
+      c.mode = "split";
+      c.uniform = ["red", sharedSecondary];
+      c.splitSecondary = [sharedSecondary];
+      c.custom = [];
+      c._noColor = false;
+      if (c.count % 2) c.count = Math.max(2, c.count + 1);
+      _pickerNormalizeConfig(product);
+      return;
+    }
+    const uniformDuo = duo[0];
+    if (uniformDuo) {
+      c.colorsPerHead = "duo";
+      c.mode = "uniform";
+      c.uniform = [...uniformDuo.colors];
+      c.splitSecondary = [];
+      c.custom = [];
+      c._noColor = false;
+      _pickerNormalizeConfig(product);
+      return;
+    }
+  }
+
+  const fallbackColors = defaultColors.length ? defaultColors : (skuColors[0]?.colors || []);
+  if (!fallbackColors.length) return;
+  c.colorsPerHead = fallbackColors.length === 1 ? "single" : fallbackColors.length === 2 ? "duo" : "trio";
   c.mode = "uniform";
-  c.uniform = colors.slice(0, 3);
+  c.uniform = fallbackColors.slice(0, 3);
   c.splitSecondary = [];
   c.custom = [];
   c._noColor = false;
@@ -1695,6 +1889,86 @@ function _pickerApplyProductContext(product) {
   if (f.type_id) _pickerBrowseExpanded.types.add(f.type_id);
   if (f.family_id) _pickerBrowseExpanded.families.add(f.family_id);
   return changed;
+}
+
+const _PICKER_TINT_WINDOWS = [
+  ["windshield", "Windshield"],
+  ["windshield_brow", "Windshield brow"],
+  ["driver_front", "Driver front window"],
+  ["passenger_front", "Passenger front window"],
+  ["driver_rear", "Driver rear window"],
+  ["passenger_rear", "Passenger rear window"],
+  ["driver_quarter", "Driver quarter / cargo window"],
+  ["passenger_quarter", "Passenger quarter / cargo window"],
+  ["rear_window", "Rear window"],
+];
+
+function _pickerIsWindowTint(product = null) {
+  return (product || _pickerSelectedProduct())?.picker_form === "window_tint";
+}
+
+function _pickerTintLabel(id) {
+  return _PICKER_TINT_WINDOWS.find(([key]) => key === id)?.[1] || id;
+}
+
+function _pickerTintReady() {
+  const percentage = Number(_pickerState.tint?.percentage);
+  return !_pickerIsWindowTint()
+    || (_pickerState.tint.windows.length > 0 && Number.isFinite(percentage) && percentage >= 1 && percentage <= 100);
+}
+
+function _pickerTintHtml() {
+  const selected = new Set(_pickerState.tint.windows || []);
+  const count = selected.size;
+  return `<section class="pp-prod-options pp-tint-options"><div class="pp-tint-heading"><div><span class="pf-label">Tint service</span><strong>Choose every window that needs tint</strong></div><span class="pp-tint-price">Retail $65.00 × ${count} = ${_pickerMoney(count * 65)}</span></div>`
+    + `<div class="pp-tint-window-grid">${_PICKER_TINT_WINDOWS.map(([id, label]) => `<button type="button" class="pp-tint-window${selected.has(id) ? " is-selected" : ""}" data-tint-window="${id}"><span class="pp-tint-window-mark">${selected.has(id) ? "✓" : "+"}</span><span class="pp-tint-window-label">${esc(label)}</span></button>`).join("")}</div>`
+    + `<label class="pp-tint-percent"><span>Tint percentage</span><span><input type="number" data-tint-percentage min="1" max="100" step="1" value="${esc(_pickerState.tint.percentage)}">%</span></label>`
+    + `<small>Each selected window is quoted as a $65 tint service line quantity. No vehicle placement is required.</small></section>`;
+}
+
+function _pickerUsesLocationAllocation(product = null) {
+  return (product || _pickerSelectedProduct())?.picker_location_allocation === true;
+}
+
+function _pickerLocationAllocationTotal() {
+  return Object.values(_pickerState.locationAllocation?.quantities || {})
+    .reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+}
+
+function _pickerLocationAllocationReady() {
+  return !_pickerUsesLocationAllocation() || _pickerLocationAllocationTotal() > 0;
+}
+
+function _pickerLocationAllocationHtml(product) {
+  const quantities = _pickerState.locationAllocation.quantities || {};
+  const comments = _pickerState.locationAllocation.comments || {};
+  const options = product.location_options || [];
+  const total = _pickerLocationAllocationTotal();
+  return `<section class="pp-prod-options pp-location-allocation"><div class="pp-tint-heading"><div><span class="pf-label">Install locations</span><strong>Split the round lights across the vehicle</strong></div><span class="pp-tint-price">${total} light${total === 1 ? "" : "s"}</span></div>`
+    + `<div class="pp-allocation-grid">${options.map(location => {
+      const quantity = Math.max(0, Number(quantities[location]) || 0);
+      return `<div class="pp-allocation-row"><div><strong>${esc(location)}</strong><small>${quantity ? `${quantity} selected` : "None"}</small><input type="text" data-allocation-comment="${esc(location)}" aria-label="${esc(location)} line notes" placeholder="Notes for this line (optional)" value="${esc(comments[location] || "")}"${quantity ? "" : " disabled"}></div><div class="pp-allocation-stepper"><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="-1"${quantity ? "" : " disabled"}>−</button><span>${quantity}</span><button type="button" data-allocation-location="${esc(location)}" data-allocation-delta="1"${total >= 12 ? " disabled" : ""}>+</button></div></div>`;
+    }).join("")}</div><small>Each selected location becomes its own editable manifest row with its own optional notes; all rows stay linked as one allocation.</small></section>`;
+}
+
+function _pickerRoundLightSku(product, color = _pickerState.roundLightColor) {
+  const normalized = color === "blue" ? "blue" : "red";
+  return (product?.skus || []).find(sku =>
+    String(sku.color || "").toLowerCase() === normalized
+    && String(sku.secondary_color || "").toLowerCase() === "white"
+  ) || null;
+}
+
+function _pickerRoundLightHtml(product) {
+  const color = _pickerState.roundLightColor === "blue" ? "blue" : "red";
+  const chosenSku = _pickerRoundLightSku(product, color);
+  return `<div class="pp-round-options">${_pickerLocationAllocationHtml(product)}`
+    + `<section class="pp-prod-options pp-round-color"><div><span class="pf-label">Secondary warning color</span><strong>White is included automatically</strong></div>`
+    + `<div class="pp-round-color-buttons">${["red", "blue"].map(value => {
+      const sku = _pickerRoundLightSku(product, value);
+      return `<button type="button" class="pf-pill${color === value ? " active" : ""}" data-round-light-color="${value}"${sku ? "" : " disabled"}>${value === "red" ? "Red" : "Blue"}${sku?.price != null ? ` · ${_pickerRetailPrice(sku.price)}` : ""}</button>`;
+    }).join("")}</div>`
+    + `<small>${chosenSku ? `${esc(chosenSku.part_number)} · ${esc(color === "red" ? "Red/White" : "Blue/White")}` : "No matching Red/White or Blue/White SKU is available."}</small></section></div>`;
 }
 
 function _pickerRenderProducts() {
@@ -1800,8 +2074,12 @@ function _pickerRenderProducts() {
     let skus = (vehFiltering ? p.skus.filter(s => _skuCompatible(s, veh)) : p.skus)
       .filter(s => _pickerSkuAllowedForCurrentFlow(s, p));
     if (vehFiltering) skus = _pickerHowlerVehicleSkus(p, skus, veh);
+    if (_pickerUsesLocationAllocation(p)) {
+      skus = skus.filter(s => ["red", "blue"].includes(String(s.color || "").toLowerCase())
+        && String(s.secondary_color || "").toLowerCase() === "white");
+    }
     const prices = skus.map(s => s.price).filter(v => v != null);
-    const priceStr = prices.length ? `from $${Math.min(...prices)}` : "";
+    const priceStr = prices.length ? `from ${_pickerRetailPrice(Math.min(...prices))}` : "";
     const qb = skus.some(s => s.qb) ? `<span class="pp-match ok">QB</span>` : "";
     // Programmable bars (WeCanX) carry no per-SKU colors → fall back to direct
     // SKU selection even inside a color category, so they stay pickable.
@@ -1816,9 +2094,11 @@ function _pickerRenderProducts() {
     let bodyHtml = "";
     if (open) {
       if (selectsOnClick && selected) {
+        if (_pickerUsesLocationAllocation(p)) {
+          bodyHtml = _pickerRoundLightHtml(p);
         // Step 5: branch on scene (category == "scene" covers all scene_lights family
         // members — front_scene/rear_scene/side_scene/spotlight share picker_flow "scene").
-        if (productCategory === "scene") {
+        } else if (productCategory === "scene") {
           // Scene box: qty control only (no mode/lens/color/cph/remove-options) +
           // per-head SKU dropdowns (all SKUs, unfiltered) + plain uncolored viz.
           bodyHtml = `<div class="pp-prod-options">${_pickerColorConfigHtml(p)}</div>`;
@@ -1828,7 +2108,7 @@ function _pickerRenderProducts() {
             const headKey = "head_" + h;
             const chosen = _pickerState.skuChoices[headKey] || (sceneSorted[0] && sceneSorted[0].part_number) || "";
             const headTitle = `Head ${h + 1}: ${chosen || "—"}`;
-            const opts = sceneSorted.map(s => `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${s.price != null ? " · $" + s.price : ""}</option>`).join("");
+            const opts = sceneSorted.map(s => `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${s.price != null ? " · " + _pickerRetailPrice(s.price) : ""}</option>`).join("");
             return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select></div>`;
           }).join("") + `</div>`;
           // Plain uncolored heads — scene heads carry no color, just quantity.
@@ -1871,7 +2151,7 @@ function _pickerRenderProducts() {
             const headTitle = `Head ${h + 1}: ${chosen || "—"}${lensLabel ? " · " + lensLabel : ""}`;
             const opts = displaySkus.map(s => {
               const cs = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).join("/");
-              return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · $" + s.price : ""}</option>`;
+              return `<option value="${esc(s.part_number)}"${s.part_number === chosen ? " selected" : ""}>${esc(s.part_number)}${cs ? " · " + esc(cs) : ""}${s.lens_type ? " · " + esc(s.lens_type) : ""}${s.price != null ? " · " + _pickerRetailPrice(s.price) : ""}</option>`;
             }).join("");
             return `<div class="pp-sku"><span class="pp-sku-pn">${esc(headTitle)}</span><select class="pp-override" data-head="${h}">${opts}</select>${(!hasMatch && !optRemoved) ? `<span class="pp-match no">no exact</span>` : ""}</div>`;
           }).join("") + `</div>`;
@@ -1881,6 +2161,7 @@ function _pickerRenderProducts() {
       } else {
         if (selected && _pickerIsSirenSpeakerContext()) bodyHtml += _pickerSirenQtyHtml();
         if (selected) bodyHtml += _pickerWestinBumperHtml(p);
+        if (selected && _pickerIsWindowTint(p)) bodyHtml += _pickerTintHtml();
         bodyHtml += `<div class="pp-skus">` + skus.map(s => {
           const matched = pColor ? _skuMatchesAny(s, headSets) : true;
           const cls = pColor ? (matched ? "match" : "nomatch") : "";
@@ -1888,7 +2169,7 @@ function _pickerRenderProducts() {
           // back to color/lens, which is description enough for lightheads.
           const colorBits = [s.color, s.secondary_color, s.tertiary_color].filter(Boolean).map(x => x[0].toUpperCase() + x.slice(1)).join("/");
           const desc = [s.friendly_name, colorBits].filter(Boolean).join(" · ") || "—";
-          const pr = s.price != null ? `$${s.price}` : "";
+          const pr = s.price != null ? _pickerRetailPrice(s.price) : "";
           const pickSel = _pickerState.sel && _pickerState.sel.sku === s.part_number && _pickerState.sel.product_id === p.product_id;
           const pick = !pColor ? `<button class="pf-pill${pickSel ? " active" : ""}" data-pick="${esc(s.part_number)}" data-pid="${esc(p.product_id)}">${pickSel ? "✓ Selected" : "Select"}</button>` : "";
           const pend = s.qb_pending ? `<span class="pp-pending" title="Not in QuickBooks yet — usable now, flagged on the estimate">pending QB</span>` : "";
@@ -1942,6 +2223,38 @@ function _pickerRenderProducts() {
     _pickerRenderProducts();
     _pickerUpdateFooter();
   }));
+  el.querySelectorAll("[data-tint-window]").forEach(button => button.addEventListener("click", () => {
+    const id = button.dataset.tintWindow;
+    const windows = _pickerState.tint.windows || [];
+    const index = windows.indexOf(id);
+    if (index >= 0) windows.splice(index, 1);
+    else windows.push(id);
+    _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-allocation-location]").forEach(button => button.addEventListener("click", () => {
+    const location = button.dataset.allocationLocation;
+    const delta = Number(button.dataset.allocationDelta) || 0;
+    const quantities = _pickerState.locationAllocation.quantities;
+    quantities[location] = Math.min(12, Math.max(0, (Number(quantities[location]) || 0) + delta));
+    if (!quantities[location]) delete quantities[location];
+    _pickerState.config.count = Math.max(1, _pickerLocationAllocationTotal());
+    _pickerNormalizeConfig(_pickerSelectedProduct());
+    _pickerState.skuChoices = {};
+    _pickerRenderProducts(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("[data-allocation-comment]").forEach(input => input.addEventListener("input", () => {
+    const location = input.dataset.allocationComment;
+    _pickerState.locationAllocation.comments[location] = input.value;
+  }));
+  el.querySelectorAll("[data-round-light-color]").forEach(button => button.addEventListener("click", () => {
+    _pickerState.roundLightColor = button.dataset.roundLightColor === "blue" ? "blue" : "red";
+    _pickerRenderProducts();
+    _pickerUpdateFooter();
+  }));
+  el.querySelector("[data-tint-percentage]")?.addEventListener("input", event => {
+    _pickerState.tint.percentage = Math.min(100, Math.max(1, Number(event.target.value) || 0));
+    _pickerUpdateFooter();
+  });
   const vt = el.querySelector("#pp-veh-only");
   if (vt) vt.addEventListener("change", () => {
     _pickerState.vehicleOnly = vt.checked;
@@ -2062,7 +2375,7 @@ function _pickerWireProductOptions(el) {
     // Qty changes leave the filter state alone; all other option changes re-apply it (Step 3).
     if (k !== "count") _pickerState.optionsRemoved = false;
     if (k === "lens") { f.lens = v; _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
-    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
+    if (k === "count") { c.count = Math.min(12, Math.max(1, c.count + parseInt(v, 10))); _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerRenderAccessories(); _pickerUpdateFooter(); return; }
     if (k === "cph") { c.colorsPerHead = v; _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
     if (k === "mode") { c.mode = v; _pickerNormalizeConfig(); _pickerState.skuChoices = {}; _pickerRenderProducts(); _pickerUpdateFooter(); return; }
   }));
@@ -2130,7 +2443,9 @@ function _pickerSetStandardLocation(location, entry = {}, autoLocation = "") {
   loc.renderLocation = "";
   loc.customStage = "";
   loc.customPlacementMode = "vehicle";
+  loc.customPlacementLayout = "even";
   loc.customPlacements = {};
+  loc.customPlacementAnchors = {};
   loc.autoLocation = autoLocation;
   loc.name_pattern = entry.name_pattern || "";
   loc.base_label = entry.base_label || "";
@@ -2165,10 +2480,123 @@ function _pickerNormalizeCustomPlacements(raw) {
     const clean = points.filter(point => {
       const x = Number(point?.x), y = Number(point?.y);
       return Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1;
-    }).map(point => ({ x: Number(point.x), y: Number(point.y) }));
+    }).map((point, fallbackIndex) => {
+      const clean = { x: Number(point.x), y: Number(point.y) };
+      const headIndex = Number(point.head_index);
+      clean.head_index = Number.isInteger(headIndex) && headIndex >= 0 ? headIndex : fallbackIndex;
+      if (typeof point.group_id === "string" && point.group_id.trim()) clean.group_id = point.group_id.trim().slice(0, 40);
+      return clean;
+    });
     if (clean.length) out[String(view).toLowerCase()] = clean;
   }
   return out;
+}
+
+function _pickerNormalizeCustomAnchors(raw) {
+  const out = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [view, point] of Object.entries(raw)) {
+    const x = Number(point?.x), y = Number(point?.y);
+    if (Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+      out[String(view).toLowerCase()] = { x, y };
+    }
+  }
+  return out;
+}
+
+function _pickerNormalizeCustomSpacing(value) {
+  const spacing = Number(value);
+  return Number.isFinite(spacing) ? Math.min(0.2, Math.max(0.01, spacing)) : 0.06;
+}
+
+function _pickerCustomPlacementHeadCount() {
+  const product = _pickerSelectedProduct();
+  const category = _pickerProductCategory(product);
+  const quantityDriven = _pickerUsesColor(product)
+    && (_pickerProductHasColor(product) || category === "scene");
+  return quantityDriven ? Math.min(12, Math.max(1, Number(_pickerState.config.count) || 1)) : 1;
+}
+
+function _pickerCustomSpacingMax(count = _pickerCustomPlacementHeadCount()) {
+  return count > 1 ? Math.min(0.2, 0.9 / (count - 1)) : 0.2;
+}
+
+function _pickerCustomGroupPoints(anchor, count = _pickerCustomPlacementHeadCount(), spacing = _pickerState.loc.customHeadSpacing) {
+  const safeCount = Math.min(12, Math.max(1, Number(count) || 1));
+  const safeSpacing = Math.min(_pickerCustomSpacingMax(safeCount), _pickerNormalizeCustomSpacing(spacing));
+  const halfWidth = safeSpacing * (safeCount - 1) / 2;
+  const centerX = Math.min(1 - halfWidth, Math.max(halfWidth, Number(anchor?.x) || 0));
+  const centerY = Math.min(1, Math.max(0, Number(anchor?.y) || 0));
+  return Array.from({ length: safeCount }, (_, index) => ({
+    x: centerX + (index - (safeCount - 1) / 2) * safeSpacing,
+    y: centerY,
+    head_index: index,
+    group_id: "row",
+  }));
+}
+
+function _pickerCustomMirroredPairPoints(anchor, spacing = _pickerState.loc.customHeadSpacing) {
+  const pairSpacing = Math.min(0.2, _pickerNormalizeCustomSpacing(spacing));
+  const halfPair = pairSpacing / 2;
+  const requestedOffset = Math.abs((Number(anchor?.x) || 0.72) - 0.5);
+  const pairOffset = Math.min(0.45 - halfPair, Math.max(halfPair + 0.025, requestedOffset));
+  const y = Math.min(1, Math.max(0, Number(anchor?.y) || 0));
+  const leftCenter = 0.5 - pairOffset;
+  const rightCenter = 0.5 + pairOffset;
+  return [
+    { x: leftCenter - halfPair, y, head_index: 0, group_id: "left_pair" },
+    { x: leftCenter + halfPair, y, head_index: 1, group_id: "left_pair" },
+    { x: rightCenter - halfPair, y, head_index: 2, group_id: "right_pair" },
+    { x: rightCenter + halfPair, y, head_index: 3, group_id: "right_pair" },
+  ];
+}
+
+function _pickerSetCustomPlacementGroup(view, anchor) {
+  const loc = _pickerState.loc;
+  const key = String(view || "").toLowerCase();
+  if (!key) return;
+  loc.customHeadSpacing = Math.min(_pickerCustomSpacingMax(), _pickerNormalizeCustomSpacing(loc.customHeadSpacing));
+  const pairMode = loc.customPlacementLayout === "mirrored_pairs" && _pickerCustomPlacementHeadCount() === 4;
+  const points = pairMode ? _pickerCustomMirroredPairPoints(anchor) : _pickerCustomGroupPoints(anchor);
+  const center = points.reduce((memo, point) => ({ x: memo.x + point.x, y: memo.y + point.y }), { x: 0, y: 0 });
+  // In pair mode the click identifies one pair's distance from center. The
+  // rendered four-head group is necessarily centered at 0.5, so saving its
+  // arithmetic center would discard that distance on the next redraw.
+  loc.customPlacementAnchors[key] = pairMode
+    ? {
+        x: Math.min(1, Math.max(0, Number(anchor?.x) || 0.72)),
+        y: Math.min(1, Math.max(0, Number(anchor?.y) || 0)),
+      }
+    : { x: center.x / points.length, y: center.y / points.length };
+  loc.customPlacements[key] = points;
+}
+
+function _pickerEnsureCustomPlacementAnchor(view) {
+  const loc = _pickerState.loc;
+  const key = String(view || "").toLowerCase();
+  if (loc.customPlacementAnchors?.[key]) return loc.customPlacementAnchors[key];
+  const points = loc.customPlacements?.[key] || [];
+  if (!points.length) return null;
+  if (loc.customPlacementLayout === "mirrored_pairs" && points.length === 4) {
+    const oneSide = points.filter(point => point.group_id === "right_pair" || Number(point.x) > 0.5);
+    if (oneSide.length) {
+      const sideSum = oneSide.reduce((memo, point) => ({ x: memo.x + point.x, y: memo.y + point.y }), { x: 0, y: 0 });
+      const anchor = { x: sideSum.x / oneSide.length, y: sideSum.y / oneSide.length };
+      loc.customPlacementAnchors[key] = anchor;
+      return anchor;
+    }
+  }
+  const sum = points.reduce((memo, point) => ({ x: memo.x + point.x, y: memo.y + point.y }), { x: 0, y: 0 });
+  const anchor = { x: sum.x / points.length, y: sum.y / points.length };
+  loc.customPlacementAnchors[key] = anchor;
+  return anchor;
+}
+
+function _pickerRefreshCustomPlacementGroups() {
+  const loc = _pickerState.loc;
+  for (const [view, anchor] of Object.entries(loc.customPlacementAnchors || {})) {
+    _pickerSetCustomPlacementGroup(view, anchor);
+  }
 }
 
 function _pickerCustomPlacementCount() {
@@ -2192,7 +2620,10 @@ function _pickerStartCustomLocation() {
   loc.renderLocation = "";
   loc.customStage = "name";
   loc.customPlacementMode = "vehicle";
+  loc.customPlacementLayout = "even";
   loc.customPlacements = {};
+  loc.customPlacementAnchors = {};
+  loc.customHeadSpacing = 0.06;
   loc.autoLocation = "";
   loc.name_pattern = "";
   loc.base_label = "";
@@ -2344,18 +2775,19 @@ const _MAGNETIC_MIC_ITEMS = {
   magnetic_with_bracket: { part_number: "MMSU-1B", model: "Mag Mic with Bracket", manufacturer: "Magnetic Mic" },
 };
 
-function _pickerMagneticMicRow(parentLineId, parentName, location, selection, condition = "New") {
+function _pickerMagneticMicRow(parentLineId, parentName, location, selection, supplyRecord = { new_or_used: "New" }) {
   const item = _MAGNETIC_MIC_ITEMS[selection];
   if (!item || !parentLineId) return null;
+  const record = typeof supplyRecord === "string" ? { new_or_used: supplyRecord } : (supplyRecord || {});
   return {
     name: `${parentName} · ${item.model}`,
     location: location || "", manufacturer: item.manufacturer, part_number: item.part_number,
-    quantity: 1, new_or_used: _pickerNormalPartStatus(condition), source: "", parent_line_id: parentLineId,
+    quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(record)), parent_line_id: parentLineId,
     accessory_category: "magnetic_mic", accessory_parent_product: "", part_type: "radio_mic_clip",
   };
 }
 
-async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName, location, selection, condition = "New") {
+async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName, location, selection, supplyRecord = { new_or_used: "New" }) {
   const existing = ((typeof _meDraft !== "undefined" && _meDraft?.parts) || []).filter(part =>
     part.parent_line_id === parentLineId && part.accessory_category === "magnetic_mic"
   );
@@ -2363,7 +2795,7 @@ async function _pickerReplaceMagneticMicChild(draftId, parentLineId, parentName,
     const result = await api(`/api/draft/${draftId}/part/${child.line_id}/delete`, {});
     if (!result?.ok) throw new Error(result?.error || "could not replace the magnetic mic line");
   }
-  const row = _pickerMagneticMicRow(parentLineId, parentName, location, selection, condition);
+  const row = _pickerMagneticMicRow(parentLineId, parentName, location, selection, supplyRecord);
   if (!row) return;
   const result = await api(`/api/draft/${draftId}/part`, row);
   if (!result?.ok) throw new Error(result?.error || "could not add the magnetic mic line");
@@ -2597,25 +3029,48 @@ function _pickerDrawLocation() {
     btns.hidden = !customPlacementActive;
     if (customPlacementActive) {
       const free = loc.customPlacementMode === "free";
+      if (free && loc.customPlacementAnchors?.[loc.view]) _pickerSetCustomPlacementGroup(loc.view, loc.customPlacementAnchors[loc.view]);
       const viewPointCount = (loc.customPlacements?.[loc.view] || []).length;
       const totalPointCount = _pickerCustomPlacementCount();
+      const headCount = _pickerCustomPlacementHeadCount();
+      if (headCount !== 4 && loc.customPlacementLayout === "mirrored_pairs") loc.customPlacementLayout = "even";
+      const pairLayout = loc.customPlacementLayout === "mirrored_pairs";
+      const spacingMax = _pickerCustomSpacingMax(headCount);
+      const spacing = Math.min(spacingMax, _pickerNormalizeCustomSpacing(loc.customHeadSpacing));
+      loc.customHeadSpacing = spacing;
       btns.innerHTML = `<section class="picker-location-chooser picker-location-chooser--custom picker-location-placement-controls">`
         + `<div class="picker-location-kicker">Vehicle placement</div><h3>Where should this appear?</h3>`
-        + `<p>${free ? "Click anywhere on the vehicle to add a point. Click one of your gold points to remove it." : "Choose any saved vehicle or fixture dot, or set your own exact point."}</p>`
+        + `<p>${free ? (pairLayout ? "Click one side to place a two-head pair. The matching pair mirrors automatically on the other side." : `Click anywhere on the vehicle to place all ${headCount} light head${headCount === 1 ? "" : "s"} as one group. Click again to move the group.`) : "Choose any saved vehicle or fixture dot, or set your own exact point."}</p>`
         + `<div class="pf-pills"><button type="button" class="pf-pill${free ? "" : " active"}" data-custom-placement-mode="vehicle">Vehicle dots</button>`
         + `<button type="button" class="pf-pill${free ? " active" : ""}" data-custom-placement-mode="free">Set your own</button></div>`
-        + (free ? `<div class="picker-custom-placement-actions"><span>${viewPointCount} point${viewPointCount === 1 ? "" : "s"} on this view · ${totalPointCount} total</span><button type="button" class="pf-pill" data-custom-placement-clear-view${viewPointCount ? "" : " disabled"}>Clear this view</button><button type="button" class="pf-pill" data-custom-placement-clear-all${totalPointCount ? "" : " disabled"}>Clear all</button></div>` : "")
+        + (free && headCount === 4 ? `<div class="pf-pills picker-custom-layout"><button type="button" class="pf-pill${pairLayout ? "" : " active"}" data-custom-placement-layout="even">Equal row</button><button type="button" class="pf-pill${pairLayout ? " active" : ""}" data-custom-placement-layout="mirrored_pairs">Two per side (mirrored)</button></div>` : "")
+        + (free && headCount > 1 ? `<label class="picker-custom-spacing"><span>Head spacing <strong data-custom-spacing-value>${Math.round(spacing * 100)}%</strong></span><input type="range" data-custom-spacing min="0.01" max="${spacingMax.toFixed(4)}" step="0.005" value="${spacing.toFixed(4)}"></label>` : "")
+        + (free ? `<div class="picker-custom-placement-actions"><span>${viewPointCount ? `${viewPointCount} of ${headCount} heads placed on this view` : `Place ${headCount} head${headCount === 1 ? "" : "s"} on this view`} · ${totalPointCount} points total</span><button type="button" class="pf-pill" data-custom-placement-clear-view${viewPointCount ? "" : " disabled"}>Clear this view</button><button type="button" class="pf-pill" data-custom-placement-clear-all${totalPointCount ? "" : " disabled"}>Clear all</button></div>` : "")
         + `</section>`;
       btns.querySelectorAll("[data-custom-placement-mode]").forEach(button => button.addEventListener("click", () => {
         loc.customPlacementMode = button.dataset.customPlacementMode;
         if (loc.customPlacementMode === "free") loc.renderLocation = "";
         _pickerDrawLocation();
       }));
+      btns.querySelectorAll("[data-custom-placement-layout]").forEach(button => button.addEventListener("click", () => {
+        loc.customPlacementLayout = button.dataset.customPlacementLayout;
+        const anchor = _pickerEnsureCustomPlacementAnchor(loc.view);
+        if (anchor) _pickerSetCustomPlacementGroup(loc.view, anchor);
+        _pickerDrawLocation(); _pickerUpdateFooter();
+      }));
+      btns.querySelector("[data-custom-spacing]")?.addEventListener("input", event => {
+        loc.customHeadSpacing = _pickerNormalizeCustomSpacing(event.target.value);
+        const label = btns.querySelector("[data-custom-spacing-value]");
+        if (label) label.textContent = `${Math.round(loc.customHeadSpacing * 100)}%`;
+        const anchor = _pickerEnsureCustomPlacementAnchor(loc.view);
+        if (anchor) _pickerSetCustomPlacementGroup(loc.view, anchor);
+        _pickerPlaceDots(); _pickerUpdateFooter();
+      });
       btns.querySelector("[data-custom-placement-clear-view]")?.addEventListener("click", () => {
-        delete loc.customPlacements[loc.view]; _pickerDrawLocation(); _pickerUpdateFooter();
+        delete loc.customPlacements[loc.view]; delete loc.customPlacementAnchors[loc.view]; _pickerDrawLocation(); _pickerUpdateFooter();
       });
       btns.querySelector("[data-custom-placement-clear-all]")?.addEventListener("click", () => {
-        loc.customPlacements = {}; _pickerDrawLocation(); _pickerUpdateFooter();
+        loc.customPlacements = {}; loc.customPlacementAnchors = {}; _pickerDrawLocation(); _pickerUpdateFooter();
       });
     }
   }
@@ -2740,7 +3195,7 @@ function _pickerPlaceDots() {
   if (freePlacement) {
     const points = loc.customPlacements?.[loc.view] || [];
     dotsHtml = points.map((point, index) =>
-      `<button class="picker-dot picker-custom-dot" data-custom-point="${index}" title="Remove custom point" style="left:${(point.x * 100).toFixed(2)}%;top:${(point.y * 100).toFixed(2)}%"></button>`
+      `<span class="picker-dot picker-custom-dot" data-custom-point="${index}" title="Click the vehicle to move this group" style="left:${(point.x * 100).toFixed(2)}%;top:${(point.y * 100).toFixed(2)}%"></span>`
     ).join("");
   } else {
     const names = Object.keys(locs).filter(n => customPlacement || (() => {
@@ -2776,23 +3231,16 @@ function _pickerPlaceDots() {
   const tip = $("picker-dot-tip");
   const allDots = [...dots.querySelectorAll(".picker-dot")];
   if (freePlacement) {
-    dots.addEventListener("click", event => {
-      if (event.target !== dots) return;
+    dots.onclick = event => {
       const rect = dots.getBoundingClientRect();
       const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
       const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
-      (loc.customPlacements[loc.view] ||= []).push({ x, y });
+      _pickerSetCustomPlacementGroup(loc.view, { x, y });
       _pickerPlaceDots(); _pickerUpdateFooter();
-    });
-    allDots.forEach(dot => dot.addEventListener("click", event => {
-      event.stopPropagation();
-      const index = Number(dot.dataset.customPoint);
-      if (Number.isInteger(index)) loc.customPlacements[loc.view].splice(index, 1);
-      if (!loc.customPlacements[loc.view]?.length) delete loc.customPlacements[loc.view];
-      _pickerPlaceDots(); _pickerUpdateFooter();
-    }));
+    };
     return;
   }
+  dots.onclick = null;
   allDots.forEach(d => {
     // Instant custom tooltip + highlight ALL slots of this location (mirror pair).
     d.addEventListener("mouseenter", () => {
@@ -2818,11 +3266,12 @@ function _pickerPlaceDots() {
           if (fixture) {
             loc.customPlacementMode = "free";
             loc.renderLocation = "";
-            (loc.customPlacements[loc.view] ||= []).push({ x: Number(fixture.x), y: Number(fixture.y) });
+            _pickerSetCustomPlacementGroup(loc.view, { x: Number(fixture.x), y: Number(fixture.y) });
           }
         } else {
           loc.customPlacementMode = "vehicle";
           loc.customPlacements = {};
+          loc.customPlacementAnchors = {};
           loc.renderLocation = d.dataset.name;
           loc.customStage = "placement";
           loc.name_pattern = entry.name_pattern || "";
@@ -2940,6 +3389,77 @@ function _pickerRecommendationHasSavedChoice(group) {
   return Array.isArray(choice) ? choice.some(Boolean) : Boolean(choice);
 }
 
+function _pickerAccessorySkuForPick(group, pick) {
+  if (!pick || pick === "none") return null;
+  const [productId, partNumber] = String(pick).split("::");
+  const option = (group?.options || []).find(item => item.product_id === productId);
+  const sku = (option?.skus || []).find(item => item.part_number === partNumber);
+  return sku ? { option, sku } : null;
+}
+
+function _pickerAccessoryParentQuantity() {
+  const product = _pickerSelectedProduct();
+  if (!product) return Math.max(1, Number(_pickerState.config.count) || 1);
+  if (_pickerUsesLocationAllocation(product)) return Math.max(1, _pickerLocationAllocationTotal());
+  if (_pickerIsWindowTint(product)) return Math.max(1, _pickerState.tint.windows.length || 1);
+  if (_pickerIsSirenSpeakerContext() || _pickerProductCategory(product) === "scene") {
+    return Math.max(1, Number(_pickerState.config.count) || 1);
+  }
+  const colorConfigured = _pickerUsesColor(product)
+    && !_pickerState.sel?.sku
+    && _pickerProductHasColor(product || { skus: [] });
+  return colorConfigured ? Math.max(1, Number(_pickerState.config.count) || 1) : 1;
+}
+
+function _pickerAccessoryQuantityRule(group, pick) {
+  return _pickerAccessorySkuForPick(group, pick)?.sku?.accessory_quantity || {};
+}
+
+function _pickerAccessoryRecommendedQuantity(group, pick) {
+  const rule = _pickerAccessoryQuantityRule(group, pick);
+  if (rule.mode !== "cover_parent_quantity") return 1;
+  const coverage = Math.max(1, Number(rule.parent_units_per_item) || 1);
+  return Math.max(1, Math.ceil(_pickerAccessoryParentQuantity() / coverage));
+}
+
+function _pickerAccessoryCoverageError(group, pick) {
+  const rule = _pickerAccessoryQuantityRule(group, pick);
+  if (!rule.requires_complete_groups) return "";
+  const coverage = Math.max(1, Number(rule.parent_units_per_item) || 1);
+  const parentQty = _pickerAccessoryParentQuantity();
+  if (parentQty % coverage === 0) return "";
+  return `${_pickerAccessorySkuForPick(group, pick)?.sku?.part_number || "This accessory"} requires complete groups of ${coverage}; ${parentQty} lights cannot be fully paired.`;
+}
+
+function _pickerAccessoryStateList(store, category, count, fallback) {
+  const current = store[category];
+  const values = Array.isArray(current) ? [...current] : [current ?? fallback];
+  while (values.length < count) values.push(fallback);
+  return values.slice(0, count);
+}
+
+function _pickerStoreAccessoryState(store, category, values, forceArray = false) {
+  store[category] = forceArray || values.length > 1 ? [...values] : values[0];
+}
+
+function _pickerSyncAccessoryQuantityDefaults() {
+  for (const group of (_pickerState.accessories || [])) {
+    const saved = _pickerState.accessoryChoices[group.category];
+    const picks = Array.isArray(saved) ? saved : [saved || ""];
+    const quantities = _pickerAccessoryStateList(
+      _pickerState.accessoryQuantities, group.category, picks.length, 1,
+    );
+    const manual = _pickerAccessoryStateList(
+      _pickerState.accessoryQuantityManual, group.category, picks.length, false,
+    );
+    picks.forEach((pick, index) => {
+      if (!manual[index]) quantities[index] = _pickerAccessoryRecommendedQuantity(group, pick);
+    });
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantities, group.category, quantities, Array.isArray(saved));
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantityManual, group.category, manual, Array.isArray(saved));
+  }
+}
+
 function _pickerApplyAccessoryRecommendations() {
   if (_pickerState.editLineId) return;
   const vehicle = _pickerVehicle();
@@ -2957,6 +3477,7 @@ function _pickerApplyAutomaticAccessories() {
   const vehicle = _pickerVehicle();
   const useVehicleFilter = _pickerState.vehicleOnly && !!vehicle;
   for (const group of (_pickerState.accessories || [])) {
+    if (_pickerRecommendationHasSavedChoice(group)) continue;
     const automaticIds = new Set(group.automatic_option_ids || []);
     if (!automaticIds.size) continue;
     const option = (group.options || []).find(item => automaticIds.has(item.product_id));
@@ -2970,6 +3491,7 @@ function _pickerApplyAutomaticAccessories() {
 async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = {}) {
   if (!productId) {
     _pickerState.accessories = []; _pickerState.accessoryChoices = {};
+    _pickerState.accessoryQuantities = {}; _pickerState.accessoryQuantityManual = {};
     _pickerState.accLoadedFor = productId || null;
     _pickerRenderAccessories(); _pickerUpdateFooter(); return;
   }
@@ -2980,11 +3502,18 @@ async function _pickerLoadAccessories(productId, { restoreFromDraft = false } = 
     _pickerState.accessories = (res && res.accessories) || [];
   } catch (e) { console.error("accessories load failed:", e); _pickerState.accessories = []; }
   if (restoreFromDraft) _pickerMergeManifestAccessories(_pickerState.accessories);
-  _pickerState.accessoryChoices = restoreFromDraft
-    ? _pickerRestoreAccessoryChoices(productId, _pickerState.accessories)
-    : Object.fromEntries(_pickerState.accessories.map(g => [g.category, ""]));
+  const restored = restoreFromDraft
+    ? _pickerRestoreAccessoryState(productId, _pickerState.accessories)
+    : null;
+  _pickerState.accessoryChoices = restored?.choices
+    || Object.fromEntries(_pickerState.accessories.map(g => [g.category, ""]));
+  _pickerState.accessoryQuantities = restored?.quantities
+    || Object.fromEntries(_pickerState.accessories.map(g => [g.category, 1]));
+  _pickerState.accessoryQuantityManual = restored?.manual
+    || Object.fromEntries(_pickerState.accessories.map(g => [g.category, false]));
   _pickerApplyAutomaticAccessories();
   _pickerApplyAccessoryRecommendations();
+  _pickerSyncAccessoryQuantityDefaults();
   await _pickerApplyLicensePlateLocation();
   _pickerRenderAccessories();
   // Westin options live in the product-specific accessory response rather
@@ -3080,21 +3609,32 @@ function _pickerAccessoryChoiceForChild(groups, child) {
   return null;
 }
 
-function _pickerRestoreAccessoryChoices(productId, groups) {
+function _pickerRestoreAccessoryState(productId, groups) {
   const choices = Object.fromEntries((groups || []).map(group => [group.category, ""]));
+  const quantities = Object.fromEntries((groups || []).map(group => [group.category, 1]));
+  const manual = Object.fromEntries((groups || []).map(group => [group.category, false]));
   const parentLineId = _pickerState.editLineId;
   const saved = {};
   for (const child of ((typeof _meDraft !== "undefined" && _meDraft?.parts) || [])) {
     if (child.parent_line_id !== parentLineId) continue;
     const match = _pickerAccessoryChoiceForChild(groups, child);
     if (!match) continue;
-    (saved[match.category] ||= []).push(match.pick);
+    (saved[match.category] ||= []).push({
+      pick: match.pick,
+      quantity: Math.max(1, Number(child.quantity) || 1),
+      manual: child.picker_config?.accessory_quantity?.manual_quantity === true,
+    });
   }
   for (const group of (groups || [])) {
-    const picks = saved[group.category] || [];
+    const rows = saved[group.category] || [];
+    const picks = rows.map(row => row.pick);
+    const qtys = rows.map(row => row.quantity);
+    const flags = rows.map(row => row.manual);
     choices[group.category] = picks.length > 1 ? picks : (picks[0] || "");
+    quantities[group.category] = qtys.length > 1 ? qtys : (qtys[0] || 1);
+    manual[group.category] = flags.length > 1 ? flags : (flags[0] || false);
   }
-  return choices;
+  return { choices, quantities, manual };
 }
 
 function _pickerScrollSelectedProductIntoView() {
@@ -3102,12 +3642,15 @@ function _pickerScrollSelectedProductIntoView() {
   if (!productId) return;
   const row = Array.from(document.querySelectorAll("#picker-products .pp-row"))
     .find(candidate => candidate.dataset.pid === productId);
-  row?.scrollIntoView({ block: "center", inline: "nearest" });
+  // An expanded product can be taller than the product-list viewport once its
+  // options and accessories are restored.  Center the stable product header,
+  // not the entire row, so edit mode always reveals what was selected.
+  (row?.querySelector(".pp-head") || row)?.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
 function _pickerAccLabel(opt, sku) {
   const colors = [sku.color, sku.secondary_color, sku.tertiary_color].filter(Boolean).map(c => c[0].toUpperCase() + c.slice(1)).join("/");
-  const price = sku.price != null ? ` · $${sku.price}` : "";
+  const price = sku.price != null ? ` · ${_pickerRetailPrice(sku.price)}` : "";
   // Put the orderable SKU first. Native selects truncate from the right, and
   // accessories frequently have nearly identical friendly descriptions, so the
   // part number must be the first thing a purchaser can identify.
@@ -3122,6 +3665,7 @@ function _pickerRenderAccessories() {
   if (!el) return;
   const groups = _pickerVisibleAccessoryGroups();
   if (!groups.length) { el.hidden = true; el.innerHTML = ""; return; }
+  _pickerSyncAccessoryQuantityDefaults();
   el.hidden = false;
   const veh = _pickerVehicle();
   const vehFiltering = _pickerState.vehicleOnly && !!veh;
@@ -3134,6 +3678,19 @@ function _pickerRenderAccessories() {
       opts += `<option value="${esc(v)}"${val === v ? " selected" : ""}>${esc(_pickerAccLabel(o, s))}</option>`;
     }
     return opts;
+  };
+  const _quantityHtml = (g, val, qty, idx, indexed) => {
+    if (!val || val === "none") return "";
+    const recommendation = _pickerAccessoryRecommendedQuantity(g, val);
+    const rule = _pickerAccessoryQuantityRule(g, val);
+    const coverage = Math.max(1, Number(rule.parent_units_per_item) || 1);
+    const parentQty = _pickerAccessoryParentQuantity();
+    const coverageNote = rule.mode === "cover_parent_quantity"
+      ? `Recommended ${recommendation} for ${parentQty} light${parentQty === 1 ? "" : "s"} · 1 covers ${coverage}`
+      : `Recommended ${recommendation}`;
+    const coverageError = _pickerAccessoryCoverageError(g, val);
+    return `<span class="pa-accessory-qty"><span>Qty</span><input type="number" min="1" max="999" step="1" value="${Math.max(1, Number(qty) || 1)}" data-accessory-qty="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""} aria-label="${esc(g.label)} quantity"></span>`
+      + `<span class="${coverageError ? "pa-coverage-note pa-coverage-error" : "pa-coverage-note"}">${esc(coverageError || coverageNote)}</span>`;
   };
   const rows = groups.map(g => {
     const automatic = (g.automatic_option_ids || []).length > 0;
@@ -3149,21 +3706,29 @@ function _pickerRenderAccessories() {
         : Array(count).fill(_pickerState.accessoryChoices[g.category] || "");
       _pickerState.accessoryChoices[g.category] = vals.slice(0, count);
       while (_pickerState.accessoryChoices[g.category].length < count) _pickerState.accessoryChoices[g.category].push("");
+      const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, g.category, count, 1);
+      const manual = _pickerAccessoryStateList(_pickerState.accessoryQuantityManual, g.category, count, false);
+      _pickerStoreAccessoryState(_pickerState.accessoryQuantities, g.category, quantities, true);
+      _pickerStoreAccessoryState(_pickerState.accessoryQuantityManual, g.category, manual, true);
       const selects = _pickerState.accessoryChoices[g.category].map((val, idx) =>
         `<div class="pa-subrow"><span class="pa-sub-label">Speaker ${idx + 1}</span>`
-        + `<select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}" data-idx="${idx}">${_optionsHtml(g, val)}</select></div>`
+        + `<select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}" data-idx="${idx}">${_optionsHtml(g, val)}</select>`
+        + `${_quantityHtml(g, val, quantities[idx], idx, true)}</div>`
       ).join("");
       return `<div class="pa-row pa-row-stack"><label>${esc(g.label)}${recommendationNote}${g.required ? '<span class="pa-req">*</span>' : ""}</label><div class="pa-subrows">${selects}</div></div>`;
     }
     const saved = _pickerState.accessoryChoices[g.category];
     const vals = Array.isArray(saved) ? saved : [saved || ""];
+    const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, g.category, vals.length, 1);
     const canAdd = vals.length > 0 && vals.every(value => value && value !== "none");
     const selects = vals.map((val, idx) => {
       const indexed = Array.isArray(saved);
       const remove = indexed && vals.length > 1
         ? `<button type="button" class="pa-accessory-remove" data-accessory-remove="${esc(g.category)}" data-idx="${idx}" title="Remove this accessory">×</button>`
         : "";
-      return `<div class="pa-subrow"><select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""}${automatic ? " disabled" : ""}>${_optionsHtml(g, val)}</select>${automatic ? '<span class="pa-recommendation">Automatically included</span>' : remove}</div>`;
+      return `<div class="pa-subrow"><select class="${val ? "pa-chosen" : "pa-unset"}" data-cat="${esc(g.category)}"${indexed ? ` data-idx="${idx}"` : ""}${automatic ? " disabled" : ""}>${_optionsHtml(g, val)}</select>`
+        + `${_quantityHtml(g, val, quantities[idx], idx, indexed)}`
+        + `${automatic ? '<span class="pa-recommendation">Automatically included</span>' : remove}</div>`;
     }).join("");
     const add = automatic ? "" : `<button type="button" class="pa-accessory-add" data-accessory-add="${esc(g.category)}"${canAdd ? "" : " disabled"}>+ Add another ${esc(g.label)}</button>`;
     return `<div class="pa-row pa-row-stack"><label>${esc(g.label)}${recommendationNote}${g.required ? '<span class="pa-req">*</span>' : ""}</label><div class="pa-subrows">${selects}</div>${add}</div>`;
@@ -3174,16 +3739,42 @@ function _pickerRenderAccessories() {
     + `<button class="pa-close" onclick="_pickerClearSelection()" title="Close">✕</button></div>`
     + `<div class="pa-rows">${rows}</div>`;
   el.querySelectorAll("select[data-cat]").forEach(sel => sel.addEventListener("change", async () => {
-    if (sel.dataset.idx !== undefined) {
-      const arr = Array.isArray(_pickerState.accessoryChoices[sel.dataset.cat])
-        ? _pickerState.accessoryChoices[sel.dataset.cat]
+    const category = sel.dataset.cat;
+    const group = groups.find(item => item.category === category);
+    const indexed = sel.dataset.idx !== undefined;
+    const index = indexed ? parseInt(sel.dataset.idx, 10) : 0;
+    if (indexed) {
+      const arr = Array.isArray(_pickerState.accessoryChoices[category])
+        ? [..._pickerState.accessoryChoices[category]]
         : [];
-      arr[parseInt(sel.dataset.idx, 10)] = sel.value;
-      _pickerState.accessoryChoices[sel.dataset.cat] = arr;
+      arr[index] = sel.value;
+      _pickerState.accessoryChoices[category] = arr;
     } else {
-      _pickerState.accessoryChoices[sel.dataset.cat] = sel.value;
+      _pickerState.accessoryChoices[category] = sel.value;
     }
+    const rowCount = Array.isArray(_pickerState.accessoryChoices[category])
+      ? _pickerState.accessoryChoices[category].length : 1;
+    const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, category, rowCount, 1);
+    const manual = _pickerAccessoryStateList(_pickerState.accessoryQuantityManual, category, rowCount, false);
+    manual[index] = false;
+    quantities[index] = _pickerAccessoryRecommendedQuantity(group, sel.value);
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantities, category, quantities, indexed);
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantityManual, category, manual, indexed);
     await _pickerApplyLicensePlateLocation({ force: true });
+    _pickerRenderAccessories(); _pickerUpdateFooter();
+  }));
+  el.querySelectorAll("input[data-accessory-qty]").forEach(input => input.addEventListener("change", () => {
+    const category = input.dataset.accessoryQty;
+    const indexed = input.dataset.idx !== undefined;
+    const index = indexed ? parseInt(input.dataset.idx, 10) : 0;
+    const rowCount = Array.isArray(_pickerState.accessoryChoices[category])
+      ? _pickerState.accessoryChoices[category].length : 1;
+    const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, category, rowCount, 1);
+    const manual = _pickerAccessoryStateList(_pickerState.accessoryQuantityManual, category, rowCount, false);
+    quantities[index] = Math.min(999, Math.max(1, Math.round(Number(input.value) || 1)));
+    manual[index] = true;
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantities, category, quantities, indexed);
+    _pickerStoreAccessoryState(_pickerState.accessoryQuantityManual, category, manual, indexed);
     _pickerRenderAccessories(); _pickerUpdateFooter();
   }));
   el.querySelectorAll("[data-accessory-add]").forEach(button => button.addEventListener("click", () => {
@@ -3192,14 +3783,23 @@ function _pickerRenderAccessories() {
     const values = Array.isArray(current) ? [...current] : [current || ""];
     if (!values.every(value => value && value !== "none")) return;
     _pickerState.accessoryChoices[category] = [...values, ""];
+    const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, category, values.length, 1);
+    const manual = _pickerAccessoryStateList(_pickerState.accessoryQuantityManual, category, values.length, false);
+    _pickerState.accessoryQuantities[category] = [...quantities, 1];
+    _pickerState.accessoryQuantityManual[category] = [...manual, false];
     _pickerRenderAccessories(); _pickerUpdateFooter();
   }));
   el.querySelectorAll("[data-accessory-remove]").forEach(button => button.addEventListener("click", async () => {
     const category = button.dataset.accessoryRemove;
     const values = Array.isArray(_pickerState.accessoryChoices[category])
       ? [..._pickerState.accessoryChoices[category]] : [];
-    values.splice(Number(button.dataset.idx), 1);
+    const index = Number(button.dataset.idx);
+    const quantities = _pickerAccessoryStateList(_pickerState.accessoryQuantities, category, values.length, 1);
+    const manual = _pickerAccessoryStateList(_pickerState.accessoryQuantityManual, category, values.length, false);
+    values.splice(index, 1); quantities.splice(index, 1); manual.splice(index, 1);
     _pickerState.accessoryChoices[category] = values.length <= 1 ? (values[0] || "") : values;
+    _pickerState.accessoryQuantities[category] = quantities.length <= 1 ? (quantities[0] || 1) : quantities;
+    _pickerState.accessoryQuantityManual[category] = manual.length <= 1 ? (manual[0] || false) : manual;
     await _pickerApplyLicensePlateLocation({ force: true });
     _pickerRenderAccessories(); _pickerUpdateFooter();
   }));
@@ -3244,10 +3844,12 @@ function _accessoriesSatisfied() {
     if (Array.isArray(v)) {
       if (v.some(x => !x)) return false;
       if (g.required && v.some(x => x === "none")) return false;
+      if (v.some(x => _pickerAccessoryCoverageError(g, x))) return false;
       continue;
     }
     if (!v) return false;                        // not yet addressed
     if (g.required && v === "none") return false;
+    if (_pickerAccessoryCoverageError(g, v)) return false;
   }
   return true;
 }
@@ -3679,9 +4281,10 @@ function _pickerIsLightbar(product) {
 function _pickerResetLocation() {
   const loc = _pickerState.loc;
   loc.selected = null; loc.textCustom = false; loc.renderLocation = ""; loc.customStage = ""; loc.autoLocation = "";
-  loc.customPlacementMode = "vehicle"; loc.customPlacements = {};
+  loc.customPlacementMode = "vehicle"; loc.customPlacementLayout = "even"; loc.customPlacements = {}; loc.customPlacementAnchors = {}; loc.customHeadSpacing = 0.06;
   loc.name_pattern = ""; loc.base_label = ""; loc.catalog_names = [];
   _pickerState.partDetails = { paMicLocation: "", paMicLocationCustom: "", paMicClip: "", handheldMagMic: null };
+  _pickerState.tint = { windows: [], percentage: 20 };
 }
 
 function _pickerSelIsFixture() {
@@ -3787,14 +4390,17 @@ const _CONSOLE_STYLE_LABELS = {
 function _pickerNewConsoleSetup(saved = null) {
   const source = saved?.choices || saved || {};
   const copyChoice = value => value && typeof value === "object"
-    ? { ...value, new_or_used: _pickerNormalPartStatus(value.new_or_used) }
+    ? { ...value, ..._pickerSupplyPayload(_pickerSupplyFromRecord(value)) }
     : null;
+  const magMicSupply = _pickerSupplyPayload(_pickerSupplyFromRecord(
+    source.magMicSupply || { new_or_used: source.magMicCondition || "New" },
+  ));
   return {
     active: false, loading: false, catalog: {}, error: "",
     choices: {
       style: source.style || "",
       consoleChoice: copyChoice(source.consoleChoice),
-      faceplates: Array.isArray(source.faceplates) ? source.faceplates.map(item => ({ ...item })) : [],
+      faceplates: Array.isArray(source.faceplates) ? source.faceplates.map(copyChoice).filter(Boolean) : [],
       armRest: copyChoice(source.armRest),
       motionAttachment: copyChoice(source.motionAttachment),
       motionLocation: source.motionLocation || "mounted_to_console",
@@ -3806,7 +4412,8 @@ function _pickerNewConsoleSetup(saved = null) {
       // standalone Mag Mic (the Gamber-Johnson flow). Havis retains its
       // bracket-plus-Mag-Mic behavior after a bracket is selected.
       addMagMic: source.radioMicClip ? source.addMagMic !== false : source.addMagMic === true,
-      magMicCondition: _pickerNormalPartStatus(source.magMicCondition),
+      magMicSupply,
+      magMicCondition: magMicSupply.new_or_used,
       // A printer armrest is designed around a PocketJet.  Ask explicitly so
       // a shop can still record an armrest-only build, but start from the
       // usual installation: include the printer and then choose its cables.
@@ -3832,7 +4439,7 @@ function _pickerConsoleChoiceFromProduct(product, autoFor = "") {
     manufacturer_label: product.manufacturer_label || "",
     part_number: sku.part_number,
     price: sku.price ?? null,
-    new_or_used: "New",
+    ..._pickerSupplyPayload({ supplyType: "new", customerCondition: "", customerSource: "" }),
     ...(autoFor ? { auto_for: autoFor } : {}),
   };
 }
@@ -3903,11 +4510,14 @@ function _pickerConsoleKitMatchesFeature(included, wanted) {
 function _pickerResolveConsoleKit(setup) {
   const style = setup.choices.style;
   if (!style) return null;
-  // Reused accessories already exist and must not cause selection of a kit
-  // that bundles another copy of that accessory.
-  const wantedArmrest = setup.choices.armRest?.new_or_used === "Reused"
+  // Gamber-Johnson's current console_kit fields describe bundled order
+  // contents, not cutout geometry. Neither customer-supplied condition may
+  // therefore select a kit that bills another copy of that accessory.
+  const armSupply = _pickerSupplyFromRecord(setup.choices.armRest || {});
+  const motionSupply = _pickerSupplyFromRecord(setup.choices.motionAttachment || {});
+  const wantedArmrest = armSupply.supplyType === "customer_supplied"
     ? "" : _pickerConsoleFeatureRole(setup.choices.armRest, "armrest");
-  const wantedMotion = setup.choices.motionAttachment?.new_or_used === "Reused"
+  const wantedMotion = motionSupply.supplyType === "customer_supplied"
     ? "" : _pickerConsoleFeatureRole(setup.choices.motionAttachment, "motion");
   const candidates = _pickerConsoleCatalogProducts(setup).filter(product => _pickerConsoleStyleForProduct(product) === style);
   const eligible = candidates.filter(product => {
@@ -3927,7 +4537,9 @@ function _pickerResolveConsoleKit(setup) {
   const product = [...eligible].sort((a, b) => rank(b) - rank(a) || String(a.model || "").localeCompare(String(b.model || "")))[0] || null;
   const choice = _pickerConsoleChoiceFromProduct(product);
   if (!choice) return null;
-  choice.new_or_used = _pickerNormalPartStatus(setup.choices.consoleChoice?.new_or_used);
+  // Resolving a better-fitting kit swaps only the catalog identity. Supply is
+  // a user decision and must survive a kit re-resolution unchanged.
+  Object.assign(choice, _pickerSupplyPayload(_pickerSupplyFromRecord(setup.choices.consoleChoice || {})));
   setup.choices.consoleChoice = choice;
   _pickerState.sel = { product_id: choice.product_id, model: choice.model, mfr: choice.manufacturer_label, sku: choice.part_number };
   return choice;
@@ -3942,7 +4554,9 @@ function _pickerConsoleFaceplateChoice(setup, kind, { included = false, required
     core: "Core Control Head Faceplate", radio: "Radio Faceplate",
     cup_holder: "Cup Holder Faceplate", oem_relocation_plate: "OEM Relocation Plate",
   };
-  return { ...choice, model: labels[kind] || choice.model, auto_kind: kind, kit_included: included, required };
+  const noCharge = brand === "gamber johnson" && ["core", "radio"].includes(kind);
+  return { ...choice, model: labels[kind] || choice.model, auto_kind: kind, kit_included: included, required,
+    no_charge_faceplate: noCharge };
 }
 
 function _pickerConsoleSyncFaceplates(setup) {
@@ -3956,10 +4570,10 @@ function _pickerConsoleSyncFaceplates(setup) {
   ].filter(Boolean);
   const automaticIds = new Set(automatic.map(choice => choice.product_id));
   const extras = (setup.choices.faceplates || []).filter(choice => !choice.auto_kind && !automaticIds.has(choice.product_id));
-  const priorCondition = new Map((setup.choices.faceplates || []).map(choice => [choice.product_id, choice.new_or_used]));
+  const priorSupply = new Map((setup.choices.faceplates || []).map(choice => [choice.product_id, _pickerSupplyPayload(_pickerSupplyFromRecord(choice))]));
   setup.choices.faceplates = [...automatic, ...extras].map(choice => ({
     ...choice,
-    new_or_used: _pickerNormalPartStatus(priorCondition.get(choice.product_id) || choice.new_or_used),
+    ...(priorSupply.get(choice.product_id) || _pickerSupplyPayload(_pickerSupplyFromRecord(choice))),
   }));
 }
 
@@ -4073,7 +4687,7 @@ function _pickerConsoleFaceplateCards(setup) {
     const choice = _pickerConsoleChoiceFromProduct(product);
     if (!choice) return "";
     const isAdded = selected.has(product.product_id);
-    const price = choice.price != null ? ` · $${choice.price}` : "";
+    const price = choice.price != null ? ` · ${_pickerRetailPrice(choice.price)}` : "";
     return `<button type="button" class="console-catalog-card${isAdded ? " is-added" : ""}" data-console-faceplate-add="${esc(product.product_id)}"${isAdded ? " disabled" : ""}>`
       + `<span class="console-catalog-card-brand">${esc(choice.manufacturer_label || "Faceplate")}</span><strong>${esc(product.model || "Faceplate")}</strong>`
       + `<small>${esc(choice.part_number)}${price}${isAdded ? " · added" : ""}</small></button>`;
@@ -4106,20 +4720,23 @@ function _pickerConsoleOrderCards(setup) {
   if (!faceplates.length) return `<div class="console-order-empty">Add the faceplates the console needs, then drag them into shop order.</div>`;
   return faceplates.map((choice, index) => `<article class="console-faceplate-order-card" draggable="true" data-console-faceplate-index="${index}">
     <span class="console-drag-handle" title="Drag to reorder">⠿</span><span class="console-faceplate-number">${index + 1}</span>
-    <div class="console-faceplate-copy"><strong>Face Plate ${index + 1} · ${esc(choice.model || choice.part_number)}</strong><small>${esc(choice.manufacturer_label || "")} · ${esc(choice.part_number || "")}${choice.auto_for ? ` · auto-added for ${esc(choice.auto_for)}` : ""}</small>${_pickerConsoleConditionHtml(choice, { faceplateIndex: index })}</div>
+    <div class="console-faceplate-copy"><strong>Face Plate ${index + 1} · ${esc(choice.model || choice.part_number)}</strong><small>${esc(choice.manufacturer_label || "")} · ${esc(choice.part_number || "")}${choice.no_charge_faceplate ? " · included at no charge" : ""}${choice.auto_for ? ` · auto-added for ${esc(choice.auto_for)}` : ""}</small>${_pickerConsoleConditionHtml(choice, { faceplateIndex: index })}</div>
     <div class="console-faceplate-actions"><button type="button" class="console-order-move" data-console-faceplate-move="-1" data-console-faceplate-index="${index}" title="Move up"${index === 0 ? " disabled" : ""}>↑</button><button type="button" class="console-order-move" data-console-faceplate-move="1" data-console-faceplate-index="${index}" title="Move down"${index === faceplates.length - 1 ? " disabled" : ""}>↓</button>${choice.required ? `<span class="console-order-included">Required</span>` : `<button type="button" class="console-order-remove" data-console-faceplate-remove="${index}" title="Remove faceplate">×</button>`}</div>
   </article>`).join("");
 }
 
 function _pickerConsoleConditionHtml(choice, { key = "", faceplateIndex = null, magMic = false } = {}) {
   if (!choice && !magMic) return "";
-  const current = _pickerNormalPartStatus(magMic ? _pickerState.consoleSetup?.choices?.magMicCondition : choice?.new_or_used);
+  const record = magMic ? _pickerState.consoleSetup?.choices?.magMicSupply : choice;
+  const supply = _pickerSupplyFromRecord(record || { new_or_used: _pickerState.consoleSetup?.choices?.magMicCondition || "New" });
+  const current = supply.supplyType === "new" ? "new" : `customer_${supply.customerCondition || "used"}`;
   const attrs = faceplateIndex !== null
     ? `data-console-condition-faceplate="${faceplateIndex}"`
     : magMic ? "data-console-condition-mag-mic" : `data-console-condition-key="${esc(key)}"`;
-  return `<div class="console-part-condition"><span>Condition</span>${["New", "Used", "Reused"].map(status =>
-    `<button type="button" class="console-location-choice${current === status ? " is-selected" : ""}" ${attrs} data-console-condition-value="${status}">${status}</button>`
-  ).join("")}</div>`;
+  const options = [["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"]];
+  return `<div class="console-part-condition"><span>Supply</span>${options.map(([value, label]) =>
+    `<button type="button" class="console-location-choice${current === value ? " is-selected" : ""}" ${attrs} data-console-condition-value="${value}">${label}</button>`
+  ).join("")}${current === "customer_used" ? `<label class="console-used-source"><span>Used-part source <b>*</b></span><input type="text" ${attrs} data-console-condition-source value="${esc(supply.customerSource || "")}" placeholder="Agency, old vehicle, customer stock…"></label>` : ""}</div>`;
 }
 
 function _pickerConsoleComponentSection(
@@ -4135,7 +4752,7 @@ function _pickerConsoleComponentSection(
     const item = _pickerConsoleChoiceFromProduct(product);
     if (!item) return "";
     const selected = choice?.product_id === product.product_id && choice?.part_number === item.part_number;
-    return `<button type="button" class="console-catalog-card${selected ? " is-added" : ""}" data-console-component-choice="${esc(product.product_id)}" data-console-component-key="${esc(key)}"><span class="console-catalog-card-brand">${esc(item.manufacturer_label || label)}</span><strong>${esc(product.model || product.product_id)}</strong><small>${esc(item.part_number)}${item.price != null ? ` · $${item.price}` : ""}</small></button>`;
+    return `<button type="button" class="console-catalog-card${selected ? " is-added" : ""}" data-console-component-choice="${esc(product.product_id)}" data-console-component-key="${esc(key)}"><span class="console-catalog-card-brand">${esc(item.manufacturer_label || label)}</span><strong>${esc(product.model || product.product_id)}</strong><small>${esc(item.part_number)}${item.price != null ? ` · ${_pickerRetailPrice(item.price)}` : ""}</small></button>`;
   }).join("")}</div>`;
   const motionLocation = key === "motionAttachment" && choice ? `<div class="console-motion-location"><span>Mounting location</span><div><button type="button" class="console-location-choice${setup.choices.motionLocation === "mounted_to_console" ? " is-selected" : ""}" data-console-motion-location="mounted_to_console">Mounted to console</button><button type="button" class="console-location-choice${setup.choices.motionLocation === "mounted_to_pedestal" ? " is-selected" : ""}" data-console-motion-location="mounted_to_pedestal">Mounted to pedestal</button></div></div>` : "";
   const selectedLabel = choice ? _pickerConsoleChoiceLabel(choice)
@@ -4149,6 +4766,18 @@ function _pickerConsoleComponentSection(
 function _pickerConsolePedestalRequired(setup = _pickerState.consoleSetup) {
   const choices = setup?.choices || {};
   return !!choices.motionAttachment && choices.motionLocation === "mounted_to_pedestal";
+}
+
+function _pickerConsoleSupplySatisfied(setup = _pickerState.consoleSetup) {
+  const choices = setup?.choices || {};
+  const records = [
+    choices.consoleChoice, ...(choices.faceplates || []), choices.armRest,
+    choices.motionAttachment, choices.pedestalMount, choices.dockingStation,
+    choices.radioMicClip, choices.printer, choices.printerPower, choices.printerUsb,
+    choices.wings,
+    ...(choices.addMagMic === true ? [choices.magMicSupply || { new_or_used: choices.magMicCondition }] : []),
+  ].filter(Boolean);
+  return records.every(record => _pickerSupplySatisfied(_pickerSupplyFromRecord(record)));
 }
 
 function _pickerConsolePedestalLocation(choice) {
@@ -4378,21 +5007,39 @@ function _pickerRenderConsoleSetup() {
   details.querySelectorAll("[data-console-condition-value]").forEach(button => button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
-    const status = _pickerNormalPartStatus(button.dataset.consoleConditionValue);
+    const value = button.dataset.consoleConditionValue;
+    const supply = value === "new"
+      ? { supplyType: "new", customerCondition: "", customerSource: "" }
+      : { supplyType: "customer_supplied", customerCondition: value === "customer_new" ? "new" : "used", customerSource: "" };
+    const payload = _pickerSupplyPayload(supply);
     if (button.hasAttribute("data-console-condition-faceplate")) {
       const choice = setup.choices.faceplates[Number(button.dataset.consoleConditionFaceplate)];
-      if (choice) choice.new_or_used = status;
+      if (choice) Object.assign(choice, payload);
     } else if (button.hasAttribute("data-console-condition-mag-mic")) {
-      setup.choices.magMicCondition = status;
+      setup.choices.magMicSupply = payload;
+      setup.choices.magMicCondition = payload.new_or_used;
     } else {
       const key = button.dataset.consoleConditionKey;
-      if (setup.choices[key]) setup.choices[key].new_or_used = status;
+      if (setup.choices[key]) Object.assign(setup.choices[key], payload);
       if (["armRest", "motionAttachment"].includes(key)) {
         _pickerResolveConsoleKit(setup);
         _pickerConsoleSyncFaceplates(setup);
       }
     }
     _pickerRenderConsoleSetup();
+    _pickerUpdateFooter();
+  }));
+  details.querySelectorAll("[data-console-condition-source]").forEach(input => input.addEventListener("input", () => {
+    const source = input.value;
+    let target = null;
+    if (input.hasAttribute("data-console-condition-faceplate")) {
+      target = setup.choices.faceplates[Number(input.dataset.consoleConditionFaceplate)];
+    } else if (input.hasAttribute("data-console-condition-mag-mic")) {
+      target = setup.choices.magMicSupply;
+    } else {
+      target = setup.choices[input.dataset.consoleConditionKey];
+    }
+    if (target) { target.customer_source = source; target.source = source; }
     _pickerUpdateFooter();
   }));
   details.querySelectorAll("[data-console-motion-location]").forEach(button => button.addEventListener("click", () => {
@@ -4450,7 +5097,8 @@ function _pickerConsoleSetupSnapshot() {
     radioMicClip: copy(choices.radioMicClip),
     radioMicClipRelation: choices.radioMicClipRelation || "",
     addMagMic: choices.addMagMic !== false,
-    magMicCondition: _pickerNormalPartStatus(choices.magMicCondition),
+    magMicSupply: choices.magMicSupply ? { ...choices.magMicSupply } : _pickerSupplyPayload({ supplyType: "new", customerCondition: "", customerSource: "" }),
+    magMicCondition: choices.magMicSupply?.new_or_used || _pickerNormalPartStatus(choices.magMicCondition),
     addPrinter: choices.addPrinter !== false,
     printer: copy(choices.printer),
     printerPower: copy(choices.printerPower),
@@ -4465,14 +5113,16 @@ function _pickerConsoleChildRows(parentLineId, parentName) {
   const add = (name, choice, partType, location, category) => {
     if (!choice?.part_number) return;
     rows.push({ name, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: parentLineId,
+      quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: parentLineId,
       // These are selected build parts, not catalog accessories. Keep the
       // relationship for manifest nesting, but let their normal edit path
       // open the Part Picker instead of an accessory-only chooser.
       accessory_category: category, accessory_parent_product: "", part_type: partType,
-      notes: choice.kit_included ? "Included with selected console kit — do not bill separately." : "",
+      notes: choice.kit_included ? "Included with selected console kit — do not bill separately."
+        : choice.no_charge_faceplate ? "Included specialty faceplate — quote at $0.00." : "",
       picker_config: {
         ...(choice.kit_included ? { console_kit_included: true } : {}),
+        ...(choice.no_charge_faceplate ? { quote_unit_price_override: 0, quote_note: "Included specialty faceplate — no charge" } : {}),
         console_setup_owner_line_id: parentLineId,
         console_component_key: category,
       } });
@@ -4489,7 +5139,7 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   const add = (name, choice, partType, location, componentKey) => {
     if (!choice?.part_number) return;
     rows.push({ name: `${ownerName} · ${name}`, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: ownerLineId,
+      quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: ownerLineId,
       // These are real, billed console components. Keep them under the
       // console in the manifest while preserving one owner marker so any
       // component edit returns to the unified console setup.
@@ -4511,7 +5161,7 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   if (choices.addMagMic === true && (
     choices.radioMicClip || _pickerConsoleBrand().toLowerCase() === "gamber johnson"
   )) {
-    add("Mag Mic", { ..._pickerConsoleMagMicChoice(), new_or_used: _pickerNormalPartStatus(choices.magMicCondition) }, "radio_mic_clip", "ON CENTER CONSOLE", "magneticMic");
+    add("Mag Mic", { ..._pickerConsoleMagMicChoice(), ...(choices.magMicSupply || { new_or_used: choices.magMicCondition }) }, "radio_mic_clip", "ON CENTER CONSOLE", "magneticMic");
   }
   return rows;
 }
@@ -4526,7 +5176,7 @@ function _pickerConsolePrinterRow(ownerLineId) {
       // child (the manifest deliberately has a clear one-level expansion).
       return {
         name: "Printer", location: "PRINTER ARMREST MOUNT", manufacturer: choice.manufacturer_label || "",
-        part_number: choice.part_number, quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", part_type: "printer",
+        part_number: choice.part_number, quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), part_type: "printer",
         picker_config: { console_setup_owner_line_id: ownerLineId, console_component_key: "printer" },
       };
     }
@@ -4543,7 +5193,7 @@ function _pickerConsolePrinterCableRows(printerLineId, printerName) {
     rows.push({
       name: `${printerName} · ${name}`, location: "PRINTER ARMREST MOUNT",
       manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
-      quantity: 1, new_or_used: _pickerNormalPartStatus(choice.new_or_used), source: "", parent_line_id: printerLineId,
+      quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: printerLineId,
       accessory_category: category, accessory_parent_product: choices.printer?.product_id || "",
       part_type: partType, picker_config: { console_component_key: componentKey },
     });
@@ -4744,7 +5394,7 @@ function _systemCableSkuSteps(kind, choices) {
       options.map(option => [
         _systemCableOptionValue(option),
         option.friendly_name || option.part_number,
-        `${option.part_number}${option.price != null ? ` · $${option.price}` : ""}`,
+        `${option.part_number}${option.price != null ? ` · ${_pickerRetailPrice(option.price)}` : ""}`,
       ]),
     )];
   });
@@ -4766,6 +5416,31 @@ function _systemKeepAvailableCableRefreshSelections(choices, cableRefreshes) {
   return choices;
 }
 
+function _systemSupplySteps(kind, noun, choices) {
+  const label = { radio: "radio", radar: "radar", camera: "camera" }[kind] || "system";
+  return [
+    _systemStep(
+      "supplyType", "choice", `Who is supplying this ${noun}?`,
+      "New means DTM supplies and bills the system. Customer supplied means the hardware is installed but not quoted.",
+      [["new", "New", "DTM supplies and bills this system"], ["customer_supplied", "Customer supplied", "Do not include the supplied hardware on the Estimate"]],
+    ),
+    ...(choices.supplyType === "customer_supplied" ? [
+      _systemStep(
+        "customerCondition", "choice", "What condition is the customer-supplied system in?",
+        "This records the physical condition without changing its non-billable status.",
+        [["new", "New", "Customer-supplied new hardware"], ["used", "Used", "Customer-supplied used or transferred hardware"]],
+      ),
+      ...(choices.customerCondition === "used" ? [
+        _systemStep("customerSource", "textarea", "Where will the used system come from?", "Required for shop handoff—for example, the agency, an old vehicle, or customer stock.", []),
+        _systemStep("refresh", "choice", `Will the ${label} cables be refreshed?`, "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
+        ...(choices.refresh === "yes" ? [_systemCableRefreshMultiStep(kind), ..._systemCableSkuSteps(kind, choices)] : []),
+      ] : []),
+    ] : [
+      ...(choices.supplyType === "new" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Confirm the model, kit contents, vendor notes, or any other purchasing detail.", [])] : []),
+    ]),
+  ];
+}
+
 const _RADAR_BRACKETS = [
   ["short_a_bracket", "Short A-bracket", "Standard low-profile radar antenna mount"],
   ["tall_a_bracket", "Tall A-bracket", "Standard taller radar antenna mount"],
@@ -4778,23 +5453,14 @@ const _SYSTEM_DEFS = {
     primaryName: "Radio Control Head", primaryPartType: "radio_head",
     intro: "Answer one install question at a time. Customer-supplied hardware only needs the decisions the shop must build around.",
     defaults: {
-      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
+      systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
       format: "split", brickLoc: "",
       antennaStyle: "", antennaLoc: "", speakerLoc: "",
       micClipRelation: "", micMount: "", micLoc: "",
     },
     steps(c) {
       return [
-        _systemStep("condition", "choice", "What is this radio system's condition?", "Reused means it is staying with this vehicle; used is customer-supplied hardware being installed here.", [
-          ["new", "New system", "A new kit is being purchased"], ["used", "Customer-supplied used system", "Used hardware supplied for this build"], ["reused", "Reused system", "The existing radio hardware stays in service"],
-        ]),
-        ...(c.condition === "reused" ? [
-          _systemStep("refresh", "choice", "Will the radio cables be refreshed?", "Choose No when the existing cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("radio"), ..._systemCableSkuSteps("radio", c)] : []),
-        ] : [
-          _systemStep("provider", "choice", "Who is providing the new radio system?", "Customer supplied is the normal path. Choose DTM only when we are purchasing the kit.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
-          ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter model, quantity, accessories, vendor notes, or any other purchasing detail.", [])] : []),
-        ]),
+        ..._systemSupplySteps("radio", "radio system", c),
         ...(c.format === "split" ? [_systemLocationStep("brickLoc", "Where will the radio brick go?", "The brick is the remote electronics module behind the control head.", _SYSTEM_LOC.radioBrick)] : []),
         _systemStep("antennaStyle", "choice", "What antenna style is expected?", "This is an install note; it does not create a purchase order.", [["cylinder", "Cylinder style", "Common roof-mounted radio antenna"], ["whip", "Whip style", "Flexible whip antenna"], ["covert", "Covert / window style", "Low-profile or window-mounted antenna"], ["customer_specified", "Customer specified", "Use the customer hardware as supplied"]]),
         _systemLocationStep("antennaLoc", "Where will the radio antenna go?", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? "Cylinder and whip antennas normally use the rear left roof." : "Choose the roof or cargo-window location.", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? [_SYSTEM_LOC.radioAntenna[0]] : _SYSTEM_LOC.radioAntenna),
@@ -4818,7 +5484,7 @@ const _SYSTEM_DEFS = {
     primaryName: "Radar Display Unit", primaryPartType: "radar_display_unit",
     intro: "Capture the radar’s ownership, cable work, and exact antenna/counting-unit locations for the shop.",
     defaults: {
-      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", split: "",
+      systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", split: "",
       frontLoc: "", frontBracket: "short_a_bracket", rearLoc: "", rearBracket: "tall_a_bracket", countingLoc: "",
     },
     steps(c) {
@@ -4829,20 +5495,22 @@ const _SYSTEM_DEFS = {
         ...(isTahoe ? [["seatbelt_slot", "Blank rear seatbelt slot (Tahoe only)", "Uses the blank rear seatbelt opening"]] : []),
       ];
       return [
-        _systemStep("condition", "choice", "What is this radar system's condition?", "Reused means it is staying with this vehicle; used is customer-supplied hardware being installed here.", [["new", "New system", "A new radar kit is being purchased"], ["used", "Customer-supplied used system", "Used hardware supplied for this build"], ["reused", "Reused system", "The existing radar hardware stays in service"]]),
-        ...(c.condition === "reused" ? [
-          _systemStep("refresh", "choice", "Will the radar cables be refreshed?", "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("radar"), ..._systemCableSkuSteps("radar", c)] : []),
-        ] : [
-          _systemStep("provider", "choice", "Who is providing the new radar system?", "Customer supplied is the default. Choose DTM only when we are purchasing it.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
-          ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter the radar model, kit contents, vendor, or any other purchasing detail.", [])] : []),
-        ]),
+        ..._systemSupplySteps("radar", "radar system", c),
         _systemStep("split", "choice", "Will the counting unit be split from the display unit?", "Choose whether the counting unit needs its own mounting location.", [["no", "No — integrated unit", "Display and counting unit stay together"], ["yes", "Yes — split unit", "The counting unit gets its own location next"]]),
         ...(c.split === "yes" ? [_systemLocationStep("countingLoc", "Where will the split counting unit go?", "Pick the final location for the separate counting unit.", _SYSTEM_LOC.radarCounting)] : []),
         _systemLocationStep("frontLoc", "Where will the front antenna be mounted?", "Choose the mounting location first; the bracket is selected on the next screen.", [["dash", "On dash", "Dash-mounted front antenna"], ["a_pillar", "On A-pillar", "A-pillar mounted front antenna"]]),
         _systemStep("frontBracket", "choice", "What bracket will mount the front antenna?", "Short A-bracket is the normal front choice; change it when this installation needs a different mount.", _RADAR_BRACKETS),
-        _systemLocationStep("rearLoc", "Where will the rear antenna be mounted?", "Choose the mounting location first; the bracket is selected on the next screen.", rearLocations),
-        _systemStep("rearBracket", "choice", "What bracket will mount the rear antenna?", "Tall A-bracket is the normal rear choice; change it when this installation needs a different mount.", _RADAR_BRACKETS),
+        _systemLocationStep(
+          "rearLoc", "Where will the rear antenna be mounted?",
+          "Choose a mounting location, or choose Not included for a front-only radar system.",
+          rearLocations, { required: false },
+        ),
+        _systemStep(
+          "rearBracket", "choice", "What bracket will mount the rear antenna?",
+          "Tall A-bracket is the normal rear choice; change it when this installation needs a different mount.",
+          _RADAR_BRACKETS,
+          { required_when: { key: "rearLoc", excludes: ["", "__none__"] } },
+        ),
       ];
     },
   },
@@ -4851,7 +5519,7 @@ const _SYSTEM_DEFS = {
     primaryName: "Camera DVR", primaryPartType: "camera_dvr",
     intro: "Record the kit ownership and the camera/DVR locations the shop needs. Only DTM purchases need ordering text.",
     defaults: {
-      systemProduct: null, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
+      systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
       cameraParts: [], rearSeatLoc: "",
       bodyDockLoc: "", wirelessMicLoc: "",
     },
@@ -4862,14 +5530,7 @@ const _SYSTEM_DEFS = {
         ...(extendedCamera ? [["rear", "Rear / backup camera", "Rear exterior view"], ["body_dock", "Body-camera dock", "Dock for a body-worn camera"], ["wireless_mic", "Wireless microphone charger", "Charger for a wireless mic"]] : []),
       ];
       return [
-        _systemStep("condition", "choice", "What is this camera system's condition?", "Reused means it is staying with this vehicle; used is customer-supplied hardware being installed here.", [["new", "New system", "A new camera kit is being purchased"], ["used", "Customer-supplied used system", "Used hardware supplied for this build"], ["reused", "Reused system", "The existing camera hardware stays in service"]]),
-        ...(c.condition === "reused" ? [
-          _systemStep("refresh", "choice", "Will the camera cables be refreshed?", "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Replace only the cable runs selected next"]]),
-          ...(c.refresh === "yes" ? [_systemCableRefreshMultiStep("camera"), ..._systemCableSkuSteps("camera", c)] : []),
-        ] : [
-          _systemStep("provider", "choice", "Who is providing the new camera system?", "Customer supplied is the default. Choose DTM only when we are purchasing it.", [["customer", "Customer supplied", "Hardware arrives with the vehicle or customer"], ["dtm", "DTM purchasing", "Sales needs the purchase description below"]]),
-          ...(c.provider === "dtm" ? [_systemStep("purchaseDetails", "textarea", "What should Sales purchase?", "Enter the camera platform, kit contents, vendor, or any other purchasing detail.", [])] : []),
-        ]),
+        ..._systemSupplySteps("camera", "camera system", c),
         _systemLocationStep("dvrLoc", "Where will the camera DVR / recorder go?", "Pick the location the shop should use for the recorder.", _SYSTEM_LOC.cameraDvr),
         _systemStep("cameraParts", "multi", "Which camera components are included?", "Select every component the shop should install. Location questions will follow for each selection.", cameraOptions),
         ...(c.cameraParts || []).includes("rear_seat") ? [_systemLocationStep("rearSeatLoc", "Where will the prisoner / rear-seat camera go?", "Pick the final cabin-camera location.", _SYSTEM_LOC.rearSeatCamera)] : [],
@@ -4880,21 +5541,44 @@ const _SYSTEM_DEFS = {
   },
 };
 
-function _systemStep(key, type, title, help, options, required = true) {
-  return { key, type, title, help, options: (options || []).map(o => Array.isArray(o) ? { value: o[0], label: o[1], help: o[2] || "" } : o), required };
+function _systemStep(key, type, title, help, options, contract = {}) {
+  // ``required:false`` is still an explicit question: the user must choose
+  // either a real value or the generated Not included option.  ``required_when``
+  // is for dependency-driven steps whose answer is mandatory only while the
+  // referenced choice is active.
+  if (typeof contract === "boolean") contract = { required: contract };
+  return {
+    key, type, title, help,
+    options: (options || []).map(o => Array.isArray(o) ? { value: o[0], label: o[1], help: o[2] || "" } : o),
+    required: contract.required !== false,
+    required_when: contract.required_when || null,
+  };
 }
 
 // These locations are shop-reference notes, not render-placement coordinates.
 // A controlled list keeps common installs consistent, while Custom preserves
 // the exact instruction when a vehicle/setup calls for something unusual.
-function _systemLocationStep(key, title, help, options, required = true) {
-  return { ..._systemStep(key, "choice", title, help, options, required), allowCustom: true, customKey: `${key}Custom` };
+function _systemLocationStep(key, title, help, options, contract = {}) {
+  return { ..._systemStep(key, "choice", title, help, options, contract), allowCustom: true, customKey: `${key}Custom` };
 }
 
 function _systemOptions(step) {
   const options = [...(step.options || [])];
+  if (!step.required) options.unshift({
+    value: "__none__", label: "Not included", help: "Do not include this component in the build",
+  });
   if (step.allowCustom) options.push({ value: "__custom__", label: "Custom location", help: "Enter a shop-specific location" });
   return options;
+}
+
+function _systemStepApplies(step, choices = _pickerState.radio?.choices || {}) {
+  const rule = step.required_when;
+  if (!rule) return true;
+  const value = choices[rule.key];
+  if (Array.isArray(rule.includes) && !rule.includes(value)) return false;
+  if (Array.isArray(rule.excludes) && rule.excludes.includes(value)) return false;
+  if (Object.prototype.hasOwnProperty.call(rule, "equals") && value !== rule.equals) return false;
+  return true;
 }
 
 const _CAMERA_EXTENDED_BRANDS = new Set(["watchguard_4re", "watchguard_m500"]);
@@ -4930,6 +5614,29 @@ function _systemDefaults(kind, existing = {}) {
     base[key] = Array.isArray(value) ? [...value]
       : value && typeof value === "object" ? { ...value } : value;
   }
+  // Migrate the first guided-system vocabulary without rewriting the saved
+  // draft until the user saves. An explicit legacy provider is useful here:
+  // old "New + Customer supplied" systems were ownership-new but not billed.
+  if (!base.supplyType && base.condition) {
+    if (["used", "reused"].includes(base.condition)) {
+      base.supplyType = "customer_supplied";
+      base.customerCondition = "used";
+    } else if (base.condition === "new" && base.provider === "customer") {
+      base.supplyType = "customer_supplied";
+      base.customerCondition = "new";
+    } else if (base.condition === "new") {
+      base.supplyType = "new";
+    }
+  }
+  if (!base.customerSource && base.supplyType === "customer_supplied") {
+    base.customerSource = String(existing.customer_source || existing.source || "").trim();
+  }
+  if (!base.componentSupply || typeof base.componentSupply !== "object" || Array.isArray(base.componentSupply)) {
+    base.componentSupply = {};
+  }
+  for (const [key, status] of Object.entries(base.componentConditions || {})) {
+    if (!base.componentSupply[key]) base.componentSupply[key] = _pickerSupplyPayload(_pickerSupplyFromRecord({ new_or_used: status }));
+  }
   // Saved guided systems from the first pass used bracket names as radar
   // locations and shorter mic-mount values. Keep them editable after the
   // clearer split between location and bracket hardware.
@@ -4960,7 +5667,7 @@ function _systemDefaults(kind, existing = {}) {
 function _systemSteps() {
   const def = _systemDef(), c = _pickerState.radio?.choices || {};
   if (!def) return [];
-  return [...def.steps(c), {
+  return [...def.steps(c).filter(step => _systemStepApplies(step, c)), {
     key: "componentConditions", type: "component_conditions",
     title: "What is the condition of each individual part?",
     help: "Used and reused parts stay on the build but are excluded from the estimate.",
@@ -4981,21 +5688,21 @@ function _systemAnswerLabel(step, value, choices = _pickerState.radio?.choices |
   if (step.allowCustom && value === "__custom__") {
     return String(choices[step.customKey] || "").trim() || "Custom location";
   }
+  if (value === "__none__") return "Not included";
   return _systemOption(step, value)?.label || String(value || "");
 }
 
 function _systemStepSatisfied(step) {
   const choices = _pickerState.radio?.choices || {};
-  if (!step.required) return true;
+  if (!_systemStepApplies(step, choices)) return true;
   if (step.type === "component_conditions") {
-    if (!choices.componentConditions || typeof choices.componentConditions !== "object") choices.componentConditions = {};
     const rows = _systemComponentRows(_pickerState.radio?.kind, choices);
-    for (const row of rows) {
-      if (!["New", "Used", "Reused"].includes(choices.componentConditions[row.key])) {
-        choices.componentConditions[row.key] = row.new_or_used;
-      }
-    }
-    return rows.length > 0;
+    return rows.length > 0 && rows.every(row =>
+      row.supply_type === "new"
+      || (row.supply_type === "customer_supplied"
+        && ["new", "used"].includes(row.customer_condition)
+        && (row.customer_condition !== "used" || Boolean(String(row.customer_source || "").trim())))
+    );
   }
   const value = choices[step.key];
   if (step.type === "multi") return Array.isArray(value) && value.length > 0;
@@ -5205,18 +5912,16 @@ function _systemOptionGrid(step, value) {
 
 function _systemComponentConditionsHtml() {
   const state = _pickerState.radio || {}, choices = state.choices || {};
-  if (!choices.componentConditions || typeof choices.componentConditions !== "object") choices.componentConditions = {};
   const rows = _systemComponentRows(state.kind, choices);
-  for (const row of rows) {
-    if (!["New", "Used", "Reused"].includes(choices.componentConditions[row.key])) {
-      choices.componentConditions[row.key] = row.new_or_used;
-    }
-  }
   return `<div class="guided-component-conditions">${rows.map(row => {
-    const current = choices.componentConditions[row.key];
-    return `<section class="guided-component-condition"><div><strong>${esc(row.label)}</strong><small>${esc(row.location || row.detail || "System component")}</small></div><div>${["New", "Used", "Reused"].map(status =>
-      `<button type="button" class="console-location-choice${current === status ? " is-selected" : ""}" data-system-component-condition="${esc(row.key)}" data-system-component-status="${status}">${status}</button>`
-    ).join("")}</div></section>`;
+    const current = row.supply_type === "new" ? "new" : `customer_${row.customer_condition || "used"}`;
+    const sourceNeeded = current === "customer_used";
+    const options = [
+      ["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"],
+    ];
+    return `<section class="guided-component-condition"><div><strong>${esc(row.label)}</strong><small>${esc(row.location || row.detail || "System component")}</small></div><div class="guided-component-supply">${options.map(([value, label]) =>
+      `<button type="button" class="console-location-choice${current === value ? " is-selected" : ""}" data-system-component-supply="${esc(row.key)}" data-system-supply-value="${value}">${label}</button>`
+    ).join("")}</div>${sourceNeeded ? `<label class="guided-component-source"><span>Used-part source <b>*</b></span><input type="text" data-system-component-source="${esc(row.key)}" value="${esc(row.customer_source || "")}" placeholder="Agency, old vehicle, customer stock…"></label>` : ""}</section>`;
   }).join("")}</div>`;
 }
 
@@ -5239,11 +5944,27 @@ function _systemDetails(def, choices) {
 }
 
 function _systemComponentRows(kind, c) {
-  const defaultCondition = c.condition === "reused" ? "Reused" : c.condition === "used" ? "Used" : "New";
-  const conditions = c.componentConditions || {};
+  if (!c.componentSupply || typeof c.componentSupply !== "object" || Array.isArray(c.componentSupply)) c.componentSupply = {};
+  if (!c.componentConditions || typeof c.componentConditions !== "object" || Array.isArray(c.componentConditions)) c.componentConditions = {};
+  const defaultSupply = _pickerSupplyPayload({
+    supplyType: c.supplyType || "new",
+    customerCondition: c.customerCondition || "",
+    customerSource: c.customerSource || "",
+  });
   const rows = [], add = (key, label, partType, location, detail) => rows.push({
     key, label, part_type: partType, location: location || "", detail: detail || "", quantity: 1,
-    new_or_used: _pickerNormalPartStatus(conditions[key] || defaultCondition),
+    ...(() => {
+      const explicitLegacy = c.componentConditions[key]
+        ? { new_or_used: c.componentConditions[key] } : null;
+      const existing = c.componentSupply[key] || explicitLegacy;
+      const inheritsParent = !existing || existing.inherits_parent_supply === true;
+      const payload = inheritsParent
+        ? { ...defaultSupply }
+        : _pickerSupplyPayload(_pickerSupplyFromRecord(existing));
+      c.componentSupply[key] = { ...payload, ...(inheritsParent ? { inherits_parent_supply: true } : {}) };
+      c.componentConditions[key] = payload.new_or_used;
+      return payload;
+    })(),
   });
   const baseSteps = _SYSTEM_DEFS[kind]?.steps(c) || [];
   const stepFor = key => baseSteps.find(s => s.key === key) || { options: [] };
@@ -5267,7 +5988,9 @@ function _systemComponentRows(kind, c) {
       add("radar_display", "Radar display / counting unit", "radar_display_unit", "Integrated display unit", "Integrated unit");
     }
     add("radar_front_antenna", "Front radar antenna", "front_radar_antenna_mount", answer("frontLoc"), answer("frontBracket"));
-    add("radar_rear_antenna", "Rear radar antenna", "rear_radar_antenna_mount", answer("rearLoc"), answer("rearBracket"));
+    if (c.rearLoc !== "__none__") {
+      add("radar_rear_antenna", "Rear radar antenna", "rear_radar_antenna_mount", answer("rearLoc"), answer("rearBracket"));
+    }
   } else if (kind === "camera") {
     add("camera_dvr", "Camera DVR / recorder", "camera_dvr", answer("dvrLoc"), `Platform: ${_systemProductLabel(c) || _systemCameraPlatform(c)}`);
     const map = {
@@ -5290,7 +6013,7 @@ function _systemComponentRows(kind, c) {
 // sell.  Keep them as nested draft children so the manifest shows the precise
 // billable SKU and QuickBooks sees a normal, linked part line.
 function _pickerSystemCableRefreshRows(parentLineId, parentName, kind, choices) {
-  if (choices.condition !== "reused" || choices.refresh !== "yes" || !parentLineId) return [];
+  if (choices.supplyType !== "customer_supplied" || choices.customerCondition !== "used" || choices.refresh !== "yes" || !parentLineId) return [];
   const byId = new Map(_systemCableRefreshes(kind).map(cable => [cable.id, cable]));
   const grouped = new Map();
   for (const cableId of (choices.refreshCables || [])) {
@@ -5401,6 +6124,22 @@ function _pickerRenderSystemIn(el) {
       }
     } else {
       target[key] = selected;
+      if (key === "supplyType") {
+        target.condition = selected === "new" ? "new" : "used";
+        target.provider = selected === "new" ? "dtm" : "customer";
+        target.customerCondition = ""; target.customerSource = "";
+        target.purchaseDetails = ""; target.refresh = "";
+        target.componentSupply = {}; target.componentConditions = {};
+        _systemClearCableRefreshSelections(target);
+      }
+      if (key === "customerCondition") {
+        target.condition = selected === "used" ? "used" : "new";
+        if (selected !== "used") {
+          target.customerSource = ""; target.refresh = "";
+          _systemClearCableRefreshSelections(target);
+        }
+        target.componentSupply = {}; target.componentConditions = {};
+      }
       if (key === "condition") { target.componentConditions = {}; target.refresh = ""; _systemClearCableRefreshSelections(target); target.provider = "customer"; target.purchaseDetails = ""; }
       if (key === "refresh" && selected !== "yes") _systemClearCableRefreshSelections(target);
       if (key === "provider" && selected === "customer") target.purchaseDetails = "";
@@ -5408,6 +6147,16 @@ function _pickerRenderSystemIn(el) {
         target.micMount = "";
         target.micLoc = "";
         delete target.micLocCustom;
+      }
+      if (key === "rearLoc" && selected === "__none__") {
+        target.rearBracket = "";
+        delete target.rearLocCustom;
+        if (target.componentConditions && typeof target.componentConditions === "object") {
+          delete target.componentConditions.radar_rear_antenna;
+        }
+        if (target.componentSupply && typeof target.componentSupply === "object") {
+          delete target.componentSupply.radar_rear_antenna;
+        }
       }
       if (key === "antennaStyle" && ["cylinder", "whip"].includes(selected) && target.antennaLoc && !["rear_left_roof", "__custom__"].includes(target.antennaLoc)) target.antennaLoc = "";
       if (key === "cameraBrand" && !_cameraSupportsExtendedComponents(selected)) {
@@ -5417,11 +6166,29 @@ function _pickerRenderSystemIn(el) {
     }
     _systemClampStep(); _pickerRefreshSystemView();
   }));
-  el.querySelectorAll("[data-system-component-condition]").forEach(button => button.addEventListener("click", () => {
+  el.querySelectorAll("[data-system-component-supply]").forEach(button => button.addEventListener("click", () => {
     const target = _pickerState.radio.choices;
+    if (!target.componentSupply || typeof target.componentSupply !== "object") target.componentSupply = {};
     if (!target.componentConditions || typeof target.componentConditions !== "object") target.componentConditions = {};
-    target.componentConditions[button.dataset.systemComponentCondition] = _pickerNormalPartStatus(button.dataset.systemComponentStatus);
+    const value = button.dataset.systemSupplyValue;
+    const supply = value === "new"
+      ? { supplyType: "new", customerCondition: "", customerSource: "" }
+      : { supplyType: "customer_supplied", customerCondition: value === "customer_new" ? "new" : "used", customerSource: "" };
+    const payload = _pickerSupplyPayload(supply);
+    target.componentSupply[button.dataset.systemComponentSupply] = payload;
+    target.componentConditions[button.dataset.systemComponentSupply] = payload.new_or_used;
     _pickerRefreshSystemView();
+  }));
+  el.querySelectorAll("[data-system-component-source]").forEach(input => input.addEventListener("input", () => {
+    const target = _pickerState.radio.choices;
+    const key = input.dataset.systemComponentSource;
+    if (!target.componentSupply || typeof target.componentSupply !== "object") target.componentSupply = {};
+    const current = target.componentSupply[key] || _pickerSupplyPayload({ supplyType: "customer_supplied", customerCondition: "used", customerSource: "" });
+    current.customer_source = input.value;
+    current.source = input.value;
+    target.componentSupply[key] = current;
+    _pickerUpdateFooter();
+    const next = el.querySelector(".guided-next"); if (next) next.disabled = !_systemStepSatisfied(step);
   }));
   el.querySelectorAll("[data-system-text]").forEach(input => input.addEventListener("input", () => {
     _pickerState.radio.choices[input.dataset.systemText] = input.value;
@@ -5457,12 +6224,16 @@ async function _pickerAddSystem(addAndContinue) {
   // appear only on the concrete component rows in the expandable manifest.
   const systemNotes = String(c.purchaseDetails || "").trim();
   const editing = !!_pickerState.editLineId, existing = _pickerState.editPart;
+  const parentSupply = _pickerSupplyPayload({
+    supplyType: c.supplyType,
+    customerCondition: c.customerCondition,
+    customerSource: c.customerSource,
+  });
   const row = {
     name: editing ? (existing?.name || def.primaryName) : def.primaryName,
     location: _pickerSystemPrimaryLocation(state.kind, c), manufacturer: c.systemProduct?.manufacturer_label || "",
-    part_number: c.provider === "dtm" ? "DTM PURCHASE — SEE DETAILS" : "CUSTOMER SUPPLIED KIT",
-    quantity: 1, new_or_used: c.condition === "reused" ? "Reused" : c.condition === "used" ? "Used" : "New",
-    source: c.provider === "dtm" ? "DTM purchasing" : "Customer supplied",
+    part_number: c.supplyType === "new" ? "DTM PURCHASE — SEE DETAILS" : "CUSTOMER SUPPLIED KIT",
+    quantity: 1, ...parentSupply,
     part_type: def.primaryPartType,
     notes: systemNotes || `${def.label} — guided system details`, components,
     comment: _pickerState.comment || "",
@@ -5481,7 +6252,7 @@ async function _pickerAddSystem(addAndContinue) {
       await _pickerReplaceMagneticMicChild(
         draftId, parentLineId, row.name, micLocation,
         c.micClipRelation === "use_console_clip" ? "" : c.micMount,
-        c.componentConditions?.radio_microphone || components.find(item => item.key === "radio_microphone")?.new_or_used || row.new_or_used,
+        c.componentSupply?.radio_microphone || components.find(item => item.key === "radio_microphone") || parentSupply,
       );
     }
     toast(editing ? `${def.label} updated` : `${def.label} added`, "success");
@@ -5498,11 +6269,22 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
   for (const g of _pickerVisibleAccessoryGroups()) {
     const v = _pickerState.accessoryChoices[g.category];
     const picks = Array.isArray(v) ? v : [v];
+    const quantities = _pickerAccessoryStateList(
+      _pickerState.accessoryQuantities, g.category, picks.length, 1,
+    );
+    const manual = _pickerAccessoryStateList(
+      _pickerState.accessoryQuantityManual, g.category, picks.length, false,
+    );
     const counts = {};
-    for (const pick of picks) {
-      if (!pick || pick === "none") continue;
-      counts[pick] = (counts[pick] || 0) + 1;
-    }
+    const rules = {};
+    picks.forEach((pick, index) => {
+      if (!pick || pick === "none") return;
+      counts[pick] = (counts[pick] || 0) + Math.max(1, Number(quantities[index]) || 1);
+      rules[pick] = {
+        ..._pickerAccessoryQuantityRule(g, pick),
+        manual_quantity: Boolean((rules[pick] || {}).manual_quantity || manual[index]),
+      };
+    });
     for (const [pick, qty] of Object.entries(counts)) {
       const [pidPart, sku] = pick.split("::");
       const opt = g.options.find(o => o.product_id === pidPart);
@@ -5514,6 +6296,9 @@ function _pickerChosenAccessoryRows(parentName, locName, parentLineId) {
         parent_line_id: parentLineId || "",
         accessory_category: g.category,
         accessory_parent_product: parentProduct,
+        picker_config: Object.keys(rules[pick] || {}).length
+          ? { accessory_quantity: { ...rules[pick] } }
+          : {},
       });
     }
   }
@@ -5614,7 +6399,7 @@ async function _pickerAddWestinChannelLights(draftId, bumperLineId) {
   if (!row) throw new Error("could not resolve the channel lights");
   const result = await api(`/api/draft/${draftId}/part`, {
     ...row,
-    new_or_used: _pickerState.partStatus,
+    ..._pickerSupplyPayload(),
     linked_parent_line_id: bumperLineId,
     part_type: "warning_light",
     picker_config: {
@@ -5651,7 +6436,11 @@ function _pickerUpdateFooter() {
   const radioOk = _pickerRadioSatisfied();
   const detailsOk = _pickerPartDetailsSatisfied();
   const westinOk = _pickerWestinChannelSatisfied();
-  const ready = accOk && tracerOk && innerEdgeOk && outerEdgeOk && lightbarOk && radioOk && detailsOk && westinOk;
+  const tintOk = _pickerTintReady();
+  const allocationOk = _pickerLocationAllocationReady();
+  const supplyOk = _pickerState.radio?.active || _pickerState.systemSetup?.active || _pickerState.consoleSetup?.active
+    ? true : _pickerSupplySatisfied();
+  const ready = accOk && tracerOk && innerEdgeOk && outerEdgeOk && lightbarOk && radioOk && detailsOk && westinOk && tintOk && allocationOk && supplyOk;
   // A required detail belongs on the next screen. It must not prevent the
   // user from reaching that screen after selecting the part.
   const detailsEntryReady = accOk && tracerOk && innerEdgeOk && outerEdgeOk && lightbarOk && westinOk;
@@ -5670,8 +6459,14 @@ function _pickerUpdateFooter() {
     hint += ' <span class="picker-foot-acc">· complete shop details</span>';
   if (sel && !westinOk)
     hint += ' <span class="picker-foot-acc">· configure channel lights</span>';
+  if (sel && !tintOk)
+    hint += ' <span class="picker-foot-acc">· choose windows and tint percentage</span>';
+  if (sel && !allocationOk)
+    hint += ' <span class="picker-foot-acc">· assign at least one install location</span>';
   if (_pickerState.radio.active && !radioOk)
     hint += ` <span class="picker-foot-acc">· complete ${esc(_systemDef()?.label || "system")} workflow</span>`;
+  if (!supplyOk)
+    hint += ` <span class="picker-foot-acc">· ${_pickerState.supply.customerCondition === "used" ? "enter the customer-used source" : "choose the customer-supplied condition"}</span>`;
 
   // Step 7: show "Add another part" alongside "Add and Finish" when the action
   // is "add" (not navigate-to-location, not edit-save). Multi-add is build-only
@@ -5717,11 +6512,13 @@ function _pickerUpdateFooter() {
     const printerReady = !printerRequired || !!_pickerState.consoleSetup.choices?.printer;
     const radioMicRelationRequired = _pickerConsoleRadioMicRelationRequired();
     const radioMicRelationReady = !radioMicRelationRequired || ["use_for_existing_radio", "additional_console_clip"].includes(_pickerState.consoleSetup.choices?.radioMicClipRelation);
-    const consoleReady = !!sel && !_pickerState.consoleSetup.loading && pedestalReady && printerReady && radioMicRelationReady;
+    const consoleSupplyReady = _pickerConsoleSupplySatisfied();
+    const consoleReady = !!sel && !_pickerState.consoleSetup.loading && pedestalReady && printerReady && radioMicRelationReady && consoleSupplyReady;
     const missing = [
       !pedestalReady ? "Choose a pedestal / mount base to continue." : "",
       !printerReady ? "Choose a printer to continue." : "",
       !radioMicRelationReady ? "Confirm whether the console mic clip is for the existing radio." : "",
+      !consoleSupplyReady ? "Enter a source for every customer-supplied used console component." : "",
     ].filter(Boolean);
     text.innerHTML = `<span class="picker-foot-label">${esc(consoleLabel)}</span>${missing.length ? `<span class="picker-foot-note">${esc(missing.join(" "))}</span>` : ""}`;
     if (_pickerState.tab === "part") {
@@ -5897,6 +6694,7 @@ async function _pickerDoAdd(addAndContinue) {
   if (_pickerState.lightbar.active) { await _pickerAddLightbar(draftId, addAndContinue); return; }
 
   const product = _pickerState.products.find(p => p.product_id === sel.product_id);
+  const isWindowTint = _pickerIsWindowTint(product);
   const isScene = _pickerProductCategory(product) === "scene";
   // Color path only for color-configured products; a direct SKU pick (sel.sku,
   // e.g. a programmable bar) always uses the simple single-SKU path.
@@ -5923,6 +6721,26 @@ async function _pickerDoAdd(addAndContinue) {
     details: (_pickerControlHeadRequiresPaMic() || _pickerControlHeadOffersHandheldMagMic())
       ? { ..._pickerState.partDetails } : {},
   };
+  if (isWindowTint) {
+    pickerConfig.window_tint = {
+      windows: [..._pickerState.tint.windows],
+      percentage: Number(_pickerState.tint.percentage),
+      unit_price: 65,
+    };
+  }
+  if (_pickerUsesLocationAllocation(product)) {
+    const activeComments = {};
+    for (const [location, quantity] of Object.entries(_pickerState.locationAllocation.quantities || {})) {
+      if (Number(quantity) > 0) activeComments[location] = String(_pickerState.locationAllocation.comments?.[location] || "");
+    }
+    pickerConfig.location_batch_id = _pickerState.locationAllocation.batchId || "";
+    pickerConfig.location_allocation = {
+      quantities: { ..._pickerState.locationAllocation.quantities },
+      comments: activeComments,
+      batch_id: _pickerState.locationAllocation.batchId || "",
+    };
+    pickerConfig.round_light = { warning_color: _pickerState.roundLightColor === "blue" ? "blue" : "red" };
+  }
   if (_pickerIsSirenSpeakerContext()) pickerConfig.siren_dual_tones = _pickerState.sirenDualTones === true;
   if (_pickerState.westin?.active) {
     pickerConfig.westin = {
@@ -5933,16 +6751,37 @@ async function _pickerDoAdd(addAndContinue) {
     };
   }
   if (loc.textCustom) {
+    _pickerRefreshCustomPlacementGroups();
     pickerConfig.custom_location = {
       label: String(loc.selected || "").trim(),
       render_location: loc.renderLocation || "",
       placements: _pickerCustomPlacementSnapshot(),
+      anchors: _pickerNormalizeCustomAnchors(loc.customPlacementAnchors),
+      spacing: _pickerNormalizeCustomSpacing(loc.customHeadSpacing),
+      layout: loc.customPlacementLayout === "mirrored_pairs" ? "mirrored_pairs" : "even",
     };
   }
   if (_pickerState.consoleSetup?.active) pickerConfig.console_setup = _pickerConsoleSetupSnapshot();
 
   let combos, colorFields = {}, totalHeads = 0;
-  if (isScene) {
+  if (_pickerUsesLocationAllocation(product)) {
+    const warningColor = _pickerState.roundLightColor === "blue" ? "blue" : "red";
+    const sku = _pickerRoundLightSku(product, warningColor);
+    const quantity = _pickerLocationAllocationTotal();
+    if (!sku || !quantity) { toast("Choose at least one install location and a Red or Blue round light", "error"); return; }
+    const colors = [warningColor, "white"];
+    combos = [{ colors, part_number: sku.part_number, quantity, price: sku.price ?? null }];
+    totalHeads = quantity;
+    colorFields = { raw_color: warningColor === "blue" ? "Blue/White" : "Red/White" };
+    pickerConfig.mode = "uniform";
+    pickerConfig.colorsPerHead = "duo";
+    pickerConfig.uniform = [...colors];
+    pickerConfig.splitSecondary = [];
+    pickerConfig.custom = [];
+    pickerConfig.count = quantity;
+    pickerConfig.lens = "clear";
+    pickerConfig.skuChoices = {};
+  } else if (isScene) {
     // Scene products are physically white and the no-color filter is deliberate,
     // but their selected quantity still represents the number of modules to
     // bill and render.  Preserve each per-head SKU override while grouping
@@ -6000,7 +6839,9 @@ async function _pickerDoAdd(addAndContinue) {
     if (!sku) { toast("Pick a SKU", "error"); return; }
     const skuObj = product.skus.find(s => s.part_number === sku) || {};
     const skuColors = [skuObj.color, skuObj.secondary_color, skuObj.tertiary_color].filter(Boolean);
-    const qty = _pickerIsSirenSpeakerContext()
+    const qty = isWindowTint
+      ? _pickerState.tint.windows.length
+      : _pickerIsSirenSpeakerContext()
       ? Math.min(2, Math.max(1, _pickerState.config.count || 1))
       : 1;
     // Concrete SKUs can still have fixed colors. Preserve them so direct SKU
@@ -6033,7 +6874,54 @@ async function _pickerDoAdd(addAndContinue) {
   const partTypeId = _pickerResolvedPartTypeId(f);
 
   let ok = 0, parentLineId = "";
-  for (const row of rows) {
+  if (_pickerUsesLocationAllocation(product)) {
+    const template = rows[0];
+    const expandedComponents = [];
+    for (const component of (template.components || [])) {
+      const quantity = Math.max(1, Number(component.quantity) || 1);
+      for (let index = 0; index < quantity; index++) expandedComponents.push({ ...component, quantity: 1 });
+    }
+    let componentIndex = 0;
+    const allocations = (product.location_options || [])
+      .map(location => [location, Math.max(0, Number(_pickerState.locationAllocation.quantities[location]) || 0)])
+      .filter(([, quantity]) => quantity > 0);
+    const supplyPayload = _pickerSupplyPayload();
+    const allocationRows = allocations.map(([location, quantity]) => {
+      const slice = expandedComponents.slice(componentIndex, componentIndex + quantity);
+      componentIndex += quantity;
+      const grouped = new Map();
+      for (const component of slice) {
+        const key = [component.part_number, JSON.stringify(component.colors || []), component.price].join("|");
+        const existing = grouped.get(key);
+        if (existing) existing.quantity += 1;
+        else grouped.set(key, { ...component, quantity: 1 });
+      }
+      return {
+        ...template,
+        ...supplyPayload,
+        quantity,
+        location,
+        components: [...grouped.values()],
+        comment: String(_pickerState.locationAllocation.comments?.[location] || "").trim(),
+        picker_config: pickerConfig,
+        ...(partTypeId ? { part_type: partTypeId } : {}),
+      };
+    });
+    try {
+      const result = await api(`/api/draft/${draftId}/location-allocation`, {
+        batch_id: _pickerState.locationAllocation.batchId || "",
+        edit_line_id: _pickerState.editLineId || "",
+        rows: allocationRows,
+      });
+      if (result?.ok) {
+        ok = allocationRows.length;
+        parentLineId = result.line_id || "";
+        _pickerState.locationAllocation.batchId = result.batch_id || "";
+      }
+    } catch (error) {
+      console.error("location allocation save failed:", error);
+    }
+  } else for (const row of rows) {
     try {
       const endpoint = _pickerState.editLineId
         ? `/api/draft/${draftId}/part/${_pickerState.editLineId}/update`
@@ -6042,11 +6930,12 @@ async function _pickerDoAdd(addAndContinue) {
       const detailNote = _pickerPartDetailsNote();
       const detailComponent = _pickerPartDetailsComponent();
       const sirenDualToneComponent = _pickerSirenDualToneComponent();
+      const supplyPayload = _pickerState.consoleSetup?.active
+        ? _pickerSupplyPayload(_pickerSupplyFromRecord(_pickerState.consoleSetup.choices?.consoleChoice || {}))
+        : _pickerSupplyPayload();
       const payload = {
         ...row,
-        new_or_used: _pickerState.consoleSetup?.active
-          ? _pickerNormalPartStatus(_pickerState.consoleSetup.choices?.consoleChoice?.new_or_used)
-          : _pickerState.partStatus,
+        ...supplyPayload,
         comment: _pickerState.comment || "",
         ...(detailNote ? { notes: detailNote } : {}),
         components: [
@@ -6057,6 +6946,13 @@ async function _pickerDoAdd(addAndContinue) {
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };
+      if (isWindowTint) {
+        payload.name = "Window Tint";
+        payload.quantity = _pickerState.tint.windows.length;
+        payload.location = _pickerState.tint.windows.map(_pickerTintLabel).join(", ");
+        payload.notes = `${Number(_pickerState.tint.percentage)}% tint`;
+        payload.components = [];
+      }
       const r = await api(endpoint, payload);
       if (r?.ok) {
         ok++;
@@ -6093,7 +6989,7 @@ async function _pickerDoAdd(addAndContinue) {
         draftId, parentLineId, baseName,
         _pickerControlHeadRequiresPaMic() ? _pickerPaMicLocation() : locName,
         magMicSelection,
-        _pickerState.partStatus,
+        _pickerSupplyPayload(),
       );
     } catch (error) {
       console.error("PA magnetic mic save failed:", error);
@@ -6192,7 +7088,7 @@ async function _pickerAddTracer(draftId, addAndContinue) {
     const r = await api(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName,
       manufacturer: sel.mfr || "", part_number: housingSku, quantity: housingQty,
-      new_or_used: _pickerState.partStatus, source: "", lens, notes, comment: _pickerState.comment || "",
+      ..._pickerSupplyPayload(), lens, notes, comment: _pickerState.comment || "",
       part_type: _pickerResolvedPartTypeId(_pickerState.filters),
       ...colorFields,
     });
@@ -6295,8 +7191,8 @@ async function _pickerAddInnerEdge(draftId, addAndContinue) {
   };
   const parentRow = {
     name: baseName, location: loc.selected, manufacturer: sel.mfr || "",
-    part_number: housing.sku, quantity: 1, new_or_used: _pickerState.partStatus,
-    source: "", notes, comment: _pickerState.comment || "", part_type: _pickerResolvedPartTypeId(_pickerState.filters),
+    part_number: housing.sku, quantity: 1, ..._pickerSupplyPayload(),
+    notes, comment: _pickerState.comment || "", part_type: _pickerResolvedPartTypeId(_pickerState.filters),
     picker_config: pickerConfig, ..._pickerInnerEdgeColorFields(ie),
   };
   let parentLineId = "";
@@ -6396,8 +7292,8 @@ async function _pickerAddOuterEdge(draftId, addAndContinue) {
     : `three Red/${oe.secondary === "amber" ? "Amber" : "White"} + three Blue/${oe.secondary === "amber" ? "Amber" : "White"} IONs`;
   const parentRow = {
     name: baseName, location: loc.selected, manufacturer: sel.mfr || "",
-    part_number: housing.sku, quantity: 1, new_or_used: _pickerState.partStatus,
-    source: "", notes: `Outer Edge rear pillar · ${colorLabel}`, comment: _pickerState.comment || "",
+    part_number: housing.sku, quantity: 1, ..._pickerSupplyPayload(),
+    notes: `Outer Edge rear pillar · ${colorLabel}`, comment: _pickerState.comment || "",
     // Warning light remains the canonical data home; the automatic rear
     // location above supplies the manifest-facing "Rear Warning" name.
     part_type: "warning_light",
@@ -6467,7 +7363,7 @@ async function _pickerAddLightbar(draftId, addAndContinue) {
   try {
     const r = await api(`/api/draft/${draftId}/part`, {
       name: baseName, location: locName, manufacturer: sel.mfr || "",
-      part_number: sel.sku, quantity: 1, new_or_used: _pickerState.partStatus, source: "", lens, notes, comment: _pickerState.comment || "",
+      part_number: sel.sku, quantity: 1, ..._pickerSupplyPayload(), lens, notes, comment: _pickerState.comment || "",
       part_type: _pickerResolvedPartTypeId(_pickerState.filters),
     });
     if (r?.ok) { added++; parentLineId = r.line_id || ""; }

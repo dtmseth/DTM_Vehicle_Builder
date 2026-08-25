@@ -796,6 +796,21 @@ def test_inner_edge_shrouds_are_not_offered_but_t_series_shrouds_are():
     assert {option["product_id"] for option in groups["shroud"]["options"]} == {
         "whelen_ie_shroud"
     }
+    shroud_skus = {
+        sku["part_number"]: sku
+        for option in groups["shroud"]["options"]
+        for sku in option["skus"]
+    }
+    assert shroud_skus["THSG1"]["accessory_quantity"] == {
+        "mode": "cover_parent_quantity",
+        "parent_units_per_item": 1,
+    }
+    assert shroud_skus["THSG2"]["accessory_quantity"] == {
+        "mode": "cover_parent_quantity",
+        "parent_units_per_item": 2,
+        "requires_complete_groups": True,
+        "render_parent_group": "dual_shroud",
+    }
 
 
 @pytest.mark.parametrize(("product_id", "expected_locations"), [
@@ -848,7 +863,14 @@ def test_round_lighthead_has_no_accessories_and_defaults_to_red_white():
     route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
 
     products = {row["product_id"]: row for row in h.body_json()["products"]}
-    assert products["whelen_round_lighthead"]["default_colors"] == ["red", "white"]
+    round_light = products["whelen_round_lighthead"]
+    assert round_light["default_colors"] == ["red", "white"]
+    assert round_light["picker_location_allocation"] is True
+    assert {sku["part_number"]: sku["price"] for sku in round_light["skus"]} == {
+        "3SBCCDCR": 64.48,
+        "3SC0CDCR": 59.52,
+        "3SRCCDCR": 64.48,
+    }
     assert _resolve_accessories(svc, "whelen_round_lighthead") == []
 
 

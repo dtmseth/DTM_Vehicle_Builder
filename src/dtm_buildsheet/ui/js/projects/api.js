@@ -95,6 +95,8 @@ function _ptSetPreferenceForm(prefix, preferences = {}) {
     const el = $(`${prefix}-${field === "lighting" ? "lighting" : field.replaceAll("_", "-")}`);
     if (el) el.innerHTML = _ptPreferenceSelectOptions(field, value);
   });
+  const lightingMode = $(`${prefix}-lighting-mode`);
+  if (lightingMode) lightingMode.value = preferences.lighting_mode === "trio" ? "trio" : "duo";
   const notes = $(`${prefix}-pref-notes`);
   if (notes) notes.value = preferences.notes || "";
 }
@@ -107,6 +109,7 @@ function _ptPreferencePayload(prefix) {
     cage_brand: $(`${prefix}-cage-brand`)?.value || "",
     console_brand: $(`${prefix}-console-brand`)?.value || "",
     lighting_brands: lighting ? [lighting] : [],
+    lighting_mode: $(`${prefix}-lighting-mode`)?.value === "trio" ? "trio" : "duo",
     notes: ($(`${prefix}-pref-notes`)?.value || "").trim(),
   };
 }

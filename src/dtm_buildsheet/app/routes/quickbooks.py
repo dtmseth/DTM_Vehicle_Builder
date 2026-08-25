@@ -20,6 +20,7 @@ POST:
 - /api/quickbooks/customer-pricing/default — save the reviewed shared Retail rule
 - /api/quickbooks/production-preview/create-snapshot — create/select a local immutable baseline
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
+- /api/quickbooks/projects/preview — preview a vehicle's local QBO Project link
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
 - /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
@@ -45,6 +46,7 @@ from ..services import (
     qb_estimate_service,
     qb_production_preview_service,
     qb_sync_service,
+    quickbooks_gateway_service,
     quickbooks_service,
 )
 
@@ -91,7 +93,33 @@ def route_quickbooks(
     paths: AppPaths,
 ) -> bool:
     if method == "GET" and path == "/api/quickbooks/status":
-        _send_json(handler, quickbooks_service.get_status(paths))
+        _send_json(handler, quickbooks_gateway_service.connection_health(paths))
+        return True
+    central_mode = quickbooks_gateway_service.central_mode_enabled(paths)
+    if central_mode and method == "GET" and path == "/api/quickbooks/callback":
+        # Preserve the callback's 302-only invariant even though desktop
+        # Intuit authorization is disabled in central mode.
+        _redirect(handler, "/?qb=error")
+        return True
+    if central_mode and path not in {
+        "/api/quickbooks/status",
+        "/api/quickbooks/items",
+        "/api/quickbooks/sync",
+        "/api/quickbooks/customer-pricing",
+        # These only read/write the local vehicle record. They never use a
+        # desktop Intuit token and remain valid in central mode.
+        "/api/quickbooks/projects/preview",
+        "/api/quickbooks/projects/bind",
+    }:
+        _send_json(
+            handler,
+            {
+                "ok": False,
+                "error": "central_operation_not_migrated",
+                "detail": "This QuickBooks operation is not available in the first central-service slice.",
+            },
+            status=503,
+        )
         return True
     if method == "GET" and path == "/api/quickbooks/production-preview/status":
         _send_json(handler, qb_production_preview_service.get_status(paths))
@@ -202,6 +230,16 @@ def route_quickbooks(
             ),
         )
         return True
+    if method == "POST" and path == "/api/quickbooks/projects/preview":
+        _send_json(
+            handler,
+            qb_estimate_service.preview_project_binding(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
+            ),
+        )
+        return True
     if method == "POST" and path == "/api/quickbooks/projects/bind":
         _send_json(
             handler,
@@ -242,6 +280,8 @@ def route_quickbooks(
                 attach_pdf=bool(body.get("attach_pdf", False)),
                 pricing_mode=body.get("pricing_mode", "retail"),
                 custom_pricing=body.get("custom_pricing") or None,
+                additional_charges=body.get("additional_charges") or None,
+                overwrite_qb_changes=bool(body.get("overwrite_qb_changes", False)),
             ),
         )
         return True

@@ -104,6 +104,7 @@ function _showInnerStab(outerStab, innerStab) {
 
 function _runStabSideEffects(stab) {
   // Per-stab initialization hooks the legacy code already exposes.
+  if (stab === "projects-defaults" && typeof initProjectDefaultsTab === "function") initProjectDefaultsTab();
   if (stab === "workbook-tools" && typeof loadTemplateInfo === "function") loadTemplateInfo();
   if (stab === "fixtures" && typeof initFixtures === "function") initFixtures();
   if (stab === "sales-reps" && typeof initSalesRepsTab === "function") initSalesRepsTab();

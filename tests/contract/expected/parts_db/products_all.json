@@ -1655,7 +1655,7 @@
             "lens_type": "",
             "options": {},
             "part_number": "UNIVERSAL GRILL BRACKET",
-            "price_usd": null,
+            "price_usd": 25.0,
             "qb_inactive": false,
             "qb_item_id": "",
             "qb_pending": false,
@@ -13436,7 +13436,23 @@
             "vehicle_tags": [
               "any"
             ]
-          },
+          }
+        ],
+        "product_id": "whelen_round_lighthead",
+        "tag_ids": [
+          "light"
+        ]
+      },
+      {
+        "description": "",
+        "fits_part_types": [
+          "rear_seat_cargo_lights",
+          "cargo_lighting"
+        ],
+        "images": {},
+        "manufacturer_id": "whelen",
+        "model": "4-inch Flat Synchronizable Interior Light",
+        "part_numbers": [
           {
             "color": "white",
             "friendly_name": "WHELEN 4\" FLAT SYNCH SUPER-LED WHT.",
@@ -13457,7 +13473,7 @@
             ]
           }
         ],
-        "product_id": "whelen_round_lighthead",
+        "product_id": "whelen_4in_flat_lighthead",
         "tag_ids": [
           "light"
         ]

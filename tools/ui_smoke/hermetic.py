@@ -143,11 +143,19 @@ def boot_server(paths) -> str:
     assert NETGUARD_VIOLATIONS is not None  # netguard module state exists
 
     from dtm_buildsheet.app import server as app_server
-    from dtm_buildsheet.app.services import agency_service, sales_rep_service
+    from dtm_buildsheet.app.services import agency_service, qb_sync_service, sales_rep_service
 
     app_server._setup_logging(paths.workspace_dir)
     agency_service.warmup_cache(paths)
     sales_rep_service.warmup_cache(paths)
+
+    # Agency smoke flows exercise the local save/default-preference contract,
+    # not the optional QuickBooks mirror.  Keep the harness from opening the
+    # workstation's real OS-keychain store while handling that local request.
+    qb_sync_service.push_agency_after_save = lambda _paths, _agency_id: {
+        "ok": True,
+        "skipped": "ui_smoke",
+    }
 
     app_server.Handler.paths = paths
     server = app_server._ReuseHTTPServer(("127.0.0.1", 0), app_server.Handler)

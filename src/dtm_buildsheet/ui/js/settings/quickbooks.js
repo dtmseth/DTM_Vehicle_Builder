@@ -30,12 +30,16 @@
 
   function _render() {
     const s = _status || {};
+    const central = !!s.central_mode;
 
     const badge = $("qb-status-badge");
     if (badge) {
       if (s.connected) {
         badge.textContent = "● Connected";
         badge.style.color = "var(--green,#166534)";
+      } else if (central) {
+        badge.textContent = "● Managed connection unavailable";
+        badge.style.color = "var(--orange,#b45309)";
       } else if (s.configured) {
         badge.textContent = "● Not connected";
         badge.style.color = "var(--orange,#b45309)";
@@ -55,15 +59,20 @@
         ? "•••••••• saved — leave blank to keep"
         : "Paste client secret";
     }
-    if ($("qb-creds-card")) $("qb-creds-card").hidden = !!s.managed_connection;
+    if ($("qb-creds-card")) $("qb-creds-card").hidden = !!s.managed_connection || central;
+    if ($("qb-managed-message")) $("qb-managed-message").hidden = !central;
+    if ($("qb-token-details")) $("qb-token-details").hidden = central;
+    if ($("qb-disconnect-btn")) $("qb-disconnect-btn").hidden = central;
+    const previewTab = document.querySelector('.stab[data-stab="quickbooks-production-preview"]');
+    if (previewTab && central) previewTab.hidden = true;
 
     // Connection panels.
     if ($("qb-connected-panel")) $("qb-connected-panel").hidden = !s.connected;
-    if ($("qb-connect-row")) $("qb-connect-row").hidden = !!s.connected;
+    if ($("qb-connect-row")) $("qb-connect-row").hidden = !!s.connected || central;
     if ($("qb-connect-btn")) $("qb-connect-btn").disabled = !s.configured;
     if ($("qb-connect-hint")) $("qb-connect-hint").hidden = !!s.configured;
     if ($("qb-sync-panel")) $("qb-sync-panel").hidden = !s.connected;
-    if ($("qb-customers-panel")) $("qb-customers-panel").hidden = !s.connected;
+    if ($("qb-customers-panel")) $("qb-customers-panel").hidden = !s.connected || central;
 
     if (s.connected) {
       if ($("qb-token-renews")) $("qb-token-renews").textContent = _fmtDate(s.refresh_expiry_utc);
@@ -165,7 +174,7 @@
       const id = esc(it.qb_item_id || "");
       const sku = it.sku ? `<span style="color:var(--muted)">SKU ${esc(it.sku)}</span> · ` : "";
       const price = _money(it.unit_price);
-      const priceHtml = price ? ` · <span style="color:var(--muted)">${esc(price)}</span>` : "";
+      const priceHtml = price ? ` · <span style="color:var(--muted)">List ${esc(price)}</span>` : "";
       // QBO items are named by part number, so lead with the Sales Description
       // (when present) and demote the part number to the detail line.
       const desc = (it.description || "").trim();
@@ -353,8 +362,13 @@
       const res = await api("/api/quickbooks/customers/import", {});
       if (res?.ok) {
         toast(`Imported: ${res.created} created, ${res.updated} updated`, "success");
-        // Refresh the agencies tab if it's loaded so the new records show.
-        if (typeof initAgenciesTab === "function") { try { initAgenciesTab(); } catch (e) {} }
+        // Refresh every agency consumer, including an already-open Preset
+        // creator. Re-running initAgenciesTab() used to refresh only that tab
+        // and could also attach duplicate handlers.
+        if (typeof refreshAgenciesTab === "function") {
+          try { await refreshAgenciesTab(); } catch (e) {}
+        }
+        window.dispatchEvent(new CustomEvent("dtm:agencies-changed"));
       } else {
         toast(_syncError(res?.error), "error");
       }

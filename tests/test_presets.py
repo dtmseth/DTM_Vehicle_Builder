@@ -101,7 +101,35 @@ class TestValidatePresetPayload:
 
     def test_schema_version_normalised(self):
         result = validate_preset_payload(_MINIMAL_PRESET)
-        assert result["schema_version"] == 3
+        assert result["schema_version"] == 4
+
+    def test_customer_supplied_new_round_trips_without_becoming_billable(self):
+        preset = {
+            **_MINIMAL_PRESET,
+            "parts": [{
+                "name": "Customer radio",
+                "supply_type": "customer_supplied",
+                "customer_condition": "new",
+                "customer_source": "Agency stock",
+            }],
+        }
+        part = validate_preset_payload(preset)["parts"][0]
+        assert part["supply_type"] == "customer_supplied"
+        assert part["customer_condition"] == "new"
+        assert part["customer_source"] == "Agency stock"
+        assert part["new_or_used"] == "Used"
+
+    def test_explicit_customer_used_preset_requires_source(self):
+        preset = {
+            **_MINIMAL_PRESET,
+            "parts": [{
+                "name": "Transferred radio",
+                "supply_type": "customer_supplied",
+                "customer_condition": "used",
+            }],
+        }
+        with pytest.raises(ValueError, match="where.*come from"):
+            validate_preset_payload(preset)
 
     def test_picker_and_renderer_fields_preserved(self):
         component = {"part_number": "BSFW50ZT", "quantity": 1}
@@ -364,6 +392,32 @@ class TestAutoNaming:
         )
         assert res["ok"]
         assert "ShouldBeIgnored" not in res["label"]
+
+    def test_project_only_agency_name_is_used_for_label(self, tmp_path):
+        ws = tmp_path / "ws"; bd = tmp_path / "bd"
+        workspace = tmp_path / "workspace"
+        projects = workspace / "projects"
+        project_dir = projects / "project-1"
+        ws.mkdir(); bd.mkdir(); project_dir.mkdir(parents=True)
+        (project_dir / "project.json").write_text(json.dumps({
+            "customer": {
+                "agency_id": "project-agency-id",
+                "agency": "Current Project Agency",
+            },
+        }), "utf-8")
+        paths = AppPaths(
+            workspace_presets_dir=ws,
+            bundled_presets_dir=bd,
+            workspace_dir=workspace,
+            workspace_projects_dir=projects,
+        )
+        res = save_preset(
+            {"agency_ids": ["project-agency-id"], "build_types": ["Patrol"],
+             "vehicle_types": ["PIU"], "tag": "", "parts": []},
+            paths,
+        )
+        assert res["ok"] is True
+        assert res["label"] == "Current Project Agency Patrol PIU"
 
     def test_single_build_type_included(self, tmp_path):
         paths = self._paths(tmp_path)

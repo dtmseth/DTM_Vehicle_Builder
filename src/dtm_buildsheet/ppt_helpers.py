@@ -12,6 +12,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
+from .domain.supply import supply_state
 from .paths import AppPaths, ensure_workspace
 
 
@@ -117,7 +118,7 @@ MANIFEST_TABLE_LEFT  = Inches(0.5)
 MANIFEST_TABLE_TOP   = Inches(1.07)
 MANIFEST_TABLE_W     = sum(Inches(w) for w in MANIFEST_COL_WIDTHS_IN)
 MANIFEST_HDR_ROW_H   = Inches(0.30)
-MANIFEST_DATA_MIN_H  = Inches(0.36)
+MANIFEST_DATA_MIN_H  = Inches(0.31)
 
 # Diagram pages retain a short in-context warning for a few missing items.  A
 # dedicated exception page is clearer (and cannot clip) when a stress-test or
@@ -148,18 +149,12 @@ class _ManifestEntry:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _is_reused(part) -> bool:
-    """True only for non-new hardware, never merely because it has a source."""
-    noru = getattr(part, "new_or_used", "").strip().lower()
-    return noru in {"used", "u", "reused", "r", "transfer", "transferred"}
+    """Compatibility name: true for any customer-supplied hardware."""
+    return supply_state(part).is_customer_supplied
 
 
 def _source_label(part) -> str:
-    noru   = getattr(part, "new_or_used", "").strip()
-    source = getattr(part, "source",      "").strip()
-    status = noru or "New"
-    if source:
-        return f"{source} — {status}"
-    return status
+    return supply_state(part).label
 
 
 def _color_label(part) -> str:
@@ -563,7 +558,8 @@ def fill_overview(slide, project) -> None:
     p2 = tf2.paragraphs[0]
     r2 = p2.add_run()
     r2.text           = footer_text
-    r2.font.size      = Pt(10)
+    footer_font_size = 10 if len(footer_text) <= 100 else 8.5 if len(footer_text) <= 135 else 7.5
+    r2.font.size      = Pt(footer_font_size)
     r2.font.bold      = True
     r2.font.color.rgb = _WHITE
 
@@ -571,9 +567,18 @@ def fill_overview(slide, project) -> None:
     L = Inches(0.45)
     y = Inches(1.05)
 
-    _textbox(slide, L, y, Inches(10.2), Inches(0.82),
-             agency, font_size=48, bold=True, color=DTM_NAVY)
-    y += Inches(0.82)
+    agency_len = len(str(agency or "").strip())
+    if agency_len <= 32:
+        agency_font, agency_height = 48, 0.82
+    elif agency_len <= 52:
+        agency_font, agency_height = 39, 1.08
+    elif agency_len <= 76:
+        agency_font, agency_height = 32, 1.25
+    else:
+        agency_font, agency_height = 27, 1.42
+    _textbox(slide, L, y, Inches(12.0), Inches(agency_height),
+             agency, font_size=agency_font, bold=True, color=DTM_NAVY)
+    y += Inches(agency_height)
 
     # ── H2: Vehicle identity ──────────────────────────────────────────────────
     veh_display = " ".join(filter(None, [year, make, model, sub_model]))
@@ -1053,7 +1058,7 @@ def _manifest_part_identity(entry: _ManifestEntry) -> tuple[str, str]:
     primary = f"{prefix}{entry.name}".strip()
     part_number = entry.part_number.strip()
     if part_number and entry.is_sku:
-        part_number = f"SKU: {part_number}"
+        part_number = f"{'SKUs' if ' / ' in part_number else 'SKU'}: {part_number}"
     secondary = "  ·  ".join(filter(None, [entry.manufacturer, part_number]))
     return primary, secondary
 
@@ -1067,11 +1072,33 @@ def _manifest_line_count(text: str, width_inches: float) -> int:
     """Conservative line estimate used to keep table text inside its row."""
     if not text:
         return 1
-    characters_per_line = max(12, int(width_inches * 13.5))
-    return sum(
-        max(1, (len(line) + characters_per_line - 1) // characters_per_line)
-        for line in str(text).splitlines() or [""]
-    )
+    characters_per_line = max(9, int(width_inches * 11.5))
+    total = 0
+    for paragraph in str(text).splitlines() or [""]:
+        words = paragraph.split()
+        if not words:
+            total += 1
+            continue
+        line_len = 0
+        paragraph_lines = 1
+        for word in words:
+            word_len = len(word)
+            if word_len > characters_per_line:
+                if line_len:
+                    paragraph_lines += 1
+                    line_len = 0
+                full, remainder = divmod(word_len, characters_per_line)
+                paragraph_lines += max(0, full - (0 if remainder else 1))
+                line_len = remainder
+            elif not line_len:
+                line_len = word_len
+            elif line_len + 1 + word_len <= characters_per_line:
+                line_len += 1 + word_len
+            else:
+                paragraph_lines += 1
+                line_len = word_len
+        total += paragraph_lines
+    return total
 
 
 def _manifest_row_height(entry: _ManifestEntry) -> int:
@@ -1087,7 +1114,7 @@ def _manifest_row_height(entry: _ManifestEntry) -> int:
         _manifest_line_count(entry.location, MANIFEST_COL_WIDTHS_IN[3]),
         _manifest_line_count(source, MANIFEST_COL_WIDTHS_IN[4]),
     )
-    return max(MANIFEST_DATA_MIN_H, Inches(0.08 + 0.14 * line_count))
+    return max(MANIFEST_DATA_MIN_H, Inches(0.08 + 0.15 * line_count))
 
 
 def _fmt_manifest_item_cell(cell, entry: _ManifestEntry, bg: RGBColor | None) -> None:
@@ -1145,9 +1172,9 @@ def _fmt_manifest_details_cell(cell, entry: _ManifestEntry, bg: RGBColor | None)
         p3.space_after = Pt(0)
         r3 = p3.add_run()
         r3.text = f"Comment: {comment}"
-        r3.font.size = Pt(8)
-        r3.font.italic = True
-        r3.font.color.rgb = DTM_NAVY
+        r3.font.size = Pt(9)
+        r3.font.bold = True
+        r3.font.color.rgb = DTM_RED
     if not description and not detail and not comment:
         p = tf.paragraphs[0]
         r = p.add_run()
@@ -1159,20 +1186,25 @@ def _fmt_manifest_details_cell(cell, entry: _ManifestEntry, bg: RGBColor | None)
 
 
 def _part_row(table, row_idx: int, entry: _ManifestEntry, alt_bg: bool, row_h: int) -> None:
-    reused = _is_reused(entry.raw)
+    state = supply_state(entry.raw)
+    reused = state.is_customer_supplied
+    used = reused and state.customer_condition == "used"
     row_bg = RGBColor(0xFF, 0xF3, 0xE8) if reused else (DTM_ALT_BG if alt_bg else None)
 
     source_text = _source_label(entry.raw)
     source_text = f"↺  {source_text}" if reused else f"■  {source_text}"
-    source_color = TAG_REUSED if reused else TAG_NEW
-    source_bg    = RGBColor(0xFF, 0xE8, 0xD0) if reused else RGBColor(0xD8, 0xEC, 0xFF)
+    source_color = DTM_RED if used else (TAG_REUSED if reused else TAG_NEW)
+    source_bg = RGBColor(0xFF, 0xE4, 0xE4) if used else (
+        RGBColor(0xFF, 0xE8, 0xD0) if reused else RGBColor(0xD8, 0xEC, 0xFF)
+    )
 
     _fmt_manifest_item_cell(table.cell(row_idx, 0), entry, row_bg)
     _fmt_manifest_details_cell(table.cell(row_idx, 1), entry, row_bg)
     _fmt_cell(table.cell(row_idx, 2), str(entry.quantity or "—"),
               font_size=9, bold=True, bg=row_bg, align=PP_ALIGN.CENTER)
     _fmt_cell(table.cell(row_idx, 3), entry.location, font_size=9, bg=row_bg)
-    _fmt_cell(table.cell(row_idx, 4), source_text, font_size=8, color=source_color, bg=source_bg)
+    _fmt_cell(table.cell(row_idx, 4), source_text, font_size=9 if used else 8,
+              bold=used, color=source_color, bg=source_bg)
     table.rows[row_idx].height = row_h
 
 
@@ -1346,6 +1378,14 @@ def _manifest_visual_detail(raw, *, component: dict | None = None,
     """Present explicit colour and lens details for the exact configured item."""
     component = component or {}
     catalog_info = catalog_info or {}
+    tint = (getattr(raw, "picker_config", {}) or {}).get("window_tint")
+    if isinstance(tint, dict):
+        try:
+            percentage = int(tint.get("percentage"))
+        except (TypeError, ValueError):
+            percentage = 0
+        if percentage:
+            return f"{percentage}% tint\n$65 per selected window"
     color = (
         str(component.get("color", "") or "").strip()
         or (_color_label(raw) if include_parent_visual else "")
@@ -1364,13 +1404,83 @@ def _manifest_visual_detail(raw, *, component: dict | None = None,
     details = [color] if color else []
     if lens:
         details.append(f"Lens: {lens.title()}")
-    return "\n".join(details)
+    return "  ·  ".join(details)
+
+
+def _combined_duo_manifest_entry(parent: _ManifestEntry, catalog) -> _ManifestEntry | None:
+    """Collapse a standard driver/passenger DUO into one shop overview row.
+
+    This is presentation-only. The draft's concrete SKU components remain
+    separate for QuickBooks resolution and estimate quantities.
+    """
+    raw = parent.raw
+    config = getattr(raw, "picker_config", {}) or {}
+    duo_split = (
+        config.get("colorsPerHead") == "duo" and config.get("mode") == "split"
+    ) or bool(getattr(raw, "driver_color", "") and getattr(raw, "passenger_color", ""))
+    if not duo_split:
+        return None
+
+    components = [
+        component for component in (getattr(raw, "components", []) or [])
+        if isinstance(component, dict) and str(component.get("part_number", "") or "").strip()
+    ]
+    if len(components) < 2:
+        return None
+    colors = [str(component.get("color", "") or "").strip() for component in components]
+    if not any("red" in color.casefold() for color in colors) \
+            or not any("blue" in color.casefold() for color in colors):
+        return None
+
+    def side_label(color: str) -> str:
+        normalized = color.casefold()
+        if "blue" in normalized and "red" not in normalized:
+            return "passenger"
+        if "red" in normalized and "blue" not in normalized:
+            return "driver"
+        return "configured"
+
+    ordered = sorted(
+        components,
+        key=lambda component: 0 if side_label(str(component.get("color", ""))) == "passenger" else 1,
+    )
+    detail_parts = [
+        f"{str(component.get('color', '') or '').strip()} ({side_label(str(component.get('color', '') or ''))})"
+        for component in ordered if str(component.get("color", "") or "").strip()
+    ]
+    lens = _lens_label(raw) or "Clear"
+    detail_parts.append(f"Lens: {lens.title()}")
+    part_numbers = " / ".join(
+        str(component.get("part_number", "") or "").strip() for component in ordered
+    )
+    quantity = 0
+    for component in components:
+        try:
+            quantity += max(0, int(float(component.get("quantity", 1) or 0)))
+        except (TypeError, ValueError):
+            quantity += 1
+    return _ManifestEntry(
+        raw=raw,
+        location=parent.location,
+        name=parent.name,
+        manufacturer=parent.manufacturer,
+        part_number=part_numbers,
+        quantity=quantity or parent.quantity,
+        description=parent.description,
+        detail="  ·  ".join(detail_parts),
+        comment=parent.comment,
+        is_sku=True,
+        indent=parent.indent,
+    )
 
 
 def _manifest_component_entries(parent: _ManifestEntry, catalog, *,
                                 collapse_skus: bool = False) -> list[_ManifestEntry]:
     """Expand SKU and guided-system details, optionally promoting SKUs to rows."""
     entries: list[_ManifestEntry] = []
+    combined_duo = _combined_duo_manifest_entry(parent, catalog) if collapse_skus else None
+    if combined_duo is not None:
+        entries.append(combined_duo)
     promoted_sku_index = 0
     for component in getattr(parent.raw, "components", []) or []:
         if not isinstance(component, dict):
@@ -1378,6 +1488,8 @@ def _manifest_component_entries(parent: _ManifestEntry, catalog, *,
         if _is_included_control_head_component(parent, component):
             continue
         part_number = str(component.get("part_number", "") or "").strip()
+        if combined_duo is not None and part_number:
+            continue
         label = str(component.get("label", "") or "").strip()
         if not label and not part_number:
             continue
@@ -1410,8 +1522,15 @@ def _manifest_component_entries(parent: _ManifestEntry, catalog, *,
         notes = ""
         if promote_sku and promoted_sku_index == 0:
             notes = _customer_manifest_notes(getattr(parent.raw, "notes", ""))
+        component_has_supply = any(key in component for key in (
+            "supply_type", "customer_condition", "customer_source",
+            "new_or_used", "source",
+        ))
         entries.append(_ManifestEntry(
-            raw=parent.raw,
+            # Guided components can carry an independent supply decision. Use
+            # it for their manifest status; older neutral SKU components keep
+            # inheriting the parent status.
+            raw=component if component_has_supply else parent.raw,
             location=_clean_manifest_location(
                 component.get("location", ""), parent.name
             ) or parent.location,
@@ -1577,7 +1696,7 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
 
     # Keep the full table inside the header/footer frame.  Row heights are
     # calculated from their contents rather than forcing text to spill below.
-    avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.16)
+    avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.26)
 
     slides_added = 0
     page_num = 0
@@ -1959,18 +2078,27 @@ def _est_wrapped_lines(text: str, inner_w_in: float, pt_size: int = 10) -> int:
 
 def _badge_label(part) -> tuple[str, object]:
     """Return (display_text, color) for the status badge on a legend card."""
-    noru   = getattr(part, "new_or_used", "").strip().upper()
-    src    = getattr(part, "source",      "").strip()
-    reused = getattr(part, "is_reused",   False)
-    if noru in ("REUSED", "R"):
-        return "↺ REUSED", TAG_REUSED
-    if noru in ("USED", "U"):
-        return "↺ USED", TAG_REUSED
-    if reused:
-        return "↺ REUSED", TAG_REUSED
-    if "customer" in src.lower():
-        return "■ CUSTOMER SUPPLIED", TAG_NEW
+    state = supply_state(part)
+    if state.is_customer_supplied:
+        condition = (
+            "NEW" if state.customer_condition == "new"
+            else "USED" if state.customer_condition == "used"
+            else "CONDITION NEEDED"
+        )
+        return f"↺ CUSTOMER SUPPLIED / {condition}", TAG_REUSED
     return "■ NEW", TAG_NEW
+
+
+def _legend_callouts(part) -> list[str]:
+    """Return human-authored/source warnings shown on visual part cards."""
+    callouts: list[str] = []
+    comment = str(getattr(part, "comment", "") or "").strip()
+    if comment:
+        callouts.append(f"NOTE: {comment}")
+    state = supply_state(part)
+    if state.is_customer_supplied and state.customer_condition == "used":
+        callouts.append(f"USED SOURCE: {state.customer_source or 'SOURCE NEEDED'}")
+    return callouts
 
 
 def _legend_headline(part) -> str:
@@ -2028,6 +2156,9 @@ def _card_content_height(part, inner_w_in: float,
     lens = _lens_label(part)
     if lens:
         h += _est_wrapped_lines(lens, inner_w_in, 11) * lh_spec
+
+    for callout in _legend_callouts(part):
+        h += _est_wrapped_lines(callout, inner_w_in, 10) * Inches(0.18)
 
     for acc_entry in _legend_accessories(part, acc):
         acc_name = acc_entry[0] if isinstance(acc_entry, tuple) else acc_entry
@@ -2201,6 +2332,14 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             r3.text           = lens
             r3.font.size      = Pt(11)
             r3.font.color.rgb = DTM_GRAY
+
+        for callout in _legend_callouts(part):
+            pc = tf.add_paragraph()
+            rc = pc.add_run()
+            rc.text = callout
+            rc.font.size = Pt(10)
+            rc.font.bold = True
+            rc.font.color.rgb = DTM_RED
 
         # Line 4+: accessories with part numbers
         for acc_entry in _legend_accessories(part, acc):
@@ -2392,6 +2531,12 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
                 p3 = tf.add_paragraph()
                 r3 = p3.add_run()
                 r3.text = lens; r3.font.size = Pt(11); r3.font.color.rgb = DTM_GRAY
+
+            for callout in _legend_callouts(part):
+                pc = tf.add_paragraph()
+                rc = pc.add_run()
+                rc.text = callout; rc.font.size = Pt(10); rc.font.bold = True
+                rc.font.color.rgb = DTM_RED
 
             # Lines 4+: accessories
             for acc_entry in _legend_accessories(part, acc):

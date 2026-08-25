@@ -84,6 +84,13 @@ def _default_config(profile: str = _DEFAULT_PROFILE) -> dict:
         "hard_expiry_utc": "",
         "last_sync_utc": None,
         "connection_status": "disconnected",
+        "central_qbo": {
+            "enabled": False,
+            "base_url": "",
+            "tenant_id": "",
+            "audience": "",
+            "delegated_scope": "",
+        },
     }
 
 
@@ -349,6 +356,11 @@ def set_last_sync(paths: AppPaths, when_iso: str, *, profile: str = _DEFAULT_PRO
     _save_config(paths, config, profile)
 
 
+def get_last_sync(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> str | None:
+    """Read non-secret sync metadata without opening any credential store."""
+    return _load_config(paths, profile).get("last_sync_utc")
+
+
 # ── disconnect / status ─────────────────────────────────────────────────────
 
 
@@ -419,4 +431,6 @@ def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
         "last_sync_utc": config.get("last_sync_utc"),
         "profile": profile,
         "preview_only": profile == PRODUCTION_PREVIEW_PROFILE,
+        "central_mode": False,
+        "managed_by_dtm": False,
     }

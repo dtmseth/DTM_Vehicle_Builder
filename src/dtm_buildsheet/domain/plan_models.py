@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from .input_models import PartInput
+from .supply import supply_state
 
 
 @dataclass
@@ -43,11 +44,20 @@ class PlannedPlacement:
     translate_dx: float = 0.0
     translate_dy: float = 0.0
     behind_vehicle: bool = False
+    mount_visibility: str = ""
+    callout_label: str = ""
     layer: int = 0
     group_shapes: bool = False
     is_fixture: bool = False
     slot_indices: list[int] | None = None
     position_slot_count: int | None = None
+    # Some accessories turn several ordinary render instances into one
+    # placement unit. A dual T-Series shroud, for example, occupies one cargo-
+    # window position while visibly containing two side-by-side lightheads.
+    compound_group_size: int = 1
+    compound_group_count: int = 0
+    compound_group_style: str = ""
+    compound_item_spacing: float = 1.0
     instances: list[RenderInstance] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     line_id: str = ""
@@ -78,6 +88,22 @@ class BuildPlan:
         data = asdict(self)
         for part in data.get("planned_parts", []):
             raw = part.get("raw")
+            if isinstance(raw, dict):
+                # Keep the derived plan-JSON contract stable during the legacy
+                # compatibility window. New and customer-used meanings are
+                # exactly recoverable from new_or_used/source, so their
+                # additive canonical keys stay in memory but need not churn
+                # every saved BuildPlan. Customer-supplied New cannot be
+                # represented by the old vocabulary and retains the new keys.
+                canonical = supply_state(raw)
+                legacy = supply_state({
+                    "new_or_used": raw.get("new_or_used", ""),
+                    "source": raw.get("source", ""),
+                })
+                if canonical == legacy:
+                    raw.pop("supply_type", None)
+                    raw.pop("customer_condition", None)
+                    raw.pop("customer_source", None)
             if isinstance(raw, dict) and raw.get("components") == []:
                 raw.pop("components")
             if isinstance(raw, dict) and raw.get("picker_config") == {}:
@@ -87,4 +113,12 @@ class BuildPlan:
                     placement.pop("translate_dx")
                 if placement.get("translate_dy") == 0.0:
                     placement.pop("translate_dy")
+                if placement.get("compound_group_size") == 1:
+                    placement.pop("compound_group_size")
+                if placement.get("compound_group_count") == 0:
+                    placement.pop("compound_group_count")
+                if placement.get("compound_group_style") == "":
+                    placement.pop("compound_group_style")
+                if placement.get("compound_item_spacing") == 1.0:
+                    placement.pop("compound_item_spacing")
         return data

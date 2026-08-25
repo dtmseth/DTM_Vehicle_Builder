@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..domain.input_models import PartInput, ProjectInput
+from ..domain.supply import normalized_supply_fields
 from ..naming import canonical_name, safe_project_id
 
 
@@ -83,12 +84,16 @@ def project_input_from_form(data: dict[str, Any]) -> ProjectInput:
         name = canonical_name(_s(entry.get("name", "")))
         if not name:
             continue
+        supply = normalized_supply_fields(entry)
         parts.append(
             PartInput(
                 name=name,
                 include=_bool(entry.get("include", True)),
-                new_or_used=_s(entry.get("new_or_used", "")),
-                source=_s(entry.get("source", "")),
+                new_or_used=supply["new_or_used"],
+                source=supply["source"],
+                supply_type=supply["supply_type"],
+                customer_condition=supply["customer_condition"],
+                customer_source=supply["customer_source"],
                 manufacturer=_s(entry.get("manufacturer", "")),
                 part_number=_s(entry.get("part_number", "")),
                 location=canonical_name(_s(entry.get("location", ""))),
@@ -96,6 +101,7 @@ def project_input_from_form(data: dict[str, Any]) -> ProjectInput:
                 quantity=_int(entry.get("quantity", 0) or entry.get("qty", 0)),
                 lens=_s(entry.get("lens", "")),
                 notes=_s(entry.get("notes", "")),
+                comment=_s(entry.get("comment", "")),
                 explicit_color_profile=_s(entry.get("explicit_color_profile", "")),
                 driver_color=_s(entry.get("driver_color", "")),
                 passenger_color=_s(entry.get("passenger_color", "")),

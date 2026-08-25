@@ -13,7 +13,12 @@
 Two ideas drive everything below:
 
 1. **The workbook is a renderer, not a database.** Historically the Excel "build sheet" was both the input and the source of truth for what parts/manufacturers/locations/colors exist. We are phasing this out. Domain data lives in a clean canonical database. The workbook becomes one of several outputs (alongside PowerPoint and PDF), built from the same domain data.
-2. **The app is a tool, not a silo.** Today the app runs locally with a per-user workspace. The destination is a tool that runs locally but reads/writes a shared team workspace, so a sales rep, a builder, and a project manager all see the same projects, presets, and inventory. **Cloud platform is decided** (see §9 Decision Log): users sign in with their M365 account, and the app talks only to SharePoint via Microsoft Graph API. GitHub is the review backend — invisible to users — where the owner reviews settings change proposals as pull requests. GitHub Actions is the sync glue between the two clouds. Power Automate handles team-wide notifications for merged setting changes and new app releases. Getting team collaboration live is prioritized — the cloud-go-live phase comes *before* the parts-DB schema migration, so the team can start collaborating on the existing data structure while later phases deliver schema improvements through reviewed PRs.
+2. **The app is a tool, not a silo.** The desktop app now reads and writes a shared SharePoint team
+   workspace, so sales, builders, and project management can see the same projects, presets,
+   agencies, drafts, and exports. Users authenticate with M365 and the app talks to SharePoint via
+   Microsoft Graph. GitHub remains the invisible review and release backend. The remaining work is
+   to preserve this collaboration model while canonicalizing parts-domain consumers and, later,
+   deciding where high-frequency inventory data should live.
 
 Around those two ideas, five thematic pillars:
 
@@ -25,54 +30,46 @@ Around those two ideas, five thematic pillars:
 
 ---
 
-## Current Direction & Critical Path (set 2026-06-29)
+## Current Direction & Critical Path (updated 2026-08-14)
 
 Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
 
-**QuickBooks is the *foundation* of the parts system, not a side integration.** `parts_db.json` now
-references parts at **SKU granularity** — real vendor part numbers + QB pricing — a fundamentally
-different basis than the old "product name / part type" model. The Part Picker and every downstream
-consumer depend on real QB data being in the DB, so the QB Item import sits *under* Phase 3 (it feeds
-the canonical DB), not beside it. Finalizing the picker against pre-QB data means building against
-data that's being deprecated. *Food on the shelves before the doors open.*
+**The production foundation is live.** SharePoint collaboration/distribution, the intelligent Part
+Picker, the SKU-level production QuickBooks catalog, agency/customer links, current-price Estimate
+creation, and shared exports are all shipped in v3.3.2. QuickBooks is no longer an externally gated
+side track; it is an active production adapter feeding canonical SKU identity and list pricing.
 
-**The Part Picker is actively usable and under owner rebuild testing.** The original Chunks 1-8 are
-built, including global search. Current work is Chunk 9 polish, guided-system coverage
-(push-bumper/radio), data quality, and retiring fallback surfaces once the real project rebuilds
-prove the picker path.
+**Phase 3 is substantially complete, but its data work continues.** The current database contains
+772 products and 1,339 SKUs, including 1,224 QB-linked SKUs. Forty-three products still have no
+part-type home. The picker and guided systems are in production use; remaining work is targeted
+polish, catalog curation, and removal of fallback/legacy assumptions—not another picker rebuild.
 
-**The real bottleneck was data-review throughput** — now addressed: the **Parts Manager SKU Review grid
-is shipped** (brand-sorted, every-field-inline-editable, QB-source read-only view, light/unbilled tags,
-accessory roles, readiness + reviewed flags; full detail in [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md)
-§2.5). The owner can now curate SKUs self-service.
+**Phase 4 is now the architectural milestone.** Some core flows already consume `parts_db`, but
+workbook-era configuration still supplies domain data to remaining consumers. The next structural
+work is to establish the parts-DB repository seam, inventory those reads precisely, migrate one
+consumer at a time under golden/contract/browser pins, and reduce `workbook_rules.json` to layout
+data only.
 
 **Deferred catalog safety improvement:** before future recurring QBO catalog changes can create or
 materially alter Builder parts, add a reviewed change queue with durable history and Whelen reference
 catalog auto-enrichment. The approved behavior and data requirements live in
 [QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
 
-### Near-term critical path (in order, updated 2026-06-30)
-1. ✅ **Parts Manager SKU Review grid** — *shipped* ("Phase 8 editing-UI brought forward"). Owner curates
-   SKUs/tags/accessories/readiness without prompting Claude per item.
-2. ✅ **Picker + placement cluster** — *shipped 2026-07-01* (this list lagged; reconciled 2026-07-07).
-   Location model rebuilt at the part_type level (`location_mode` placement/text + `location_options`),
-   scene no-color filter fixed server-side, SKU descriptions rendering. Detail:
-   [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) §"Picker + placement cluster — SHIPPED".
-   Only #7(a) (auto-skip empty location step) remains, low priority.
-3. ⭐ **Kit SKUs** *(NEXT — scope before building)* — mark a SKU as a kit that includes other SKUs (data + UI +
-   estimate behavior). Gated on the parts-DB repository extraction (Stage A of
-   [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 Step 4) so composability lands on the
-   repository seam, not on route-layer logic; owner decisions logged in
-   `docs/audit/PARTS_DB_REPOSITORY_SPEC.md` §5.
-4. **QB Pass-2 import** *(parallel/feeding)* — reviewed through the Parts Manager grid. Fills the shelves.
-5. **Finish the Part Picker** *(then)* — Chunk 9 polish, guided-system hardening, and continued
-   non-light data-quality coverage against final SKU data.
-6. **Phase 4 consumer migration** *(then)* — strip domain fields from `workbook_rules.json`.
+### Near-term critical path (in order, updated 2026-08-14)
 
-**QB go-live** (deploy relay + submit the Intuit questionnaire — see [QUICKBOOKS.md](QUICKBOOKS.md))
-is a discrete, externally-gated track. Run it when the owner chooses; it is *not* advanced by the
-import grind and must not block it.
+1. ⭐ **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
+   boundary, then identify and migrate the remaining workbook-domain consumers.
+2. **Reviewed QBO catalog-change queue** — require explicit review before recurring production
+   catalog changes can create or materially reshape Builder products; preserve durable history and
+   Builder-owned metadata.
+3. **Finish the visible curation queue** — assign or intentionally exclude the 43 unhomed products
+   and continue acceptance testing through real builds.
+4. **Interior light bars + light-domain consolidation** — model driver/passenger halves and dynamic
+   configured heads while retiring remaining workbook-era light assumptions.
+5. **Choose the next larger feature after the seam** — generalized kit SKUs, arbitrary view
+   extensibility, or high-frequency inventory/serial tracking. Generic kit billing/expansion remains
+   an owner decision even though several guided systems already persist component hierarchies.
 
 **Audit & refactor track (adopted 2026-07-06)**: a codebase-wide audit/refactor runs *interleaved*
 with the critical path above — see [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 for
@@ -100,19 +97,25 @@ These are constraints on **how** we move toward the vision. Override them only w
 
 ## 3. Current State (Snapshot)
 
-As of the time this document is being authored:
+As of v3.3.2 (2026-08-14):
 
-- **8 consumers depend on `workbook_rules.json`** for domain data: `template_builder.py`, `manifest_editor.js`, `part_types.js`, `placements.js`, `projects/api.js`, `state.js`, plus validation/route plumbing. `excel_reader.py` does **not** — it parses by header position.
-- **`workbook_rules.json` is ~3,300 lines, ~95% domain data**: manufacturers, models, per-part locations, colors, quantities, lens types. The other 5% is layout (`template_sections`, `_row` indexes).
-- **Colors live only in `workbook_rules.json`.** Nowhere else.
-- **Per-part location validity is split-brain**: vehicle_layouts defines what locations exist on each vehicle; workbook_rules defines which of those locations are valid for which part type. They overlap ~38%.
-- **Per-record JSON storage exists for**: projects (`workspace/projects/{id}/project.json` — subdirectory layout, intentional), drafts, presets.
-- **Monolithic JSON storage exists for**: agencies, sales reps, all 8 config files in `workspace/config/`.
-- **Absolute paths get persisted in records**: `ProjectRecord.export_dir`, `BuildUnit.output_path`, `IndividualUnit.output_path`.
-- **`paths.py` has one workspace root**, no separation between user-local and shared-team data.
-- **The vehicle wizard** today is preset-driven. The build editor exposes "slots" (Forward Warning 1, 2, 3, etc.) that reflect the workbook's row layout, not a natural user mental model.
-- **Light color choice** today is one selection from an enumerated combo list (e.g., "Red/White", "Red/Blue/Amber"). Every combination is its own row.
-- **Views**: four external views per vehicle in `vehicle_layouts.json`. The structure is already a dictionary keyed by view name, but several UI assumptions still hardcode the four.
+- SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and drafts;
+  generated PPTX/PDF exports are shared separately by agency/year and portable across installs.
+- `parts_db.json` is the production source for the Part Picker, manifest grouping, SKU/QB identity,
+  price reconciliation, and substantial planner/render metadata. Legacy config still serves some
+  consumers, so Phase 4 is incomplete.
+- The production catalog contains 772 Builder products and 1,339 SKUs; 1,224 SKUs are linked to
+  QBO Items and 43 products still need a part-type home or intentional exclusion.
+- The Part Picker is the normal build-authoring path. Guided radio, radar, camera, console,
+  siren/Howler, light, fixture, accessory, and custom-location workflows persist rich `DraftPart`
+  data through presets, preview, PowerPoint, PDF, and Estimate resolution.
+- Production QuickBooks OAuth, catalog reconciliation, Customers/Agencies, Retail pricing, and
+  per-vehicle/batch non-posting Estimates are live. QBO Project creation remains manual because the
+  Project API requires a paid restricted scope; the app links the resulting Project URL/ID.
+- Desktop releases are built for macOS and Windows in CI, published to GitHub, staged in SharePoint,
+  and consumed by the in-app updater. Startup/status work is concurrent and non-interactive.
+- Current regression baseline: 2,009 Python tests passed with 1 skipped; 18/18 hermetic browser
+  smoke flows passed.
 
 ---
 
@@ -122,15 +125,17 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
-**Status snapshot** (2026-06-17):
+**Status snapshot** (2026-08-14):
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
-- 🟡 **Phase 3** — schema + service + migration landed; **Intelligent Part Picker actively usable** (original Chunks 1-8 built; Chunk 9 polish, guided systems, and data-quality hardening remain). The QB Item import is the *foundation* feeding this (see Current Direction above). Full status: `docs/PARTS_DB_AND_PICKER.md`.
-  - PR-1/2a/2b (service + schema + migration + Part Manager seed): commits `cbc18d4`, `5f4189b`, `befb52d`, `368c040`, `6b68847`, `7157c13`, `01ada6d`.
-  - parts_db.json populated: 5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements; 417+ QB-linked SKUs (Setina, Whelen, Arctic Start; Gamber pilot pending).
-  - **Next** (critical path): **Parts Manager revamp** for self-service data review → continue QB Pass-2 import → finish picker polish/guided-system hardening → Phase 4 consumer migration.
-- 🟢 **Phase 8 MVP brought forward** (out of order): the read-only tree + edit-modal Part Manager (Settings → Advanced → Part Manager → Database v2). **Being revamped now** into a two-view editor (SKU grid + hierarchy) — see §Phase 8. Inventory/pricing/separate-app questions still deferred to the full Phase 8.
+- 🟢 **Phase 3** — substantially complete and live. The SKU-level DB, production QBO foundation,
+  picker, guided systems, placement, preview, and estimate resolution are shipped. Targeted polish,
+  43 unhomed products, and catalog-change governance remain.
+- 🟡 **Phase 4** — partial. Modern flows read `parts_db`, but remaining workbook-domain consumers
+  must be migrated before `workbook_rules.json` can become layout-only.
+- 🟢 **Phase 8 editing MVP brought forward** — SKU Review and hierarchy tooling are live. Operational
+  inventory quantities, low-stock behavior, and the storage split remain future work.
 
 ### Phase 0 — Foundation Refactor
 
@@ -423,16 +428,18 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ### Phase 3 — `parts_db.json` (Schema, Migration, Intelligent Part Picker)
 
-**Current status (2026-06-17)** — read this first if you're picking up Phase 3 work:
+**Current status (v3.3.2, 2026-08-14)** — read this first if you're picking up Phase 3 work:
 
 - ✅ `domain/parts_db_models.py` — 13 dataclasses.
 - ✅ `app/services/parts_db_service.py` — 23 typed queries + 3-tier fallback.
 - ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`.
 - ✅ `config/schemas.py::_validate_parts_db` — top-level validation.
 - ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
-- ✅ `parts_db.json` seeded (5 types · 2 sections · 8 zones · 2 sub-zones · 61 manufacturers · 227 products · 106 part_types · 59 placements). 417 QB-linked SKUs.
-- ✅ Part Manager UI (`ui/js/settings/part_manager.js`) — admin read-only tree browser.
-- 🟢 **Intelligent Part Picker — actively usable.** Original Chunks 1-8 are built, including global search; Chunk 9 polish, guided-system hardening, and non-light data-quality work remain. Full design + current status: `docs/PARTS_DB_AND_PICKER.md`. (The old "Chunk 5 JS bug" was a server-side `AttributeError`, fixed.)
+- ✅ `parts_db.json` in production (772 products · 1,339 SKUs · 1,224 QB-linked SKUs ·
+  120 part types · 63 manufacturers). Forty-three products remain unhomed.
+- ✅ Part Manager SKU Review + hierarchy editing UI.
+- 🟢 **Intelligent Part Picker — live.** Original Chunks 1-8 and the principal guided-system flows
+  are built; targeted polish and fallback retirement remain. Full status: `docs/PARTS_DB_AND_PICKER.md`.
 
 **Goal**: `parts_db.json` is the authoritative data source for the build flow. The QB-linked part catalog is visible and usable when adding parts to builds.
 
@@ -577,10 +584,9 @@ location-rule matching (interior bars couldn't be placed). Labels are now
 
 **MVP slice shipped early (2026-06-12)**: the read-only tree + edit-modal slice was brought forward as part of Phase 3 PR-2b (4/4) so the owner could review the migration output (~165 model→manufacturer mappings, ~106 part_type tree positions) through a UI instead of by hand. Lives at Settings → Advanced → Part Manager → Database (v2); see `src/dtm_buildsheet/ui/js/settings/part_manager.js`. The remaining Phase 8 work below — inventory, pricing, low-stock indicators, the storage-split decision — is still open and depends on Phases 4–7.
 
-**Editing-UI revamp brought forward (2026-06-29, on the critical path)**: the read-only MVP can't do
-fast self-service review of the ~1,200-item QB import — and that review throughput is the current
-bottleneck (see Current Direction). The revamp replaces today's three-tab Part Manager with **two
-complementary views**:
+**Editing-UI revamp brought forward (2026-06-29, now shipped)**: the read-only MVP could not support
+fast self-service review of the imported QBO catalog. The shipped editor adds complementary SKU
+Review and hierarchy views:
 - **SKU Review Grid** — brand-sorted, spreadsheet-style; expand a product to see all its SKUs inline;
   every field editable (each value-set field is a selector populated from `parts_db.json` with a
   "+ Create new…" option + a validating modal when more than a name is needed — never type-and-guess);

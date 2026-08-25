@@ -51,6 +51,7 @@ class TestPreferencesFromDict:
     def test_all_fields(self):
         d = {
             "lighting_brands": ["Whelen", "Code 3"],
+            "lighting_mode": "trio",
             "camera_brand": "Axon",
             "push_bumper_brand": "Setina",
             "cage_brand": "Jotto Desk",
@@ -62,6 +63,7 @@ class TestPreferencesFromDict:
         p = preferences_from_dict(d)
         assert isinstance(p, EquipmentPreferences)
         assert p.lighting_brands == ["Whelen", "Code 3"]
+        assert p.lighting_mode == "trio"
         assert p.camera_brand == "Axon"
         assert p.cage_brand == "Jotto Desk"
         assert p.console_brand == "Gamber Johnson"
@@ -72,6 +74,10 @@ class TestPreferencesFromDict:
     def test_missing_lighting_brands_defaults_to_empty_list(self):
         p = preferences_from_dict({})
         assert p.lighting_brands == []
+        assert p.lighting_mode == "duo"
+
+    def test_invalid_lighting_mode_defaults_to_duo(self):
+        assert preferences_from_dict({"lighting_mode": "quad"}).lighting_mode == "duo"
 
     def test_non_list_lighting_brands_defaults_to_empty(self):
         p = preferences_from_dict({"lighting_brands": "Whelen"})
@@ -87,6 +93,8 @@ class TestIndividualUnitFromDict:
             "individual_id": "i1", "unit_number": "U001",
             "year": "2024", "make": "Ford", "model": "Interceptor",
             "color": "White", "vin": "VIN123", "qb_project_id": "447322633",
+            "qb_estimate_snapshot": {"doc_number": "1001", "lines": []},
+            "qb_estimate_snapshot_at": "2026-08-21T12:00:00Z",
         }
         ind = individual_unit_from_dict(d)
         assert isinstance(ind, IndividualUnit)
@@ -94,6 +102,8 @@ class TestIndividualUnitFromDict:
         assert ind.unit_number == "U001"
         assert ind.make == "Ford"
         assert ind.qb_project_id == "447322633"
+        assert ind.qb_estimate_snapshot == {"doc_number": "1001", "lines": []}
+        assert ind.qb_estimate_snapshot_at == "2026-08-21T12:00:00Z"
 
     def test_missing_individual_id_auto_generated(self):
         ind = individual_unit_from_dict({"unit_number": "U1"})

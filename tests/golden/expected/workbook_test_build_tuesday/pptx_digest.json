@@ -79,7 +79,7 @@
           ],
           "text": "Stearns County Sherrif",
           "top_emu": 960120,
-          "width_emu": 9326880
+          "width_emu": 10972800
         },
         {
           "fill": {
@@ -1009,7 +1009,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 5340096,
+          "height_emu": 4992624,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -1134,12 +1134,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Standard Lense"
+                          "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Standard Lense"
+                  "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1181,16 +1181,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  REUSED"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  REUSED"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -1225,12 +1225,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Standard Lense"
+                          "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Standard Lense"
+                  "text": "Red/White Blue/White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1276,12 +1276,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1316,12 +1316,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Amber Blue/Amber\nLens: Smoked Lense"
+                          "text": "Red/Amber Blue/Amber  ·  Lens: Smoked Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Amber Blue/Amber\nLens: Smoked Lense"
+                  "text": "Red/Amber Blue/Amber  ·  Lens: Smoked Lense"
                 },
                 {
                   "paragraphs": [
@@ -1363,16 +1363,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  USED"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  USED"
+                  "text": "↺  Customer supplied / Used · Source needed"
                 }
               ],
               [
@@ -1407,12 +1407,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Clear"
+                          "text": "Red/Blue  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Clear"
+                  "text": "Red/Blue  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1680,12 +1680,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red and Blue\nLens: Clear"
+                          "text": "Red and Blue  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red and Blue\nLens: Clear"
+                  "text": "Red and Blue  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1771,12 +1771,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1862,12 +1862,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2044,12 +2044,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Clear"
+                          "text": "Red/Blue  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Clear"
+                  "text": "Red/Blue  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2135,12 +2135,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2193,6 +2193,250 @@
                   ],
                   "text": "■  New"
                 }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              621792,
+              347472,
+              621792,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
+            ],
+            "rows": 13
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "LIGHTING — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "LIGHTING — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 2"
+                }
+              ]
+            }
+          ],
+          "text": "Page 2",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 2496311,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
+                }
               ],
               [
                 {
@@ -2226,12 +2470,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red and Blue\nLens: Clear"
+                          "text": "Red and Blue  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red and Blue\nLens: Clear"
+                  "text": "Red and Blue  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2408,12 +2652,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White\nLens: Clear"
+                          "text": "White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "White\nLens: Clear"
+                  "text": "White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2465,253 +2709,6 @@
                     }
                   ],
                   "text": "■  New"
-                }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200,
-              329184
-            ],
-            "rows": 16
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "LIGHTING — Continued"
-                }
-              ]
-            }
-          ],
-          "text": "LIGHTING — Continued",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 2"
-                }
-              ]
-            }
-          ],
-          "text": "Page 2",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 1261872,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
                 }
               ],
               [
@@ -2928,12 +2925,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/White Blue/White\nLens: Clear"
+                          "text": "Red/White Blue/White  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/White Blue/White\nLens: Clear"
+                  "text": "Red/White Blue/White  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2998,11 +2995,14 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184
+              347472,
+              484631,
+              347472,
+              347472,
+              347472,
+              347472
             ],
-            "rows": 4
+            "rows": 7
           },
           "top_emu": 978408,
           "width_emu": 11274551
@@ -3129,7 +3129,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 603504,
+          "height_emu": 621792,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3324,7 +3324,7 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184
+              347472
             ],
             "rows": 2
           },
@@ -3453,7 +3453,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 1261872,
+          "height_emu": 1453895,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3625,16 +3625,16 @@
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#C86000",
+                          "bold": true,
+                          "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "↺  #3017 — REUSED"
+                          "size_pt": 9.0,
+                          "text": "↺  Customer supplied / Used · #3017"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  #3017 — REUSED"
+                  "text": "↺  Customer supplied / Used · #3017"
                 }
               ],
               [
@@ -3830,9 +3830,9 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184
+              484631,
+              347472,
+              347472
             ],
             "rows": 4
           },
@@ -3961,7 +3961,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 603504,
+          "height_emu": 621792,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -4156,7 +4156,7 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184
+              347472
             ],
             "rows": 2
           },
@@ -4495,7 +4495,7 @@
             "color": "#C86000",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -4513,7 +4513,7 @@
             "color": "#FFF3E8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -4530,7 +4530,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 676656,
+          "height_emu": 841248,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -4547,7 +4547,7 @@
                   "bold": true,
                   "color": "#C86000",
                   "size_pt": 10.0,
-                  "text": "  ↺ REUSED"
+                  "text": "  ↺ CUSTOMER SUPPLIED / USED"
                 }
               ]
             },
@@ -4568,9 +4568,19 @@
                   "text": "STANDARD LENSE"
                 }
               ]
+            },
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#B83A3A",
+                  "size_pt": 10.0,
+                  "text": "USED SOURCE: SOURCE NEEDED"
+                }
+              ]
             }
           ],
-          "text": "TOP TUBE  ↺ REUSED\nWHELEN  ·  ION  ·  Red/White Blue/White  ·  QTY: 2\nSTANDARD LENSE",
+          "text": "TOP TUBE  ↺ CUSTOMER SUPPLIED / USED\nWHELEN  ·  ION  ·  Red/White Blue/White  ·  QTY: 2\nSTANDARD LENSE\nUSED SOURCE: SOURCE NEEDED",
           "top_emu": 950976,
           "width_emu": 3242919
         },
@@ -4673,7 +4683,7 @@
             "color": "#C86000",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8738463,
           "name": "TextBox",
@@ -4683,7 +4693,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1673352,
+          "top_emu": 1837944,
           "width_emu": 45720
         },
         {
@@ -4691,7 +4701,7 @@
             "color": "#FFF3E8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8784183,
           "name": "TextBox",
@@ -4701,14 +4711,14 @@
             }
           ],
           "text": "",
-          "top_emu": 1673352,
+          "top_emu": 1837944,
           "width_emu": 3316071
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 676656,
+          "height_emu": 841248,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8829903,
           "name": "TextBox",
@@ -4725,7 +4735,7 @@
                   "bold": true,
                   "color": "#C86000",
                   "size_pt": 10.0,
-                  "text": "  ↺ USED"
+                  "text": "  ↺ CUSTOMER SUPPLIED / USED"
                 }
               ]
             },
@@ -4746,10 +4756,20 @@
                   "text": "SMOKED LENSE"
                 }
               ]
+            },
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#B83A3A",
+                  "size_pt": 10.0,
+                  "text": "USED SOURCE: SOURCE NEEDED"
+                }
+              ]
             }
           ],
-          "text": "FOG LIGHT AREA  ↺ USED\nWHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2\nSMOKED LENSE",
-          "top_emu": 1728216,
+          "text": "FOG LIGHT AREA  ↺ CUSTOMER SUPPLIED / USED\nWHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2\nSMOKED LENSE\nUSED SOURCE: SOURCE NEEDED",
+          "top_emu": 1892808,
           "width_emu": 3242919
         },
         {
@@ -4757,82 +4777,7 @@
             "color": "#C86000",
             "type": "SOLID (1)"
           },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2450592,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#FFF3E8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2450592,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "UNDER PUSH BUMPER"
-                },
-                {
-                  "bold": true,
-                  "color": "#C86000",
-                  "size_pt": 10.0,
-                  "text": "  ↺ REUSED"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "UNDER PUSH BUMPER  ↺ REUSED\nWHELEN  ·  SA315P  ·  QTY: 1",
-          "top_emu": 2505456,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
+          "height_emu": 557784,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5303520,
           "name": "TextBox",
@@ -4847,10 +4792,10 @@
         },
         {
           "fill": {
-            "color": "#F0F6FF",
+            "color": "#FFF3E8",
             "type": "SOLID (1)"
           },
-          "height_emu": 393192,
+          "height_emu": 557784,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5349240,
           "name": "TextBox",
@@ -4867,9 +4812,94 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 356616,
+          "height_emu": 521208,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "UNDER PUSH BUMPER"
+                },
+                {
+                  "bold": true,
+                  "color": "#C86000",
+                  "size_pt": 10.0,
+                  "text": "  ↺ CUSTOMER SUPPLIED / USED"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#B83A3A",
+                  "size_pt": 10.0,
+                  "text": "USED SOURCE: #3017"
+                }
+              ]
+            }
+          ],
+          "text": "UNDER PUSH BUMPER  ↺ CUSTOMER SUPPLIED / USED\nWHELEN  ·  SA315P  ·  QTY: 1\nUSED SOURCE: #3017",
+          "top_emu": 2638044,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2779776,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2779776,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -4899,7 +4929,7 @@
             }
           ],
           "text": "UNDER MIRROR  ■ NEW\nWHELEN  ·  U-SERIES  ·  QTY: 1",
-          "top_emu": 2638044,
+          "top_emu": 2834640,
           "width_emu": 3242919
         },
         {
@@ -4909,7 +4939,7 @@
           },
           "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
+          "left_emu": 5303520,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -4917,7 +4947,7 @@
             }
           ],
           "text": "",
-          "top_emu": 2907792,
+          "top_emu": 3204972,
           "width_emu": 45720
         },
         {
@@ -4927,7 +4957,7 @@
           },
           "height_emu": 553212,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
+          "left_emu": 5349240,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -4935,7 +4965,7 @@
             }
           ],
           "text": "",
-          "top_emu": 2907792,
+          "top_emu": 3204972,
           "width_emu": 3316071
         },
         {
@@ -4944,7 +4974,7 @@
           },
           "height_emu": 516636,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
+          "left_emu": 5394960,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -4974,7 +5004,7 @@
             }
           ],
           "text": "Roof Light Bar  ■ NEW\nWHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1",
-          "top_emu": 2962656,
+          "top_emu": 3259836,
           "width_emu": 3242919
         },
         {
@@ -4984,7 +5014,7 @@
           },
           "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
+          "left_emu": 8738463,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -4992,7 +5022,7 @@
             }
           ],
           "text": "",
-          "top_emu": 3040380,
+          "top_emu": 3236976,
           "width_emu": 45720
         },
         {
@@ -5002,7 +5032,7 @@
           },
           "height_emu": 393192,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
+          "left_emu": 8784183,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -5010,7 +5040,7 @@
             }
           ],
           "text": "",
-          "top_emu": 3040380,
+          "top_emu": 3236976,
           "width_emu": 3316071
         },
         {
@@ -5019,7 +5049,7 @@
           },
           "height_emu": 356616,
           "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
+          "left_emu": 8829903,
           "name": "TextBox",
           "paragraphs": [
             {
@@ -5049,7 +5079,7 @@
             }
           ],
           "text": "RIGHT FRONT FENDER  ■ NEW\nWHELEN  ·  PRO-FOCUS  ·  QTY: 1",
-          "top_emu": 3095244,
+          "top_emu": 3291840,
           "width_emu": 3242919
         },
         {
@@ -5084,7 +5114,7 @@
             }
           ],
           "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Pit Bar  @  FIXTURE:PIT_BAR",
-          "top_emu": 3579876,
+          "top_emu": 3877056,
           "width_emu": 6796735
         }
       ]
@@ -5322,7 +5352,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 274320,
           "name": "TextBox",
@@ -5340,7 +5370,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 329184,
           "name": "TextBox",
@@ -5357,7 +5387,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 685800,
+          "height_emu": 850392,
           "kind": "TEXT_BOX (17)",
           "left_emu": 374904,
           "name": "TextBox",
@@ -5417,7 +5447,7 @@
             "color": "#C86000",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 3207943,
           "name": "TextBox",
@@ -5435,7 +5465,7 @@
             "color": "#FFF3E8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 3262807,
           "name": "TextBox",
@@ -5452,7 +5482,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 685800,
+          "height_emu": 850392,
           "kind": "TEXT_BOX (17)",
           "left_emu": 3308527,
           "name": "TextBox",
@@ -5469,7 +5499,7 @@
                   "bold": true,
                   "color": "#C86000",
                   "size_pt": 10.0,
-                  "text": "  ↺ USED"
+                  "text": "  ↺ CUSTOMER SUPPLIED / USED"
                 }
               ]
             },
@@ -5490,9 +5520,19 @@
                   "text": "SMOKED LENSE"
                 }
               ]
+            },
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#B83A3A",
+                  "size_pt": 10.0,
+                  "text": "USED SOURCE: SOURCE NEEDED"
+                }
+              ]
             }
           ],
-          "text": "FOG LIGHT AREA  ↺ USED\nWHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2\nSMOKED LENSE",
+          "text": "FOG LIGHT AREA  ↺ CUSTOMER SUPPLIED / USED\nWHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2\nSMOKED LENSE\nUSED SOURCE: SOURCE NEEDED",
           "top_emu": 1005840,
           "width_emu": 2714167
         },
@@ -5501,7 +5541,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6141567,
           "name": "TextBox",
@@ -5519,7 +5559,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6196431,
           "name": "TextBox",
@@ -5536,7 +5576,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 685800,
+          "height_emu": 850392,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6242151,
           "name": "TextBox",
@@ -5576,7 +5616,7 @@
             "color": "#1A6FC8",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 9075191,
           "name": "TextBox",
@@ -5594,7 +5634,7 @@
             "color": "#F0F6FF",
             "type": "SOLID (1)"
           },
-          "height_emu": 713232,
+          "height_emu": 877824,
           "kind": "TEXT_BOX (17)",
           "left_emu": 9130055,
           "name": "TextBox",
@@ -5611,7 +5651,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 685800,
+          "height_emu": 850392,
           "kind": "TEXT_BOX (17)",
           "left_emu": 9175775,
           "name": "TextBox",
@@ -5661,7 +5701,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 54864
         },
         {
@@ -5679,7 +5719,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 2787319
         },
         {
@@ -5718,7 +5758,7 @@
             }
           ],
           "text": "ON RUNNING BOARD  ■ NEW\nWHELEN  ·  TRACER 5 LAMP  ·  Red/White Blue/White  ·  QTY: 5",
-          "top_emu": 1801368,
+          "top_emu": 1965960,
           "width_emu": 2714167
         },
         {
@@ -5736,7 +5776,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 54864
         },
         {
@@ -5754,7 +5794,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 2787319
         },
         {
@@ -5793,7 +5833,7 @@
             }
           ],
           "text": "UPPER CARGO WINDOW  ■ NEW\nWHELEN  ·  T-SERIES  ·  Red and Blue  ·  QTY: 1",
-          "top_emu": 1801368,
+          "top_emu": 1965960,
           "width_emu": 2714167
         },
         {
@@ -5811,7 +5851,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 54864
         },
         {
@@ -5829,7 +5869,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 2787319
         },
         {
@@ -5868,7 +5908,7 @@
             }
           ],
           "text": "Roof Light Bar  ■ NEW\nWHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1",
-          "top_emu": 1801368,
+          "top_emu": 1965960,
           "width_emu": 2714167
         },
         {
@@ -5886,7 +5926,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 54864
         },
         {
@@ -5904,7 +5944,7 @@
             }
           ],
           "text": "",
-          "top_emu": 1764792,
+          "top_emu": 1929384,
           "width_emu": 2787319
         },
         {
@@ -5943,7 +5983,7 @@
             }
           ],
           "text": "RIGHT FRONT FENDER  ■ NEW\nWHELEN  ·  PRO-FOCUS  ·  QTY: 1",
-          "top_emu": 1801368,
+          "top_emu": 1965960,
           "width_emu": 2714167
         },
         {
@@ -5951,7 +5991,7 @@
             "color": "#FFF3F0",
             "type": "SOLID (1)"
           },
-          "height_emu": 603504,
+          "height_emu": 589788,
           "kind": "TEXT_BOX (17)",
           "left_emu": 274320,
           "line_color": "#B83A3A",
@@ -5987,7 +6027,7 @@
             }
           ],
           "text": "ADDITIONAL COMPONENTS NOT SHOWN ON DIAGRAM\n  Pit Bar  @  FIXTURE:PIT_BAR\n  Side Scene  @  ON ROOF",
-          "top_emu": 2409444,
+          "top_emu": 2574036,
           "width_emu": 11643055
         }
       ]

@@ -88,7 +88,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/presets" or path.startswith("/api/presets/"):
             if not preset_routes.route_presets(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
-        elif path == "/api/agencies" or path == "/api/agencies/search":
+        elif path in {"/api/agencies", "/api/agencies/choices", "/api/agencies/search"}:
             if not agency_routes.route_agencies(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):

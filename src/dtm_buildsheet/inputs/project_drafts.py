@@ -18,6 +18,12 @@ from pathlib import Path
 from typing import Any
 
 from ..domain.input_models import PartInput, ProjectInput
+from ..domain.supply import (
+    normalize_component_supply_dict,
+    normalize_supply_dict,
+    normalized_supply_fields,
+    supply_validation_error,
+)
 from ..naming import canonical_name, safe_id, safe_project_id
 from ..paths import AppPaths
 from ..storage.local import LocalStorageProvider
@@ -57,6 +63,9 @@ class DraftPart:
     include: bool = True
     new_or_used: str = "New"
     source: str = ""
+    supply_type: str = ""
+    customer_condition: str = ""
+    customer_source: str = ""
     manufacturer: str = ""
     part_number: str = ""
     location: str = ""
@@ -223,6 +232,9 @@ def draft_from_project_input(project: ProjectInput, draft_id: str | None = None)
             include=p.include,
             new_or_used=p.new_or_used,
             source=p.source,
+            supply_type=p.supply_type,
+            customer_condition=p.customer_condition,
+            customer_source=p.customer_source,
             manufacturer=p.manufacturer,
             part_number=p.part_number,
             location=p.location,
@@ -263,18 +275,40 @@ def find_part_by_line_id(draft: BuildDraft, line_id: str) -> tuple[int, DraftPar
     return None
 
 
-def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: ARG001
+def draft_part_from_payload(
+    body: dict, paths: AppPaths, *, require_complete_supply: bool = False,
+) -> DraftPart:  # noqa: ARG001
     """Build a DraftPart from an API request body; coerces field types."""
     name = _s(body.get("name", ""))
     include = _bool(body.get("include", True))
     quantity = max(0, _int(body.get("quantity", 0)))
     line_id = _s(body.get("line_id", ""))
 
+    if require_complete_supply and "supply_type" in body:
+        error = supply_validation_error(body)
+        if error:
+            raise ValueError(error)
+        for component in body.get("components") or []:
+            if isinstance(component, dict) and "supply_type" in component:
+                error = supply_validation_error(component)
+                if error:
+                    label = _s(component.get("label") or component.get("name")) or "System component"
+                    raise ValueError(f"{label}: {error}")
+
+    supply = normalized_supply_fields(body)
+    components = body.get("components") if isinstance(body.get("components"), list) else []
+    normalized_components = [
+        normalize_component_supply_dict(component) if isinstance(component, dict) else component
+        for component in components
+    ]
     return DraftPart(
         name=name,
         include=include,
-        new_or_used=_s(body.get("new_or_used", "")),
-        source=_s(body.get("source", "")),
+        new_or_used=supply["new_or_used"],
+        source=supply["source"],
+        supply_type=supply["supply_type"],
+        customer_condition=supply["customer_condition"],
+        customer_source=supply["customer_source"],
         manufacturer=_s(body.get("manufacturer", "")),
         part_number=_s(body.get("part_number", "")),
         location=_s(body.get("location", "")),
@@ -288,7 +322,7 @@ def draft_part_from_payload(body: dict, paths: AppPaths) -> DraftPart:  # noqa: 
         passenger_color=_s(body.get("passenger_color", "")),
         center_color=_s(body.get("center_color", "")),
         placement_overrides=body.get("placement_overrides") if isinstance(body.get("placement_overrides"), dict) else {},
-        components=body.get("components") if isinstance(body.get("components"), list) else [],
+        components=normalized_components,
         line_id=line_id or str(uuid.uuid4()),
         parent_line_id=_s(body.get("parent_line_id", "")),
         linked_parent_line_id=_s(body.get("linked_parent_line_id", "")),
@@ -314,12 +348,17 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
         raw_id = _s(info.get("QuoteNumber", "")) or _s(info.get("Agency", "Project"))
         info["ProjectID"] = safe_project_id(raw_id, fallback="PROJECT")
 
-    parts = [
-        PartInput(
+    parts: list[PartInput] = []
+    for dp in draft.parts:
+        supply = normalized_supply_fields(dp)
+        parts.append(PartInput(
             name=dp.name,
             include=dp.include,
-            new_or_used=dp.new_or_used,
-            source=dp.source,
+            new_or_used=supply["new_or_used"],
+            source=supply["source"],
+            supply_type=supply["supply_type"],
+            customer_condition=supply["customer_condition"],
+            customer_source=supply["customer_source"],
             manufacturer=dp.manufacturer,
             part_number=dp.part_number,
             location=canonical_name(dp.location),
@@ -340,9 +379,7 @@ def draft_to_project_input(draft: BuildDraft) -> ProjectInput:
             accessory_parent_product=dp.accessory_parent_product,
             components=list(dp.components or []),
             picker_config=dict(dp.picker_config or {}),
-        )
-        for dp in draft.parts
-    ]
+        ))
     notes = dict(draft.notes)
     if draft.project_notes:
         notes["PROJECT-WIDE NOTES"] = [draft.project_notes]
@@ -385,11 +422,23 @@ def _coerce_notes(raw) -> dict[str, list[str]]:
     return {}
 
 
+def _normalize_saved_part(raw: dict[str, Any]) -> dict[str, Any]:
+    """Load old draft JSON into the canonical supply shape without writing it."""
+    part = normalize_supply_dict(raw)
+    components = part.get("components")
+    if isinstance(components, list):
+        part["components"] = [
+            normalize_component_supply_dict(component) if isinstance(component, dict) else component
+            for component in components
+        ]
+    return part
+
+
 def load_draft(draft_id: str, drafts_dir: Path) -> BuildDraft:
     """Load a draft by ID; raises FileNotFoundError if not found."""
     path = _draft_path(draft_id, drafts_dir)
     data = json.loads(LocalStorageProvider().read_text(str(path)))
-    parts = [DraftPart(**p) for p in data.pop("parts", [])]
+    parts = [DraftPart(**_normalize_saved_part(p)) for p in data.pop("parts", [])]
     data["notes"] = _coerce_notes(data.get("notes", {}))
     draft = BuildDraft(parts=parts, **data)
     _ensure_line_ids(draft)
@@ -413,7 +462,7 @@ def list_drafts(drafts_dir: Path) -> list[BuildDraft]:
     for path in drafts_dir.glob("*.json"):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-            parts = [DraftPart(**p) for p in data.pop("parts", [])]
+            parts = [DraftPart(**_normalize_saved_part(p)) for p in data.pop("parts", [])]
             data["notes"] = _coerce_notes(data.get("notes", {}))
             draft = BuildDraft(parts=parts, **data)
             _ensure_line_ids(draft)

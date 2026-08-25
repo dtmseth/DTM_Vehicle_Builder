@@ -22,6 +22,7 @@ class CustomerInfo:
 @dataclass
 class EquipmentPreferences:
     lighting_brands: list[str] = field(default_factory=list)  # one choice in the current UI
+    lighting_mode: str = "duo"  # duo | trio; defaults compatible picker SKUs, never limits choices
     camera_brand: str = ""
     push_bumper_brand: str = ""
     cage_brand: str = ""
@@ -53,7 +54,28 @@ class IndividualUnit:
     color: str = ""
     draft_id: str = ""
     output_path: str = ""     # set when build sheet is generated
+    status: str = "draft"     # draft | finalized | reopened
+    finalized_at: str = ""
+    finalized_by: str = ""
+    finalized_draft_fingerprint: str = ""
+    final_check_version: str = ""
+    finalization_acknowledgements: list = field(default_factory=list)
+    reopened_at: str = ""
+    reopened_by: str = ""
+    reopen_reason: str = ""
+    qb_project_id: str = ""
+    qb_estimate_id: str = ""
+    qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
+    qb_estimate_snapshot_at: str = ""
 ```
+
+`BuildUnit` carries the same additive finalization fields for projects whose build is represented by
+the unit itself rather than an `IndividualUnit`. Finalized draft mutations are rejected in the draft
+service until the owning build is explicitly reopened with an actor and reason.
+The Estimate snapshot is deliberately narrower than the raw QBO object: it tracks the customer /
+project references, document number, memo fields, and material line IDs, descriptions, quantities,
+prices, and amounts. Provider metadata such as `SyncToken` and update timestamps is excluded so it
+does not create false conflicts.
 
 ## ProjectRecord
 
@@ -99,6 +121,22 @@ Lives in `workspace/sales_reps/{rep_id}.json`. Mirrored to SharePoint.
 | `domain/sales_rep_models.py` | `SalesRepRecord` |
 | `domain/geometry.py` | Shared placement math (single source of truth) |
 | `domain/rules.py` | Rule dataclasses |
+| `domain/supply.py` | Canonical supply normalization, legacy mapping, validation, and labels |
+
+### Part supply fields
+
+`PartInput`, `DraftPart`, and guided component dictionaries carry these canonical fields:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `supply_type` | `new`, `customer_supplied` | Who supplies/bills the part |
+| `customer_condition` | blank, `new`, `used` | Condition of a customer-supplied part |
+| `customer_source` | string | Required source for explicitly edited customer-supplied/used data |
+
+The legacy `new_or_used` and `source` fields remain for read/write compatibility. Normalization is
+additive and does not rewrite a draft merely because it was opened. Blank/New maps to canonical New;
+Used/Reused maps to customer-supplied/used. Source-less legacy used data is permitted on read and
+flagged for repair, while canonical saves validate the source.
 
 ## Agency & Sales Rep storage
 

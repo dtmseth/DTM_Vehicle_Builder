@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from dtm_buildsheet.domain.geometry import slot_relative_positions, slot_roles, view_side_role
+from dtm_buildsheet.domain.geometry import (
+    compound_slot_relative_positions,
+    slot_relative_positions,
+    slot_roles,
+    view_side_role,
+)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -276,3 +281,14 @@ class TestSlotRelativePositions:
         )
         assert [x for x, _ in positions] == pytest.approx([0.205, 0.205, 0.205, 0.795, 0.795, 0.795])
         assert [y for _, y in positions] == pytest.approx([0.175, 0.22, 0.265, 0.175, 0.22, 0.265])
+
+    def test_dual_groups_position_two_heads_around_each_mirrored_unit(self):
+        positions = compound_slot_relative_positions(
+            "mirror", group_count=2, group_size=2, instance_count=4,
+            anchor_x=0.3, anchor_y=0.5, group_h_spacing=0.05,
+            item_h_spacing=0.02,
+        )
+        assert positions == pytest.approx([
+            (0.29, 0.5), (0.31, 0.5),
+            (0.69, 0.5), (0.71, 0.5),
+        ])

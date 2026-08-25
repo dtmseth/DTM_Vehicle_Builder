@@ -5,8 +5,8 @@ former `PART_PICKER_PLAN.md` (design + chunk status), `PICKER_TRANSLATION_AUDIT.
 lessons), `PENDING_QB_PARTS.md`, `TRACER_LIGHTHEAD_SELECTION.md`, and `PHASE5_ACCESSORIES_DESIGN.md`.
 
 **Related**: [QUICKBOOKS.md](QUICKBOOKS.md) (the SKU/price source), [ROADMAP.md](ROADMAP.md)
-(where this sits — Phase 3/4), [DATA_MODELS.md](DATA_MODELS.md), [CONFIG_SCHEMA.md](CONFIG_SCHEMA.md).
-Historical blow-by-blow changelogs live in [archive/](archive/).
+(where this sits — Phase 3/4), [CURRENT_STATE.md](CURRENT_STATE.md),
+[DATA_MODELS.md](DATA_MODELS.md), and [CONFIG_SCHEMA.md](CONFIG_SCHEMA.md).
 
 > **Foundation note:** `parts_db.json` now references parts at **SKU granularity** (real vendor part
 > numbers + QB pricing), not just product name / part type. That is a fundamentally different basis
@@ -43,10 +43,10 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
 
-**Current population** (approx, post full-QB import 2026-07-01): 5 types · 2 sections · 8 zones ·
-62 manufacturers · **932 products** · 113 part_types · 59 placements · **~1,290 QB-linked SKUs**
-(the full sandbox QBO inventory). ~673 of those products have **no part-type home yet** — the
-curation queue (filter the SKU grid to "— No part-type —"). Every part_type now carries a
+**Current population** (v3.3.2, counted 2026-08-14): 5 types · 2 sections · 8 zones ·
+63 manufacturers · **772 products** · 120 part_types · 59 placements · **1,339 SKUs**, including
+**1,224 QB-linked SKUs** from the production catalog. **43 products** have no part-type home yet —
+the current curation queue (filter the SKU grid to "— No part-type —"). Every part_type carries a
 `location_mode` + (text mode) `location_options`. Import tool: `tools/qb_import_all.py`.
 
 **Write invariant:** all `parts_db.json` writes go through `save_config_file(...)` (or
@@ -65,9 +65,9 @@ prices, vehicle compatibility, and color configuration. Two entry paths, one des
 Both converge on SKU confirmation or a guided-system workflow → resolve into `PartInput` records
 via the translation layer.
 
-**Status: actively usable and under owner rebuild testing.** The original Chunks 1-8 are built.
-Current work is polish, guided-system coverage, data quality, and retiring old fallback surfaces
-once the owner rebuilds the real projects.
+**Status: live in production.** The original Chunks 1-8 and the major guided-system flows are built.
+Current work is targeted polish, the 43-product curation queue, catalog-change governance, and
+retiring old fallback surfaces as Phase 4 removes remaining workbook-era consumers.
 
 | Chunk | Goal | Status |
 |-------|------|--------|
@@ -92,7 +92,9 @@ green manifest-highlight dot (matches on the `part_type` field carried by picker
 **Search behavior (owner-corrected 2026-07-15):** typing in the picker search box searches across
 all categories, brands, vehicle tags, product names, SKU text, and sales descriptions by default.
 The "Current filters only" checkbox scopes search back to the selected category/family/brand/vehicle
-filters when the user wants to stay inside the current browse context.
+filters when the user wants to stay inside the current browse context. Since v3.3.3 a matching child
+SKU makes its product visible without expanding it; opening that product shows the complete SKU list,
+not only the matching child rows.
 
 Key files: `ui/js/part_picker.js` (panel UI), `app/routes/parts_db.py` (endpoints),
 `planning/sku_resolver.py` (translation), `ui/js/manifest_editor.js` (entry + fallback modal).
@@ -236,6 +238,13 @@ happens *through* this feature.
   set `include_in_generic_accessory_options: false` until it is linked to its intended parent.
   Use the `custom_patch` category for a billable custom-patch option that belongs with its parent
   product (for example, Tiger Tough seat-cover embroidery).
+- **Quantity rules:** every selected accessory exposes an editable quantity. A concrete accessory
+  SKU can additionally declare `accessory_quantity: {mode: "cover_parent_quantity",
+  parent_units_per_item: N}`. The picker then recommends `ceil(parent quantity / N)` while still
+  allowing an explicit override. `requires_complete_groups: true` blocks an incompatible remainder
+  (for example, three T-Series heads in two-head THSG2 shrouds). The saved child row records whether
+  its quantity was manually overridden, so ordinary recommendations continue to follow later parent
+  quantity edits without erasing deliberate user choices.
 - **API:** `GET /api/parts-db/accessories?product_id=<id>` returns both, grouped by category.
 - **Picker UX:** an "Accessories" section appears with per-category selectors + "None needed";
   users can add another item within a selector when the install needs multiples. **Hard-gated Add**
@@ -245,6 +254,11 @@ happens *through* this feature.
   picker and replaces that selected set on Save. Saved manifest children also remain selectable
   during an edit when an old SKU is no longer linked in the current catalog; saving normalizes their
   metadata without requiring the user to rebuild the choice by hand.
+- **Compound accessory rendering:** an accessory quantity rule may declare
+  `render_parent_group: "dual_shroud"`. The planner then treats each two-head housing as one
+  placement unit while retaining two independently colored head images. Side-profile cargo-window
+  locations show the visible pair centered on the window; front/rear/top mirror locations place the
+  pair as one unit on each side. Preview and PowerPoint both draw the shroud housing around the pair.
 - **Contextual recommendations:** a parent part type can declare `recommended_accessories` for an
   optional item that applies only after an authored draft condition is met. The picker shows its
   reason and preselects it, but **None needed** remains an explicit opt-out. For example, the
@@ -342,6 +356,11 @@ location" rows.
   shop-reference data and always include Custom — they do not create render placements. Editing a
   guided kit restarts at question one while retaining all saved answers, and its manifest-section
   **Add** button returns directly to the matching picker family or leaf.
+  Guided step contracts distinguish an optional but deliberate choice from a dependency: a
+  `required: false` step exposes **Not included** and still must be answered, while `required_when`
+  removes a dependent question when its controlling choice does not apply. The radio audit kept its
+  core installed components required; camera already uses an explicit component multi-select; and
+  console already provides explicit None choices plus pedestal/printer dependency checks.
   - **Radio Communications** writes `radio_head`, `radio_brick`, `radio_antenna_top`,
     `radio_speaker`, and `radio_mic_clip` component rows. Split-head is the default; the center
     console setup owns the control-head position, so radio setup does not ask for it again.
@@ -358,7 +377,9 @@ location" rows.
     more than one of its included cable runs is refreshed.
   - **Radar System** records each antenna location and its bracket separately. Short A-bracket is
     the default front choice and tall A-bracket the default rear choice; either can instead use a
-    swivel arm. A split system writes separate display and counting-unit component rows, while an
+    swivel arm. For a front-only system, the rear antenna can be explicitly marked **Not included**;
+    its bracket question and rear manifest component are then omitted. A split system writes
+    separate display and counting-unit component rows, while an
     integrated system uses one combined row. The rear seatbelt-slot option appears only for a Tahoe
     build. Refreshed radar cable runs require an exact, QB-linked length/SKU selection before they
     are added as billable child lines.
@@ -560,6 +581,44 @@ render, it can use either of two anchors:
   exterior views. These persist as `custom_location.placements` (`{view: [{x, y}, ...]}`) and the
   planner creates a separate placement for every point. This deliberately supports unusual custom
   light installations without inventing a misleading standard location.
+
+Local unreleased work extends this to quantity-aware grouped placement. A Details-tab spacing
+control lays out the selected number of heads horizontally, one click places or moves the group,
+and `custom_location.anchors` plus `custom_location.spacing` preserve the edit round trip. Older
+single-point drafts remain valid. Four-head configurations also offer **Two per side (mirrored)**;
+each generated point persists `head_index` and `group_id`, so both equal rows and mirrored pairs use
+the correct ordered DUO/custom asset on each side.
+
+Products with `picker_location_allocation: true` use one quantity control per eligible location.
+The current capability is limited to the true 3-inch round-interior-light family; saving replaces a
+stable `location_batch_id` atomically with one ordinary draft row per nonzero location. Each
+location also owns an independent optional manifest comment, persisted on that draft row and in
+`picker_config.location_allocation.comments` so editing any row restores the complete allocation
+without collapsing the notes back into one shared value.
+
+Products with `picker_form: "window_tint"` bypass placement. The picker stores selected windows and
+tint percentage, saves one row whose quantity is the selected-window count, and the Estimate path
+quotes $65 per window through the existing MISC PART item even though no dedicated QBO tint Item is
+required.
+
+### Guided-system supply behavior (local Phase 1B)
+
+Each parent part and selectable guided component has a canonical supply state:
+
+- **New** — supplied and billed by DTM.
+- **Customer supplied / New** — installed but not billed by DTM.
+- **Customer supplied / Used** — installed but not billed by DTM and requires a source.
+
+Components may override their parent's state; otherwise they inherit it, including a subsequently
+entered customer source. The draft/input compatibility layer still reads and emits legacy
+`new_or_used`/`source` fields. Blank/New maps to New, while Used/Reused maps to Customer supplied /
+Used. A legacy used line without a source stays readable and displays **Source needed**; the editor
+requires a source the next time that line is changed.
+
+Both customer-supplied conditions are excluded from QuickBooks Estimate lines. Gamber-Johnson
+`console_kit.included` describes the parts DTM must order, so customer-supplied console components
+do not participate in bundle resolution under either condition. They remain visible as installed,
+unbilled component rows in the manifest/build sheet.
 
 Tracer configuration owns its own **Clear / Smoked** lens selection; the chosen lens is used for
 both the live SKU resolution and the saved tracer lighthead lines.

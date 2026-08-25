@@ -236,3 +236,44 @@ def slot_relative_positions(
         return positions
 
     return [(anchor_x, anchor_y)]
+
+
+def compound_slot_relative_positions(
+    pattern: str,
+    group_count: int,
+    group_size: int,
+    instance_count: int,
+    anchor_x: float,
+    anchor_y: float,
+    group_h_spacing: float,
+    item_h_spacing: float,
+    v_spacing: float | None = None,
+) -> list[tuple[float, float]]:
+    """Position grouped instances around ordinary placement-unit centers.
+
+    ``slot_relative_positions`` first places each physical housing/mount. Each
+    housing then receives a centered horizontal row of its member instances.
+    This keeps a dual shroud as one mirrored placement unit without collapsing
+    its two independently colored lightheads into one image.
+    """
+    group_count = max(1, int(group_count or 1))
+    group_size = max(1, int(group_size or 1))
+    instance_count = max(0, int(instance_count or 0))
+    centers = slot_relative_positions(
+        pattern,
+        group_count,
+        anchor_x,
+        anchor_y,
+        group_h_spacing,
+        v_spacing=v_spacing,
+    )
+    positions: list[tuple[float, float]] = []
+    remaining = instance_count
+    for center_x, center_y in centers:
+        count = min(group_size, remaining)
+        if count <= 0:
+            break
+        start_x = center_x - item_h_spacing * (count - 1) / 2
+        positions.extend((start_x + index * item_h_spacing, center_y) for index in range(count))
+        remaining -= count
+    return positions

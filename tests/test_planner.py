@@ -104,6 +104,54 @@ def test_picker_part_type_resolves_a_descriptive_manifest_child(config):
     assert not plan.warnings
 
 
+def test_t_series_dual_shroud_groups_two_heads_per_visible_placement(config):
+    parent = PartInput(
+        name="Rear Warning 1",
+        part_number="TST0D",
+        part_type="warning_light",
+        location="LOWER CARGO WINDOW",
+        raw_color="Red/White",
+        quantity=4,
+        line_id="t-series-parent",
+        picker_config={
+            "mode": "uniform", "colorsPerHead": "duo",
+            "uniform": ["red", "white"], "count": 4,
+        },
+    )
+    shrouds = PartInput(
+        name="Rear Warning 1 · T-Series Shroud",
+        part_number="THSG2",
+        quantity=2,
+        line_id="dual-shrouds",
+        parent_line_id=parent.line_id,
+        accessory_category="shroud",
+        picker_config={"accessory_quantity": {
+            "parent_units_per_item": 2,
+            "render_parent_group": "dual_shroud",
+        }},
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "DUAL-SHROUD"},
+        parts=[parent, shrouds],
+        notes={},
+    )
+
+    planned = next(
+        item for item in build_plan(project, config).planned_parts
+        if item.raw.line_id == parent.line_id
+    )
+    placements = {placement.view: placement for placement in planned.placements}
+
+    # The side profile exposes one cargo window: one centered housing with two
+    # lightheads. The top view exposes both sides: two placement units/four heads.
+    assert placements["side"].compound_group_style == "dual_shroud"
+    assert placements["side"].compound_group_count == 1
+    assert len(placements["side"].instances) == 2
+    assert placements["top"].compound_group_count == 2
+    assert len(placements["top"].instances) == 4
+    assert all(not placement.warnings for placement in placements.values())
+
+
 def test_radio_antenna_renders_at_rear_left_roof(config):
     part = PartInput(
         name="Radio Antenna Top",
@@ -766,13 +814,62 @@ def test_split_ion_at_neutral_custom_point_uses_a_concrete_side_asset(config):
     assert instance.asset_path == "lights/sm_red-white_h.png"
 
 
+def test_four_custom_heads_keep_duo_sides_and_head_order(config):
+    part = PartInput(
+        name="Forward Warning 1", part_type="warning_light", part_number="ION",
+        raw_color="Red/White / Blue/White", driver_color="Red/White",
+        passenger_color="Blue/White", location="Custom grille pairs", quantity=4,
+        line_id="custom-duo-pairs",
+        components=[
+            {"part_number": "XI2D", "color": "Red/White", "quantity": 2},
+            {"part_number": "XI2E", "color": "Blue/White", "quantity": 2},
+        ],
+        picker_config={
+            "mode": "split",
+            "custom_location": {
+                "label": "Custom grille pairs",
+                "layout": "mirrored_pairs",
+                "placements": {"front": [
+                    {"x": 0.18, "y": 0.62, "head_index": 0, "group_id": "left_pair"},
+                    {"x": 0.24, "y": 0.62, "head_index": 1, "group_id": "left_pair"},
+                    {"x": 0.76, "y": 0.62, "head_index": 2, "group_id": "right_pair"},
+                    {"x": 0.82, "y": 0.62, "head_index": 3, "group_id": "right_pair"},
+                ]},
+            },
+        },
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CUSTOM-DUO-PAIRS"}, parts=[part], notes={},
+    ), config)
+
+    instances = [placement.instances[0] for placement in plan.planned_parts[0].placements]
+    assert [instance.slot_role for instance in instances] == ["passenger", "passenger", "driver", "driver"]
+    assert [instance.color_token for instance in instances] == ["blue-white", "blue-white", "red-white", "red-white"]
+    assert all(instance.asset_path for instance in instances)
+
+
+def test_siren_behind_grille_has_concealed_mount_callout(config):
+    part = PartInput(
+        name="Siren Speaker", part_type="siren_speaker", part_number="SA315P",
+        location="BEHIND GRILL (CENTER)", quantity=1, line_id="hidden-speaker",
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "HIDDEN-SPEAKER"}, parts=[part], notes={},
+    ), config)
+    placement = plan.planned_parts[0].placements[0]
+    assert placement.mount_visibility == "behind_grille"
+    assert placement.callout_label == "BEHIND GRILLE"
+
+
 def test_guided_radio_antenna_uses_its_individual_condition(config):
     parent = PartInput(
-        name="Radio Control Head", part_type="radio_head", new_or_used="New", line_id="radio-system",
+        name="Radio Control Head", part_type="radio_head", supply_type="new",
+        new_or_used="New", line_id="radio-system",
         components=[{
             "label": "Radio antenna", "part_type": "radio_antenna_top",
             "location": "Rear left roof", "detail": "Whip style", "quantity": 1,
-            "new_or_used": "Reused",
+            "supply_type": "customer_supplied", "customer_condition": "used",
+            "customer_source": "Prior patrol unit", "new_or_used": "Used",
         }],
     )
     project = ProjectInput(
@@ -784,7 +881,9 @@ def test_guided_radio_antenna_uses_its_individual_condition(config):
         planned for planned in build_plan(project, config).planned_parts
         if planned.raw.part_type == "radio_antenna_top"
     )
-    assert antenna.raw.new_or_used == "Reused"
+    assert antenna.raw.supply_type == "customer_supplied"
+    assert antenna.raw.customer_condition == "used"
+    assert antenna.raw.customer_source == "Prior patrol unit"
 
 
 def test_picker_opticom_uses_preemption_parts_db_render_metadata(config):

@@ -45,7 +45,7 @@
                 {
                   "bold": true,
                   "color": "#FFFFFF",
-                  "size_pt": 10.0,
+                  "size_pt": 8.5,
                   "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service"
                 }
               ]
@@ -79,7 +79,7 @@
           ],
           "text": "Riverside County Sheriff",
           "top_emu": 960120,
-          "width_emu": 9326880
+          "width_emu": 10972800
         },
         {
           "fill": {
@@ -830,7 +830,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 5340096,
+          "height_emu": 5138928,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -955,12 +955,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1006,12 +1006,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1046,12 +1046,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1097,12 +1097,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1137,12 +1137,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1188,12 +1188,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1228,12 +1228,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1279,12 +1279,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1319,12 +1319,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1370,12 +1370,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1410,12 +1410,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1461,12 +1461,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1501,12 +1501,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1552,12 +1552,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1592,12 +1592,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1643,12 +1643,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1683,12 +1683,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1734,12 +1734,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1774,12 +1774,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1825,12 +1825,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1865,12 +1865,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White\nLens: Standard Lense\nGrille area"
+                          "text": "White  ·  Lens: Standard Lense\nGrille area"
                         }
                       ]
                     }
                   ],
-                  "text": "White\nLens: Standard Lense\nGrille area"
+                  "text": "White  ·  Lens: Standard Lense\nGrille area"
                 },
                 {
                   "paragraphs": [
@@ -1916,12 +1916,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -1956,12 +1956,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White\nLens: Standard Lense"
+                          "text": "White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "White\nLens: Standard Lense"
+                  "text": "White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -2007,12 +2007,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2047,12 +2047,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White\nLens: Standard Lense"
+                          "text": "White  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "White\nLens: Standard Lense"
+                  "text": "White  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -2098,12 +2098,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2138,12 +2138,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Clear"
+                          "text": "Red/Blue  ·  Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Clear"
+                  "text": "Red/Blue  ·  Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -2189,12 +2189,258 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
+                }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
+            ],
+            "rows": 15
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "LIGHTING — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "LIGHTING — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 2"
+                }
+              ]
+            }
+          ],
+          "text": "Page 2",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 621792,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
                 }
               ],
               [
@@ -2229,12 +2475,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue\nLens: Standard Lense"
+                          "text": "Red/Blue  ·  Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue\nLens: Standard Lense"
+                  "text": "Red/Blue  ·  Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -2280,12 +2526,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ]
             ],
@@ -2299,23 +2545,9 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              457200,
-              329184,
-              329184,
-              329184,
-              329184
+              347472
             ],
-            "rows": 16
+            "rows": 2
           },
           "top_emu": 978408,
           "width_emu": 11274551
@@ -2407,12 +2639,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "Page 2"
+                  "text": "Page 3"
                 }
               ]
             }
           ],
-          "text": "Page 2",
+          "text": "Page 3",
           "top_emu": 521207,
           "width_emu": 2331720
         },
@@ -2442,7 +2674,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 2907792,
+          "height_emu": 3054096,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -2618,12 +2850,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2709,12 +2941,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2800,12 +3032,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  AGENCY — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2891,12 +3123,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -2982,12 +3214,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3073,12 +3305,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3164,12 +3396,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3255,12 +3487,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  AGENCY — NEW"
+                  "text": "■  New"
                 }
               ]
             ],
@@ -3274,14 +3506,14 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
             ],
             "rows": 9
           },
@@ -3375,12 +3607,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "Page 3"
+                  "text": "Page 4"
                 }
               ]
             }
           ],
-          "text": "Page 3",
+          "text": "Page 4",
           "top_emu": 521207,
           "width_emu": 2331720
         },
@@ -3410,7 +3642,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 1920240,
+          "height_emu": 2011680,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3586,12 +3818,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3677,12 +3909,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3768,12 +4000,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3859,12 +4091,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -3950,12 +4182,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ]
             ],
@@ -3969,11 +4201,11 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
             ],
             "rows": 6
           },
@@ -4067,12 +4299,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "Page 4"
+                  "text": "Page 5"
                 }
               ]
             }
           ],
-          "text": "Page 4",
+          "text": "Page 5",
           "top_emu": 521207,
           "width_emu": 2331720
         },
@@ -4102,7 +4334,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 5212080,
+          "height_emu": 5138928,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -4278,12 +4510,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4369,12 +4601,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4460,12 +4692,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4551,12 +4783,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  AGENCY — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4642,12 +4874,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4733,12 +4965,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4824,12 +5056,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -4915,12 +5147,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  AGENCY — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5006,12 +5238,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5097,12 +5329,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5188,12 +5420,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5279,12 +5511,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5370,12 +5602,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -5461,103 +5693,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Light Controller"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  CENCOM SAPPHIRE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Light Controller\nWHELEN  ·  CENCOM SAPPHIRE"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "ON EQUIPMENT TRAY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "ON EQUIPMENT TRAY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ]
             ],
@@ -5571,1635 +5712,22 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
             ],
-            "rows": 16
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "OTHER / CUSTOM — Continued"
-                }
-              ]
-            }
-          ],
-          "text": "OTHER / CUSTOM — Continued",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 5"
-                }
-              ]
-            }
-          ],
-          "text": "Page 5",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 5212080,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Motion Attachment"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "HAVIS  ·  PKG-MTG-1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Motion Attachment\nHAVIS  ·  PKG-MTG-1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "MOUNTED TO CONSOLE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "MOUNTED TO CONSOLE"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Pa Mic"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  PA21"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Pa Mic\nWHELEN  ·  PA21"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Printer"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "ZEBRA  ·  ZQ630+"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Printer\nZEBRA  ·  ZQ630+"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PRINTER ARMREST MOUNT"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PRINTER ARMREST MOUNT"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Printer Mount"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "HAVIS  ·  PM-120"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Printer Mount\nHAVIS  ·  PM-120"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Printer Power"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "SPECIFY MFG  ·  SPECIFY MODEL"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Printer Power\nSPECIFY MFG  ·  SPECIFY MODEL"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Radar"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "STALKER  ·  DUAL DSR"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Radar\nSTALKER  ·  DUAL DSR"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "ON DASH"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "ON DASH"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Radar Interface Cable (To Camera)"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "STALKER  ·  CAM CABLE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Radar Interface Cable (To Camera)\nSTALKER  ·  CAM CABLE"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Radio 1"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "MOTOROLA  ·  APX8500"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Radio 1\nMOTOROLA  ·  APX8500"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "ON EQUIPMENT TRAY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "ON EQUIPMENT TRAY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  AGENCY — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Radio Antenna Cable"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "SPECIFY MFG  ·  COAX-15"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Radio Antenna Cable\nSPECIFY MFG  ·  COAX-15"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "REAR LEFT ROOF"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "REAR LEFT ROOF"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Radio Mic Clip 1"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "MOTOROLA  ·  RMN5127"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Radio Mic Clip 1\nMOTOROLA  ·  RMN5127"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "ON DASH"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "ON DASH"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  AGENCY — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  AGENCY — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Rear Camera"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "AXON  ·  FLEET 3 REAR"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Rear Camera\nAXON  ·  FLEET 3 REAR"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Rear Radar Antenna Mount"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "STALKER  ·  ANT BRKT"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Rear Radar Antenna Mount\nSTALKER  ·  ANT BRKT"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DRIVER SIDE PILLAR"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DRIVER SIDE PILLAR"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Rear Seat Camera"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "AXON  ·  FLEET INSIDE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Rear Seat Camera\nAXON  ·  FLEET INSIDE"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "CENTER OF PARTITION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "CENTER OF PARTITION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Rear Seat Lights 1"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  ION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Rear Seat Lights 1\nWHELEN  ·  ION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "White\nLens: Clear"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "White\nLens: Clear"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Replacement Rear Seat"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "HAVIS  ·  DS-SEAT-FPI"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Replacement Rear Seat\nHAVIS  ·  DS-SEAT-FPI"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  DTM — NEW"
-                }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184,
-              329184
-            ],
-            "rows": 16
+            "rows": 15
           },
           "top_emu": 978408,
           "width_emu": 11274551
@@ -7326,7 +5854,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 932688,
+          "height_emu": 5138928,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -7428,6 +5956,1708 @@
                           "bold": true,
                           "color": "#1E2761",
                           "size_pt": 9.0,
+                          "text": "Light Controller"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "WHELEN  ·  CENCOM SAPPHIRE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Light Controller\nWHELEN  ·  CENCOM SAPPHIRE"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "ON EQUIPMENT TRAY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "ON EQUIPMENT TRAY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Motion Attachment"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "HAVIS  ·  PKG-MTG-1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Motion Attachment\nHAVIS  ·  PKG-MTG-1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "MOUNTED TO CONSOLE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "MOUNTED TO CONSOLE"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Pa Mic"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "WHELEN  ·  PA21"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Pa Mic\nWHELEN  ·  PA21"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Printer"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "ZEBRA  ·  ZQ630+"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Printer\nZEBRA  ·  ZQ630+"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PRINTER ARMREST MOUNT"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PRINTER ARMREST MOUNT"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Printer Mount"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "HAVIS  ·  PM-120"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Printer Mount\nHAVIS  ·  PM-120"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Printer Power"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "SPECIFY MFG  ·  SPECIFY MODEL"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Printer Power\nSPECIFY MFG  ·  SPECIFY MODEL"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Radar"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "STALKER  ·  DUAL DSR"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Radar\nSTALKER  ·  DUAL DSR"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "ON DASH"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "ON DASH"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Radar Interface Cable (To Camera)"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "STALKER  ·  CAM CABLE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Radar Interface Cable (To Camera)\nSTALKER  ·  CAM CABLE"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Radio 1"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "MOTOROLA  ·  APX8500"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Radio 1\nMOTOROLA  ·  APX8500"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "ON EQUIPMENT TRAY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "ON EQUIPMENT TRAY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Radio Antenna Cable"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "SPECIFY MFG  ·  COAX-15"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Radio Antenna Cable\nSPECIFY MFG  ·  COAX-15"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "REAR LEFT ROOF"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "REAR LEFT ROOF"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Radio Mic Clip 1"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "MOTOROLA  ·  RMN5127"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Radio Mic Clip 1\nMOTOROLA  ·  RMN5127"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "ON DASH"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "ON DASH"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Rear Camera"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "AXON  ·  FLEET 3 REAR"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Rear Camera\nAXON  ·  FLEET 3 REAR"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Rear Radar Antenna Mount"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "STALKER  ·  ANT BRKT"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Rear Radar Antenna Mount\nSTALKER  ·  ANT BRKT"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DRIVER SIDE PILLAR"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DRIVER SIDE PILLAR"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Rear Seat Camera"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "AXON  ·  FLEET INSIDE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Rear Seat Camera\nAXON  ·  FLEET INSIDE"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "CENTER OF PARTITION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "CENTER OF PARTITION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ]
+            ],
+            "col_widths_emu": [
+              2880360,
+              3749039,
+              438912,
+              3017520,
+              1188720
+            ],
+            "cols": 5,
+            "row_heights_emu": [
+              274320,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472
+            ],
+            "rows": 15
+          },
+          "top_emu": 978408,
+          "width_emu": 11274551
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 868680,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 20.0,
+                  "text": "OTHER / CUSTOM — Continued"
+                }
+              ]
+            }
+          ],
+          "text": "OTHER / CUSTOM — Continued",
+          "top_emu": 82296,
+          "width_emu": 9235440
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217"
+                }
+              ]
+            }
+          ],
+          "text": "PARTS MANIFEST   •   Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217",
+          "top_emu": 521207,
+          "width_emu": 9052560
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 164592,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9464040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "align": "RIGHT (3)",
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#D9DFF1",
+                  "size_pt": 9.0,
+                  "text": "Page 7"
+                }
+              ]
+            }
+          ],
+          "text": "Page 7",
+          "top_emu": 521207,
+          "width_emu": 2331720
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Riverside County Sheriff   •   2024 Ford Police Interceptor Utility 4WD   •   PIU #4217   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 1664208,
+          "kind": "TABLE (19)",
+          "left_emu": 457200,
+          "name": "Table",
+          "table": {
+            "cells": [
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "PART / SKU"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "PART / SKU"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "DETAILS / SALES DESCRIPTION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "DETAILS / SALES DESCRIPTION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "QTY"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "QTY"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "LOCATION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LOCATION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "SOURCE"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "SOURCE"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Rear Seat Lights 1"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "WHELEN  ·  ION"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Rear Seat Lights 1\nWHELEN  ·  ION"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "White  ·  Lens: Clear"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "White  ·  Lens: Clear"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
+                          "text": "Replacement Rear Seat"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "HAVIS  ·  DS-SEAT-FPI"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Replacement Rear Seat\nHAVIS  ·  DS-SEAT-FPI"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#555555",
+                          "size_pt": 8.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.0,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 8.0,
+                          "text": "■  New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "■  New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 9.0,
                           "text": "Tail Light Flasher"
                         }
                       ]
@@ -7502,12 +7732,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ],
               [
@@ -7593,12 +7823,12 @@
                           "color": "#1A6FC8",
                           "italic": false,
                           "size_pt": 8.0,
-                          "text": "■  DTM — NEW"
+                          "text": "■  New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  DTM — NEW"
+                  "text": "■  New"
                 }
               ]
             ],
@@ -7612,10 +7842,12 @@
             "cols": 5,
             "row_heights_emu": [
               274320,
-              329184,
-              329184
+              347472,
+              347472,
+              347472,
+              347472
             ],
-            "rows": 3
+            "rows": 5
           },
           "top_emu": 978408,
           "width_emu": 11274551

@@ -11,6 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ...domain.input_models import PartInput
+from ...domain.supply import (
+    normalize_component_supply_dict,
+    normalized_supply_fields,
+    supply_validation_error,
+)
 from ...paths import AppPaths
 from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
@@ -26,6 +31,9 @@ _PART_DEFAULTS: dict = {
     "include": True,
     "new_or_used": "New",
     "source": "",
+    "supply_type": "new",
+    "customer_condition": "",
+    "customer_source": "",
     "manufacturer": "",
     "part_number": "",
     "location": "",
@@ -76,6 +84,10 @@ def validate_preset_payload(payload: dict) -> dict:
         name = str(raw.get("name", "")).strip()
         if not name:
             raise ValueError(f"Preset parts[{i}] must have a non-empty 'name'")
+        if "supply_type" in raw:
+            error = supply_validation_error(raw)
+            if error:
+                raise ValueError(f"Preset parts[{i}]: {error}")
         part: dict = {"name": name}
         for field, default in _PART_DEFAULTS.items():
             value = raw.get(field, default)
@@ -84,6 +96,11 @@ def validate_preset_payload(payload: dict) -> dict:
             elif field == "components":
                 value = list(value) if isinstance(value, list) else []
             part[field] = value
+        part.update(normalized_supply_fields(raw))
+        part["components"] = [
+            normalize_component_supply_dict(component) if isinstance(component, dict) else component
+            for component in part["components"]
+        ]
         normalised_parts.append(part)
 
     agency_ids = payload.get("agency_ids", [])
@@ -96,7 +113,7 @@ def validate_preset_payload(payload: dict) -> dict:
     po = payload.get("placement_overrides")
 
     return {
-        "schema_version": max(int(payload.get("schema_version", 1)), 3),
+        "schema_version": max(int(payload.get("schema_version", 1)), 4),
         "preset_id": preset_id,
         "label": label,
         "description": str(payload.get("description", "")).strip(),
@@ -153,7 +170,7 @@ _BLANK_CUSTOM_SUMMARY = {
 }
 
 _BLANK_CUSTOM_FULL = {
-    "schema_version": 3,
+    "schema_version": 4,
     "preset_id": "blank_custom",
     "label": "Blank / Custom",
     "description": "Empty starting point. Add whichever parts apply to this build.",
@@ -235,11 +252,15 @@ def load_preset_dict(preset_id: str, paths: AppPaths) -> dict:
 
 
 def _part_input_from_dict(d: dict) -> PartInput:
+    supply = normalized_supply_fields(d)
     return PartInput(
         name=d["name"],
         include=bool(d.get("include", True)),
-        new_or_used="",
-        source="",
+        new_or_used=supply["new_or_used"],
+        source=supply["source"],
+        supply_type=supply["supply_type"],
+        customer_condition=supply["customer_condition"],
+        customer_source=supply["customer_source"],
         manufacturer=str(d.get("manufacturer", "")),
         part_number=str(d.get("part_number", "")),
         location=str(d.get("location", "")),
@@ -277,7 +298,7 @@ def _workspace_path(preset_id: str, paths: AppPaths) -> Path:
 
 def _auto_name(payload: dict, paths: AppPaths) -> str:
     """Compute the auto-generated label from agency_ids, build_types, vehicle_types, tag."""
-    from ..services.agency_service import load_agencies
+    from ..services.agency_service import load_agency_choices
 
     agency_ids = payload.get("agency_ids") or []
     build_types = payload.get("build_types") or []
@@ -285,8 +306,8 @@ def _auto_name(payload: dict, paths: AppPaths) -> str:
     tag = str(payload.get("tag", "")).strip()
 
     if agency_ids:
-        agencies = load_agencies(paths)
-        by_id = {a.agency_id: a.name for a in agencies}
+        agencies = load_agency_choices(paths)
+        by_id = {agency["agency_id"]: agency["name"] for agency in agencies}
         prefix = by_id.get(agency_ids[0], "Agency")
     else:
         prefix = "General"
