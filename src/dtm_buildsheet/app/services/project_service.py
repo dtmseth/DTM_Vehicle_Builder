@@ -105,7 +105,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
 
         # Existing drafts need the new shared instruction immediately too.  We
         # keep it as a separate draft field so a project edit never overwrites
-        # build-specific final-page notes.
+        # build-specific installation and delivery notes.
         draft_ids = {
             draft_id
             for unit in project.build_units

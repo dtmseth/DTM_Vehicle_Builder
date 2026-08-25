@@ -62,14 +62,14 @@ function _ptRenderEditTab(project, editable) {
         : `<p class="proj-empty-msg">No customer info saved.</p>`}
       <section class="proj-project-notes-card">
         <div>
-          <h3>Project-wide final-page notes</h3>
-          <p>Included on the final page of every build sheet in this project.</p>
+          <h3>Project notes</h3>
+          <p>Included on the build-notes page of every unit in this project.</p>
         </div>
         <button class="btn btn-primary btn-sm" type="button" onclick="PT_editProjectNotes()">${projectNotes ? "Edit shared notes" : "+ Add shared notes"}</button>
       </section>
       ${projectNotes
         ? _ptInfoRow("Shared across every build", projectNotes)
-        : `<p class="proj-empty-msg">No project-wide final-page notes saved.</p>`}
+        : `<p class="proj-empty-msg">No project notes saved.</p>`}
       <div class="proj-section-label">Equipment Preferences</div>
       ${prefPairs.length
         ? prefPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")

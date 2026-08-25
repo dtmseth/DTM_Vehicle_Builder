@@ -77,5 +77,5 @@ the current unit. The agency shortcut remains a narrower convenience list.
 An existing build also exposes **Load Preset** beside **Save as New Preset**. The loader refreshes
 the current preset list, shows only presets compatible with the build's vehicle and build type,
 and replaces the draft's parts and placement overrides in one server-side operation. Vehicle/unit
-identity, final-page notes, and project-wide notes remain unchanged. Loading is a copy operation for
+identity, build notes, and project-wide notes remain unchanged. Loading is a copy operation for
 that one build; it does not silently change the unit group's assigned preset or sibling vehicles.

@@ -71,6 +71,9 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   choices. DUO component rows combine only in the shop manifest, preserving separate QBO line items;
   color/lens details and row spacing are compacted. Long agency titles and dense manifests now
   paginate safely in PDF output, while concealed speakers render faded with a red mounting callout.
+  Export order is cover, vehicle views, manifest, then build notes. Customer output omits internal
+  QB-import provenance, tint pricing, stale allocation recipes, Install Type, and Other Orders.
+  Build notes contain only project notes, installation notes, and delivery requirements.
 - The first vehicle-finalization slice includes a focused review modal, current-PDF
   requirement, an expandable passed/warning/blocked checklist, equipment relationship/coverage
   warnings (including Core interface, photo eye, docking motion, radio/camera/expansion, Patrol
@@ -128,13 +131,15 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 
 ## Current verification baseline
 
-- The v3.4.0 Python suite passes **2,097 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
+- The v3.4.0 Python suite passes **2,102 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
   macOS updater test writes to Downloads, which this verification sandbox cannot access. Contract
   snapshots and all six PowerPoint render goldens pass. The default-off Netlify central adapter has
   **11/11** passing Node security/storage/function tests.
 - The hermetic browser smoke suite passes **28/28**, including tint/round-light allocation, custom
   DUO grouping, accessory quantity and dual-shroud rendering, Overview notes/pre-configuration
-  QuickBooks Project setup, finalization, and Estimate review workflows. It reports no console
+  QuickBooks Project setup, finalization, and Estimate review workflows. Round-light coverage includes
+  deleting one allocated manifest row and editing the survivor without resurrecting removed lights.
+  It reports no console
   errors, external browser requests, or network-guard violations.
 - PR checks: import boundaries, dependency audit, high-severity security scan, and test/coverage
   floor are enforced.

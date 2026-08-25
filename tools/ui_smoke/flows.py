@@ -254,12 +254,17 @@ def flow_load_preset_from_build_editor(page, base_url: str) -> None:
             "part_number": "OLD-1",
             "quantity": 1,
         }],
-        "notes": {"CUSTOMER REQUESTS": ["Preserve this note"]},
+        "notes": {"INSTALLATION NOTES": ["Preserve this note"]},
         "vehicle_info": original["vehicle_info"],
     })
     assert seeded["ok"], seeded
 
     _open_build_editor(page, base_url)
+    note_categories = page.locator("[data-pbe-note-category]").evaluate_all(
+        "fields => fields.map(field => field.dataset.pbeNoteCategory)"
+    )
+    assert note_categories == ["INSTALLATION NOTES", "DELIVERY REQUIREMENTS"], \
+        f"build notes must expose only installation and delivery fields, got {note_categories!r}"
     page.wait_for_selector("#pbe-load-preset-top")
     assert page.locator("#pbe-load-preset-top").is_visible()
     assert page.locator("#pbe-load-preset-btn").is_visible()
@@ -282,7 +287,7 @@ def flow_load_preset_from_build_editor(page, base_url: str) -> None:
     loaded = _api(base_url, f"/api/draft/{draft_id}")["draft"]
     assert [part["name"] for part in loaded["parts"]] == ["Preset Loaded Light"]
     assert loaded["placement_overrides"] == {"loaded:front": {"x": 0.25, "y": 0.5}}
-    assert loaded["notes"] == {"CUSTOMER REQUESTS": ["Preserve this note"]}
+    assert loaded["notes"] == {"INSTALLATION NOTES": ["Preserve this note"]}
     assert loaded["audit_trail"][-1]["action"] == "preset_loaded"
 
 
@@ -852,6 +857,44 @@ def flow_tint_and_round_location_allocation(page, base_url: str) -> None:
         "Lower Kick Panels": "Updated kick-panel direction",
         "Prisoner Headliner": "Center over rear seat",
     }, f"editing one allocated line overwrote another line's comment: {edited_comments!r}"
+
+    # Deleting one allocated manifest row must make the live remaining rows
+    # authoritative. The old full-batch picker snapshot on the survivor must
+    # not resurrect the deleted location on the next edit/save.
+    deleted = next(part for part in edited_allocated if part["location"] == "Prisoner Headliner")
+    remaining = next(part for part in edited_allocated if part["location"] == "Lower Kick Panels")
+    delete_result = page.evaluate("""async ({draftId, lineId}) => {
+      const response = await fetch(`/api/draft/${draftId}/part/${lineId}/delete`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+      });
+      return response.json();
+    }""", {"draftId": draft_id, "lineId": deleted["line_id"]})
+    assert delete_result.get("ok"), f"could not delete allocated manifest row: {delete_result!r}"
+    page.evaluate("id => loadDraftManifest(id)", draft_id)
+    page.wait_for_selector(f".me-edit-btn[data-lid='{remaining['line_id']}']")
+    page.click(f".me-edit-btn[data-lid='{remaining['line_id']}']")
+    page.wait_for_selector("#picker-panel.open")
+    page.wait_for_function(
+        "() => _pickerState?.editLineId "
+        "&& Number(_pickerState.locationAllocation?.quantities?.['Lower Kick Panels']) === 2 "
+        "&& !_pickerState.locationAllocation?.quantities?.['Prisoner Headliner']"
+    )
+    page.wait_for_selector("[data-allocation-location='Prisoner Headliner'][data-allocation-delta='1']")
+    assert "2 lights" in page.locator(".pp-location-allocation .pp-tint-price").inner_text()
+    prisoner_value = page.locator(
+        "[data-allocation-location='Prisoner Headliner'][data-allocation-delta='1']"
+    ).locator("xpath=preceding-sibling::span").inner_text()
+    assert prisoner_value == "0", "deleted round-light allocation was restored from a stale snapshot"
+    page.click("#picker-add-btn")
+    page.wait_for_selector("#picker-panel.open", state="hidden")
+    saved = _api(base_url, f"/api/draft/{draft_id}")["draft"]
+    live_allocated = [
+        part for part in saved["parts"]
+        if (part.get("picker_config") or {}).get("location_batch_id")
+    ]
+    assert [(part["location"], part["quantity"]) for part in live_allocated] == [
+        ("Lower Kick Panels", 2),
+    ], f"editing a surviving round-light row resurrected deleted locations: {live_allocated!r}"
 
 
 def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:

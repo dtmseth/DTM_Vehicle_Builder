@@ -412,18 +412,16 @@ Size class prefixes the color token in light filenames (e.g., `"sm_"` vs `"lg_"`
 
 **Module**: `render_ppt.py`, `ppt_helpers.py`
 
-### Slide Structure (fixed order)
-| Position | Slide | Description |
+### Slide Structure (fixed section order)
+| Order | Slide | Description |
 |---|---|---|
-| 0 | Cover | Agency, contact, VIN, logo, vehicle image |
-| 1 | Parts Manifest | Tabular part list (may be multiple slides) |
-| 2 | Front view | Vehicle diagram with icons |
-| 3 | Side view | Vehicle diagram with icons |
-| 4 | Top view | Vehicle diagram with icons |
-| 5 | Rear view | Vehicle diagram with icons |
-| 6 | Notes | Project notes |
+| 1 | Cover | Agency, contact, VIN, logo, vehicle image |
+| 2 | Vehicle views | Front, side, top, and rear diagrams with icons |
+| 3 | Parts Manifest | Tabular shop part list (may be multiple slides) |
+| 4 | Build Notes | Project notes, installation notes, and delivery requirements |
 
-Manifest slides are appended last, then moved to position 1 via `_move_slides_to_position()`.
+Manifest slides are built dynamically and inserted after the four vehicle-view slots, immediately
+before the build-notes page.
 
 ### Rendering per View Slide
 1. Place vehicle background image.

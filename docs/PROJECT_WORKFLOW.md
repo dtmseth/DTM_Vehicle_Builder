@@ -58,7 +58,8 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    This creates a `BuildDraft` seeded from the unit's preset (if any) and stores the `draft_id` on the `IndividualUnit`.
 
 4. **Edit draft** — the embedded build editor (`#proj-build-editor`) loads the draft into the preview canvas
-   and manifest editor. Part and placement changes persist immediately; final-page notes save as they are typed.
+   and manifest editor. Part and placement changes persist immediately; installation notes and
+   delivery requirements save as they are typed.
    Project Details owns one shared note that is carried into every build draft without replacing unit-specific notes.
 
 5. **Preview / Edit in PowerPoint** — the per-build action is "📊 Preview / Edit in PowerPoint", not a separate Generate step. Behind the scenes:

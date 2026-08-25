@@ -182,64 +182,6 @@
         },
         {
           "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 292608,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 411480,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Install Type:  "
-                },
-                {
-                  "color": "#1A1A1A",
-                  "size_pt": 12.0,
-                  "text": "New Installation"
-                }
-              ]
-            }
-          ],
-          "text": "Install Type:  New Installation",
-          "top_emu": 2761488,
-          "width_emu": 5120640
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 292608,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 411480,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Other Orders:  "
-                },
-                {
-                  "color": "#1A1A1A",
-                  "size_pt": 12.0,
-                  "text": "0"
-                }
-              ]
-            }
-          ],
-          "text": "Other Orders:  0",
-          "top_emu": 2999232,
-          "width_emu": 5120640
-        },
-        {
-          "fill": {
             "color": "#F5F6FA",
             "type": "SOLID (1)"
           },
@@ -689,6 +631,2107 @@
             "color": "#1E2761",
             "type": "SOLID (1)"
           },
+          "height_emu": 566928,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "DTM_SLIDE_HEADER",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 11.0,
+                  "text": "FRONT VIEW — Sample Agency 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#CCCCFF",
+                  "size_pt": 11.0,
+                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "FRONT VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 3919665,
+          "image_ext": "png",
+          "image_sha256": "83848e0ad3a1419672591add88d956306c9d14bcafae3f6a4c41703d768b7d67",
+          "kind": "PICTURE (13)",
+          "left_emu": 365760,
+          "name": "Picture",
+          "top_emu": 1743487,
+          "width_emu": 4937760
+        },
+        {
+          "flip_h": true,
+          "height_emu": 1612239,
+          "image_ext": "png",
+          "image_sha256": "d6db9893e64e89183a10cbcbfeee2924c36cd49de27566d545764994ceff231d",
+          "kind": "PICTURE (13)",
+          "left_emu": 453221,
+          "name": "Picture",
+          "top_emu": 3249970,
+          "width_emu": 1405162
+        },
+        {
+          "height_emu": 1612239,
+          "image_ext": "png",
+          "image_sha256": "d6db9893e64e89183a10cbcbfeee2924c36cd49de27566d545764994ceff231d",
+          "kind": "PICTURE (13)",
+          "left_emu": 3810897,
+          "name": "Picture",
+          "top_emu": 3249970,
+          "width_emu": 1405162
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 1964609,
+          "name": "Picture",
+          "top_emu": 3406387,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 2433696,
+          "name": "Picture",
+          "top_emu": 3406387,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 2902783,
+          "name": "Picture",
+          "top_emu": 3406387,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 3371870,
+          "name": "Picture",
+          "top_emu": 3406387,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 767202,
+          "name": "Picture",
+          "top_emu": 4484295,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 84309,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 4569278,
+          "name": "Picture",
+          "top_emu": 4484295,
+          "width_emu": 332801
+        },
+        {
+          "height_emu": 480713,
+          "image_ext": "png",
+          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
+          "kind": "PICTURE (13)",
+          "left_emu": 2155149,
+          "name": "Picture",
+          "top_emu": 4207699,
+          "width_emu": 420809
+        },
+        {
+          "height_emu": 480713,
+          "image_ext": "png",
+          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
+          "kind": "PICTURE (13)",
+          "left_emu": 3093323,
+          "name": "Picture",
+          "top_emu": 4207699,
+          "width_emu": 420809
+        },
+        {
+          "height_emu": 739559,
+          "image_ext": "png",
+          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
+          "kind": "PICTURE (13)",
+          "left_emu": 2791284,
+          "name": "Picture",
+          "top_emu": 1844067,
+          "width_emu": 86713
+        },
+        {
+          "flip_v": true,
+          "height_emu": 162703,
+          "image_ext": "png",
+          "image_sha256": "fac8c4720820f0868e6bc30663e0c72a9ad4bc4ea12fc881ff103b4bc96ad64d",
+          "kind": "PICTURE (13)",
+          "left_emu": 2464861,
+          "name": "Picture",
+          "top_emu": 3798353,
+          "width_emu": 739559
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 256032,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "  7 INSTALLED COMPONENTS"
+                }
+              ]
+            }
+          ],
+          "text": "  7 INSTALLED COMPONENTS",
+          "top_emu": 603504,
+          "width_emu": 6796735
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Wing Wraps"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Wing Wraps  ■ NEW\nWESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1",
+          "top_emu": 950976,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 553212,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 553212,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 516636,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "TOP TUBE"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  ION  ·  Red/Blue/White  ·  QTY: 4"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENSE"
+                }
+              ]
+            }
+          ],
+          "text": "TOP TUBE  ■ NEW\nWHELEN  ·  ION  ·  Red/Blue/White  ·  QTY: 4\nSTANDARD LENSE",
+          "top_emu": 950976,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 676656,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "PIT BARS"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENSE"
+                }
+              ]
+            }
+          ],
+          "text": "PIT BARS  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
+          "top_emu": 1408176,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1513332,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1513332,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "UNDER PUSH BUMPER"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "UNDER PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
+          "top_emu": 1568196,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1970532,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1970532,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "UNDER PUSH BUMPER"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "UNDER PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
+          "top_emu": 2025396,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2130552,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2130552,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Front Interior Light Bar"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Front Interior Light Bar  ■ NEW\nWHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1",
+          "top_emu": 2185416,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2427732,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 2427732,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "TOP OF PUSH BUMPER"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  PIONEER  ·  White  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "TOP OF PUSH BUMPER  ■ NEW\nWHELEN  ·  PIONEER  ·  White  ·  QTY: 1",
+          "top_emu": 2482596,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#FFF3F0",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 420624,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "line_color": "#B83A3A",
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#B83A3A",
+                  "size_pt": 10.0,
+                  "text": "ADDITIONAL COMPONENTS NOT SHOWN"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#B83A3A",
+                  "size_pt": 11.0,
+                  "text": "  Radar  @  ON DASH"
+                }
+              ]
+            }
+          ],
+          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Radar  @  ON DASH",
+          "top_emu": 2939796,
+          "width_emu": 6796735
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 566928,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "DTM_SLIDE_HEADER",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 11.0,
+                  "text": "SIDE VIEW — Sample Agency 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#CCCCFF",
+                  "size_pt": 11.0,
+                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "SIDE VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 3273552,
+          "image_ext": "png",
+          "image_sha256": "18a013c268566b2278930500c789cb6217b3647c645d952827a1b747b8497650",
+          "kind": "PICTURE (13)",
+          "left_emu": 1592140,
+          "name": "Picture",
+          "top_emu": 3200400,
+          "width_emu": 9007415
+        },
+        {
+          "height_emu": 1490472,
+          "image_ext": "png",
+          "image_sha256": "a4690017dfa49e26b958b2bb4bbeabcdd3bf8b7562e80824cb90e5b6a3612252",
+          "kind": "PICTURE (13)",
+          "left_emu": 1381412,
+          "name": "Picture",
+          "top_emu": 4419295,
+          "width_emu": 1682495
+        },
+        {
+          "height_emu": 77724,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 8845181,
+          "name": "Picture",
+          "top_emu": 4012660,
+          "width_emu": 446227
+        },
+        {
+          "height_emu": 365760,
+          "image_ext": "png",
+          "image_sha256": "e9682ecaaba65f1db3a353594e59ba3197a8b28f3197d59d323e58e408a75492",
+          "kind": "PICTURE (13)",
+          "left_emu": 8950379,
+          "name": "Picture",
+          "top_emu": 3024066,
+          "width_emu": 109727
+        },
+        {
+          "height_emu": 77724,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 1840880,
+          "name": "Picture",
+          "rotation": 2.0,
+          "top_emu": 5649437,
+          "width_emu": 223113
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "  4 INSTALLED COMPONENTS"
+                }
+              ]
+            }
+          ],
+          "text": "  4 INSTALLED COMPONENTS",
+          "top_emu": 603504,
+          "width_emu": 11643055
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 329184,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 374904,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Wing Wraps"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Wing Wraps  ■ NEW\nWESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3207943,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3262807,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3308527,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "PIT BARS"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENSE"
+                }
+              ]
+            }
+          ],
+          "text": "PIT BARS  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6141567,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6196431,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6242151,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "LOWER CARGO WINDOW"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENSE"
+                }
+              ]
+            }
+          ],
+          "text": "LOWER CARGO WINDOW  ■ NEW\nWHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9075191,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9130055,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 9175775,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "REAR LEFT ROOF"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHIP STYLE  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 566928,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "DTM_SLIDE_HEADER",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 11.0,
+                  "text": "TOP VIEW — Sample Agency 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#CCCCFF",
+                  "size_pt": 11.0,
+                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "TOP VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 3273552,
+          "image_ext": "png",
+          "image_sha256": "11a54c3af69b72e3eeaa6f9d62f163054a25964fabc6db2a484de7191bacfed5",
+          "kind": "PICTURE (13)",
+          "left_emu": 2522142,
+          "name": "Picture",
+          "top_emu": 3200400,
+          "width_emu": 7147411
+        },
+        {
+          "height_emu": 77724,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 8338591,
+          "name": "Picture",
+          "rotation": 354.0,
+          "top_emu": 3718041,
+          "width_emu": 446227
+        },
+        {
+          "height_emu": 77724,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 8338591,
+          "name": "Picture",
+          "rotation": 6.0,
+          "top_emu": 5878586,
+          "width_emu": 446227
+        },
+        {
+          "height_emu": 41148,
+          "image_ext": "png",
+          "image_sha256": "2300401cbd24771cea171ba070ef350b971bdbed0b4d14937c048e8c1d227367",
+          "kind": "PICTURE (13)",
+          "left_emu": 5626920,
+          "name": "Picture",
+          "top_emu": 4816602,
+          "width_emu": 223113
+        },
+        {
+          "height_emu": 128016,
+          "image_ext": "png",
+          "image_sha256": "79745d85ef5e133786f4c3f3b65abc7fb6d10a0e963b30bd5b525780601682a9",
+          "kind": "PICTURE (13)",
+          "left_emu": 8347601,
+          "name": "Picture",
+          "top_emu": 5218371,
+          "width_emu": 128015
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 310896,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "  3 INSTALLED COMPONENTS"
+                }
+              ]
+            }
+          ],
+          "text": "  3 INSTALLED COMPONENTS",
+          "top_emu": 603504,
+          "width_emu": 11643055
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 274320,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 329184,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 374904,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "LOWER CARGO WINDOW"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "STANDARD LENSE"
+                }
+              ]
+            }
+          ],
+          "text": "LOWER CARGO WINDOW  ■ NEW\nWHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3207943,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3262807,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 3308527,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "REAR LEFT ROOF"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHIP STYLE  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6141567,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 54864
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 713232,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6196431,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 969264,
+          "width_emu": 2787319
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 685800,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6242151,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "HEADLINER"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  3\" ROUND  ·  RED/WHITE  ·  QTY: 2"
+                }
+              ]
+            }
+          ],
+          "text": "HEADLINER  ■ NEW\nWHELEN  ·  3\" ROUND  ·  RED/WHITE  ·  QTY: 2",
+          "top_emu": 1005840,
+          "width_emu": 2714167
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 566928,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "DTM_SLIDE_HEADER",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 11.0,
+                  "text": "REAR VIEW — Sample Agency 2"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#CCCCFF",
+                  "size_pt": 11.0,
+                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
+                }
+              ]
+            }
+          ],
+          "text": "REAR VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
+          "top_emu": 0,
+          "width_emu": 12191695
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 384048,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 0,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
+                }
+              ]
+            }
+          ],
+          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
+          "top_emu": 6473952,
+          "width_emu": 12191695
+        },
+        {
+          "height_emu": 4062713,
+          "image_ext": "png",
+          "image_sha256": "dca8f3ba110f2d126995a746a38c399d3571e861c429701a316258d26741d92b",
+          "kind": "PICTURE (13)",
+          "left_emu": 365760,
+          "name": "Picture",
+          "top_emu": 1671963,
+          "width_emu": 4937760
+        },
+        {
+          "height_emu": 766549,
+          "image_ext": "png",
+          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
+          "kind": "PICTURE (13)",
+          "left_emu": 2145726,
+          "name": "Picture",
+          "top_emu": 1857468,
+          "width_emu": 94010
+        },
+        {
+          "height_emu": 766549,
+          "image_ext": "png",
+          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
+          "kind": "PICTURE (13)",
+          "left_emu": 3429543,
+          "name": "Picture",
+          "top_emu": 1857468,
+          "width_emu": 94010
+        },
+        {
+          "height_emu": 87386,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 2168391,
+          "name": "Picture",
+          "top_emu": 2989278,
+          "width_emu": 344947
+        },
+        {
+          "height_emu": 87386,
+          "image_ext": "png",
+          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
+          "kind": "PICTURE (13)",
+          "left_emu": 3155943,
+          "name": "Picture",
+          "top_emu": 2989278,
+          "width_emu": 344947
+        },
+        {
+          "height_emu": 306619,
+          "image_ext": "png",
+          "image_sha256": "e9682ecaaba65f1db3a353594e59ba3197a8b28f3197d59d323e58e408a75492",
+          "kind": "PICTURE (13)",
+          "left_emu": 2097361,
+          "name": "Picture",
+          "top_emu": 1579594,
+          "width_emu": 91985
+        },
+        {
+          "height_emu": 87386,
+          "image_ext": "png",
+          "image_sha256": "2b6c29a3e2411b8d6d34e3947afb7605aca9b9a623c64f3bdb4ae032c9bf14f8",
+          "kind": "PICTURE (13)",
+          "left_emu": 1205528,
+          "name": "Picture",
+          "top_emu": 2440812,
+          "width_emu": 344947
+        },
+        {
+          "height_emu": 87386,
+          "image_ext": "png",
+          "image_sha256": "2b6c29a3e2411b8d6d34e3947afb7605aca9b9a623c64f3bdb4ae032c9bf14f8",
+          "kind": "PICTURE (13)",
+          "left_emu": 4118805,
+          "name": "Picture",
+          "top_emu": 2440812,
+          "width_emu": 344947
+        },
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 256032,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#FFFFFF",
+                  "size_pt": 10.0,
+                  "text": "  4 INSTALLED COMPONENTS"
+                }
+              ]
+            }
+          ],
+          "text": "  4 INSTALLED COMPONENTS",
+          "top_emu": 603504,
+          "width_emu": 6796735
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Rear Interior Light Bar"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "Rear Interior Light Bar  ■ NEW\nWHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1",
+          "top_emu": 950976,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 896112,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "ABOVE LICENSE PLATE"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  Red/Blue/White  ·  QTY: 2"
+                }
+              ]
+            }
+          ],
+          "text": "ABOVE LICENSE PLATE  ■ NEW\nWHELEN  ·  Red/Blue/White  ·  QTY: 2",
+          "top_emu": 950976,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5303520,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5349240,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 5394960,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "REAR LEFT ROOF"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHIP STYLE  ·  QTY: 1"
+                }
+              ]
+            }
+          ],
+          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
+          "top_emu": 1408176,
+          "width_emu": 3242919
+        },
+        {
+          "fill": {
+            "color": "#1A6FC8",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8738463,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 45720
+        },
+        {
+          "fill": {
+            "color": "#F0F6FF",
+            "type": "SOLID (1)"
+          },
+          "height_emu": 393192,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8784183,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": []
+            }
+          ],
+          "text": "",
+          "top_emu": 1353312,
+          "width_emu": 3316071
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 356616,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8829903,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "PILLARS"
+                },
+                {
+                  "bold": true,
+                  "color": "#1A6FC8",
+                  "size_pt": 10.0,
+                  "text": "  ■ NEW"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "color": "#555555",
+                  "size_pt": 11.0,
+                  "text": "WHELEN  ·  ION  ·  Red/Blue/Amber  ·  QTY: 6"
+                }
+              ]
+            }
+          ],
+          "text": "PILLARS  ■ NEW\nWHELEN  ·  ION  ·  Red/Blue/Amber  ·  QTY: 6",
+          "top_emu": 1408176,
+          "width_emu": 3242919
+        }
+      ]
+    },
+    {
+      "layout": "Blank",
+      "shapes": [
+        {
+          "fill": {
+            "color": "#1E2761",
+            "type": "SOLID (1)"
+          },
           "height_emu": 868680,
           "kind": "TEXT_BOX (17)",
           "left_emu": 0,
@@ -926,12 +2969,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                          "text": "Red/Blue/White · Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                  "text": "Red/Blue/White · Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1017,12 +3060,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                          "text": "Red/Blue/White · Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                  "text": "Red/Blue/White · Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1108,12 +3151,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Clear"
+                          "text": "Red/Blue/White · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Clear"
+                  "text": "Red/Blue/White · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1199,12 +3242,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/Amber  ·  Lens: Clear"
+                          "text": "Red/Blue/Amber · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/Amber  ·  Lens: Clear"
+                  "text": "Red/Blue/Amber · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1290,12 +3333,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                          "text": "Red/Blue/White · Lens: Standard Lense"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Standard Lense"
+                  "text": "Red/Blue/White · Lens: Standard Lense"
                 },
                 {
                   "paragraphs": [
@@ -1381,12 +3424,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "White  ·  Lens: Clear"
+                          "text": "White · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "White  ·  Lens: Clear"
+                  "text": "White · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1472,12 +3515,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE  ·  Lens: Clear"
+                          "text": "RED/WHITE · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE  ·  Lens: Clear"
+                  "text": "RED/WHITE · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1563,12 +3606,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Clear"
+                          "text": "Red/Blue/White · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Clear"
+                  "text": "Red/Blue/White · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1654,12 +3697,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/Amber  ·  Lens: Clear"
+                          "text": "Red/Blue/Amber · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/Amber  ·  Lens: Clear"
+                  "text": "Red/Blue/Amber · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1736,12 +3779,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "Red/Blue/White  ·  Lens: Clear"
+                          "text": "Red/Blue/White · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "Red/Blue/White  ·  Lens: Clear"
+                  "text": "Red/Blue/White · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -1827,12 +3870,12 @@
                         {
                           "color": "#555555",
                           "size_pt": 8.0,
-                          "text": "RED/WHITE  ·  Lens: Clear"
+                          "text": "RED/WHITE · Lens: Clear"
                         }
                       ]
                     }
                   ],
-                  "text": "RED/WHITE  ·  Lens: Clear"
+                  "text": "RED/WHITE · Lens: Clear"
                 },
                 {
                   "paragraphs": [
@@ -6683,2107 +8726,6 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 11.0,
-                  "text": "FRONT VIEW — Sample Agency 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#CCCCFF",
-                  "size_pt": 11.0,
-                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "FRONT VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 3919665,
-          "image_ext": "png",
-          "image_sha256": "83848e0ad3a1419672591add88d956306c9d14bcafae3f6a4c41703d768b7d67",
-          "kind": "PICTURE (13)",
-          "left_emu": 365760,
-          "name": "Picture",
-          "top_emu": 1743487,
-          "width_emu": 4937760
-        },
-        {
-          "flip_h": true,
-          "height_emu": 1612239,
-          "image_ext": "png",
-          "image_sha256": "d6db9893e64e89183a10cbcbfeee2924c36cd49de27566d545764994ceff231d",
-          "kind": "PICTURE (13)",
-          "left_emu": 453221,
-          "name": "Picture",
-          "top_emu": 3249970,
-          "width_emu": 1405162
-        },
-        {
-          "height_emu": 1612239,
-          "image_ext": "png",
-          "image_sha256": "d6db9893e64e89183a10cbcbfeee2924c36cd49de27566d545764994ceff231d",
-          "kind": "PICTURE (13)",
-          "left_emu": 3810897,
-          "name": "Picture",
-          "top_emu": 3249970,
-          "width_emu": 1405162
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 1964609,
-          "name": "Picture",
-          "top_emu": 3406387,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 2433696,
-          "name": "Picture",
-          "top_emu": 3406387,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 2902783,
-          "name": "Picture",
-          "top_emu": 3406387,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 3371870,
-          "name": "Picture",
-          "top_emu": 3406387,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 767202,
-          "name": "Picture",
-          "top_emu": 4484295,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 84309,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 4569278,
-          "name": "Picture",
-          "top_emu": 4484295,
-          "width_emu": 332801
-        },
-        {
-          "height_emu": 480713,
-          "image_ext": "png",
-          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
-          "kind": "PICTURE (13)",
-          "left_emu": 2155149,
-          "name": "Picture",
-          "top_emu": 4207699,
-          "width_emu": 420809
-        },
-        {
-          "height_emu": 480713,
-          "image_ext": "png",
-          "image_sha256": "59a0db35876a8e07f2cf0da1fe3ba4cc538702dc07dc76eab2ea42567f6705fe",
-          "kind": "PICTURE (13)",
-          "left_emu": 3093323,
-          "name": "Picture",
-          "top_emu": 4207699,
-          "width_emu": 420809
-        },
-        {
-          "height_emu": 739559,
-          "image_ext": "png",
-          "image_sha256": "8ad0b0b5e703b5d699a4ee492fd2014e9129465c72299ee1bc7841e41d4efab3",
-          "kind": "PICTURE (13)",
-          "left_emu": 2791284,
-          "name": "Picture",
-          "top_emu": 1844067,
-          "width_emu": 86713
-        },
-        {
-          "flip_v": true,
-          "height_emu": 162703,
-          "image_ext": "png",
-          "image_sha256": "fac8c4720820f0868e6bc30663e0c72a9ad4bc4ea12fc881ff103b4bc96ad64d",
-          "kind": "PICTURE (13)",
-          "left_emu": 2464861,
-          "name": "Picture",
-          "top_emu": 3798353,
-          "width_emu": 739559
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 256032,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "  7 INSTALLED COMPONENTS"
-                }
-              ]
-            }
-          ],
-          "text": "  7 INSTALLED COMPONENTS",
-          "top_emu": 603504,
-          "width_emu": 6796735
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Wing Wraps"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "Wing Wraps  ■ NEW\nWESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1",
-          "top_emu": 950976,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 553212,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 553212,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 516636,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "TOP TUBE"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  ION  ·  Red/Blue/White  ·  QTY: 4"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "STANDARD LENSE"
-                }
-              ]
-            }
-          ],
-          "text": "TOP TUBE  ■ NEW\nWHELEN  ·  ION  ·  Red/Blue/White  ·  QTY: 4\nSTANDARD LENSE",
-          "top_emu": 950976,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 676656,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "PIT BARS"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "STANDARD LENSE"
-                }
-              ]
-            }
-          ],
-          "text": "PIT BARS  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
-          "top_emu": 1408176,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1513332,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1513332,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "UNDER PUSH BUMPER"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "UNDER PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
-          "top_emu": 1568196,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1970532,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1970532,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "UNDER PUSH BUMPER"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  SA315P  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "UNDER PUSH BUMPER  ■ NEW\nWHELEN  ·  SA315P  ·  QTY: 1",
-          "top_emu": 2025396,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2130552,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2130552,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Front Interior Light Bar"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "Front Interior Light Bar  ■ NEW\nWHELEN  ·  FST  ·  Red/Blue/White  ·  QTY: 1",
-          "top_emu": 2185416,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2427732,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 2427732,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "TOP OF PUSH BUMPER"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  PIONEER  ·  White  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "TOP OF PUSH BUMPER  ■ NEW\nWHELEN  ·  PIONEER  ·  White  ·  QTY: 1",
-          "top_emu": 2482596,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#FFF3F0",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 420624,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "line_color": "#B83A3A",
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#B83A3A",
-                  "size_pt": 10.0,
-                  "text": "ADDITIONAL COMPONENTS NOT SHOWN"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#B83A3A",
-                  "size_pt": 11.0,
-                  "text": "  Radar  @  ON DASH"
-                }
-              ]
-            }
-          ],
-          "text": "ADDITIONAL COMPONENTS NOT SHOWN\n  Radar  @  ON DASH",
-          "top_emu": 2939796,
-          "width_emu": 6796735
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 566928,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "DTM_SLIDE_HEADER",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 11.0,
-                  "text": "SIDE VIEW — Sample Agency 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#CCCCFF",
-                  "size_pt": 11.0,
-                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "SIDE VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 3273552,
-          "image_ext": "png",
-          "image_sha256": "18a013c268566b2278930500c789cb6217b3647c645d952827a1b747b8497650",
-          "kind": "PICTURE (13)",
-          "left_emu": 1592140,
-          "name": "Picture",
-          "top_emu": 3200400,
-          "width_emu": 9007415
-        },
-        {
-          "height_emu": 1490472,
-          "image_ext": "png",
-          "image_sha256": "a4690017dfa49e26b958b2bb4bbeabcdd3bf8b7562e80824cb90e5b6a3612252",
-          "kind": "PICTURE (13)",
-          "left_emu": 1381412,
-          "name": "Picture",
-          "top_emu": 4419295,
-          "width_emu": 1682495
-        },
-        {
-          "height_emu": 77724,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 8845181,
-          "name": "Picture",
-          "top_emu": 4012660,
-          "width_emu": 446227
-        },
-        {
-          "height_emu": 365760,
-          "image_ext": "png",
-          "image_sha256": "e9682ecaaba65f1db3a353594e59ba3197a8b28f3197d59d323e58e408a75492",
-          "kind": "PICTURE (13)",
-          "left_emu": 8950379,
-          "name": "Picture",
-          "top_emu": 3024066,
-          "width_emu": 109727
-        },
-        {
-          "height_emu": 77724,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 1840880,
-          "name": "Picture",
-          "rotation": 2.0,
-          "top_emu": 5649437,
-          "width_emu": 223113
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "  4 INSTALLED COMPONENTS"
-                }
-              ]
-            }
-          ],
-          "text": "  4 INSTALLED COMPONENTS",
-          "top_emu": 603504,
-          "width_emu": 11643055
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 329184,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 374904,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Wing Wraps"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "Wing Wraps  ■ NEW\nWESTIN  ·  Wing Wrap EliteXD  ·  QTY: 1",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3207943,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3262807,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3308527,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "PIT BARS"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "STANDARD LENSE"
-                }
-              ]
-            }
-          ],
-          "text": "PIT BARS  ■ NEW\nWHELEN  ·  SURFACE MOUNT ION  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6141567,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6196431,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6242151,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "LOWER CARGO WINDOW"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "STANDARD LENSE"
-                }
-              ]
-            }
-          ],
-          "text": "LOWER CARGO WINDOW  ■ NEW\nWHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9075191,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9130055,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9175775,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "REAR LEFT ROOF"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHIP STYLE  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 566928,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "DTM_SLIDE_HEADER",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 11.0,
-                  "text": "TOP VIEW — Sample Agency 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#CCCCFF",
-                  "size_pt": 11.0,
-                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "TOP VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 3273552,
-          "image_ext": "png",
-          "image_sha256": "11a54c3af69b72e3eeaa6f9d62f163054a25964fabc6db2a484de7191bacfed5",
-          "kind": "PICTURE (13)",
-          "left_emu": 2522142,
-          "name": "Picture",
-          "top_emu": 3200400,
-          "width_emu": 7147411
-        },
-        {
-          "height_emu": 77724,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 8338591,
-          "name": "Picture",
-          "rotation": 354.0,
-          "top_emu": 3718041,
-          "width_emu": 446227
-        },
-        {
-          "height_emu": 77724,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 8338591,
-          "name": "Picture",
-          "rotation": 6.0,
-          "top_emu": 5878586,
-          "width_emu": 446227
-        },
-        {
-          "height_emu": 41148,
-          "image_ext": "png",
-          "image_sha256": "2300401cbd24771cea171ba070ef350b971bdbed0b4d14937c048e8c1d227367",
-          "kind": "PICTURE (13)",
-          "left_emu": 5626920,
-          "name": "Picture",
-          "top_emu": 4816602,
-          "width_emu": 223113
-        },
-        {
-          "height_emu": 128016,
-          "image_ext": "png",
-          "image_sha256": "79745d85ef5e133786f4c3f3b65abc7fb6d10a0e963b30bd5b525780601682a9",
-          "kind": "PICTURE (13)",
-          "left_emu": 8347601,
-          "name": "Picture",
-          "top_emu": 5218371,
-          "width_emu": 128015
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "  3 INSTALLED COMPONENTS"
-                }
-              ]
-            }
-          ],
-          "text": "  3 INSTALLED COMPONENTS",
-          "top_emu": 603504,
-          "width_emu": 11643055
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 329184,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 374904,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "LOWER CARGO WINDOW"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "STANDARD LENSE"
-                }
-              ]
-            }
-          ],
-          "text": "LOWER CARGO WINDOW  ■ NEW\nWHELEN  ·  MEGA T-SERIES  ·  Red/Blue/White  ·  QTY: 2\nSTANDARD LENSE",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3207943,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3262807,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 3308527,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "REAR LEFT ROOF"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHIP STYLE  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6141567,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 54864
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 713232,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6196431,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 969264,
-          "width_emu": 2787319
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 685800,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 6242151,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "HEADLINER"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  3\" ROUND  ·  RED/WHITE  ·  QTY: 2"
-                }
-              ]
-            }
-          ],
-          "text": "HEADLINER  ■ NEW\nWHELEN  ·  3\" ROUND  ·  RED/WHITE  ·  QTY: 2",
-          "top_emu": 1005840,
-          "width_emu": 2714167
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 566928,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "DTM_SLIDE_HEADER",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 11.0,
-                  "text": "REAR VIEW — Sample Agency 2"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#CCCCFF",
-                  "size_pt": 11.0,
-                  "text": "K-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1"
-                }
-              ]
-            }
-          ],
-          "text": "REAR VIEW — Sample Agency 2\nK-9  |  2026 Ford Police Interceptor Utility  |  K-9 #1",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Sample Agency 2   •   2026 Ford Police Interceptor Utility   •   K-9 #1   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 4062713,
-          "image_ext": "png",
-          "image_sha256": "dca8f3ba110f2d126995a746a38c399d3571e861c429701a316258d26741d92b",
-          "kind": "PICTURE (13)",
-          "left_emu": 365760,
-          "name": "Picture",
-          "top_emu": 1671963,
-          "width_emu": 4937760
-        },
-        {
-          "height_emu": 766549,
-          "image_ext": "png",
-          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
-          "kind": "PICTURE (13)",
-          "left_emu": 2145726,
-          "name": "Picture",
-          "top_emu": 1857468,
-          "width_emu": 94010
-        },
-        {
-          "height_emu": 766549,
-          "image_ext": "png",
-          "image_sha256": "cf1aada4400cd7a5e968144fd25af08b1cc8b22b81e8275baa0243d80ea6175f",
-          "kind": "PICTURE (13)",
-          "left_emu": 3429543,
-          "name": "Picture",
-          "top_emu": 1857468,
-          "width_emu": 94010
-        },
-        {
-          "height_emu": 87386,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 2168391,
-          "name": "Picture",
-          "top_emu": 2989278,
-          "width_emu": 344947
-        },
-        {
-          "height_emu": 87386,
-          "image_ext": "png",
-          "image_sha256": "8ecd81c1f9dcddd0bb882752814a85d9c78e9e84646d5be56ec7d4baf4d07b37",
-          "kind": "PICTURE (13)",
-          "left_emu": 3155943,
-          "name": "Picture",
-          "top_emu": 2989278,
-          "width_emu": 344947
-        },
-        {
-          "height_emu": 306619,
-          "image_ext": "png",
-          "image_sha256": "e9682ecaaba65f1db3a353594e59ba3197a8b28f3197d59d323e58e408a75492",
-          "kind": "PICTURE (13)",
-          "left_emu": 2097361,
-          "name": "Picture",
-          "top_emu": 1579594,
-          "width_emu": 91985
-        },
-        {
-          "height_emu": 87386,
-          "image_ext": "png",
-          "image_sha256": "2b6c29a3e2411b8d6d34e3947afb7605aca9b9a623c64f3bdb4ae032c9bf14f8",
-          "kind": "PICTURE (13)",
-          "left_emu": 1205528,
-          "name": "Picture",
-          "top_emu": 2440812,
-          "width_emu": 344947
-        },
-        {
-          "height_emu": 87386,
-          "image_ext": "png",
-          "image_sha256": "2b6c29a3e2411b8d6d34e3947afb7605aca9b9a623c64f3bdb4ae032c9bf14f8",
-          "kind": "PICTURE (13)",
-          "left_emu": 4118805,
-          "name": "Picture",
-          "top_emu": 2440812,
-          "width_emu": 344947
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 256032,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "  4 INSTALLED COMPONENTS"
-                }
-              ]
-            }
-          ],
-          "text": "  4 INSTALLED COMPONENTS",
-          "top_emu": 603504,
-          "width_emu": 6796735
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "Rear Interior Light Bar"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "Rear Interior Light Bar  ■ NEW\nWHELEN  ·  RST  ·  Red/Blue/Amber  ·  QTY: 1",
-          "top_emu": 950976,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 896112,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "ABOVE LICENSE PLATE"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  Red/Blue/White  ·  QTY: 2"
-                }
-              ]
-            }
-          ],
-          "text": "ABOVE LICENSE PLATE  ■ NEW\nWHELEN  ·  Red/Blue/White  ·  QTY: 2",
-          "top_emu": 950976,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5303520,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5349240,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 5394960,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "REAR LEFT ROOF"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHIP STYLE  ·  QTY: 1"
-                }
-              ]
-            }
-          ],
-          "text": "REAR LEFT ROOF  ■ NEW\nWHIP STYLE  ·  QTY: 1",
-          "top_emu": 1408176,
-          "width_emu": 3242919
-        },
-        {
-          "fill": {
-            "color": "#1A6FC8",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8738463,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 45720
-        },
-        {
-          "fill": {
-            "color": "#F0F6FF",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 393192,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8784183,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 1353312,
-          "width_emu": 3316071
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 356616,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 8829903,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "PILLARS"
-                },
-                {
-                  "bold": true,
-                  "color": "#1A6FC8",
-                  "size_pt": 10.0,
-                  "text": "  ■ NEW"
-                }
-              ]
-            },
-            {
-              "runs": [
-                {
-                  "color": "#555555",
-                  "size_pt": 11.0,
-                  "text": "WHELEN  ·  ION  ·  Red/Blue/Amber  ·  QTY: 6"
-                }
-              ]
-            }
-          ],
-          "text": "PILLARS  ■ NEW\nWHELEN  ·  ION  ·  Red/Blue/Amber  ·  QTY: 6",
-          "top_emu": 1408176,
-          "width_emu": 3242919
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 566928,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "DTM_SLIDE_HEADER",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 11.0,
                   "text": "BUILD NOTES — Sample Agency 2"
                 }
               ]
@@ -8941,111 +8883,13 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "CUSTOMER REQUESTS"
-                }
-              ]
-            }
-          ],
-          "text": "CUSTOMER REQUESTS",
-          "top_emu": 2523744,
-          "width_emu": 11430000
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 201168,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 548640,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "color": "#AAAAAA",
-                  "italic": true,
-                  "size_pt": 10.0,
-                  "text": "No customer requests specified."
-                }
-              ]
-            }
-          ],
-          "text": "No customer requests specified.",
-          "top_emu": 2816352,
-          "width_emu": 11247120
-        },
-        {
-          "fill": {
-            "color": "#ECEEF6",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 237744,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 365760,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "SPECIAL FABRICATION NOTES"
-                }
-              ]
-            }
-          ],
-          "text": "SPECIAL FABRICATION NOTES",
-          "top_emu": 3145536,
-          "width_emu": 11430000
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 201168,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 548640,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "color": "#AAAAAA",
-                  "italic": true,
-                  "size_pt": 10.0,
-                  "text": "No special fabrication notes specified."
-                }
-              ]
-            }
-          ],
-          "text": "No special fabrication notes specified.",
-          "top_emu": 3438144,
-          "width_emu": 11247120
-        },
-        {
-          "fill": {
-            "color": "#ECEEF6",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 237744,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 365760,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
                   "text": "DELIVERY REQUIREMENTS"
                 }
               ]
             }
           ],
           "text": "DELIVERY REQUIREMENTS",
-          "top_emu": 3767328,
+          "top_emu": 2523744,
           "width_emu": 11430000
         },
         {
@@ -9069,56 +8913,7 @@
             }
           ],
           "text": "No delivery requirements specified.",
-          "top_emu": 4059936,
-          "width_emu": 11247120
-        },
-        {
-          "fill": {
-            "color": "#ECEEF6",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 237744,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 365760,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#1E2761",
-                  "size_pt": 10.0,
-                  "text": "FINAL APPROVALS"
-                }
-              ]
-            }
-          ],
-          "text": "FINAL APPROVALS",
-          "top_emu": 4389120,
-          "width_emu": 11430000
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 201168,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 548640,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "color": "#AAAAAA",
-                  "italic": true,
-                  "size_pt": 10.0,
-                  "text": "Pending final inspection sign-off."
-                }
-              ]
-            }
-          ],
-          "text": "Pending final inspection sign-off.",
-          "top_emu": 4681728,
+          "top_emu": 2816352,
           "width_emu": 11247120
         }
       ]

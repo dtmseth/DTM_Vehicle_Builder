@@ -599,18 +599,12 @@ def fill_overview(slide, project) -> None:
     RIGHT_W  = Inches(5.85)
 
     # Left: Quote + Sales info
-    reused_count  = sum(1 for p in parts if _is_reused(p))
-    install_type  = "Transfer / Retrofit" if reused_count else "New Installation"
     _textbox(slide, L, col_top, LEFT_W, Inches(0.25),
              "QUOTE & SALES INFORMATION", font_size=10, bold=True, color=DTM_NAVY)
     left_y = col_top + Inches(0.25)
-    project_total = int(info.get("project_total_units", 0) or 0)
-    other_orders  = str(max(0, project_total - 1)) if project_total > 0 else "0"
     left_y = _kv_block(slide, [
         ("Sales Rep",    sales_rep),
         ("Quote #",      quote_num),
-        ("Install Type", install_type),
-        ("Other Orders", other_orders),
     ], L, left_y, LEFT_W)
 
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)
@@ -673,6 +667,7 @@ def fill_overview(slide, project) -> None:
     # ── Stats / tiles row ─────────────────────────────────────────────────────
     tiles_top = col_top + card_h + Inches(0.18)
 
+    reused_count = sum(1 for p in parts if _is_reused(p))
     lights_count = sum(
         getattr(p, "quantity", 1) or 1
         for p in parts
@@ -681,20 +676,20 @@ def fill_overview(slide, project) -> None:
     )
 
     light_brands = sorted({
-        getattr(p, "manufacturer", "").strip()
+        _customer_manufacturer(getattr(p, "manufacturer", ""))
         for p in parts
         if getattr(p, "category", "") in MANIFEST_LIGHT_CATS
-        and getattr(p, "manufacturer", "").strip()
+        and _customer_manufacturer(getattr(p, "manufacturer", ""))
     })
     brands_str = ", ".join(light_brands) if light_brands else "—"
 
     # --- Cage + Tray combined ---
     cage_part  = _find_part(parts, "front partition", "partition")
-    cage_value = (getattr(cage_part, "part_number", "") or getattr(cage_part, "manufacturer", "") or "Configured") if cage_part else "None"
+    cage_value = (getattr(cage_part, "part_number", "") or _customer_manufacturer(getattr(cage_part, "manufacturer", "")) or "Configured") if cage_part else "None"
     equip_part = _find_part(parts, "equipment tray")
     if equip_part:
         equip_value = (
-            getattr(equip_part, "manufacturer", "")
+            _customer_manufacturer(getattr(equip_part, "manufacturer", ""))
             or getattr(equip_part, "part_number", "")
             or getattr(equip_part, "name", "")
             or "Configured"
@@ -706,7 +701,7 @@ def fill_overview(slide, project) -> None:
     light_ctrl = _find_part(parts, "light controller", "lights controller")
     if light_ctrl:
         lc_lines = list(filter(None, [
-            getattr(light_ctrl, "manufacturer", ""),
+            _customer_manufacturer(getattr(light_ctrl, "manufacturer", "")),
             getattr(light_ctrl, "part_number",  ""),
         ]))
         lighting_value = " · ".join(lc_lines) if lc_lines else "—"
@@ -715,7 +710,7 @@ def fill_overview(slide, project) -> None:
     camera_part = _find_part(parts, "camera dvr", "dvr", "camera system")
     if camera_part:
         cam_lines = list(filter(None, [
-            getattr(camera_part, "manufacturer", ""),
+            _customer_manufacturer(getattr(camera_part, "manufacturer", "")),
             getattr(camera_part, "part_number",  ""),
         ]))
         camera_value = " · ".join(cam_lines) if cam_lines else "—"
@@ -726,8 +721,8 @@ def fill_overview(slide, project) -> None:
     _BUMPER_KEYWORDS = ["push bumper", "pit bar", "wing wrap", "wire cover"]
     bumper_parts = [p for p in parts
                     if any(kw in getattr(p, "name", "").lower() for kw in _BUMPER_KEYWORDS)]
-    bumper_mfg   = next((getattr(p, "manufacturer", "") for p in bumper_parts
-                         if getattr(p, "manufacturer", "")), "")
+    bumper_mfg   = next((_customer_manufacturer(getattr(p, "manufacturer", "")) for p in bumper_parts
+                         if _customer_manufacturer(getattr(p, "manufacturer", ""))), "")
 
     def _has(keyword: str) -> bool:
         return any(keyword.lower() in getattr(p, "name", "").lower() for p in bumper_parts)
@@ -1055,17 +1050,23 @@ def _catalog_detail(raw, part_number: str, catalog) -> tuple[str, str, bool, dic
 def _manifest_part_identity(entry: _ManifestEntry) -> tuple[str, str]:
     """Return a manifest row's clear product name and model/SKU support text."""
     prefix = "↳ " * entry.indent
-    primary = f"{prefix}{entry.name}".strip()
-    part_number = entry.part_number.strip()
+    primary = f"{prefix}{_customer_visible_text(entry.name)}".strip()
+    part_number = _customer_visible_text(entry.part_number)
     if part_number and entry.is_sku:
         part_number = f"{'SKUs' if ' / ' in part_number else 'SKU'}: {part_number}"
-    secondary = "  ·  ".join(filter(None, [entry.manufacturer, part_number]))
+    secondary = "  ·  ".join(filter(None, [
+        _customer_manufacturer(entry.manufacturer), part_number,
+    ]))
     return primary, secondary
 
 
 def _manifest_details(entry: _ManifestEntry) -> tuple[str, str, str]:
     """Return sales description, configured detail, and user comment."""
-    return entry.description, entry.detail, entry.comment
+    return (
+        _customer_visible_text(entry.description),
+        _customer_visible_text(entry.detail),
+        _customer_visible_text(entry.comment),
+    )
 
 
 def _manifest_line_count(text: str, width_inches: float) -> int:
@@ -1289,17 +1290,66 @@ def _manifest_entry_for_part(pp, catalog, *, indent: int = 0,
     notes = _customer_manifest_notes(getattr(raw, "notes", ""))
     return _ManifestEntry(
         raw=raw,
-        location=_clean_location(pp),
+        location=_customer_visible_text(_clean_location(pp)),
         name=_customer_manifest_name(raw, display_name),
-        manufacturer=str(getattr(raw, "manufacturer", "") or "").strip() or catalog_manufacturer,
-        part_number=part_number,
+        manufacturer=_customer_manufacturer(
+            str(getattr(raw, "manufacturer", "") or "").strip() or catalog_manufacturer
+        ),
+        part_number=_customer_visible_text(part_number),
         quantity=getattr(raw, "quantity", ""),
-        description=description,
+        description=_customer_sales_description(description, raw),
         detail="\n".join(filter(None, [visual, notes])),
-        comment=str(getattr(raw, "comment", "") or "").strip(),
+        comment=_customer_visible_text(getattr(raw, "comment", "")),
         is_sku=is_sku,
         indent=indent,
     )
+
+
+_QB_IMPORT_REFERENCE = re.compile(
+    r"\s*\(\s*(?:QB|QBO|QuickBooks)\s+Import\s*\)|\b(?:QB|QBO|QuickBooks)\s+Import\b",
+    re.IGNORECASE,
+)
+
+
+def _customer_visible_text(value: object) -> str:
+    """Strip accounting-source labels that do not belong in a build sheet."""
+    cleaned_lines = []
+    for line in str(value or "").splitlines():
+        clean = _QB_IMPORT_REFERENCE.sub("", line)
+        clean = re.sub(r"[ \t]{2,}", " ", clean).strip(" \t·-")
+        if clean:
+            cleaned_lines.append(clean)
+    return "\n".join(cleaned_lines).strip()
+
+
+def _customer_manufacturer(value: object) -> str:
+    """Return a manufacturer label without internal QB-import provenance."""
+    return _customer_visible_text(value)
+
+
+def _customer_sales_description(value: object, raw: object | None = None) -> str:
+    """Remove stale allocation quantities from customer-facing descriptions.
+
+    The live quantity and location columns own those values. Some historical
+    QBO descriptions contain a fixed ``(x2 cargo, x3 cage)`` recipe that is no
+    longer true once round lights are allocated or edited in Builder.
+    """
+    allocation = (getattr(raw, "picker_config", {}) or {}).get("location_allocation")
+    part_number = str(getattr(raw, "part_number", "") or "").strip().upper()
+    round_light_description = (
+        part_number in {"3SBCCDCR", "3SC0CDCR", "3SRCCDCR"}
+        or '3" ROUND' in str(value or "").upper()
+    )
+    lines = []
+    for line in str(value or "").splitlines():
+        if (allocation or round_light_description) and re.match(
+            r"^\s*\(\s*x\d+\b", line, re.IGNORECASE,
+        ):
+            continue
+        clean = _customer_visible_text(line)
+        if clean:
+            lines.append(clean)
+    return "\n".join(lines).strip()
 
 
 def _customer_manifest_name(raw, display_name: str | None = None) -> str:
@@ -1314,16 +1364,17 @@ def _customer_manifest_name(raw, display_name: str | None = None) -> str:
     part_type = str(getattr(raw, "part_type", "") or "").strip().casefold()
     if part_type == "siren_speaker" or re.fullmatch(r"siren speaker\s+\d+", name, re.I):
         return "Siren Speaker(s)"
-    return name
+    return _customer_visible_text(name)
 
 
 def _customer_manifest_notes(value: object) -> str:
     """Remove picker-process language while preserving meaningful shop notes."""
     lines = str(value or "").splitlines()
     return "\n".join(
-        line.strip()
+        _customer_visible_text(line)
         for line in lines
         if "guided system" not in line.casefold()
+        and _customer_visible_text(line)
     ).strip()
 
 
@@ -1385,7 +1436,7 @@ def _manifest_visual_detail(raw, *, component: dict | None = None,
         except (TypeError, ValueError):
             percentage = 0
         if percentage:
-            return f"{percentage}% tint\n$65 per selected window"
+            return f"{percentage}% tint"
     color = (
         str(component.get("color", "") or "").strip()
         or (_color_label(raw) if include_parent_visual else "")
@@ -1535,10 +1586,10 @@ def _manifest_component_entries(parent: _ManifestEntry, catalog, *,
                 component.get("location", ""), parent.name
             ) or parent.location,
             name=row_name,
-            manufacturer=catalog_manufacturer or parent.manufacturer,
-            part_number=part_number,
+            manufacturer=_customer_manufacturer(catalog_manufacturer or parent.manufacturer),
+            part_number=_customer_visible_text(part_number),
             quantity=component.get("quantity", 1),
-            description=description,
+            description=_customer_sales_description(description, parent.raw),
             detail="\n".join(filter(None, [visual_detail, component_detail, notes])),
             comment=parent.comment if promote_sku and promoted_sku_index == 0 else "",
             is_sku=is_sku or bool(part_number),
@@ -2147,8 +2198,8 @@ def _card_content_height(part, inner_w_in: float,
     headline = _legend_headline(part) + f"  {badge_text}"
     h = pad_top + _est_wrapped_lines(headline, inner_w_in, 10) * lh_name
 
-    mfg   = getattr(part, "manufacturer", "") or ""
-    pnum  = getattr(part, "part_number",   "") or ""
+    mfg   = _customer_manufacturer(getattr(part, "manufacturer", ""))
+    pnum  = _customer_visible_text(getattr(part, "part_number", ""))
     color = _color_label(part)
     specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
     if specs:
@@ -2313,8 +2364,8 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
         badge.font.color.rgb = badge_color
 
         # Line 2: mfg · part# · color · qty (no lens here)
-        mfg   = getattr(part, "manufacturer", "") or ""
-        pnum  = getattr(part, "part_number",   "") or ""
+        mfg   = _customer_manufacturer(getattr(part, "manufacturer", ""))
+        pnum  = _customer_visible_text(getattr(part, "part_number", ""))
         color = _color_label(part)
         specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
         if specs:
@@ -2516,8 +2567,8 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             bdg.font.color.rgb = badge_color
 
             # Line 2: mfg · part# · color · qty (no lens)
-            mfg   = getattr(part, "manufacturer", "") or ""
-            pnum  = getattr(part, "part_number",   "") or ""
+            mfg   = _customer_manufacturer(getattr(part, "manufacturer", ""))
+            pnum  = _customer_visible_text(getattr(part, "part_number", ""))
             color = _color_label(part)
             specs = "  ·  ".join(filter(None, [mfg, pnum, color, _quantity_label(part)]))
             if specs:
@@ -2638,10 +2689,7 @@ def place_specify_palette(slide, category: str, img_box, y_offset_emu: int = 0):
 NOTES_CATEGORIES = [
     "PROJECT-WIDE NOTES",
     "INSTALLATION NOTES",
-    "CUSTOMER REQUESTS",
-    "SPECIAL FABRICATION NOTES",
     "DELIVERY REQUIREMENTS",
-    "FINAL APPROVALS",
 ]
 
 
@@ -2660,10 +2708,7 @@ def fill_notes(slide, notes: dict[str, list[str]]) -> None:
     _placeholders = {
         "PROJECT-WIDE NOTES":      "No project-wide notes specified.",
         "INSTALLATION NOTES":      "No installation notes specified.",
-        "CUSTOMER REQUESTS":       "No customer requests specified.",
-        "SPECIAL FABRICATION NOTES": "No special fabrication notes specified.",
         "DELIVERY REQUIREMENTS":   "No delivery requirements specified.",
-        "FINAL APPROVALS":         "Pending final inspection sign-off.",
     }
 
     for section in NOTES_CATEGORIES:
@@ -2687,12 +2732,19 @@ def fill_notes(slide, notes: dict[str, list[str]]) -> None:
         section_notes = notes.get(section, []) if isinstance(notes, dict) else []
         if section_notes:
             for idx, note in enumerate(section_notes):
-                if y + line_h > top + height - Inches(0.1):
+                note_width = width - Inches(0.2)
+                note_lines = _manifest_line_count(
+                    f"{idx + 1}.  {note}", float(note_width) / 914400,
+                )
+                note_h = max(line_h, Inches(0.06 + 0.18 * note_lines))
+                if y + note_h > top + height - Inches(0.1):
                     break
                 tb  = slide.shapes.add_textbox(left + Inches(0.2), y,
-                                                width - Inches(0.2), line_h)
+                                                note_width, note_h)
                 tf2 = tb.text_frame
                 tf2.word_wrap = True
+                tf2.margin_top = 0
+                tf2.margin_bottom = 0
                 p2  = tf2.paragraphs[0]
                 nr  = p2.add_run()
                 nr.text           = f"{idx + 1}.  "
@@ -2703,7 +2755,7 @@ def fill_notes(slide, notes: dict[str, list[str]]) -> None:
                 br.text           = note
                 br.font.size      = Pt(11)
                 br.font.color.rgb = DTM_DARKTEXT
-                y += line_h
+                y += note_h
         else:
             tb  = slide.shapes.add_textbox(left + Inches(0.2), y,
                                             width - Inches(0.2), line_h)

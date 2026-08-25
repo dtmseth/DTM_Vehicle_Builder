@@ -28,6 +28,7 @@ from dtm_buildsheet.ppt_helpers import (
     _badge_label,
     _legend_callouts,
     add_render_exception_slides,
+    fill_notes,
     place_legend,
 )
 
@@ -82,6 +83,88 @@ def test_render_has_multiple_slides(rendered_pptx):
     assert len(prs.slides) >= 3
 
 
+def test_export_page_order_is_cover_then_vehicle_views_then_manifest_then_notes(rendered_pptx):
+    prs = Presentation(str(rendered_pptx))
+    slide_text = [
+        "\n".join(
+            getattr(shape, "text", "")
+            for shape in slide.shapes
+            if getattr(shape, "has_text_frame", False)
+        )
+        for slide in prs.slides
+    ]
+    view_indices = [
+        index for index, text in enumerate(slide_text)
+        if any(f"{view} VIEW" in text for view in ("FRONT", "SIDE", "TOP", "REAR"))
+    ]
+    manifest_indices = [
+        index for index, text in enumerate(slide_text) if "PARTS MANIFEST" in text
+    ]
+    notes_index = next(index for index, text in enumerate(slide_text) if "BUILD NOTES" in text)
+
+    assert view_indices
+    assert manifest_indices
+    assert min(view_indices) == 1
+    assert max(view_indices) < min(manifest_indices) < notes_index
+
+
+def test_cover_and_customer_output_hide_removed_and_internal_fields(rendered_pptx):
+    prs = Presentation(str(rendered_pptx))
+    cover_text = "\n".join(
+        getattr(shape, "text", "")
+        for shape in prs.slides[0].shapes
+        if getattr(shape, "has_text_frame", False)
+    )
+    all_text = "\n".join(
+        getattr(shape, "text", "")
+        for slide in prs.slides
+        for shape in slide.shapes
+        if getattr(shape, "has_text_frame", False)
+    )
+
+    assert "INSTALL TYPE" not in cover_text.upper()
+    assert "OTHER ORDERS" not in cover_text.upper()
+    assert "QB IMPORT" not in all_text.upper()
+
+
+def test_build_notes_keep_only_requested_sections_and_do_not_overlap(config):
+    prs = Presentation(str(config.paths.templates_dir / "build_sheet_template.pptx"))
+    notes_slide = prs.slides[5]
+    long_installation_note = (
+        "Route the controller harness behind the center console, protect every pass-through, "
+        "leave a service loop near the cage, label both ends, and confirm the final routing "
+        "with the shop lead before reinstalling the trim panels."
+    )
+    fill_notes(notes_slide, {
+        "PROJECT-WIDE NOTES": ["Keep the vehicle available for inspection."],
+        "INSTALLATION NOTES": [long_installation_note],
+        "DELIVERY REQUIREMENTS": ["Call fleet before delivery."],
+        "CUSTOMER REQUESTS": ["This retired section must not render."],
+        "SPECIAL FABRICATION NOTES": ["This retired section must not render."],
+        "FINAL APPROVALS": ["This retired section must not render."],
+    })
+
+    text_shapes = [
+        shape for shape in notes_slide.shapes
+        if getattr(shape, "has_text_frame", False)
+    ]
+    rendered_text = "\n".join(shape.text for shape in text_shapes)
+    assert "PROJECT-WIDE NOTES" in rendered_text
+    assert "INSTALLATION NOTES" in rendered_text
+    assert "DELIVERY REQUIREMENTS" in rendered_text
+    assert "CUSTOMER REQUESTS" not in rendered_text
+    assert "SPECIAL FABRICATION" not in rendered_text
+    assert "FINAL APPROVALS" not in rendered_text
+
+    install_note_shape = next(
+        shape for shape in text_shapes if "Route the controller harness" in shape.text
+    )
+    delivery_header = next(
+        shape for shape in text_shapes if shape.text.strip() == "DELIVERY REQUIREMENTS"
+    )
+    assert install_note_shape.top + install_note_shape.height <= delivery_header.top
+
+
 @pytest.mark.parametrize(
     ("anchor_y", "expected"),
     [
@@ -125,7 +208,7 @@ def test_render_second_sample(tmp_path_factory, test_build_input, config):
     assert len(prs.slides) > 0
 
 
-def test_dual_shroud_renders_housing_around_two_t_series_heads(tmp_path, config):
+def test_dual_shroud_groups_pairs_without_dark_outline_box(tmp_path, config):
     paths = AppPaths(
         project_root=config.paths.project_root,
         package_dir=config.paths.package_dir,
@@ -174,10 +257,12 @@ def test_dual_shroud_renders_housing_around_two_t_series_heads(tmp_path, config)
                 for child in children
             )
             picture_count = sum(child.shape_type == MSO_SHAPE_TYPE.PICTURE for child in children)
-            if has_housing and picture_count >= 2:
-                compound_groups.append(shape)
+            if picture_count >= 2:
+                compound_groups.append((shape, has_housing, picture_count))
 
-    assert compound_groups, "expected a rounded shroud housing grouped with two T-Series pictures"
+    assert compound_groups, "expected the paired T-Series placement to remain grouped"
+    assert all(not has_housing for _shape, has_housing, _count in compound_groups)
+    assert sum(picture_count for _shape, _housing, picture_count in compound_groups) >= 4
 
 
 def test_concealed_speaker_renders_translucent_with_mount_callout(tmp_path, config):
@@ -408,6 +493,55 @@ def test_manifest_combines_standard_duo_skus_into_one_compact_shop_row():
     assert entries[0].location == "UPPER GRILLE"
     assert entries[0].detail == "Blue/White (passenger)  ·  Red/White (driver)  ·  Lens: Smoked"
     assert "\n" not in entries[0].detail
+
+
+def test_manifest_uses_live_round_light_quantity_without_stale_qb_recipe(config):
+    raw = SimpleNamespace(
+        name="Rear Seat Cargo Lights", include=True, notes="", comment="",
+        part_number="3SRCCDCR", location="LOWER KICK PANELS",
+        part_type="rear_seat_cargo_lights", line_id="round-live",
+        parent_line_id="", manufacturer="Unassigned (QB Import)",
+        raw_color="Red/White", lens="Clear", quantity=2,
+        new_or_used="New", source="", components=[],
+        picker_config={},
+    )
+    planned = SimpleNamespace(
+        category="warning", render_kind="light", placements=[], raw=raw,
+    )
+
+    entry = _manifest_groups([planned], config.paths)[0][1][0]
+
+    assert entry.quantity == 2
+    assert entry.description == 'WHELEN 3" ROUND SPLIT RED/WHT COMPART'
+    assert "x2 REAR CARGO" not in entry.description
+    assert "x3 CAGE" not in entry.description
+    assert entry.manufacturer == "Unassigned"
+
+
+def test_manifest_window_tint_keeps_percentage_but_hides_pricing(config):
+    raw = SimpleNamespace(
+        name="Window Tint", include=True, notes="", comment="",
+        part_number="TINT", location="SELECTED WINDOWS", part_type="window_tint",
+        line_id="tint", parent_line_id="", manufacturer="Unassigned (QB Import)",
+        raw_color="", lens="", quantity=3, new_or_used="New", source="",
+        components=[], picker_config={
+            "window_tint": {
+                "windows": ["windshield_brow", "driver_front", "passenger_front"],
+                "percentage": 35,
+                "unit_price": 65,
+            },
+        },
+    )
+    planned = SimpleNamespace(
+        category="custom", render_kind="none", placements=[], raw=raw,
+    )
+
+    entry = _manifest_groups([planned], config.paths)[0][1][0]
+
+    assert "35% tint" in entry.detail
+    assert "$" not in entry.detail
+    assert "65" not in entry.detail
+    assert entry.manufacturer == "Unassigned"
 
 
 def test_build_legend_groups_direct_child_parts_with_their_parent():

@@ -674,9 +674,17 @@ async function _pickerOpenEdit(part) {
     const siblings = (_meDraft?.parts || []).filter(candidate =>
       String(candidate.picker_config?.location_batch_id || "") === _pickerState.locationAllocation.batchId
     );
-    for (const sibling of siblings) {
-      if (sibling.location) _pickerState.locationAllocation.quantities[sibling.location] = Number(sibling.quantity) || 1;
-      if (sibling.location) _pickerState.locationAllocation.comments[sibling.location] = String(sibling.comment || "");
+    if (siblings.length) {
+      // The manifest is authoritative. Each linked row carries a historical
+      // full-allocation snapshot for edit round-tripping, but a sibling may
+      // since have been deleted directly from the manifest. Rebuild from the
+      // live rows so an edit cannot resurrect removed round lights.
+      _pickerState.locationAllocation.quantities = {};
+      _pickerState.locationAllocation.comments = {};
+      for (const sibling of siblings) {
+        if (sibling.location) _pickerState.locationAllocation.quantities[sibling.location] = Number(sibling.quantity) || 1;
+        if (sibling.location) _pickerState.locationAllocation.comments[sibling.location] = String(sibling.comment || "");
+      }
     }
     c.count = Math.max(1, Object.values(_pickerState.locationAllocation.quantities).reduce((sum, value) => sum + (Number(value) || 0), 0));
     _pickerNormalizeConfig();

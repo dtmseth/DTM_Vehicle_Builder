@@ -11,10 +11,7 @@ const _PBE_COMPARE_FIELDS = [
 
 const _PBE_NOTE_CATEGORIES = [
   "INSTALLATION NOTES",
-  "CUSTOMER REQUESTS",
-  "SPECIAL FABRICATION NOTES",
   "DELIVERY REQUIREMENTS",
-  "FINAL APPROVALS",
 ];
 let _pbeNotesSaveTimer = null;
 let _pbeNotesDraftId = "";
@@ -66,7 +63,7 @@ async function _pbeSaveNotes(flush = false) {
     return true;
   } catch (error) {
     _pbeSetNotesStatus(error.message || "Could not save notes", true);
-    toast("Could not save final-page notes", "error");
+    toast("Could not save build notes", "error");
     return false;
   }
 }

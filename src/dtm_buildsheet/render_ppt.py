@@ -649,44 +649,6 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
 
                 placement_shapes: list = []
 
-                # The shroud itself is a visible physical part. Draw its dark
-                # rounded housing behind each pair instead of implying the
-                # accessory only through two nearby light icons.
-                if placement.compound_group_style == "dual_shroud":
-                    group_size = max(2, placement.compound_group_size)
-                    for group_start in range(0, len(positions), group_size):
-                        group_positions = positions[group_start:group_start + group_size]
-                        group_instances = placement.instances[group_start:group_start + group_size]
-                        if not group_positions or not group_instances:
-                            continue
-                        sizes = [
-                            _instance_icon_size(placement, part_size, instance, view,
-                                                active_paths, equip_scale)
-                            for instance in group_instances
-                        ]
-                        left_edge = min(
-                            point[0] - Inches(size[0]) // 2
-                            for point, size in zip(group_positions, sizes)
-                        )
-                        right_edge = max(
-                            point[0] + Inches(size[0]) // 2
-                            for point, size in zip(group_positions, sizes)
-                        )
-                        center_y = sum(point[1] for point in group_positions) // len(group_positions)
-                        housing_h = max(Inches(size[1]) for size in sizes) + Inches(0.10)
-                        pad_x = Inches(0.07)
-                        housing = slide.shapes.add_shape(
-                            MSO_SHAPE.ROUNDED_RECTANGLE,
-                            left_edge - pad_x,
-                            center_y - housing_h // 2,
-                            right_edge - left_edge + pad_x * 2,
-                            housing_h,
-                        )
-                        housing.fill.background()
-                        housing.line.color.rgb = RGBColor(0x1F, 0x29, 0x37)
-                        housing.line.width = Pt(1.7)
-                        placement_shapes.append(housing)
-
                 for instance_index, (instance, (px, py)) in enumerate(
                     zip(placement.instances, positions)
                 ):
@@ -881,10 +843,15 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     place_logo(notes_slide, active_paths)
     fill_notes(notes_slide, plan.notes)
 
-    # ── Parts manifest slides (appended, then moved to position 1) ────────────
+    # ── Parts manifest slides ────────────────────────────────────────────────
+    # Keep vehicle diagrams immediately after the cover, then place the shop
+    # manifest before the notes page. The manifest is built last so its page
+    # count can remain dynamic, then inserted at the template notes position.
     n_manifest = add_parts_manifest_slides(prs, plan, active_paths)
     if n_manifest:
-        _move_slides_to_position(prs, start_position=1, count=n_manifest)
+        _move_slides_to_position(
+            prs, start_position=_TEMPLATE_VIEW_SLOTS + 1, count=n_manifest,
+        )
 
     prs.save(out_path)
     return out_path
