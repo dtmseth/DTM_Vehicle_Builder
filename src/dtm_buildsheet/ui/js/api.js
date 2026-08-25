@@ -456,21 +456,14 @@ function _refreshQbConnectionBody(){
     if (action) action.textContent = "Manage";
     return;
   }
-  const central = !!status.central_mode;
-  if (label) label.textContent = status.connected
-    ? (central ? "Managed by DTM" : "Connected")
-    : (central ? "Managed connection unavailable" : "Not connected");
+  if (label) label.textContent = status.connected ? "Connected" : "Not connected";
   if (detail) {
     const environment = status.environment === "sandbox" ? "Sandbox company" : "Production company";
-    detail.textContent = status.error === "central_service_limit_reached"
-      ? "The monthly Netlify limit was reached. A Builder Admin must check Netlify Usage & billing or wait for the monthly reset."
-      : status.connected
-      ? `${environment}${central ? " · Microsoft 365 sign-in" : ""}${status.last_sync_utc ? " · Catalog synced" : ""}`
-      : central
-        ? "Contact a Builder Admin; employees never sign in to Intuit here."
-        : "Connect to create estimates and refresh catalog pricing.";
+    detail.textContent = status.connected
+      ? `${environment}${status.last_sync_utc ? " · Catalog synced" : ""}`
+      : "Connect to create estimates and refresh catalog pricing.";
   }
-  if (action) action.textContent = central ? "View" : (status.connected ? "Manage" : "Connect");
+  if (action) action.textContent = status.connected ? "Manage" : "Connect";
 }
 
 async function _refreshQbConnectionStatus(){
@@ -561,7 +554,7 @@ async function _doSignin(){
 
 async function _doQuickBooksAction(){
   const btn = $("cloud-modal-qb-action");
-  if (_lastQbConnectionStatus?.connected || _lastQbConnectionStatus?.central_mode) {
+  if (_lastQbConnectionStatus?.connected) {
     closeCloudModal();
     if (typeof switchTab === "function") switchTab("general-settings");
     document.querySelector('.stab[data-stab="quickbooks"]')?.click();

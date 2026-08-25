@@ -243,37 +243,9 @@ no refresh race or admin prompt occurs; unauthorized tenant/users receive 401/40
 server-side; each Estimate is attributable in the Builder audit; secrets never reach the desktop or
 logs; and backend unavailability fails closed without falling back to stale local credentials.
 
-#### Phase 3A implementation checkpoint — 2026-08-19
-
-The default-off first slice is implemented locally. It establishes the desktop gateway and local
-compatibility adapter; non-secret Builder API config; Builder-API-specific delegated MSAL token
-acquisition; a narrow central client for health and active Items; provider-neutral Entra validation,
-roles, server credential, per-realm refresh, audit, and safe-error ports; and production-refusing
-hermetic adapters. When central mode is enabled, only health and the read-only Item pull work; every
-unmigrated QBO operation fails closed and no local QBO token is used. When disabled, production
-behavior is unchanged. No cloud resource, live credential, or live token was touched.
-
-Netlify is now selected and the default-off production-shaped adapter is implemented locally. It
-adds Entra JWKS/signature/issuer/audience/tenant/expiry/subject/role validation; protected-environment
-Intuit secret and encryption key inputs; AES-256-GCM credentials in Netlify Blobs; strong-consistency
-ETag CAS for a per-realm refresh lease and latest rotating token; encrypted one-time Admin OAuth
-state; append-only payload-free audit records; and thin health/Admin health/Items/Admin OAuth-start
-handlers. The callback remains 302-only. Hermetic Node tests cover the role, redaction, encryption,
-one-time state, and concurrent refresh boundaries. The desktop maps both structured capacity errors
-and Netlify's paused-site response to clear no-Estimate/Admin-action guidance.
-
-If this phase is resumed, the next slice is registration plus isolated read-only deployment
-validation, not a QBO write
-migration: create the Entra API audience/scope/roles, grant the desktop permission and admin consent,
-configure protected Netlify variables, keep the feature off for deployment, then enable only in the
-test context and compare company/Item results and audit records. Define usage alerts, retention,
-restore, and encryption-key rotation before owner authorization. Live token migration, Customers,
-Estimates, Estimate updates, PDF attachment, and catalog governance remain explicitly out of that
-slice.
-
 ### 3B. Generated QuickBooks Project names
 
-The centralized formatter now generates/copies names as:
+The shared formatter now generates/copies names as:
 
 - `Unit {unit number} | Build {year}` when known.
 - `{build type} #{ordinal} | Build {year}` when unknown.

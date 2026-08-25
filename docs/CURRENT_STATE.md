@@ -121,28 +121,15 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   Customer-supplied lines are excluded from Estimates, console bundle resolution excludes both
   customer-supplied conditions, and manifest/build-sheet comments and used-source callouts are red.
   Intentional PowerPoint golden-image changes are recorded and pass with focused renderer coverage.
-- The first centralized QuickBooks architecture slice is included behind a default-off
-  feature flag. It adds the provider-neutral backend core, desktop gateway/client, central health
-  and read-only active-Item path, Entra role/claim requirements, refresh serialization, audit/error
-  interfaces, and production-refusing hermetic adapters. The existing keychain/direct-QBO behavior
-  remains the active compatibility path. **This work was deferred by the owner on 2026-08-20.** No
-  service is deployed and no production token is moved; do not continue registration, deployment,
-  authorization, or migration until the owner explicitly resumes it.
-- Before the phase was deferred, Netlify was selected for an eventual narrow central service so the existing DTM host can be
-  reused without adding a provider. A default-off deployment adapter now exists locally: Entra
-  JWT/JWKS validation, `Builder.User` / `Builder.Admin` enforcement, application-encrypted Netlify
-  Blob credentials, strong-consistency compare-and-swap refresh locking, one-time Admin OAuth
-  state, append-only audit records, and thin health/Item/Admin-authorization functions. Nothing is
-  deployed. The desktop also recognizes Netlify's platform-owned paused-site response and shows a
-  specific monthly-limit message that says the Estimate was not created, the build is safe, and a
-  Builder Admin must check **Netlify → Usage & billing** before retrying.
+- Centralized QuickBooks remains deferred and is excluded from this release. The existing
+  per-user OS-keychain connection and stateless OAuth broker remain the only production path; no
+  central service is deployed and no production token is moved.
 
 ## Current verification baseline
 
-- The v3.4.0 Python suite passes **2,106 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
+- The v3.4.0 Python suite passes **2,077 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
   macOS updater test writes to Downloads, which this verification sandbox cannot access. Contract
-  snapshots and all six PowerPoint render goldens pass. The default-off Netlify central adapter has
-  **11/11** passing Node security/storage/function tests.
+  snapshots and all six PowerPoint render goldens pass.
 - The hermetic browser smoke suite passes **28/28**, including tint/round-light allocation, custom
   DUO grouping, accessory quantity and dual-shroud rendering, Overview notes/pre-configuration
   QuickBooks Project setup, finalization, and Estimate review workflows. Round-light coverage includes
@@ -177,9 +164,8 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
    states, and explicit concurrent stale-finalization rejection.
 2. **Continue the remaining non-backend identity/cloud workflow work** in the approved dependency
    order: generated QBO Project naming, cloud folders, and migration dry-runs.
-3. **Keep centralized QuickBooks Phase 3A deferred.** The local default-off code may remain for a
-   future decision, but no cloud registration, deployment, authorization, or token migration is
-   currently planned.
+3. **Keep centralized QuickBooks Phase 3A deferred and out of production.** No cloud registration,
+   deployment, authorization, or token migration is currently planned.
 4. Preserve the longer-term parts-DB consumer migration, catalog governance, visible curation queue,
    interior-light-bar work, and generalized kit/light/view roadmap behind the approved feature plan.
 

@@ -1021,10 +1021,6 @@ function _ptEstError(code) {
     attachment_file_unreadable: "The build PDF could not be read",
     attachment_upload_failed: "QuickBooks rejected the build PDF attachment",
     quickbooks_rejected_estimate: "QuickBooks rejected the estimate",
-    central_service_limit_reached: "The Estimate was not created because DTM's Netlify monthly usage limit has been reached. Your build is safe. Ask a Builder Admin to open Netlify → Usage & billing, then retry after service is restored or the monthly limit resets",
-    central_service_unavailable: "The managed QuickBooks service is temporarily unavailable. The Estimate was not created; try again shortly or contact a Builder Admin",
-    central_auth_unavailable: "Sign in to Microsoft 365 again before creating the Estimate",
-    forbidden: "Your Microsoft 365 account is not assigned permission to create QuickBooks Estimates",
     estimate_request_failed: "The app could not complete the QuickBooks estimate request",
   };
   return m[code] || ("Estimate failed: " + (code || "unknown error"));

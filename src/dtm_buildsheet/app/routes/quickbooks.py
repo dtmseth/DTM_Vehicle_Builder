@@ -46,7 +46,6 @@ from ..services import (
     qb_estimate_service,
     qb_production_preview_service,
     qb_sync_service,
-    quickbooks_gateway_service,
     quickbooks_service,
 )
 
@@ -93,33 +92,7 @@ def route_quickbooks(
     paths: AppPaths,
 ) -> bool:
     if method == "GET" and path == "/api/quickbooks/status":
-        _send_json(handler, quickbooks_gateway_service.connection_health(paths))
-        return True
-    central_mode = quickbooks_gateway_service.central_mode_enabled(paths)
-    if central_mode and method == "GET" and path == "/api/quickbooks/callback":
-        # Preserve the callback's 302-only invariant even though desktop
-        # Intuit authorization is disabled in central mode.
-        _redirect(handler, "/?qb=error")
-        return True
-    if central_mode and path not in {
-        "/api/quickbooks/status",
-        "/api/quickbooks/items",
-        "/api/quickbooks/sync",
-        "/api/quickbooks/customer-pricing",
-        # These only read/write the local vehicle record. They never use a
-        # desktop Intuit token and remain valid in central mode.
-        "/api/quickbooks/projects/preview",
-        "/api/quickbooks/projects/bind",
-    }:
-        _send_json(
-            handler,
-            {
-                "ok": False,
-                "error": "central_operation_not_migrated",
-                "detail": "This QuickBooks operation is not available in the first central-service slice.",
-            },
-            status=503,
-        )
+        _send_json(handler, quickbooks_service.get_status(paths))
         return True
     if method == "GET" and path == "/api/quickbooks/production-preview/status":
         _send_json(handler, qb_production_preview_service.get_status(paths))

@@ -108,84 +108,13 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
 
-### Centralization Phase 3A — deferred; core and Netlify adapter remain local only
+### Centralization Phase 3A — deferred and excluded from production
 
-**Owner decision, 2026-08-20:** table this phase. Keep every central-QBO flag off. Do not register
-the Entra API, configure protected service variables, deploy the new functions, authorize the owner
-connection, move tokens, or retire the existing desktop/keychain path unless the owner explicitly
-resumes the work. The code below is retained as reviewed, default-off groundwork only.
-
-The first safe migration slice now exists behind a default-off feature flag. It is not deployed and
-does not change the live per-workstation connection:
-
-- `app/quickbooks_central/` is a framework- and provider-neutral service core. Its narrow contracts
-  cover User connection health, Admin-detailed connection health, and normalized active Item reads.
-  It requires a signature-verifying Entra adapter, validates tenant/audience/expiry/subject, enforces
-  `Builder.User` / `Builder.Admin`, coordinates one atomic refresh-token writer per realm, and emits
-  append-only attribution records.
-- `app/adapters/quickbooks/gateway.py` separates desktop services from the transport. The existing
-  OS-keychain/direct-QBO implementation is retained as `LocalQuickBooksCompatibilityGateway`.
-  `CentralQuickBooksGateway` uses the narrow Builder API client.
-- `builder_api_config.py`, `builder_api_token.py`, and `central_client.py` add the non-secret central
-  config, request a delegated token for the Builder API scope (never a Graph token), and call only
-  `/v1/quickbooks/health` and `/v1/quickbooks/items`.
-- Central mode routes health and the active-Item pull through the new client. All other QBO routes
-  return `central_operation_not_migrated`; no surviving local token is used. The central Item slice
-  updates only the disposable local cache and deliberately skips `parts_db` reconciliation until
-  catalog governance is behind an Admin endpoint.
-- The Settings and Connections UI says **QuickBooks managed by DTM**, hides Intuit connect,
-  disconnect, credential, and production-preview controls, and directs outages to a Builder Admin.
-- Hermetic identity, credential, lock, audit, and QBO adapters refuse `environment="production"`.
-  Focused tests cover authorization failures, Admin-only access, a 24-caller refresh race, safe
-  redaction, audit attribution, Builder-API token scope, central fail-closed behavior, and disabled-
-  mode compatibility.
-- `relay/netlify/functions/qb-central.mjs` and `_shared/netlify-central.mjs` are the selected,
-  default-off deployment adapter. They validate signed Entra v2 access tokens against tenant JWKS,
-  issuer, audience, expiry, subject, object ID, and roles; keep the Intuit secret and a separate
-  256-bit token-encryption key in protected Netlify environment variables; store only AES-256-GCM
-  credential ciphertext in Netlify Blobs; use strong reads plus ETag compare-and-swap for the
-  per-realm refresh lease/latest rotating token; consume encrypted Admin OAuth state once; and
-  append payload-free audit records. The existing `qb-token` relay remains unchanged while central
-  mode is off.
-- The desktop treats a normal central JSON capacity error and Netlify's own paused-site HTML as the
-  single safe code `central_service_limit_reached`. It never echoes or logs that HTML. Connection
-  status and Estimate UI explain that no Estimate was created, the build is safe, and a Builder
-  Admin should check **Netlify → Usage & billing** or wait for the monthly reset before retrying.
-
-Configuration is the `central_qbo` object in local-only `quickbooks_config.json`, with environment
-overrides. It contains no secrets:
-
-```json
-{
-  "central_qbo": {
-    "enabled": false,
-    "base_url": "https://<builder-api-host>",
-    "tenant_id": "<entra-tenant-id>",
-    "audience": "<builder-api-application-client-id>",
-    "delegated_scope": "api://<builder-api-application-client-id>/Builder.Access"
-  }
-}
-```
-
-Environment overrides are `DTM_QB_CENTRAL_ENABLED`, `DTM_BUILDER_API_BASE_URL`,
-`DTM_BUILDER_API_TENANT_ID`, `DTM_BUILDER_API_AUDIENCE`, and `DTM_BUILDER_API_SCOPE`. Enabled mode
-requires HTTPS and a delegated scope matching the configured audience.
-
-**Platform decision:** reuse the existing DTM Netlify account/site; do not add Azure or another
-provider. Netlify's Free plan is a hard monthly credit pool: exhaustion pauses the site instead of
-silently billing overage. That avoids surprise charges but makes the central QBO path unavailable
-until an Admin restores service or the allowance resets, which is why the explicit desktop failure
-path above is a release requirement.
-
-**Next slice only if resumed:** register the single-tenant Builder API in Entra, add delegated
-`Builder.Access`, define/assign `Builder.User` and `Builder.Admin`, grant the desktop app that API
-permission with admin consent, and supply the public tenant/audience/scope identifiers. Configure
-the protected Netlify variables only in an isolated test context, deploy with
-`CENTRAL_QBO_ENABLED=false`, then explicitly enable and compare health/company/active Items with the
-existing local path. Review audit retention, recovery, usage alerts, and an encryption-key backup/
-rotation procedure before the owner's one-time authorization. Customer writes, Estimates, Estimate
-updates, PDF attachment, and live token retirement remain later guarded slices; Estimate creation
-and attachment must remain two separate writes.
+**Owner decision, 2026-08-20:** table this phase. The production branch contains no centralized
+QuickBooks backend, desktop central-mode flag, Entra Builder API integration, or server-side token
+store. The existing per-user OS-keychain connection and stateless OAuth broker remain the only
+supported path. Do not register, deploy, authorize, or migrate tokens for a central service unless
+the owner explicitly resumes the work.
 
 ### Production catalog preview — read-only migration gate
 
@@ -674,11 +603,10 @@ still requires an employee's own QBO access or owner/admin handling until the ap
 restricted Projects API scope.
 
 The currently deployed stateless Netlify token broker is not an Accounting API backend and cannot
-solve the multi-workstation refresh race by itself. The repository now also contains a separate
-default-off central Accounting API adapter with encrypted durable storage and CAS locking, but it is
-not deployed or commissioned. The target cutover sequence, role model, failure behavior, and
-acceptance tests are specified in `NEXT_FEATURE_PLAN.md` Phase 3A. Until that migration is complete,
-the existing per-user OS-keychain connection remains the live behavior.
+solve the multi-workstation refresh race by itself. No centralized Accounting API adapter is
+included in the production branch. The target cutover sequence, role model, failure behavior, and
+acceptance tests remain future design work in `NEXT_FEATURE_PLAN.md` Phase 3A. Until that work is
+explicitly resumed, the existing per-user OS-keychain connection remains the live behavior.
 
 The next QuickBooks architecture improvement is the reviewed catalog-change queue described above.
 Routine reconciliation may update QB-owned fields on already-linked SKUs, but must not silently

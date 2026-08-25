@@ -111,36 +111,13 @@ class MsalClient:
         switch. Always implies interactive — silent acquisition skips the
         picker step entirely.
         """
-        return self.acquire_token_for_scopes(
-            GRAPH_SCOPES,
-            interactive_ok=interactive_ok,
-            force_account_picker=force_account_picker,
-        )
-
-    def acquire_token_for_scopes(
-        self,
-        scopes: tuple[str, ...],
-        *,
-        interactive_ok: bool = True,
-        force_account_picker: bool = False,
-    ) -> str:
-        """Acquire a token for the exact requested resource scopes.
-
-        Builder API callers use this method with the delegated ``api://``
-        scope.  Keeping the scopes explicit prevents reuse of a Microsoft
-        Graph token whose audience is necessarily wrong for that API.
-        """
-        requested_scopes = tuple(str(scope).strip() for scope in scopes if str(scope).strip())
-        if not requested_scopes:
-            raise CloudAuthError("At least one token scope is required")
         if not force_account_picker:
-            token = self._acquire_silent(requested_scopes)
+            token = self._acquire_silent()
             if token:
                 return token
         if not interactive_ok:
             raise CloudAuthError("No cached account and interactive sign-in disabled")
         return self._acquire_interactive_or_devicecode(
-            requested_scopes,
             force_account_picker=force_account_picker,
         )
 
@@ -161,29 +138,24 @@ class MsalClient:
 
     # ── Internal ──────────────────────────────────────────────────────────
 
-    def _acquire_silent(self, scopes: tuple[str, ...] = GRAPH_SCOPES) -> str | None:
+    def _acquire_silent(self) -> str | None:
         accounts = self._app.get_accounts()
         if not accounts:
             return None
         result = self._app.acquire_token_silent(
-            scopes=list(scopes),
+            scopes=list(GRAPH_SCOPES),
             account=accounts[0],
         )
         if result and "access_token" in result:
             return result["access_token"]
         return None
 
-    def _acquire_interactive_or_devicecode(
-        self,
-        scopes: tuple[str, ...] = GRAPH_SCOPES,
-        *,
-        force_account_picker: bool = False,
-    ) -> str:
+    def _acquire_interactive_or_devicecode(self, *, force_account_picker: bool = False) -> str:
         # prompt="select_account" forces the OAuth endpoint to show the
         # account chooser even when the browser already has a Microsoft
         # session — without it, MSAL silently reuses that session and the
         # Switch User flow has no visible effect.
-        interactive_kwargs: dict = {"scopes": list(scopes)}
+        interactive_kwargs: dict = {"scopes": list(GRAPH_SCOPES)}
         if force_account_picker:
             interactive_kwargs["prompt"] = "select_account"
         try:
@@ -193,7 +165,7 @@ class MsalClient:
         except Exception:  # noqa: BLE001 — fall through to device-code
             logger.info("Interactive auth unavailable; falling back to device code")
 
-        flow = self._app.initiate_device_flow(scopes=list(scopes))
+        flow = self._app.initiate_device_flow(scopes=list(GRAPH_SCOPES))
         if "user_code" not in flow:
             raise CloudAuthError(
                 f"Could not start device-code flow: {flow.get('error_description', flow)}"

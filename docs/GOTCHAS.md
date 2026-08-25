@@ -64,29 +64,21 @@ you're touching. New gotchas get appended to the bottom with a date.
 
 ## QuickBooks
 
-12. **Current-production QuickBooks user tokens never touch disk or cloud** — access/refresh tokens
-    and realm binding live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py`.
-    The default-off central design is the deliberate exception: one owner-authorized token is kept
-    server-side only as AES-GCM ciphertext in Netlify Blobs, with its separate encryption key and
-    the Intuit secret held in protected Netlify environment variables. Neither value may reach the
-    desktop, SharePoint, logs, or repository. `quickbooks_config.json` holds only non-secret metadata
+12. **QuickBooks user tokens never touch disk or cloud** — access/refresh tokens and realm binding
+    live ONLY in the OS keychain via `adapters/quickbooks/credential_store.py`. The shared Intuit
+    app secret is not shipped; it lives only in Netlify's protected environment for the stateless
+    token broker. `quickbooks_config.json` holds non-secret metadata
     and is deliberately NOT in any cloud-mirror set.
 13. **QuickBooks OAuth callback** (`routes/quickbooks.py`) MUST stay 302-only — never echo the
     code/token as HTML. All `/api/quickbooks/*` responses set `Cache-Control: no-store`.
-14. **Netlify usage exhaustion bypasses application JSON** — a paused Free-plan site returns a
-    platform-owned HTML page because the function cannot run. Central clients must keep the bounded,
-    redacted paused-page detector and map it to `central_service_limit_reached`; never log or display
-    the HTML. The Estimate message must say no Estimate was created, the build is safe, and an Admin
-    should check **Netlify → Usage & billing** before retrying.
-
 ---
 
 ## Testing
 
-15. **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud
+14. **Tests must NEVER write to the real workspace queue**. `tests/conftest.py` blocks real cloud
     I/O, and `wiring.save_via_proposal` refuses to enqueue when `PYTEST_CURRENT_TEST` is set.
     Bypassing these guards reintroduces the abc.json resurrection bug.
-16. **Placement math is single-source**: `domain/geometry.py`. If you change it, update the
+15. **Placement math is single-source**: `domain/geometry.py`. If you change it, update the
     preview canvas JS too.
 
 ---

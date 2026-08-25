@@ -679,32 +679,6 @@ supplies + delivery, excluding the card-fee line itself.
 
 ---
 
-## Local Connection Metadata (outside workspace/config)
-
-### `quickbooks_config.json`
-
-This local-only, git-ignored file is managed directly by `quickbooks_service`; it is deliberately
-outside `workspace/config`, `REQUIRED_CONFIG_FILES`, schema migrations, and SharePoint mirroring.
-Existing top-level fields hold non-secret local QuickBooks connection metadata. OAuth tokens, the
-realm binding, and the Intuit client secret must never be placed here.
-
-The optional `central_qbo` object configures the default-off Builder API migration slice:
-
-| Field | Type | Rule |
-|---|---|---|
-| `enabled` | boolean | `false` preserves the local compatibility adapter; `true` fails closed on missing/invalid central config. |
-| `base_url` | string | HTTPS origin/base path only; no user info, query, or fragment. |
-| `tenant_id` | string | Expected DTM Entra tenant public identifier. |
-| `audience` | string | Builder API application/client ID used as the backend token audience. |
-| `delegated_scope` | string | Exact `api://<audience>/<scope>` permission requested by the desktop. Never use a Graph scope/token. |
-
-Environment variables override file values: `DTM_QB_CENTRAL_ENABLED`,
-`DTM_BUILDER_API_BASE_URL`, `DTM_BUILDER_API_TENANT_ID`, `DTM_BUILDER_API_AUDIENCE`, and
-`DTM_BUILDER_API_SCOPE`. None is a secret. Enabling the flag routes only connection health and the
-read-only active-Item query centrally in the first slice; all other QBO operations fail closed.
-
----
-
 ## Common Conventions
 
 ### schema_version
