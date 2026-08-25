@@ -28,7 +28,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | Presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) — synced from SharePoint `/Settings/presets/` | `app/services/preset_service.py` |
 | Agencies (per-record) | `workspace/agencies/{agency_id}.json` — synced from SharePoint `/Settings/agencies/` | `app/services/agency_service.py` |
 | Sales reps (per-record) | `workspace/sales_reps/{rep_id}.json` — synced from SharePoint `/Settings/sales_reps/` | `app/services/sales_rep_service.py` |
-| Generated outputs | `workspace/output/`, then SharePoint export library by agency/year | `app/services/generation_service.py`, `export_service.py`, `exports_upload_service.py` |
+| Generated outputs | Timestamped files in `workspace/output/`; customer PDFs and internal PPTX sources use separate SharePoint trees | `app/services/generation_service.py`, `export_service.py`, `exports_upload_service.py` |
 
 ---
 
@@ -72,29 +72,42 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 6. **Export PDF** — "📄 Export PDF" runs the same staleness check, regenerates if needed, then exports the PDF and uploads it to the SharePoint exports library. Updates `pdf_path`, `last_exported_at`, `last_exported_by` on the project record.
 
-7. **View PDF / Show in folder** — visible once the corresponding artifact exists. If a shared
+7. **View PDF / Open PDF folder** — visible once the corresponding artifact exists. If a shared
    project contains an absolute export path from another computer, View PDF / Preview downloads the
    matching agency/year/filename from the SharePoint exports library into this install's approved
-   output folder before opening it. "Show in folder" tries an OneDrive-synced path first, falling
+   output folder before opening it. "Open PDF folder" tries an OneDrive-synced path first, falling
    back to the SharePoint web URL via Graph's `drives/{id}.webUrl`.
 
 ---
 
 ## Export Location
 
-Generated `.pptx` and `.pdf` files are written to the local app output folder (`workspace/output/`).
-When cloud mode and the export library are configured, successful exports are also uploaded to SharePoint:
+Generated `.pptx` and `.pdf` files are written with timestamps to the local app output folder
+(`workspace/output/`). When cloud mode and the export library are configured, SharePoint uses
+deterministic filenames for the normal Replace path and separates customer-ready PDFs from editable
+PowerPoint sources:
 
 ```text
-{exports_base_folder}/{agency}/{year}/{filename}
+{exports_base_folder}/{agency}/{year}/{stable vehicle name}.pdf
+{exports_base_folder}/_DTM Internal PowerPoint Sources/{agency}/{year}/{stable vehicle name}.pptx
 ```
+
+The build-card folder action opens only the agency/year PDF folder. The internal PowerPoint tree is
+an accident-prevention boundary, not a separate SharePoint permission boundary; app users who can
+edit shared builds still need delegated access so another workstation can hydrate the source.
+Downloads try the new canonical location first and then the legacy combined agency/year location,
+so older project records remain usable during migration.
 
 The `project_id` is passed with every `/api/draft/generate` call so the backend can refresh unit labels and agency/year metadata from the current project record before rendering. Custom per-project output folders and the old standalone export-folder picker are no longer used.
 
 Before replacing an existing vehicle export, the Builds UI asks whether to replace the prior
 PPTX/PDF pair or keep both and create a version. Replace is the default. Cleanup runs only after the
 new PPTX and project record save succeed, and removes every older timestamped PPTX/PDF sharing that
-vehicle's stable filename prefix, both locally and in the SharePoint exports library.
+vehicle's stable filename prefix, both locally and across the new/legacy SharePoint trees. The
+SharePoint canonical filename is itself overwritten atomically, and remote mutation is serialized
+with retry uploads so a delayed queue worker cannot resurrect a deleted version. If the operator
+explicitly chooses **Keep both**, that export retains its timestamped SharePoint filename instead of
+overwriting the canonical artifact.
 
 ---
 

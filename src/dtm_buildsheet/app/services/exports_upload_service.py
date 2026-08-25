@@ -1,6 +1,9 @@
-"""Auto-upload generated PPTX exports to a SharePoint folder outside the
-vehicle-builder library so the whole company can access them via normal
-SharePoint navigation (no app install needed on the consumer side).
+"""Upload generated build artifacts to the company SharePoint library.
+
+Customer-ready PDFs stay in the agency/year folder that the Builds UI opens.
+Editable PowerPoint sources live under a deliberately separate internal tree,
+which makes them much harder to mistake for customer deliverables while still
+allowing another Builder workstation to hydrate and edit them.
 
 Triggered from generation_service immediately after a successful local
 write. Runs in a background thread so the generate response returns
@@ -10,7 +13,8 @@ auto-refresh.
 
 Path layout in the target library (configurable via cloud_config.json):
 
-    {exports_base_folder}/{agency}/{year}/{filename}.pptx
+    {exports_base_folder}/{agency}/{year}/{stable filename}.pdf
+    {exports_base_folder}/_DTM Internal PowerPoint Sources/{agency}/{year}/{stable filename}.pptx
 
 Sanitization is deliberate — agency names commonly have apostrophes,
 slashes, and casing inconsistencies that SharePoint would reject or
@@ -48,7 +52,16 @@ _UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024  # 10 MiB
 _GRAPH = "https://graph.microsoft.com/v1.0"
 _MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024
 _EXPORT_SUFFIXES = {".pdf", ".pptx"}
-_EXPORT_TIMESTAMP = re.compile(r"_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$")
+_INTERNAL_PPTX_FOLDER = "_DTM Internal PowerPoint Sources"
+_EXPORT_TIMESTAMP = re.compile(
+    r"_(?:[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+(?:-\d+)?[AP]M|\d{8}_\d{6})$"
+)
+
+# Uploads run in background threads and the outbound queue can retry at the
+# same time as an operator chooses Replace. Serialize the remote mutation and
+# re-check source existence under this lock so a delayed retry cannot resurrect
+# a version that cleanup just removed.
+_remote_exports_lock = threading.RLock()
 
 # Memoized drive_id lookup so we don't re-list /sites/{site_id}/drives on
 # every export. Cleared by reset_cache() during tests.
@@ -85,15 +98,46 @@ def stable_export_stem(value: str) -> str:
     return _EXPORT_TIMESTAMP.sub("", Path(portable_export_filename(value)).stem)
 
 
-def _remote_export_path(config, *, agency: str, year: str, filename: str) -> str:
+def canonical_export_filename(value: str) -> str:
+    """Return the deterministic SharePoint filename for a local export.
+
+    Local files keep timestamps so PowerPoint editing and crash recovery remain
+    safe. SharePoint gets one stable filename per vehicle/artifact type, letting
+    Graph's replace behavior provide a second line of defense against duplicate
+    versions even when cleanup is interrupted.
+    """
+    safe_name = portable_export_filename(value)
+    suffix = Path(safe_name).suffix.lower()
+    if suffix not in _EXPORT_SUFFIXES:
+        return safe_name
+    return f"{stable_export_stem(safe_name)}{suffix}"
+
+
+def _remote_export_folder_path(
+    config, *, agency: str, year: str, suffix: str, legacy: bool = False,
+) -> str:
     base = (config.exports_base_folder or "").strip().strip("/")
     segments = [base] if base else []
+    if suffix.lower() == ".pptx" and not legacy:
+        segments.append(_INTERNAL_PPTX_FOLDER)
     segments.extend((
         _sanitize_segment(agency),
         _sanitize_segment(year or "Unassigned"),
-        filename,
     ))
     return "/".join(segment for segment in segments if segment)
+
+
+def _remote_export_path(
+    config, *, agency: str, year: str, filename: str,
+    legacy: bool = False, canonicalize: bool = True,
+) -> str:
+    safe_name = portable_export_filename(filename)
+    suffix = Path(safe_name).suffix.lower()
+    folder = _remote_export_folder_path(
+        config, agency=agency, year=year, suffix=suffix, legacy=legacy,
+    )
+    remote_name = canonical_export_filename(safe_name) if canonicalize else safe_name
+    return "/".join(segment for segment in (folder, remote_name) if segment)
 
 
 def _bundle_or_none(*, log_reason: bool = False):
@@ -262,6 +306,7 @@ def upload_export(
     agency: str,
     year: str,
     filename: Optional[str] = None,
+    canonicalize: bool = True,
 ) -> bool:
     """Synchronous upload entry point. Returns True on success.
 
@@ -312,15 +357,23 @@ def upload_export(
         agency=agency,
         year=year,
         filename=filename or local_pptx.name,
+        canonicalize=canonicalize,
     )
 
-    try:
-        data = local_pptx.read_bytes()
-    except OSError:
-        logger.exception("Could not read local export %s", local_pptx)
-        return False
+    with _remote_exports_lock:
+        # Cleanup may have removed an obsolete local source while this worker
+        # waited behind another upload. Do not let a stale queue/thread put it
+        # back into SharePoint afterward.
+        if not local_pptx.exists():
+            logger.info("Export upload cancelled because the source was replaced: %s", local_pptx)
+            return False
+        try:
+            data = local_pptx.read_bytes()
+        except OSError:
+            logger.exception("Could not read local export %s", local_pptx)
+            return False
 
-    return _upload_via_session(token, drive_id, remote_path, data)
+        return _upload_via_session(token, drive_id, remote_path, data)
 
 
 def download_export(
@@ -365,21 +418,49 @@ def download_export(
         logger.exception("Token acquisition failed during shared export download")
         return {"ok": False, "error": "shared_exports_unavailable"}
 
-    remote_path = _remote_export_path(
-        config, agency=agency, year=year, filename=safe_name,
-    )
-    encoded_path = quote(remote_path, safe="/")
-    url = f"{_GRAPH}/drives/{drive_id}/root:/{encoded_path}:/content"
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=120,
-        )
-    except Exception:
-        logger.exception("Shared export download request failed")
-        return {"ok": False, "error": "shared_export_download_failed"}
-    if response.status_code == 404:
+    # New exports use a canonical filename, with PowerPoint sources separated
+    # from customer PDFs. Fall back through the transitional paths so project
+    # records created before this layout change remain portable.
+    candidate_paths = [
+        _remote_export_path(
+            config, agency=agency, year=year, filename=safe_name,
+            canonicalize=False,
+        ),
+        _remote_export_path(
+            config, agency=agency, year=year, filename=safe_name,
+        ),
+    ]
+    if suffix == ".pptx":
+        candidate_paths.extend((
+            _remote_export_path(
+                config, agency=agency, year=year, filename=safe_name,
+                legacy=True, canonicalize=False,
+            ),
+            _remote_export_path(
+                config, agency=agency, year=year, filename=safe_name,
+                legacy=True,
+            ),
+        ))
+    candidate_paths = list(dict.fromkeys(candidate_paths))
+
+    response = None
+    for remote_path in candidate_paths:
+        encoded_path = quote(remote_path, safe="/")
+        url = f"{_GRAPH}/drives/{drive_id}/root:/{encoded_path}:/content"
+        try:
+            candidate_response = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=120,
+            )
+        except Exception:
+            logger.exception("Shared export download request failed")
+            return {"ok": False, "error": "shared_export_download_failed"}
+        if candidate_response.status_code == 404:
+            continue
+        response = candidate_response
+        break
+    if response is None:
         return {"ok": False, "error": "shared_export_not_found"}
     if response.status_code != 200:
         logger.warning("Shared export download failed: HTTP %s", response.status_code)
@@ -413,20 +494,20 @@ def delete_shared_exports(
     *, agency: str, year: str, filenames: list[str],
     keep_filename: str = "", keep_filenames: list[str] | None = None,
 ) -> dict:
-    """Delete explicitly named prior exports from the shared library."""
-    safe_keep = {
-        portable_export_filename(name)
-        for name in [keep_filename, *(keep_filenames or [])]
-        if portable_export_filename(name)
-    }
-    safe_names = {
+    """Delete prior versions from both the current and legacy folder layouts.
+
+    The current canonical PPTX/PDF pair is protected by its full remote path,
+    not merely by filename. That distinction lets cleanup remove a legacy
+    public PPTX even when it has the same basename as the protected internal
+    source.
+    """
+    requested_names = {
         portable_export_filename(name) for name in filenames
         if portable_export_filename(name)
-        and portable_export_filename(name) != safe_keep
         and Path(portable_export_filename(name)).suffix.lower() in _EXPORT_SUFFIXES
     }
-    stable_stems = {stable_export_stem(name) for name in safe_names}
-    if not safe_names:
+    stable_stems = {stable_export_stem(name) for name in requested_names}
+    if not requested_names:
         return {"ok": True, "deleted": [], "errors": []}
     bundle = _bundle_or_none(log_reason=True)
     if bundle is None:
@@ -443,58 +524,112 @@ def delete_shared_exports(
     if not config.exports_enabled or not drive_id or not token:
         return {"ok": False, "deleted": [], "errors": ["shared_exports_unavailable"]}
 
-    # Include every older timestamped version for the same vehicle, not just
-    # the last paths retained on the project record.
-    folder_path = _remote_export_path(
-        config, agency=agency, year=year, filename="",
-    ).rstrip("/")
-    list_url = f"{_GRAPH}/drives/{drive_id}/root:/{quote(folder_path, safe='/')}:/children"
-    try:
-        while list_url:
-            listing = requests.get(
-                list_url,
-                headers={"Authorization": f"Bearer {token}"},
-                params={"$select": "name,file", "$top": "999"},
-                timeout=30,
-            )
-            if listing.status_code == 404:
-                break
-            if listing.status_code != 200:
-                logger.warning("Shared export listing failed: HTTP %s", listing.status_code)
-                break
-            envelope = listing.json()
-            for item in envelope.get("value", []):
-                candidate = portable_export_filename(item.get("name", ""))
-                if (
-                    isinstance(item.get("file"), dict)
-                    and Path(candidate).suffix.lower() in _EXPORT_SUFFIXES
-                    and stable_export_stem(candidate) in stable_stems
-                ):
-                    safe_names.add(candidate)
-            list_url = str(envelope.get("@odata.nextLink") or "")
-    except Exception:
-        logger.exception("Could not list prior shared export versions")
-
-    deleted, errors = [], []
-    for safe_name in sorted(safe_names):
-        if safe_name in safe_keep:
-            continue
-        remote_path = _remote_export_path(
-            config, agency=agency, year=year, filename=safe_name,
+    keep_names = {
+        portable_export_filename(name)
+        for name in [keep_filename, *(keep_filenames or [])]
+        if portable_export_filename(name)
+        and Path(portable_export_filename(name)).suffix.lower() in _EXPORT_SUFFIXES
+    }
+    keep_paths = {
+        _remote_export_path(
+            config, agency=agency, year=year, filename=name,
         )
-        url = f"{_GRAPH}/drives/{drive_id}/root:/{quote(remote_path, safe='/')}"
-        try:
-            response = requests.delete(
-                url, headers={"Authorization": f"Bearer {token}"}, timeout=30,
+        for name in keep_names
+    }
+
+    public_folder = _remote_export_folder_path(
+        config, agency=agency, year=year, suffix=".pdf",
+    )
+    internal_folder = _remote_export_folder_path(
+        config, agency=agency, year=year, suffix=".pptx",
+    )
+    folder_specs = {
+        public_folder: _EXPORT_SUFFIXES,        # PDF + legacy public PPTX
+        internal_folder: {".pptx"},           # current PowerPoint sources
+    }
+
+    # Seed targets from the explicit project paths. Listing below broadens the
+    # set to every timestamped version with the same stable vehicle identity.
+    targets: dict[str, str] = {}
+    for name in requested_names:
+        suffix = Path(name).suffix.lower()
+        candidates = {
+            _remote_export_path(
+                config, agency=agency, year=year, filename=name,
+            ),
+            _remote_export_path(
+                config, agency=agency, year=year, filename=name,
+                canonicalize=False,
+            ),
+        }
+        if suffix == ".pptx":
+            candidates.update((
+                _remote_export_path(
+                    config, agency=agency, year=year, filename=name,
+                    legacy=True,
+                ),
+                _remote_export_path(
+                    config, agency=agency, year=year, filename=name,
+                    legacy=True, canonicalize=False,
+                ),
+            ))
+        for remote_path in candidates:
+            if remote_path not in keep_paths:
+                targets[remote_path] = Path(remote_path).name
+
+    with _remote_exports_lock:
+        for folder_path, allowed_suffixes in folder_specs.items():
+            list_url = (
+                f"{_GRAPH}/drives/{drive_id}/root:/"
+                f"{quote(folder_path, safe='/')}:/children"
             )
-            if response.status_code in (204, 404):
-                deleted.append(safe_name)
-            else:
-                logger.warning("Shared export delete failed: HTTP %s", response.status_code)
-                errors.append(safe_name)
-        except Exception:
-            logger.exception("Shared export delete request failed")
-            errors.append(safe_name)
+            try:
+                while list_url:
+                    listing = requests.get(
+                        list_url,
+                        headers={"Authorization": f"Bearer {token}"},
+                        params={"$select": "name,file", "$top": "999"},
+                        timeout=30,
+                    )
+                    if listing.status_code == 404:
+                        break
+                    if listing.status_code != 200:
+                        logger.warning(
+                            "Shared export listing failed for %s: HTTP %s",
+                            folder_path, listing.status_code,
+                        )
+                        break
+                    envelope = listing.json()
+                    for item in envelope.get("value", []):
+                        candidate = portable_export_filename(item.get("name", ""))
+                        suffix = Path(candidate).suffix.lower()
+                        remote_path = f"{folder_path}/{candidate}"
+                        if (
+                            isinstance(item.get("file"), dict)
+                            and suffix in allowed_suffixes
+                            and stable_export_stem(candidate) in stable_stems
+                            and remote_path not in keep_paths
+                        ):
+                            targets[remote_path] = candidate
+                    list_url = str(envelope.get("@odata.nextLink") or "")
+            except Exception:
+                logger.exception("Could not list prior shared export versions in %s", folder_path)
+
+        deleted, errors = [], []
+        for remote_path, display_name in sorted(targets.items()):
+            url = f"{_GRAPH}/drives/{drive_id}/root:/{quote(remote_path, safe='/')}"
+            try:
+                response = requests.delete(
+                    url, headers={"Authorization": f"Bearer {token}"}, timeout=30,
+                )
+                if response.status_code in (204, 404):
+                    deleted.append(display_name)
+                else:
+                    logger.warning("Shared export delete failed: HTTP %s", response.status_code)
+                    errors.append(display_name)
+            except Exception:
+                logger.exception("Shared export delete request failed")
+                errors.append(display_name)
     return {"ok": not errors, "deleted": deleted, "errors": errors}
 
 
@@ -510,29 +645,30 @@ def cleanup_previous_exports(
     old_stems = {stable_export_stem(value) for value in filenames if value}
     keep_names = {portable_export_filename(value) for value in keep_filenames if value}
     deleted_local, errors = [], []
-    try:
-        candidates = [
-            candidate for candidate in paths.workspace_output_dir.iterdir()
-            if candidate.is_file()
-            and candidate.suffix.lower() in _EXPORT_SUFFIXES
-            and stable_export_stem(candidate.name) in old_stems
-            and candidate.name not in keep_names
-        ]
-    except OSError:
-        candidates = []
-    for candidate in sorted(candidates):
+    with _remote_exports_lock:
         try:
-            candidate.unlink()
-            deleted_local.append(candidate.name)
+            candidates = [
+                candidate for candidate in paths.workspace_output_dir.iterdir()
+                if candidate.is_file()
+                and candidate.suffix.lower() in _EXPORT_SUFFIXES
+                and stable_export_stem(candidate.name) in old_stems
+                and candidate.name not in keep_names
+            ]
         except OSError:
-            errors.append(candidate.name)
-    shared = delete_shared_exports(
-        agency=agency,
-        year=year,
-        filenames=filenames,
-        keep_filenames=list(keep_names),
-    )
-    errors.extend(shared.get("errors", []))
+            candidates = []
+        for candidate in sorted(candidates):
+            try:
+                candidate.unlink()
+                deleted_local.append(candidate.name)
+            except OSError:
+                errors.append(candidate.name)
+        shared = delete_shared_exports(
+            agency=agency,
+            year=year,
+            filenames=filenames,
+            keep_filenames=list(keep_names),
+        )
+        errors.extend(shared.get("errors", []))
     return {
         "ok": not errors,
         "deleted_local": deleted_local,
@@ -547,6 +683,7 @@ def upload_export_in_background(
     agency: str,
     year: str,
     filename: Optional[str] = None,
+    canonicalize: bool = True,
     on_complete=None,
 ) -> None:
     """Fire-and-forget background upload. Used by generation_service so the
@@ -561,7 +698,10 @@ def upload_export_in_background(
     closed mid-upload, next launch re-tries automatically.
     """
     def _worker():
-        ok = upload_export(local_pptx, agency=agency, year=year, filename=filename)
+        ok = upload_export(
+            local_pptx, agency=agency, year=year, filename=filename,
+            canonicalize=canonicalize,
+        )
         if not ok:
             # Only queue if cloud was supposed to handle this. The
             # upload_export() implementation short-circuits to False on
@@ -589,6 +729,7 @@ def upload_export_in_background(
                         agency=agency,
                         year=year,
                         filename=filename,
+                        canonicalize=canonicalize,
                     )
             except Exception:
                 logger.exception("Failed to queue export retry for %s", local_pptx.name)

@@ -195,3 +195,10 @@ you're touching. New gotchas get appended to the bottom with a date.
     manifest row per nonzero location, so it must read/write `locationAllocation.comments[location]`
     and each row's `comment`. Do not route this flow through the shared footer comment or one note
     will overwrite every allocated line.
+39. **SharePoint export identity usually differs from the local filename.** Local PPTX/PDF files
+    retain a render timestamp; the normal Replace path writes the stable filename from
+    `exports_upload_service.canonical_export_filename()`, while explicit Keep both uploads retain
+    their timestamp. PDFs stay in the visible agency/year tree;
+    PPTX sources live under `_DTM Internal PowerPoint Sources`. Hydration and cleanup must use the
+    shared path helpers and preserve the legacy combined-folder fallback. Remote upload/delete is
+    serialized so an outbound retry cannot resurrect a replaced artifact.

@@ -353,7 +353,9 @@ location" rows.
   writes one expandable kit line. Its child rows are the concrete shop components with their
   selected mounting data; the manifest deliberately does not repeat the full questionnaire.
   Purchase text is retained in the kit’s saved choices/notes for Sales. Location choices are
-  shop-reference data and always include Custom — they do not create render placements. Editing a
+  shop-reference data and always include Custom. Guided radio antenna Custom locations additionally
+  offer the normal optional vehicle-dot/free-point placement flow and persist that render metadata
+  on the antenna component; other guided location questions remain shop-reference-only. Editing a
   guided kit restarts at question one while retaining all saved answers, and its manifest-section
   **Add** button returns directly to the matching picker family or leaf.
   Guided step contracts distinguish an optional but deliberate choice from a dependency: a
@@ -370,8 +372,9 @@ location" rows.
     same physical clip or an additional radio clip; console setup asks the inverse when radio was
     configured first. Reusing the console clip leaves one physical clip/Mag Mic line while the
     radio component retains its install note.
-    cylinder and whip antennas are restricted to rear-left roof (or Custom); mic location is top
-    plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked
+    cylinder and whip antennas are restricted to rear-left roof (or Custom); a Custom antenna can
+    keep its exact shop label while independently choosing where the antenna appears on the vehicle
+    render. Mic location is top plate of console (or Custom). Choosing either Magnetic Mic option also adds its real, QB-linked
     Mag Mic SKU as a billable child line under the radio kit. Any selected cable refresh creates a
     separate nested QB-linked cable line; the shared Radio Refresh Cable Kit bills once even when
     more than one of its included cable runs is refreshed.

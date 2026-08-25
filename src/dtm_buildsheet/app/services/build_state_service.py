@@ -8,7 +8,7 @@ Two responsibilities:
   PowerPoint since the last render. The UI uses this to decide between
   "open directly", "re-render silently", and "warn about manual edits".
 
-- ``resolve_show_folder`` — figure out where "Show in folder" should
+- ``resolve_show_folder`` — figure out where "Open PDF folder" should
   point. Best case: a locally synced OneDrive copy of the SharePoint
   exports library. Fallback: the SharePoint web URL for the agency/year
   subfolder. Either way the UI just receives a path or a URL and opens
@@ -361,7 +361,7 @@ _drive_web_url_cache: dict[str, str] = {}
 
 
 def resolve_show_folder(body: dict) -> dict:
-    """Decide what to open for the per-build "Show in folder" button.
+    """Decide what to open for the per-build "Open PDF folder" button.
 
     Body keys:
       - agency: str

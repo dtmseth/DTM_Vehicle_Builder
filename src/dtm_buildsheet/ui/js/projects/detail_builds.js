@@ -140,7 +140,7 @@ function _ptBuildCardsMarkup(p) {
               📋 ${(ind.qb_estimate_id || "").trim() ? "Re-estimate" : "QB Estimate"}
             </button>` : ""}
             <button class="btn btn-secondary btn-sm"
-              onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Show in folder</button>
+              onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Open PDF folder</button>
             <button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
               onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
           </div>
@@ -176,7 +176,7 @@ function _ptBuildCardsMarkup(p) {
           ${hasPdf ? `<button class="btn btn-secondary btn-sm"
             onclick="PT_buildOpenPdf('${pid}','${uid}','','unit')">📑 View PDF</button>` : ""}
           <button class="btn btn-secondary btn-sm"
-            onclick="PT_buildShowFolder('${pid}','${uid}','','unit')">📂 Show in folder</button>
+            onclick="PT_buildShowFolder('${pid}','${uid}','','unit')">📂 Open PDF folder</button>
           <button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
             onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
         </div>
@@ -531,7 +531,7 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
 };
 
 // ── Smart build buttons ────────────────────────────────────────────────
-// Preview/Edit, Export PDF, View PDF, Show in folder all go through here.
+// Preview/Edit, Export PDF, View PDF, and Open PDF folder all go through here.
 // The "Generate" button is gone — both Preview and Export auto-regenerate
 // when the source has changed since the last render. Manual PowerPoint
 // edits are detected and the user is asked whether to keep them.
@@ -609,6 +609,7 @@ async function _ptGenerateAndPersist(ctx, statusEl) {
     project_id: ctx.project.project_id,
     existing_output_path: ctx.outputPath,
     replace_previous_exports: ctx._replacePreviousExports === true,
+    preserve_sharepoint_version: ctx._replacePreviousExports === false,
     previous_export_paths: [ctx.outputPath, ctx.pdfPath].filter(Boolean),
   });
   if (!res?.ok) {
@@ -712,6 +713,7 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       unit_id: unitId,
       individual_id: individualId || "",
       replace_previous_exports: ctx._replacePreviousExports === true,
+      preserve_sharepoint_version: ctx._replacePreviousExports === false && Boolean(ctx.outputPath || ctx.pdfPath),
       previous_export_paths: [ctx.outputPath, ctx.pdfPath].filter(Boolean),
     });
     if (!res?.ok) {

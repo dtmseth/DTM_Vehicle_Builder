@@ -1441,7 +1441,18 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     )
     assert set(antenna_locations) == {"rear_left_roof", "__custom__"}, \
         f"cylinder antennas should only allow the rear-left roof or Custom, got {antenna_locations!r}"
-    _guided_pick(page, "antennaLoc", "rear_left_roof")
+    _guided_pick(page, "antennaLoc", "__custom__")
+    page.locator("input[data-system-custom='antennaLocCustom']").fill("Roof above rear quarter")
+    page.click("[data-system-custom-placement]")
+    page.wait_for_selector("#picker-location-content:not([hidden]) [data-system-placement-done]")
+    assert page.locator("#picker-add-btn").is_disabled(), \
+        "radio kit cannot save until the custom antenna placement sub-flow is finished"
+    page.click("#picker-loc-views [data-view='side']")
+    page.wait_for_selector("#picker-loc-dots .picker-dot[data-name='REAR LEFT ROOF']")
+    page.locator("#picker-loc-dots .picker-dot[data-name='REAR LEFT ROOF']").first.click()
+    assert page.evaluate("() => _pickerState.loc.renderLocation") == "REAR LEFT ROOF"
+    page.click("[data-system-placement-done]")
+    page.wait_for_selector("#picker-system-details .guided-system[data-system-kind='radio']")
     _guided_next(page)
     _guided_pick(page, "speakerLoc", "back_center_console")
     _guided_next(page)
@@ -1474,6 +1485,10 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     expected = {"radio_head", "radio_brick", "radio_antenna_top", "radio_speaker", "radio_mic_clip"}
     assert expected.issubset(component_types), \
         f"expected expandable radio details {sorted(expected)}, got {sorted(component_types)}"
+    antenna = next(c for c in radio["components"] if c.get("part_type") == "radio_antenna_top")
+    assert antenna.get("location") == "Roof above rear quarter"
+    assert antenna.get("picker_config", {}).get("custom_location", {}).get("render_location") == "REAR LEFT ROOF", \
+        f"guided custom antenna must retain its diagram placement, got {antenna!r}"
     mic = next(c for c in radio["components"] if c.get("part_type") == "radio_mic_clip")
     assert all(component.get("supply_type") == "new" for component in radio["components"]), \
         f"new DTM system components should inherit New supply, got {radio['components']!r}"
@@ -1494,6 +1509,8 @@ def flow_radio_communications_workflow(page, base_url: str) -> None:
     restored = page.evaluate("() => _pickerState.radio.choices")
     assert restored.get("purchaseDetails") == radio.get("notes") and restored.get("micLocCustom") == "Console sidecar", \
         f"guided radio edits must retain saved answers, got {restored!r}"
+    assert restored.get("antennaLocCustom") == "Roof above rear quarter"
+    assert restored.get("antennaLocPlacement", {}).get("render_location") == "REAR LEFT ROOF"
 
 
 def _open_guided_system(page, base_url: str, family_id: str, kind: str) -> str:

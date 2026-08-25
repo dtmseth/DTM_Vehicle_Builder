@@ -559,6 +559,12 @@ project controls and each configured vehicle opening its embedded build editor:
   until finalization and solid green afterward. Project actions include generate/export-all and batch
   **Prepare QB Estimates**. Missing QBO Project links are completed one vehicle at a time; Back or
   Save returns to a revalidated checklist showing ready and remaining vehicles.
+- **Shared exports**: local PowerPoint/PDF artifacts retain timestamps, while SharePoint's normal
+  Replace path uses one deterministic filename per vehicle (an explicit Keep both choice remains
+  timestamped). Customer PDFs remain in the visible agency/year folder and
+  editable PPTX sources live under `_DTM Internal PowerPoint Sources`; **Open PDF folder** never
+  navigates users into the internal source tree. Replace cleanup recognizes current and legacy
+  timestamps/folders and is serialized against background upload retries.
 - **Final sign-off**: the focused review includes an expandable checklist of every server-side
   check, with passed, warning, and blocking states shown individually before the build is locked.
   Advisory equipment checks cover front/side/rear warning, siren/controller relationships,

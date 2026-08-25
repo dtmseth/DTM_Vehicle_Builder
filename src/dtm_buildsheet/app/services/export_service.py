@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import subprocess
 import sys
 import time
@@ -15,11 +14,13 @@ _log = logging.getLogger(__name__)
 
 
 def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
-    """Find older PDF exports with the same Agency_Unit_Year_Updated_ prefix."""
-    prefix = re.sub(r'_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$', '', pdf_path.stem) + '_'
+    """Find older PDF exports with the same stable vehicle identity."""
+    from .exports_upload_service import stable_export_stem
+
+    stable_stem = stable_export_stem(pdf_path.name)
     return [
-        str(p) for p in sorted(pdf_path.parent.glob(f"{prefix}*.pdf"))
-        if p.name != pdf_path.name
+        str(p) for p in sorted(pdf_path.parent.glob("*.pdf"))
+        if p.name != pdf_path.name and stable_export_stem(p.name) == stable_stem
     ]
 
 
@@ -73,7 +74,10 @@ def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
         return
     try:
         from .exports_upload_service import upload_export_in_background
-        upload_export_in_background(pdf_path, agency=agency, year=year)
+        upload_export_in_background(
+            pdf_path, agency=agency, year=year,
+            canonicalize=body.get("preserve_sharepoint_version") is not True,
+        )
     except Exception:
         pass
 

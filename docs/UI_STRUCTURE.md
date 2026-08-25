@@ -15,7 +15,7 @@ Two main tabs: **Projects** and **Settings**.
     Edit               — read-only by default; [✏️ Edit] enters edit mode with inputs
                          Build cards expose [📊 Preview/Edit in PowerPoint] [📄 Export PDF]
                          [📑 View PDF] [◆ Set up/Manage QB Project] [📋 QB Estimate]
-                         [📂 Show in folder] [✓ Final review] + per-card author tags
+                         [📂 Open PDF folder] [✓ Final review] + per-card author tags
 #proj-editor           — 4-step wizard (new projects only: Customer → Preferences → Fleet → Review)
 #proj-build-editor     — embedded build editor (in-place, no tab switch)
     #pbe-header        — unit context bar + "← Back to Project" button

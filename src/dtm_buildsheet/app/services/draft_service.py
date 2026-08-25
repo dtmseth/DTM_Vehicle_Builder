@@ -1059,6 +1059,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             project_export_dir=_project_export_dir,
             agency=_agency or project.info.get("Agency", ""),
             year=_year or project.info.get("BuildYear", "") or _ind_year,
+            preserve_sharepoint_version=body.get("preserve_sharepoint_version") is True,
         )
         _t_step("finalize_output (queues SharePoint upload)")
 

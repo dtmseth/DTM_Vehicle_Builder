@@ -2463,6 +2463,7 @@ function _pickerSetStandardLocation(location, entry = {}, autoLocation = "") {
 function _pickerLocationAllowsCustom() {
   const loc = _pickerState.loc;
   const product = _pickerSelectedProduct();
+  if (_pickerGuidedCustomPlacementActive()) return true;
   return !_pickerSelIsFixture()
     && !_pickerHasFixedPartLocation()
     // Some single-location products, such as the hand-held CCTL5, also need
@@ -2476,7 +2477,8 @@ function _pickerLocationAllowsCustom() {
 }
 
 function _pickerLocationOffersVehiclePlacement() {
-  return _pickerProductType() === "lights"
+  return _pickerGuidedCustomPlacementActive()
+    || _pickerProductType() === "lights"
     || Object.values(_pickerState.loc.locByName || {}).some(entry => entry.has_coords === true);
 }
 
@@ -2518,6 +2520,7 @@ function _pickerNormalizeCustomSpacing(value) {
 }
 
 function _pickerCustomPlacementHeadCount() {
+  if (_pickerGuidedCustomPlacementActive()) return 1;
   const product = _pickerSelectedProduct();
   const category = _pickerProductCategory(product);
   const quantityDriven = _pickerUsesColor(product)
@@ -3036,6 +3039,7 @@ function _pickerDrawLocation() {
   if (btns) {
     btns.hidden = !customPlacementActive;
     if (customPlacementActive) {
+      const guidedCustomPlacement = _pickerGuidedCustomPlacementActive();
       const free = loc.customPlacementMode === "free";
       if (free && loc.customPlacementAnchors?.[loc.view]) _pickerSetCustomPlacementGroup(loc.view, loc.customPlacementAnchors[loc.view]);
       const viewPointCount = (loc.customPlacements?.[loc.view] || []).length;
@@ -3054,6 +3058,7 @@ function _pickerDrawLocation() {
         + (free && headCount === 4 ? `<div class="pf-pills picker-custom-layout"><button type="button" class="pf-pill${pairLayout ? "" : " active"}" data-custom-placement-layout="even">Equal row</button><button type="button" class="pf-pill${pairLayout ? " active" : ""}" data-custom-placement-layout="mirrored_pairs">Two per side (mirrored)</button></div>` : "")
         + (free && headCount > 1 ? `<label class="picker-custom-spacing"><span>Head spacing <strong data-custom-spacing-value>${Math.round(spacing * 100)}%</strong></span><input type="range" data-custom-spacing min="0.01" max="${spacingMax.toFixed(4)}" step="0.005" value="${spacing.toFixed(4)}"></label>` : "")
         + (free ? `<div class="picker-custom-placement-actions"><span>${viewPointCount ? `${viewPointCount} of ${headCount} heads placed on this view` : `Place ${headCount} head${headCount === 1 ? "" : "s"} on this view`} · ${totalPointCount} points total</span><button type="button" class="pf-pill" data-custom-placement-clear-view${viewPointCount ? "" : " disabled"}>Clear this view</button><button type="button" class="pf-pill" data-custom-placement-clear-all${totalPointCount ? "" : " disabled"}>Clear all</button></div>` : "")
+        + (guidedCustomPlacement ? `<div class="picker-custom-placement-actions picker-custom-placement-finish"><span>Placement is optional; the custom shop name is kept either way.</span><button type="button" class="btn btn-primary btn-sm" data-system-placement-done>Done — return to radio setup</button></div>` : "")
         + `</section>`;
       btns.querySelectorAll("[data-custom-placement-mode]").forEach(button => button.addEventListener("click", () => {
         loc.customPlacementMode = button.dataset.customPlacementMode;
@@ -3079,6 +3084,9 @@ function _pickerDrawLocation() {
       });
       btns.querySelector("[data-custom-placement-clear-all]")?.addEventListener("click", () => {
         loc.customPlacements = {}; loc.customPlacementAnchors = {}; _pickerDrawLocation(); _pickerUpdateFooter();
+      });
+      btns.querySelector("[data-system-placement-done]")?.addEventListener("click", () => {
+        _pickerFinishSystemCustomPlacement();
       });
     }
   }
@@ -5463,7 +5471,7 @@ const _SYSTEM_DEFS = {
     defaults: {
       systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "",
       format: "split", brickLoc: "",
-      antennaStyle: "", antennaLoc: "", speakerLoc: "",
+      antennaStyle: "", antennaLoc: "", antennaLocPlacement: null, speakerLoc: "",
       micClipRelation: "", micMount: "", micLoc: "",
     },
     steps(c) {
@@ -5471,7 +5479,7 @@ const _SYSTEM_DEFS = {
         ..._systemSupplySteps("radio", "radio system", c),
         ...(c.format === "split" ? [_systemLocationStep("brickLoc", "Where will the radio brick go?", "The brick is the remote electronics module behind the control head.", _SYSTEM_LOC.radioBrick)] : []),
         _systemStep("antennaStyle", "choice", "What antenna style is expected?", "This is an install note; it does not create a purchase order.", [["cylinder", "Cylinder style", "Common roof-mounted radio antenna"], ["whip", "Whip style", "Flexible whip antenna"], ["covert", "Covert / window style", "Low-profile or window-mounted antenna"], ["customer_specified", "Customer specified", "Use the customer hardware as supplied"]]),
-        _systemLocationStep("antennaLoc", "Where will the radio antenna go?", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? "Cylinder and whip antennas normally use the rear left roof." : "Choose the roof or cargo-window location.", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? [_SYSTEM_LOC.radioAntenna[0]] : _SYSTEM_LOC.radioAntenna),
+        _systemLocationStep("antennaLoc", "Where will the radio antenna go?", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? "Cylinder and whip antennas normally use the rear left roof." : "Choose the roof or cargo-window location.", c.antennaStyle === "cylinder" || c.antennaStyle === "whip" ? [_SYSTEM_LOC.radioAntenna[0]] : _SYSTEM_LOC.radioAntenna, { vehiclePlacement: true }),
         _systemLocationStep("speakerLoc", "Where will the radio speaker go?", "Pick the location the shop should mount the speaker.", _SYSTEM_LOC.radioSpeaker),
         ...(() => {
           const consoleClip = _pickerExistingConsoleRadioMicClip();
@@ -5560,6 +5568,7 @@ function _systemStep(key, type, title, help, options, contract = {}) {
     options: (options || []).map(o => Array.isArray(o) ? { value: o[0], label: o[1], help: o[2] || "" } : o),
     required: contract.required !== false,
     required_when: contract.required_when || null,
+    vehiclePlacement: contract.vehiclePlacement === true,
   };
 }
 
@@ -5577,6 +5586,85 @@ function _systemOptions(step) {
   });
   if (step.allowCustom) options.push({ value: "__custom__", label: "Custom location", help: "Enter a shop-specific location" });
   return options;
+}
+
+function _systemPlacementChoiceKey(stepOrKey) {
+  const key = typeof stepOrKey === "string" ? stepOrKey : stepOrKey?.key;
+  return `${key || "location"}Placement`;
+}
+
+function _pickerGuidedCustomPlacementActive() {
+  const state = _pickerState.radio || {};
+  return !!(state.active && state.customPlacementKey);
+}
+
+function _systemPlacementDescription(raw) {
+  if (!raw || typeof raw !== "object") return "No vehicle placement selected yet";
+  if (String(raw.render_location || "").trim()) {
+    return `Vehicle dot: ${_pickerTitleCase(raw.render_location)}`;
+  }
+  const count = Object.values(raw.placements || {}).reduce(
+    (total, points) => total + (Array.isArray(points) ? points.length : 0), 0,
+  );
+  return count ? `${count} custom vehicle point${count === 1 ? "" : "s"} selected` : "No vehicle placement selected yet";
+}
+
+async function _pickerStartSystemCustomPlacement(step) {
+  const state = _pickerState.radio || {};
+  const choices = state.choices || {};
+  if (!state.active || !step?.vehiclePlacement || choices[step.key] !== "__custom__") return;
+  const label = String(choices[step.customKey] || "").trim();
+  if (!label) return;
+
+  const saved = choices[_systemPlacementChoiceKey(step)] || {};
+  const loc = _pickerState.loc;
+  loc.vehicle = (typeof _meDraft !== "undefined" && _meDraft?.vehicle_info?.VehicleType) || "PIU";
+  if (!loc.layouts) {
+    try { loc.layouts = await api("/api/layouts"); }
+    catch (e) { console.error("Picker: layouts failed:", e); loc.layouts = {}; }
+  }
+  await _pickerEnsurePartTypeMeta();
+  loc.locByName = {};
+  loc.selected = label;
+  loc.textCustom = true;
+  loc.renderLocation = String(saved.render_location || "");
+  loc.customPlacements = _pickerNormalizeCustomPlacements(saved.placements);
+  loc.customPlacementAnchors = _pickerNormalizeCustomAnchors(saved.anchors);
+  loc.customHeadSpacing = _pickerNormalizeCustomSpacing(saved.spacing);
+  loc.customPlacementLayout = saved.layout === "mirrored_pairs" ? "mirrored_pairs" : "even";
+  loc.customPlacementMode = _pickerCustomPlacementCount() ? "free" : "vehicle";
+  loc.customStage = "placement";
+  loc.autoLocation = "";
+  loc.name_pattern = "";
+  loc.base_label = "Radio Antenna";
+  loc.catalog_names = [];
+
+  const views = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
+  const savedView = Object.keys(loc.customPlacements || {})[0]
+    || Object.keys(views).find(view => Object.prototype.hasOwnProperty.call(views[view]?.locations || {}, loc.renderLocation));
+  loc.view = savedView || Object.keys(views).find(view => !view.startsWith("internal")) || "location";
+  state.customPlacementKey = step.key;
+  _pickerRenderRadio();
+}
+
+function _pickerFinishSystemCustomPlacement() {
+  const state = _pickerState.radio || {};
+  const key = state.customPlacementKey;
+  if (!state.active || !key) return;
+  const step = _systemSteps().find(candidate => candidate.key === key);
+  if (!step) { state.customPlacementKey = ""; _pickerRenderRadio(); return; }
+  const loc = _pickerState.loc;
+  _pickerRefreshCustomPlacementGroups();
+  state.choices[_systemPlacementChoiceKey(step)] = {
+    label: String(state.choices[step.customKey] || loc.selected || "").trim(),
+    render_location: loc.renderLocation || "",
+    placements: _pickerCustomPlacementSnapshot(),
+    anchors: _pickerNormalizeCustomAnchors(loc.customPlacementAnchors),
+    spacing: _pickerNormalizeCustomSpacing(loc.customHeadSpacing),
+    layout: loc.customPlacementLayout === "mirrored_pairs" ? "mirrored_pairs" : "even",
+  };
+  state.customPlacementKey = "";
+  _pickerRefreshSystemView();
 }
 
 function _systemStepApplies(step, choices = _pickerState.radio?.choices || {}) {
@@ -5721,6 +5809,7 @@ function _systemStepSatisfied(step) {
 function _systemSatisfied() {
   const state = _pickerState.radio || {};
   if (!state.active || state.loading) return !state.active;
+  if (state.customPlacementKey) return false;
   return _systemSteps().every(_systemStepSatisfied);
 }
 
@@ -5769,7 +5858,7 @@ async function _pickerLoadSystemWorkflow(kind, existingChoices = null, step = 0)
   _pickerState.systemSetup = { active: false, kind: "", product: null };
   _pickerState.radio = {
     active: true, kind, loading: false, products: prior.products || {},
-    cableRefreshes, choices, step: Number(step) || 0,
+    cableRefreshes, choices, step: Number(step) || 0, customPlacementKey: "",
   };
   _systemClampStep();
   _pickerRenderProducts();
@@ -5959,8 +6048,9 @@ function _systemComponentRows(kind, c) {
     customerCondition: c.customerCondition || "",
     customerSource: c.customerSource || "",
   });
-  const rows = [], add = (key, label, partType, location, detail) => rows.push({
+  const rows = [], add = (key, label, partType, location, detail, pickerConfig = null) => rows.push({
     key, label, part_type: partType, location: location || "", detail: detail || "", quantity: 1,
+    ...(pickerConfig && Object.keys(pickerConfig).length ? { picker_config: pickerConfig } : {}),
     ...(() => {
       const explicitLegacy = c.componentConditions[key]
         ? { new_or_used: c.componentConditions[key] } : null;
@@ -5980,7 +6070,14 @@ function _systemComponentRows(kind, c) {
   if (kind === "radio") {
     add("radio_control_head", "Radio control head", "radio_head", "", c.format === "split" ? "Split radio layout — console position is set with the center console." : "All-in-one radio — console position is set with the center console.");
     if (c.format === "split") add("radio_brick", "Radio brick", "radio_brick", answer("brickLoc"), "Separate electronics module");
-    add("radio_antenna", "Radio antenna", "radio_antenna_top", answer("antennaLoc"), answer("antennaStyle"));
+    const antennaPickerConfig = c.antennaLoc === "__custom__"
+      ? { custom_location: { ...(c.antennaLocPlacement || {}), label: answer("antennaLoc") } }
+      : null;
+    add(
+      "radio_antenna", "Radio antenna", "radio_antenna_top",
+      answer("antennaLoc"), answer("antennaStyle"),
+      antennaPickerConfig,
+    );
     add("radio_speaker", "Radio speaker", "radio_speaker", answer("speakerLoc"), "Shop mounting location");
     const usesConsoleClip = c.micClipRelation === "use_console_clip" && !!_pickerExistingConsoleRadioMicClip();
     add(
@@ -6085,6 +6182,12 @@ function _pickerRenderRadio() {
     return;
   }
   if (_pickerState.tab === "location") {
+    if (_pickerGuidedCustomPlacementActive()) {
+      if (details) { details.hidden = true; details.innerHTML = ""; }
+      if (locationContent) locationContent.hidden = false;
+      _pickerDrawLocation();
+      return;
+    }
     if (locationContent) locationContent.hidden = true;
     if (details) { details.hidden = false; _pickerRenderSystemIn(details); }
     return;
@@ -6104,8 +6207,12 @@ function _pickerRenderSystemIn(el) {
   const complete = _systemSatisfied();
   const progress = steps.length ? Math.round(((index + 1) / steps.length) * 100) : 0;
   let nextOk = _systemStepSatisfied(step);
+  const savedPlacement = state.choices?.[_systemPlacementChoiceKey(step)];
+  const customPlacementAction = step.vehiclePlacement
+    ? `<div class="guided-custom-placement"><button type="button" class="btn btn-secondary btn-sm" data-system-custom-placement${String(state.choices?.[step.customKey] || "").trim() ? "" : " disabled"}>${savedPlacement ? "Edit" : "Choose"} vehicle placement</button><small>${esc(_systemPlacementDescription(savedPlacement))}</small></div>`
+    : "";
   const customLocation = step.allowCustom && value === "__custom__"
-    ? `<label class="guided-custom-field"><span>Custom shop location</span><input class="guided-text-input" data-system-custom="${esc(step.customKey)}" value="${esc(state.choices?.[step.customKey] || "")}" placeholder="Enter the exact shop-reference location"></label>`
+    ? `<label class="guided-custom-field"><span>Custom shop location</span><input class="guided-text-input" data-system-custom="${esc(step.customKey)}" value="${esc(state.choices?.[step.customKey] || "")}" placeholder="Enter the exact shop-reference location"></label>${customPlacementAction}`
     : "";
   const stepBody = step.type === "component_conditions"
     ? _systemComponentConditionsHtml()
@@ -6132,6 +6239,10 @@ function _pickerRenderSystemIn(el) {
       }
     } else {
       target[key] = selected;
+      if (step.allowCustom && selected !== "__custom__") {
+        delete target[step.customKey];
+        delete target[_systemPlacementChoiceKey(step)];
+      }
       if (key === "supplyType") {
         target.condition = selected === "new" ? "new" : "used";
         target.provider = selected === "new" ? "dtm" : "customer";
@@ -6207,7 +6318,12 @@ function _pickerRenderSystemIn(el) {
     _pickerState.radio.choices[input.dataset.systemCustom] = input.value;
     _pickerUpdateFooter();
     const next = el.querySelector(".guided-next"); if (next) next.disabled = !_systemStepSatisfied(step);
+    const placement = el.querySelector("[data-system-custom-placement]");
+    if (placement) placement.disabled = !String(input.value || "").trim();
   }));
+  el.querySelector("[data-system-custom-placement]")?.addEventListener("click", () => {
+    _pickerStartSystemCustomPlacement(step);
+  });
   el.querySelectorAll("[data-system-nav]").forEach(button => button.addEventListener("click", () => {
     if (button.dataset.systemNav === "back") _pickerState.radio.step = Math.max(0, (state.step || 0) - 1);
     else if (_systemStepSatisfied(step)) _pickerState.radio.step = Math.min(steps.length - 1, (state.step || 0) + 1);

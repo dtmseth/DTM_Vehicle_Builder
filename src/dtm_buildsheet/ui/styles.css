@@ -511,6 +511,9 @@
     .guided-textarea:focus{border-color:var(--guided-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--guided-accent) 14%,transparent)}
     .guided-custom-field{display:flex;flex-direction:column;gap:6px;max-width:650px;margin-top:12px}
     .guided-custom-field span{font-size:12px;font-weight:750;color:var(--text)}
+    .guided-custom-placement{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .guided-custom-placement small{color:var(--muted);font-size:12px}
+    .picker-custom-placement-finish{justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
     .guided-text-input{width:100%;padding:12px 13px;border:2px solid #d5dee3;border-radius:10px;background:#fff;font:13px/1.4 inherit;color:var(--text);outline:none}
     .guided-text-input:focus{border-color:var(--guided-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--guided-accent) 14%,transparent)}
     .guided-field-note{font-size:11px;color:var(--muted);margin-top:7px}

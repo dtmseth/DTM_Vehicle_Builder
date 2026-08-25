@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import re
 import traceback
 from pathlib import Path
 
@@ -66,13 +65,13 @@ def get_output_save_dir(paths: AppPaths) -> Path | None:
 
 
 def _find_previous_versions(ppt_path: Path, export_dir: Path) -> list[str]:
-    """Find older exports with the same Agency_Unit_Year_Updated_ prefix."""
-    # Filename pattern: Agency_Unit_Year_Updated_Mmm DD_YYYY_H-MMAM.pptx
-    # Strip the _Mmm DD_YYYY_... timestamp suffix to get the stable prefix
-    prefix = re.sub(r'_[A-Z][a-z]{2}\d+_\d{4}_\d+-\d+-\d+[AP]M$', '', ppt_path.stem) + '_'
+    """Find older exports with the same stable vehicle identity."""
+    from .exports_upload_service import stable_export_stem
+
+    stable_stem = stable_export_stem(ppt_path.name)
     return [
-        str(p) for p in sorted(export_dir.glob(f"{prefix}*.pptx"))
-        if p.name != ppt_path.name
+        str(p) for p in sorted(export_dir.glob("*.pptx"))
+        if p.name != ppt_path.name and stable_export_stem(p.name) == stable_stem
     ]
 
 
@@ -83,6 +82,7 @@ def finalize_output(
     *,
     agency: str = "",
     year: str = "",
+    preserve_sharepoint_version: bool = False,
 ) -> dict:
     """
     Keep ppt_path in the app workspace output directory.
@@ -124,6 +124,7 @@ def finalize_output(
             result_path,
             agency=agency,
             year=year,
+            canonicalize=not preserve_sharepoint_version,
             on_complete=_on_complete,
         )
     except Exception:

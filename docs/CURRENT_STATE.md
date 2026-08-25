@@ -106,6 +106,14 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   this removes the dependent rear-bracket question and rear component while preserving edit
   round-trip. Core radio choices remain required, camera keeps its explicit component selection,
   and console's existing None/dependency behavior is unchanged.
+- Guided radio Custom antenna locations now reuse the normal optional vehicle-placement flow, so
+  the shop-facing location label remains independent from a saved vehicle dot or free point and
+  the synthesized antenna renders on the build sheet. Shared exports now keep customer PDFs in the
+  visible agency/year tree while moving editable PPTX sources under
+  `_DTM Internal PowerPoint Sources`; the build card opens only the PDF folder. Normal Replace
+  exports use deterministic SharePoint filenames, legacy timestamp/folder variants remain
+  readable and cleanable, and upload/delete serialization prevents a delayed retry from restoring
+  an obsolete ICE-style duplicate. Explicit Keep both exports remain timestamped.
 - The canonical part-supply model is included. Drafts, presets, Excel input, picker and
   guided-system components now normalize to **New** or **Customer supplied**, with customer-supplied
   condition New/Used and a required source for newly edited Used records. Legacy New/Used/Reused
@@ -131,7 +139,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 
 ## Current verification baseline
 
-- The v3.4.0 Python suite passes **2,102 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
+- The v3.4.0 Python suite passes **2,106 passed, 1 skipped, 1 sandbox-only deselected**. The deselected
   macOS updater test writes to Downloads, which this verification sandbox cannot access. Contract
   snapshots and all six PowerPoint render goldens pass. The default-off Netlify central adapter has
   **11/11** passing Node security/storage/function tests.

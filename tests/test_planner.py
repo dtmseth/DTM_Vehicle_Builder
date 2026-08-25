@@ -886,6 +886,34 @@ def test_guided_radio_antenna_uses_its_individual_condition(config):
     assert antenna.raw.customer_source == "Prior patrol unit"
 
 
+def test_guided_radio_custom_antenna_keeps_vehicle_placement(config):
+    parent = PartInput(
+        name="Radio Control Head", part_type="radio_head", line_id="radio-custom-antenna",
+        components=[{
+            "label": "Radio antenna", "part_type": "radio_antenna_top",
+            "location": "Roof above rear quarter", "detail": "Whip style", "quantity": 1,
+            "picker_config": {"custom_location": {
+                "label": "Roof above rear quarter",
+                "render_location": "REAR LEFT ROOF",
+                "placements": {},
+            }},
+        }],
+    )
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "GUIDED-CUSTOM-ANTENNA"},
+        parts=[parent], notes={},
+    )
+
+    antenna = next(
+        planned for planned in build_plan(project, config).planned_parts
+        if planned.raw.part_type == "radio_antenna_top"
+    )
+
+    assert antenna.raw.location == "Roof above rear quarter"
+    assert antenna.raw.picker_config["custom_location"]["render_location"] == "REAR LEFT ROOF"
+    assert [placement.view for placement in antenna.placements] == ["side", "top", "rear"]
+
+
 def test_picker_opticom_uses_preemption_parts_db_render_metadata(config):
     from dtm_buildsheet.domain.input_models import PartInput, ProjectInput
     proj = ProjectInput(

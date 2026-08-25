@@ -472,6 +472,11 @@ def _renderable_system_components(part: PartInput) -> list[PartInput]:
             notes=detail,
             line_id=part.line_id,
             part_type="radio_antenna_top",
+            picker_config=(
+                dict(component.get("picker_config") or {})
+                if isinstance(component.get("picker_config"), dict)
+                else {}
+            ),
         ))
     return rendered
 

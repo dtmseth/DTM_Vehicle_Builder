@@ -147,6 +147,7 @@ def enqueue_export(
     agency: str,
     year: str,
     filename: str | None = None,
+    canonicalize: bool = True,
 ) -> bool:
     """Persist a failed export upload for later retry. ``local_path`` must
     still be on disk at retry time; if it's been deleted, drain logs and
@@ -162,6 +163,7 @@ def enqueue_export(
         "agency": agency,
         "year": year,
         "filename": filename,
+        "canonicalize": canonicalize,
     }
     try:
         out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -287,6 +289,7 @@ def _drain_exports(paths: AppPaths) -> dict[str, int]:
             agency=payload.get("agency", ""),
             year=payload.get("year", ""),
             filename=payload.get("filename"),
+            canonicalize=payload.get("canonicalize", True) is not False,
         )
         if ok:
             succeeded += 1
