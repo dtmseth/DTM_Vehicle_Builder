@@ -178,8 +178,9 @@ Activation stopped the running desktop process before the profile swap, promoted
 production credentials into the standard profile, seeded the standard active Item cache, applied
 only the plan's QB-owned fields, and retired the duplicate preview token without revocation. The
 first standard production pull/reconciliation updated no reviewed links, incorrectly flagged zero
-Items inactive, and linked one formerly pending part by an exact production Name match. Current
-catalog state is 1,223 linked rows, 28 pending rows, and 6 intentionally inactive linked rows.
+Items inactive, and linked one formerly pending part by an exact production Name match. That
+activation checkpoint held 1,223 linked rows. The v3.4.0 catalog now holds **1,224 linked rows,
+28 pending rows, and 6 intentionally inactive linked rows**.
 
 The owner-facing entry is **Advanced Settings → QB Catalog Preview**. It appears only on a machine
 that already has a valid local migration snapshot. Guarded QB sales/estimate controls are enabled;
@@ -348,7 +349,8 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
 `POST projects/preview` · `POST projects/bind` ·
 `POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
 
-**Test totals (v3.3.2)**: full suite 2,009 pass, 1 skipped; hermetic browser smoke 18/18.
+**Release verification (v3.4.0):** full suite 2,077 passed, 1 skipped, 1 sandbox-only deselected;
+hermetic browser smoke 28/28. See `CURRENT_STATE.md` for the live baseline and coverage summary.
 QB-specific: service (15), sync (24), customer-sync (14), agency-push (13), estimate (54),
 customer-pricing (4), seed-sandbox (5).
 

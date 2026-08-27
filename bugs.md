@@ -1,6 +1,13 @@
-# Bug Fix Plan
+# Historical Bug Fix Plan (2026-05-19)
 
-Planning notes from the May 19, 2026 investigation. This file is intentionally written as a durable repair guide: prefer preserving the intended behavior and adding regression coverage over following any exact implementation detail if the code moves later.
+> **Historical investigation snapshot — not the current backlog.** This plan has not been
+> revalidated against production v3.4.0. Several systems described below have since changed,
+> including preset/cloud sources, project output identity, display labels, and the embedded build
+> editor. Start with `docs/CURRENT_STATE.md`; reproduce any item on the current release before
+> treating it as open work. Preserve the useful failure analysis and regression ideas, but do not
+> follow old implementation guidance blindly.
+
+Planning notes from the May 19, 2026 investigation. This file remains as historical repair context.
 
 ## 1. Preset setup can create empty builds
 

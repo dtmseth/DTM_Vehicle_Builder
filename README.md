@@ -1,18 +1,22 @@
 # DTM Vehicle Builder
 
-Generates PowerPoint build sheets for police and emergency vehicles. Manage a project library, configure builds per unit, and export finished `.pptx` files. Integrates an agency database, sales rep database, and preset library for repeatable fleet configurations.
+Desktop workflow for planning police and emergency vehicles. It manages shared projects, agencies,
+sales reps, presets, per-unit build drafts, review/finalization, customer PDFs, editable PowerPoint
+sources, and non-posting QuickBooks Online Estimates.
 
 Runs as a native desktop app on macOS and Windows — no browser required.
+
+Current production release: [v3.4.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.4.0).
 
 ---
 
 ## Installing
 
 ### Mac
-[Download DTM_Vehicle_Builder.dmg](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/download/latest/DTM_Vehicle_Builder.dmg) — open it, drag the app to Applications.
+[Download DTM_Vehicle_Builder.dmg](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/latest/download/DTM_Vehicle_Builder.dmg) — open it, drag the app to Applications.
 
 ### Windows
-[Download DTM_Vehicle_Builder_Setup.exe](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/download/latest/DTM_Vehicle_Builder_Setup.exe) — run the installer.
+[Download DTM_Vehicle_Builder_Setup.exe](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/latest/download/DTM_Vehicle_Builder_Setup.exe) — run the installer.
 
 ---
 
@@ -38,14 +42,14 @@ The first launch copies default configs and assets into your workspace folder.
 
 ```
 src/dtm_buildsheet/       Python package — app server, domain, planning, rendering, UI, resources
-workspace/                User data — configs, inputs, outputs, assets (git-ignored)
+workspace/                Local mirror/cache — configs, drafts, projects, outputs, assets (git-ignored)
 samples/                  Sample input workbooks
 packaging/
   pyinstaller/            PyInstaller spec + entrypoint
   windows/                Inno Setup installer script
   icons/                  app.icns (Mac), app.ico (Windows)
 docs/                     Architecture, pipeline, config schema, repo principles, packaging notes
-.github/workflows/        CI — builds Mac .dmg and Windows .exe on every push to main
+.github/workflows/        Checks, platform builds, and tagged release publication
 ```
 
 ---
@@ -64,7 +68,9 @@ bash packaging/build_macos.sh
 # output: dist\DTM Vehicle Builder\  +  dist\DTM_Vehicle_Builder_Setup.exe
 ```
 
-**CI** — both are built automatically on every push to `main`. Download artifacts from the [Actions tab](https://github.com/dtmseth/DTM_Vehicle_Builder/actions).
+**CI** — both platforms are built automatically on every push to `main`. The manual release workflow
+publishes a tagged GitHub release and stages the installers/release metadata in SharePoint. Download
+ordinary build artifacts from the [Actions tab](https://github.com/dtmseth/DTM_Vehicle_Builder/actions).
 
 ---
 
@@ -72,14 +78,13 @@ bash packaging/build_macos.sh
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e .
+.venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m dtm_buildsheet        # GUI
 .venv/bin/python -m dtm_buildsheet.generator_cli /path/to/workbook.xlsx  # CLI
 ```
 
 Run automated tests:
 ```bash
-.venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m pytest
 ```
 

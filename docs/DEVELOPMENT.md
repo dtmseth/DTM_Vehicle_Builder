@@ -94,6 +94,13 @@ Semantic versioning (`bump-my-version`). See `docs/VERSIONING.md`. Current: `v3.
 
 ## Release checklist
 
+The current published release is v3.4.0. Its verification baseline is 2,077 passed, 1 skipped,
+1 sandbox-only deselected; six render goldens and 28/28 browser smoke flows pass. Treat
+`CURRENT_STATE.md` as the live baseline rather than copying these totals into new planning docs.
+
+The manual release workflow creates the tagged GitHub release and uploads versioned installers plus
+release metadata to SharePoint `/Releases/` for the in-app updater.
+
 Do not ship:
 - `workspace/` drafts, inputs, or outputs
 - `.DS_Store`, `__pycache__/`, generated build folders

@@ -13,7 +13,10 @@ class CustomerInfo:
     sales_rep_id: str = ""    # FK → sales_reps/{id}.json
     quote_number: str = ""
     build_year: str = ""        # canonical project year used in generated outputs
-    notes: str = ""
+    sales_rep: str = ""
+    contact: str = ""
+    phone: str = ""
+    email: str = ""
 ```
 
 ## EquipmentPreferences
@@ -28,7 +31,9 @@ class EquipmentPreferences:
     cage_brand: str = ""
     console_brand: str = ""
     slick_top: bool = False
+    mixed_brands: bool = False
     notes: str = ""
+    lens: str = ""              # clear | colored | smoked
 ```
 
 ## BuildUnit
@@ -36,6 +41,7 @@ class EquipmentPreferences:
 ```python
 @dataclass
 class BuildUnit:
+    unit_id: str
     vehicle_model: str = ""
     build_type: str = ""
     quantity: int = 1
@@ -48,12 +54,15 @@ class BuildUnit:
 ```python
 @dataclass
 class IndividualUnit:
+    individual_id: str         # durable identity; never derive associations from unit number
     unit_number: str = ""
     vin: str = ""
     year: str = ""             # per-vehicle/model year; fallback metadata, not project build year
     color: str = ""
     draft_id: str = ""
     output_path: str = ""     # set when build sheet is generated
+    notes: str = ""           # prominent shop note on Overview; long notes open in a modal
+    pdf_path: str = ""
     status: str = "draft"     # draft | finalized | reopened
     finalized_at: str = ""
     finalized_by: str = ""
@@ -64,6 +73,7 @@ class IndividualUnit:
     reopened_by: str = ""
     reopen_reason: str = ""
     qb_project_id: str = ""
+    qb_project_name: str = ""
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
     qb_estimate_snapshot_at: str = ""
@@ -82,19 +92,19 @@ does not create false conflicts.
 ```python
 @dataclass
 class ProjectRecord:
-    project_id: str = ""
+    project_id: str
+    created_at: str
+    updated_at: str
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
     project_notes: str = ""   # shown on every build's final PowerPoint page
-    export_dir: str = ""      # empty = default output location
-    created_at: str = ""
-    updated_at: str = ""
 ```
 
 Projects are stored in `workspace/projects/{project_id}/project.json` (one subdirectory per
-project). The subdirectory layout lets future artifacts (generated PPTX, draft snapshots) sit
-alongside the record without polluting a flat list.
+project) and mirrored to SharePoint. Drafts remain durable records keyed by `draft_id`. Generated
+customer PDFs and internal PPTX sources use the configured output trees; record-side output paths
+are compatibility locators, not a per-project `export_dir` setting.
 
 ## AgencyRecord
 

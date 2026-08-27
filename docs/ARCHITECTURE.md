@@ -41,15 +41,15 @@ On first run they are copied into `workspace/`, which becomes the mutable area f
 - saved GUI drafts (`workspace/drafts/`)
 - project records (`workspace/projects/`)
 - user-created presets (`workspace/presets/` — bundled app; dev writes to `resources/presets/`)
-- agency database (`workspace/agencies.json`)
-- sales rep database (`workspace/sales_reps.json`)
+- per-record agency data (`workspace/agencies/{agency_id}.json`)
+- per-record sales-rep data (`workspace/sales_reps/{rep_id}.json`)
 
 `workspace/` is git-ignored. It lives in `{repo}/workspace/` in dev mode and in the OS user
 data folder in a packaged app.
 
-`agencies.json` and `sales_reps.json` are seeded from `resources/default_data/` on first run
-if the files do not yet exist. This lets the app ship a set of sample/starter records without
-overwriting user edits on upgrade.
+SharePoint mirrors the shared agencies, sales reps, projects, drafts, and presets. The old
+`workspace/agencies.json` and `workspace/sales_reps.json` files are one-shot migration inputs only;
+fresh-install seeds are used only when neither shared nor local per-record data exists.
 
 **Dev note**: `WORKSPACE_CONFIG_DIR`, `WORKSPACE_ASSETS_DIR`, and `WORKSPACE_PRESETS_DIR` all
 collapse back into `src/dtm_buildsheet/resources/` in dev mode so every edit is immediately
@@ -70,11 +70,14 @@ The app has two main tabs: **Projects** and **Settings**.
 
 **Projects tab** manages the full project lifecycle:
 - `#proj-list-view` — scrollable list of all projects
-- `#proj-detail-view` — detail view with Overview / Edit / Builds sub-tabs
+- `#proj-detail-view` — detail view with Overview / Edit sub-tabs and build actions on the cards
 - `#proj-editor` — 4-step wizard for new projects only
 - `#proj-build-editor` — embedded build editor (in-place; no tab switch required)
 
-**Settings tab** has ten sub-tabs: placements, fixtures, sizes, catalog, parts, vehicles, agencies, sales-reps, presets, tools. The "Tools" stab contains the standalone workbook-upload generator (formerly the main "Generate" tab).
+**Settings** has **General** and **Advanced** header tabs. General contains project defaults,
+agencies, sales reps, presets, and QuickBooks. Advanced contains placements/fixtures, sizes, the
+Part Manager, vehicles, and Workbook Tools. See `UI_STRUCTURE.md` for the current DOM and nested-tab
+map.
 
 ## Route Module Pattern
 

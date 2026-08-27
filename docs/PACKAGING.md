@@ -13,7 +13,8 @@ Package the GUI-first app for macOS and Windows without changing how the core co
 
 ## Current Choice
 
-`PyInstaller` is the first packaging target because it is the shortest path to a real distributable app for both platforms.
+`PyInstaller` is the production packaging target for both platforms. macOS builds produce a DMG;
+Windows builds use Inno Setup around the PyInstaller output.
 
 ## Build Entry
 
@@ -42,3 +43,8 @@ PyInstaller outputs will be created under:
 - `dist/`
 
 Those are ignored by git.
+
+GitHub Actions builds both platforms on pushes to `main`. The manual release workflow publishes the
+version tag and release, uploads the platform installers, stages installers/release metadata in
+SharePoint, and feeds the in-app update path. See `DEVELOPMENT.md` and `VERSIONING.md` before a
+release.

@@ -1,7 +1,7 @@
 # External Connection Security Standards
 
 **Applies to**: All external API integrations in DTM Vehicle Builder  
-**Last updated**: 2026-08-13
+**Last updated**: 2026-08-26
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
 
@@ -201,9 +201,9 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | Token rotation | ✅ | Rotated refresh token saved on every refresh |
 | Discovery document | ✅ | `oauth_client._discover()` with static fallback |
 | Cache-Control: no-store on QB routes | ✅ | Set on all `/api/quickbooks/*` responses |
-| HTTPS relay for production redirect URI | Pending | Hosted relay to deploy before go-live |
+| HTTPS relay for production redirect URI | ✅ | Deployed `qb-callback` relay on the verified Netlify origin; 302-only and stateless |
 | Isolated production catalog preview | ✅ | Separate metadata/keychain/cache; preview cannot reconcile, poll, or write Builder catalog data |
-| textContent for QB data in UI | Pending — Phase 2 | Enforced when the parts UI lands |
+| Safe QB data rendering in UI | ✅ | QB/catalog values use DOM text nodes/`textContent`; smoke coverage rejects unsafe external requests and console failures |
 
 ---
 

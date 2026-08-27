@@ -1,8 +1,10 @@
 # Next Feature Plan — Vehicle Workflow and Picker Improvements
 
-**Planning date:** 2026-08-18
+**Planning date:** 2026-08-18; status refreshed 2026-08-26
 
-**Status:** approved scope; Phases 1A–1B complete locally; Phase 2 next; Phase 3A deferred
+**Status:** v3.4.0 shipped Phases 1, 2, 4, the Phase 3B naming change, and the core Phase 5 workflow.
+Phase 3A is deferred and excluded from production. Phase 3C/3D plus the Phase 5 cloud
+publication/retry boundary remain follow-up work.
 
 **Rule:** preserve `individual_id` as the durable vehicle identity. Unit numbers, generated labels,
 QuickBooks Project names, and SharePoint folder names are mutable display data and must never be the
@@ -22,8 +24,9 @@ only link between a vehicle and its draft, outputs, Estimate, or finalization st
 8. Move generated files into per-vehicle SharePoint folders beneath a newly created
    `Vehicle Project Database` root, provision an empty `Reference Photos & Videos` folder, and
    publish a PDF-only copy to the Shop Documents library while the vehicle is finalized.
-9. Replace per-workstation QuickBooks authorization with one owner-authorized company connection in
-   a protected backend, while employees authenticate only with their Microsoft 365 identities.
+9. *(Deferred; not on the active production roadmap.)* Replace per-workstation QuickBooks
+   authorization with one owner-authorized company connection in a protected backend, while
+   employees authenticate only with their Microsoft 365 identities.
 
 ## Cross-cutting design decisions
 
@@ -39,22 +42,21 @@ only link between a vehicle and its draft, outputs, Estimate, or finalization st
 - SharePoint work must be tested intentionally with cloud enabled; normal development remains
   cloud-off so the settings mirror cannot replace local catalog edits.
 
-## Phase 0 — protect and baseline the current local work
+## Phase 0 — protected baseline (completed before v3.4.0)
 
-Before starting a feature slice:
+The release work used this baseline sequence:
 
-1. Review and commit the unreleased quantity-aware custom-placement change as its own change.
-2. Preserve all unrelated documentation and scratch-work changes already in the worktree.
-3. Run the targeted planner/routes tests and 21-flow UI smoke suite again, then record the commit
+1. Reviewed and committed quantity-aware custom placement as an isolated change.
+2. Preserved unrelated documentation and scratch-work changes already in the worktree.
+3. Ran the targeted planner/routes tests and 28-flow UI smoke suite, then recorded the commit
    and verification baseline in `CURRENT_STATE.md`.
-4. Do not update golden masters unless a later slice intentionally changes plan or render output
-   and the visual difference has been reviewed.
+4. Updated golden masters only for intentional, reviewed plan/render changes with focused coverage.
 
 ## Phase 1 — data vocabulary and low-risk picker behavior
 
 ### 1A. Optional guided-system components
 
-**Implementation status (2026-08-20): complete locally.** The guided-step contract now distinguishes
+**Shipped in v3.4.0.** The guided-step contract now distinguishes
 an explicit optional choice (`required: false`) from a dependency-controlled step
 (`required_when`). The audit kept core radio components required, retained camera's explicit
 component multi-select, and confirmed the console flow already exposes clear None choices and
@@ -79,7 +81,7 @@ a phantom component; dependency-driven required steps still prevent an invalid S
 
 ### 1B. Canonical part-supply model
 
-**Implementation status (2026-08-20): complete locally; render-golden approval pending.** The
+**Shipped in v3.4.0.** The
 canonical fields now flow through drafts, inputs, presets (schema v4), Excel compatibility,
 picker/guided editors, planning, manifests, PowerPoint, and Estimate preparation. Legacy records
 normalize on read without forcing a startup write; source-less legacy Used/Reused records remain
@@ -87,8 +89,9 @@ readable as **Source needed** but cannot be edited again without a source. Paren
 supply states round-trip independently, including inherited guided-component state. Catalog review
 confirmed that Gamber-Johnson `console_kit.included` lists items DTM must order rather than physical
 fit geometry, so both Customer supplied / New and Customer supplied / Used components are excluded
-from main-console bundle resolution. A PDF-scale review shows the new red callouts cleanly. Five
-intentional PowerPoint golden-image diffs are awaiting owner approval and have not been re-recorded.
+from main-console bundle resolution. A PDF-scale review shows the new red callouts cleanly. The
+intentional PowerPoint golden changes were reviewed, re-recorded, and pass with focused renderer
+coverage.
 
 Add structured fields to draft/input component records while retaining legacy read compatibility:
 
@@ -134,9 +137,9 @@ tests. A rendered review artifact must verify red callouts at normal print/PDF s
 
 ### 2A. Multi-location allocation for 3-inch round lights
 
-**Implemented locally (2026-08-21).** The data capability, multi-location quantity UI, atomic batch
-replace endpoint, non-3-inch product split, edit round-trip, and focused service coverage are in the
-working tree.
+**Shipped in v3.4.0.** The data capability, multi-location quantity UI, atomic batch replace
+endpoint, non-3-inch product split, per-location notes, safe deletion/edit round-trip, and focused
+service/browser coverage are live.
 
 Add a validated product capability such as `picker_location_allocation: true` to the actual 3-inch
 round-light product family. First separate any non-3-inch SKU currently grouped under that product.
@@ -153,7 +156,7 @@ and quote the correct total without requiring three full picker runs.
 
 ### 2B. DUO assets in grouped custom placement
 
-**Implemented locally (2026-08-21).** Equal rows and the four-head **Two per side (mirrored)** mode
+**Shipped in v3.4.0.** Equal rows and the four-head **Two per side (mirrored)** mode
 persist ordered indices/group IDs and resolve DUO/custom colors per head. Browser smoke covers pair
 symmetry, spacing, movement, persistence, and edit round-trip.
 
@@ -168,14 +171,19 @@ four-head DUO groups plus a browser smoke that verifies the preview asset sequen
 
 ## Phase 3 — shared identity, centralized QuickBooks, names, and cloud folders
 
-These changes share the same identity boundary: `individual_id` identifies the vehicle, Microsoft
-Entra ID identifies the employee, and one server-held QBO realm connection identifies the company.
+These changes share the durable vehicle identity boundary: `individual_id` identifies the vehicle,
+while unit numbers, generated labels, QBO names, and folder names remain mutable display data.
+Microsoft Entra ID identifies the employee for collaboration. Production QBO authorization remains
+per-workstation with tokens in that user's OS keychain; the server-held company connection below is
+a deferred alternative, not the deployed architecture.
 
 ### 3A. Centralized QuickBooks company connection
 
 **Deferred by owner (2026-08-20).** Keep the local implementation default-off and do not register,
 configure, deploy, authorize, migrate tokens, or continue the cutover until the owner explicitly
-resumes this phase. The existing production per-user/keychain QuickBooks path remains active.
+resumes this phase. The existing production per-user/keychain QuickBooks path remains active. The
+complete but excluded experiment is preserved only on local branch
+`codex/central-qb-backend-wip` at `f5ac223`; do not merge or delete it without that explicit decision.
 
 Replace the current per-workstation QBO refresh-token model with an authenticated backend. The owner
 authorizes the DTM QuickBooks company once using the existing Intuit production app and an admin QBO
@@ -245,6 +253,9 @@ logs; and backend unavailability fails closed without falling back to stale loca
 
 ### 3B. Generated QuickBooks Project names
 
+**Generated/copied naming shipped in v3.4.0.** The stored-name audit/migration and manual QBO rename
+checklist below remain open.
+
 The shared formatter now generates/copies names as:
 
 - `Unit {unit number} | Build {year}` when known.
@@ -263,6 +274,11 @@ display names must be renamed manually in QBO. The migration report must list th
 vehicle, QBO Project ID, old name, and desired name so that manual work is finite and auditable.
 
 ### 3C. SharePoint vehicle folders
+
+**Not yet implemented.** v3.4.0 keeps customer PDFs in the visible agency/year tree and editable
+PPTX sources under `_DTM Internal PowerPoint Sources`, with deterministic Replace filenames and
+legacy duplicate cleanup. That shipped split is the current runtime behavior; the per-vehicle
+hierarchy below is the next migration target and must begin with a dry run.
 
 Create a completely new `Vehicle Project Database` folder item. Do not rename the existing
 `Vehicle Builder Projects` folder: a fresh item prevents the active app path from inheriting the
@@ -331,7 +347,7 @@ before production execution.
 
 ## Phase 4 — concealed siren-speaker rendering
 
-**Implemented locally (2026-08-21).** Preview and PowerPoint both use normalized concealment fields,
+**Shipped in v3.4.0.** Preview and PowerPoint both use normalized concealment fields,
 reduced opacity, and a compact red callout. The generated review PDF includes a behind-grille case.
 
 Model concealment as normalized placement data, not a renderer string check. Extend the planned
@@ -349,9 +365,10 @@ no opacity change for normal speaker locations.
 
 ## Phase 5 — vehicle finalization MVP
 
-**Core workflow implemented locally (2026-08-21).** Durable status/audit fields, current-PDF and
-fingerprint checks, Tier 1 warnings with required acknowledgement notes, a focused final-review UI,
-server-side edit locks, and reasoned reopening are present. The SharePoint Shop Documents
+**Core workflow shipped in v3.4.0.** Durable status/audit fields, current-PDF and
+fingerprint checks, equipment relationship/coverage warnings with required acknowledgement notes,
+a focused final-review UI with expandable passed checks, server-side edit locks, and reasoned
+reopening are live. The SharePoint Shop Documents
 publication/withdrawal and retry state described below remain follow-up before Phase 5 is complete;
 so do automatic stale-draft reopening and explicit concurrent stale-finalization rejection.
 
@@ -392,18 +409,12 @@ tier, warning text, evidence, suggested fix, and bypassability. Finalization eva
 draft server-side. Warnings never hard-block the design, but every bypassed warning requires a note
 that is stored with the finalization record and shown to collaborators.
 
-Start small with Tier 1 presence warnings only:
-
-- no warning lights;
-- no siren speaker;
-- warning lights present but no light controller;
-- light controller present but no control head.
-
-The first release establishes the framework and UI. Add Tier 2 build-type rules (K-9 kennel, patrol
-cage) and Tier 3 relationship/location rules (photo eye vs exterior lightbar, amp/siren counts, lens
-consistency, through-glass lens suitability, Mega T bracket, and similar accessory rules) in later,
-individually tested config/rule changes. Part-add accessory prompts remain useful, but finalization
-must re-evaluate the completed design because interim relationships are incomplete.
+The shipped rule set now checks the controller/interface relationship (including ScanPort/CanPort
+for Core), photo eye when there is no roof bar, docking-station motion attachment, radio, camera,
+expansion module, Patrol radar and front/rear partitions, and front/side/rear warning coverage. It
+also warns when both roof and interior light bars are absent. Keep adding relationship rules as
+small, individually tested domain changes; finalization must always re-evaluate the completed design
+because part-add accessory prompts only see an interim state.
 
 After the user resolves or acknowledges the warnings, finalization ensures the working PDF matches
 the exact finalized draft revision, visibly generates it when stale or missing, then uploads/replaces
@@ -419,19 +430,16 @@ retry are required test cases.
 
 ## Delivery order and release gates
 
-Recommended releases:
+Current delivery state and next gates:
 
-1. **Placement baseline:** commit/release the current grouped-spacing work, then DUO index roles.
-2. **Conditions and guided choices:** optionality plus the supply-model migration and visible notes.
-3. **Round-light allocation:** isolated picker/product capability slice.
-4. **Identity/backend migration:** centralize the owner-authorized QBO connection behind M365 user
-   authentication and verify concurrent multi-user access before removing local tokens.
-5. **Vehicle identity/cloud migration:** QBO generated-name change, fresh SharePoint root, historical
-   file copy, and Shop Documents destination plumbing, with dry-run reports reviewed before any
-   production copy or cutover.
-6. **Concealed speaker rendering:** small plan/renderer slice with visual review.
-7. **Finalize MVP:** state/guard/framework, Tier 1 rules, and finalized-PDF Shop Documents
-   publication/withdrawal; add higher-tier rules incrementally.
+1. **Shipped in v3.4.0:** placement grouping/DUO roles, guided optionality, canonical supply,
+   multi-location round lights, concealed speakers, generated QBO naming, and finalization core.
+2. **Next:** complete the finalization cloud boundary—Shop Documents publication/withdrawal,
+   durable retry states, and explicit stale concurrent-finalization rejection.
+3. **Then:** dry-run and review the per-vehicle SharePoint folder migration before any production
+   copy or cutover; follow with the stored-name audit/manual QBO rename checklist.
+4. **Deferred/out of production:** centralized QuickBooks. Do not make it a release dependency
+   unless the owner explicitly resumes Phase 3A.
 
 Every release runs the relevant focused tests, full `pytest`, golden and contract safety pins, and the
 UI smoke suite. Any render-affecting release also produces reviewed PPTX/PDF samples. SharePoint and
@@ -439,7 +447,8 @@ QuickBooks migrations require an owner-reviewed dry-run report and backup before
 
 ## Known manual work after the automated migrations
 
-- The owner/admin must complete one QBO authorization when the centralized backend is commissioned,
+- Only if Phase 3A is explicitly resumed, the owner/admin must complete one QBO authorization when
+  the centralized backend is commissioned,
   and again only if Intuit authorization is revoked or expires beyond automatic recovery. Employees
   use Microsoft 365 sign-in only for Vehicle Builder operations.
 - Anyone assigned to manually create or rename true Projects in the QBO website still needs their own

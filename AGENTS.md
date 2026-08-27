@@ -41,9 +41,10 @@ bash packaging/build_macos.sh                  # package Mac app
 
 ## Current work (2026-08)
 
-Production v3.4.0 is live. The immediate roadmap is Phase 4's remaining consumer migration,
-reviewed QuickBooks catalog-change governance, and completion of the visible parts-curation queue;
-see `docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m
+Production v3.4.0 is live. The immediate product follow-up is the finalization cloud boundary and
+the non-backend vehicle-folder migration; the architectural backlog remains Phase 4's consumer
+migration, reviewed QuickBooks catalog-change governance, and the visible parts-curation queue. See
+`docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m
 dtm_buildsheet` or preview config "DTM App") unless intentionally testing SharePoint — cloud sync
 can replace local `parts_db.json`. Safety pins are `pytest tests/golden tests/contract` plus
 `tools/ui_smoke/run_smoke.py` (currently 28 smoke flows). Golden masters must not move merely to make

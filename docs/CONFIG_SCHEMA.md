@@ -2,7 +2,12 @@
 
 Reference for all JSON configuration and data files. Config files live in `workspace/config/` (editable) and `src/dtm_buildsheet/resources/config/` (bundled defaults). Workspace data files (agencies, sales reps, projects, presets) live directly in `workspace/` or its sub-directories.
 
-Last updated: 2026-08-21 (Phases 1–5)
+Last updated: 2026-08-26 (v3.4.0)
+
+`parts_db.json` is the canonical production parts/SKU source. The older `part_catalog.json`,
+`parts_library.json`, `asset_manifest.json`, and `workbook_rules.json` sections document supported
+compatibility/render/workbook consumers; new domain data must not be duplicated into them merely
+because a legacy consumer still reads them.
 
 ---
 
@@ -26,7 +31,8 @@ Last updated: 2026-08-21 (Phases 1–5)
 
 ## part_catalog.json
 
-Defines every known part type: how it is named, categorized, and rendered. This is the central rules engine.
+Defines the workbook-era part/render compatibility rules still used by legacy consumers. It is not
+the canonical production SKU catalog; new canonical part/type data belongs in `parts_db.json`.
 
 ```
 {
@@ -413,46 +419,46 @@ Served at `GET /api/project-options`. The workspace copy (`workspace/config/proj
 
 ---
 
-## agencies.json
+## Agency records
 
-Workspace-root file at `workspace/agencies.json`. Not a config file — not versioned in `workspace/config/`.
+One record per `workspace/agencies/{agency_id}.json`, mirrored to SharePoint
+`Settings/agencies/{agency_id}.json`. The legacy workspace-root `agencies.json` is read only as a
+one-shot migration source.
 
 ```
 {
-  "schema_version": 1,
-  "agencies": [ <AgencyRecord>, ... ]
+  "agency_id": <string, UUID — auto-generated>,
+  "name": <string, required>,
+  "contact_name": <string>,
+  "contact_title": <string>,
+  "contact_phone": <string>,
+  "contact_email": <string>,
+  "mobile_phone": <string>,
+  "fax": <string>,
+  "website": <string>,
+  "bill_address_*": <billing address fields>,
+  "ship_address_*": <shipping address fields>,
+  "notes": <string>,
+  "taxable": <bool>,
+  "customer_since": <string>,
+  "default_preferences": <EquipmentPreferences>,
+  "pricing_overrides": <manufacturer_id to discount-percent map>,
+  "qb_customer_id": <QuickBooks Customer.Id or blank>,
+  "created_at": <ISO 8601>,
+  "updated_at": <ISO 8601>
 }
 ```
 
-### AgencyRecord Object
-```
-{
-  "agency_id":      <string, UUID — auto-generated>,
-  "name":           <string, required — canonical agency name>,
-  "contact_name":   <string, required on creation>,
-  "contact_info":   <string, required on creation — phone or email>,
-  "customer_since": <string, optional — free-text year>,
-  "created_at":     <string, ISO 8601>,
-  "updated_at":     <string, ISO 8601>
-}
-```
-
-Managed through Settings → Agencies or the project wizard's agency combo. The fuzzy search endpoint normalizes abbreviations before matching (PD → police department, SO → sheriff's office, St. → saint, etc.).
+Managed through Settings → Agencies or the project wizard's searchable agency control. The fuzzy
+search endpoint normalizes common abbreviations before matching.
 
 ---
 
-## sales_reps.json
+## Sales-rep records
 
-Workspace-root file at `workspace/sales_reps.json`. Not a config file.
+One record per `workspace/sales_reps/{rep_id}.json`, mirrored to SharePoint
+`Settings/sales_reps/{rep_id}.json`. The legacy flat file is migration-only.
 
-```
-{
-  "schema_version": 1,
-  "sales_reps": [ <SalesRepRecord>, ... ]
-}
-```
-
-### SalesRepRecord Object
 ```
 {
   "rep_id":     <string, UUID — auto-generated>,
@@ -474,17 +480,18 @@ Individual JSON files in `workspace/presets/` (bundled app) or `src/dtm_buildshe
 
 Each file represents one preset and is named `{preset_id}.json`.
 
-### Preset Object (schema_version 2)
+### Preset Object (schema_version 4)
 ```
 {
-  "schema_version": 2,
+  "schema_version": 4,
   "preset_id":     <string, slug-style unique ID>,
   "label":         <string — auto-generated; see auto-naming rules>,
   "agency_ids":    <list[string] — [] = universal>,
   "build_types":   <list[string] — [] = any build type>,
   "vehicle_types": <list[string] — [] = any vehicle>,
   "tag":           <string, optional — suffix for General presets>,
-  "parts":         <list[PartInput-like dicts]>
+  "parts":         <list[rich DraftPart-like dicts]>,
+  "placement_overrides": <dict, optional>
 }
 ```
 
@@ -497,8 +504,12 @@ Label is computed by `preset_service._auto_name()`:
 
 Example: `"St. Cloud PD Patrol PIU/Tahoe"`, `"General Patrol PIU/Tahoe — Fleet23"`.
 
-### v1 Compatibility
-Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `build_types`, or `tag` fields). They behave as universal presets.
+### Compatibility
+Existing presets without `schema_version` are treated as v1 (no `agency_ids`, `build_types`, or
+`tag` fields) and behave as universal presets. v4 preserves picker configuration, guided
+components, placement overrides, accessory relationships, and canonical supply fields
+(`supply_type`, `customer_condition`, `customer_source`). Legacy New/Used/Reused values normalize on
+read without forcing a cloud write. See `PRESETS.md` for the live round-trip contract.
 
 ---
 

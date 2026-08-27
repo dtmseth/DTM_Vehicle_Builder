@@ -30,18 +30,19 @@ Around those two ideas, five thematic pillars:
 
 ---
 
-## Current Direction & Critical Path (updated 2026-08-14)
+## Current Direction & Critical Path (updated 2026-08-26)
 
 Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
 
 **The production foundation is live.** SharePoint collaboration/distribution, the intelligent Part
 Picker, the SKU-level production QuickBooks catalog, agency/customer links, current-price Estimate
-creation, and shared exports are all shipped in v3.3.2. QuickBooks is no longer an externally gated
-side track; it is an active production adapter feeding canonical SKU identity and list pricing.
+creation, shared exports, the first finalization slice, and the v3.4.0 picker/output polish are live.
+QuickBooks is no longer an externally gated side track; it is an active production adapter feeding
+canonical SKU identity and list pricing.
 
 **Phase 3 is substantially complete, but its data work continues.** The current database contains
-772 products and 1,339 SKUs, including 1,224 QB-linked SKUs. Forty-three products still have no
+773 products and 1,339 SKUs, including 1,224 QB-linked SKUs. Forty-three products still have no
 part-type home. The picker and guided systems are in production use; remaining work is targeted
 polish, catalog curation, and removal of fallback/legacy assumptions—not another picker rebuild.
 
@@ -56,20 +57,26 @@ materially alter Builder parts, add a reviewed change queue with durable history
 catalog auto-enrichment. The approved behavior and data requirements live in
 [QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
 
-### Near-term critical path (in order, updated 2026-08-14)
+### Near-term critical path (in order, updated 2026-08-26)
 
-1. ⭐ **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
+1. ⭐ **Finalization cloud boundary** — publish/withdraw the finalized PDF in Shop Documents, expose
+   durable retry state, and reject stale concurrent finalization attempts explicitly.
+2. **Vehicle-folder migration dry run and cutover design** — move toward per-vehicle SharePoint
+   folders with collision/unmatched reports, stable item identity, and no silent legacy fallback.
+   Generated/copied QBO Project naming already changed in v3.4.0; stored legacy names need an audit
+   and manual QBO rename checklist.
+3. **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
    boundary, then identify and migrate the remaining workbook-domain consumers.
-2. **Reviewed QBO catalog-change queue** — require explicit review before recurring production
-   catalog changes can create or materially reshape Builder products; preserve durable history and
-   Builder-owned metadata.
-3. **Finish the visible curation queue** — assign or intentionally exclude the 43 unhomed products
-   and continue acceptance testing through real builds.
-4. **Interior light bars + light-domain consolidation** — model driver/passenger halves and dynamic
+4. **Reviewed QBO catalog-change queue and visible curation** — require explicit review before
+   recurring production catalog changes can create or materially reshape Builder products; preserve
+   durable history and Builder-owned metadata, and assign or intentionally exclude the 43 unhomed
+   products.
+5. **Interior light bars + light-domain consolidation** — model driver/passenger halves and dynamic
    configured heads while retiring remaining workbook-era light assumptions.
-5. **Choose the next larger feature after the seam** — generalized kit SKUs, arbitrary view
-   extensibility, or high-frequency inventory/serial tracking. Generic kit billing/expansion remains
-   an owner decision even though several guided systems already persist component hierarchies.
+
+Centralized QuickBooks is deliberately excluded from the production branch and is not part of this
+sequence. The complete experiment is preserved only on local branch
+`codex/central-qb-backend-wip` at `f5ac223` in case the owner explicitly resumes it.
 
 **Audit & refactor track (adopted 2026-07-06)**: a codebase-wide audit/refactor runs *interleaved*
 with the critical path above — see [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 for
@@ -87,7 +94,10 @@ These are constraints on **how** we move toward the vision. Override them only w
 
 - **Domain data has one home.** If a manufacturer or location appears in two files, one of them is wrong. Don't paper over duplication with sync logic — pick a home and update consumers.
 - **Persisted records are portable.** No absolute filesystem paths inside JSON records. Store relative-to-workspace paths so a project authored on User A's machine works when User B opens it from a shared folder.
-- **Per-record JSON files beat monolithic collection JSONs.** Concurrency-safe, merge-friendly, sync-friendly. New collections should follow this pattern; existing monolithic ones (`agencies.json`, `sales_reps.json`, the 8 config files) are candidates for migration when their next big change lands.
+- **Per-record JSON files beat monolithic collection JSONs.** Concurrency-safe, merge-friendly,
+  sync-friendly. Agencies, sales reps, projects, drafts, and presets use per-record storage; legacy
+  flat agency/sales-rep files are migration inputs only. Shared config remains intentionally
+  document-oriented where one atomic settings document is the real unit of review.
 - **Schemas evolve with explicit migrations.** Every schema change carries a version bump and a migration step that runs on read. We do not silently mutate data when a user opens a file.
 - **Refactor in small, testable passes.** Each change makes two-similar-things-that-aren't-quite-the-same become one shared concept, and only when the conceptual identity is real. "Similar but different" stays separate.
 - **Behavior changes are flagged, never sneaked.** If a UI changes what a user sees or how a build is named, call it out in the commit and the release notes.
@@ -97,14 +107,14 @@ These are constraints on **how** we move toward the vision. Override them only w
 
 ## 3. Current State (Snapshot)
 
-As of v3.3.2 (2026-08-14):
+As of v3.4.0 (2026-08-26):
 
 - SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and drafts;
   generated PPTX/PDF exports are shared separately by agency/year and portable across installs.
 - `parts_db.json` is the production source for the Part Picker, manifest grouping, SKU/QB identity,
   price reconciliation, and substantial planner/render metadata. Legacy config still serves some
   consumers, so Phase 4 is incomplete.
-- The production catalog contains 772 Builder products and 1,339 SKUs; 1,224 SKUs are linked to
+- The production catalog contains 773 Builder products and 1,339 SKUs; 1,224 SKUs are linked to
   QBO Items and 43 products still need a part-type home or intentional exclusion.
 - The Part Picker is the normal build-authoring path. Guided radio, radar, camera, console,
   siren/Howler, light, fixture, accessory, and custom-location workflows persist rich `DraftPart`
@@ -114,8 +124,10 @@ As of v3.3.2 (2026-08-14):
   Project API requires a paid restricted scope; the app links the resulting Project URL/ID.
 - Desktop releases are built for macOS and Windows in CI, published to GitHub, staged in SharePoint,
   and consumed by the in-app updater. Startup/status work is concurrent and non-interactive.
-- Current regression baseline: 2,009 Python tests passed with 1 skipped; 18/18 hermetic browser
-  smoke flows passed.
+- The first vehicle-finalization slice, grouped DUO placement, multi-location round-light editing,
+  customer-supply vocabulary, Estimate conflict/charge review, and PDF/PPTX output split are live.
+- Current regression baseline: 2,077 Python tests passed, with 1 skipped and 1 sandbox-only
+  deselected; all six render goldens and 28/28 hermetic browser smoke flows passed.
 
 ---
 
@@ -125,7 +137,7 @@ Phases are ordered by dependency. Phase 0 must come first. Phase 1 (cloud prep) 
 
 Each phase has a goal, an exit condition, and a list of work items. Phases can overlap when their work doesn't touch the same files.
 
-**Status snapshot** (2026-08-14):
+**Status snapshot** (2026-08-26):
 - ✅ **Phase 0** — complete. Released as v1.1.3.
 - ✅ **Phase 1** — complete. Released as v1.2.0 (per-record agency/sales-rep storage) and v1.2.1 (paths.py scope annotations + audits).
 - ✅ **Phase 2 / 2.5** — cloud go-live and hardening shipped (cloud is the source of truth as of v2.2.9+).
@@ -150,7 +162,8 @@ Each phase has a goal, an exit condition, and a list of work items. Phases can o
 - Make persisted output paths portable. **Important nuance**: the existing architecture already separates the local-only absolute root (`app_settings.json.project_output_root` consumed by `inputs/project_dirs.py:resolve_project_output_dir`) from the computed output directory. That separation is correct and stays. What needs to change is the per-record fields that store *resolved* paths:
   - `IndividualUnit.output_path` (set when a build sheet is generated) — migrate to workspace-relative; resolve to absolute at read time via `paths.resolve_output_path(stored_value)`.
   - `BuildUnit.output_path` — same.
-  - `ProjectRecord.export_dir` — strongly consider dropping this from the persisted record. Today it's empty in the default case (output dir is computed from `app_settings.project_output_root` + agency + year). A per-project custom output override is better expressed as a local-only setting (e.g., `app_settings.local_project_overrides[project_id]`), not baked into a record that will be shared cross-user via SharePoint.
+  - `ProjectRecord.export_dir` — dropped from the persisted record. Output roots remain local app
+    settings; shared project records carry only portable artifact identity/compatibility locators.
   - `app_settings.project_output_root` itself stays absolute and is explicitly designated as **local-only, non-synced** in the path classification (see Phase 1).
 - Replace `mtime`-based draft ordering in `project_drafts.py` with the explicit `created_at` / `updated_at` fields.
 - Extract `send_json(handler, payload, status=200)` to `app/routes/http.py`. Replace the six byte-identical `_json` helpers. Keep `presets._xlsx` local — it's a different MIME concern.
@@ -428,14 +441,14 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ### Phase 3 — `parts_db.json` (Schema, Migration, Intelligent Part Picker)
 
-**Current status (v3.3.2, 2026-08-14)** — read this first if you're picking up Phase 3 work:
+**Current status (v3.4.0, 2026-08-26)** — read this first if you're picking up Phase 3 work:
 
-- ✅ `domain/parts_db_models.py` — 13 dataclasses.
-- ✅ `app/services/parts_db_service.py` — 23 typed queries + 3-tier fallback.
-- ✅ `app/routes/parts_db.py` — 13 REST endpoints under `/api/parts-db/*`.
+- ✅ `domain/parts_db_models.py` — typed domain models for the live schema.
+- ✅ `app/services/parts_db_service.py` — the catalog query/read-write service surface.
+- ✅ `app/routes/parts_db.py` — the `/api/parts-db/*` local API surface.
 - ✅ `config/schemas.py::_validate_parts_db` — top-level validation.
 - ✅ `tools/migrate_workbook_to_parts_db.py` — one-shot migration script.
-- ✅ `parts_db.json` in production (772 products · 1,339 SKUs · 1,224 QB-linked SKUs ·
+- ✅ `parts_db.json` in production (773 products · 1,339 SKUs · 1,224 QB-linked SKUs ·
   120 part types · 63 manufacturers). Forty-three products remain unhomed.
 - ✅ Part Manager SKU Review + hierarchy editing UI.
 - 🟢 **Intelligent Part Picker — live.** Original Chunks 1-8 and the principal guided-system flows

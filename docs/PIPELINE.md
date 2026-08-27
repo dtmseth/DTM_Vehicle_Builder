@@ -76,15 +76,17 @@ Mutable runtime data:
 - `workspace/drafts/`
 - `workspace/projects/`
 - `workspace/presets/` (bundled app only; dev writes to `resources/presets/`)
-- `workspace/agencies.json`
-- `workspace/sales_reps.json`
+- `workspace/agencies/{agency_id}.json`
+- `workspace/sales_reps/{rep_id}.json`
 
 `workspace/` is git-ignored. In development it lives in the repo root; in a packaged app it
 lives in the OS user data folder (`~/Library/Application Support/DTM Vehicle Builder` on Mac,
 `%APPDATA%\DTM Vehicle Builder` on Windows).
 
-`agencies.json` and `sales_reps.json` are seeded on first run from `resources/default_data/`
-if they do not yet exist.
+SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and drafts.
+The old flat `agencies.json` and `sales_reps.json` files are migration inputs only. Generated
+customer PDFs use the visible agency/year export tree; editable PPTX sources use the internal
+`_DTM Internal PowerPoint Sources` tree and can be hydrated by another workstation.
 
 ## Where To Change Things
 

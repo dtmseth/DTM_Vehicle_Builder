@@ -20,8 +20,9 @@ lessons), `PENDING_QB_PARTS.md`, `TRACER_LIGHTHEAD_SELECTION.md`, and `PHASE5_AC
 
 The ROADMAP §7 sketch is an early draft; this is the live shape. Authoritative copy:
 `src/dtm_buildsheet/resources/config/parts_db.json`. Service: `app/services/parts_db_service.py`
-(23 typed queries + 3-tier fallback). Routes: `app/routes/parts_db.py` (`/api/parts-db/*`).
-Models: `domain/parts_db_models.py` (13 dataclasses). Validation: `config/schemas.py::_validate_parts_db`.
+(typed catalog queries with compatibility fallback). Routes: `app/routes/parts_db.py`
+(`/api/parts-db/*`). Models: `domain/parts_db_models.py`. Validation:
+`config/schemas.py::_validate_parts_db`.
 
 **Six-level hierarchy** (Type → Section → Zone → Part Type → Product → Part Number) plus
 cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
@@ -43,8 +44,8 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
 
-**Current population** (v3.3.2, counted 2026-08-14): 5 types · 2 sections · 8 zones ·
-63 manufacturers · **772 products** · 120 part_types · 59 placements · **1,339 SKUs**, including
+**Current population** (v3.4.0, counted 2026-08-26): 5 types · 2 sections · 8 zones ·
+63 manufacturers · **773 products** · 120 part_types · 58 placements · **1,339 SKUs**, including
 **1,224 QB-linked SKUs** from the production catalog. **43 products** have no part-type home yet —
 the current curation queue (filter the SKU grid to "— No part-type —"). Every part_type carries a
 `location_mode` + (text mode) `location_options`. Import tool: `tools/qb_import_all.py`.

@@ -1,6 +1,6 @@
 # DTM Vehicle Builder — Current State
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-26
 
 **Current release:** [v3.4.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.4.0)
 
@@ -21,7 +21,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 - **Part Picker and rendering:** the SKU-level Part Picker, guided radio/radar/camera/console flows,
   siren/Howler behavior, custom locations, rich preset round-tripping, manifest grouping, preview,
   PowerPoint, and PDF output are in production use.
-- **Parts catalog:** `parts_db.json` currently contains 772 products, 1,339 SKUs, 1,224 QB-linked
+- **Parts catalog:** `parts_db.json` currently contains 773 products, 1,339 SKUs, 1,224 QB-linked
   SKUs, 120 part types, and 63 manufacturers. Forty-three products still have no part-type home and
   remain an explicit curation queue.
 - **QuickBooks production:** managed OAuth uses the Netlify token broker; the shared Intuit secret
@@ -162,10 +162,14 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 
 1. **Finish the finalization cloud boundary:** Shop Documents PDF publication/withdrawal, retry
    states, and explicit concurrent stale-finalization rejection.
-2. **Continue the remaining non-backend identity/cloud workflow work** in the approved dependency
-   order: generated QBO Project naming, cloud folders, and migration dry-runs.
+2. **Continue the remaining non-backend identity/cloud workflow work** with an owner-reviewed
+   vehicle-folder migration dry run, collision report, and cutover plan. The new generated/copied
+   QBO Project naming convention already shipped in v3.4.0; stored legacy names still require an
+   audit and manual QBO rename checklist rather than an automatic destructive rename.
 3. **Keep centralized QuickBooks Phase 3A deferred and out of production.** No cloud registration,
-   deployment, authorization, or token migration is currently planned.
+   deployment, authorization, or token migration is currently planned. The complete but excluded
+   experiment is preserved only on local branch `codex/central-qb-backend-wip` at `f5ac223`; do not
+   merge or delete it unless the owner explicitly resumes that design.
 4. Preserve the longer-term parts-DB consumer migration, catalog governance, visible curation queue,
    interior-light-bar work, and generalized kit/light/view roadmap behind the approved feature plan.
 

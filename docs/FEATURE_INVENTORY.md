@@ -1,8 +1,15 @@
 # DTM Vehicle Builder — Feature Inventory
 
-This document enumerates every feature and non-obvious rule in the current codebase. It is the reference for contributors who need to understand system behavior without reverse-engineering the source.
+This document inventories major features and non-obvious rules. It includes the workbook-era
+compatibility path as well as the current GUI workflow.
 
-Last updated: 2026-05-18 (Phases 1–5: Agency DB, Sales Rep DB, Preset Manager, Project Layout Redesign, Embedded Build Editor)
+Last updated: 2026-08-26 (production v3.4.0)
+
+> **Authority note:** `CURRENT_STATE.md` is authoritative for release status and current test
+> totals. `PARTS_DB_AND_PICKER.md`, `QUICKBOOKS.md`, `PROJECT_WORKFLOW.md`, and `UI_STRUCTURE.md` are
+> the detailed current contracts for those systems. The legacy catalog/workbook sections below
+> document the supported compatibility adapter; they are not permission to add new canonical data
+> to `part_catalog.json`, `parts_library.json`, or `workbook_rules.json`.
 
 ---
 
@@ -33,6 +40,12 @@ Last updated: 2026-05-18 (Phases 1–5: Agency DB, Sales Rep DB, Preset Manager,
 23. [Asset Upload & Management](#asset-upload--management)
 24. [String Normalization](#string-normalization)
 25. [Warning System](#warning-system)
+26. [Canonical Parts and Picker](#canonical-parts-and-picker)
+27. [SharePoint Collaboration and Export Split](#sharepoint-collaboration-and-export-split)
+28. [QuickBooks Project and Estimate Workflow](#quickbooks-project-and-estimate-workflow)
+29. [Vehicle Finalization](#vehicle-finalization)
+30. [Canonical Supply Model](#canonical-supply-model)
+31. [v3.4.0 Build and Output Behavior](#v340-build-and-output-behavior)
 
 ---
 
@@ -501,6 +514,8 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 | `app_settings.json` | App-level settings (template save dir, etc.) |
 | `project_options.json` | Project wizard dropdown lists (build types, brands) |
 | `build_rules.json` | Dependency, incompatibility, vehicle/location compatibility, group, and preset rules |
+| `parts_db.json` | Canonical picker/catalog hierarchy, SKU identity/prices, accessories, and type-level render metadata |
+| `estimate_charges.json` | Labor/install-supplies presets and QuickBooks service-item names |
 
 ### Validation (`config/schemas.py`)
 - All files must be JSON objects.
@@ -512,6 +527,9 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 - `workbook_rules.json`: requires `"template_sections"`.
 - `app_settings.json`: sets default `"template_save_dir": ""` if missing.
 - `build_rules.json`: validates known rule groups, rule IDs, and severity values.
+- `parts_db.json`: validates hierarchy references, locations, SKU/catalog fields, picker capabilities,
+  accessories, and guided-system data.
+- `estimate_charges.json`: validates charge categories, build-type defaults, and non-negative amounts.
 
 ### Save Behavior
 - Config saves write with 2-space indentation and a final newline.
@@ -521,7 +539,8 @@ Identical option sets are cached and the same `DataValidation` object is reused,
 ### Workspace vs Bundled
 - Dev: workspace in `{repo}/workspace/`, resources in `src/dtm_buildsheet/resources/`.
 - Bundled: workspace in `~/Library/Application Support/DTM Vehicle Builder` (Mac) or `%APPDATA%\DTM Vehicle Builder` (Windows).
-- On first run, bundled defaults are copied to workspace. User edits in workspace are never overwritten.
+- On first run, bundled defaults are copied to workspace. In cloud mode the shared SharePoint copy
+  is authoritative and can replace the local mirror; use cloud-off mode for ordinary development.
 
 ---
 
@@ -539,7 +558,6 @@ mirrored to SharePoint as shared work records.
 | `customer` | CustomerInfo | Agency name + agency_id + sales_rep_id + quote + year + notes |
 | `preferences` | EquipmentPreferences | Lighting brand plus DUO/TRIO default, camera, bumper, cage, slick top, notes |
 | `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
-| `export_dir` | str | Empty = default output location; user-configurable |
 | `created_at` / `updated_at` | str | ISO timestamps |
 
 Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id` (links to `workspace/drafts/`) and `output_path` (set when the build sheet is generated).
@@ -682,46 +700,35 @@ Duplicate detection: if a preset already exists with the same agency + build_typ
 | POST | `/api/presets/{id}/clone` | Copy with new ID, strip agency_ids |
 | DELETE | `/api/presets/{id}` | Delete workspace preset (cannot delete bundled) |
 
-### Preset Filtering in Project Editor
-`projects_tab.js` filters the preset dropdown by:
-1. `vehicle_types` — compatible with current unit's vehicle model (soft filter: compatible shown first, others grayed).
-2. `agency_ids` — agency-specific presets appear in a separate "Agency Presets" section.
-3. `build_types` — filtered to current unit's build type.
+### Preset Selection in Project Editor
+
+The project wizard/details **All Presets** menu is literal and does not hide entries by vehicle,
+build type, or agency. The build editor's **Load Preset** action is intentionally narrower: it is
+searchable and shows presets compatible with the active vehicle/build context. Loading replaces the
+active build's parts/placements atomically while preserving vehicle identity and notes.
 
 ---
 
 ## Embedded Build Editor
 
-**Modules**: `ui/js/projects_tab.js` (`_showBuildEditor`, `_hideBuildEditor`), `ui/js/preview_canvas.js` (`pvLoad`, `pvReload`), `ui/js/manifest_editor.js` (`loadDraftManifest`)
+**Modules**: `ui/js/projects/build_editor.js`, `ui/js/preview_canvas.js`, and
+`ui/js/manifest_editor.js`
 
 ### DOM Structure
 `#proj-build-editor` is a sibling of `#proj-list-view`, `#proj-detail-view`, and `#proj-editor` inside `#tab-projects`. It contains:
 - `#pbe-header` — unit context line + "← Back to Project" button
 - `#pbe-preview-section` — preview canvas (reuses `#card-preview`)
 - `#pbe-manifest-section` — manifest editor (reuses `#card-manifest`)
-- `#pbe-footer` — "💾 Save & Return to Project" button
+- `#pbe-footer` — Load Preset / Save as New Preset / Apply to Group actions plus Return to Project
 
 `#card-preview` and `#card-manifest` exist only here — they are not duplicated in Settings → Tools.
 
 ### Show/Hide Flow
-**`_showBuildEditor(draftId, unit, project, returnTab)`**:
-1. Hides `#proj-detail-view` (and `#proj-editor` if open).
-2. Shows `#proj-build-editor`.
-3. Populates `#pbe-unit-info` with unit context.
-4. Stores `_pbeReturnProject` and `_pbeReturnTab = "builds"`.
-5. Calls `pvLoad(draftId)` and `loadDraftManifest(draftId)`.
 
-**`_hideBuildEditor()`**:
-1. Hides `#proj-build-editor`, shows `#proj-detail-view`.
-2. Reloads project from API.
-3. Re-renders all three detail tabs (Overview, Edit, Builds).
-4. Calls `_setDetailTab("builds")`.
-
-**`#pbe-save-return` click**:
-1. Calls `saveDraftManifest()` to persist the draft.
-2. Calls `_hideBuildEditor()`.
-
-**Triggering the editor** — from the Builds tab, clicking "Setup Build" or "Edit Build" calls `_showBuildEditor` directly. "Setup Build" first calls the create-draft API to get a `draft_id`.
+Opening Setup/Edit Build hides the project detail and loads the active draft into preview and
+manifest. Return to Project saves pending manifest/placement work through the editor's dirty-state
+guard, reloads the project, and returns to the Overview/build-card workflow. The same editor exposes
+Load Preset next to Save as New Preset in both action areas.
 
 ### pvReload
 `pvReload()` in `preview_canvas.js` reloads using the internally stored `_pvDraftId` — no external state needed.
@@ -868,3 +875,79 @@ Warnings are strings collected at multiple levels and flattened in `generator.py
 - Asset file not found.
 - `specify_palette` used without per-slot color fields filled.
 - Model remap target part_id not found in catalog.
+
+---
+
+## Canonical Parts and Picker
+
+`parts_db.json` is the production catalog and SKU identity source. As counted for v3.4.0 it holds
+773 products, 1,339 SKUs, 1,224 QBO-linked SKUs, 120 part types, 58 placements, and 63
+manufacturers; 43 products remain in the explicit no-part-type curation queue. Product browsing,
+SKU selection, Retail price display, accessories, guided radio/radar/camera/console flows, and most
+render metadata start here. Render size and asset identity belong at the part-type level.
+
+The picker supports searchable hierarchy browsing, parent matches without collapsing the child-SKU
+catalog, conditional guided components, custom/free-point placement, accessory quantity overrides,
+and rich preset round-trip. All catalog writes must use the validated save path because SharePoint
+is the shared settings source of truth.
+
+## SharePoint Collaboration and Export Split
+
+M365/SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and
+drafts. Normal development runs cloud-off unless a SharePoint behavior is being tested deliberately.
+
+Customer-facing PDFs remain in the visible agency/year tree. Editable PPTX sources are stored under
+`_DTM Internal PowerPoint Sources`, and build cards open only the PDF folder. Replace exports use a
+deterministic stable name, remove recognized legacy duplicates after confirmation, and serialize
+upload/delete work so a late retry cannot restore an obsolete version. Explicit Keep both exports
+remain timestamped. Per-vehicle folders and Shop Documents publication are planned follow-up, not
+the v3.4.0 storage shape.
+
+## QuickBooks Project and Estimate Workflow
+
+Production QBO OAuth uses a stateless Netlify exchange/refresh/revoke broker so the Intuit secret is
+never shipped. Each workstation's user tokens remain only in that OS keychain. Centralized
+owner-authorized QBO is deferred and excluded from production.
+
+The app creates non-posting Estimates, not Projects. A user can open the manual QBO Project setup
+and link flow before configuring the unit; Estimate actions still require a configured build. New
+copied Project names omit agency and use `Unit {number} | Build {year}`, with a stable build label
+when unit number is unknown. Estimate review refreshes Retail prices, excludes customer-supplied
+lines, handles zero-price/billed faceplate rules, supports labor/install-supplies presets, delivery,
+and a non-compounding 4% card fee. A changed linked QBO Estimate raises a loud conflict and offers
+differences, overwrite, or create-new; the service repeats the conflict check just before update.
+
+## Vehicle Finalization
+
+Final review is the last build-card action. It is light green until finalized and solid green
+afterward. The review modal requires a current PDF, shows expandable passed/warning/blocked checks,
+stores acknowledgements for warnings, and records the actor/timestamp/fingerprint. Finalized drafts
+are locked server-side until reopened with an actor and reason.
+
+Checks include Core interface presence, slick-top photo eye/light-bar coverage, docking motion,
+radio, camera, expansion module, Patrol radar and partitions, and front/side/rear warning. Shop
+Documents publish/withdraw, durable retry state, and explicit stale-concurrent-finalization rejection
+remain the next finalization boundary.
+
+## Canonical Supply Model
+
+Parts and guided components normalize to DTM-supplied **New** or **Customer supplied**, with the
+latter carrying condition New/Used and a source. Customer-supplied items are installed but excluded
+from Estimates; newly edited Used records require the source. Legacy New/Used/Reused fields remain
+readable without silently rewriting a draft. Manifest/build-sheet comments and customer-used source
+callouts use the red attention treatment.
+
+## v3.4.0 Build and Output Behavior
+
+- Three-inch round lights allocate one total across multiple locations, with one note per location;
+  atomic editing/deletion does not resurrect removed allocation rows.
+- Quantity-aware custom light placement supports equal spacing and a mirrored two-pairs layout.
+  Persisted head/pair identity keeps DUO driver/passenger assets correct. Dual shrouds render paired
+  heads as one placement unit and accessories default to an educated quantity with manual override.
+- Window Tint uses a multi-window selection and percentage with no vehicle placement, bills $65 per
+  window through MISC PART, and omits tint pricing from the customer build-sheet PDF.
+- Gamber-Johnson Motorola/Core specialty faceplates appear at $0, OEM is omitted, and later plates
+  bill normally. DUO light rows combine only in the shop manifest; QBO retains distinct item lines.
+- Concealed speakers remain visible at reduced opacity with a red mounting callout. Long titles,
+  dense manifests, and installation notes paginate safely. Output order is cover, vehicle renders,
+  manifest, then project/installation/delivery notes; internal QB-import labels are omitted.
