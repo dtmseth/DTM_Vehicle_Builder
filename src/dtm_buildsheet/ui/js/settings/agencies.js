@@ -7,6 +7,7 @@
   let _listWired = false;
   let _preferenceLoadToken = 0;
   let _pricingRule = null;
+  let _abbreviationTouched = false;
 
   const _profileFields = [
     "contact_name", "contact_title", "contact_phone", "contact_email",
@@ -115,6 +116,7 @@
         <thead>
           <tr style="border-bottom:2px solid var(--border)">
             <th style="text-align:left;padding:6px 8px">Name</th>
+            <th style="text-align:left;padding:6px 8px">Abbreviation</th>
             <th style="text-align:left;padding:6px 8px">Contact</th>
             <th style="text-align:left;padding:6px 8px">Phone</th>
             <th style="text-align:left;padding:6px 8px">Email</th>
@@ -126,13 +128,14 @@
           ${list.map(a => `
             <tr style="border-bottom:1px solid var(--border)">
               <td style="padding:7px 8px;font-weight:600">${esc(a.name)}</td>
+              <td style="padding:7px 8px;font-weight:600">${esc(a.effective_abbreviation || a.abbreviation || "")}${a.record_source === "project" ? ` <span class="field-hint">Recovered from project</span>` : ""}</td>
               <td style="padding:7px 8px">${esc(a.contact_name)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_phone)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_email)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.customer_since)}</td>
               <td style="padding:7px 8px;white-space:nowrap;text-align:right">
                 <button class="btn btn-secondary btn-sm" data-act="edit" data-id="${escAttr(a.agency_id)}">Edit</button>
-                <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>
+                ${a.record_source === "project" ? "" : `<button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>`}
               </td>
             </tr>`).join("")}
         </tbody>
@@ -147,9 +150,15 @@
 
   function _filterAndRender() {
     const q = ($("agency-search")?.value || "").toLowerCase();
-    const filtered = q
+    const abbreviationMatches = q
       ? _agencies.filter(a =>
+          (a.effective_abbreviation || a.abbreviation || "").toLowerCase() === q)
+      : [];
+    const filtered = abbreviationMatches.length
+      ? abbreviationMatches
+      : q ? _agencies.filter(a =>
           a.name.toLowerCase().includes(q) ||
+          (a.effective_abbreviation || a.abbreviation || "").toLowerCase().includes(q) ||
           (a.contact_name || "").toLowerCase().includes(q))
       : _agencies;
     _renderTable(filtered);
@@ -161,7 +170,12 @@
     _editingId = options.agencyId || null;
     const agency = _editingId ? _agencies.find(a => a.agency_id === _editingId) : null;
 
+    $("agency-modal-title").textContent = _editingId ? "Edit Agency" : "New Agency";
+    $("ac-save").textContent = _editingId ? "Save Agency" : "Create Agency";
+
     $("ac-name").value          = agency?.name           || options.prefill || "";
+    $("ac-abbreviation").value  = agency?.abbreviation || agency?.effective_abbreviation || _ptDefaultAgencyAbbreviation(options.prefill || "");
+    _abbreviationTouched = !!agency?.abbreviation;
     $("ac-contact-name").value  = agency?.contact_name   || "";
     $("ac-contact-phone").value = agency?.contact_phone  || "";
     $("ac-contact-email").value = agency?.contact_email  || "";
@@ -221,16 +235,24 @@
     const panel = $("ac-pricing-overrides");
     if (panel) panel.hidden = event.target.checked;
   });
+  $("ac-name")?.addEventListener("input", (event) => {
+    if (!_abbreviationTouched) {
+      $("ac-abbreviation").value = _ptDefaultAgencyAbbreviation(event.target.value);
+    }
+  });
+  $("ac-abbreviation")?.addEventListener("input", () => {
+    _abbreviationTouched = true;
+  });
 
   $("ac-save")?.addEventListener("click", async () => {
     const name        = $("ac-name").value.trim();
     const contactName = $("ac-contact-name").value.trim();
     if (!name) { toast("Agency name is required", "error"); return; }
-    if (!contactName) { toast("Contact name is required", "error"); return; }
 
     if ($("ac-ship-same")?.checked) _copyBillingToShipping();
     const payload = {
       name,
+      abbreviation: $("ac-abbreviation").value.trim(),
       contact_name:  contactName,
       contact_phone: $("ac-contact-phone").value.trim(),
       contact_email: $("ac-contact-email").value.trim(),

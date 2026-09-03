@@ -45,6 +45,8 @@ function _ptRenderOverview(project) {
         <div class="proj-overview-card-body">${prefHtml}</div>
       </div>
     </div>
+    ${typeof _ptProjectFolderActionsMarkup === "function" ? _ptProjectFolderActionsMarkup(project) : ""}
+    ${typeof _ptReferenceSummaryMarkup === "function" ? _ptReferenceSummaryMarkup(project) : ""}
     <section class="proj-overview-builds" aria-label="Builds">
       <div class="proj-overview-builds-title">Builds</div>
       ${buildsHtml}
@@ -52,4 +54,10 @@ function _ptRenderOverview(project) {
 
   if (typeof _ptBindBuildCardOpeners === "function") _ptBindBuildCardOpeners(panel);
   if (typeof _ptLoadBuildsStats === "function") _ptLoadBuildsStats(project);
+  if (typeof _ptRefreshCompletedPhotoActions === "function") {
+    _ptRefreshCompletedPhotoActions(project.project_id, panel);
+  }
+  if (typeof _ptRefreshProjectFolderPhotos === "function") {
+    _ptRefreshProjectFolderPhotos(project.project_id);
+  }
 }

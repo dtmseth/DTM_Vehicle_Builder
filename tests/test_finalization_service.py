@@ -97,6 +97,43 @@ def test_finalization_requires_current_pdf_locks_edits_and_records_reopen(tmp_pa
     }, paths)["ok"]
 
 
+def test_individual_finalization_requires_unit_number_or_vin(tmp_path, monkeypatch):
+    paths = _paths(tmp_path)
+    import dtm_buildsheet.app.services.shared_work_service as shared
+    monkeypatch.setattr(shared, "mirror_project_to_cloud_in_background", lambda *args, **kwargs: None)
+    draft = new_draft(parts=_complete_final_check_parts())
+    save_draft(draft, paths.workspace_drafts_dir)
+    project = new_project(build_units=[BuildUnit(
+        unit_id="unit-1",
+        individuals=[IndividualUnit(
+            individual_id="vehicle-1",
+            draft_id=draft.draft_id,
+            pdf_path="output/final.pdf",
+            last_exported_at="2999-01-01T00:00:00+00:00",
+        )],
+    )])
+    save_project(project, paths)
+
+    check = handle_finalization_check(project.project_id, "unit-1", "vehicle-1", paths)
+
+    assert check["ok"] is True
+    assert check["blocking"][0]["id"] == "vehicle_identifier_required"
+
+
+def test_sparse_project_without_draft_cannot_enter_finalization(tmp_path):
+    paths = _paths(tmp_path)
+    project = new_project(build_units=[BuildUnit(
+        unit_id="history",
+        individuals=[IndividualUnit(individual_id="archive")],
+    )])
+    save_project(project, paths)
+
+    result = handle_finalization_check(project.project_id, "history", "archive", paths)
+
+    assert result["ok"] is False
+    assert result["error"] == "Configure this build before finalizing"
+
+
 def test_finalization_counts_guided_child_parts_and_compares_iso_timestamps(tmp_path, monkeypatch):
     paths = _paths(tmp_path)
     import dtm_buildsheet.app.services.shared_work_service as shared
@@ -123,6 +160,18 @@ def test_finalization_counts_guided_child_parts_and_compares_iso_timestamps(tmp_
     assert check["warnings"] == []
     assert len(check["checks"]) == 17
     assert all(item["status"] == "passed" for item in check["checks"])
+
+    finalized = handle_finalize_build(project.project_id, "unit-1", "", {
+        "fingerprint": check["fingerprint"], "acknowledgements": [],
+    }, paths)
+    assert finalized["ok"] is True
+    assert finalized["shop_publication_status"] == ""
+
+    reopened = handle_reopen_build(project.project_id, "unit-1", "", {
+        "reason": "Update group build configuration",
+    }, paths)
+    assert reopened["ok"] is True
+    assert reopened["shop_publication_status"] == ""
 
 
 def test_finalization_returns_visible_warning_check_results(tmp_path, monkeypatch):
@@ -221,3 +270,47 @@ def test_finalization_accepts_core_canport_photo_eye_motion_and_patrol_equipment
     check = handle_finalization_check(project.project_id, "unit-1", "", paths)
     assert check["warnings"] == []
     assert all(item["status"] == "passed" for item in check["checks"])
+
+
+def test_finalization_recognizes_motion_saved_in_legacy_console_setup(tmp_path, monkeypatch):
+    paths = _paths(tmp_path)
+    import dtm_buildsheet.app.services.shared_work_service as shared
+    monkeypatch.setattr(shared, "mirror_project_to_cloud_in_background", lambda *args, **kwargs: None)
+
+    draft = new_draft(parts=[
+        DraftPart(
+            name="Center Console",
+            part_number="7170-0734-04",
+            part_type="console",
+            picker_config={
+                "console_setup": {
+                    "consoleChoice": {
+                        "product_id": "gamber_johnson_7170_0734_04",
+                        "part_number": "7170-0734-04",
+                    },
+                    "motionAttachment": {
+                        "product_id": "gamber_johnson_7160_0220",
+                        "model": "Mongoose 9-inch locking slide arm",
+                        "part_number": "7160-0220",
+                    },
+                    "dockingStation": {
+                        "product_id": "gamber_johnson_7160_1982_10",
+                        "model": "Docking station",
+                        "part_number": "7160-1982-10",
+                    },
+                },
+            },
+        ),
+    ])
+    save_draft(draft, paths.workspace_drafts_dir)
+    project = new_project()
+    project.build_units = [BuildUnit(
+        unit_id="unit-1", build_type="Admin", draft_id=draft.draft_id,
+        pdf_path="output/final.pdf", last_exported_at="2999-01-01T00:00:00+00:00",
+    )]
+    save_project(project, paths)
+
+    check = handle_finalization_check(project.project_id, "unit-1", "", paths)
+    statuses = {item["id"]: item["status"] for item in check["checks"]}
+
+    assert statuses["docking_without_motion"] == "passed"

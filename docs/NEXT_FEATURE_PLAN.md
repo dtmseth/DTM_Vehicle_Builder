@@ -1,10 +1,11 @@
 # Next Feature Plan — Vehicle Workflow and Picker Improvements
 
-**Planning date:** 2026-08-18; status refreshed 2026-08-26
+**Planning date:** 2026-08-18; status refreshed 2026-09-03
 
 **Status:** v3.4.0 shipped Phases 1, 2, 4, the Phase 3B naming change, and the core Phase 5 workflow.
-Phase 3A is deferred and excluded from production. Phase 3C/3D plus the Phase 5 cloud
-publication/retry boundary remain follow-up work.
+Phase 3A is deferred and excluded from production. Phase 3C/3D and the Phase 5 cloud boundary are
+shipped in v3.5.0 behind independent explicit cutover flags after live SharePoint package
+verification and folder flattening.
 
 **Rule:** preserve `individual_id` as the durable vehicle identity. Unit numbers, generated labels,
 QuickBooks Project names, and SharePoint folder names are mutable display data and must never be the
@@ -21,9 +22,9 @@ only link between a vehicle and its draft, outputs, Estimate, or finalization st
 6. Assign the correct alternating/side assets to grouped custom DUO placements.
 7. Add vehicle finalization, collaborator-visible status, guarded reopening, and an extensible
    warning-only final-check engine.
-8. Move generated files into per-vehicle SharePoint folders beneath a newly created
-   `Vehicle Project Database` root, provision an empty `Reference Photos & Videos` folder, and
-   publish a PDF-only copy to the Shop Documents library while the vehicle is finalized.
+8. Move PDFs into per-vehicle SharePoint folders beneath a newly created
+   `Vehicle Project Database` root, keep year-level **Reference Photos & Videos**, and publish a
+   PDF-plus-reference-photo package under Shop Documents / **Shop Project Database** while finalized.
 9. *(Deferred; not on the active production roadmap.)* Replace per-workstation QuickBooks
    authorization with one owner-authorized company connection in a protected backend, while
    employees authenticate only with their Microsoft 365 identities.
@@ -92,6 +93,12 @@ fit geometry, so both Customer supplied / New and Customer supplied / Used compo
 from main-console bundle resolution. A PDF-scale review shows the new red callouts cleanly. The
 intentional PowerPoint golden changes were reviewed, re-recorded, and pass with focused renderer
 coverage.
+
+**Post-release correction:** base-console selection and bundle recommendation are now separate.
+The exact base SKU is never replaced by feature choices; a better bundle is an explicit suggestion.
+Likewise, physical presence and billing are separate: every selected console component remains a
+build row, while `console_kit_included` prevents only a duplicate Estimate charge. Older saved
+console snapshots remain valid evidence for final-design equipment checks.
 
 Add structured fields to draft/input component records while retaining legacy read compatibility:
 
@@ -253,20 +260,36 @@ logs; and backend unavailability fails closed without falling back to stale loca
 
 ### 3B. Generated QuickBooks Project names
 
-**Generated/copied naming shipped in v3.4.0.** The stored-name audit/migration and manual QBO rename
-checklist below remain open.
+**Shipped in v3.5.0, superseding the v3.4.0 formatter.** One canonical visible identity now drives
+unit cards, folders, PDF filenames, and generated/copied QBO names. The dry-run audit/report is
+implemented; the report must be reviewed and existing true QBO Projects renamed manually before
+cutover.
 
 The shared formatter now generates/copies names as:
 
-- `Unit {unit number} | Build {year}` when known.
-- `{build type} #{ordinal} | Build {year}` when unknown.
+- visible/card/folder: `2027 SCPD PIU - Patrol - Unit 12 - VIN 123456`;
+- QBO: `2027 SCPD PIU | Patrol | Unit 12 | VIN 123456`.
 
-Do not include agency because QBO already presents the parent Customer. Keep `individual_id`,
+Names use the short vehicle model without the make. Police Interceptor Utility is always `PIU`,
+F-150 Lightning is `Lightning`, and other labels use recognizable model names such as `Durango`,
+`F-150`, `Traverse`, and `Tahoe`.
+
+Actual/new-vehicle unit number and VIN-last-six are both included when known; either one alone satisfies new vehicle
+identity. A vehicle without either cannot export/finalize. Existing incomplete records receive a
+stable `Pending ID` label derived from `individual_id` so folders/cards are unique, then the same
+folder item is renamed in place when a VIN arrives. Existing/replaced-vehicle year, make, model,
+build type, unit, and VIN remain editable display metadata for the dedicated Existing Vehicle card;
+they are never current identity fallbacks.
+
+Include the compact Agency Abbreviation even though QBO also presents the parent Customer so copied
+names remain self-identifying in exports and external lists. Keep `individual_id`,
 `qb_project_id`, Estimate IDs, and output paths unchanged when the display name changes.
 
-The guarded migration command/service remains follow-up work. It should scan every shared project, preview old/new names,
-backs up changed records, updates only generated-format `qb_project_name` values, mirrors changes to
-SharePoint, and reports custom or incomplete names it cannot safely rewrite.
+The read-only migration report now scans every local/shared project snapshot and previews old/new
+names, missing identifiers, legacy output/folder moves, same-agency/year duplicates, and exact
+manual QBO renames. An owner-approved mutating migration remains follow-up work: it must back up
+changed records, update only generated-format stored names, mirror deliberately to SharePoint, and
+report custom or incomplete names it cannot safely rewrite.
 
 Current API limitation: the app cannot list or rename real QBO Projects with its approved Accounting
 scope. Therefore the migration can update Builder's stored/copied name, but existing QBO Project
@@ -275,10 +298,27 @@ vehicle, QBO Project ID, old name, and desired name so that manual work is finit
 
 ### 3C. SharePoint vehicle folders
 
-**Not yet implemented.** v3.4.0 keeps customer PDFs in the visible agency/year tree and editable
-PPTX sources under `_DTM Internal PowerPoint Sources`, with deterministic Replace filenames and
-legacy duplicate cleanup. That shipped split is the current runtime behavior; the per-vehicle
-hierarchy below is the next migration target and must begin with a dry run.
+**Shipped and activated in v3.5.0.** The two approved roots and all current project trees were
+provisioned and reconciled in place to the abbreviation-qualified naming convention before
+per-vehicle Company PDF publication was enabled. New PDFs now write exclusively to the per-vehicle
+tree; there is no dual write to the legacy agency/year export root. The approved detailed product contract is
+[BUILD_REFERENCE_PHOTOS.md](BUILD_REFERENCE_PHOTOS.md).
+
+One project means one agency build year. Enforce `agency_id + normalized build_year` for new
+records and open/extend the existing project instead of creating a duplicate. Existing duplicates
+require a dry-run merge report; never guess across drafts, vehicles, notes, QuickBooks links, or
+finalization state.
+
+Folder provisioning is independently gated from PDF cutover. With
+`company_folder_provisioning_enabled` / `shop_folder_provisioning_enabled`, project save creates the
+two agency roots plus its year/reference folders, and every known vehicle
+creates its durable item-ID subtree. Missing identifiers use a stable `Pending ID` suffix until a
+unit number or VIN arrives. This allows additive construction and migration copying
+before the app's active Company/Shop PDF paths are switched.
+
+Agency Manager and QBO Customer import are not provisioning boundaries. Only a saved vehicle
+project can create/retry roots. Legacy Build Photos agencies enter this scope through ordinary
+completed agency/year projects created by the reviewed migration.
 
 Create a completely new `Vehicle Project Database` folder item. Do not rename the existing
 `Vehicle Builder Projects` folder: a fresh item prevents the active app path from inheriting the
@@ -289,88 +329,173 @@ Target hierarchy:
 ```text
 Vehicle Project Database/
   {Agency}/
-    {Build Year}/
-      {Vehicle folder}/
-        {vehicle}.pptx
-        {vehicle}.pdf
-        Reference Photos & Videos/
+    {Agency Abbreviation} - {Build Year}/
+      Reference Photos & Videos/
+      {Canonical Vehicle Name}/
+        {Canonical Vehicle Name}.pdf
 ```
 
-Use **Reference Photos & Videos** as the final single folder name.
+Do not upload new PPTX files after cutover. The app project/draft is the editable source and PPTX is
+an internal local conversion artifact. Videos remain Company Files only.
 
 Persist the SharePoint vehicle folder item ID (and current display name) on `IndividualUnit` once
 provisioned. The item ID, not a reconstructed unit-number path, is the durable locator. Provision
 folders asynchronously when vehicles are created and retry on first export; expose provisioning
-status without freezing the UI.
+status without freezing the UI. Reconciliation resolves that ID to its current Graph parent/path
+before moving it directly beneath the canonical year, so an out-of-band SharePoint move or a model
+edit cannot strand photos behind a stale saved path.
 
 Update upload, hydrate, replace/version cleanup, delete, list, PDF attachment, and **Show in
 SharePoint** paths together. After cutover, normal app reads and writes use only the new root; the old
 folder must not remain as a hidden runtime fallback that could split files between structures.
 
+Past Shop photo archives map to ordinary projects for their actual agency/build year, with only the
+known vehicle model, optional build type/unit/VIN, and photos—no invented draft, PDF, finalization,
+QBO state, record kind, or label. After the copied photos are verified, the project is marked
+completed and becomes browseable in Project Archives. Ambiguous source folders remain unmatched for
+manual review rather than receiving an invented name.
+
+The completed live migration inventory is 28 agency folders, 46 source build/photo groups, and
+1,043 files. Forty-five dated groups consolidate to 34 projects across 27 confidently matched saved
+agencies. The approved **Benton-Stearns Negotiator Van** (`BSNV`) 2025 project brings the total to
+35 completed projects. All 1,043 files were copied into their normal Completed Build Photos
+destinations and independently verified by relative path and size; source and destination both
+total 11,934,028,588 bytes. The legacy source remains untouched.
+
 The migration first performs a dry-run, creates the new root, then **copies** uniquely matched
-historical PPTX/PDF files into new per-vehicle folders. Copying creates clean destination items rather
+historical PDFs and photos into new per-vehicle folders. PPTX files stay out of the new visible
+trees. Copying creates clean destination items rather
 than carrying the old folder identity forward. It validates destination hashes/sizes, updates project
-records to the new file items, creates the empty reference folder, detects collisions, and reports
-unmatched/orphan files. Never guess when two vehicles could claim the same historical filename.
+records to the new file items, detects collisions, and reports unmatched/orphan files. Never guess
+when two vehicles could claim the same historical filename.
 Keep the old root untouched and outside the active app path until the owner reviews the migration
 report and new structure; archiving or deleting it is a separate, explicitly approved cleanup.
+Existing Shop build photos use the same copy-first rule: inventory, reviewed historical-record
+mapping, copy, count/size/hash validation, app-path cutover, app verification, and only then a
+separately approved old-location archive/delete. No migration step moves the source in place.
 
 ### 3D. Finalized PDF publication for the shop
 
+**Shipped and activated in v3.5.0.** Publication/withdrawal, exact owned-item IDs, retry
+state, folder relocation, and Completed Build Photos preservation are active behind the explicit
+`shop_publication_enabled` gate. The first live package was uploaded and hash-verified before the
+gate was recorded as the production default.
+
 Add a second configured SharePoint destination for the **Shop Documents** library. Resolve and store
 the library drive ID during setup instead of assuming its display name is its internal Graph name.
-Use a parallel, PDF-only hierarchy:
+Create a **Shop Project Database** root and add a folder for every physical vehicle. The existing
+**Build Photos** tree remains the read-only migration source until copied data and app cutover are
+verified:
 
 ```text
 Shop Documents library/
-  Vehicle Project Database/
+  Shop Project Database/
     {Agency}/
-      {Build Year}/
-        {Vehicle folder}/
-          {vehicle}.pdf
+      {Agency Abbreviation} - {Build Year}/
+        {Canonical Vehicle Name}/
+          {Canonical Vehicle Name}.pdf
+          Build Reference Photos/
+          Completed Build Photos/
 ```
 
-Do not place PPTX files or the reference-media folder in Shop Documents. The normal Company Files
-destination remains the complete working record and may contain draft outputs. The shop destination
-is a publication surface and contains only the PDF for a currently finalized vehicle.
+Do not place PPTX files or videos in Shop Documents. Finalization publishes the PDF and the effective
+unit-group reference photos, while continuing to honor legacy project/individual assignments. The app owns its PDF and published **Build Reference
+Photos**, but must never modify or delete **Completed Build Photos**.
+
+The post-migration browser now treats photos as galleries rather than filenames. Reference galleries
+are populated immediately from saved project assignments. The exact year-level Company **Reference
+Photos & Videos** folder is the project's physical unassigned-photo inbox: when that project opens,
+JPG/PNG files added through OneDrive or SharePoint are reconciled into project metadata. Videos stay
+Company-only. Completed galleries enumerate only the
+project's exact stored vehicle folders on a background worker, prefer an exact locally synced
+OneDrive folder when available, and otherwise use Graph. Normalized thumbnails are cached locally
+and in Company Files `Settings/_DTM Photo Thumbnail Cache/v2` by source identity/eTag, so another
+workstation can download the small shared JPEG; the full-resolution file is hydrated only when the user
+opens it and is then retained in the app's local exact-media cache. Project Overview and Project Archives expose project reference/completed galleries;
+unit-group headers own reference controls, while vehicle cards expose only conditional completed-
+photo viewing plus exact-folder navigation. The direct completed-gallery action is shown only after
+a scan finds a supported image in the applicable exact completed-photo folder. The last authoritative
+presence result is cached locally for immediate project rendering while a background refresh checks
+the folder; completed and
+design-finalized states alone do not reveal it. The broad same-agency reuse browser also
+uses a persistent inventory cache and background refresh instead of blocking the local server on a
+full recursive walk.
+
+Thumbnail work uses two tiers. Four background workers prepare persistent small display previews,
+and six foreground workers promote the photos currently on screen; three separate workers perform
+exact-source normalization and shared-cache publication only after a visible card requests its
+upgrade. App startup compares a persisted fingerprint of saved project-photo metadata and skips
+preparation entirely when unchanged; it never recursively scans every completed-photo folder. The
+project currently being viewed receives the external-folder refresh, and the upper-right connection pill
+shows checking or display-ready progress with a progress bar. A cache miss therefore becomes a fast
+preview, `Preparing`, or an explicit Retry state—never a permanent spinner. Exact, source-versioned
+thumbnails replace previews when available. Failed previews complete the batch and retry on demand;
+closing the app cancels queued work rather than waiting for the whole inventory. Full-resolution
+viewing uses a separate high-priority job: new thumbnail network work yields, the viewer and connection
+pill report the active download, the browser polls a short preparing response, and success persists the
+exact original locally. Its backend wait is bounded at 18 seconds and its viewer budget at 22 seconds.
+
+Portrait thumbnails preserve the full image with side letterboxing and regenerate from exact source
+bytes in a versioned cache. Completed galleries use thumbnail multi-select plus one disabled-until-
+selected **Use as Reference Photo(s)** action. Its compact dialog chooses a destination project and
+optional unit group; project-only reuse creates an unassigned project photo and a group selection
+assigns directly. The full-resolution viewer is view-only. One selectable **Project photos** gallery
+shows assigned/unassigned state and notes, adds more photos, assigns selected photos to a unit group,
+and removes selected metadata without deleting source media. The source browser overlays
+**Completed** on Shop photos, uses the canonical vehicle name instead of folder paths, and can browse
+every app agency while defaulting to the current agency, vehicle make/model, and build type. Empty
+galleries show one centered Add action.
+Project completion now presents a confirmation warning before archive placement.
 
 Prepare the library configuration and upload/delete service in this phase, but trigger publication
 through vehicle finalization in Phase 5. Store `shop_pdf_item_id`, the published finalization/content
 fingerprint, path, and timestamp on `IndividualUnit` so replacement and withdrawal are exact and
 idempotent.
 
-Acceptance: create a multi-vehicle project on one workstation, observe every Company Files vehicle
-folder and empty reference folder, export/replace both formats, hydrate on a second instance, attach
-the PDF to an Estimate, and open the correct SharePoint folder. The Shop Documents path must remain
-empty before finalization. Migration rollback instructions and the unmatched file report are required
-before production execution.
+Acceptance: create a multi-vehicle project on one workstation, add reusable project photos,
+assign them to unit groups, export/replace the PDF, hydrate on a second instance, attach the PDF to
+an Estimate, and open the correct SharePoint folder. Reopen/retry must preserve completed photos.
+Migration rollback instructions and the unmatched-file report are required before production
+execution.
 
 ## Phase 4 — concealed siren-speaker rendering
 
-**Shipped in v3.4.0.** Preview and PowerPoint both use normalized concealment fields,
-reduced opacity, and a compact red callout. The generated review PDF includes a behind-grille case.
+**Shipped in v3.4.0; presentation tuning shipped in v3.5.0.** Preview and
+PowerPoint both use normalized concealment fields, 80% concealed-asset opacity, and a compact,
+70%-opaque red `SPEAKER BEHIND ...` callout sized to its text. The generated review PDF includes a
+behind-grille case. Post-release PDF legibility work also makes render-card support text black,
+raises manifest body text to at least 9 pt while compacting customer-supplied status into two lines,
+and moves 10-point reference-photo notes into a high-contrast overlay so the photos render larger.
+The callout itself is now draggable in Build Preview, persists relative-image X/Y offsets, and draws
+a red leader to the nearest speaker instance in preview and PDF. Manifest categories share pages
+behind high-contrast section bars; a pagination guard carries a section to the next page when its
+first item would not fit beneath the heading.
 
 Model concealment as normalized placement data, not a renderer string check. Extend the planned
 placement with a value such as `mount_visibility = behind_grille | behind_oem_bumper | normal` and
 an optional callout label. Both preview and PowerPoint consume it.
 
 For concealed siren speakers, render the asset at reduced opacity and place a compact red callout
-(`BEHIND GRILLE` or `BEHIND OEM BUMPER`) adjacent to it. Preserve the existing `behind_vehicle`
-z-order behavior, but do not rely on z-order alone because a fully hidden asset communicates nothing.
+(`SPEAKER BEHIND GRILLE` or `SPEAKER BEHIND OEM BUMPER`) adjacent to it. The callout can be moved
+independently of the speaker placement; connect it to the nearest speaker with a red leader.
+Preserve the existing `behind_vehicle` z-order behavior, but do not rely on z-order alone because a
+fully hidden asset communicates nothing.
 If PowerPoint opacity requires an XML alpha transform, isolate that implementation in one tested PPT
 helper rather than spreading XML manipulation through the renderer.
 
-Acceptance: visual review on each vehicle/view where those locations exist, preview/PPTX parity, and
-no opacity change for normal speaker locations.
+Acceptance: visual review on each vehicle/view where those locations exist, preview/PPTX parity,
+saved callout-position round trip, nearest-speaker leader selection, and no opacity change for normal
+speaker locations.
 
 ## Phase 5 — vehicle finalization MVP
 
-**Core workflow shipped in v3.4.0.** Durable status/audit fields, current-PDF and
+**Core workflow shipped in v3.4.0; cloud-boundary extension shipped in v3.5.0.** Durable status/audit fields, current-PDF and
 fingerprint checks, equipment relationship/coverage warnings with required acknowledgement notes,
 a focused final-review UI with expandable passed checks, server-side edit locks, and reasoned
-reopening are live. The SharePoint Shop Documents
-publication/withdrawal and retry state described below remain follow-up before Phase 5 is complete;
-so do automatic stale-draft reopening and explicit concurrent stale-finalization rejection.
+reopening are live. v3.5.0 adds SharePoint Shop Documents
+publication/withdrawal, exact owned-item IDs, durable retry state, and pre-cutover finalized-build
+catch-up behind an explicit enabled flag. Automatic stale-draft reopening and explicit concurrent
+stale-finalization rejection are still follow-up work.
 
 ### Durable state
 
@@ -434,10 +559,18 @@ Current delivery state and next gates:
 
 1. **Shipped in v3.4.0:** placement grouping/DUO roles, guided optionality, canonical supply,
    multi-location round lights, concealed speakers, generated QBO naming, and finalization core.
-2. **Next:** complete the finalization cloud boundary—Shop Documents publication/withdrawal,
-   durable retry states, and explicit stale concurrent-finalization rejection.
-3. **Then:** dry-run and review the per-vehicle SharePoint folder migration before any production
-   copy or cutover; follow with the stored-name audit/manual QBO rename checklist.
+2. **Shipped and activated in v3.5.0:** canonical unit-card/folder/PDF/QBO naming,
+   reference-photo assignment/output, Company vehicle folders, and Shop publication/withdrawal with
+   durable retry state. Progressive agency/project/vehicle provisioning, exact photo-folder open
+   actions, sparse past projects, and the completed-project archive tree are also implemented.
+   PDF publication/cutover remains independently controllable, but all four lifecycle/publication
+   gates are enabled after the approved folder run and live package verification. Cloud-off tests
+   and representative output review pass.
+3. **Completed additive migration:** the historical-photo inventory, reviewed mapping, 35 completed
+   projects, 46 folder trees, and all 1,043 photo copies are live and verified. The next cloud gate
+   was the owner-approved Company PDF and Shop publication activation. Follow the manual QBO rename
+   checklist before those accounting names are treated as complete.
+   Explicit stale concurrent-finalization rejection remains a separate workflow hardening item.
 4. **Deferred/out of production:** centralized QuickBooks. Do not make it a release dependency
    unless the owner explicitly resumes Phase 3A.
 

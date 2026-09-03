@@ -49,6 +49,16 @@ def load_config(filename: str, paths: AppPaths | None = None) -> dict:
     return validate_config_payload(filename, migrated)
 
 
+def load_bundled_config(filename: str, paths: AppPaths | None = None) -> dict:
+    """Load a packaged config seed without materializing a workspace copy."""
+    if filename not in REQUIRED_CONFIG_FILES:
+        raise ValueError(f"Unknown config file: {filename}")
+    active_paths = paths or AppPaths()
+    raw = load_json_file(active_paths.resources_dir / "config" / filename)
+    migrated = migrate(filename, raw)
+    return validate_config_payload(filename, migrated)
+
+
 def save_config(filename: str, data: object, paths: AppPaths | None = None) -> dict:
     active_paths = paths or ensure_workspace()
     migrated = migrate(filename, data if isinstance(data, dict) else {})

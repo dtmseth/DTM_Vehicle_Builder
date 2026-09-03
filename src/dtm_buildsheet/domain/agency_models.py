@@ -63,6 +63,9 @@ CUSTOMER_FIELD_LABELS = {
 class AgencyRecord:
     agency_id: str
     name: str
+    # Optional user override. Blank legacy records derive a display value from
+    # the agency name until the record is next edited.
+    abbreviation: str = ""
     contact_name: str = ""
     contact_title: str = ""
     contact_phone: str = ""
@@ -94,5 +97,15 @@ class AgencyRecord:
     # continue to inherit the shared Default customer-pricing rule.
     pricing_overrides: dict[str, float] = field(default_factory=dict)
     qb_customer_id: str = ""   # FK → QuickBooks Customer.Id (empty = not linked)
+    # Durable roots for the progressively provisioned Company/Shop vehicle
+    # trees. Item IDs survive an agency rename; paths are display/opening data.
+    company_folder_id: str = ""
+    company_folder_path: str = ""
+    company_folder_status: str = "not_provisioned"
+    company_folder_error: str = ""
+    shop_folder_id: str = ""
+    shop_folder_path: str = ""
+    shop_folder_status: str = "not_provisioned"
+    shop_folder_error: str = ""
     created_at: str = ""
     updated_at: str = ""

@@ -3,7 +3,7 @@
 function _ptProjectBuildSummary(project) {
   const groups = new Map();
   for (const unit of (project.build_units || [])) {
-    const vm = _PT.vehicleMap[unit.vehicle_model] || {};
+    const vm = _ptVehicleConfig(unit.vehicle_model);
     const vehicle = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "—");
     const buildType = unit.build_type || "—";
     const key = `${vehicle}\u0000${buildType}`;
@@ -185,12 +185,6 @@ function _ptRenderEditUnits() {
   if (!listEl) return;
   const currentAgency = $("et-agency")?.value?.trim() || "Agency";
 
-  const vOpts = _PT.vehicles.map(v => {
-    const vm  = _PT.vehicleMap[v] || {};
-    const lbl = vm.make ? `${v} — ${vm.make} ${vm.model}` : v;
-    return `<option value="${esc(v)}">${esc(lbl)}</option>`;
-  }).join("");
-
   const btVals = _PT.projectOptions?.build_types || ["Patrol", "Admin", "Unmarked", "K-9", "Fire"];
 
   listEl.innerHTML = _PT.editTabUnits.map((u, i) => {
@@ -227,7 +221,7 @@ function _ptRenderEditUnits() {
       <div class="form-row">
         <div class="form-group proj-vehicle-group">
           <label>Vehicle Model</label>
-          <select class="et-u-vehicle">${vOpts}</select>
+          <select class="et-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
         </div>
         <div class="form-group proj-buildtype-group">
           <label>Build Type</label>
@@ -279,7 +273,7 @@ function _ptRenderEditUnits() {
   _PT.editTabUnits.forEach(u => {
     const row = listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"]`);
     if (!row) return;
-    row.querySelector(".et-u-vehicle").value = u.vehicle_model;
+    row.querySelector(".et-u-vehicle").value = _ptCanonicalVehicleType(u.vehicle_model);
     const qtyInput  = row.querySelector(".et-u-qty");
     const indBtn    = row.querySelector(".proj-ind-toggle-btn");
     const vehSelect = row.querySelector(".et-u-vehicle");
@@ -337,7 +331,7 @@ function _ptCollectEditUnits() {
     u.quantity      = Math.max(1, parseInt(row.querySelector(".et-u-qty").value, 10) || 1);
     const indRows = row.querySelectorAll(".proj-ind-row");
     if (indRows.length) {
-      const vm = _PT.vehicleMap[u.vehicle_model] || {};
+      const vm = _ptVehicleConfig(u.vehicle_model);
       u.individuals = Array.from(indRows).map(ir => {
         const iid      = ir.dataset.iid;
         const existing = u.individuals.find(i => i.individual_id === iid) || {};
@@ -350,8 +344,12 @@ function _ptCollectEditUnits() {
           model:                vm.model || existing.model || "",
           color:                ir.querySelector(".ind-color")?.value.trim()          || "",
           vin:                  ir.querySelector(".ind-vin")?.value.trim()            || "",
-          existing_unit_number: ir.querySelector(".ind-existing-unit")?.value.trim() || "",
-          existing_vin:         ir.querySelector(".ind-existing-vin")?.value.trim()  || "",
+          existing_year:        ir.querySelector(".ind-existing-year")?.value.trim() || "",
+          existing_make:        ir.querySelector(".ind-existing-make")?.value.trim() || "",
+          existing_model:       ir.querySelector(".ind-existing-model")?.value.trim() || "",
+          existing_build_type:  ir.querySelector(".ind-existing-build-type")?.value.trim() || "",
+          existing_unit_number: ir.querySelector(".ind-existing-unit-number")?.value.trim() || "",
+          existing_vin:         ir.querySelector(".ind-existing-vin")?.value.trim() || "",
           notes:                ir.querySelector(".ind-notes")?.value.trim()         || "",
           draft_id:             ir.dataset.draftId || null,
         };

@@ -10,6 +10,7 @@ class CustomerInfo:
     name: str = ""
     agency: str = ""          # display name
     agency_id: str = ""       # FK → agencies/{id}.json
+    agency_abbreviation: str = ""  # editable agency identity used in paths/names
     sales_rep_id: str = ""    # FK → sales_reps/{id}.json
     quote_number: str = ""
     build_year: str = ""        # canonical project year used in generated outputs
@@ -47,6 +48,10 @@ class BuildUnit:
     quantity: int = 1
     preset_id: str = ""
     individuals: list = field(default_factory=list)
+    company_group_folder_id: str = ""
+    company_group_folder_path: str = ""
+    shop_group_folder_id: str = ""
+    shop_group_folder_path: str = ""
 ```
 
 ## IndividualUnit
@@ -56,7 +61,13 @@ class BuildUnit:
 class IndividualUnit:
     individual_id: str         # durable identity; never derive associations from unit number
     unit_number: str = ""
-    vin: str = ""
+    vin: str = ""              # actual VIN; sole VIN used for current identity/naming
+    existing_year: str = ""    # optional replaced-vehicle display metadata
+    existing_make: str = ""
+    existing_model: str = ""
+    existing_build_type: str = ""
+    existing_unit_number: str = ""
+    existing_vin: str = ""
     year: str = ""             # per-vehicle/model year; fallback metadata, not project build year
     color: str = ""
     draft_id: str = ""
@@ -77,6 +88,12 @@ class IndividualUnit:
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
     qb_estimate_snapshot_at: str = ""
+    company_vehicle_folder_id: str = ""
+    company_vehicle_folder_path: str = ""
+    company_folder_status: str = "not_provisioned"
+    shop_vehicle_folder_id: str = ""
+    shop_vehicle_folder_path: str = ""
+    shop_folder_status: str = "not_provisioned"
 ```
 
 `BuildUnit` carries the same additive finalization fields for projects whose build is represented by
@@ -86,6 +103,16 @@ The Estimate snapshot is deliberately narrower than the raw QBO object: it track
 project references, document number, memo fields, and material line IDs, descriptions, quantities,
 prices, and amounts. Provider metadata such as `SyncToken` and update timestamps is excluded so it
 does not create false conflicts.
+
+Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
+actual vehicle being built and is the only VIN eligible for current card identity, folders,
+filenames, or QBO names. The `existing_*` fields are editable, round-trip-safe metadata for the
+vehicle being replaced; generated output may show them only in the dedicated **Existing Vehicle**
+card. Older clients that omit those optional keys preserve stored values, while an explicit empty
+value clears one. Folder item IDs remain the stable identity when readable fields change. A current
+vehicle without an actual unit number or VIN uses a display/folder-only `Pending ID` derived from
+`individual_id`; the placeholder is not separately persisted and disappears when a real identifier
+is added.
 
 ## ProjectRecord
 
@@ -98,7 +125,20 @@ class ProjectRecord:
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
+    reference_assets: list[BuildReferenceAsset] = field(default_factory=list)
+    reference_source_exclusions: list[str] = field(default_factory=list)
+    project_status: str = "active"  # active | completed
+    completed_at: str = ""
+    completed_by: str = ""
+    reactivated_at: str = ""
+    reactivated_by: str = ""
     project_notes: str = ""   # shown on every build's final PowerPoint page
+    company_year_folder_id: str = ""
+    company_year_folder_path: str = ""
+    company_folder_status: str = "not_provisioned"
+    shop_year_folder_id: str = ""
+    shop_year_folder_path: str = ""
+    shop_folder_status: str = "not_provisioned"
 ```
 
 Projects are stored in `workspace/projects/{project_id}/project.json` (one subdirectory per
@@ -106,15 +146,43 @@ project) and mirrored to SharePoint. Drafts remain durable records keyed by `dra
 customer PDFs and internal PPTX sources use the configured output trees; record-side output paths
 are compatibility locators, not a per-project `export_dir` setting.
 
+Legacy projects default to `active`. Completed projects use the same data model and remain fully
+browseable; `project_status` controls active-list versus Project Archives placement and can be
+reversed with the project completion service.
+
+`BuildReferenceAsset` stores portable source identity plus assignments, not image bytes. Zero
+assignments means an unassigned project photo; current writes assign photos only to unit groups.
+Legacy project-wide and individual assignments remain readable and publishable. JPG/PNG files found
+in the exact year-level Company **Reference Photos & Videos** folder are reconciled into this list as
+unassigned photos. `reference_source_exclusions` stores stable item/path identities for folder photos
+that a user removed from the app without deleting the SharePoint source; explicitly adding one again
+clears its exclusion. Videos are not auto-attached.
+
+`BuildUnit.company_group_folder_*` and `BuildUnit.shop_group_folder_*` remain codec fields only for
+backward compatibility with pre-flattening records. Current provisioning clears them and places each
+`IndividualUnit` vehicle folder directly under the agency/year folder. Durable vehicle, PDF, and
+published-reference item IDs/paths remain authoritative and are rewritten together when that folder
+moves.
+
 ## AgencyRecord
 
 Lives in `workspace/agencies/{agency_id}.json`. Mirrored to SharePoint.
-Carries optional `qb_customer_id` (FK → QuickBooks `Customer.Id`).
+Carries editable `abbreviation` plus optional `qb_customer_id` (FK → QuickBooks `Customer.Id`).
+The abbreviation defaults to name initials, a county-only sheriff label, or a short explicit
+acronym, but the stored override wins. Project snapshots retain the effective value for backward
+compatibility and offline naming.
 Contact info comes from the agency record — no separate contact field on the project.
 `default_preferences` stores the agency's normal equipment choices. They are copied to a new
 project once; editing a project never changes the agency defaults or another project's choices.
 `pricing_overrides` is a sparse `manufacturer_id → percent off list` map. An empty map inherits
 the shared Retail customer-pricing rule; only values that differ from Retail are stored.
+Agency records also carry Company/Shop root folder IDs, portable paths, statuses, and retry-safe
+errors. Those operational fields are persisted narrowly so an asynchronous Graph response cannot
+overwrite customer-profile edits.
+
+Agency list/search also exposes recovery rows synthesized from projects whose durable `agency_id`
+no longer has a standalone record. Editing a recovery row materializes the ordinary record without
+changing the ID; deletion is rejected while any project references the agency.
 
 ## SalesRepRecord
 
@@ -132,6 +200,11 @@ Lives in `workspace/sales_reps/{rep_id}.json`. Mirrored to SharePoint.
 | `domain/geometry.py` | Shared placement math (single source of truth) |
 | `domain/rules.py` | Rule dataclasses |
 | `domain/supply.py` | Canonical supply normalization, legacy mapping, validation, and labels |
+
+`PlannedPlacement` carries normalized concealed-mount presentation state (`mount_visibility`,
+`callout_label`) plus optional `callout_dx` / `callout_dy` relative-image offsets. Those offsets are
+ordinary placement overrides: old plans default to zero without serialized churn, while manually
+moved labels persist through drafts/presets and are consumed identically by preview and PDF output.
 
 ### Part supply fields
 

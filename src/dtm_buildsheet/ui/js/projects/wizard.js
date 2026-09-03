@@ -77,8 +77,11 @@ function _ptCollectUnits() {
 
     const indRows = row.querySelectorAll(".proj-ind-row");
     if (indRows.length) {
-      const vm = _PT.vehicleMap[u.vehicle_model] || {};
-      u.individuals = Array.from(indRows).map(ir => ({
+      const vm = _ptVehicleConfig(u.vehicle_model);
+      u.individuals = Array.from(indRows).map(ir => {
+        const existing = u.individuals.find(ind => ind.individual_id === ir.dataset.iid) || {};
+        return {
+        ...existing,
         individual_id:        ir.dataset.iid,
         unit_number:          ir.querySelector(".ind-unit-number")?.value.trim()    || "",
         year:                 ir.querySelector(".ind-year")?.value.trim()           || "",
@@ -86,22 +89,21 @@ function _ptCollectUnits() {
         model:                vm.model || "",
         color:                ir.querySelector(".ind-color")?.value.trim()          || "",
         vin:                  ir.querySelector(".ind-vin")?.value.trim()            || "",
-        existing_unit_number: ir.querySelector(".ind-existing-unit")?.value.trim() || "",
-        existing_vin:         ir.querySelector(".ind-existing-vin")?.value.trim()  || "",
+        existing_year:        ir.querySelector(".ind-existing-year")?.value.trim() || "",
+        existing_make:        ir.querySelector(".ind-existing-make")?.value.trim() || "",
+        existing_model:       ir.querySelector(".ind-existing-model")?.value.trim() || "",
+        existing_build_type:  ir.querySelector(".ind-existing-build-type")?.value.trim() || "",
+        existing_unit_number: ir.querySelector(".ind-existing-unit-number")?.value.trim() || "",
+        existing_vin:         ir.querySelector(".ind-existing-vin")?.value.trim() || "",
         notes:                ir.querySelector(".ind-notes")?.value.trim()         || "",
         draft_id:             ir.dataset.draftId || null,
-      }));
+      };
+      });
     }
   });
 }
 
 function _ptRenderUnits() {
-  const vOpts = _PT.vehicles.map(v => {
-    const vm    = _PT.vehicleMap[v] || {};
-    const label = vm.make ? `${v} — ${vm.make} ${vm.model}` : v;
-    return `<option value="${esc(v)}">${esc(label)}</option>`;
-  }).join("");
-
   const btVals       = _PT.projectOptions?.build_types || ["Patrol", "Admin", "Unmarked", "K-9", "Fire"];
   const currentAgency = $("proj-agency")?.value?.trim() || "Agency";
 
@@ -137,7 +139,7 @@ function _ptRenderUnits() {
       <div class="form-row">
         <div class="form-group proj-vehicle-group">
           <label>Vehicle Model</label>
-          <select class="proj-u-vehicle">${vOpts}</select>
+          <select class="proj-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
         </div>
         <div class="form-group proj-buildtype-group">
           <label>Build Type</label>
@@ -182,7 +184,7 @@ function _ptRenderUnits() {
   _PT.units.forEach(u => {
     const row = document.querySelector(`.proj-unit-row[data-uid="${u.uid}"]`);
     if (!row) return;
-    row.querySelector(".proj-u-vehicle").value = u.vehicle_model;
+    row.querySelector(".proj-u-vehicle").value = _ptCanonicalVehicleType(u.vehicle_model);
     const qtyInput = row.querySelector(".proj-u-qty");
     const indBtn   = row.querySelector(".proj-ind-toggle-btn");
     const btSelect = row.querySelector(".proj-u-buildtype");
@@ -312,7 +314,7 @@ function _ptRenderReview() {
   const unitRows = _PT.units.map((u, i) => {
     const preset  = _PT.presets.find(p => p.preset_id === u.preset_id);
     const pLabel  = preset ? preset.label : (u.preset_id || "No Preset");
-    const vm      = _PT.vehicleMap[u.vehicle_model] || {};
+    const vm      = _ptVehicleConfig(u.vehicle_model);
     const vmLabel = vm.make ? `${vm.make} ${vm.model}` : u.vehicle_model;
     _ptEnsureIndividuals(u);
     const indBtns = u.individuals.slice(0, u.quantity).map((ind, j) =>
@@ -376,6 +378,10 @@ function _ptBuildPayload() {
         model:                ind.model                || "",
         color:                ind.color                || "",
         vin:                  ind.vin                  || "",
+        existing_year:        ind.existing_year        || "",
+        existing_make:        ind.existing_make        || "",
+        existing_model:       ind.existing_model       || "",
+        existing_build_type:  ind.existing_build_type  || "",
         existing_unit_number: ind.existing_unit_number || "",
         existing_vin:         ind.existing_vin         || "",
         notes:                ind.notes                || "",
@@ -415,6 +421,13 @@ async function _ptSaveProject() {
       const msg = res.error || "Save failed";
       toast(msg, "error");
       if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
+      if (res.error_code === "project_exists_for_agency_year" && res.existing_project_id) {
+        await _ptLoadAll();
+        const existing = _PT.projects.find(p => p.project_id === res.existing_project_id);
+        if (existing) {
+          setTimeout(() => _ptShowDetail(existing), 650);
+        }
+      }
     }
   } catch (e) {
     const msg = e.message || "Unexpected error";
@@ -438,6 +451,11 @@ function _ptOkCustomer() {
   if (!$("proj-salesrep").value.trim()) {
     toast("Sales rep is required", "error");
     $("proj-salesrep").focus();
+    return false;
+  }
+  if (!$("proj-build-year")?.value?.trim()) {
+    toast("Build year is required", "error");
+    $("proj-build-year")?.focus();
     return false;
   }
   return true;

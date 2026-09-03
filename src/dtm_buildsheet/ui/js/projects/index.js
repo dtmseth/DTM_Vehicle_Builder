@@ -3,18 +3,27 @@
 
 // ── View switching ─────────────────────────────────────────────────────────────
 
-function _ptShowList() {
-  show("proj-list-view");
+function _ptShowList(mode = _PT.listMode || "active") {
+  _PT.listMode = mode === "archive" ? "archive" : "active";
+  if (_PT.listMode === "archive") {
+    hide("proj-list-view");
+    show("proj-archive-view");
+  } else {
+    show("proj-list-view");
+    hide("proj-archive-view");
+  }
   hide("proj-detail-view");
   hide("proj-editor");
   hide("proj-build-editor");
   _ptRenderList();
+  _ptRenderArchive();
 }
 
 function _ptShowDetail(project) {
   _PT.viewProject      = project;
   _PT.editTabEditable  = false;
   hide("proj-list-view");
+  hide("proj-archive-view");
   show("proj-detail-view");
   hide("proj-editor");
   hide("proj-build-editor");
@@ -22,6 +31,10 @@ function _ptShowDetail(project) {
   $("proj-detail-agency").textContent = _ptProjName(project);
   const n = (project.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
   $("proj-detail-meta").textContent = n + " unit" + (n !== 1 ? "s" : "");
+  const completed = project.project_status === "completed";
+  const completionBtn = $("btn-proj-complete");
+  completionBtn.textContent = completed ? "Reopen Project" : "Mark Project Completed";
+  completionBtn.className = `btn btn-sm ${completed ? "btn-primary" : "btn-secondary"}`;
 
   _ptRenderOverview(project);
   _ptRenderEditTab(project, false);
@@ -33,6 +46,7 @@ function _ptShowEditor(project, activeTab) {
   _PT.isWizard   = !project;
   _PT.editId     = project?.project_id || null;
   hide("proj-list-view");
+  hide("proj-archive-view");
   hide("proj-detail-view");
   show("proj-editor");
   hide("proj-build-editor");
@@ -122,7 +136,35 @@ function _ptWizardNext() {
 // ── One-time event binding ─────────────────────────────────────────────────────
 
 function _ptBind() {
+  if (typeof _ptBindReferencePhotoModal === "function") _ptBindReferencePhotoModal();
+  document.addEventListener("click", event => {
+    const openMenus = [...document.querySelectorAll(".proj-build-action-menu[open]")];
+    if (!openMenus.length) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const targetMenu = target?.closest(".proj-build-action-menu") || null;
+    const insideOpenMenu = !!targetMenu && openMenus.includes(targetMenu);
+    openMenus.forEach(menu => {
+      if (menu !== targetMenu) menu.removeAttribute("open");
+    });
+    if (insideOpenMenu && target?.closest(".proj-build-action-menu-items button")) {
+      targetMenu.removeAttribute("open");
+    }
+    if (!insideOpenMenu) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
   $("btn-new-project").addEventListener("click", () => _ptShowEditor(null));
+  $("btn-project-archives").addEventListener("click", () => _ptShowList("archive"));
+  $("btn-project-archives-back").addEventListener("click", () => _ptShowList("active"));
+  $("btn-proj-complete").addEventListener("click", () => {
+    if (_PT.viewProject) {
+      PT_setProjectCompleted(
+        _PT.viewProject.project_id,
+        _PT.viewProject.project_status !== "completed",
+      );
+    }
+  });
 
   // Build editor wiring (Return to Project)
   _ptBindBuildEditor();
@@ -225,5 +267,5 @@ function _ptBind() {
 window.initProjectsTab = async function () {
   if (!_PT.inited) { _ptBind(); _PT.inited = true; }
   await _ptLoadAll();
-  _ptShowList();
+  _ptShowList("active");
 };

@@ -10,8 +10,86 @@ import pytest
 
 from dtm_buildsheet.app.services.preview_service import _view_metadata, _FALLBACK_VIEW_ORDER
 from dtm_buildsheet.config.schemas import validate_config_payload
+from dtm_buildsheet.config.loader import resolve_vehicle_type
+from dtm_buildsheet.config.migrations import migrate
 from dtm_buildsheet.config_loader import load_configs
 from dtm_buildsheet.paths import ensure_workspace
+
+
+def test_reference_photo_ui_uses_project_photos_and_group_assignments():
+    ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
+    script = (ui_root / "js" / "projects" / "reference_photos.js").read_text(encoding="utf-8")
+    build_script = (ui_root / "js" / "projects" / "detail_builds.js").read_text(encoding="utf-8")
+    api_script = (ui_root / "js" / "api.js").read_text(encoding="utf-8")
+    html = (ui_root / "index.html").read_text(encoding="utf-8")
+    styles = (ui_root / "styles.css").read_text(encoding="utf-8")
+
+    assert "Use as Reference Photo(s)" in script
+    assert "Assign to unit group" in script
+    assert "Remove from project" in script
+    assert "Project Reference Pool" not in script
+    assert "Manage reference pool" not in script
+    assert "View all project references" not in script
+    assert ">Project photos</button>" in script
+    assert "Open project photos folder" in script
+    assert "discover_folder: kind === \"reference\" && !unitId" in script
+    assert 'id="photo-use-project"' in html
+    assert 'id="photo-use-unit-group"' in html
+    assert "data-reference-order" not in script
+    assert "Remove from this level" not in script
+    assert "Add this photo to active project" not in script
+    assert "Thumbnails are cached locally" not in script
+    assert "Preview unavailable" in script
+    assert "photo-gallery-state-badge--completed" in script
+    assert ".photo-gallery-thumb img{position:absolute" in styles
+    assert "View reference photos (${count})" not in build_script
+    assert "Manage reference assignments" not in build_script
+    assert "Build Reference Photos (${count})" in script
+    assert 'id="reference-photo-add-selected"' in script
+    assert "data-reference-select" in script
+    assert "PT_editGroupReferenceNote" in script
+    assert "PT_saveGroupReferenceNote" in script
+    assert 'response.status === 202' in script
+    assert 'new IntersectionObserver' in script
+    assert 'X-DTM-Thumbnail-Priority' in script
+    assert 'Preview still preparing' in script
+    assert 'PT_retryGalleryPhoto' in script
+    assert '24_000' in script
+    assert 'response.status === 202' in script
+    assert 'Downloading full-resolution photo… Saving it locally for next time.' in script
+    assert '<button type="button" class="photo-thumbnail-retry"' not in script
+    assert '/api/photo-gallery/cache-status' in api_script
+    assert '/api/photo-gallery/cache-prepare' in api_script
+    assert 'Preparing photos ${ready}/${total}${failed ?' in api_script
+    assert "Checking for new photos" in api_script
+    assert "Finding app photos" not in api_script
+    assert 'photo${failed === 1 ? "" : "s"} will retry when opened.' in api_script
+    assert 'Downloading full-resolution photo' in api_script
+    assert 'id="photo-cache-progress-panel"' in html
+    assert 'data-completed-photo-action' in script
+    assert 'presence_only: true' in script
+    assert 'if (result?.ok) applyPresence(result.presence || {});' in script
+    assert '_ptHasCompletedBuild' not in build_script
+    assert 'Finalize design' in build_script
+    assert 'statusEl = options.statusEl || $("proj-action-status")' in build_script
+    assert "This finalized design already has a PDF in Shop Documents." in build_script
+    assert "/shop-publication/republish" in build_script
+
+
+def test_existing_vehicle_metadata_is_editable_but_not_used_by_unit_labels():
+    ui_root = Path(__file__).parents[1] / "src" / "dtm_buildsheet" / "ui"
+    html = (ui_root / "index.html").read_text(encoding="utf-8")
+    state = (ui_root / "js" / "projects" / "state.js").read_text(encoding="utf-8")
+    modal = (ui_root / "js" / "projects" / "individual_modal.js").read_text(encoding="utf-8")
+
+    assert "Existing / replaced vehicle (optional)" in html
+    assert "Existing / replaced vehicle (optional)" in state
+    assert "ind-edit-existing-unit-number" in html
+    assert "ind-edit-existing-unit-number" in modal
+    assert "ind-edit-existing-vin" in html
+    assert "ind-edit-existing-year" in html
+    assert "ind-edit-existing-model" in html
+    assert "ind?.unit_number || ind?.existing_unit_number" not in state
 
 
 # ── view metadata helper ──────────────────────────────────────────────────────
@@ -148,6 +226,42 @@ class TestVehicleLayoutsSchema:
         result = self._validate(minimal)
         assert "vehicles" in result
 
+    def test_placeholder_layout_source_expands_without_copying_raw_geometry(self):
+        data = {
+            "vehicles": {
+                "BASE": {
+                    "view_order": ["front"],
+                    "views": {"front": {"locations": {}}},
+                    "fixtures": {"fixture": {}},
+                },
+                "NEW MODEL": {
+                    "layout_source": "BASE",
+                    "placeholder": True,
+                    "aliases": ["New Model"],
+                },
+            },
+        }
+        result = self._validate(data)
+        assert result["vehicles"]["NEW MODEL"]["views"] == result["vehicles"]["BASE"]["views"]
+        assert result["vehicles"]["NEW MODEL"]["views"] is not result["vehicles"]["BASE"]["views"]
+        assert resolve_vehicle_type("New Model", result) == "NEW MODEL"
+
+    def test_placeholder_layout_source_cycle_is_rejected(self):
+        data = {"vehicles": {
+            "A": {"layout_source": "B"},
+            "B": {"layout_source": "A"},
+        }}
+        with pytest.raises(ValueError, match="cycle"):
+            self._validate(data)
+
+    def test_older_shared_layout_file_forward_merges_historical_placeholders(self):
+        migrated = migrate("vehicle_layouts.json", {"vehicles": {
+            "PIU": {"views": {"front": {"locations": {}}}},
+            "F-150": {"views": {"front": {"locations": {}}}},
+        }})
+        assert migrated["vehicles"]["MACH-E"]["layout_source"] == "PIU"
+        assert migrated["vehicles"]["SILVERADO 3500"]["layout_source"] == "F-150"
+
 
 # ── bundled vehicle_layouts.json has correct new fields ───────────────────────
 
@@ -188,6 +302,18 @@ class TestBundledVehicleLayouts:
                 assert view.get("legend_layout") == "grid", (
                     f"{vtype}/{vname} should have legend_layout=grid"
                 )
+
+    def test_concrete_historical_models_are_assignable_placeholders(self):
+        expected = {
+            "BLAZER EV", "EXPEDITION", "F-150 LIGHTNING", "F-550", "HARLEY",
+            "JEEP", "MACH-E", "RAM 1500", "SILVERADO", "SILVERADO 3500", "VAN",
+        }
+        assert expected <= set(self.layouts["vehicles"])
+        assert all(self.layouts["vehicles"][key]["placeholder"] for key in expected)
+        assert resolve_vehicle_type("3500", self.layouts) == "SILVERADO 3500"
+        assert resolve_vehicle_type("Durango", self.layouts) == "DURANGO"
+        assert resolve_vehicle_type("Vehicle", self.layouts) == "Vehicle"
+        assert resolve_vehicle_type("Tahoe & Silverado", self.layouts) == "Tahoe & Silverado"
 
     def test_front_rear_have_standard_legend_layout(self):
         for vtype, vehicle in self.layouts["vehicles"].items():

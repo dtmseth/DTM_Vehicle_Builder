@@ -856,9 +856,9 @@ def validate_estimate(paths: AppPaths, *, project_id: str, individual_id: str) -
 
 
 def _project_identity_labels(unit) -> list[str]:
-    """Return the sole, owner-approved vehicle identifier for a QBO Project."""
-    unit_number = (unit.unit_number or unit.existing_unit_number or "").strip()
-    return [f"Unit {unit_number}"] if unit_number else []
+    """Return the unit/VIN identifiers used in a QBO Project name."""
+    from ...domain.vehicle_naming import vehicle_identifier_parts
+    return vehicle_identifier_parts(unit)
 
 
 def _automatic_build_label(project, build_unit, unit) -> str:
@@ -884,23 +884,15 @@ def _automatic_build_label(project, build_unit, unit) -> str:
 def _estimate_project_name(project, build_unit, unit, *, use_auto_name: bool = False) -> str:
     """Return the canonical, self-identifying name for one real QBO Project.
 
-    QBO already displays the parent agency Customer, so repeating it in every
-    Project title is redundant. The operational order is unit number first,
-    then build year. Vehicle specification, VIN, and quote number are
-    deliberately excluded to keep the QBO Project list clean.
+    Agency abbreviation, build year, vehicle model, unit number, and VIN
+    last-six mirror the app's folder/file identity.
     """
-    labels = _project_identity_labels(unit)
-    has_stored_binding = bool(
-        str(getattr(unit, "qb_project_id", "") or "").strip()
-        and str(getattr(unit, "qb_project_name", "") or "").strip()
-    )
-    if not labels and (use_auto_name or has_stored_binding):
-        labels = [_automatic_build_label(project, build_unit, unit)]
-    parts = list(labels)
-    build_year = (project.customer.build_year or "").strip()
-    if build_year:
-        parts.append(f"Build {build_year}")
-    return " | ".join(p for p in parts if p)
+    from ...domain.vehicle_naming import qb_project_name
+    try:
+        ordinal = list(build_unit.individuals).index(unit) + 1
+    except (AttributeError, ValueError):
+        ordinal = 1
+    return qb_project_name(project, build_unit, unit, ordinal=ordinal)
 
 
 def _project_customer_name(paths: AppPaths, project) -> str:

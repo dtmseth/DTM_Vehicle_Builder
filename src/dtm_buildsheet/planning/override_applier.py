@@ -19,6 +19,8 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
         anchor_dy (float)   — delta added to anchor.y (relative_image units)
         translate_dx (float)— uniform x translation applied after slot/mirror layout
         translate_dy (float)— uniform y translation applied after slot/mirror layout
+        callout_dx (float)  — concealed-speaker callout x offset (relative_image units)
+        callout_dy (float)  — concealed-speaker callout y offset (relative_image units)
         size_scale (float)  — multiplier applied to size_override w/h values
         size_w (float)      — absolute width  in inches (replaces size_scale)
         size_h (float)      — absolute height in inches (replaces size_scale)
@@ -70,6 +72,10 @@ def apply_overrides(plan: BuildPlan, overrides: dict) -> BuildPlan:
                 pl.translate_dx = float(ov["translate_dx"])
             if "translate_dy" in ov:
                 pl.translate_dy = float(ov["translate_dy"])
+            if "callout_dx" in ov:
+                pl.callout_dx = float(ov["callout_dx"])
+            if "callout_dy" in ov:
+                pl.callout_dy = float(ov["callout_dy"])
 
             if "size_w" in ov or "size_h" in ov:
                 # Explicit per-axis sizing from the inspector. Inputs are

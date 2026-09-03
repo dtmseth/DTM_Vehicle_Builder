@@ -24,6 +24,7 @@ from .routes import exports as export_routes
 from .routes import generation as generation_routes
 from .routes import preview as preview_routes
 from .routes import parts_db as parts_db_routes
+from .routes import photo_gallery as photo_gallery_routes
 from .routes import presets as preset_routes
 from .routes import projects as project_routes
 from .routes import quickbooks as quickbooks_routes
@@ -94,12 +95,15 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):
             if not parts_db_routes.route_parts_db(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/photo-gallery/"):
+            if not photo_gallery_routes.route_photo_gallery(self, "GET", path, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-reps" or path == "/api/sales-reps/search":
             if not sales_rep_routes.route_sales_reps(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/project/pick-output-root":
             self._api(_pick_folder())
-        elif path == "/api/projects" or path.startswith("/api/project/"):
+        elif path == "/api/projects" or path.startswith("/api/projects/") or path.startswith("/api/project/"):
             if not project_routes.route_projects(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/update/"):
@@ -162,6 +166,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/parts-db" or path.startswith("/api/parts-db/"):
             if not parts_db_routes.route_parts_db(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/photo-gallery/"):
+            if not photo_gallery_routes.route_photo_gallery(self, "POST", path, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path == "/api/sales-rep/save":
             if not sales_rep_routes.route_sales_reps(self, "POST", path, body, self.paths):
@@ -547,6 +554,29 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
                 or queue_report.get("exports_succeeded")
             )
 
+            # Folder lifecycle provisioning is a separate, earlier cutover
+            # gate from publishing PDFs. It creates only known agency/year/
+            # build/photo folders and remains inert until its explicit flags
+            # are enabled.
+            from .services.vehicle_folder_provisioning_service import retry_folder_provisioning
+            folder_report = retry_folder_provisioning(active_paths)
+            report["vehicle_folder_provisioning"] = folder_report
+            folder_changed = bool(folder_report.get("agencies") or folder_report.get("projects"))
+
+            # Finalized Shop packages have their own durable state because
+            # their PDF/reference item IDs must be replaced or withdrawn
+            # exactly. This remains a no-op unless Shop publication has been
+            # explicitly enabled in cloud configuration.
+            from .services.shop_publication_service import retry_pending_shop_publications
+            shop_report = retry_pending_shop_publications(active_paths)
+            report["shop_publication"] = shop_report
+            shop_changed = bool(shop_report.get("succeeded"))
+
+            from .services.company_vehicle_folder_service import retry_pending_company_vehicle_pdfs
+            company_vehicle_report = retry_pending_company_vehicle_pdfs(active_paths)
+            report["company_vehicle_pdfs"] = company_vehicle_report
+            company_vehicle_changed = bool(company_vehicle_report.get("succeeded"))
+
             # Sweep processed entries out of /PendingChanges/ so it doesn't
             # accumulate forever. The pickup workflow reads from there but
             # doesn't delete; everything older than 12h is either applied
@@ -558,7 +588,8 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             except Exception:
                 logger.exception("PendingChanges cleanup failed")
 
-            if settings_changed or work_changed or queue_changed or update_changed:
+            if (settings_changed or work_changed or queue_changed or folder_changed or shop_changed
+                    or company_vehicle_changed or update_changed):
                 _bump_data_version()
                 _record_change_summary(work_report, settings_report, queue_report,
                                        update_report if update_changed else None)
@@ -673,8 +704,14 @@ def main(paths: AppPaths | None = None):
         window = webview.create_window(
             "DTM Vehicle Builder", url, width=1280, height=800, min_size=(900, 600)
         )
-        webview.start()
-        server.shutdown()
+        try:
+            webview.start()
+        finally:
+            from .services.photo_gallery_service import shutdown_photo_gallery_workers
+
+            shutdown_photo_gallery_workers()
+            server.shutdown()
+            server.server_close()
     except ImportError:
         print("Press Ctrl-C to quit.\n")
         threading.Thread(
@@ -684,3 +721,8 @@ def main(paths: AppPaths | None = None):
             server.serve_forever()
         except KeyboardInterrupt:
             print("\nServer stopped.")
+        finally:
+            from .services.photo_gallery_service import shutdown_photo_gallery_workers
+
+            shutdown_photo_gallery_workers()
+            server.server_close()

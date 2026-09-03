@@ -30,14 +30,15 @@ Around those two ideas, five thematic pillars:
 
 ---
 
-## Current Direction & Critical Path (updated 2026-08-26)
+## Current Direction & Critical Path (updated 2026-09-03)
 
 Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
 
 **The production foundation is live.** SharePoint collaboration/distribution, the intelligent Part
 Picker, the SKU-level production QuickBooks catalog, agency/customer links, current-price Estimate
-creation, shared exports, the first finalization slice, and the v3.4.0 picker/output polish are live.
+creation, per-vehicle Company/Shop folders, photo workflows, finalized Shop publication, and the
+v3.5.0 workflow/output release are live.
 QuickBooks is no longer an externally gated side track; it is an active production adapter feeding
 canonical SKU identity and list pricing.
 
@@ -57,22 +58,18 @@ materially alter Builder parts, add a reviewed change queue with durable history
 catalog auto-enrichment. The approved behavior and data requirements live in
 [QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
 
-### Near-term critical path (in order, updated 2026-08-26)
+### Near-term critical path (in order, updated 2026-09-03)
 
-1. ⭐ **Finalization cloud boundary** — publish/withdraw the finalized PDF in Shop Documents, expose
-   durable retry state, and reject stale concurrent finalization attempts explicitly.
-2. **Vehicle-folder migration dry run and cutover design** — move toward per-vehicle SharePoint
-   folders with collision/unmatched reports, stable item identity, and no silent legacy fallback.
-   Generated/copied QBO Project naming already changed in v3.4.0; stored legacy names need an audit
-   and manual QBO rename checklist.
-3. **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
+1. **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
    boundary, then identify and migrate the remaining workbook-domain consumers.
-4. **Reviewed QBO catalog-change queue and visible curation** — require explicit review before
+2. **Reviewed QBO catalog-change queue and visible curation** — require explicit review before
    recurring production catalog changes can create or materially reshape Builder products; preserve
    durable history and Builder-owned metadata, and assign or intentionally exclude the 43 unhomed
    products.
-5. **Interior light bars + light-domain consolidation** — model driver/passenger halves and dynamic
+3. **Interior light bars + light-domain consolidation** — model driver/passenger halves and dynamic
    configured heads while retiring remaining workbook-era light assumptions.
+4. **Finalization concurrency hardening** — reject stale concurrent finalization requests explicitly
+   while preserving the shipped Shop publish/withdraw and re-export confirmation boundaries.
 
 Centralized QuickBooks is deliberately excluded from the production branch and is not part of this
 sequence. The complete experiment is preserved only on local branch
@@ -107,7 +104,7 @@ These are constraints on **how** we move toward the vision. Override them only w
 
 ## 3. Current State (Snapshot)
 
-As of v3.4.0 (2026-08-26):
+As of v3.5.0 (2026-09-03):
 
 - SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and drafts;
   generated PPTX/PDF exports are shared separately by agency/year and portable across installs.
@@ -441,7 +438,7 @@ Phase 2 was declared "shipped" at v2.2.2 but the next 11 patch releases tightene
 
 ### Phase 3 — `parts_db.json` (Schema, Migration, Intelligent Part Picker)
 
-**Current status (v3.4.0, 2026-08-26)** — read this first if you're picking up Phase 3 work:
+**Current status (v3.5.0, 2026-09-03)** — read this first if you're picking up Phase 3 work:
 
 - ✅ `domain/parts_db_models.py` — typed domain models for the live schema.
 - ✅ `app/services/parts_db_service.py` — the catalog query/read-write service surface.

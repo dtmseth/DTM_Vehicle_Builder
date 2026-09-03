@@ -12,6 +12,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
+from .domain.reference_photo_layout import plan_reference_photo_pages
 from .domain.supply import supply_state
 from .paths import AppPaths, ensure_workspace
 
@@ -57,6 +58,7 @@ DTM_ORANGE    = RGBColor(0xC8, 0x60, 0x00)
 DTM_ORANGE_BG = RGBColor(0xFF, 0xF0, 0xD4)
 DTM_ALT_BG    = RGBColor(0xF2, 0xF2, 0xF5)
 DTM_RED       = RGBColor(0xB8, 0x3A, 0x3A)
+DTM_BLACK     = RGBColor(0x00, 0x00, 0x00)
 # Color system: BLUE = NEW, ORANGE = REUSED
 TAG_NEW       = RGBColor(0x1A, 0x6F, 0xC8)   # blue  — new / installed
 TAG_REUSED    = RGBColor(0xC8, 0x60, 0x00)   # orange — reused / transferred
@@ -112,12 +114,13 @@ MANIFEST_SYSTEM_SORT_ORDER = {
 }
 
 MANIFEST_COL_HEADERS   = ["PART / SKU", "DETAILS / SALES DESCRIPTION", "QTY", "LOCATION", "SOURCE"]
-MANIFEST_COL_WIDTHS_IN = [3.15, 4.10, 0.48, 3.30, 1.30]
+MANIFEST_COL_WIDTHS_IN = [3.15, 3.95, 0.48, 3.00, 1.75]
 
 MANIFEST_TABLE_LEFT  = Inches(0.5)
 MANIFEST_TABLE_TOP   = Inches(1.07)
 MANIFEST_TABLE_W     = sum(Inches(w) for w in MANIFEST_COL_WIDTHS_IN)
 MANIFEST_HDR_ROW_H   = Inches(0.30)
+MANIFEST_SECTION_ROW_H = Inches(0.38)
 MANIFEST_DATA_MIN_H  = Inches(0.31)
 
 # Diagram pages retain a short in-context warning for a few missing items.  A
@@ -155,6 +158,23 @@ def _is_reused(part) -> bool:
 
 def _source_label(part) -> str:
     return supply_state(part).label
+
+
+def _manifest_source_label(part) -> str:
+    """Return a compact, explicit two-line supply label for the PDF table."""
+    state = supply_state(part)
+    if not state.is_customer_supplied:
+        return "New"
+    condition = (
+        "New" if state.customer_condition == "new"
+        else "Used" if state.customer_condition == "used"
+        else "Condition needed"
+    )
+    if state.customer_source:
+        condition += f" - {state.customer_source}"
+    elif state.source_needed:
+        condition += " - Source needed"
+    return f"Customer supplied\n{condition}"
 
 
 def _color_label(part) -> str:
@@ -449,6 +469,68 @@ def _find_part(parts, *names) -> object | None:
     return None
 
 
+def physical_light_head_count(parts) -> int:
+    """Count physical light heads across every supported input route.
+
+    Planner-only rows for prelit bumpers are real installed heads even though
+    they are intentionally hidden from the manifest. Multi-lamp Tracer
+    assemblies store housing quantity, so expand their lamp count explicitly.
+    For ordinary light rows, use the larger of the parent quantity and its
+    concrete SKU-component quantities to preserve legacy and picker-created
+    drafts without double-counting accessories.
+    """
+    total = 0
+    for part in parts:
+        raw = getattr(part, "raw", part)
+        render_kind = str(
+            getattr(part, "render_kind", getattr(raw, "render_kind", "")) or ""
+        ).casefold()
+        if render_kind != "light":
+            continue
+        try:
+            quantity = max(0, int(float(getattr(raw, "quantity", 0) or 0)))
+        except (TypeError, ValueError):
+            quantity = 0
+        component_quantity = 0
+        for component in getattr(raw, "components", []) or []:
+            if not isinstance(component, dict):
+                continue
+            try:
+                component_quantity += max(0, int(float(component.get("quantity", 0) or 0)))
+            except (TypeError, ValueError):
+                continue
+        quantity = max(quantity, component_quantity)
+        placement_quantity = max(
+            (
+                len(getattr(placement, "instances", []) or [])
+                for placement in getattr(part, "placements", []) or []
+            ),
+            default=0,
+        )
+        name = str(getattr(part, "part_name", getattr(raw, "name", "")) or "")
+        tracer = re.search(r"\b(\d+)\s*[- ]?lamp\s+tracer\b", name, re.IGNORECASE)
+        if tracer is None:
+            tracer = re.search(
+                r"tracer[_ -]?(\d+)(?:lamp)?",
+                str(getattr(part, "part_id", "") or ""),
+                re.IGNORECASE,
+            )
+        if tracer:
+            lamp_count = int(tracer.group(1))
+            # Legacy workbook fixtures sometimes stored ``quantity`` as the
+            # fixture's physical lamp count (for example 5) and also emitted
+            # those same five placement instances. That is one five-lamp
+            # housing, not five housings. Newer draft rows store housing
+            # quantity (for example two Tracers), so expand those normally.
+            if quantity == placement_quantity == lamp_count:
+                total += lamp_count
+            else:
+                total += max(quantity * lamp_count, placement_quantity)
+        else:
+            total += max(quantity, placement_quantity)
+    return total
+
+
 _KNOWN_VEHICLE_MAKES = frozenset({
     "Ford", "Chevrolet", "Dodge", "Ram", "GMC", "Jeep", "Toyota",
     "Nissan", "Kia", "Tesla", "Honda", "Hyundai", "Volkswagen",
@@ -512,11 +594,10 @@ def fill_overview(slide, project) -> None:
     agency     = info.get("Agency",    "—")
     build_type = info.get("BuildType", "")
     year, make, model, sub_model = _project_vehicle_fields(info)
-    unit_id   = (new_v.get("UNIT ID", new_v.get("UNIT", ""))
-                 or exist_v.get("UNIT ID", exist_v.get("UNIT", "")))
-    vin       = new_v.get("VIN",       "") or exist_v.get("VIN",       "")
+    unit_id   = new_v.get("UNIT ID", new_v.get("UNIT", ""))
     quote_num = info.get("QuoteNumber",    "")
     sales_rep = info.get("SalesRep",       "")
+    unit_notes = str(info.get("UnitNotes", "") or "").strip()
 
     # Remove slot shapes and template text boxes (prevents double footer / white-on-white)
     for name in ("PROJECT_INFO_BLOCK", "PARTS_TABLE_SLOT",
@@ -608,7 +689,7 @@ def fill_overview(slide, project) -> None:
     ], L, left_y, LEFT_W)
 
     # Right: Vehicle specs — NEW primary card (always) + EXISTING secondary card (orange, if data)
-    card_h = Inches(1.75)
+    card_h = Inches(1.95)
 
     new_vehicle_for_display = dict(new_v)
     if info.get("BuildYear", ""):
@@ -622,9 +703,15 @@ def fill_overview(slide, project) -> None:
 
     ex_year, ex_make, ex_model, ex_sub_model = _vehicle_fields(exist_v)
     ex_model_str = " ".join(filter(None, [ex_model, ex_sub_model]))
-    ex_unit      = exist_v.get("UNIT ID", exist_v.get("UNIT", ""))
-    ex_vin       = exist_v.get("VIN",     "")
-    exist_has_data = any([ex_year, ex_make, ex_model_str, ex_unit, ex_vin])
+    ex_build_type = exist_v.get("BUILD TYPE", exist_v.get("BUILD", ""))
+    ex_unit = exist_v.get("UNIT ID", exist_v.get("UNIT", ""))
+    ex_vin = exist_v.get("VIN", "")
+    # Replaced-vehicle facts belong only in this dedicated card. They never
+    # participate in current vehicle naming, footer identity, folders, files,
+    # exports, or QuickBooks project names.
+    exist_has_data = any([
+        ex_year, ex_make, ex_model_str, ex_build_type, ex_unit, ex_vin,
+    ])
 
     if exist_has_data:
         CARD_W  = int((RIGHT_W - Inches(0.12)) / 2)
@@ -641,12 +728,14 @@ def fill_overview(slide, project) -> None:
     _textbox(slide, RIGHT_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.25),
              "NEW VEHICLE", font_size=10, bold=True, color=TAG_NEW)
     _kv_block(slide, [
-        ("Year",    new_year      or "—"),
-        ("Make",    new_make      or "—"),
-        ("Model",   new_model_str or "—"),
-        ("Build",   unit_str      or new_unit or "—"),
-        ("VIN",     new_vin       or "—"),
-    ], RIGHT_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
+        ("Year",       new_year      or "—"),
+        ("Make",       new_make      or "—"),
+        ("Model",      new_model_str or "—"),
+        ("Build Type", build_type    or "—"),
+        ("Unit #",     new_unit      or "—"),
+        ("VIN",        new_vin       or "—"),
+    ], RIGHT_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2),
+        line_h=0.245)
 
     # Secondary card: EXISTING VEHICLE (orange theme, only if data present)
     if exist_has_data:
@@ -657,22 +746,23 @@ def fill_overview(slide, project) -> None:
         _textbox(slide, EXIST_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.25),
                  "EXISTING VEHICLE", font_size=10, bold=True, color=DTM_ORANGE)
         _kv_block(slide, [
-            ("Year",    ex_year      or "—"),
-            ("Make",    ex_make      or "—"),
-            ("Model",   ex_model_str or "—"),
-            ("Build",   unit_str     or ex_unit or "—"),
-            ("VIN",     ex_vin       or "—"),
-        ], EXIST_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2))
+            ("Year",       ex_year       or "—"),
+            ("Make",       ex_make       or "—"),
+            ("Model",      ex_model_str  or "—"),
+            ("Build Type", ex_build_type or "—"),
+            ("Unit #",     ex_unit       or "—"),
+            ("VIN",        ex_vin        or "—"),
+        ], EXIST_X + Inches(0.10), col_top + Inches(0.25), CARD_W - Inches(0.2),
+            line_h=0.245)
 
     # ── Stats / tiles row ─────────────────────────────────────────────────────
     tiles_top = col_top + card_h + Inches(0.18)
 
     reused_count = sum(1 for p in parts if _is_reused(p))
-    lights_count = sum(
-        getattr(p, "quantity", 1) or 1
-        for p in parts
-        if getattr(p, "render_kind", "") == "light"
-        and "tracer" not in getattr(p, "name", "").lower()
+    lights_count = (
+        int(project.light_heads_count)
+        if getattr(project, "light_heads_count", None) is not None
+        else physical_light_head_count(parts)
     )
 
     light_brands = sorted({
@@ -831,6 +921,31 @@ def fill_overview(slide, project) -> None:
     _tile_value(tf, f"Ctrl: {lighting_value}", font_size=11)
     if camera_value:
         _tile_value(tf, f"Cam: {camera_value}", font_size=11)
+
+    if unit_notes:
+        notes_top = tiles_top + BASE_TILE_H + Inches(0.13)
+        notes_h = SLIDE_H_EMU - FOOTER_H - notes_top - Inches(0.10)
+        note_box = slide.shapes.add_textbox(L, notes_top, SLIDE_USABLE_W, notes_h)
+        note_box.fill.solid()
+        note_box.fill.fore_color.rgb = DTM_ORANGE_BG
+        _add_border(note_box, DTM_ORANGE, 0.8)
+        note_tf = note_box.text_frame
+        note_tf.clear()
+        note_tf.word_wrap = True
+        note_tf.margin_left = Inches(0.12)
+        note_tf.margin_right = Inches(0.12)
+        note_tf.margin_top = Inches(0.06)
+        title_p = note_tf.paragraphs[0]
+        title_r = title_p.add_run()
+        title_r.text = "UNIT NOTES"
+        title_r.font.size = Pt(10)
+        title_r.font.bold = True
+        title_r.font.color.rgb = DTM_ORANGE
+        body_p = note_tf.add_paragraph()
+        body_r = body_p.add_run()
+        body_r.text = unit_notes
+        body_r.font.size = Pt(12 if len(unit_notes) <= 240 else 10.5)
+        body_r.font.color.rgb = DTM_DARKTEXT
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1107,7 +1222,7 @@ def _manifest_row_height(entry: _ManifestEntry) -> int:
     primary, secondary = _manifest_part_identity(entry)
     description, detail, comment = _manifest_details(entry)
     details = "\n".join(filter(None, [description, detail, f"Comment: {comment}" if comment else ""]))
-    source = _source_label(entry.raw)
+    source = _manifest_source_label(entry.raw)
     line_count = max(
         _manifest_line_count("\n".join(filter(None, [primary, secondary])), MANIFEST_COL_WIDTHS_IN[0]),
         _manifest_line_count(details, MANIFEST_COL_WIDTHS_IN[1]),
@@ -1131,7 +1246,7 @@ def _fmt_manifest_item_cell(cell, entry: _ManifestEntry, bg: RGBColor | None) ->
     p.space_after = Pt(0)
     r = p.add_run()
     r.text = primary
-    r.font.size = Pt(8 if entry.indent else 9)
+    r.font.size = Pt(9 if entry.indent else 10)
     r.font.bold = not entry.indent
     r.font.color.rgb = DTM_NAVY if not entry.indent else DTM_DARKTEXT
     if secondary:
@@ -1139,8 +1254,8 @@ def _fmt_manifest_item_cell(cell, entry: _ManifestEntry, bg: RGBColor | None) ->
         p2.space_after = Pt(0)
         r2 = p2.add_run()
         r2.text = secondary
-        r2.font.size = Pt(8)
-        r2.font.color.rgb = DTM_GRAY
+        r2.font.size = Pt(9)
+        r2.font.color.rgb = DTM_DARKTEXT
     if bg is not None:
         _set_cell_bg(cell, bg)
 
@@ -1159,15 +1274,15 @@ def _fmt_manifest_details_cell(cell, entry: _ManifestEntry, bg: RGBColor | None)
         p.space_after = Pt(0)
         r = p.add_run()
         r.text = description
-        r.font.size = Pt(8)
+        r.font.size = Pt(9)
         r.font.color.rgb = DTM_DARKTEXT
     if detail:
         p2 = tf.add_paragraph() if description else tf.paragraphs[0]
         p2.space_after = Pt(0)
         r2 = p2.add_run()
         r2.text = detail
-        r2.font.size = Pt(8)
-        r2.font.color.rgb = DTM_GRAY
+        r2.font.size = Pt(9)
+        r2.font.color.rgb = DTM_DARKTEXT
     if comment:
         p3 = tf.add_paragraph() if (description or detail) else tf.paragraphs[0]
         p3.space_after = Pt(0)
@@ -1180,8 +1295,8 @@ def _fmt_manifest_details_cell(cell, entry: _ManifestEntry, bg: RGBColor | None)
         p = tf.paragraphs[0]
         r = p.add_run()
         r.text = "—"
-        r.font.size = Pt(8)
-        r.font.color.rgb = DTM_GRAY
+        r.font.size = Pt(9)
+        r.font.color.rgb = DTM_DARKTEXT
     if bg is not None:
         _set_cell_bg(cell, bg)
 
@@ -1192,8 +1307,7 @@ def _part_row(table, row_idx: int, entry: _ManifestEntry, alt_bg: bool, row_h: i
     used = reused and state.customer_condition == "used"
     row_bg = RGBColor(0xFF, 0xF3, 0xE8) if reused else (DTM_ALT_BG if alt_bg else None)
 
-    source_text = _source_label(entry.raw)
-    source_text = f"↺  {source_text}" if reused else f"■  {source_text}"
+    source_text = _manifest_source_label(entry.raw)
     source_color = DTM_RED if used else (TAG_REUSED if reused else TAG_NEW)
     source_bg = RGBColor(0xFF, 0xE4, 0xE4) if used else (
         RGBColor(0xFF, 0xE8, 0xD0) if reused else RGBColor(0xD8, 0xEC, 0xFF)
@@ -1202,10 +1316,10 @@ def _part_row(table, row_idx: int, entry: _ManifestEntry, alt_bg: bool, row_h: i
     _fmt_manifest_item_cell(table.cell(row_idx, 0), entry, row_bg)
     _fmt_manifest_details_cell(table.cell(row_idx, 1), entry, row_bg)
     _fmt_cell(table.cell(row_idx, 2), str(entry.quantity or "—"),
-              font_size=9, bold=True, bg=row_bg, align=PP_ALIGN.CENTER)
-    _fmt_cell(table.cell(row_idx, 3), entry.location, font_size=9, bg=row_bg)
-    _fmt_cell(table.cell(row_idx, 4), source_text, font_size=9 if used else 8,
-              bold=used, color=source_color, bg=source_bg)
+              font_size=9.5, bold=True, bg=row_bg, align=PP_ALIGN.CENTER)
+    _fmt_cell(table.cell(row_idx, 3), entry.location, font_size=9.5, bg=row_bg)
+    _fmt_cell(table.cell(row_idx, 4), source_text, font_size=9.5,
+              bold=reused, color=source_color, bg=source_bg)
     table.rows[row_idx].height = row_h
 
 
@@ -1731,12 +1845,10 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
 
     proj    = plan.project
     new_v   = proj.get("NewVehicle",      {})
-    exist_v = proj.get("ExistingVehicle", {})
     agency  = proj.get("Agency", "")
     year, make, model, sub_model = _project_vehicle_fields(proj)
     veh_line = " ".join(filter(None, [year, make, model, sub_model]))
-    unit_id  = (new_v.get("UNIT ID", new_v.get("UNIT",""))
-                or exist_v.get("UNIT ID", exist_v.get("UNIT","")))
+    unit_id  = new_v.get("UNIT ID", new_v.get("UNIT", ""))
     unit_part = _build_unit_label(proj.get("BuildType", ""), unit_id)
     hdr_parts = list(filter(None, [agency, veh_line, unit_part]))
     hdr_base  = "   •   ".join(hdr_parts)
@@ -1749,61 +1861,315 @@ def add_parts_manifest_slides(prs, plan, paths: AppPaths | None = None) -> int:
     # calculated from their contents rather than forcing text to spill below.
     avail_h = SLIDE_H_EMU - MANIFEST_TABLE_TOP - FOOTER_H - Inches(0.26)
 
+    pages = _manifest_page_rows(groups, avail_h)
     slides_added = 0
-    page_num = 0
+
+    for page_num, slide_rows in enumerate(pages, start=1):
+        used_h = MANIFEST_HDR_ROW_H + sum(row_h for _kind, _value, row_h in slide_rows)
+        manifest_context = f"{hdr_base}   •   Page {page_num}"
+        slide = _make_manifest_slide(
+            prs,
+            "PARTS MANIFEST",
+            paths,
+            footer_text=footer_text,
+            subtitle=manifest_context,
+            title_font_size=20,
+        )
+        slides_added += 1
+
+        total_rows = 1 + len(slide_rows)
+        tbl_shape = slide.shapes.add_table(
+            total_rows, n_cols,
+            MANIFEST_TABLE_LEFT, MANIFEST_TABLE_TOP,
+            MANIFEST_TABLE_W, used_h,
+        )
+        table = tbl_shape.table
+        for c, w in enumerate(col_widths):
+            table.columns[c].width = w
+
+        table.rows[0].height = MANIFEST_HDR_ROW_H
+        for c, hdr in enumerate(MANIFEST_COL_HEADERS):
+            _fmt_cell(table.cell(0, c), hdr,
+                      font_size=10, bold=True, color=_WHITE,
+                      bg=DTM_NAVY, align=PP_ALIGN.CENTER)
+
+        data_row_index = 0
+        for r_idx, (row_kind, value, row_h) in enumerate(slide_rows, start=1):
+            table.rows[r_idx].height = row_h
+            if row_kind == "section":
+                section_cell = table.cell(r_idx, 0)
+                section_cell.merge(table.cell(r_idx, n_cols - 1))
+                _fmt_cell(
+                    section_cell, str(value).upper(),
+                    font_size=12, bold=True, color=_WHITE,
+                    bg=DTM_ORANGE, align=PP_ALIGN.LEFT,
+                )
+                section_cell.text_frame.margin_left = Inches(0.10)
+                continue
+            data_row_index += 1
+            _part_row(
+                table, r_idx, value,
+                alt_bg=(data_row_index % 2 == 0), row_h=row_h,
+            )
+
+    return slides_added
+
+
+def _manifest_page_rows(
+    groups: list[tuple[str, list[_ManifestEntry]]],
+    avail_h: int,
+) -> list[list[tuple[str, object, int]]]:
+    """Pack category bars and manifest entries without orphaning a bar.
+
+    Every section row is followed by at least one data row on the same page.
+    A category that spans pages receives a repeated ``- CONTINUED`` bar so the
+    table remains understandable when pages are printed separately.
+    """
+    pages: list[list[tuple[str, object, int]]] = []
+    page: list[tuple[str, object, int]] = []
+    used_h = MANIFEST_HDR_ROW_H
+
+    def finish_page() -> None:
+        nonlocal page, used_h
+        if page:
+            pages.append(page)
+        page = []
+        used_h = MANIFEST_HDR_ROW_H
 
     for group_label, entries in groups:
         entry_index = 0
-        category_page = 0
-
+        continued = False
         while entry_index < len(entries):
-            category_page += 1
-            page_num += 1
-            slide_rows: list[tuple] = []
-            used_h = MANIFEST_HDR_ROW_H
+            first_row_h = _manifest_row_height(entries[entry_index])
+            required_h = MANIFEST_SECTION_ROW_H + first_row_h
+            if page and used_h + required_h > avail_h:
+                finish_page()
 
+            section_label = f"{group_label} - CONTINUED" if continued else group_label
+            page.append(("section", section_label, MANIFEST_SECTION_ROW_H))
+            used_h += MANIFEST_SECTION_ROW_H
+
+            rows_added = 0
             while entry_index < len(entries):
                 entry = entries[entry_index]
                 row_h = _manifest_row_height(entry)
-                if used_h + row_h > avail_h and slide_rows:
+                if rows_added and used_h + row_h > avail_h:
                     break
-                slide_rows.append((entry, row_h))
+                page.append(("entry", entry, row_h))
                 used_h += row_h
                 entry_index += 1
+                rows_added += 1
 
-            category_suffix = "" if category_page == 1 else " — Continued"
-            manifest_heading = f"{group_label.upper()}{category_suffix}"
-            manifest_context = f"PARTS MANIFEST   •   {hdr_base}   •   Page {page_num}"
-            slide = _make_manifest_slide(
-                prs,
-                manifest_heading,
-                paths,
-                footer_text=footer_text,
-                subtitle=manifest_context,
-                title_font_size=20,
+            if entry_index < len(entries):
+                finish_page()
+                continued = True
+
+    finish_page()
+    return pages
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build reference photo slides
+# ────────────────────────────────────────────────────────────────────────────
+
+def _reference_picture_path(source: Path) -> tuple[Path, tuple[int, int], bool]:
+    """Return an EXIF-correct, bounded PNG suitable for embedding."""
+    from PIL import Image, ImageOps
+
+    with Image.open(source) as original:
+        image = ImageOps.exif_transpose(original)
+        if image.mode not in {"RGB", "RGBA"}:
+            image = image.convert("RGB")
+        image.thumbnail((1800, 1200))
+        size = image.size
+        temporary = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        temporary.close()
+        target = Path(temporary.name)
+        image.save(target, "PNG", optimize=True)
+    return target, size, True
+
+
+def _fit_inside(width: int, height: int, box_w: int, box_h: int) -> tuple[int, int]:
+    if width <= 0 or height <= 0:
+        return box_w, box_h
+    scale = min(box_w / width, box_h / height)
+    return max(1, int(width * scale)), max(1, int(height * scale))
+
+
+def _safe_relative_photo_link(value: str) -> str:
+    normalized = str(value or "").replace("\\", "/").strip()
+    prefix = "Build Reference Photos/"
+    if not normalized.startswith(prefix):
+        return ""
+    leaf = normalized[len(prefix):]
+    if not leaf or "/" in leaf or leaf in {".", ".."}:
+        return ""
+    return prefix + leaf
+
+
+def _set_solid_fill_opacity(shape, opacity: float) -> None:
+    """Apply opacity to a solid-filled shape without fading its text."""
+    color = shape._element.find(".//" + qn("a:solidFill") + "/" + qn("a:srgbClr"))
+    if color is None:
+        return
+    for old in color.findall(qn("a:alpha")):
+        color.remove(old)
+    alpha = etree.SubElement(color, qn("a:alpha"))
+    alpha.set("val", str(int(max(0.0, min(1.0, opacity)) * 100000)))
+
+
+def _reference_photo_dimensions(photo: dict) -> tuple[int, int]:
+    from PIL import Image, ImageOps
+
+    try:
+        with Image.open(Path(str(photo.get("local_path") or ""))) as original:
+            return ImageOps.exif_transpose(original).size
+    except Exception:
+        return (1, 1)
+
+
+def _add_reference_photo_cell(
+    slide,
+    photo: dict,
+    *,
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+) -> None:
+    source = Path(str(photo.get("local_path") or ""))
+    note = str(photo.get("note") or "").strip()
+    title = str(photo.get("title") or photo.get("file_name") or "Reference photo")
+    image_w = max(Inches(0.8), width - Inches(0.10))
+    image_h = max(Inches(0.8), height - Inches(0.10))
+
+    frame = slide.shapes.add_textbox(left, top, width, height)
+    frame.fill.solid()
+    frame.fill.fore_color.rgb = RGBColor(0xF7, 0xF8, 0xFB)
+    frame.line.color.rgb = RGBColor(0xD4, 0xD9, 0xE3)
+    frame.text_frame.clear()
+
+    prepared = None
+    picture = None
+    try:
+        prepared, (pixel_w, pixel_h), temporary = _reference_picture_path(source)
+        picture_w, picture_h = _fit_inside(pixel_w, pixel_h, image_w, image_h)
+        picture = slide.shapes.add_picture(
+            str(prepared),
+            left + (width - picture_w) // 2,
+            top + (height - picture_h) // 2,
+            width=picture_w,
+            height=picture_h,
+        )
+        relative_link = _safe_relative_photo_link(photo.get("source_relative_path", ""))
+        if relative_link:
+            picture.click_action.hyperlink.address = relative_link
+    except Exception:
+        error = slide.shapes.add_textbox(
+            left + Inches(0.15), top + max(Inches(0.2), image_h // 2 - Inches(0.3)),
+            width - Inches(0.3), Inches(0.65),
+        )
+        error_tf = error.text_frame
+        error_tf.clear()
+        error_p = error_tf.paragraphs[0]
+        error_p.alignment = PP_ALIGN.CENTER
+        error_run = error_p.add_run()
+        error_run.text = "Reference photo could not be rendered"
+        error_run.font.size = Pt(12)
+        error_run.font.bold = True
+        error_run.font.color.rgb = DTM_RED
+    finally:
+        if prepared is not None:
+            prepared.unlink(missing_ok=True)
+
+    caption_left = picture.left if picture is not None else left + Inches(0.05)
+    caption_width = picture.width if picture is not None else width - Inches(0.10)
+    caption_bottom = picture.top + picture.height if picture is not None else top + height - Inches(0.05)
+    inner_width_inches = max(0.5, float(caption_width - Inches(0.18)) / 914400)
+    title_lines = _est_wrapped_lines(title, inner_width_inches, 11)
+    note_lines = _est_wrapped_lines(note, inner_width_inches, 10) if note else 0
+    caption_h = Inches(0.12 + title_lines * 0.18 + note_lines * 0.17)
+    max_caption_h = max(Inches(0.40), (picture.height if picture is not None else height) - Inches(0.10))
+    caption_h = min(max_caption_h, max(Inches(0.40), caption_h))
+    caption = slide.shapes.add_textbox(
+        caption_left, caption_bottom - caption_h, caption_width, caption_h,
+    )
+    caption.fill.solid()
+    caption.fill.fore_color.rgb = DTM_BLACK
+    _set_solid_fill_opacity(caption, 0.78)
+    caption.line.fill.background()
+    relative_link = _safe_relative_photo_link(photo.get("source_relative_path", ""))
+    if relative_link:
+        caption.click_action.hyperlink.address = relative_link
+    caption_tf = caption.text_frame
+    caption_tf.clear()
+    caption_tf.word_wrap = True
+    caption_tf.margin_left = Inches(0.09)
+    caption_tf.margin_right = Inches(0.09)
+    caption_tf.margin_top = Inches(0.045)
+    caption_tf.margin_bottom = Inches(0.035)
+    title_p = caption_tf.paragraphs[0]
+    title_p.space_after = Pt(0)
+    title_run = title_p.add_run()
+    title_run.text = title
+    title_run.font.size = Pt(11)
+    title_run.font.bold = True
+    title_run.font.color.rgb = _WHITE
+    if note:
+        note_p = caption_tf.add_paragraph()
+        note_p.space_after = Pt(0)
+        note_run = note_p.add_run()
+        note_run.text = note
+        note_run.font.size = Pt(10)
+        note_run.font.color.rgb = _WHITE
+
+
+def add_reference_photo_slides(
+    prs,
+    plan,
+    paths: AppPaths | None = None,
+    *,
+    footer_text: str = "",
+) -> int:
+    """Append adaptive reference-photo pages and return their count."""
+    photos = list(getattr(plan, "reference_photos", []) or [])
+    if not photos:
+        return 0
+    project = plan.project
+    agency = str(project.get("Agency") or "")
+    build_type = str(project.get("BuildType") or "")
+    new_vehicle = project.get("NewVehicle") or {}
+    unit_id = new_vehicle.get("UNIT ID") or new_vehicle.get("UNIT") or ""
+    canonical_vehicle = str(project.get("CanonicalVehicleName") or "").strip()
+    context = "   •   ".join(filter(None, [
+        agency,
+        canonical_vehicle or build_type,
+        "" if canonical_vehicle else _build_unit_label(build_type, unit_id),
+    ]))
+    pages = plan_reference_photo_pages([_reference_photo_dimensions(photo) for photo in photos])
+    content_left = Inches(0.48)
+    content_top = Inches(1.08)
+    content_width = Inches(12.35)
+    content_height = Inches(5.90)
+    for page_index, page in enumerate(pages):
+        slide = _make_manifest_slide(
+            prs,
+            "BUILD REFERENCE PHOTOS",
+            paths,
+            footer_text=footer_text,
+            subtitle=f"{context}   •   Page {page_index + 1}",
+            title_font_size=20,
+        )
+        for placement in page.placements:
+            _add_reference_photo_cell(
+                slide,
+                photos[placement.source_index],
+                left=content_left + int(content_width * placement.left),
+                top=content_top + int(content_height * placement.top),
+                width=int(content_width * placement.width),
+                height=int(content_height * placement.height),
             )
-            slides_added += 1
-
-            total_rows = 1 + len(slide_rows)
-            tbl_shape = slide.shapes.add_table(
-                total_rows, n_cols,
-                MANIFEST_TABLE_LEFT, MANIFEST_TABLE_TOP,
-                MANIFEST_TABLE_W, used_h,
-            )
-            table = tbl_shape.table
-            for c, w in enumerate(col_widths):
-                table.columns[c].width = w
-
-            table.rows[0].height = MANIFEST_HDR_ROW_H
-            for c, hdr in enumerate(MANIFEST_COL_HEADERS):
-                _fmt_cell(table.cell(0, c), hdr,
-                          font_size=9, bold=True, color=_WHITE,
-                          bg=DTM_NAVY, align=PP_ALIGN.CENTER)
-
-            for r_idx, (entry, row_h) in enumerate(slide_rows, start=1):
-                _part_row(table, r_idx, entry, alt_bg=(r_idx % 2 == 0), row_h=row_h)
-
-    return slides_added
+    return len(pages)
 
 
 def _render_exception_reason(item, view: str) -> str:
@@ -2373,7 +2739,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             r2 = p2.add_run()
             r2.text           = specs
             r2.font.size      = Pt(11)
-            r2.font.color.rgb = DTM_GRAY
+            r2.font.color.rgb = DTM_BLACK
 
         # Line 3: lens on its own line (value already contains "Lens")
         lens = _lens_label(part)
@@ -2382,7 +2748,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             r3 = p3.add_run()
             r3.text           = lens
             r3.font.size      = Pt(11)
-            r3.font.color.rgb = DTM_GRAY
+            r3.font.color.rgb = DTM_BLACK
 
         for callout in _legend_callouts(part):
             pc = tf.add_paragraph()
@@ -2401,7 +2767,7 @@ def place_legend(slide, placed, unplaced, accessory_map: dict | None = None,
             ra.text           = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
             ra.font.size      = Pt(10)
             ra.font.italic    = True
-            ra.font.color.rgb = DTM_GRAY
+            ra.font.color.rgb = DTM_BLACK
 
         col_y[col_i] += card_h + CARD_GAP
 
@@ -2574,14 +2940,14 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
             if specs:
                 p2 = tf.add_paragraph()
                 r2 = p2.add_run()
-                r2.text = specs; r2.font.size = Pt(11); r2.font.color.rgb = DTM_GRAY
+                r2.text = specs; r2.font.size = Pt(11); r2.font.color.rgb = DTM_BLACK
 
             # Line 3: lens on its own line (value already contains "Lens")
             lens = _lens_label(part)
             if lens:
                 p3 = tf.add_paragraph()
                 r3 = p3.add_run()
-                r3.text = lens; r3.font.size = Pt(11); r3.font.color.rgb = DTM_GRAY
+                r3.text = lens; r3.font.size = Pt(11); r3.font.color.rgb = DTM_BLACK
 
             for callout in _legend_callouts(part):
                 pc = tf.add_paragraph()
@@ -2596,7 +2962,7 @@ def place_legend_grid(slide, placed, unplaced, accessory_map: dict | None = None
                 pa = tf.add_paragraph()
                 ra = pa.add_run()
                 ra.text = "+ " + acc_name + (f"  ·  {acc_pnum}" if acc_pnum else "")
-                ra.font.size = Pt(10); ra.font.italic = True; ra.font.color.rgb = DTM_GRAY
+                ra.font.size = Pt(10); ra.font.italic = True; ra.font.color.rgb = DTM_BLACK
 
     if unplaced:
         # Place "not shown" note just below the lowest rendered card row

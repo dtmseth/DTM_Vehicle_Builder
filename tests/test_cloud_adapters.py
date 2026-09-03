@@ -15,6 +15,10 @@ from dtm_buildsheet.app.adapters.cloud.sharepoint_graph_provider import (
     SharePointGraphProvider,
     SharePointRequestError,
 )
+from dtm_buildsheet.app.adapters.cloud.graph_drive_gateway import (
+    GraphDriveError,
+    GraphDriveGateway,
+)
 from dtm_buildsheet.app.adapters.wiring import (
     CLOUD_ENV_FLAG,
     build_local_bundle,
@@ -56,6 +60,21 @@ def _mock_response(status_code: int = 200, *, content: bytes = b"", json: dict |
     return resp
 
 
+def test_graph_drive_gateway_get_item_uses_durable_id_and_handles_missing():
+    session = MagicMock()
+    session.get.side_effect = [
+        _mock_response(200, json={"id": "item/id", "name": "Vehicle"}),
+        _mock_response(404),
+    ]
+    gateway = GraphDriveGateway(token="TOK", drive_id="drive-1", session=session)
+
+    assert gateway.get_item("item/id") == {"id": "item/id", "name": "Vehicle"}
+    assert gateway.get_item("missing") is None
+    assert session.get.call_args_list[0].args[0].endswith(
+        "/drives/drive-1/items/item%2Fid"
+    )
+
+
 # ── CloudConfig env loading ──────────────────────────────────────────────────
 
 
@@ -67,6 +86,27 @@ def test_load_cloud_config_from_env_happy(monkeypatch):
     cfg = load_cloud_config_from_env()
     assert cfg.tenant_id == "t"
     assert cfg.authority == "https://login.microsoftonline.com/t"
+
+
+def test_vehicle_folder_targets_require_explicit_cutover_flags(monkeypatch):
+    monkeypatch.setenv("DTM_AZURE_TENANT_ID", "t")
+    monkeypatch.setenv("DTM_AZURE_CLIENT_ID", "c")
+    monkeypatch.setenv("DTM_SHAREPOINT_SITE_ID", "s")
+    monkeypatch.setenv("DTM_SHAREPOINT_DRIVE_ID", "d")
+    monkeypatch.setenv("DTM_COMPANY_LIBRARY_NAME", "Company Files")
+    monkeypatch.setenv("DTM_SHOP_LIBRARY_NAME", "Shop Documents")
+    monkeypatch.setenv("DTM_COMPANY_VEHICLE_FOLDERS_ENABLED", "false")
+    monkeypatch.setenv("DTM_SHOP_PUBLICATION_ENABLED", "false")
+
+    disabled = load_cloud_config_from_env()
+    assert disabled.company_target_configured is False
+    assert disabled.shop_target_configured is False
+
+    monkeypatch.setenv("DTM_COMPANY_VEHICLE_FOLDERS_ENABLED", "true")
+    monkeypatch.setenv("DTM_SHOP_PUBLICATION_ENABLED", "1")
+    enabled = load_cloud_config_from_env()
+    assert enabled.company_target_configured is True
+    assert enabled.shop_target_configured is True
 
 
 def test_load_cloud_config_from_env_reports_all_missing(monkeypatch, tmp_path):
@@ -93,6 +133,109 @@ def test_load_cloud_config_from_env_reports_all_missing(monkeypatch, tmp_path):
         "DTM_SHAREPOINT_DRIVE_ID",
     ):
         assert name in msg
+
+
+def test_graph_drive_gateway_resolves_library_by_display_or_internal_name():
+    session = MagicMock()
+    session.get.return_value = _mock_response(200, json={"value": [
+        {
+            "id": "drive-1",
+            "name": "Documents",
+            "webUrl": "https://tenant.sharepoint.com/sites/DTM/Documents",
+        },
+        {"id": "drive-2", "name": "Shop Documents"},
+    ]})
+
+    drive_id = GraphDriveGateway.resolve_drive_id(
+        token="TOK",
+        site_id="site-id",
+        library_names=("Renamed Company Files", "Documents"),
+        session=session,
+        timeout_seconds=7,
+    )
+
+    assert drive_id == "drive-1"
+    assert session.get.call_args.kwargs["headers"]["Authorization"] == "Bearer TOK"
+    assert session.get.call_args.kwargs["timeout"] == 7
+    assert GraphDriveGateway.resolve_drive_web_url(
+        token="TOK",
+        site_id="site-id",
+        library_names=("Company Files", "Documents"),
+        session=session,
+    ) == "https://tenant.sharepoint.com/sites/DTM/Documents"
+
+
+def test_graph_drive_gateway_downloads_exact_item_without_exposing_redirect_url():
+    session = MagicMock()
+    session.get.return_value = _mock_response(200, content=b"photo bytes")
+    gateway = GraphDriveGateway(token="TOK", drive_id="drive-1", session=session)
+
+    assert gateway.download_item("item-1", timeout_seconds=17) == b"photo bytes"
+    assert session.get.call_args.args[0].endswith("/drives/drive-1/items/item-1/content")
+    assert session.get.call_args.kwargs["timeout"] == 17
+
+    temporary_url = "https://download.invalid/photo?tempauth=do-not-leak"
+    failed = _mock_response(500)
+    from requests import HTTPError
+    failed.raise_for_status.side_effect = HTTPError(
+        f"500 for url: {temporary_url}", response=failed,
+    )
+    session.get.return_value = failed
+    with pytest.raises(GraphDriveError) as exc:
+        gateway.download_item("item-1")
+    assert "tempauth" not in str(exc.value)
+
+
+def test_graph_drive_gateway_downloads_large_thumbnail_bytes():
+    session = MagicMock()
+    session.get.return_value = _mock_response(200, content=b"thumbnail bytes")
+    gateway = GraphDriveGateway(token="TOK", drive_id="drive-1", session=session)
+
+    assert gateway.download_thumbnail("item-1", timeout_seconds=9) == b"thumbnail bytes"
+    assert session.get.call_args.args[0].endswith(
+        "/drives/drive-1/items/item-1/thumbnails/0/large/content"
+    )
+    assert session.get.call_args.kwargs["allow_redirects"] is True
+    assert session.get.call_args.kwargs["timeout"] == 9
+
+
+def test_graph_drive_gateway_copies_folder_and_verifies_destination(monkeypatch):
+    accepted = _mock_response(202)
+    accepted.headers = {"Location": "https://graph.microsoft.com/monitor/copy-1"}
+    progress = _mock_response(202, json={"status": "inProgress"})
+    progress.headers = {"Retry-After": "0"}
+    complete = _mock_response(200, json={"status": "completed"})
+    complete.content = b"{}"
+    destination = _mock_response(200, json={
+        "id": "copied-folder",
+        "name": "Completed Build Photos",
+        "folder": {"childCount": 3},
+    })
+    session = MagicMock()
+    session.post.return_value = accepted
+    session.get.side_effect = [progress, complete, destination]
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.graph_drive_gateway.time.sleep",
+        lambda _delay: None,
+    )
+    gateway = GraphDriveGateway(token="TOK", drive_id="drive-1", session=session)
+
+    result = gateway.copy_item(
+        "source-folder",
+        parent_id="vehicle-folder",
+        new_name="Completed Build Photos",
+        destination_path="Shop Project Database/Agency/Year/Vehicle/Completed Build Photos",
+    )
+
+    assert result["id"] == "copied-folder"
+    assert session.post.call_args.args[0].endswith(
+        "/drives/drive-1/items/source-folder/copy"
+    )
+    assert session.post.call_args.kwargs["json"] == {
+        "parentReference": {"driveId": "drive-1", "id": "vehicle-folder"},
+        "name": "Completed Build Photos",
+    }
+    assert "headers" not in session.get.call_args_list[0].kwargs
 
 
 def test_load_cloud_config_from_file_fallback(monkeypatch, tmp_path):

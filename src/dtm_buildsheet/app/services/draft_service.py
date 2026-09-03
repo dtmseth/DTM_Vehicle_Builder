@@ -4,8 +4,10 @@ import logging
 import traceback
 import uuid
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from ...domain.supply import supply_state
+from ...domain.vehicle_naming import refresh_individual_vehicle_info
 
 _log = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ def _finalized_edit_error(draft_id: str, paths: AppPaths) -> dict | None:
     return {
         "ok": False,
         "error": "build_finalized",
-        "message": "This build is finalized. Reopen it with a reason before editing.",
+        "message": "This design is finalized. Reopen it with a reason before editing.",
         "finalized_owner": owner,
     }
 
@@ -957,6 +959,9 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         _agency = str(project.info.get("Agency", "") or "")
         _year = str(project.info.get("BuildYear", "") or "")
         _ind_year = ""
+        _proj_rec = None
+        _matched_unit_id = ""
+        _matched_individual_id = ""
         _proj_id_param = body.get("project_id", "")
         if _proj_id_param:
             try:
@@ -964,6 +969,10 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                 _proj_rec = load_project(_proj_id_param, paths)
                 _agency = (_proj_rec.customer.agency or "").strip() or _agency
                 _year = (_proj_rec.customer.build_year or "").strip() or _year
+                project.info["Agency"] = _agency
+                project.info["AgencyAbbreviation"] = (
+                    _proj_rec.customer.agency_abbreviation or ""
+                )
                 if _year:
                     project.info["BuildYear"] = _year
 
@@ -974,25 +983,23 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                     for _idx, _ind in enumerate(_bu.individuals):
                         if _ind.draft_id == draft_id:
                             _matched_project_unit = True
-                            _nv = dict(project.info.get("NewVehicle") or {})
-                            _nv["UNIT ID"] = _ind.unit_number or f"Unit-{_idx + 1}"
+                            _matched_unit_id = _bu.unit_id
+                            _matched_individual_id = _ind.individual_id
                             _year = (_proj_rec.customer.build_year or "").strip() or _year
-                            project.info["BuildYear"] = _year
                             _ind_year = _year or _ind.year or ""
-                            if _ind_year:
-                                _nv["YEAR"] = _ind_year
-                                vehicle_model = _ind.make or _bu.vehicle_model or ""
-                                if _ind.model:
-                                    vehicle_model = f"{vehicle_model} {_ind.model}".strip()
-                                if vehicle_model:
-                                    _nv["MODEL"] = f"{_ind_year} {vehicle_model}".strip()
-                            project.info["NewVehicle"] = _nv
-                            project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
+                            project.info = refresh_individual_vehicle_info(
+                                project.info,
+                                _proj_rec,
+                                _bu,
+                                _ind,
+                                ordinal=_idx + 1,
+                            )
                             break
                     if _matched_project_unit:
                         break
                     if not _bu.individuals and _bu.draft_id == draft_id:
                         _matched_project_unit = True
+                        _matched_unit_id = _bu.unit_id
                         _nv = dict(project.info.get("NewVehicle") or {})
                         if _year:
                             _nv["YEAR"] = _year
@@ -1001,6 +1008,10 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
                         _nv["UNIT ID"] = _nv.get("UNIT ID") or "Group Build"
                         project.info["NewVehicle"] = _nv
                         project.info["BuildType"] = _bu.build_type or project.info.get("BuildType", "")
+                        from ...domain.vehicle_naming import vehicle_display_name
+                        project.info["CanonicalVehicleName"] = vehicle_display_name(
+                            _proj_rec, _bu, None,
+                        )
                         break
             except Exception:
                 _log.exception("Could not resolve project metadata for draft %s", draft_id)
@@ -1020,6 +1031,31 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
         _t_step("load_configs")
         plan = build_plan(project, config)
         _t_step("build_plan")
+
+        if _proj_rec is not None and _matched_unit_id:
+            from .reference_package_service import resolve_reference_package
+
+            reference_package = resolve_reference_package(
+                _proj_rec,
+                unit_id=_matched_unit_id,
+                individual_id=_matched_individual_id,
+                paths=paths,
+            )
+            for missing in reference_package.errors:
+                plan.warnings.append(f"Reference photo unavailable: {missing}")
+            for entry in reference_package.entries:
+                plan.reference_photos.append({
+                    "reference_id": entry.asset.reference_id,
+                    "file_name": entry.asset.file_name,
+                    "published_file_name": entry.published_file_name,
+                    "title": Path(entry.asset.file_name).stem,
+                    "note": entry.assignment.note,
+                    "sort_order": entry.assignment.sort_order,
+                    "origin": entry.origin,
+                    "source_relative_path": f"Build Reference Photos/{entry.published_file_name}",
+                    "local_path": str(entry.local_path),
+                })
+            _t_step(f"resolve_reference_photos({len(plan.reference_photos)})")
 
         if draft.placement_overrides:
             plan = apply_overrides(plan, draft.placement_overrides)
@@ -1061,7 +1097,7 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
             year=_year or project.info.get("BuildYear", "") or _ind_year,
             preserve_sharepoint_version=body.get("preserve_sharepoint_version") is True,
         )
-        _t_step("finalize_output (queues SharePoint upload)")
+        _t_step("finalize_output (keeps local conversion artifact)")
 
         # Detect rename: if the caller supplied the previous output path and the
         # stable filename prefix (everything before the timestamp) has changed,

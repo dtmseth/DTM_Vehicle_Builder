@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -80,7 +81,7 @@ def run_child(flow_name: str) -> int:
         try:
             FLOWS[flow_name](page, base_url)
         except Exception as exc:  # noqa: BLE001 — reported in the verdict
-            flow_error = f"{type(exc).__name__}: {exc}"
+            flow_error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
         finally:
             # Some project-detail flows leave long-lived polling/fetch work in
             # the page. Navigate away first so Chromium can shut down cleanly

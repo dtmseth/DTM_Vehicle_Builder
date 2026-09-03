@@ -46,6 +46,8 @@ class PlannedPlacement:
     behind_vehicle: bool = False
     mount_visibility: str = ""
     callout_label: str = ""
+    callout_dx: float = 0.0
+    callout_dy: float = 0.0
     layer: int = 0
     group_shapes: bool = False
     is_fixture: bool = False
@@ -83,9 +85,18 @@ class BuildPlan:
     planned_parts: list[PlannedPart]
     warnings: list[str] = field(default_factory=list)
     notes: dict[str, list[str]] = field(default_factory=dict)
+    # Ephemeral render inputs derived from ProjectRecord reference assignments.
+    # ``local_path`` is stripped from serialized BuildPlan JSON below so a
+    # workstation path never becomes shared project data.
+    reference_photos: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        if data.get("reference_photos"):
+            for photo in data["reference_photos"]:
+                photo.pop("local_path", None)
+        else:
+            data.pop("reference_photos", None)
         for part in data.get("planned_parts", []):
             raw = part.get("raw")
             if isinstance(raw, dict):
@@ -113,6 +124,10 @@ class BuildPlan:
                     placement.pop("translate_dx")
                 if placement.get("translate_dy") == 0.0:
                     placement.pop("translate_dy")
+                if placement.get("callout_dx") == 0.0:
+                    placement.pop("callout_dx")
+                if placement.get("callout_dy") == 0.0:
+                    placement.pop("callout_dy")
                 if placement.get("compound_group_size") == 1:
                     placement.pop("compound_group_size")
                 if placement.get("compound_group_count") == 0:

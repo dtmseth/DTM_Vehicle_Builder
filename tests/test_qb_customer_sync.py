@@ -86,6 +86,30 @@ def test_import_creates_new_agencies(paths):
     assert names["Beta SO"].qb_customer_id == "2"
 
 
+def test_import_does_not_schedule_vehicle_folders(paths, monkeypatch):
+    import dtm_buildsheet.app.services.vehicle_folder_provisioning_service as folders
+
+    monkeypatch.setattr(
+        folders,
+        "folder_provisioning_targets",
+        lambda: folders.ProvisioningTargets(True, True),
+    )
+    monkeypatch.setattr(
+        folders,
+        "schedule_agency_folder_provisioning_batch",
+        lambda *_args, **_kwargs: pytest.fail(
+            "QBO Customer imports must not create vehicle-project folders"
+        ),
+    )
+
+    result = agc.upsert_agencies_from_qb([_cust(1, "Standalone QBO Customer")], paths)
+
+    assert result["created"] == 1
+    stored = agc.load_agencies(paths)[0]
+    assert stored.company_folder_status == "not_provisioned"
+    assert stored.shop_folder_status == "not_provisioned"
+
+
 def test_import_links_existing_by_name_without_clobbering(paths):
     # Pre-existing agency entered by the user, no QB link, with a phone already.
     agc.handle_save_agency({"name": "Alpha PD", "contact_phone": "111"}, paths)

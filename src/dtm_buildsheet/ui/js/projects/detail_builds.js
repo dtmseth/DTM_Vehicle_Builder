@@ -27,37 +27,77 @@ function _ptShortAgo(iso) {
   return Math.floor(mo / 12) + "y ago";
 }
 
-function _ptRenderTimelineRow(holder) {
-  // holder has last_rendered_at/by, last_exported_at/by — render a small
-  // dim line so teammates can see who built each artifact at a glance.
-  const pptxBy   = _ptFirstName(holder.last_rendered_by);
-  const pptxWhen = _ptShortAgo(holder.last_rendered_at);
-  const pdfBy    = _ptFirstName(holder.last_exported_by);
-  const pdfWhen  = _ptShortAgo(holder.last_exported_at);
-  const lines = [];
-  if (pptxWhen) {
-    const who = pptxBy ? `${esc(pptxBy)} · ` : "";
-    lines.push(`<span class="proj-build-card-author">📊 ${who}${pptxWhen}</span>`);
-  }
-  if (pdfWhen) {
-    const who = pdfBy ? `${esc(pdfBy)} · ` : "";
-    lines.push(`<span class="proj-build-card-author">📄 ${who}${pdfWhen}</span>`);
-  }
-  if (!lines.length) return "";
-  return `<div class="proj-build-card-timeline">${lines.join(" ")}</div>`;
-}
-
 function _ptFinalizationBadge(holder) {
   const status = holder.status || "draft";
   if (status === "finalized") {
     const who = _ptFirstName(holder.finalized_by);
     const when = _ptShortAgo(holder.finalized_at);
-    return `<span class="proj-final-badge proj-final-badge--final">✓ Finalized${who ? ` by ${esc(who)}` : ""}${when ? ` · ${when}` : ""}</span>`;
+    return `<span class="proj-final-badge proj-final-badge--final">✓ Design finalized${who ? ` by ${esc(who)}` : ""}${when ? ` · ${when}` : ""}</span>`;
   }
   if (status === "reopened") {
     return `<span class="proj-final-badge proj-final-badge--reopened">Reopened for changes</span>`;
   }
   return `<span class="proj-final-badge">Draft</span>`;
+}
+
+function _ptPdfOptionsMarkup(projectId, unitId, individualId, type, holder, disabledAttrs) {
+  const hasPdf = !!String(holder.pdf_path || "").trim();
+  const shopVehiclePath = String(holder.shop_vehicle_folder_path || "").trim();
+  const hasShopFolder = !!(shopVehiclePath || String(holder.shop_pdf_path || "").trim());
+  return `<details class="proj-build-action-menu">
+    <summary class="btn btn-secondary btn-sm">PDF Options</summary>
+    <div class="proj-build-action-menu-items">
+      <button type="button"${disabledAttrs}
+        onclick="PT_buildExportPdf('${projectId}','${unitId}','${individualId}','${type}')">Export / update PDF</button>
+      ${hasPdf ? `<button type="button"
+        onclick="PT_buildOpenPdf('${projectId}','${unitId}','${individualId}','${type}')">View PDF</button>` : ""}
+      ${shopVehiclePath ? `<button type="button" data-library-target="shop" data-folder-path="${esc(shopVehiclePath)}"
+        onclick="PT_openCloudFolder(this)">Open Shop folder</button>` : `<button type="button"
+        onclick="PT_buildShowFolder('${projectId}','${unitId}','${individualId}','${type}')">${hasShopFolder ? "Open Shop folder" : "Open PDF folder"}</button>`}
+    </div>
+  </details>`;
+}
+
+function _ptQuickBooksOptionsMarkup(projectId, unitId, individualId, holder, disabledAttrs) {
+  if (!_PT_QUICKBOOKS_UI_ENABLED || !individualId) return "";
+  return `<details class="proj-build-action-menu">
+    <summary class="btn btn-secondary btn-sm">QuickBooks</summary>
+    <div class="proj-build-action-menu-items">
+      <button type="button"
+        onclick="PT_setupQbProject('${projectId}','${individualId}')">${String(holder.qb_project_id || "").trim() ? "Manage QB project" : "Set up QB project"}</button>
+      <button type="button"${disabledAttrs}
+        onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update estimate" : "Create estimate"}</button>
+    </div>
+  </details>`;
+}
+
+function _ptPhotoOptionsMarkup(project, projectId, unitId, individualId) {
+  const unit = (project.build_units || []).find(item => item.unit_id === unitId);
+  const holder = individualId
+    ? (unit?.individuals || []).find(item => item.individual_id === individualId)
+    : unit;
+  const publication = String(holder?.shop_publication_status || "not_published");
+  const companyReferencePath = String(project?.company_year_folder_path || "").trim()
+    ? `${String(project.company_year_folder_path).trim()}/Reference Photos & Videos` : "";
+  const shopVehiclePath = String(holder?.shop_vehicle_folder_path || "").trim();
+  const publicationNote = publication === "published" ? "Final PDF and references are published to the Shop folder."
+    : ["pending", "publishing"].includes(publication) ? "Shop publication is pending."
+      : ["error", "withdrawal_error"].includes(publication) ? "Shop publication needs a cloud-sync retry."
+        : "Completed Build Photos are kept in the unit's Shop folder.";
+  return `${_ptCompletedPhotoButtonMarkup(projectId, unitId, individualId)}
+    <details class="proj-build-action-menu proj-build-folder-menu">
+    <summary class="btn btn-secondary btn-sm">Folder options</summary>
+    <div class="proj-build-action-menu-items">
+      ${companyReferencePath ? `<button type="button" data-library-target="company" data-folder-path="${esc(companyReferencePath)}"
+        onclick="PT_openCloudFolder(this)">Open Company reference folder</button>` : ""}
+      ${shopVehiclePath ? `<button type="button" data-library-target="shop" data-folder-path="${esc(`${shopVehiclePath}/Build Reference Photos`)}"
+        onclick="PT_openCloudFolder(this)">Open reference photos folder</button>
+      <button type="button" data-library-target="shop" data-folder-path="${esc(`${shopVehiclePath}/Completed Build Photos`)}"
+        onclick="PT_openCloudFolder(this)">Open completed photos folder</button>` :
+        `<span class="proj-build-action-menu-note">Photo-folder locations will appear after folder provisioning.</span>`}
+      <span class="proj-build-action-menu-note">${esc(publicationNote)}</span>
+    </div>
+  </details>`;
 }
 
 function _ptUnitNotesMarkup(notes, individualId) {
@@ -82,8 +122,7 @@ function _ptBuildCardsMarkup(p) {
 
   const groups = units.map((u, uIdx) => {
     const pLabel  = _ptPresetLabel(u);
-    const vm      = _PT.vehicleMap[u.vehicle_model] || {};
-    const vmLabel = vm.make ? `${vm.make} ${vm.model}` : (u.vehicle_model || "—");
+    const vmLabel = _ptVehicleModelLabel(u);
     const inds    = u.individuals || [];
     const uid     = esc(u.unit_id);
 
@@ -95,7 +134,6 @@ function _ptBuildCardsMarkup(p) {
         const hasDraft  = !!ind.draft_id;
         const confirmed = !!ind.confirmed;
 
-        const hasPdf    = !!(ind.pdf_path || "").trim();
         const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
@@ -109,76 +147,43 @@ function _ptBuildCardsMarkup(p) {
               onclick="PT_openDetailIndModal('${pid}','${uid}','${iid}')">Details</button>
           </div>
           <div class="proj-ind-card-badges">
-            ${hasDraft  ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
             ${confirmed ? `<span class="proj-confirmed-badge">✓ confirmed</span>` : ""}
             ${_ptFinalizationBadge(ind)}
-            ${_PT_QUICKBOOKS_UI_ENABLED ? ((ind.qb_project_id || "").trim() ? `<span class="proj-confirmed-badge">◆ QB project</span>` : `<span class="proj-ind-not-setup">QB project needed</span>`) : ""}
-            ${_PT_QUICKBOOKS_UI_ENABLED && (ind.qb_estimate_id || "").trim() ? `<span class="proj-confirmed-badge">📋 estimate</span>` : ""}
           </div>
           ${_ptUnitNotesMarkup(ind.notes, ind.individual_id)}
-          ${_ptRenderTimelineRow(ind)}
           <div class="proj-build-card-stats" id="build-stats-${iid}">
             ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
           </div>
           <div class="proj-build-actions">
-            <button class="btn btn-secondary btn-sm"${buildDis}
-              onclick="PT_buildOpenPptx('${pid}','${uid}','${iid}','ind')">
-              📊 Preview / Edit in PowerPoint
-            </button>
-            <button class="btn btn-secondary btn-sm"${buildDis}
-              onclick="PT_buildExportPdf('${pid}','${uid}','${iid}','ind')">
-              📄 Export PDF
-            </button>
-            ${hasPdf ? `<button class="btn btn-secondary btn-sm"
-              onclick="PT_buildOpenPdf('${pid}','${uid}','${iid}','ind')">📑 View PDF</button>` : ""}
-            ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm"
-              onclick="PT_setupQbProject('${pid}','${iid}')">
-              ◆ ${(ind.qb_project_id || "").trim() ? "Manage QB Project" : "Set up QB Project"}
-            </button>` : ""}
-            ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm"${buildDis}
-              onclick="PT_buildCreateEstimate('${pid}','${uid}','${iid}')">
-              📋 ${(ind.qb_estimate_id || "").trim() ? "Re-estimate" : "QB Estimate"}
-            </button>` : ""}
-            <button class="btn btn-secondary btn-sm"
-              onclick="PT_buildShowFolder('${pid}','${uid}','${iid}','ind')">📂 Open PDF folder</button>
+            ${_ptPdfOptionsMarkup(pid, uid, iid, "ind", ind, buildDis)}
+            ${_ptQuickBooksOptionsMarkup(pid, uid, iid, ind, buildDis)}
+            ${_ptPhotoOptionsMarkup(p, pid, uid, iid)}
             <button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
+              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>
           </div>
         </div>`;
       }).join("");
     } else {
       const hasDraft  = !!u.draft_id;
-      const hasPdf    = !!(u.pdf_path || "").trim();
       const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
+      const groupLabel = _ptUnitLabel(u, null, uIdx);
 
       cards = `<div class="proj-build-card proj-build-card--openable" id="build-card-unit-${uid}" tabindex="0"
-        role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(u.build_type || "Unit")}" data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
+        role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(groupLabel)}" data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
         data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}" data-final-status="${esc(u.status || "draft")}">
-        <div class="proj-build-card-label">${esc(u.build_type || "Unit")} ×${u.quantity}</div>
+        <div class="proj-build-card-label">${esc(groupLabel)} ×${u.quantity}</div>
         <div class="proj-ind-card-badges">
-          ${hasDraft ? `<span class="proj-draft-badge">configured</span>` : `<span class="proj-ind-not-setup">not set up</span>`}
           ${_ptFinalizationBadge(u)}
         </div>
-        ${_ptRenderTimelineRow(u)}
         <div class="proj-build-card-stats" id="build-stats-unit-${uid}">
           ${hasDraft ? `<span class="proj-stats-loading">Loading…</span>` : ""}
         </div>
         <div class="proj-build-actions">
-          <button class="btn btn-secondary btn-sm"${buildDis}
-            onclick="PT_buildOpenPptx('${pid}','${uid}','','unit')">
-            📊 Preview / Edit in PowerPoint
-          </button>
-          <button class="btn btn-secondary btn-sm"${buildDis}
-            onclick="PT_buildExportPdf('${pid}','${uid}','','unit')">
-            📄 Export PDF
-          </button>
-          ${hasPdf ? `<button class="btn btn-secondary btn-sm"
-            onclick="PT_buildOpenPdf('${pid}','${uid}','','unit')">📑 View PDF</button>` : ""}
-          <button class="btn btn-secondary btn-sm"
-            onclick="PT_buildShowFolder('${pid}','${uid}','','unit')">📂 Open PDF folder</button>
+          ${_ptPdfOptionsMarkup(pid, uid, "", "unit", u, buildDis)}
+          ${_ptPhotoOptionsMarkup(p, pid, uid, "")}
           <button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Finalized" : "✓ Final review"}</button>
+            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>
         </div>
       </div>`;
     }
@@ -187,6 +192,7 @@ function _ptBuildCardsMarkup(p) {
       <div class="proj-unit-group-hdr">
         <span class="proj-unit-group-vehicle">${esc(vmLabel)}</span>
         <span class="proj-unit-group-meta">${esc(u.build_type || "—")} · ${u.quantity}× · ${esc(pLabel)}</span>
+        ${_ptGroupReferenceButton(p, u)}
       </div>
       <div class="proj-build-btn-row">${cards}</div>
     </div>`;
@@ -195,9 +201,8 @@ function _ptBuildCardsMarkup(p) {
   return `
     ${groups}
     <div class="proj-builds-footer">
-      <button class="btn btn-primary btn-sm" onclick="PT_generateAll()">⚡ Generate All</button>
-      <button class="btn btn-secondary btn-sm" onclick="PT_exportAllPdf()">📄 Export All PDFs</button>
-      ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">📋 Prepare QB Estimates</button>` : ""}
+      <button class="btn btn-primary btn-sm" onclick="PT_exportAllPdf()">Export / update all PDFs</button>
+      ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">QuickBooks options</button>` : ""}
     </div>
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
 }
@@ -260,7 +265,9 @@ function _ptOpenBuildCard(card) {
   const unitId = card.dataset.unitId;
   const draftId = card.dataset.draftId || "";
   const unitIndex = Number(card.dataset.unitIndex);
-  if (card.dataset.finalStatus === "finalized") {
+  if (card.dataset.buildKind === "historical") {
+    PT_openDetailIndModal(projectId, unitId, card.dataset.individualId || "");
+  } else if (card.dataset.finalStatus === "finalized") {
     PT_reviewFinalization(projectId, unitId, card.dataset.individualId || "", card.dataset.buildKind || "unit", true);
   } else if (card.dataset.buildKind === "ind") {
     PT_setupOrEditBuildInd(projectId, unitId, card.dataset.individualId, draftId, unitIndex);
@@ -273,7 +280,7 @@ function _ptBindBuildCardOpeners(container) {
   _ptBindUnitNoteCards(container);
   container.querySelectorAll(".proj-build-card--openable").forEach(card => {
     card.addEventListener("click", event => {
-      if (event.target.closest("button, a, input, select, textarea, [data-unit-notes-card]")) return;
+      if (event.target.closest("button, a, details, summary, input, select, textarea, [data-unit-notes-card]")) return;
       _ptOpenBuildCard(card);
     });
     card.addEventListener("keydown", event => {
@@ -289,8 +296,54 @@ function _ptFinalizationUrl(projectId, unitId, individualId, action) {
   return `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unitId)}${individual}/finalization/${action}`;
 }
 
+function _ptShopRepublishUrl(target) {
+  return `/api/project/${encodeURIComponent(target.project_id)}/unit/${encodeURIComponent(target.unit_id)}/individual/${encodeURIComponent(target.individual_id)}/shop-publication/republish`;
+}
+
+async function _ptOfferShopRepublish(targets, statusEl) {
+  const pending = (Array.isArray(targets) ? targets : [targets]).filter(target =>
+    target?.required && target.project_id && target.unit_id && target.individual_id
+  );
+  if (!pending.length) return { accepted: false, updated: 0, failed: 0 };
+  const plural = pending.length !== 1;
+  const accepted = confirm(
+    plural
+      ? `${pending.length} finalized designs already have PDFs in Shop Documents.\n\nReplace them with these new exports?`
+      : "This finalized design already has a PDF in Shop Documents.\n\nReplace it with this new export?"
+  );
+  if (!accepted) return { accepted: false, updated: 0, failed: 0 };
+
+  if (statusEl) _ptSetStatus(
+    statusEl,
+    plural ? "Updating Shop PDFs…" : "Updating Shop PDF…",
+    "loading",
+  );
+  let updated = 0;
+  let failed = 0;
+  for (const target of pending) {
+    try {
+      const result = await api(_ptShopRepublishUrl(target), {});
+      if (result?.ok) updated += 1;
+      else failed += 1;
+    } catch (_) {
+      failed += 1;
+    }
+  }
+  if (updated) toast(
+    plural ? `${updated} Shop PDF${updated === 1 ? "" : "s"} updated` : "Shop PDF updated",
+    failed ? "error" : "success",
+  );
+  if (failed) toast(
+    `${failed} Shop PDF${failed === 1 ? "" : "s"} could not be updated`,
+    "error",
+  );
+  return { accepted: true, updated, failed };
+}
+
 function _ptCloseFinalizationModal() {
-  $("build-finalization-modal")?.classList.remove("open");
+  const modal = $("build-finalization-modal");
+  modal?.classList.remove("open");
+  if (modal) modal.hidden = true;
 }
 
 function _ptOpenFinalizationModal(title, bodyHtml, saveLabel, onSave) {
@@ -355,13 +408,13 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
   if (check.status === "finalized") {
     const finalizedBy = check.finalized_by ? ` by ${esc(check.finalized_by)}` : "";
     const finalizedAt = check.finalized_at ? new Date(check.finalized_at).toLocaleString() : "";
-    _ptOpenFinalizationModal("Build finalized", `<section class="build-final-summary"><div class="build-final-seal">✓</div><div><h3>Final sign-off complete</h3><p>Signed off${finalizedBy}${finalizedAt ? ` on ${esc(finalizedAt)}` : ""}. The build is locked against accidental edits.</p></div></section>${_ptFinalizationChecksHtml(check.checks)}<label class="build-reopen-reason"><span>Reason for reopening</span><textarea id="build-reopen-reason" rows="3" placeholder="What needs to change?"></textarea></label>`, "Reopen for changes", async () => {
+    _ptOpenFinalizationModal("Design finalized", `<section class="build-final-summary"><div class="build-final-seal">✓</div><div><h3>Design sign-off complete</h3><p>Signed off${finalizedBy}${finalizedAt ? ` on ${esc(finalizedAt)}` : ""}. The design is locked against accidental edits.</p></div></section>${_ptFinalizationChecksHtml(check.checks)}<label class="build-reopen-reason"><span>Reason for reopening</span><textarea id="build-reopen-reason" rows="3" placeholder="What needs to change?"></textarea></label>`, "Reopen for changes", async () => {
       const reason = $("build-reopen-reason")?.value.trim() || "";
       if (reason.length < 3) { toast("Enter a brief reason for reopening", "error"); return; }
       const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "reopen"), { reason });
       if (!result?.ok) { toast(result?.error || "Could not reopen build", "error"); return; }
       _ptCloseFinalizationModal();
-      toast("Build reopened for changes", "success");
+      toast("Design reopened for changes", "success");
       if (openAfterReopen) await _ptOpenBuildAfterReopen(projectId, unitId, individualId, type);
       else {
         await _ptLoadAll();
@@ -374,7 +427,7 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
 
   if ((check.blocking || []).length) {
     const blockingHtml = check.blocking.map(item => `<div class="build-final-block"><strong>PDF required</strong><span>${esc(item.message)}</span></div>`).join("");
-    _ptOpenFinalizationModal("Final build sign-off", `<div class="build-final-intro"><span class="build-final-step">1</span><div><h3>Export the final PDF</h3><p>The signed-off PDF must match the current build settings.</p></div></div>${blockingHtml}${_ptFinalizationChecksHtml(check.checks)}`, "Export PDF now", async () => {
+    _ptOpenFinalizationModal("Finalize design", `<div class="build-final-intro"><span class="build-final-step">1</span><div><h3>Export the final PDF</h3><p>The signed-off PDF must match the current design.</p></div></div>${blockingHtml}${_ptFinalizationChecksHtml(check.checks)}`, "Export PDF now", async () => {
       const exported = await PT_buildExportPdf(projectId, unitId, individualId, type, { openAfter: false });
       if (exported) {
         _ptCloseFinalizationModal();
@@ -388,13 +441,13 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
   const warningHtml = warnings.length
     ? warnings.map(warning => `<label class="build-final-warning"><span><strong>${esc(warning.title)}</strong><small>${esc(warning.message)}</small></span><textarea data-final-warning="${esc(warning.id)}" rows="2" placeholder="Acknowledge why this is correct for this build…"></textarea></label>`).join("")
     : `<div class="build-final-clear"><strong>✓ Equipment checks clear</strong><span>No review warnings were found.</span></div>`;
-  _ptOpenFinalizationModal("Final build sign-off", `<div class="build-final-intro"><span class="build-final-step">2</span><div><h3>Review and lock this build</h3><p>The PDF is current. Resolve each warning with a short note, then finalize.</p></div></div>${warningHtml}${_ptFinalizationChecksHtml(check.checks)}<div class="build-final-lock-note">Finalizing records the signed-in user and time, then locks build-setting edits until someone reopens it with a reason.</div>`, "Finalize build", async () => {
+  _ptOpenFinalizationModal("Finalize design", `<div class="build-final-intro"><span class="build-final-step">2</span><div><h3>Review and lock this design</h3><p>The PDF is current. Resolve each warning with a short note, then finalize the design.</p></div></div>${warningHtml}${_ptFinalizationChecksHtml(check.checks)}<div class="build-final-lock-note">Finalizing records the signed-in user and time, then locks design edits until someone reopens it with a reason.</div>`, "Finalize design", async () => {
     const acknowledgements = [...document.querySelectorAll("[data-final-warning]")].map(textarea => ({ id: textarea.dataset.finalWarning, note: textarea.value.trim() }));
     if (acknowledgements.some(item => item.note.length < 3)) { toast("Add a short acknowledgement for every warning", "error"); return; }
     const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "finalize"), { fingerprint: check.fingerprint, acknowledgements });
-    if (!result?.ok) { toast(result?.message || result?.error || "Could not finalize build", "error"); return; }
+    if (!result?.ok) { toast(result?.message || result?.error || "Could not finalize design", "error"); return; }
     _ptCloseFinalizationModal();
-    toast("Build finalized and locked", "success");
+    toast("Design finalized and locked", "success");
     await _ptLoadAll();
     const updated = _PT.projects.find(item => item.project_id === projectId);
     if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
@@ -435,8 +488,6 @@ async function _ptLoadBuildsStats(p) {
           if (!statsEl) continue;
           const modLine = (modified && hasPreset)
             ? `<div class="proj-ind-card-stat-line proj-ind-card-modified">✏ modified from preset</div>`
-            : (!hasPreset && modified)
-            ? `<div class="proj-ind-card-stat-line proj-ind-card-custom">custom build</div>`
             : "";
           statsEl.innerHTML = `
             <div class="proj-ind-card-stat-line"><strong>${included.length}</strong>&nbsp;parts</div>
@@ -457,8 +508,6 @@ async function _ptLoadBuildsStats(p) {
         if (!statsEl) continue;
         const modLine = (modified && hasPreset)
           ? `<div class="proj-ind-card-stat-line proj-ind-card-modified">✏ modified from preset</div>`
-          : (!hasPreset && modified)
-          ? `<div class="proj-ind-card-stat-line proj-ind-card-custom">custom build</div>`
           : "";
         statsEl.innerHTML = `
           <div class="proj-ind-card-stat-line"><strong>${included.length}</strong>&nbsp;parts</div>
@@ -481,7 +530,7 @@ window.PT_setupOrEditBuildUnit = async function (projectId, unitId, existingDraf
     await _ptShowBuildEditor(existingDraftId, unit, project, "overview");
   } else {
     const statusEl = $("proj-action-status");
-    if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "ok");
+    if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "loading");
     try {
       const res = await api(`/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unitId)}/create-draft`, {});
       if (!res.ok) {
@@ -509,7 +558,7 @@ window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId,
     await _ptShowBuildEditor(existingDraftId, unit, project, "overview", individual);
   } else {
     const statusEl = $("proj-action-status");
-    if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "ok");
+    if (statusEl) _ptSetStatus(statusEl, "Setting up build…", "loading");
     try {
       const res = await api(
         `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unitId)}/individual/${encodeURIComponent(individualId)}/create-draft`, {}
@@ -541,21 +590,24 @@ function _ptResolveBuildContext(projectId, unitId, individualId, type) {
   if (!project) return null;
   const unit = (project.build_units || []).find(u => u.unit_id === unitId);
   if (!unit) return null;
-  let draftId = "", outputPath = "", pdfPath = "", lastRenderedAt = "";
+  let draftId = "", outputPath = "", pdfPath = "", lastRenderedAt = "", shopPdfPath = "";
+  let holder = unit;
   if (type === "ind") {
     const ind = (unit.individuals || []).find(i => i.individual_id === individualId);
     if (!ind) return null;
+    holder = ind;
     draftId = ind.draft_id || "";
     outputPath = ind.output_path || "";
     pdfPath = ind.pdf_path || "";
     lastRenderedAt = ind.last_rendered_at || "";
+    shopPdfPath = ind.shop_pdf_path || "";
   } else {
     draftId = unit.draft_id || "";
     outputPath = unit.output_path || "";
     pdfPath = unit.pdf_path || "";
     lastRenderedAt = unit.last_rendered_at || "";
   }
-  return { project, unit, draftId, outputPath, pdfPath, lastRenderedAt };
+  return { project, unit, holder, draftId, outputPath, pdfPath, lastRenderedAt, shopPdfPath };
 }
 
 // Returns "open" (use existing), "regen" (rebuild), or null (user cancelled).
@@ -596,7 +648,7 @@ async function _ptGenerateAndPersist(ctx, statusEl) {
     toast("No build configured for this unit", "error");
     return null;
   }
-  if (statusEl) _ptSetStatus(statusEl, "Preparing build sheet…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Preparing build sheet…", "loading");
   if (ctx._replacePreviousExports === undefined && (ctx.outputPath || ctx.pdfPath)) {
     ctx._replacePreviousExports = confirm(
       "This vehicle already has an exported build sheet.\n\n" +
@@ -658,7 +710,7 @@ window.PT_buildOpenPptx = async function (projectId, unitId, individualId, type)
     target = result;
   }
   if (!target) { toast("No build sheet available", "error"); return; }
-  if (statusEl) _ptSetStatus(statusEl, "Opening in PowerPoint…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Opening in PowerPoint…", "loading");
   try {
     const customer = ctx.project?.customer || {};
     const res = await api("/open", {
@@ -680,7 +732,7 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
   const ctx = _ptResolveBuildContext(projectId, unitId, individualId, type);
   if (!ctx) return false;
   ctx.individualId = individualId || "";
-  const statusEl = options.statusEl || $("proj-action-status");
+  let statusEl = options.statusEl || $("proj-action-status");
   const plan = await _ptDecidePlan(ctx, statusEl);
   if (!plan) return false;
   let pptxPath = ctx.outputPath;
@@ -701,9 +753,13 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
     if (!result) return false;
     pptxPath = result;
   }
+  // Generation reloads and re-renders the project, replacing the normal
+  // status node. Rebind it before conversion so the visible spinner remains
+  // active until the same completed response that triggers the success toast.
+  statusEl = options.statusEl || $("proj-action-status");
   if (!pptxPath) { toast("No build sheet available", "error"); return false; }
   const customer = ctx.project?.customer || {};
-  if (statusEl) _ptSetStatus(statusEl, "Exporting PDF…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Exporting PDF…", "loading");
   try {
     const res = await api("/api/export/pdf", {
       output_path: pptxPath,
@@ -726,6 +782,7 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
     if (res.cleanup?.errors?.length) {
       toast("PDF saved, but some prior files could not be removed", "error");
     }
+    const shopUpdate = await _ptOfferShopRepublish(res.shop_republish, statusEl);
     // Backend stamped pdf_path + last_exported_at/by on the project
     // record itself, so just reload to refresh the UI.
     await _ptLoadAll();
@@ -734,7 +791,12 @@ window.PT_buildExportPdf = async function (projectId, unitId, individualId, type
       _PT.viewProject = updated;
       _ptRenderBuildsTab(updated);
     }
-    if (statusEl) _ptSetStatus(statusEl, "✅ PDF exported", "good");
+    statusEl = options.statusEl || $("proj-action-status");
+    if (statusEl) _ptSetStatus(
+      statusEl,
+      shopUpdate.updated ? "✅ PDF exported · Shop PDF updated" : "✅ PDF exported",
+      shopUpdate.failed ? "err" : "good",
+    );
     // Ordinary exports open for review. Estimate preparation stays in the
     // modal and attaches the file immediately afterward.
     if (options.openAfter !== false) {
@@ -773,6 +835,25 @@ window.PT_buildShowFolder = async function (projectId, unitId, individualId, typ
     const res = await api("/api/build/show-folder", {
       agency: customer.agency || "",
       year: customer.build_year || "",
+      shop_pdf_path: ctx.shopPdfPath || "",
+    });
+    if (!res?.ok) toast(res?.error || "Could not open folder", "error");
+  } catch (e) {
+    toast(e.message || "Open failed", "error");
+  }
+};
+
+window.PT_openCloudFolder = async function (source, explicitTarget = "", explicitPath = "") {
+  const libraryTarget = explicitTarget || source?.dataset?.libraryTarget || "";
+  const folderPath = explicitPath || source?.dataset?.folderPath || "";
+  if (!libraryTarget || !folderPath) {
+    toast("This folder has not been created yet", "error");
+    return;
+  }
+  try {
+    const res = await api("/api/build/show-folder", {
+      library_target: libraryTarget,
+      folder_path: folderPath,
     });
     if (!res?.ok) toast(res?.error || "Could not open folder", "error");
   } catch (e) {
@@ -821,7 +902,7 @@ window.PT_generateAll = async function () {
   for (let i = 0; i < configuredItems.length; i++) {
     const item = configuredItems[i];
     if (statusEl) _ptSetStatus(statusEl,
-      `Generating ${i + 1}/${configuredItems.length}: ${item.label}…`, "ok");
+      `Generating ${i + 1}/${configuredItems.length}: ${item.label}…`, "loading");
 
     const draftId = item.type === "ind" ? item.ind.draft_id : item.unit.draft_id;
     try {
@@ -892,24 +973,32 @@ window.PT_exportAllPdf = async function () {
   }
 
   const missingNum = units.some(u =>
-    (u.individuals || []).some(ind => !ind.unit_number?.trim())
+    (u.individuals || []).some(ind => !ind.unit_number?.trim() && !ind.vin?.trim())
   );
   if (missingNum) {
-    toast("Some units are missing a unit number. Add unit numbers via Details / Setup Build before exporting.", "error");
+    toast("Some units are missing both a unit number and VIN. Add one identifier via Details / Setup Build before exporting.", "error");
     return;
   }
 
   const statusEl = $("proj-action-status");
   const allBtns  = document.querySelectorAll(".proj-builds-footer .btn");
   allBtns.forEach(b => b.disabled = true);
-  if (statusEl) _ptSetStatus(statusEl, "Generating and exporting PDFs…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Generating and exporting PDFs…", "loading");
   try {
     const res = await api(`/api/project/${encodeURIComponent(_PT.viewProject.project_id)}/export-all-pdf`, {});
     if (res.ok) {
       const n = (res.exported || []).length;
       const e = (res.errors  || []).length;
+      const shopUpdate = await _ptOfferShopRepublish(
+        (res.exported || []).map(item => item.shop_republish).filter(Boolean),
+        statusEl,
+      );
       toast(`${n} PDF${n !== 1 ? "s" : ""} exported`, e ? "error" : "success");
-      if (statusEl) _ptSetStatus(statusEl, `✅ ${n} exported${e ? ` · ${e} error${e !== 1 ? "s" : ""}` : ""}`, "good");
+      if (statusEl) _ptSetStatus(
+        statusEl,
+        `✅ ${n} exported${shopUpdate.updated ? ` · ${shopUpdate.updated} Shop updated` : ""}${e ? ` · ${e} error${e !== 1 ? "s" : ""}` : ""}`,
+        e || shopUpdate.failed ? "err" : "good",
+      );
     } else {
       const msg = res.error || "Export failed";
       toast(msg, "error");
@@ -930,7 +1019,7 @@ window.PT_startBuild = async function (projectId, unitIndex) {
   const unit = project.build_units[unitIndex];
   if (!unit) return;
   const statusEl = $("proj-action-status");
-  if (statusEl) _ptSetStatus(statusEl, "Creating draft…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Creating draft…", "loading");
   try {
     const res = await api(
       `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unit.unit_id)}/create-draft`, {}
@@ -951,7 +1040,7 @@ window.PT_startBuildIndividual = async function (projectId, unitIndex, individua
   const unit = project.build_units[unitIndex];
   if (!unit) return;
   const statusEl = $("proj-action-status");
-  if (statusEl) _ptSetStatus(statusEl, "Creating draft…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Creating draft…", "loading");
   try {
     const res = await api(
       `/api/project/${encodeURIComponent(projectId)}/unit/${encodeURIComponent(unit.unit_id)}/individual/${encodeURIComponent(individualId)}/create-draft`, {}
@@ -1678,7 +1767,7 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
       button.textContent = "Creating PDF…";
       if (progress) {
         progress.hidden = false;
-        _ptSetStatus(progress, "Creating the PowerPoint and PDF… please wait", "ok");
+        _ptSetStatus(progress, "Creating the PowerPoint and PDF… please wait", "loading");
       }
       const exported = await window.PT_buildExportPdf(
         projectId, unitId, individualId, "ind", { openAfter: false, statusEl: progress }
@@ -1917,7 +2006,7 @@ async function _ptOpenBatchEstimateSetup(project) {
             );
             if (progress) {
               progress.hidden = false;
-              _ptSetStatus(progress, `Creating PDF ${index + 1} of ${missingPdfs.length}: ${target.label}…`, "ok");
+              _ptSetStatus(progress, `Creating PDF ${index + 1} of ${missingPdfs.length}: ${target.label}…`, "loading");
             }
             const ok = unit && await window.PT_buildExportPdf(
               project.project_id, unit.unit_id, target.individualId, "ind",
@@ -1963,7 +2052,7 @@ async function _ptRunBatchEstimates(project, individualIds) {
   const statusEl = $("proj-action-status");
   const footerBtns = document.querySelectorAll(".proj-builds-footer .btn");
   footerBtns.forEach((button) => { button.disabled = true; });
-  if (statusEl) _ptSetStatus(statusEl, "Creating estimates…", "ok");
+  if (statusEl) _ptSetStatus(statusEl, "Creating estimates…", "loading");
   let res;
   try {
     res = await api("/api/quickbooks/estimates/create-batch", {

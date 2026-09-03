@@ -49,3 +49,14 @@ def test_bundled_cloud_config_values_are_non_empty_strings():
         assert isinstance(data[key], str) and data[key].strip(), (
             f"bundled cloud_config.json: {key} must be a non-empty string"
         )
+
+
+def test_bundled_vehicle_folder_roots_match_the_migration_target():
+    path = DEFAULT_DATA_DIR / "cloud_config.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["company_vehicle_root"] == "Vehicle Project Database"
+    assert data["shop_build_photos_root"] == "Shop Project Database"
+    assert data["company_folder_provisioning_enabled"] is True
+    assert data["company_vehicle_folders_enabled"] is True
+    assert data["shop_folder_provisioning_enabled"] is True
+    assert data["shop_publication_enabled"] is True

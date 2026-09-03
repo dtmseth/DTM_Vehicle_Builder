@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import traceback
 
-from ...config.loader import load_configs
+from ...config.loader import load_configs, resolve_vehicle_type
 from ...domain.geometry import compound_slot_relative_positions, slot_relative_positions
 from ...inputs.project_drafts import draft_to_project_input
 from ...paths import AppPaths
@@ -106,7 +106,9 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
         if draft.placement_overrides:
             plan = apply_overrides(plan, draft.placement_overrides)
 
-        vehicle_type = project.info.get("VehicleType", "")
+        vehicle_type = resolve_vehicle_type(
+            project.info.get("VehicleType", ""), config.vehicle_layouts,
+        )
         vehicle_config = config.vehicle_layouts.get("vehicles", {}).get(vehicle_type, {})
         view_order, view_meta = _view_metadata(vehicle_config)
 
@@ -273,6 +275,8 @@ def handle_preview_plan(body: dict, paths: AppPaths) -> dict:
                     "layer":              pl.layer,
                     "mount_visibility":   pl.mount_visibility,
                     "callout_label":      pl.callout_label,
+                    "callout_dx":         pl.callout_dx,
+                    "callout_dy":         pl.callout_dy,
                     "size":               pl.size_override,
                     "instances":          instances_out,
                     "override":           draft.placement_overrides.get(override_key, {}),

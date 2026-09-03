@@ -214,6 +214,7 @@ def _find_onedrive_synced_folder(
     library_display_name: str,
     library_internal_name: str,
     base_subpath: str,
+    exact: bool = False,
 ) -> Optional[Path]:
     """Look for a locally-synced OneDrive copy of the target SharePoint
     library.
@@ -257,10 +258,26 @@ def _find_onedrive_synced_folder(
                 return leaf
         except OSError:
             pass
-        # Library is mounted but the agency/year subfolder hasn't been
-        # synced yet — open the library root rather than nothing.
-        return c
+        # Legacy PDF-folder actions may still open the mounted library root.
+        # Explicit vehicle/photo-folder actions must fall through to their
+        # exact SharePoint web URL rather than opening a misleading root.
+        if not exact:
+            return c
     return None
+
+
+def find_synced_library_folder(
+    library_display_name: str,
+    library_internal_name: str,
+    base_subpath: str,
+) -> Optional[Path]:
+    """Return an exact locally synced library folder when one is available."""
+    return _find_onedrive_synced_folder(
+        library_display_name,
+        library_internal_name,
+        base_subpath,
+        exact=True,
+    )
 
 
 def _build_sharepoint_web_url(
@@ -306,7 +323,6 @@ def _get_exports_drive_web_url() -> Optional[str]:
         from ..adapters.cloud.config import load_cloud_config_from_env
         if not wiring._cloud_flag_enabled():  # noqa: SLF001
             return None
-        bundle = wiring.get_active_bundle()
         config = load_cloud_config_from_env()
         if not config.exports_enabled:
             return None
@@ -322,34 +338,16 @@ def _get_exports_drive_web_url() -> Optional[str]:
     if cached:
         return cached
 
-    # Reuse the same drive_id lookup the export uploader caches.
     try:
-        from .exports_upload_service import _get_export_drive_id  # noqa: SLF001
-        drive_id = _get_export_drive_id(bundle, config)
-    except Exception:
-        return None
-    if not drive_id:
-        return None
-
-    token_provider = getattr(bundle.storage, "_token_provider", None)
-    if token_provider is None:
-        return None
-    try:
-        token = token_provider()
-    except Exception:
-        return None
-
-    import requests
-    try:
-        resp = requests.get(
-            f"https://graph.microsoft.com/v1.0/drives/{drive_id}",
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=15,
+        from ..adapters.cloud.graph_drive_gateway import GraphDriveGateway
+        web_url = GraphDriveGateway.web_url_from_active_cloud(
+            config,
+            library_names=(
+                config.exports_library_name,
+                config.exports_library_internal_name,
+            ),
         )
-        resp.raise_for_status()
-        web_url = str(resp.json().get("webUrl") or "")
     except Exception:
-        logger.exception("Could not look up drive webUrl")
         return None
     if not web_url:
         return None
@@ -360,8 +358,24 @@ def _get_exports_drive_web_url() -> Optional[str]:
 _drive_web_url_cache: dict[str, str] = {}
 
 
+def _portable_folder_path(value: str, *, file_path: bool = False) -> tuple[str, str]:
+    """Validate a library-relative saved path and return folder/error."""
+    from pathlib import PurePosixPath
+
+    normalized = str(value or "").replace("\\", "/").strip("/")
+    if not normalized:
+        return "", ""
+    portable = PurePosixPath(normalized)
+    if portable.is_absolute() or ".." in portable.parts:
+        return "", "Saved cloud folder path is invalid"
+    folder = portable.parent if file_path else portable
+    if not str(folder) or str(folder) == ".":
+        return "", "Saved cloud folder path is invalid"
+    return str(folder), ""
+
+
 def resolve_show_folder(body: dict) -> dict:
-    """Decide what to open for the per-build "Open PDF folder" button.
+    """Decide what to open for a PDF, vehicle, or photo-folder action.
 
     Body keys:
       - agency: str
@@ -383,20 +397,50 @@ def resolve_show_folder(body: dict) -> dict:
         config = load_cloud_config_from_env()
     except Exception:
         return {"ok": False, "error": "Cloud config not available"}
-    if not config.exports_enabled:
-        return {"ok": False, "error": "Cloud exports library not configured"}
+    requested_target = str(body.get("library_target") or "").strip().casefold()
+    folder_path, folder_error = _portable_folder_path(body.get("folder_path") or "")
+    shop_pdf_path = str(body.get("shop_pdf_path") or "")
+    if not folder_path and shop_pdf_path:
+        folder_path, folder_error = _portable_folder_path(shop_pdf_path, file_path=True)
+        requested_target = requested_target or "shop"
+    if folder_error:
+        # Preserve the old Shop-specific wording for existing callers.
+        message = "Saved Shop folder path is invalid" if shop_pdf_path else folder_error
+        return {"ok": False, "error": message}
 
-    base_segments = [s for s in (
-        (config.exports_base_folder or "").strip().strip("/"),
-        agency,
-        year,
-    ) if s]
-    base_subpath = "/".join(base_segments)
+    if folder_path:
+        base_subpath = folder_path
+        if requested_target == "company":
+            library_name = config.company_library_name or config.exports_library_name
+            internal_name = (
+                config.company_library_internal_name or config.exports_library_internal_name
+            )
+            if not (library_name or internal_name):
+                return {"ok": False, "error": "Company Files library not configured"}
+        elif requested_target == "shop":
+            library_name = config.shop_library_name
+            internal_name = config.shop_library_internal_name
+            if not (library_name or internal_name):
+                return {"ok": False, "error": "Shop Documents library not configured"}
+        else:
+            return {"ok": False, "error": "Select Company Files or Shop Documents"}
+    else:
+        if not config.exports_enabled:
+            return {"ok": False, "error": "Cloud exports library not configured"}
+        base_segments = [s for s in (
+            (config.exports_base_folder or "").strip().strip("/"),
+            agency,
+            year,
+        ) if s]
+        base_subpath = "/".join(base_segments)
+        library_name = config.exports_library_name
+        internal_name = config.exports_library_internal_name
 
     local = _find_onedrive_synced_folder(
-        config.exports_library_name,
-        config.exports_library_internal_name,
+        library_name,
+        internal_name,
         base_subpath,
+        exact=bool(folder_path),
     )
     if local is not None:
         # We don't actually open here — the route handler does that via
@@ -404,14 +448,58 @@ def resolve_show_folder(body: dict) -> dict:
         # the UI can decide.
         return {"ok": True, "method": "explorer", "path": str(local)}
 
-    web_url = _build_sharepoint_web_url(
-        config.sharepoint_site_id,
-        config.exports_library_name,
-        base_subpath,
-    )
+    if folder_path:
+        drive_web_url = _get_named_drive_web_url(
+            config.sharepoint_site_id, library_name, internal_name,
+        )
+        if drive_web_url:
+            from urllib.parse import quote
+            encoded = "/".join(quote(segment) for segment in base_subpath.split("/") if segment)
+            web_url = f"{drive_web_url.rstrip('/')}/{encoded}" if encoded else drive_web_url
+        else:
+            web_url = None
+    else:
+        web_url = _build_sharepoint_web_url(
+            config.sharepoint_site_id,
+            config.exports_library_name,
+            base_subpath,
+        )
     if web_url:
         return {"ok": True, "method": "browser", "url": web_url}
     return {"ok": False, "error": "Could not resolve SharePoint URL from cloud_config"}
+
+
+def _get_named_drive_web_url(
+    site_id: str, library_name: str, internal_name: str,
+) -> Optional[str]:
+    """Resolve a configured library web URL without assuming its backend name."""
+    candidates = {
+        str(library_name or "").strip().casefold(),
+        str(internal_name or "").strip().casefold(),
+    } - {""}
+    if not site_id or not candidates:
+        return None
+    cache_key = f"named|{site_id}|{'|'.join(sorted(candidates))}"
+    if cache_key in _drive_web_url_cache:
+        return _drive_web_url_cache[cache_key]
+    try:
+        from ..adapters import wiring
+        if not wiring._cloud_flag_enabled():  # noqa: SLF001
+            return None
+        from ..adapters.cloud.config import load_cloud_config_from_env
+        from ..adapters.cloud.graph_drive_gateway import GraphDriveGateway
+        config = load_cloud_config_from_env()
+        web_url = GraphDriveGateway.web_url_from_active_cloud(
+            config,
+            library_names=(library_name, internal_name),
+        )
+    except Exception:
+        logger.exception("Could not resolve configured library web URL")
+        return None
+    if web_url:
+        _drive_web_url_cache[cache_key] = web_url
+        return web_url
+    return None
 
 
 def open_show_folder(body: dict) -> dict:

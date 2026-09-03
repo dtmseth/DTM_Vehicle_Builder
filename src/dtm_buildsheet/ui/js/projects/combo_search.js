@@ -13,7 +13,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
       const res = await api(`/api/agencies/search?q=${encodeURIComponent(q)}`);
       if (!res?.ok) return;
       const rows = (res.matches || []).map(m =>
-        `<div class="sug-item" data-id="${esc(m.agency_id)}" data-name="${esc(m.name)}">${esc(m.name)}</div>`
+        `<div class="sug-item" data-id="${esc(m.agency_id)}" data-name="${esc(m.name)}" data-abbreviation="${esc(m.abbreviation || "")}">${esc(m.name)}${m.abbreviation ? ` <span class="field-hint">${esc(m.abbreviation)}</span>` : ""}</div>`
       );
       rows.push(`<div class="sug-create">+ Create &quot;${esc(q)}&quot;</div>`);
       suggEl.innerHTML = rows.join("");
@@ -23,7 +23,7 @@ function _ptWireAgencySearch(inputEl, idEl, suggEl, onSelect) {
           inputEl.value = el.dataset.name;
           if (idEl) idEl.value = el.dataset.id;
           suggEl.style.display = "none";
-          notify({ agency_id: el.dataset.id, name: el.dataset.name });
+          notify({ agency_id: el.dataset.id, name: el.dataset.name, abbreviation: el.dataset.abbreviation || "" });
         });
       });
       const createEl = suggEl.querySelector(".sug-create");

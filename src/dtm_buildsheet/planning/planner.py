@@ -114,9 +114,9 @@ def _concealed_mount(part, location_key: str) -> tuple[str, str]:
         return "", ""
     key = canonical_name(location_key).strip().upper()
     if "BEHIND GRILL" in key or "BEHIND GRILLE" in key:
-        return "behind_grille", "BEHIND GRILLE"
+        return "behind_grille", "SPEAKER BEHIND GRILLE"
     if "BEHIND OEM BUMPER" in key:
-        return "behind_oem_bumper", "BEHIND OEM BUMPER"
+        return "behind_oem_bumper", "SPEAKER BEHIND OEM BUMPER"
     return "", ""
 _SETINA_PB450L_PREFIX_COUNTS: dict[str, int] = {
     # Setina PB450L lighted bumper SKU families. The friendly names in
@@ -484,7 +484,10 @@ def _renderable_system_components(part: PartInput) -> list[PartInput]:
 def build_plan(project, config: ConfigBundle) -> BuildPlan:
     manifest = config.asset_manifest
     layouts = config.vehicle_layouts.get("vehicles", {})
-    vehicle_type = project.info.get("VehicleType", "PIU")
+    from ..config.loader import resolve_vehicle_type
+    vehicle_type = resolve_vehicle_type(
+        project.info.get("VehicleType", "PIU"), config.vehicle_layouts,
+    )
     vehicle = layouts.get(vehicle_type, {})
     view_map = {k.lower(): v for k, v in vehicle.get("views", {}).items()}
     fixtures_map = vehicle.get("fixtures", {})

@@ -6,7 +6,7 @@ sources, and non-posting QuickBooks Online Estimates.
 
 Runs as a native desktop app on macOS and Windows — no browser required.
 
-Current production release: [v3.4.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.4.0).
+Current production release: [v3.5.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.5.0).
 
 ---
 

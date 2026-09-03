@@ -1,15 +1,9 @@
-"""Upload generated build artifacts to the company SharePoint library.
+"""Upload generated PDF artifacts to the company SharePoint library.
 
-Customer-ready PDFs stay in the agency/year folder that the Builds UI opens.
-Editable PowerPoint sources live under a deliberately separate internal tree,
-which makes them much harder to mistake for customer deliverables while still
-allowing another Builder workstation to hydrate and edit them.
-
-Triggered from generation_service immediately after a successful local
-write. Runs in a background thread so the generate response returns
-fast; the cloud chip's spinner reflects the upload-in-progress state
-via the same data_version mechanism that drives the project-list
-auto-refresh.
+Customer-ready PDFs are uploaded after conversion. PPTX files are local
+conversion artifacts and are rejected by the upload/queue entry points. The
+legacy PPTX path and download/cleanup behavior remain so older shared project
+records continue to work and historical cleanup stays possible.
 
 Path layout in the target library (configurable via cloud_config.json):
 
@@ -314,6 +308,10 @@ def upload_export(
     empty so the file still lands somewhere instead of failing. ``filename``
     defaults to the local file's name.
     """
+    requested_name = portable_export_filename(filename or local_pptx.name)
+    if Path(requested_name).suffix.casefold() != ".pdf":
+        logger.info("Shared export upload skipped for non-PDF artifact: %s", requested_name)
+        return False
     bundle = _bundle_or_none(log_reason=True)
     if bundle is None:
         return False
@@ -686,8 +684,7 @@ def upload_export_in_background(
     canonicalize: bool = True,
     on_complete=None,
 ) -> None:
-    """Fire-and-forget background upload. Used by generation_service so the
-    generate response returns immediately.
+    """Fire-and-forget background PDF upload.
 
     ``on_complete(success: bool)`` is called from the worker thread when
     the upload finishes. The server.py data_version counter is the
@@ -697,6 +694,15 @@ def upload_export_in_background(
     sync loop drains the queue on every iteration; even if the app is
     closed mid-upload, next launch re-tries automatically.
     """
+    requested_name = portable_export_filename(filename or local_pptx.name)
+    if Path(requested_name).suffix.casefold() != ".pdf":
+        if on_complete is not None:
+            try:
+                on_complete(False)
+            except Exception:
+                logger.exception("Export upload on_complete callback raised")
+        return
+
     def _worker():
         ok = upload_export(
             local_pptx, agency=agency, year=year, filename=filename,

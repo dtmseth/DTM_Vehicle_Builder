@@ -21,7 +21,9 @@ from dtm_buildsheet.app.services.agency_service import (
     handle_search_agencies,
     load_agency_choices,
     load_agencies,
+    restore_project_agency_records,
 )
+from dtm_buildsheet.domain.agency_naming import default_agency_abbreviation
 from dtm_buildsheet.paths import AppPaths
 
 
@@ -34,7 +36,12 @@ def _clear_cache():
 
 
 def _paths(tmp_path: Path) -> AppPaths:
-    return AppPaths(workspace_dir=tmp_path)
+    return AppPaths(
+        workspace_dir=tmp_path,
+        workspace_projects_dir=tmp_path / "projects",
+        workspace_drafts_dir=tmp_path / "drafts",
+        workspace_output_dir=tmp_path / "output",
+    )
 
 
 def _agencies_dir(tmp_path: Path) -> Path:
@@ -53,6 +60,31 @@ class TestPerRecordStorage:
         assert len(files) == 2
         # No monolithic file is written
         assert not (tmp_path / "agencies.json").exists()
+
+    def test_standalone_agency_save_does_not_schedule_vehicle_folders(
+        self, tmp_path, monkeypatch,
+    ):
+        paths = _paths(tmp_path)
+        import dtm_buildsheet.app.services.vehicle_folder_provisioning_service as folders
+
+        monkeypatch.setattr(
+            folders,
+            "folder_provisioning_targets",
+            lambda: folders.ProvisioningTargets(True, True),
+        )
+        monkeypatch.setattr(
+            folders,
+            "schedule_agency_folder_provisioning",
+            lambda *_args, **_kwargs: pytest.fail(
+                "standalone Agency Manager records must not create folders"
+            ),
+        )
+
+        result = handle_save_agency({"name": "Standalone QBO Customer"}, paths)
+
+        assert result["folder_provisioning_scheduled"] is False
+        assert result["agency"]["company_folder_status"] == "not_provisioned"
+        assert result["agency"]["shop_folder_status"] == "not_provisioned"
 
     def test_save_then_load_roundtrip(self, tmp_path):
         paths = _paths(tmp_path)
@@ -96,6 +128,13 @@ class TestPerRecordStorage:
         agency_service._cache.clear()
         agency = load_agencies(paths)[0]
         assert agency.pricing_overrides == {"whelen": 35.0, "havis": 12.5}
+
+    def test_agency_abbreviation_round_trip(self, tmp_path):
+        paths = _paths(tmp_path)
+        handle_save_agency({"name": "Homeland Security Investigations", "abbreviation": "HSI"}, paths)
+        agency_service._cache.clear()
+        agency = load_agencies(paths)[0]
+        assert agency.abbreviation == "HSI"
 
     def test_customer_pricing_override_rejects_out_of_range_discount(self, tmp_path):
         result = handle_save_agency({
@@ -269,6 +308,39 @@ class TestSearch:
         res = handle_search_agencies("", paths)
         assert res["matches"] == []
 
+    def test_project_backed_missing_agency_is_searchable_by_abbreviation(self, tmp_path):
+        paths = _paths(tmp_path)
+        for index in range(10):
+            handle_save_agency({"name": f"Police Department {index}"}, paths)
+        projects_dir = tmp_path / "projects" / "project-ice"
+        projects_dir.mkdir(parents=True)
+        (projects_dir / "project.json").write_text(json.dumps({
+            "project_id": "project-ice",
+            "customer": {
+                "agency_id": "ice-id",
+                "agency": "United States Immigration and Customs Enforcement (ICE)",
+            },
+        }), "utf-8")
+        result = handle_search_agencies("ICE", paths)
+        assert result["matches"][0] == {
+            "agency_id": "ice-id",
+            "name": "United States Immigration and Customs Enforcement (ICE)",
+            "abbreviation": "ICE",
+            "choice_source": "project",
+        }
+        listed = handle_list_agencies(paths)["agencies"]
+        ice = next(row for row in listed if row["agency_id"] == "ice-id")
+        assert ice["record_source"] == "project"
+        assert ice["effective_abbreviation"] == "ICE"
+
+    def test_abbreviation_defaults_cover_police_county_and_parenthetical_names(self):
+        assert default_agency_abbreviation("St. Cloud Police Department") == "SCPD"
+        assert default_agency_abbreviation("Custer County Sheriff") == "Custer"
+        assert default_agency_abbreviation("Mille Lacs County Sheriff's Office") == "Mille Lacs"
+        assert default_agency_abbreviation("Homeland Security Investigations (HSI)") == "HSI"
+        assert default_agency_abbreviation("Overview Notes PD") == "ONP"
+        assert default_agency_abbreviation("ICE") == "ICE"
+
 
 # ── Response shape ─────────────────────────────────────────────────────────────
 
@@ -321,5 +393,54 @@ class TestAgencyChoices:
         assert choices == [{
             "agency_id": "same-id",
             "name": "Current Agency Name",
+            "abbreviation": "CAN",
             "choice_source": "agency",
         }]
+
+
+def test_restore_project_agency_materializes_same_durable_id(tmp_path, monkeypatch):
+    projects_dir = tmp_path / "projects" / "project-ice"
+    projects_dir.mkdir(parents=True)
+    (projects_dir / "project.json").write_text(json.dumps({
+        "project_id": "project-ice",
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00",
+        "customer": {
+            "agency_id": "ice-id",
+            "agency": "Immigration and Customs Enforcement (ICE)",
+            "contact": "Fleet Manager",
+        },
+    }), "utf-8")
+    paths = AppPaths(workspace_dir=tmp_path, workspace_projects_dir=tmp_path / "projects")
+    mirrored = []
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.services.shared_work_service.save_setting_to_cloud",
+        lambda target, payload: mirrored.append((target, payload)) or True,
+    )
+
+    result = restore_project_agency_records(paths, mirror_to_cloud=True)
+
+    assert result["restored"] == ["ice-id"]
+    stored = load_agencies(paths)[0]
+    assert stored.agency_id == "ice-id"
+    assert stored.contact_name == "Fleet Manager"
+    assert mirrored[0][0] == "agencies/ice-id.json"
+
+
+def test_delete_rejects_agency_still_referenced_by_project(tmp_path):
+    projects_dir = tmp_path / "projects"
+    projects_dir.mkdir()
+    paths = AppPaths(workspace_dir=tmp_path, workspace_projects_dir=projects_dir)
+    saved = handle_save_agency({"name": "Linked PD"}, paths)["agency"]
+    project_dir = projects_dir / "project-1"
+    project_dir.mkdir(parents=True)
+    (project_dir / "project.json").write_text(json.dumps({
+        "project_id": "project-1",
+        "customer": {"agency_id": saved["agency_id"], "agency": "Linked PD"},
+    }), "utf-8")
+
+    result = handle_delete_agency(saved["agency_id"], paths)
+
+    assert result["ok"] is False
+    assert "still used" in result["error"]
+    assert (_agencies_dir(tmp_path) / f"{saved['agency_id']}.json").exists()

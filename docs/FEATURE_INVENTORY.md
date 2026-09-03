@@ -3,7 +3,7 @@
 This document inventories major features and non-obvious rules. It includes the workbook-era
 compatibility path as well as the current GUI workflow.
 
-Last updated: 2026-08-26 (production v3.4.0)
+Last updated: 2026-09-03 (production v3.5.0)
 
 > **Authority note:** `CURRENT_STATE.md` is authoritative for release status and current test
 > totals. `PARTS_DB_AND_PICKER.md`, `QUICKBOOKS.md`, `PROJECT_WORKFLOW.md`, and `UI_STRUCTURE.md` are
@@ -558,9 +558,23 @@ mirrored to SharePoint as shared work records.
 | `customer` | CustomerInfo | Agency name + agency_id + sales_rep_id + quote + year + notes |
 | `preferences` | EquipmentPreferences | Lighting brand plus DUO/TRIO default, camera, bumper, cage, slick top, notes |
 | `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
+| `quote_numbers` | list[str] | Every quote/reference number associated with the single agency/build-year project |
+| `reference_assets` | list[BuildReferenceAsset] | Portable Company/Shop source identities; zero assignments means an unassigned project photo, while new shop references use unit-group assignments (legacy project/individual assignments remain compatible) |
+| `project_status` | str | `active` or `completed`; controls active-list vs Project Archives placement |
 | `created_at` / `updated_at` | str | ISO timestamps |
 
-Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id` (links to `workspace/drafts/`) and `output_path` (set when the build sheet is generated).
+Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id`, local output paths, QBO links,
+finalization state, and exact Company/Shop folder/PDF/reference item IDs. `individual_id` is durable;
+actual unit/VIN/name/folder text remains mutable display data. Optional replaced-vehicle year, make,
+model, build type, unit, and VIN values are editable and appear only in the dedicated Existing
+Vehicle output card; they never become current identity. Project saves preserve server-owned
+folder/publication IDs, QBO links, generated outputs, and finalization state by stable unit IDs even
+when a browser payload contains only editable fields. Older clients that omit replaced-vehicle keys
+preserve them, while explicit empty keys clear them.
+
+Past-photo imports are ordinary sparse projects/units for their actual agency and build year. They
+persist only known fields and are marked completed at project level after their photo copy is
+verified. Project Archives organizes completed records under Agency → Build Year and supports reopen.
 
 ### Project Detail View
 The project detail view centers the Overview/build-card workflow, with editing available from the
@@ -571,18 +585,57 @@ project controls and each configured vehicle opening its embedded build editor:
   visual clamp; overflowing notes expose **Read more** and open the full instruction in a modal
   without opening the build editor.
 - **Edit**: read-only by default; `[✏️ Edit]` button activates edit mode with full input fields. Save stays on the detail view; Cancel discards changes. The 4-step wizard (`#proj-editor`) is only for new projects.
-- **Build actions**: per-vehicle build cards expose setup/edit, generation, PDF export, and
-  QuickBooks Estimate preparation. Individual units can open the manual QBO Project setup/link
-  walkthrough before a build draft exists. Final review is the last card action, shown light green
-  until finalization and solid green afterward. Project actions include generate/export-all and batch
-  **Prepare QB Estimates**. Missing QBO Project links are completed one vehicle at a time; Back or
-  Save returns to a revalidated checklist showing ready and remaining vehicles.
-- **Shared exports**: local PowerPoint/PDF artifacts retain timestamps, while SharePoint's normal
-  Replace path uses one deterministic filename per vehicle (an explicit Keep both choice remains
-  timestamped). Customer PDFs remain in the visible agency/year folder and
-  editable PPTX sources live under `_DTM Internal PowerPoint Sources`; **Open PDF folder** never
-  navigates users into the internal source tree. Replace cleanup recognizes current and legacy
-  timestamps/folders and is serialized against background upload retries.
+- **Build actions**: the card title exposes build year, model, build type, and unit number and/or actual VIN
+  last six. Actions are consolidated under **PDF Options**, **QuickBooks**, conditional completed-
+  photo viewing, and **Folder options**; unit-group headers own reference-photo actions. Final
+  Review remains separate and last. User-facing PowerPoint actions and configured/PPT/PDF/custom
+  badges are absent. Individual units can open the manual QBO Project setup/link walkthrough before
+  a draft exists. Project actions use **Export / update all PDFs** plus batch QuickBooks options.
+- **Build reference photos**: the Project Overview shows one selectable **Project photos** gallery
+  with assigned/unassigned states and notes, while the unit-group header and builder notes area open
+  a thumbnail-card gallery with tags, inline note editing, multi-select removal, and a multi-select
+  **Add photos** picker. Removing the last group assignment leaves the photo unassigned in the
+  project. New project/individual assignments
+  are hidden, while existing ones remain effective and visibly labeled as legacy. The source browser defaults to the current agency and the
+  selected make/model/build type, while explicit agency and filter controls expose organized Company
+  reference/video and Shop completed-photo folders from every app agency. Videos are Company-only
+  project context. The year-level Company **Reference Photos & Videos** folder is the physical
+  unassigned-photo inbox: opening that project reconciles direct OneDrive/SharePoint JPG/PNG uploads
+  into Project Photos. Videos stay Company-only. Explicitly removed folder photos remain excluded
+  until the user adds them again. Effective photos use adaptive orientation-aware appendix pages with
+  assignment notes.
+- **Photo galleries and folders**: Project Overview and Project Archives open project reference and
+  completed galleries; unit-group headers own reference controls, and individual vehicle cards open
+  only their completed photos. Completed photos scan only exact stored vehicle
+  folders in the background; the last authoritative completed-photo presence is cached locally for
+  an immediate project paint while the folder refreshes. Reference assignments render immediately; thumbnails persist in a
+  local source/eTag cache and full-resolution content hydrates on demand into a persistent local exact-media cache. Normalized thumbnails also
+  use the app-managed Company Files `Settings/_DTM Photo Thumbnail Cache/v2` so another workstation
+  can download the small JPEG rather than hydrating the original. Project Overview has a direct
+  **Open project photos folder** action; **Folder options** retain
+  exact Company/Shop navigation through local OneDrive when present, with SharePoint URL fallback.
+  Portrait thumbnails use side letterboxing and regenerate from exact source bytes under a versioned
+  cache. Completed-gallery thumbnail multi-select enables one **Use as Reference Photo(s)** action;
+  its dialog chooses a destination project and optional unit group. Project-only reuse creates an
+  unassigned project photo and group reuse assigns directly. The full-resolution viewer is view-only.
+  The source browser overlays **Completed** on Shop photos, uses the canonical vehicle name as its
+  main label, and drops path clutter. Project galleries add, assign, or remove selected metadata
+  without deleting the source files.
+- **Bounded photo loading**: four background workers prepare persistent display previews, six
+  foreground workers promote currently visible previews, and three separate workers perform exact-source
+  normalization/shared-cache publication only for visible cards requesting an upgrade. Startup compares a
+  persisted saved-photo catalog fingerprint and skips preparation entirely when unchanged; it does
+  not recursively scan all projects' completed-photo folders. The current project's external photo
+  folders are refreshed when that project is viewed. Server and browser waits stay bounded, and the connection pill reports checking/display-ready progress with
+  a progress bar. A card settles on a fast preview, an exact thumbnail, or Retry rather than spinning
+  forever. Failed previews finish the batch and retry when opened. Closing the app cancels queued photo
+  work, while already-running network stages are short-bounded. Full-resolution requests use a
+  dedicated high-priority job; new thumbnail downloads yield, the viewer and connection pill show the
+  active filename, and a successful original remains local for later opens. The shared normalized JPEG cache avoids
+  regeneration on another workstation.
+- **Shared exports**: PPTX is a local conversion artifact; new cloud uploads accept PDF only.
+  Production uses the activated Company per-vehicle PDF path. The path uses the canonical card identity and moves an
+  existing vehicle folder by stored item ID when readable naming changes.
 - **Final sign-off**: the focused review includes an expandable checklist of every server-side
   check, with passed, warning, and blocking states shown individually before the build is locked.
   Advisory equipment checks cover front/side/rear warning, siren/controller relationships,
@@ -612,8 +665,9 @@ SharePoint. The old monolithic `agencies.json` is migration input only.
 |---|---|
 | `agency_id` | UUID |
 | `name` | Canonical name, e.g. "St. Cloud PD" |
-| `contact_name` | Required on creation |
-| `contact_info` | Required on creation (phone or email) |
+| `abbreviation` | Editable path/name identity; defaults from initials, a county-sheriff county name, or an explicit acronym |
+| `contact_name` | Optional |
+| `contact_info` | Optional phone/email fields |
 | `customer_since` | Free text year / best guess |
 | `default_preferences` | Equipment defaults copied into new projects |
 | `pricing_overrides` | Sparse manufacturer discounts that prefill the estimate modal's optional Custom pricing; estimates still default to Retail |
@@ -624,10 +678,13 @@ SharePoint. The old monolithic `agencies.json` is migration input only.
 `handle_search_agencies(query, paths)`:
 1. Normalizes query: lowercase, strip punctuation.
 2. Expands abbreviations: `pd` → `police department`, `so` → `sheriff's office`, `st.` → `saint`, `dept` → `department`, etc.
-3. Runs `difflib.get_close_matches(normalized_query, normalized_names, n=5, cutoff=0.6)`.
-4. Returns matches sorted by score.
+3. Matches substrings in both normalized names and effective agency abbreviations.
+4. Adds close name matches with `difflib.get_close_matches` when fewer than eight direct matches exist.
 
-The project wizard shows a live-search combo for agency. On blur, if matches exist, a suggestion modal appears ("Did you mean…?").
+The project wizard shows a live-search combo for agency. Agency Manager, the wizard, and preset
+choices also include project-backed recovery rows when the standalone agency record is missing.
+Editing such a row recreates the normal record with the same durable ID, and an agency referenced by
+a project cannot be deleted.
 
 ### REST Endpoints
 | Method | Path | Description |
@@ -794,7 +851,14 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/project/{id}/unit/{uid}/finalization/check` | Evaluate PDF currency and final build warnings |
 | `/api/project/{id}/unit/{uid}/finalization/finalize` | Finalize the unit against its exact draft fingerprint |
 | `/api/project/{id}/unit/{uid}/finalization/reopen` | Reopen a finalized unit with actor and reason |
+| `/api/project/{id}/unit/{uid}/individual/{iid}/shop-publication/republish` | Explicitly replace an existing app-owned Shop package after a finalized PDF re-export |
 | `/api/project/{id}/export-all-pdf` | Export all generated sheets for a project to PDF |
+| `/api/project/{id}/references` | List persisted reference assets/assignments |
+| `/api/project/{id}/references/discover` | Browse organized reusable media within the same agency |
+| `/api/project/{id}/references/save` | Add/update a portable asset and its scope assignments |
+| `/api/project/{id}/references/{reference_id}/delete` | Remove metadata only; never delete source media |
+| `/api/project/{id}/completion` | Mark a project completed or return it to the active list |
+| `/api/projects/naming-migration-report` | Read-only canonical names, duplicates, missing IDs, legacy output/folder changes, manual QBO checklist |
 
 ### DELETE Routes
 | Path | Description |
@@ -888,7 +952,12 @@ render metadata start here. Render size and asset identity belong at the part-ty
 
 The picker supports searchable hierarchy browsing, parent matches without collapsing the child-SKU
 catalog, conditional guided components, custom/free-point placement, accessory quantity overrides,
-and rich preset round-trip. All catalog writes must use the validated save path because SharePoint
+and rich preset round-trip. Center-console setup preserves the exact selected base SKU; compatible
+bundle matching is an explicit recommendation, while every selected physical component remains a
+nested build row and billing coverage is tracked separately. User-arranged console faceplate order
+survives required-item reconciliation and edit round-trip. Guided Camera System setup records antenna
+style (whip, cylinder, Axon fin, or custom) and location, defaulting new setups to rear right roof.
+All catalog writes must use the validated save path because SharePoint
 is the shared settings source of truth.
 
 ## SharePoint Collaboration and Export Split
@@ -896,12 +965,30 @@ is the shared settings source of truth.
 M365/SharePoint is the shared source of truth for agencies, sales reps, presets, projects, and
 drafts. Normal development runs cloud-off unless a SharePoint behavior is being tested deliberately.
 
-Customer-facing PDFs remain in the visible agency/year tree. Editable PPTX sources are stored under
-`_DTM Internal PowerPoint Sources`, and build cards open only the PDF folder. Replace exports use a
-deterministic stable name, remove recognized legacy duplicates after confirmation, and serialize
-upload/delete work so a late retry cannot restore an obsolete version. Explicit Keep both exports
-remain timestamped. Per-vehicle folders and Shop Documents publication are planned follow-up, not
-the v3.4.0 storage shape.
+Production v3.5.0 uses the per-vehicle Company PDF tree. PPTX stays local and is rejected by new
+cloud-upload/queue entry points. The Company
+`Vehicle Project Database` and finalized Shop `Shop Project Database` publication paths are active
+behind separate explicit gates. Both use durable folder/item IDs and retry states. Shop publication owns only its PDF
+and copied Build Reference Photos; reopening never lists, deletes, or replaces Completed Build
+Photos.
+
+Separate provisioning flags pre-create/reconcile the structure without changing PDF destinations;
+they are enabled after the approved initial live-folder run. Project save creates agency/year/reference
+folders, and every known vehicle creates its canonical folder directly beneath the year. Existing vehicles without a unit/VIN use
+a stable `Pending ID` suffix and retain the same folder item when later renamed. The folder's
+existence does not authorize an ambiguous historical-photo match; reviewed source mappings are
+copied only during the migration.
+Pending/error states retry during cloud sync. The first sync after activation also catches up a
+pre-cutover exported Company PDF or finalized Shop package when that exact PDF exists locally.
+
+Agency Manager and QBO Customer import are deliberately outside this lifecycle: a customer record
+without a saved app project never creates or retries Company/Shop vehicle folders. Historical Build
+Photos agencies become project-scoped through ordinary completed agency/year projects.
+
+Every agency has an editable abbreviation used in the year folder, canonical vehicle name, PDF
+filename, card title, and generated/copied QBO Project name. Examples are `ICE - 2026` and
+`2026 ICE PIU - Patrol - VIN C43753`. Ampersands are preserved;
+actual cross-platform reserved path characters are folded to spaces.
 
 ## QuickBooks Project and Estimate Workflow
 
@@ -911,23 +998,29 @@ owner-authorized QBO is deferred and excluded from production.
 
 The app creates non-posting Estimates, not Projects. A user can open the manual QBO Project setup
 and link flow before configuring the unit; Estimate actions still require a configured build. New
-copied Project names omit agency and use `Unit {number} | Build {year}`, with a stable build label
-when unit number is unknown. Estimate review refreshes Retail prices, excludes customer-supplied
+copied Project names use the canonical
+`{year} {agency abbreviation} {model} | {build type} | Unit {number} | VIN {last six}` identity, omitting only unavailable
+identifier segments. Estimate review refreshes Retail prices, excludes customer-supplied
 lines, handles zero-price/billed faceplate rules, supports labor/install-supplies presets, delivery,
 and a non-compounding 4% card fee. A changed linked QBO Estimate raises a loud conflict and offers
 differences, overwrite, or create-new; the service repeats the conflict check just before update.
 
-## Vehicle Finalization
+## Vehicle Design Finalization
 
-Final review is the last build-card action. It is light green until finalized and solid green
+**Finalize design** is the last build-card action. It is light green until finalized and solid green
 afterward. The review modal requires a current PDF, shows expandable passed/warning/blocked checks,
 stores acknowledgements for warnings, and records the actor/timestamp/fingerprint. Finalized drafts
 are locked server-side until reopened with an actor and reason.
 
 Checks include Core interface presence, slick-top photo eye/light-bar coverage, docking motion,
-radio, camera, expansion module, Patrol radar and partitions, and front/side/rear warning. Shop
-Documents publish/withdraw, durable retry state, and explicit stale-concurrent-finalization rejection
-remain the next finalization boundary.
+radio, camera, expansion module, Patrol radar and partitions, front/side/rear warning, required
+unit/VIN identity, and availability of assigned reference photos. With the explicit Shop cutover
+enabled, finalization publishes the PDF/effective photos asynchronously; retry state is durable and
+reopening withdraws only persisted app-owned item IDs while preserving the vehicle folder and every
+Completed Build Photo. A later PDF re-export does not silently change Shop Documents: after the
+local/Company export completes, the UI asks whether to replace the existing app-owned Shop PDF and
+publishes only if the user accepts. Completed-photo buttons are independent of this state and appear only when
+the applicable exact completed-photo folder actually contains a supported image.
 
 ## Canonical Supply Model
 
@@ -948,6 +1041,16 @@ callouts use the red attention treatment.
   window through MISC PART, and omits tint pricing from the customer build-sheet PDF.
 - Gamber-Johnson Motorola/Core specialty faceplates appear at $0, OEM is omitted, and later plates
   bill normally. DUO light rows combine only in the shop manifest; QBO retains distinct item lines.
-- Concealed speakers remain visible at reduced opacity with a red mounting callout. Long titles,
-  dense manifests, and installation notes paginate safely. Output order is cover, vehicle renders,
-  manifest, then project/installation/delivery notes; internal QB-import labels are omitted.
+- Concealed speakers remain visible at 80% opacity with a text-sized, 70%-opaque red **Speaker
+  behind grille/bumper** callout. The tag can be dragged independently in Build Preview; its
+  relative-image offset round-trips through placement overrides, and a red leader in preview/PDF
+  points to the nearest speaker instance. Quantity-aware custom points contribute one legend card per
+  draft line while still drawing every configured head. Supporting render-card details use black
+  text. Manifest body type is at least 9 pt, with compact two-line customer-supplied source labels.
+  Categories flow continuously under orange section bars, repeat their heading on continuation
+  pages, and move to the next page when the heading would otherwise be orphaned;
+  reference-photo titles and 10-point notes overlay the enlarged aspect-preserved image on a
+  translucent dark panel. Long titles, dense manifests, and installation notes paginate safely.
+  Output order is cover, vehicle renders,
+  reference-photo pages when present, manifest, then project/installation/delivery notes; internal
+  QB-import labels are omitted.

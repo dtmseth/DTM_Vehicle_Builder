@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "card_fee_percent": 4,
+  "card_fee_percent": 4.0,
   "service_items": {
     "labor": "LABOR INSTALL",
     "install_supplies": "INSTALL SUPPLIES",
@@ -13,8 +13,8 @@
       "aliases": [
         "patrol"
       ],
-      "labor_amount": 0,
-      "install_supplies_amount": 450
+      "labor_amount": 4900.0,
+      "install_supplies_amount": 500.0
     },
     "undercover": {
       "label": "Undercover",
@@ -23,8 +23,8 @@
         "slick top",
         "slicktop"
       ],
-      "labor_amount": 0,
-      "install_supplies_amount": 450
+      "labor_amount": 3200.0,
+      "install_supplies_amount": 475.0
     },
     "admin": {
       "label": "Admin",
@@ -32,14 +32,14 @@
         "admin",
         "command"
       ],
-      "labor_amount": 0,
-      "install_supplies_amount": 450
+      "labor_amount": 3200.0,
+      "install_supplies_amount": 475.0
     },
     "custom": {
       "label": "Custom",
       "aliases": [],
-      "labor_amount": 0,
-      "install_supplies_amount": 450
+      "labor_amount": 0.0,
+      "install_supplies_amount": 475.0
     }
   }
 }

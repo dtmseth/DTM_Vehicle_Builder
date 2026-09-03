@@ -39,11 +39,12 @@ bash packaging/build_macos.sh                  # package Mac app
 | [docs/audit/LEDGER.md](docs/audit/LEDGER.md) | Findings ledger (FINDING-nnn) — check before treating a flaw as new |
 | [docs/audit/PICKER_REDESIGN.md](docs/audit/PICKER_REDESIGN.md) | Part Picker redesign spec (browse tree, options-in-box, editor) |
 
-## Current work (2026-08)
+## Current work (2026-09)
 
-Production v3.4.0 is live. The immediate product follow-up is the finalization cloud boundary and
-the non-backend vehicle-folder migration; the architectural backlog remains Phase 4's consumer
-migration, reviewed QuickBooks catalog-change governance, and the visible parts-curation queue. See
+Production v3.5.0 is live. Per-vehicle Company/Shop folders, reference/completed-photo workflows,
+finalized Shop publication, and the non-backend folder migration are the production baseline. The
+architectural backlog remains Phase 4's consumer migration, reviewed QuickBooks catalog-change
+governance, and the visible parts-curation queue. See
 `docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m
 dtm_buildsheet` or preview config "DTM App") unless intentionally testing SharePoint — cloud sync
 can replace local `parts_db.json`. Safety pins are `pytest tests/golden tests/contract` plus

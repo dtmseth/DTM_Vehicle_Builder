@@ -89,11 +89,10 @@ def finalize_output(
     Returns {output_path, output_name, previous_versions}.
     No conflict logic — the timestamp in the filename ensures uniqueness.
 
-    In cloud mode (and only when ``exports_library_name`` is configured),
-    the final PPTX is also auto-uploaded to a SharePoint folder on the
-    company's separate library — in the background, so the response returns
-    immediately. agency / year drive the {library}/{base}/{agency}/{year}/
-    layout. Missing values get sanitized to "Unassigned" upstream.
+    PPTX is an internal local conversion artifact. It is deliberately not
+    uploaded to SharePoint; the PDF export path is the only customer/shop
+    artifact publication entry point. Historical cloud PPTX files remain
+    readable for backward compatibility but no new ones are created here.
     """
     result_path = ppt_path
     result = {
@@ -101,35 +100,6 @@ def finalize_output(
         "output_name": ppt_path.name,
         "previous_versions": _find_previous_versions(ppt_path, ppt_path.parent),
     }
-
-    # Fire the SharePoint auto-upload from the canonical final path. The
-    # service is a no-op outside cloud mode and when exports aren't
-    # configured, so callers without agency/year context still get correct
-    # local-only behavior.
-    try:
-        from .exports_upload_service import upload_export_in_background
-        from .. import server as _server
-
-        def _on_complete(ok: bool) -> None:
-            if ok:
-                # Same data_version counter the UI watches for sync changes —
-                # bump it so the cloud chip refreshes and tells the user the
-                # upload finished.
-                try:
-                    _server._bump_data_version()  # noqa: SLF001
-                except Exception:
-                    pass
-
-        upload_export_in_background(
-            result_path,
-            agency=agency,
-            year=year,
-            canonicalize=not preserve_sharepoint_version,
-            on_complete=_on_complete,
-        )
-    except Exception:
-        # Don't let the auto-upload setup affect the local-write contract.
-        pass
 
     return result
 

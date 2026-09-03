@@ -2,7 +2,7 @@
 
 Reference for all JSON configuration and data files. Config files live in `workspace/config/` (editable) and `src/dtm_buildsheet/resources/config/` (bundled defaults). Workspace data files (agencies, sales reps, projects, presets) live directly in `workspace/` or its sub-directories.
 
-Last updated: 2026-08-26 (v3.4.0)
+Last updated: 2026-09-03 (v3.5.0)
 
 `parts_db.json` is the canonical production parts/SKU source. The older `part_catalog.json`,
 `parts_library.json`, `asset_manifest.json`, and `workbook_rules.json` sections document supported
@@ -25,7 +25,8 @@ because a legacy consumer still reads them.
 10. [Preset Files](#preset-files)
 11. [parts_db.json](#parts_dbjson)
 12. [estimate_charges.json](#estimate_chargesjson)
-13. [Common Conventions](#common-conventions)
+13. [cloud_config.json](#cloud_configjson)
+14. [Common Conventions](#common-conventions)
 
 ---
 
@@ -148,6 +149,11 @@ Defines, per vehicle type, the fixture coordinates and named location points use
 ### VehicleLayout Object
 ```
 {
+  "make": "<display make>",
+  "model": "<display model>",
+  "aliases": ["<legacy exact vehicle value>", ...],
+  "layout_source": "<optional canonical VehicleType reused until this layout is customized>",
+  "placeholder": <optional bool — true while external vehicle artwork is pending>,
   "fixtures": {
     "<part_id>": {
       "<view>": <LocationPoint>,
@@ -166,6 +172,14 @@ Defines, per vehicle type, the fixture coordinates and named location points use
   }
 }
 ```
+
+`aliases` are exact, case-insensitive compatibility values for older projects; substring guessing is
+not allowed. A `layout_source` entry inherits missing `views`, `fixtures`, and `view_order` at the
+validated config boundary so planners/renderers still receive the ordinary expanded shape. Cycles
+and missing sources are rejected. `placeholder: true` is surfaced in Settings and project vehicle
+selectors as **artwork pending**. The UI clears it after front/side/top/rear PNGs are all present.
+Older shared settings files are forward-merged with the concrete historical model placeholders when
+PIU and F-150 bases exist, so a pre-feature SharePoint mirror cannot temporarily hide them.
 
 `<view>` is one of `"front"`, `"side"`, `"top"`, `"rear"`.
 
@@ -429,6 +443,7 @@ one-shot migration source.
 {
   "agency_id": <string, UUID — auto-generated>,
   "name": <string, required>,
+  "abbreviation": <string, optional editable override>,
   "contact_name": <string>,
   "contact_title": <string>,
   "contact_phone": <string>,
@@ -449,8 +464,11 @@ one-shot migration source.
 }
 ```
 
-Managed through Settings → Agencies or the project wizard's searchable agency control. The fuzzy
-search endpoint normalizes common abbreviations before matching.
+Managed through Settings → Agencies or the project wizard's searchable agency control. Blank
+abbreviations derive from the agency name (including county-sheriff and uppercase-acronym rules).
+The fuzzy search endpoint matches both name and effective abbreviation. Project-backed recovery
+rows remain searchable if their standalone agency file is missing; editing one restores the normal
+per-record file under the same durable ID.
 
 ---
 
@@ -615,8 +633,10 @@ was reached, so a product with multiple physical homes consistently opens the ri
 product (not the individual SKU): it identifies the kit's selectable style and the physical
 components already covered by its QuickBooks price.
 `included` is a free-form object so it can describe the precise armrest or motion variant when
-needed. Included components remain on the shop manifest and are intentionally skipped by estimate
-resolution.
+needed. The user's selected base console SKU remains authoritative; matching another product's
+`console_kit` produces only an explicit recommendation. Every selected physical component remains
+on the shop manifest/build sheet. A component covered by the chosen base receives
+`picker_config.console_kit_included: true` and is skipped only by estimate resolution.
 
 `system_cable_refreshes` is an optional per-system catalog for guided radio, radar, and camera
 workflows. A user first selects the cable run, then selects the exact SKU if that run has several
@@ -665,7 +685,7 @@ QBO Service items and are resolved from the refreshed Item cache immediately bef
 ```json
 {
   "schema_version": 1,
-  "card_fee_percent": 4,
+  "card_fee_percent": 4.0,
   "service_items": {
     "labor": "LABOR INSTALL",
     "install_supplies": "INSTALL SUPPLIES",
@@ -676,8 +696,8 @@ QBO Service items and are resolved from the refreshed Item cache immediately bef
     "patrol": {
       "label": "Patrol",
       "aliases": ["patrol"],
-      "labor_amount": 0,
-      "install_supplies_amount": 450
+      "labor_amount": 4900.0,
+      "install_supplies_amount": 500.0
     }
   }
 }
@@ -687,6 +707,58 @@ All four preset IDs (`patrol`, `undercover`, `admin`, `custom`) are required. Am
 non-negative, but estimate creation requires labor and install supplies to be greater than zero.
 Delivery is optional per estimate. The card fee is `card_fee_percent` of materials + labor + install
 supplies + delivery, excluding the card-fee line itself.
+
+---
+
+## cloud_config.json
+
+Per-install non-secret Microsoft identifiers and library names. Environment variables override the
+same JSON keys. The Company/Shop vehicle-folder write paths remain deliberately independent; setting
+a library name alone does not activate either path. Both publication gates are enabled in the
+current production defaults after the live folder and package verification.
+
+```json
+{
+  "enabled": true,
+  "tenant_id": "...",
+  "client_id": "...",
+  "sharepoint_site_id": "...",
+  "sharepoint_drive_id": "...",
+
+  "exports_library_name": "Company Files",
+  "exports_library_internal_name": "Documents",
+  "exports_base_folder": "Vehicle Builder Projects",
+
+  "company_folder_provisioning_enabled": true,
+  "company_vehicle_folders_enabled": true,
+  "company_library_name": "Company Files",
+  "company_library_internal_name": "Documents",
+  "company_vehicle_root": "Vehicle Project Database",
+
+  "shop_folder_provisioning_enabled": true,
+  "shop_publication_enabled": true,
+  "shop_library_name": "Shop Documents",
+  "shop_library_internal_name": "ShopDocs",
+  "shop_build_photos_root": "Shop Project Database"
+}
+```
+
+`company_folder_provisioning_enabled` and `shop_folder_provisioning_enabled` permit lifecycle folder
+pre-creation/reconciliation without changing the active PDF paths. `company_vehicle_folders_enabled`
+exclusively switches new Company PDF writes from the legacy agency/year export root to the
+per-vehicle tree; there is no hidden dual-write fallback. `shop_publication_enabled` permits
+finalization publication/withdrawal and sync retries. All four gates are enabled in the current
+defaults. Catch-up retries publish an existing local PDF that was exported/finalized before cutover;
+records without that exact local PDF remain untouched until a workstation holding it exports or
+publishes it.
+Library display and internal names are both optional candidates because a SharePoint rename may not
+change the backend drive name.
+
+Environment overrides use `DTM_COMPANY_FOLDER_PROVISIONING_ENABLED`,
+`DTM_COMPANY_VEHICLE_FOLDERS_ENABLED`, `DTM_COMPANY_LIBRARY_NAME`,
+`DTM_COMPANY_LIBRARY_INTERNAL_NAME`, `DTM_COMPANY_VEHICLE_ROOT`,
+`DTM_SHOP_FOLDER_PROVISIONING_ENABLED`, `DTM_SHOP_PUBLICATION_ENABLED`, `DTM_SHOP_LIBRARY_NAME`,
+`DTM_SHOP_LIBRARY_INTERNAL_NAME`, and `DTM_SHOP_BUILD_PHOTOS_ROOT`.
 
 ---
 

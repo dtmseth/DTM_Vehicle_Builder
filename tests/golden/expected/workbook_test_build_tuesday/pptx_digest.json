@@ -214,7 +214,7 @@
             "color": "#F5F6FA",
             "type": "SOLID (1)"
           },
-          "height_emu": 1600200,
+          "height_emu": 1783080,
           "kind": "TEXT_BOX (17)",
           "left_emu": 5943600,
           "line_color": "#1A6FC8",
@@ -258,7 +258,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6035040,
           "name": "TextBox",
@@ -287,7 +287,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6035040,
           "name": "TextBox",
@@ -309,14 +309,14 @@
             }
           ],
           "text": "Make:  Ford",
-          "top_emu": 2761488,
+          "top_emu": 2747772,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6035040,
           "name": "TextBox",
@@ -338,14 +338,14 @@
             }
           ],
           "text": "Model:  PIU",
-          "top_emu": 2999232,
+          "top_emu": 2971800,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6035040,
           "name": "TextBox",
@@ -356,25 +356,54 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "Build:  "
+                  "text": "Build Type:  "
                 },
                 {
                   "color": "#1A1A1A",
                   "size_pt": 12.0,
-                  "text": "PIU #307"
+                  "text": "PIU"
                 }
               ]
             }
           ],
-          "text": "Build:  PIU #307",
-          "top_emu": 3236976,
+          "text": "Build Type:  PIU",
+          "top_emu": 3195828,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 6035040,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Unit #:  "
+                },
+                {
+                  "color": "#1A1A1A",
+                  "size_pt": 12.0,
+                  "text": "307"
+                }
+              ]
+            }
+          ],
+          "text": "Unit #:  307",
+          "top_emu": 3419856,
+          "width_emu": 2436876
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 6035040,
           "name": "TextBox",
@@ -396,7 +425,7 @@
             }
           ],
           "text": "VIN:  12345678769879",
-          "top_emu": 3474720,
+          "top_emu": 3643884,
           "width_emu": 2436876
         },
         {
@@ -404,7 +433,7 @@
             "color": "#FFF0D4",
             "type": "SOLID (1)"
           },
-          "height_emu": 1600200,
+          "height_emu": 1783080,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8673084,
           "line_color": "#C86000",
@@ -448,7 +477,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8764524,
           "name": "TextBox",
@@ -477,7 +506,7 @@
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8764524,
           "name": "TextBox",
@@ -499,14 +528,14 @@
             }
           ],
           "text": "Make:  Ford",
-          "top_emu": 2761488,
+          "top_emu": 2747772,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8764524,
           "name": "TextBox",
@@ -528,14 +557,14 @@
             }
           ],
           "text": "Model:  PIU",
-          "top_emu": 2999232,
+          "top_emu": 2971800,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8764524,
           "name": "TextBox",
@@ -546,25 +575,54 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 10.0,
-                  "text": "Build:  "
+                  "text": "Build Type:  "
                 },
                 {
                   "color": "#1A1A1A",
                   "size_pt": 12.0,
-                  "text": "PIU #307"
+                  "text": "—"
                 }
               ]
             }
           ],
-          "text": "Build:  PIU #307",
-          "top_emu": 3236976,
+          "text": "Build Type:  —",
+          "top_emu": 3195828,
           "width_emu": 2436876
         },
         {
           "fill": {
             "type": "BACKGROUND (5)"
           },
-          "height_emu": 292608,
+          "height_emu": 278892,
+          "kind": "TEXT_BOX (17)",
+          "left_emu": 8764524,
+          "name": "TextBox",
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "bold": true,
+                  "color": "#1E2761",
+                  "size_pt": 10.0,
+                  "text": "Unit #:  "
+                },
+                {
+                  "color": "#1A1A1A",
+                  "size_pt": 12.0,
+                  "text": "507"
+                }
+              ]
+            }
+          ],
+          "text": "Unit #:  507",
+          "top_emu": 3419856,
+          "width_emu": 2436876
+        },
+        {
+          "fill": {
+            "type": "BACKGROUND (5)"
+          },
+          "height_emu": 278892,
           "kind": "TEXT_BOX (17)",
           "left_emu": 8764524,
           "name": "TextBox",
@@ -586,7 +644,7 @@
             }
           ],
           "text": "VIN:  12345676",
-          "top_emu": 3474720,
+          "top_emu": 3643884,
           "width_emu": 2436876
         },
         {
@@ -606,7 +664,7 @@
                   "bold": true,
                   "color": "#1E2761",
                   "size_pt": 28.0,
-                  "text": "18"
+                  "text": "23"
                 }
               ]
             },
@@ -633,8 +691,8 @@
               ]
             }
           ],
-          "text": "18\nLight Heads\nBEARDED 3D, SOUNDOFF, WHELEN",
-          "top_emu": 4059936,
+          "text": "23\nLight Heads\nBEARDED 3D, SOUNDOFF, WHELEN",
+          "top_emu": 4242816,
           "width_emu": 2200595
         },
         {
@@ -671,7 +729,7 @@
             }
           ],
           "text": "3\nReused / Transfer",
-          "top_emu": 4059936,
+          "top_emu": 4242816,
           "width_emu": 2200595
         },
         {
@@ -741,7 +799,7 @@
             }
           ],
           "text": "Bumper\nWESTIN\n✓ Push bumper\n✓ Pit bars\n✓ Wire covers",
-          "top_emu": 4059936,
+          "top_emu": 4242816,
           "width_emu": 2200595
         },
         {
@@ -789,7 +847,7 @@
             }
           ],
           "text": "Cage / Tray\nCage: None\nTray: —",
-          "top_emu": 4059936,
+          "top_emu": 4242816,
           "width_emu": 2200595
         },
         {
@@ -826,7 +884,7 @@
             }
           ],
           "text": "Lighting / Camera\nCtrl: —",
-          "top_emu": 4059936,
+          "top_emu": 4242816,
           "width_emu": 2200595
         }
       ]
@@ -1125,7 +1183,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WESTIN  ·  PB400  ·  QTY: 1"
                 }
@@ -1134,7 +1192,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Pit Bar"
@@ -1144,7 +1202,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Wire Covers"
@@ -1220,7 +1278,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  ION  ·  Red/White Blue/White  ·  QTY: 2"
                 }
@@ -1229,7 +1287,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "STANDARD LENSE"
                 }
@@ -1314,7 +1372,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  2 LAMP TRACER  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -1323,7 +1381,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "STANDARD LENSE"
                 }
@@ -1332,7 +1390,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ FW 2 Bracket  ·  TRACER L BRACKETS X2 PER"
@@ -1408,7 +1466,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2"
                 }
@@ -1417,7 +1475,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "SMOKED LENSE"
                 }
@@ -1502,7 +1560,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  SA315P  ·  QTY: 1"
                 }
@@ -1587,7 +1645,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  U-SERIES  ·  QTY: 1"
                 }
@@ -1662,7 +1720,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -1737,7 +1795,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  PRO-FOCUS  ·  QTY: 1"
                 }
@@ -2077,7 +2135,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WESTIN  ·  PB400  ·  QTY: 1"
                 }
@@ -2086,7 +2144,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Pit Bar"
@@ -2096,7 +2154,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Wire Covers"
@@ -2172,7 +2230,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  VXE  ·  Red/Amber Blue/Amber  ·  QTY: 2"
                 }
@@ -2181,7 +2239,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "SMOKED LENSE"
                 }
@@ -2266,7 +2324,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  U-SERIES  ·  QTY: 1"
                 }
@@ -2341,7 +2399,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  MEGA T-SERIES  ·  Red/Blue  ·  QTY: 1"
                 }
@@ -2416,7 +2474,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  TRACER 5 LAMP  ·  Red/White Blue/White  ·  QTY: 5"
                 }
@@ -2491,7 +2549,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  T-SERIES  ·  Red and Blue  ·  QTY: 1"
                 }
@@ -2566,7 +2624,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -2641,7 +2699,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  PRO-FOCUS  ·  QTY: 1"
                 }
@@ -2879,7 +2937,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WESTIN  ·  PB400  ·  QTY: 1"
                 }
@@ -2888,7 +2946,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Pit Bar"
@@ -2898,7 +2956,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "italic": true,
                   "size_pt": 10.0,
                   "text": "+ Wire Covers"
@@ -2974,7 +3032,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -3258,7 +3316,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  U-SERIES  ·  QTY: 1"
                 }
@@ -3333,7 +3391,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  LEGACY  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -3408,7 +3466,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  ION  ·  Red and Blue  ·  QTY: 1"
                 }
@@ -3483,7 +3541,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  MINI T-SERIES  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -3558,7 +3616,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "WHELEN  ·  VERTEX  ·  Red/White Blue/White  ·  QTY: 1"
                 }
@@ -3633,7 +3691,7 @@
             {
               "runs": [
                 {
-                  "color": "#555555",
+                  "color": "#000000",
                   "size_pt": 11.0,
                   "text": "ION  ·  Red/Blue  ·  QTY: 1"
                 }
@@ -3682,12 +3740,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 20.0,
-                  "text": "LIGHTING"
+                  "text": "PARTS MANIFEST"
                 }
               ]
             }
           ],
-          "text": "LIGHTING",
+          "text": "PARTS MANIFEST",
           "top_emu": 82296,
           "width_emu": 9235440
         },
@@ -3706,12 +3764,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
+                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
                 }
               ]
             }
           ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
+          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
           "top_emu": 521207,
           "width_emu": 9052560
         },
@@ -3766,7 +3824,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 4992624,
+          "height_emu": 5138928,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -3782,7 +3840,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "PART / SKU"
                         }
                       ]
@@ -3799,7 +3857,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "DETAILS / SALES DESCRIPTION"
                         }
                       ]
@@ -3816,7 +3874,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "QTY"
                         }
                       ]
@@ -3833,7 +3891,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "LOCATION"
                         }
                       ]
@@ -3850,7 +3908,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "SOURCE"
                         }
                       ]
@@ -3863,11 +3921,62 @@
                 {
                   "paragraphs": [
                     {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 12.0,
+                          "text": "LIGHTING"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "LIGHTING"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
                       "runs": [
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Forward Warning 1"
                         }
                       ]
@@ -3875,8 +3984,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  ION"
                         }
                       ]
@@ -3889,8 +3998,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Standard Lense"
                         }
                       ]
@@ -3907,7 +4016,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "2"
                         }
                       ]
@@ -3924,7 +4033,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "TOP TUBE"
                         }
                       ]
@@ -3941,13 +4050,13 @@
                           "bold": true,
                           "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 9.0,
-                          "text": "↺  Customer supplied / Used · Source needed"
+                          "size_pt": 9.5,
+                          "text": "Customer supplied\nUsed - Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Customer supplied / Used · Source needed"
+                  "text": "Customer supplied\nUsed - Source needed"
                 }
               ],
               [
@@ -3958,7 +4067,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Forward Warning 2"
                         }
                       ]
@@ -3966,8 +4075,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  2 LAMP TRACER"
                         }
                       ]
@@ -3980,8 +4089,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Standard Lense"
                         }
                       ]
@@ -3998,7 +4107,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "1"
                         }
                       ]
@@ -4015,7 +4124,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "CENTER PLATE OF PB"
                         }
                       ]
@@ -4032,13 +4141,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4049,7 +4158,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Front Side Warning"
                         }
                       ]
@@ -4057,8 +4166,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  VXE"
                         }
                       ]
@@ -4071,8 +4180,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/Amber Blue/Amber · Lens: Smoked Lense"
                         }
                       ]
@@ -4089,7 +4198,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "2"
                         }
                       ]
@@ -4106,7 +4215,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "FOG LIGHT AREA"
                         }
                       ]
@@ -4123,13 +4232,13 @@
                           "bold": true,
                           "color": "#B83A3A",
                           "italic": false,
-                          "size_pt": 9.0,
-                          "text": "↺  Customer supplied / Used · Source needed"
+                          "size_pt": 9.5,
+                          "text": "Customer supplied\nUsed - Source needed"
                         }
                       ]
                     }
                   ],
-                  "text": "↺  Customer supplied / Used · Source needed"
+                  "text": "Customer supplied\nUsed - Source needed"
                 }
               ],
               [
@@ -4140,7 +4249,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Lower Lift Gate Warning"
                         }
                       ]
@@ -4148,8 +4257,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Whelen  ·  ION"
                         }
                       ]
@@ -4162,8 +4271,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/Blue · Lens: Clear"
                         }
                       ]
@@ -4180,7 +4289,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4197,7 +4306,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "LOWER LIFTGATE LIP"
                         }
                       ]
@@ -4214,13 +4323,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4231,7 +4340,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Mirror Warning 1"
                         }
                       ]
@@ -4239,8 +4348,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  U-SERIES"
                         }
                       ]
@@ -4253,8 +4362,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -4271,7 +4380,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "1"
                         }
                       ]
@@ -4288,7 +4397,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "UNDER MIRROR"
                         }
                       ]
@@ -4305,13 +4414,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4322,7 +4431,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Mirror Warning Brackets 1"
                         }
                       ]
@@ -4330,8 +4439,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  PIU Bracket"
                         }
                       ]
@@ -4344,8 +4453,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -4362,7 +4471,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4379,7 +4488,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -4396,13 +4505,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4413,7 +4522,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Rear Warning 1"
                         }
                       ]
@@ -4421,8 +4530,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  ION"
                         }
                       ]
@@ -4435,8 +4544,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red and Blue · Lens: Clear"
                         }
                       ]
@@ -4453,7 +4562,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4470,7 +4579,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "UPPER REAR WINDOW"
                         }
                       ]
@@ -4487,13 +4596,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4504,7 +4613,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Rear Warning 2"
                         }
                       ]
@@ -4512,8 +4621,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  MINI T-SERIES"
                         }
                       ]
@@ -4526,8 +4635,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Clear"
                         }
                       ]
@@ -4544,7 +4653,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4561,7 +4670,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "REAR BUMPER"
                         }
                       ]
@@ -4578,13 +4687,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4595,7 +4704,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Rear Warning 3"
                         }
                       ]
@@ -4603,8 +4712,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  VERTEX"
                         }
                       ]
@@ -4617,8 +4726,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Clear"
                         }
                       ]
@@ -4635,7 +4744,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4652,7 +4761,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "TAIL LIGHTS"
                         }
                       ]
@@ -4669,13 +4778,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4686,7 +4795,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Rear Warning Bracket 1"
                         }
                       ]
@@ -4694,8 +4803,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN"
                         }
                       ]
@@ -4708,8 +4817,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -4726,7 +4835,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -4743,7 +4852,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -4760,13 +4869,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4777,7 +4886,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Side Warning 1"
                         }
                       ]
@@ -4785,8 +4894,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  MEGA T-SERIES"
                         }
                       ]
@@ -4799,8 +4908,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/Blue · Lens: Clear"
                         }
                       ]
@@ -4817,7 +4926,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "1"
                         }
                       ]
@@ -4834,7 +4943,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "REAR DOOR WINDOW"
                         }
                       ]
@@ -4851,13 +4960,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -4868,7 +4977,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Side Warning 2"
                         }
                       ]
@@ -4876,8 +4985,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  TRACER 5 LAMP"
                         }
                       ]
@@ -4890,8 +4999,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Clear"
                         }
                       ]
@@ -4908,7 +5017,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "5"
                         }
                       ]
@@ -4925,7 +5034,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "ON RUNNING BOARD"
                         }
                       ]
@@ -4942,29 +5051,122 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 10.0,
+                          "text": "Side Warning 3"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "WHELEN  ·  T-SERIES"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Side Warning 3\nWHELEN  ·  T-SERIES"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "Red and Blue · Lens: Clear"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Red and Blue · Lens: Clear"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "UPPER CARGO WINDOW"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "UPPER CARGO WINDOW"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "New"
                 }
               ]
             ],
             "col_widths_emu": [
               2880360,
-              3749039,
+              3611880,
               438912,
-              3017520,
-              1188720
+              2743200,
+              1600200
             ],
             "cols": 5,
             "row_heights_emu": [
               274320,
-              621792,
               347472,
-              621792,
+              347472,
+              347472,
+              347472,
+              347472,
               347472,
               347472,
               347472,
@@ -4975,10 +5177,10 @@
               347472,
               347472
             ],
-            "rows": 13
+            "rows": 15
           },
           "top_emu": 978408,
-          "width_emu": 11274551
+          "width_emu": 11274552
         }
       ]
     },
@@ -5018,12 +5220,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 20.0,
-                  "text": "LIGHTING — Continued"
+                  "text": "PARTS MANIFEST"
                 }
               ]
             }
           ],
-          "text": "LIGHTING — Continued",
+          "text": "PARTS MANIFEST",
           "top_emu": 82296,
           "width_emu": 9235440
         },
@@ -5042,12 +5244,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
+                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
                 }
               ]
             }
           ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
+          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
           "top_emu": 521207,
           "width_emu": 9052560
         },
@@ -5102,7 +5304,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 2496311,
+          "height_emu": 4581143,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -5118,7 +5320,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "PART / SKU"
                         }
                       ]
@@ -5135,7 +5337,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "DETAILS / SALES DESCRIPTION"
                         }
                       ]
@@ -5152,7 +5354,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "QTY"
                         }
                       ]
@@ -5169,7 +5371,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "LOCATION"
                         }
                       ]
@@ -5186,7 +5388,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "SOURCE"
                         }
                       ]
@@ -5199,91 +5401,51 @@
                 {
                   "paragraphs": [
                     {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Side Warning 3"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  T-SERIES"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Side Warning 3\nWHELEN  ·  T-SERIES"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "Red and Blue · Lens: Clear"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Red and Blue · Lens: Clear"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
                       "align": "LEFT (1)",
                       "runs": [
                         {
-                          "bold": false,
-                          "color": "#1A1A1A",
+                          "bold": true,
+                          "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
-                          "text": "UPPER CARGO WINDOW"
+                          "size_pt": 12.0,
+                          "text": "LIGHTING - CONTINUED"
                         }
                       ]
                     }
                   ],
-                  "text": "UPPER CARGO WINDOW"
+                  "text": "LIGHTING - CONTINUED"
                 },
                 {
                   "paragraphs": [
                     {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
-                        }
-                      ]
+                      "runs": []
                     }
                   ],
-                  "text": "■  New"
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
                 }
               ],
               [
@@ -5294,7 +5456,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Side Warning Bracket 1"
                         }
                       ]
@@ -5302,8 +5464,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  SKU: DTM EXTENDED CARGO WINDOW BRACKET"
                         }
                       ]
@@ -5316,8 +5478,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -5334,7 +5496,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -5351,7 +5513,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -5368,13 +5530,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -5385,7 +5547,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Side Scene"
                         }
                       ]
@@ -5393,8 +5555,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  M6"
                         }
                       ]
@@ -5407,8 +5569,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "White · Lens: Clear"
                         }
                       ]
@@ -5425,7 +5587,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -5442,7 +5604,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "ON ROOF"
                         }
                       ]
@@ -5459,13 +5621,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -5476,7 +5638,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Front Side Brackets"
                         }
                       ]
@@ -5484,8 +5646,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "BEARDED 3D"
                         }
                       ]
@@ -5498,8 +5660,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -5516,7 +5678,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -5533,7 +5695,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -5550,13 +5712,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -5567,7 +5729,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "FW 2 Bracket"
                         }
                       ]
@@ -5575,8 +5737,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "SOUNDOFF  ·  TRACER L BRACKETS X2 PER"
                         }
                       ]
@@ -5589,8 +5751,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -5607,7 +5769,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -5624,7 +5786,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -5641,13 +5803,13 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ],
               [
@@ -5658,7 +5820,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Roof Light Bar"
                         }
                       ]
@@ -5666,8 +5828,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "WHELEN  ·  LEGACY"
                         }
                       ]
@@ -5680,8 +5842,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "Red/White Blue/White · Lens: Clear"
                         }
                       ]
@@ -5698,7 +5860,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -5715,7 +5877,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -5732,22 +5894,488 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 12.0,
+                          "text": "STRUCTURAL EQUIPMENT"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "STRUCTURAL EQUIPMENT"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 10.0,
+                          "text": "Push Bumper"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "WESTIN  ·  PB400"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Push Bumper\nWESTIN  ·  PB400"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#FFFFFF",
+                          "italic": false,
+                          "size_pt": 12.0,
+                          "text": "EQUIPMENT & ELECTRONICS"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "EQUIPMENT & ELECTRONICS"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": []
+                    }
+                  ],
+                  "text": ""
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 10.0,
+                          "text": "Siren Speaker(s)"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "WHELEN  ·  SKU: SA315P"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Siren Speaker(s)\nWHELEN  ·  SKU: SA315P"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "WHELEN SA315P SPEAKER, BLACK PLASTIC"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "WHELEN SA315P SPEAKER, BLACK PLASTIC"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "1"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "1"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "UNDER PUSH BUMPER"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "UNDER PUSH BUMPER"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#B83A3A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "Customer supplied\nUsed - #3017"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Customer supplied\nUsed - #3017"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 10.0,
+                          "text": "Pit Bar"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "SETINA"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Pit Bar\nSETINA"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": ""
+                        }
+                      ]
+                    }
+                  ],
+                  "text": ""
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "New"
+                }
+              ],
+              [
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1E2761",
+                          "size_pt": 10.0,
+                          "text": "Arges"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "WHELEN  ·  PRO-FOCUS"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "Arges\nWHELEN  ·  PRO-FOCUS"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "CENTER (2)",
+                      "runs": [
+                        {
+                          "bold": true,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "—"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "—"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A1A1A",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "RIGHT FRONT FENDER"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "RIGHT FRONT FENDER"
+                },
+                {
+                  "paragraphs": [
+                    {
+                      "align": "LEFT (1)",
+                      "runs": [
+                        {
+                          "bold": false,
+                          "color": "#1A6FC8",
+                          "italic": false,
+                          "size_pt": 9.5,
+                          "text": "New"
+                        }
+                      ]
+                    }
+                  ],
+                  "text": "New"
                 }
               ]
             ],
             "col_widths_emu": [
               2880360,
-              3749039,
+              3611880,
               438912,
-              3017520,
-              1188720
+              2743200,
+              1600200
             ],
             "cols": 5,
             "row_heights_emu": [
@@ -5757,12 +6385,18 @@
               347472,
               347472,
               347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
+              347472,
               347472
             ],
-            "rows": 7
+            "rows": 13
           },
           "top_emu": 978408,
-          "width_emu": 11274551
+          "width_emu": 11274552
         }
       ]
     },
@@ -5802,12 +6436,12 @@
                   "bold": true,
                   "color": "#FFFFFF",
                   "size_pt": 20.0,
-                  "text": "STRUCTURAL EQUIPMENT"
+                  "text": "PARTS MANIFEST"
                 }
               ]
             }
           ],
-          "text": "STRUCTURAL EQUIPMENT",
+          "text": "PARTS MANIFEST",
           "top_emu": 82296,
           "width_emu": 9235440
         },
@@ -5826,12 +6460,12 @@
                   "bold": true,
                   "color": "#D9DFF1",
                   "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
+                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
                 }
               ]
             }
           ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
+          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
           "top_emu": 521207,
           "width_emu": 9052560
         },
@@ -5886,7 +6520,7 @@
           "width_emu": 12191695
         },
         {
-          "height_emu": 621792,
+          "height_emu": 969264,
           "kind": "TABLE (19)",
           "left_emu": 457200,
           "name": "Table",
@@ -5902,7 +6536,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "PART / SKU"
                         }
                       ]
@@ -5919,7 +6553,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "DETAILS / SALES DESCRIPTION"
                         }
                       ]
@@ -5936,7 +6570,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "QTY"
                         }
                       ]
@@ -5953,7 +6587,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "LOCATION"
                         }
                       ]
@@ -5970,7 +6604,7 @@
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "SOURCE"
                         }
                       ]
@@ -5983,832 +6617,51 @@
                 {
                   "paragraphs": [
                     {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Push Bumper"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WESTIN  ·  PB400"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Push Bumper\nWESTIN  ·  PB400"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
                       "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  New"
-                }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              347472
-            ],
-            "rows": 2
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
-                  "text": "EQUIPMENT & ELECTRONICS"
-                }
-              ]
-            }
-          ],
-          "text": "EQUIPMENT & ELECTRONICS",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 4"
-                }
-              ]
-            }
-          ],
-          "text": "Page 4",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 1453895,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
                       "runs": [
                         {
                           "bold": true,
                           "color": "#FFFFFF",
                           "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
+                          "size_pt": 12.0,
+                          "text": "OTHER / CUSTOM"
                         }
                       ]
                     }
                   ],
-                  "text": "PART / SKU"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "DETAILS / SALES DESCRIPTION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "QTY"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "LOCATION"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "SOURCE"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Siren Speaker(s)"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  SKU: SA315P"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Siren Speaker(s)\nWHELEN  ·  SKU: SA315P"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#1A1A1A",
-                          "size_pt": 8.0,
-                          "text": "WHELEN SA315P SPEAKER, BLACK PLASTIC"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "WHELEN SA315P SPEAKER, BLACK PLASTIC"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "1"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "1"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "UNDER PUSH BUMPER"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "UNDER PUSH BUMPER"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#B83A3A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "↺  Customer supplied / Used · #3017"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "↺  Customer supplied / Used · #3017"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Pit Bar"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "SETINA"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Pit Bar\nSETINA"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": ""
-                        }
-                      ]
-                    }
-                  ],
-                  "text": ""
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  New"
-                }
-              ],
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1E2761",
-                          "size_pt": 9.0,
-                          "text": "Arges"
-                        }
-                      ]
-                    },
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "WHELEN  ·  PRO-FOCUS"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "Arges\nWHELEN  ·  PRO-FOCUS"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "runs": [
-                        {
-                          "color": "#555555",
-                          "size_pt": 8.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "—"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "—"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A1A1A",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "RIGHT FRONT FENDER"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "RIGHT FRONT FENDER"
-                },
-                {
-                  "paragraphs": [
-                    {
-                      "align": "LEFT (1)",
-                      "runs": [
-                        {
-                          "bold": false,
-                          "color": "#1A6FC8",
-                          "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "■  New"
-                }
-              ]
-            ],
-            "col_widths_emu": [
-              2880360,
-              3749039,
-              438912,
-              3017520,
-              1188720
-            ],
-            "cols": 5,
-            "row_heights_emu": [
-              274320,
-              484631,
-              347472,
-              347472
-            ],
-            "rows": 4
-          },
-          "top_emu": 978408,
-          "width_emu": 11274551
-        }
-      ]
-    },
-    {
-      "layout": "Blank",
-      "shapes": [
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 868680,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": []
-            }
-          ],
-          "text": "",
-          "top_emu": 0,
-          "width_emu": 12191695
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 310896,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 20.0,
                   "text": "OTHER / CUSTOM"
-                }
-              ]
-            }
-          ],
-          "text": "OTHER / CUSTOM",
-          "top_emu": 82296,
-          "width_emu": 9235440
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 274320,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307"
-                }
-              ]
-            }
-          ],
-          "text": "PARTS MANIFEST   •   Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307",
-          "top_emu": 521207,
-          "width_emu": 9052560
-        },
-        {
-          "fill": {
-            "type": "BACKGROUND (5)"
-          },
-          "height_emu": 164592,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 9464040,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "align": "RIGHT (3)",
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#D9DFF1",
-                  "size_pt": 9.0,
-                  "text": "Page 5"
-                }
-              ]
-            }
-          ],
-          "text": "Page 5",
-          "top_emu": 521207,
-          "width_emu": 2331720
-        },
-        {
-          "fill": {
-            "color": "#1E2761",
-            "type": "SOLID (1)"
-          },
-          "height_emu": 384048,
-          "kind": "TEXT_BOX (17)",
-          "left_emu": 0,
-          "name": "TextBox",
-          "paragraphs": [
-            {
-              "runs": [
-                {
-                  "bold": true,
-                  "color": "#FFFFFF",
-                  "size_pt": 10.0,
-                  "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service"
-                }
-              ]
-            }
-          ],
-          "text": "Stearns County Sherrif   •   2026 Ford PIU   •   PIU #307   •   DTM Fleet Service",
-          "top_emu": 6473952,
-          "width_emu": 12191695
-        },
-        {
-          "height_emu": 621792,
-          "kind": "TABLE (19)",
-          "left_emu": 457200,
-          "name": "Table",
-          "table": {
-            "cells": [
-              [
-                {
-                  "paragraphs": [
-                    {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "PART / SKU"
-                        }
-                      ]
-                    }
-                  ],
-                  "text": "PART / SKU"
                 },
                 {
                   "paragraphs": [
                     {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "DETAILS / SALES DESCRIPTION"
-                        }
-                      ]
+                      "runs": []
                     }
                   ],
-                  "text": "DETAILS / SALES DESCRIPTION"
+                  "text": ""
                 },
                 {
                   "paragraphs": [
                     {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "QTY"
-                        }
-                      ]
+                      "runs": []
                     }
                   ],
-                  "text": "QTY"
+                  "text": ""
                 },
                 {
                   "paragraphs": [
                     {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "LOCATION"
-                        }
-                      ]
+                      "runs": []
                     }
                   ],
-                  "text": "LOCATION"
+                  "text": ""
                 },
                 {
                   "paragraphs": [
                     {
-                      "align": "CENTER (2)",
-                      "runs": [
-                        {
-                          "bold": true,
-                          "color": "#FFFFFF",
-                          "italic": false,
-                          "size_pt": 9.0,
-                          "text": "SOURCE"
-                        }
-                      ]
+                      "runs": []
                     }
                   ],
-                  "text": "SOURCE"
+                  "text": ""
                 }
               ],
               [
@@ -6819,7 +6672,7 @@
                         {
                           "bold": true,
                           "color": "#1E2761",
-                          "size_pt": 9.0,
+                          "size_pt": 10.0,
                           "text": "Wire Covers"
                         }
                       ]
@@ -6827,8 +6680,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "SETINA"
                         }
                       ]
@@ -6841,8 +6694,8 @@
                     {
                       "runs": [
                         {
-                          "color": "#555555",
-                          "size_pt": 8.0,
+                          "color": "#1A1A1A",
+                          "size_pt": 9.0,
                           "text": "—"
                         }
                       ]
@@ -6859,7 +6712,7 @@
                           "bold": true,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": "—"
                         }
                       ]
@@ -6876,7 +6729,7 @@
                           "bold": false,
                           "color": "#1A1A1A",
                           "italic": false,
-                          "size_pt": 9.0,
+                          "size_pt": 9.5,
                           "text": ""
                         }
                       ]
@@ -6893,32 +6746,33 @@
                           "bold": false,
                           "color": "#1A6FC8",
                           "italic": false,
-                          "size_pt": 8.0,
-                          "text": "■  New"
+                          "size_pt": 9.5,
+                          "text": "New"
                         }
                       ]
                     }
                   ],
-                  "text": "■  New"
+                  "text": "New"
                 }
               ]
             ],
             "col_widths_emu": [
               2880360,
-              3749039,
+              3611880,
               438912,
-              3017520,
-              1188720
+              2743200,
+              1600200
             ],
             "cols": 5,
             "row_heights_emu": [
               274320,
+              347472,
               347472
             ],
-            "rows": 2
+            "rows": 3
           },
           "top_emu": 978408,
-          "width_emu": 11274551
+          "width_emu": 11274552
         }
       ]
     },

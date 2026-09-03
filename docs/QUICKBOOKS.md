@@ -193,8 +193,12 @@ all write operations still require their backend checks and explicit confirmatio
   decisions for every exception. The reviewed finish linked Minnesota State Patrol to Customer 39,
   Cold Spring Fire Department to 240, and the Camp Ripley training agency to 104; deleted two
   owner-confirmed local sample agencies; and imported Baker Police Department, Custer County
-  Sheriff, Dundas Police Department, and Camp Ripley Fire Department. All 214 remaining agencies
-  now point to distinct, existing production Customers.
+  Sheriff, Dundas Police Department, and Camp Ripley Fire Department. At that checkpoint all 214
+  remaining agencies pointed to distinct, existing production Customers. A later agency-record
+  loss was repaired from durable project IDs and the older installed-app workspace: the current
+  local set has 218 saved agencies and all 218 retain production Customer IDs, including Fergus
+  `433`, HSI `444`, and ICE `446`. Those three enriched recovery records were explicitly approved
+  and mirrored to SharePoint; no QBO write was made.
 - Production Customer IDs 38, 88, and 407 are reviewed duplicate records. Future customer import
   previews and imports exclude them so they cannot replace the selected State Patrol/Cold Spring
   links. The local migration plan and immutable agency snapshot remain in the ignored `workspace/`
@@ -203,7 +207,8 @@ all write operations still require their backend checks and explicit confirmatio
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,
   notes, taxable flag, and billing/shipping addresses). Linking fills only EMPTY local fields;
-  it never overwrites the agency name or a populated app field. Routes
+  it never overwrites the agency name or a populated app field. A Customer import never schedules
+  Company/Shop vehicle folders; only a saved vehicle project enters that lifecycle. Routes
   `GET /customers/preview`, `POST /customers/import`. Tests: `tests/test_qb_customer_sync.py` (14).
 - **Slice 2 (up-sync):** `api_client.create_customer()` / `update_customer()` (sparse) /
   `read_customer()` / `find_customer_by_display_name()`. `agency_service.set_qb_customer_id()`
@@ -220,13 +225,13 @@ and the vehicle's true QBO `ProjectRef`. The free-tier workflow creates the Proj
 QuickBooks, then stores its Project ID (or a Project page URL) on the individual vehicle through `POST /projects/bind`;
 the app does not create a sub-customer. This local link can be previewed and saved before the unit
 has a configured build draft; only Estimate validation waits for configuration. Project names are
-stable per vehicle. The generated/copied format is `Unit {number} | Build {build year}`; QBO already
-shows the parent Customer, so the agency is intentionally omitted. When a unit number is unavailable,
-the app uses a deterministic build-type label such as `Patrol #1 | Build {build year}`.
-The fallback is derived from the vehicle's stable `individual_id`, so adding a unit number later
-does not lose its stored Project, Estimate, PPTX, or PDF associations. Removing the redundant agency
-prefix from new generated names, plus migrating stored display names, is planned in
-`NEXT_FEATURE_PLAN.md`.
+stable per vehicle and self-identifying outside their parent Customer. The generated/copied format
+is `{build year} {agency abbreviation} {model} | {build type} | Unit {number} | VIN {last six}`;
+only identifiers that are present are included. When both unit number and VIN are unavailable, the
+app uses a deterministic `Pending ID {token}` derived from the vehicle's stable `individual_id`, so
+adding identifiers later renames the display target without losing its stored Project, Estimate,
+PPTX, PDF, or folder associations. Existing true QBO Projects require a manual UI rename because
+the current Accounting API scope cannot rename them.
 The app requires agency name, contact name/email/phone, and billing street/city/state/postal code
 before it can create an estimate. If the agency is not linked, it first reuses an exact top-level
 Customer name match; otherwise it asks the user to confirm the complete customer profile before

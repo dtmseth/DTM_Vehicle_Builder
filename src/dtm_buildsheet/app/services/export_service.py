@@ -24,7 +24,9 @@ def _find_previous_pdf_versions(pdf_path: Path) -> list[str]:
     ]
 
 
-def _stamp_export_on_project(body: dict, pdf_path: Path, paths: AppPaths | None) -> None:
+def _stamp_export_on_project(
+    body: dict, pdf_path: Path, paths: AppPaths | None,
+) -> dict | None:
     """Update the project record with the PDF path + author + timestamp.
 
     No-op when the body doesn't include enough context (project_id +
@@ -33,12 +35,12 @@ def _stamp_export_on_project(body: dict, pdf_path: Path, paths: AppPaths | None)
     instead of leaking another /api/project/save round-trip into the UI.
     """
     if paths is None:
-        return
+        return None
     project_id = str(body.get("project_id", "") or "").strip()
     unit_id = str(body.get("unit_id", "") or "").strip()
     individual_id = str(body.get("individual_id", "") or "").strip()
     if not project_id or not unit_id:
-        return
+        return None
     try:
         from datetime import datetime, timezone
         from ...inputs.project_entry import load_project, save_project
@@ -46,15 +48,28 @@ def _stamp_export_on_project(body: dict, pdf_path: Path, paths: AppPaths | None)
         project = load_project(project_id, paths)
         now = datetime.now(timezone.utc).isoformat()
         by = _current_user_display_name()
+        shop_republish = None
         for bu in project.build_units:
             if bu.unit_id != unit_id:
                 continue
             if individual_id:
                 for ind in bu.individuals or []:
                     if ind.individual_id == individual_id:
+                        if ind.status == "finalized" and ind.shop_pdf_item_id:
+                            shop_republish = {
+                                "required": True,
+                                "project_id": project_id,
+                                "unit_id": unit_id,
+                                "individual_id": individual_id,
+                                "current_shop_pdf_path": ind.shop_pdf_path,
+                            }
                         ind.pdf_path = str(pdf_path)
                         ind.last_exported_at = now
                         ind.last_exported_by = by
+                        from .company_vehicle_folder_service import company_vehicle_folders_configured
+                        if company_vehicle_folders_configured():
+                            ind.company_publication_status = "pending"
+                            ind.company_publication_error = ""
                         break
             else:
                 bu.pdf_path = str(pdf_path)
@@ -62,8 +77,10 @@ def _stamp_export_on_project(body: dict, pdf_path: Path, paths: AppPaths | None)
                 bu.last_exported_by = by
             break
         save_project(project, paths)
+        return shop_republish
     except Exception:
         _log.exception("Could not stamp PDF metadata on project %s", project_id)
+        return None
 
 
 def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
@@ -73,6 +90,11 @@ def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
     if not agency and not year:
         return
     try:
+        from .company_vehicle_folder_service import company_vehicle_folders_configured
+        if company_vehicle_folders_configured():
+            # Cutover is exclusive: never split a new PDF between the legacy
+            # root and Vehicle Project Database.
+            return
         from .exports_upload_service import upload_export_in_background
         upload_export_in_background(
             pdf_path, agency=agency, year=year,
@@ -84,8 +106,28 @@ def _maybe_upload_pdf(pdf_path: Path, body: dict) -> None:
 
 def _finish_pdf_export(result: dict, pdf_path: Path, body: dict, paths: AppPaths | None) -> dict:
     """Upload/stamp a completed PDF and apply explicit version cleanup."""
+    from .pdf_reference_links import add_build_reference_links
+    link_result = add_build_reference_links(pdf_path, body, paths)
+    result["reference_links_added"] = link_result.get("links_added", 0)
+    if not link_result.get("ok"):
+        result["reference_links_error"] = link_result.get("error", "reference_link_annotation_failed")
+    if link_result.get("reference_errors"):
+        result["reference_photo_errors"] = link_result["reference_errors"]
     _maybe_upload_pdf(pdf_path, body)
-    _stamp_export_on_project(body, pdf_path, paths)
+    shop_republish = _stamp_export_on_project(body, pdf_path, paths)
+    if shop_republish:
+        result["shop_republish"] = shop_republish
+    if paths is not None:
+        try:
+            from .company_vehicle_folder_service import schedule_company_vehicle_pdf
+            schedule_company_vehicle_pdf(
+                str(body.get("project_id") or ""),
+                str(body.get("unit_id") or ""),
+                str(body.get("individual_id") or ""),
+                paths,
+            )
+        except Exception:
+            _log.exception("Could not schedule Company vehicle PDF publication")
     if body.get("replace_previous_exports") and paths is not None:
         try:
             from .exports_upload_service import cleanup_previous_exports
@@ -241,6 +283,29 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     if not pptx_path_str:
         return {"ok": False, "error": "output_path is required"}
 
+    if paths is not None:
+        project_id = str(body.get("project_id") or "").strip()
+        unit_id = str(body.get("unit_id") or "").strip()
+        individual_id = str(body.get("individual_id") or "").strip()
+        if project_id and unit_id and individual_id:
+            try:
+                from ...domain.vehicle_naming import vehicle_identity_ready
+                from ...inputs.project_entry import load_project
+                project = load_project(project_id, paths)
+                build_unit = next(item for item in project.build_units if item.unit_id == unit_id)
+                individual = next(
+                    item for item in build_unit.individuals
+                    if item.individual_id == individual_id
+                )
+            except (FileNotFoundError, StopIteration):
+                return {"ok": False, "error": "vehicle_not_found"}
+            if not vehicle_identity_ready(individual):
+                return {
+                    "ok": False,
+                    "error": "vehicle_identifier_required",
+                    "message": "Add a unit number or VIN before exporting this vehicle.",
+                }
+
     pptx_path = Path(pptx_path_str)
     _log.info("export_to_pdf start: %s", pptx_path)
     if not pptx_path.exists() and paths is not None:
@@ -351,6 +416,7 @@ def handle_export_all_pdf(project_id: str, paths: AppPaths) -> dict:
                     project_id=project_id,
                     agency=project.customer.agency,
                     year=project.customer.build_year,
+                    individual_id=ind.individual_id,
                 )
         else:
             if not unit.draft_id:
@@ -375,6 +441,7 @@ def _do_export(
     project_id: str = "",
     agency: str = "",
     year: str = "",
+    individual_id: str = "",
 ) -> None:
     from .draft_service import handle_generate_from_draft
 
@@ -390,10 +457,25 @@ def _do_export(
                        "error": "No output_path returned from generation"})
         return
 
-    pdf_res = export_to_pdf({"output_path": pptx_path, "agency": agency, "year": year}, paths)
+    pdf_res = export_to_pdf({
+        "output_path": pptx_path,
+        "agency": agency,
+        "year": year,
+        "project_id": project_id,
+        "unit_id": unit.unit_id,
+        "individual_id": individual_id,
+    }, paths)
     if pdf_res.get("ok"):
-        exported.append({"draft_id": draft_id, "unit_id": unit.unit_id,
-                          "pdf_name": pdf_res["pdf_name"], "pdf_path": pdf_res["pdf_path"]})
+        exported_item = {
+            "draft_id": draft_id,
+            "unit_id": unit.unit_id,
+            "individual_id": individual_id,
+            "pdf_name": pdf_res["pdf_name"],
+            "pdf_path": pdf_res["pdf_path"],
+        }
+        if pdf_res.get("shop_republish"):
+            exported_item["shop_republish"] = pdf_res["shop_republish"]
+        exported.append(exported_item)
     else:
         errors.append({"draft_id": draft_id, "unit_id": unit.unit_id,
                        "error": pdf_res.get("error", "PDF conversion failed")})

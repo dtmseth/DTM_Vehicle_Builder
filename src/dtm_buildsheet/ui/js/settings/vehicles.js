@@ -37,15 +37,17 @@ function renderVehicleCards(){
   $("vehicle-cards").innerHTML=Object.entries(vehicles).map(([id,v])=>{
     const viewCount=Object.keys(v.views||{}).length;
     const locCount=Object.values(v.views||{}).reduce((a,view)=>a+Object.keys(view.locations||{}).length,0);
+    const pending=v.placeholder ? `<div class="vc-pending">Vehicle images pending</div>` : "";
     return `<div class="vehicle-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div class="vehicle-card-head">
         <div class="vc-name">${esc(id)}</div>
-        <div style="display:flex;gap:6px">
+        <div class="vehicle-card-actions">
           <button class="btn btn-secondary btn-sm vehicle-edit-btn" data-vehicle="${esc(id)}">Edit</button>
           <button class="btn btn-danger btn-sm vehicle-delete-btn" data-vehicle="${esc(id)}">Delete</button>
         </div>
       </div>
       <div class="vc-views">${viewCount} view${viewCount!==1?"s":""} · ${locCount} locations</div>
+      ${pending}
     </div>`;
   }).join("");
   $("vehicle-cards").querySelectorAll(".vehicle-delete-btn").forEach(btn=>{
@@ -158,6 +160,13 @@ async function saveVehicleEdit(){
     for(const [view,img] of Object.entries(_vehicleEditImages)){
       const res=await api("/api/assets/upload",{folder:"vehicles",filename:`${vid}_${view}.png`,data:img.b64});
       if(!res.ok) throw new Error("Image upload failed: "+res.error);
+    }
+    if(_layouts.vehicles[vid].placeholder){
+      const assets=await api("/api/assets/list");
+      const paths=new Set((assets.files||[]).map(file=>file.path));
+      if(VIEWS_ORDER.every(view=>paths.has(`vehicles/${vid}_${view}.png`))){
+        _layouts.vehicles[vid].placeholder=false;
+      }
     }
     // Persist layout changes
     const res=await apiSave("/api/layouts/save",_layouts);

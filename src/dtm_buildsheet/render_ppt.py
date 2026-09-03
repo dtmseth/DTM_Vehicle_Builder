@@ -10,12 +10,14 @@ from types import SimpleNamespace
 from lxml import etree
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_CONNECTOR_TYPE, MSO_SHAPE
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
+from .config.store import load_config
 from .domain.geometry import compound_slot_relative_positions, slot_relative_positions
 from .paths import AppPaths, ensure_workspace
+from .domain.vehicle_naming import project_info_export_stem
 from .ppt_helpers import (
     INLINE_RENDER_FAILURE_LIMIT,
     VIEWS as _LEGACY_VIEWS,
@@ -24,6 +26,7 @@ from .ppt_helpers import (
     _project_vehicle_fields,
     _source_label,
     add_parts_manifest_slides,
+    add_reference_photo_slides,
     add_render_exception_slides,
     add_slide_footer_bar,
     fill_notes,
@@ -37,6 +40,7 @@ from .ppt_helpers import (
     place_specify_palette,
     place_vehicle_image,
     update_slide_header_footer,
+    physical_light_head_count,
 )
 
 _log = logging.getLogger(__name__)
@@ -64,7 +68,12 @@ def _project_shim(plan) -> SimpleNamespace:
             category     = pp.category or "",
             render_kind  = pp.render_kind or "",
         ))
-    return SimpleNamespace(info=plan.project, parts=parts, notes=plan.notes)
+    return SimpleNamespace(
+        info=plan.project,
+        parts=parts,
+        notes=plan.notes,
+        light_heads_count=physical_light_head_count(plan.planned_parts),
+    )
 
 
 def _legend_item(part_name: str, location: str = "", notes: str = "",
@@ -216,19 +225,67 @@ def _set_picture_opacity(shape, opacity: float) -> None:
     alpha.set("amt", str(int(max(0.0, min(1.0, opacity)) * 100000)))
 
 
-def _add_concealed_mount_callout(slide, x: int, y: int, label: str):
-    """Add a compact red shop callout next to a hidden speaker icon."""
-    width = Inches(1.42)
-    height = Inches(0.24)
+def _set_shape_fill_opacity(shape, opacity: float) -> None:
+    """Apply opacity to a shape's solid fill without fading its text."""
+    color = shape._element.find(".//" + qn("a:solidFill") + "/" + qn("a:srgbClr"))
+    if color is None:
+        return
+    for old in color.findall(qn("a:alpha")):
+        color.remove(old)
+    alpha = etree.SubElement(color, qn("a:alpha"))
+    alpha.set("val", str(int(max(0.0, min(1.0, opacity)) * 100000)))
+
+
+def _concealed_mount_callout_size(label: str) -> tuple[int, int]:
+    # Size the tag to its short uppercase label rather than reserving a wide
+    # fixed box that can cover unrelated vehicle details.
+    width = Inches(max(0.72, min(2.10, 0.16 + len(label) * 0.053)))
+    height = Inches(0.18)
+    return width, height
+
+
+def _add_concealed_mount_callout(
+    slide,
+    x: int,
+    y: int,
+    label: str,
+    speaker_centers: list[tuple[int, int]],
+):
+    """Add a compact red callout and leader to the nearest hidden speaker."""
+    width, height = _concealed_mount_callout_size(label)
+    target_x, target_y = min(
+        speaker_centers,
+        key=lambda point: (point[0] - x) ** 2 + (point[1] - y) ** 2,
+    )
+    delta_x = target_x - x
+    delta_y = target_y - y
+    if abs(delta_x) <= width // 2 and abs(delta_y) <= height // 2:
+        leader_x, leader_y = x, y
+    else:
+        x_scale = (width / 2) / abs(delta_x) if delta_x else float("inf")
+        y_scale = (height / 2) / abs(delta_y) if delta_y else float("inf")
+        edge_scale = min(x_scale, y_scale)
+        leader_x = int(x + delta_x * edge_scale)
+        leader_y = int(y + delta_y * edge_scale)
+    leader = slide.shapes.add_connector(
+        MSO_CONNECTOR_TYPE.STRAIGHT,
+        leader_x,
+        leader_y,
+        target_x,
+        target_y,
+    )
+    leader.line.color.rgb = RGBColor(0xB8, 0x3A, 0x3A)
+    leader.line.width = Pt(1.25)
     shape = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE,
         x - width // 2,
-        y,
+        y - height // 2,
         width,
         height,
     )
     shape.fill.solid()
     shape.fill.fore_color.rgb = RGBColor(0xB8, 0x3A, 0x3A)
+    _set_shape_fill_opacity(shape, 0.70)
     shape.line.fill.background()
     tf = shape.text_frame
     tf.clear()
@@ -243,7 +300,7 @@ def _add_concealed_mount_callout(slide, x: int, y: int, label: str):
     run.font.size = Pt(7)
     run.font.bold = True
     run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-    return shape
+    return leader, shape
 
 
 def _vertical_mirror_slot_is_reflected(placement, instance_index: int) -> bool:
@@ -433,11 +490,12 @@ def _load_vehicle_view_config(vehicle_type: str, paths) -> tuple[list[str], dict
 
     Falls back to the legacy hardcoded order if the config is unavailable.
     """
-    import json
     try:
-        layouts_path = paths.workspace_config_dir / "vehicle_layouts.json"
-        layouts = json.loads(layouts_path.read_text("utf-8"))
-        vehicle = layouts.get("vehicles", {}).get(vehicle_type, {})
+        from .config.store import load_config
+        from .config.loader import resolve_vehicle_type
+        layouts = load_config("vehicle_layouts.json", paths)
+        canonical = resolve_vehicle_type(vehicle_type, layouts)
+        vehicle = layouts.get("vehicles", {}).get(canonical, {})
     except Exception:
         vehicle = {}
 
@@ -462,18 +520,11 @@ def _safe_part(s: str) -> str:
 
 def build_output_filename(project: dict) -> str:
     """Build a timestamped export filename from project info."""
-    agency     = _safe_part(str(project.get("Agency", "") or "Agency"))
-    build_type = _safe_part(str(project.get("BuildType", "") or ""))
-    new_v      = project.get("NewVehicle") or {}
-    old_v      = project.get("ExistingVehicle") or {}
-    unit       = _safe_part(str(new_v.get("UNIT ID", "") or old_v.get("UNIT ID", "") or "Unit"))
-    year       = _safe_part(str(project.get("BuildYear", "") or new_v.get("YEAR", "") or old_v.get("YEAR", "") or "Year"))
     now        = datetime.now()
     hour       = now.hour % 12 or 12
     ampm       = "AM" if now.hour < 12 else "PM"
     ts         = now.strftime(f"%b%d_%Y_{hour}-{now.strftime('%M-%S')}{ampm}")
-    parts      = [p for p in [agency, build_type, unit, year] if p and p != "Unknown"]
-    return "_".join(parts) + f"_Updated_{ts}.pptx"
+    return project_info_export_stem(project) + f"_Updated_{ts}.pptx"
 
 
 def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
@@ -481,7 +532,11 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     template     = active_paths.templates_dir / "build_sheet_template.pptx"
     out_path     = active_paths.workspace_output_dir / build_output_filename(plan.project)
 
-    vehicle_type = plan.project.get("VehicleType", "PIU")
+    from .config.loader import resolve_vehicle_type
+    layouts = load_config("vehicle_layouts.json", active_paths)
+    vehicle_type = resolve_vehicle_type(
+        plan.project.get("VehicleType", "PIU"), layouts,
+    )
     external_views, view_map = _load_vehicle_view_config(vehicle_type, active_paths)
 
     shutil.copyfile(template, out_path)
@@ -497,13 +552,11 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     # ── Shared project metadata ───────────────────────────────────────────────
     project_shim = _project_shim(plan)
     new_v      = plan.project.get("NewVehicle",      {})
-    exist_v    = plan.project.get("ExistingVehicle", {})
     agency     = plan.project.get("Agency", "")
     build_type = plan.project.get("BuildType", "")
     year, make, model, sub_model = _project_vehicle_fields(plan.project)
     veh_line = " ".join(filter(None, [year, make, model, sub_model]))
-    unit_id  = (new_v.get("UNIT ID", new_v.get("UNIT",""))
-                or exist_v.get("UNIT ID", exist_v.get("UNIT","")))
+    unit_id  = new_v.get("UNIT ID", new_v.get("UNIT", ""))
     unit_str = _build_unit_label(build_type, unit_id)
     footer   = "   •   ".join(filter(None, [agency, veh_line, unit_str, "DTM Fleet Service"]))
 
@@ -648,6 +701,8 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     ]
 
                 placement_shapes: list = []
+                placement_centers: list[tuple[int, int]] = []
+                first_rendered_height = 0
 
                 for instance_index, (instance, (px, py)) in enumerate(
                     zip(placement.instances, positions)
@@ -734,19 +789,36 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     _apply_shape_transforms(pic, inst_rot, inst_flip_h, placement.flip_v)
 
                     if placement.mount_visibility:
-                        _set_picture_opacity(pic, 0.48)
+                        _set_picture_opacity(pic, 0.80)
 
                     layer = getattr(placement, "layer", 0)
                     placement_shapes.append(pic)
+                    placement_centers.append((ax, ay))
+                    if not first_rendered_height:
+                        first_rendered_height = ih
                     rendered_placement_keys.add(_placement_key(pp, placement))
-                    if instance_index == 0 and placement.callout_label:
-                        callout = _add_concealed_mount_callout(
-                            slide,
-                            ax,
-                            ay + ih // 2 + Inches(0.03),
-                            placement.callout_label,
-                        )
-                        rendered_part_elements.append((callout._element, layer + 1))
+
+                if placement.callout_label and placement_centers:
+                    callout_x = placement_centers[0][0] + int(
+                        img_box[2] * (getattr(placement, "callout_dx", 0.0) or 0.0)
+                    )
+                    callout_y = (
+                        placement_centers[0][1]
+                        + first_rendered_height // 2
+                        + Inches(0.28)
+                        + int(img_box[3] * (getattr(placement, "callout_dy", 0.0) or 0.0))
+                    )
+                    leader, callout = _add_concealed_mount_callout(
+                        slide,
+                        callout_x,
+                        callout_y,
+                        placement.callout_label,
+                        placement_centers,
+                    )
+                    rendered_part_elements.extend([
+                        (leader._element, layer + 1),
+                        (callout._element, layer + 1),
+                    ])
 
                 if placement.group_shapes and len(placement_shapes) >= 2:
                     group_element = _group_shapes(slide, placement_shapes)
@@ -771,15 +843,22 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
                     continue
                 if pl.color_profile == "specify_palette":
                     continue
-                key = (pp.part_name, pl.location_key)
+                raw = pp.raw
+                line_id = str(getattr(raw, "line_id", "") or "")
+                # A quantity-aware custom location creates one planned
+                # placement per visual point. Those points still represent one
+                # draft/manifest line and therefore need one legend card.
+                key = (
+                    ("custom-line", line_id)
+                    if line_id and pl.location_key.startswith("CUSTOM:")
+                    else ("placement", pp.part_name, pl.location_key)
+                )
 
                 if _placement_key(pp, pl) in rendered_placement_keys:
                     if key in seen_placed:
                         continue
                     seen_placed.add(key)
-                    raw         = pp.raw
                     reused      = _is_reused(raw)
-                    line_id = str(getattr(raw, "line_id", "") or "")
                     accessories = accessory_map.get(line_id) or accessory_map.get(pp.part_name, [])
                     placed_legend.append(_legend_item(
                         pp.part_name, raw.location or pl.location_key, raw.notes, accessories,
@@ -851,6 +930,20 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     if n_manifest:
         _move_slides_to_position(
             prs, start_position=_TEMPLATE_VIEW_SLOTS + 1, count=n_manifest,
+        )
+
+    # Reference pages belong immediately after the vehicle diagrams so the
+    # shop sees the intended visual result and its supporting photos together.
+    # They are omitted completely when no effective photos apply.
+    n_reference = add_reference_photo_slides(
+        prs,
+        plan,
+        active_paths,
+        footer_text=footer,
+    )
+    if n_reference:
+        _move_slides_to_position(
+            prs, start_position=_TEMPLATE_VIEW_SLOTS + 1, count=n_reference,
         )
 
     prs.save(out_path)

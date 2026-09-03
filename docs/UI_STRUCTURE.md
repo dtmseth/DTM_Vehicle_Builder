@@ -13,9 +13,9 @@ Two main tabs: **Projects** and **Settings**.
 #proj-detail-view      — detail view with two sub-tabs:
     Overview           — customer + prefs cards (2-col), fleet/build cards below; long unit notes open in a modal
     Edit               — read-only by default; [✏️ Edit] enters edit mode with inputs
-                         Build cards expose [📊 Preview/Edit in PowerPoint] [📄 Export PDF]
-                         [📑 View PDF] [◆ Set up/Manage QB Project] [📋 QB Estimate]
-                         [📂 Open PDF folder] [✓ Final review] + per-card author tags
+                         Unit-group headers own Build Reference Photos.
+                         Build cards expose [PDF Options] [QuickBooks] [Folder options]
+                         [View completed photos] only when files exist, then [Finalize design].
 #proj-editor           — 4-step wizard (new projects only: Customer → Preferences → Fleet → Review)
 #proj-build-editor     — embedded build editor (in-place, no tab switch)
     #pbe-header        — unit context bar + "← Back to Project" button

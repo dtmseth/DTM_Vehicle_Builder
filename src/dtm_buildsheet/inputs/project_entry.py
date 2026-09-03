@@ -109,6 +109,23 @@ def save_project(project: ProjectRecord, paths: AppPaths) -> Path:
     return path
 
 
+def save_project_operational_state(project: ProjectRecord, paths: AppPaths) -> Path:
+    """Persist folder/publication metadata without making the design stale.
+
+    ``updated_at`` represents user-authored project/build content and is used
+    by render staleness checks. Background SharePoint provisioning must not
+    advance it merely because an item ID, retry state, or portable path was
+    learned after the PDF was generated.
+    """
+    validate_safe_id(project.project_id, label="project_id")
+    path = _project_path(project.project_id, paths)
+    data = _project_to_dict_portable(project, paths)
+    LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
+    from ..app.services.shared_work_service import mirror_project_to_cloud_in_background
+    mirror_project_to_cloud_in_background(project.project_id, path)
+    return path
+
+
 def load_project(project_id: str, paths: AppPaths) -> ProjectRecord:
     """Load a project by ID.
 

@@ -829,23 +829,13 @@ def _find_individual(project, individual_id: str):
 
 
 def _job_display_name(project, build_unit, unit) -> str:
-    """A unique, human-readable job name: '<year> <model> · Unit N · Q<quote>'.
-
-    QBO requires DisplayName to be globally unique, so we fold in the unit
-    number and quote number; if neither is present we suffix a short id slice
-    so two unnamed vehicles on one project don't collide.
-    """
-    year = (project.customer.build_year or unit.year or "").strip()
-    model = (unit.model or build_unit.vehicle_model or "").strip()
-    head = " ".join(p for p in (year, model) if p) or "Vehicle"
-    tail: list[str] = []
-    if unit.unit_number:
-        tail.append(f"Unit {unit.unit_number}")
-    if project.customer.quote_number:
-        tail.append(f"Q{project.customer.quote_number}")
-    if not tail:
-        tail.append(unit.individual_id[:8])
-    return f"{head} · " + " · ".join(tail)
+    """Legacy QBO Job label aligned with the canonical vehicle identity."""
+    from ...domain.vehicle_naming import qb_project_name
+    try:
+        ordinal = list(build_unit.individuals).index(unit) + 1
+    except (AttributeError, ValueError):
+        ordinal = 1
+    return qb_project_name(project, build_unit, unit, ordinal=ordinal).replace(" | ", " · ")
 
 
 def push_vehicle_job(paths: AppPaths, project_id: str, individual_id: str) -> dict:

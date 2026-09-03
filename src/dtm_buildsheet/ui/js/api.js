@@ -178,6 +178,8 @@ function _cloudInitials(name){
 // Cached so the modal can render the same identity the chip is showing
 // without a second fetch. Updated by every refreshCloudStatus() call.
 let _lastCloudStatus = null;
+let _lastPhotoCacheStatus = null;
+let _photoCachePollTimer = null;
 
 // Tracks the data_version we last reacted to. When the backend bumps this
 // (sync changed local files), refreshCloudStatus() detects the transition
@@ -213,9 +215,26 @@ function _refreshVisibleDataAfterSync(){
 }
 
 function _setCloudChip({stateClass, text, title, photo, initials, syncing}){
+  if(_lastPhotoCacheStatus?.active){
+    const ready = Number(_lastPhotoCacheStatus.ready) || 0;
+    const failed = Number(_lastPhotoCacheStatus.failed) || 0;
+    const total = Number(_lastPhotoCacheStatus.total) || 0;
+    const fullResolution = !!_lastPhotoCacheStatus.full_resolution_active;
+    text = fullResolution
+      ? "Downloading photo…"
+      : _lastPhotoCacheStatus.phase === "checking"
+        ? "Checking photos…"
+        : `Preparing photos ${ready}/${total}${failed ? ` · ${failed} retry` : ""}`;
+    title = fullResolution
+      ? `Downloading full-resolution photo${_lastPhotoCacheStatus.full_resolution_file ? `: ${_lastPhotoCacheStatus.full_resolution_file}` : ""}`
+      : "Preparing photo thumbnails. Photos currently on screen are prioritized.";
+    syncing = true;
+  }
   const chip = $("cloud-status"); if(!chip) return;
   // Strip every cloud-status-* state class so we don't accumulate them.
   chip.className = "cloud-status " + stateClass;
+  const cacheActive = !!_lastPhotoCacheStatus?.active;
+  chip.classList.toggle("cloud-status-photo-cache", cacheActive);
   chip.title = title || text;
   $("cloud-status-text").textContent = text;
   const photoEl = $("cloud-status-photo");
@@ -242,16 +261,77 @@ function _setCloudChip({stateClass, text, title, photo, initials, syncing}){
   // Spinner overlay — shown whenever the backend reports a sync in flight.
   const spinner = $("cloud-status-spinner");
   if(spinner) spinner.hidden = !syncing;
+  const cachePanel = $("photo-cache-progress-panel");
+  const cacheTitle = $("photo-cache-progress-title");
+  const cacheCount = $("photo-cache-progress-count");
+  const cacheTrack = $("photo-cache-progress-track");
+  const cacheFill = $("photo-cache-progress-fill");
+  if(cachePanel){
+    cachePanel.hidden = !cacheActive;
+    if(cacheActive){
+      const phase = _lastPhotoCacheStatus.phase || "preparing";
+      const fullResolution = phase === "full_resolution";
+      const checking = phase === "checking";
+      const ready = Number(_lastPhotoCacheStatus.ready) || 0;
+      const failed = Number(_lastPhotoCacheStatus.failed) || 0;
+      const total = Number(_lastPhotoCacheStatus.total) || 0;
+      const projectsDone = Number(_lastPhotoCacheStatus.projects_done) || 0;
+      const projectsTotal = Number(_lastPhotoCacheStatus.projects_total) || 0;
+      if(cacheTitle) cacheTitle.textContent = fullResolution
+        ? "Downloading full-resolution photo"
+        : checking ? "Checking for new photos" : "Preparing photo thumbnails";
+      if(cacheCount) cacheCount.textContent = fullResolution
+        ? (_lastPhotoCacheStatus.full_resolution_file || "Saving to local cache…")
+        : checking
+          ? `${projectsDone}/${projectsTotal || "?"} projects`
+          : `${ready}/${total} ready${failed ? ` · ${failed} retry` : ""}`;
+      if(cacheTrack){
+        const indeterminate = fullResolution || (!checking && total === 0);
+        cacheTrack.classList.toggle("is-indeterminate", indeterminate);
+        cacheTrack.setAttribute("aria-valuemin", "0");
+        cacheTrack.setAttribute("aria-valuemax", String(checking ? (projectsTotal || 1) : (total || 1)));
+        cacheTrack.setAttribute("aria-valuenow", String(checking
+          ? Math.min(projectsDone, projectsTotal || 0)
+          : Math.min(ready + failed, total || 0)));
+      }
+      if(cacheFill && !fullResolution && ((checking && projectsTotal) || (!checking && total))){
+        cacheFill.style.width = `${Math.min(100, checking
+          ? (projectsDone / projectsTotal) * 100
+          : ((ready + failed) / total) * 100)}%`;
+      } else if(cacheFill) cacheFill.style.width = "";
+    }
+  }
 }
 
 async function refreshCloudStatus(){
   let res;
-  try { res = await api("/api/cloud/status"); }
+  const previousPhotoCacheStatus = _lastPhotoCacheStatus;
+  try {
+    [res, _lastPhotoCacheStatus] = await Promise.all([
+      api("/api/cloud/status"),
+      api("/api/photo-gallery/cache-status").catch(() => null),
+    ]);
+  }
   catch(_){
     _lastCloudStatus = null;
+    _lastPhotoCacheStatus = null;
+    clearTimeout(_photoCachePollTimer);
+    _photoCachePollTimer = null;
     _setCloudChip({stateClass:"cloud-status-local", text:"Offline",
                    title:"Could not reach the local server"});
     return;
+  }
+  clearTimeout(_photoCachePollTimer);
+  _photoCachePollTimer = null;
+  if(_lastPhotoCacheStatus?.active){
+    _photoCachePollTimer = setTimeout(() => refreshCloudStatus(), 2_000);
+  }
+  if(previousPhotoCacheStatus?.active
+      && previousPhotoCacheStatus?.phase !== "full_resolution"
+      && !_lastPhotoCacheStatus?.active
+      && Number(_lastPhotoCacheStatus?.failed || 0) > 0){
+    const failed = Number(_lastPhotoCacheStatus.failed) || 0;
+    toast(`${failed} photo${failed === 1 ? "" : "s"} will retry when opened.`);
   }
   _lastCloudStatus = res;
   // Detect "data changed under us" via the data_version counter the
@@ -575,7 +655,7 @@ async function _doQuickBooksAction(){
 // Boot + 60s polling. The status endpoint is cheap (no Graph hit on the
 // hot path — only on first-call photo fetch) so polling won't be noticed.
 document.addEventListener("DOMContentLoaded", () => {
-  refreshCloudStatus();
+  api("/api/photo-gallery/cache-prepare", {}).catch(() => null).finally(refreshCloudStatus);
   setInterval(refreshCloudStatus, 60_000);
   // Modal wiring — each listener belongs to exactly one element so the
   // single-listener pattern from the rest of the app is preserved.

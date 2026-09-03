@@ -44,7 +44,7 @@ cross-cutting catalogs (manufacturers, tags, placements, accessory categories):
 **Three orthogonal axes** (never conflate): `part_type.category` = *what it is* · zone (via a
 placement's zone) = *where on the vehicle* · `product.build section` = *how it groups on the sheet*.
 
-**Current population** (v3.4.0, counted 2026-08-26): 5 types · 2 sections · 8 zones ·
+**Current population** (v3.5.0, counted 2026-09-03): 5 types · 2 sections · 8 zones ·
 63 manufacturers · **773 products** · 120 part_types · 58 placements · **1,339 SKUs**, including
 **1,224 QB-linked SKUs** from the production catalog. **43 products** have no part-type home yet —
 the current curation queue (filter the SKU grid to "— No part-type —"). Every part_type carries a
@@ -401,13 +401,19 @@ location" rows.
     **Control Head 2** (and child-row prefixes track that change). Removing back to one drops the
     numeric suffix again.
   - **Center Console.** It has one fixed physical location (In Center Console). **Set up Center
-    Console** starts with the console style and required features, then selects the best compatible
-    QuickBooks kit. Core and radio faceplates are always placed in the lineup; vehicle-specific
+    Console** starts from the exact vehicle-compatible base SKU selected on the Parts tab. That SKU
+    remains authoritative while features are configured. A better-bundled QuickBooks kit may be
+    shown as an optional recommendation, but is applied only when the user explicitly chooses it.
+    Core and radio faceplates are always placed in the lineup; vehicle-specific
     kits also place their OEM relocation plate and, when supplied, cupholder plate in physical
-    shop order. Included kit items remain visible under the console in the manifest but are not
-    billed separately. An armrest or motion attachment is omitted as a separate estimate line
-    when that exact feature is included with the selected kit; docking stations and other non-kit
-    hardware remain independent billed lines. Faceplates and related hardware are filtered to the
+    shop order. The user's arranged lineup remains authoritative across component changes, base-kit
+    reconciliation, save, and edit; synchronization adds/removes required plates in place instead
+    of rebuilding the list in default order. Included kit items remain visible under the console in the manifest but are not
+    billed separately. Every selected armrest, motion attachment, dock, and related physical part
+    remains a separate nested build row with its exact SKU; `console_kit_included` is billing
+    metadata, not a presence filter. For example, `7170-0734-00` plus a selected `7160-0220`
+    Mongoose stays exactly that pair unless the user accepts another base-kit recommendation.
+    Docking stations and other non-kit hardware remain independent billed lines. Faceplates and related hardware are filtered to the
     preferred console manufacturer. Vehicle-specific console wings remain an optional detail
     rather than a numbered faceplate; the current catalog offers Gamber Johnson 2015+ Tahoe wings
     only on Tahoe builds. A pedestal-mounted motion attachment requires a compatible
@@ -424,9 +430,17 @@ location" rows.
     and USB cable SKUs nest directly below it. The Havis faceplate
     chooser exposes only exact Havis products with a live, vehicle-compatible QuickBooks SKU;
     generic migration placeholders and other manufacturers' equipment brackets are not options.
+    Final-design equipment checks read both materialized component rows and the saved console setup
+    snapshot, preserving correct motion/dock checks for older drafts whose included components were
+    not yet written as separate rows.
   - **Camera System** asks for platform before components. Axon Fleet 3 only exposes front and
     prisoner cameras; WatchGuard 4RE and M500 also expose rear camera, body-camera dock, and
-    wireless-mic charger. Front and rear cameras use fixed upper-window locations. Camera refresh
+    wireless-mic charger. It also records a whip, cylinder, Axon fin, or custom camera-antenna
+    style and its shop location; rear right roof is the default, the four roof corners are standard
+    choices, and Custom retains an exact location plus optional vehicle placement. The antenna is a
+    nested physical manifest component and inherits the system's supply status. Existing camera
+    drafts that predate these questions remain editable as **Not recorded (existing build)** until
+    a user makes an explicit selection. Front and rear cameras use fixed upper-window locations. Camera refresh
     choices appear only when a corresponding QB-linked cable SKU is available.
 
 **Location/render caveat:** text `location_options` are only friendly choices unless the same key
@@ -629,8 +643,12 @@ both the live SKU resolution and the saved tracer lighthead lines.
 
 ### Kit SKUs (after the picker cluster)
 Let a SKU be marked a **kit** that **includes other SKUs**. New per-SKU concept (e.g. `is_kit: true` +
-`kit_skus: [part_number…]`) — needs: data model + SKU-grid UI (mark kit + pick members) + a decision on
-estimate behavior (does the kit bill as one line, or expand to its components?). Scope before building.
+`kit_skus: [part_number…]`) — still needs a generalized data model and SKU-grid UI (mark kit + pick
+members). The output/billing rule is now established by the console implementation: every selected
+physical member remains visible on the manifest/build sheet, the exact user-selected parent SKU is
+authoritative, and an included member carries explicit billing coverage so the Estimate bills the
+kit once rather than the member twice. A member not covered by the chosen parent remains separately
+billable. Generalizing that rule beyond console-specific `console_kit` metadata remains future work.
 
 ### Picker finish-line work (lower priority)
 - **Chunk 9 polish**: real images where useful, final visual QA, and retiring the flat modal once

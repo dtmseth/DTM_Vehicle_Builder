@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import logging
 from dataclasses import asdict
+from datetime import datetime, timezone
 
 _log = logging.getLogger(__name__)
 
 from ...domain.project_codec import build_unit_from_dict, customer_from_dict, preferences_from_dict
-from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences, IndividualUnit
+from ...config.loader import resolve_vehicle_type
+from ...config.store import load_bundled_config, load_config
+from ...domain.project_models import BuildUnit, CustomerInfo, EquipmentPreferences
+from ...domain.vehicle_naming import (
+    refresh_individual_vehicle_info,
+    vehicle_display_name,
+)
 from ...inputs.project_drafts import DraftPart, draft_part_from_payload, new_draft, save_draft
 from ...inputs.project_entry import (
     delete_project,
@@ -21,6 +28,86 @@ from .draft_service import load_draft_for_request
 from .preset_service import load_preset_dict
 
 
+_BUILD_UNIT_OPERATIONAL_FIELDS = (
+    "draft_id", "output_path", "last_rendered_at", "last_rendered_by",
+    "pdf_path", "last_exported_at", "last_exported_by", "status",
+    "finalized_at", "finalized_by", "finalized_draft_fingerprint",
+    "final_check_version", "finalization_acknowledgements", "reopened_at",
+    "reopened_by", "reopen_reason", "company_group_folder_id",
+    "company_group_folder_path", "shop_group_folder_id", "shop_group_folder_path",
+)
+
+_INDIVIDUAL_OPERATIONAL_FIELDS = (
+    "draft_id", "output_path", "confirmed", "confirmed_at", "status",
+    "finalized_at", "finalized_by", "finalized_draft_fingerprint",
+    "final_check_version", "finalization_acknowledgements", "reopened_at",
+    "reopened_by", "reopen_reason", "last_rendered_at", "last_rendered_by",
+    "pdf_path", "last_exported_at", "last_exported_by", "qb_job_id",
+    "qb_project_id", "qb_project_name", "qb_estimate_id",
+    "qb_estimate_snapshot", "qb_estimate_snapshot_at", "qb_invoice_id",
+    "company_vehicle_folder_id", "company_vehicle_folder_name",
+    "company_vehicle_folder_path", "company_folder_status",
+    "company_folder_error", "company_pdf_item_id", "company_pdf_path",
+    "company_publication_fingerprint", "company_publication_status",
+    "company_publication_error", "shop_vehicle_folder_id",
+    "shop_vehicle_folder_name", "shop_vehicle_folder_path", "shop_folder_status",
+    "shop_folder_error", "shop_pdf_item_id", "shop_pdf_path",
+    "shop_publication_fingerprint", "shop_published_at",
+    "shop_publication_status", "shop_publication_error", "shop_reference_items",
+)
+
+
+_OPTIONAL_EXISTING_VEHICLE_FIELDS = (
+    "existing_year", "existing_make", "existing_model", "existing_build_type",
+    "existing_unit_number", "existing_vin",
+)
+
+
+def _preserve_server_owned_build_state(
+    existing_units,
+    incoming_units,
+    raw_units=None,
+) -> None:
+    """Keep durable operational identity across ordinary project edits.
+
+    Browser payloads own editable vehicle facts, not SharePoint item IDs,
+    QBO links, generated artifacts, or finalization state. Matching by stable
+    IDs here prevents a partial/older client from dropping those fields and
+    causing folder provisioning to create a second subtree.
+    """
+    old_units = {unit.unit_id: unit for unit in existing_units}
+    old_individuals = {
+        individual.individual_id: individual
+        for unit in existing_units
+        for individual in unit.individuals
+    }
+    raw_individuals = {
+        str(individual.get("individual_id") or ""): individual
+        for unit in (raw_units or [])
+        if isinstance(unit, dict)
+        for individual in (unit.get("individuals") or [])
+        if isinstance(individual, dict) and individual.get("individual_id")
+    }
+    for incoming_unit in incoming_units:
+        old_unit = old_units.get(incoming_unit.unit_id)
+        if old_unit is not None:
+            for field in _BUILD_UNIT_OPERATIONAL_FIELDS:
+                setattr(incoming_unit, field, getattr(old_unit, field))
+        for incoming_individual in incoming_unit.individuals:
+            old_individual = old_individuals.get(incoming_individual.individual_id)
+            if old_individual is None:
+                continue
+            # Older/partial clients do not know the optional replaced-vehicle
+            # fields. Preserve a saved value only when the key was omitted;
+            # an explicit empty value remains a valid user-requested clear.
+            raw_individual = raw_individuals.get(incoming_individual.individual_id, {})
+            for field in _OPTIONAL_EXISTING_VEHICLE_FIELDS:
+                if field not in raw_individual:
+                    setattr(incoming_individual, field, getattr(old_individual, field))
+            for field in _INDIVIDUAL_OPERATIONAL_FIELDS:
+                setattr(incoming_individual, field, getattr(old_individual, field))
+
+
 def _load_preset_draft_parts(preset_id: str, paths: AppPaths) -> tuple[list[DraftPart], dict]:
     """Load a preset without dropping picker, renderer, or SKU metadata."""
     try:
@@ -30,6 +117,17 @@ def _load_preset_draft_parts(preset_id: str, paths: AppPaths) -> tuple[list[Draf
     parts = [draft_part_from_payload(raw, paths) for raw in preset.get("parts") or []]
     overrides = preset.get("placement_overrides")
     return parts, dict(overrides) if isinstance(overrides, dict) else {}
+
+
+def _canonical_vehicle_type(value: str, paths: AppPaths) -> str:
+    try:
+        layouts = load_config("vehicle_layouts.json", paths)
+    except FileNotFoundError:
+        # Draft creation historically did not require a materialized workspace
+        # config. Keep partial/older workspaces working while still resolving
+        # against the validated definitions packaged with the app.
+        layouts = load_bundled_config("vehicle_layouts.json", paths)
+    return resolve_vehicle_type(value, layouts)
 
 
 def _project_output_root(paths: AppPaths) -> str:
@@ -57,6 +155,98 @@ def handle_get_project(project_id: str, paths: AppPaths) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
+def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) -> dict:
+    """Move one project between the active list and Project Archives."""
+    if not isinstance(body.get("completed"), bool):
+        return {"ok": False, "error": "completed must be true or false"}
+    try:
+        project = load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Project not found: {project_id}"}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+
+    completed = body["completed"]
+    target_status = "completed" if completed else "active"
+    if project.project_status == target_status:
+        return {"ok": True, "unchanged": True, "project": asdict(project)}
+
+    now = datetime.now(timezone.utc).isoformat()
+    actor = str(body.get("actor") or "").strip()
+    project.project_status = target_status
+    if completed:
+        project.completed_at = now
+        project.completed_by = actor
+    else:
+        project.reactivated_at = now
+        project.reactivated_by = actor
+        project.completed_at = ""
+        project.completed_by = ""
+    path = save_project(project, paths)
+    return {
+        "ok": True,
+        "unchanged": False,
+        "project": asdict(project),
+        "path": str(path),
+    }
+
+
+def _normalized_agency_year(customer: CustomerInfo) -> tuple[str, str] | None:
+    """Return the unique project key, with a legacy name fallback."""
+
+    year = str(customer.build_year or "").strip()
+    agency_id = str(customer.agency_id or "").strip().casefold()
+    agency_name = " ".join(str(customer.agency or "").split()).casefold()
+    agency_key = f"id:{agency_id}" if agency_id else (f"name:{agency_name}" if agency_name else "")
+    if not agency_key or not year:
+        return None
+    return agency_key, year
+
+
+def _repair_customer_agency_id(customer: CustomerInfo, paths: AppPaths) -> None:
+    """Resolve and refresh exact agency identity without changing fuzzy matches."""
+
+    from .agency_service import load_agency_choices
+    choices = load_agency_choices(paths)
+    match = None
+    if customer.agency_id:
+        match = next(
+            (item for item in choices if item["agency_id"] == customer.agency_id),
+            None,
+        )
+    elif customer.agency:
+        wanted = customer.agency.strip().casefold()
+        matches = [
+            item for item in choices
+            if item["name"].strip().casefold() == wanted
+        ]
+        if len(matches) == 1:
+            match = matches[0]
+    if match is not None:
+        customer.agency_id = match["agency_id"]
+        customer.agency = match["name"]
+        customer.agency_abbreviation = match["abbreviation"]
+
+
+def _agency_year_conflict(
+    customer: CustomerInfo,
+    paths: AppPaths,
+    *,
+    exclude_project_id: str = "",
+):
+    wanted = _normalized_agency_year(customer)
+    if wanted is None:
+        return None
+    return next(
+        (
+            candidate for candidate in list_projects(paths)
+            if candidate.project_id != exclude_project_id
+            and _normalized_agency_year(candidate.customer) == wanted
+        ),
+        None,
+    )
+
+
 def handle_save_project(body: dict, paths: AppPaths) -> dict:
     try:
         project_id = body.get("project_id") or None
@@ -71,17 +261,39 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             project = new_project()
 
         if "customer" in body:
-            project.customer = customer_from_dict(body["customer"])
+            candidate_customer = customer_from_dict(body["customer"])
             # The search box permits free typing. If the user types the exact
             # name of one saved agency without clicking its suggestion, repair
-            # the missing ID here so QuickBooks/customer-profile workflows do
-            # not lose the otherwise valid association.
-            if project.customer.agency and not project.customer.agency_id:
-                from .agency_service import load_agencies
-                wanted = project.customer.agency.strip().casefold()
-                matches = [a for a in load_agencies(paths) if a.name.strip().casefold() == wanted]
-                if len(matches) == 1:
-                    project.customer.agency_id = matches[0].agency_id
+            # the missing ID before enforcing agency/year uniqueness.
+            _repair_customer_agency_id(candidate_customer, paths)
+            if is_new_project and not candidate_customer.build_year.strip():
+                return {
+                    "ok": False,
+                    "error_code": "build_year_required",
+                    "error": "Build year is required for a new project.",
+                }
+            conflict = _agency_year_conflict(
+                candidate_customer,
+                paths,
+                exclude_project_id=project.project_id,
+            )
+            if conflict is not None:
+                return {
+                    "ok": False,
+                    "error_code": "project_exists_for_agency_year",
+                    "error": (
+                        f"A {candidate_customer.build_year.strip()} project already exists for "
+                        f"{candidate_customer.agency.strip() or 'this agency'}. Open that project "
+                        "and add the new builds there."
+                    ),
+                    "existing_project_id": conflict.project_id,
+                }
+            project.customer = candidate_customer
+
+        if project.customer.quote_number:
+            quote = project.customer.quote_number.strip()
+            if quote and quote not in project.quote_numbers:
+                project.quote_numbers.append(quote)
 
         # Agency defaults are copied only as a project is first created.  This
         # deliberately avoids retroactively changing existing projects when an
@@ -96,16 +308,31 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             project.preferences = preferences_from_dict(body["preferences"])
 
         if "build_units" in body:
-            project.build_units = [build_unit_from_dict(u) for u in body["build_units"]]
+            incoming_units = [build_unit_from_dict(u) for u in body["build_units"]]
+            if not is_new_project:
+                _preserve_server_owned_build_state(
+                    project.build_units, incoming_units, body["build_units"],
+                )
+            project.build_units = incoming_units
 
         if "project_notes" in body:
             project.project_notes = str(body.get("project_notes") or "").strip()
 
+        from .vehicle_folder_provisioning_service import (
+            mark_project_folder_provisioning_pending,
+        )
+        mark_project_folder_provisioning_pending(project)
         path = save_project(project, paths)
 
         # Existing drafts need the new shared instruction immediately too.  We
         # keep it as a separate draft field so a project edit never overwrites
         # build-specific installation and delivery notes.
+        draft_contexts = {
+            individual.draft_id: (unit, individual, ordinal)
+            for unit in project.build_units
+            for ordinal, individual in enumerate(unit.individuals, start=1)
+            if individual.draft_id
+        }
         draft_ids = {
             draft_id
             for unit in project.build_units
@@ -115,13 +342,40 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         for draft_id in draft_ids:
             try:
                 draft = load_draft_for_request(draft_id, paths)
+                changed = False
                 if draft.project_notes != project.project_notes:
                     draft.project_notes = project.project_notes
+                    changed = True
+                context = draft_contexts.get(draft_id)
+                if context is not None:
+                    unit, individual, ordinal = context
+                    vehicle_info = refresh_individual_vehicle_info(
+                        draft.vehicle_info,
+                        project,
+                        unit,
+                        individual,
+                        ordinal=ordinal,
+                    )
+                    vehicle_info.update({
+                        "Agency": project.customer.agency,
+                        "AgencyAbbreviation": project.customer.agency_abbreviation,
+                        "SalesRep": project.customer.sales_rep,
+                        "project_total_units": sum(u.quantity for u in project.build_units),
+                    })
+                    if vehicle_info != draft.vehicle_info:
+                        draft.vehicle_info = vehicle_info
+                        changed = True
+                if changed:
                     save_draft(draft, paths.workspace_drafts_dir)
             except FileNotFoundError:
                 # A draft can be cleared/recreated while its project record is
                 # being edited. The fresh draft receives this value below.
                 continue
+
+        from .vehicle_folder_provisioning_service import schedule_project_folder_provisioning
+        folder_provisioning_scheduled = schedule_project_folder_provisioning(
+            project.project_id, paths,
+        )
 
         # Create the per-project output folder immediately so the directory is
         # ready before generation, and so the user can see it was created.
@@ -134,7 +388,12 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         except Exception:
             _log.exception("Failed to create output folder for project %s", project.project_id)
 
-        return {"ok": True, "project_id": project.project_id, "path": str(path)}
+        return {
+            "ok": True,
+            "project_id": project.project_id,
+            "path": str(path),
+            "folder_provisioning_scheduled": folder_provisioning_scheduled,
+        }
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:
@@ -191,13 +450,15 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
     project_total_units = sum(u.quantity for u in project.build_units)
 
     vehicle_info: dict = {
-        "VehicleType": unit.vehicle_model,
+        "VehicleType": _canonical_vehicle_type(unit.vehicle_model, paths),
         "Agency": project.customer.agency,
+        "AgencyAbbreviation": project.customer.agency_abbreviation,
         "BuildYear": project.customer.build_year,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
         "project_total_units": project_total_units,
+        "CanonicalVehicleName": vehicle_display_name(project, unit, None),
         "NewVehicle": {
             "MODEL": unit.vehicle_model,
             "UNIT ID": "Group Build",
@@ -277,38 +538,23 @@ def handle_create_individual_draft(
     ind_idx = next(
         (i for i, x in enumerate(unit.individuals) if x.individual_id == individual_id), 0
     )
-    unit_label = individual.unit_number or f"Unit-{ind_idx + 1}"
-    # The project build year is the canonical year for generated build sheets.
-    # IndividualUnit.year is retained as legacy vehicle metadata/fallback, but
-    # must not make an older vehicle year leak into a newly tagged project.
-    ind_year = (project.customer.build_year or "").strip() or individual.year or ""
-
-    vehicle_model = individual.make or unit.vehicle_model
-    if ind_year:
-        vehicle_model = f"{ind_year} {vehicle_model}".strip()
-    if individual.model:
-        vehicle_model = f"{vehicle_model} {individual.model}".strip()
-
     vehicle_info: dict = {
-        "VehicleType": unit.vehicle_model,
+        "VehicleType": _canonical_vehicle_type(unit.vehicle_model, paths),
         "Agency": project.customer.agency,
+        "AgencyAbbreviation": project.customer.agency_abbreviation,
         "BuildYear": project.customer.build_year,
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
         "project_total_units": project_total_units,
-        "NewVehicle": {
-            "MODEL": vehicle_model or unit.vehicle_model,
-            "UNIT ID": unit_label,
-            "YEAR": ind_year,
-            "COLOR": individual.color,
-            "VIN": individual.vin,
-        },
-        "ExistingVehicle": {
-            "UNIT ID": individual.existing_unit_number,
-            "VIN": individual.existing_vin,
-        },
     }
+    vehicle_info = refresh_individual_vehicle_info(
+        vehicle_info,
+        project,
+        unit,
+        individual,
+        ordinal=ind_idx + 1,
+    )
 
     prefs = project.preferences
     pref_notes: list[str] = []

@@ -79,6 +79,7 @@ async function _pbeLoadNotes(draftId) {
     if (!result?.ok) throw new Error(result?.error || "Could not load notes");
     if (_pbeNotesDraftId !== draftId) return;
     content.innerHTML = _pbeNotesMarkup(result.draft?.notes || {}, result.draft?.project_notes || "");
+    if (typeof _pbeRenderReferenceSummary === "function") _pbeRenderReferenceSummary();
     content.querySelectorAll("[data-pbe-note-category]").forEach(field => field.addEventListener("input", () => {
       if (_pbeNotesSaveTimer) clearTimeout(_pbeNotesSaveTimer);
       _pbeSetNotesStatus("Saving notes…");
@@ -285,7 +286,7 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   show("proj-build-editor");
   _pbeSetActionRowVisible(false);
 
-  const vm      = _PT.vehicleMap[unit.vehicle_model] || {};
+  const vm      = _ptVehicleConfig(unit.vehicle_model);
   const vmLabel = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "Vehicle");
   const agency  = project?.customer?.agency || "";
   const unitNum = individual?.unit_number?.trim();
@@ -377,7 +378,7 @@ async function _ptOpenCreatePresetFromBuild() {
   const placementOverrides = _meDraft.placement_overrides || {};
 
   const agencyIds    = project?.customer?.agency_id ? [project.customer.agency_id] : [];
-  const vehicleTypes = unit?.vehicle_model ? [unit.vehicle_model] : [];
+  const vehicleTypes = unit?.vehicle_model ? [_ptCanonicalVehicleType(unit.vehicle_model)] : [];
   const buildTypes   = unit?.build_type    ? [unit.build_type]    : [];
 
   if (typeof pmOpenFromDraft === "function") {

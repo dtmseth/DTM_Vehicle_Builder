@@ -5,9 +5,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_SHAPE_TYPE
 from pptx.oxml.ns import qn
+from pptx.util import Inches
 
 from dtm_buildsheet.models import PartInput, ProjectInput
 from dtm_buildsheet.paths import AppPaths
@@ -24,13 +26,104 @@ from dtm_buildsheet.ppt_helpers import (
     FOOTER_H,
     SLIDE_H_EMU,
     SLIDE_W_EMU,
+    _ManifestEntry,
     _manifest_groups,
+    _manifest_page_rows,
+    _manifest_row_height,
+    _manifest_source_label,
     _badge_label,
     _legend_callouts,
     add_render_exception_slides,
+    fill_overview,
     fill_notes,
+    MANIFEST_HDR_ROW_H,
+    MANIFEST_SECTION_ROW_H,
+    physical_light_head_count,
     place_legend,
 )
+
+
+def test_overview_separates_current_and_existing_vehicle_fields():
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    project = SimpleNamespace(
+        info={
+            "Agency": "Test PD",
+            "BuildYear": "2027",
+            "BuildType": "Patrol",
+            "VehicleType": "PIU",
+            "NewVehicle": {
+                "YEAR": "2027", "MODEL": "PIU", "UNIT ID": "12",
+                "VIN": "ACTUAL123456",
+            },
+            "ExistingVehicle": {
+                "YEAR": "2020", "MAKE": "Ford", "MODEL": "PIU",
+                "BUILD TYPE": "Admin", "UNIT ID": "OLD-12",
+                "VIN": "OLDVIN654321",
+            },
+            "UnitNotes": "Mount the radio control head above the siren controller.",
+        },
+        parts=[],
+    )
+
+    fill_overview(slide, project)
+
+    text = "\n".join(
+        shape.text for shape in slide.shapes if getattr(shape, "has_text_frame", False)
+    )
+    assert "ACTUAL123456" in text
+    assert "OLDVIN654321" in text
+    assert "OLD-12" in text
+    assert "Build Type:  Patrol" in text
+    assert "Unit #:  12" in text
+    assert "Build Type:  Admin" in text
+    assert "Unit #:  OLD-12" in text
+    assert "UNIT NOTES" in text
+    assert "Mount the radio control head above the siren controller." in text
+
+
+def test_physical_light_head_count_includes_all_supported_input_routes():
+    def planned(
+        *, name, quantity, render_kind="light", part_id="", components=None,
+        placement_counts=(),
+    ):
+        return SimpleNamespace(
+            part_name=name,
+            part_id=part_id,
+            render_kind=render_kind,
+            raw=SimpleNamespace(quantity=quantity, components=components or []),
+            placements=[
+                SimpleNamespace(instances=[object()] * count)
+                for count in placement_counts
+            ],
+        )
+
+    parts = [
+        planned(
+            name="Front Warning", quantity=2,
+            components=[
+                {"part_number": "XI2D", "quantity": 1},
+                {"part_number": "XI2E", "quantity": 1},
+            ],
+            placement_counts=(2, 2),
+        ),
+        planned(name="Included bumper top-tube lights", quantity=4, placement_counts=(4, 4)),
+        planned(name="Included bumper side lights", quantity=2, placement_counts=(2, 2)),
+        planned(
+            name="Side Warning", quantity=2, part_id="tracer_5lamp",
+            placement_counts=(5,),
+        ),
+        planned(name="Interior Light Bar", quantity=1, placement_counts=(10,)),
+        planned(name="Roof Light Bar", quantity=1, render_kind="bar", placement_counts=(1,)),
+    ]
+
+    assert physical_light_head_count(parts) == 28
+
+    legacy_fixture = planned(
+        name="Side Warning", quantity=5, part_id="tracer_5lamp",
+        placement_counts=(5,),
+    )
+    assert physical_light_head_count([legacy_fixture]) == 5
 
 
 @pytest.fixture(scope="module")
@@ -106,6 +199,108 @@ def test_export_page_order_is_cover_then_vehicle_views_then_manifest_then_notes(
     assert manifest_indices
     assert min(view_indices) == 1
     assert max(view_indices) < min(manifest_indices) < notes_index
+
+
+def test_manifest_data_text_is_at_least_nine_points(rendered_pptx):
+    prs = Presentation(str(rendered_pptx))
+    font_sizes = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if not getattr(shape, "has_table", False):
+                continue
+            table = shape.table
+            if not table.rows or table.cell(0, 0).text != "PART / SKU":
+                continue
+            for row in list(table.rows)[1:]:
+                for cell in row.cells:
+                    for paragraph in cell.text_frame.paragraphs:
+                        for run in paragraph.runs:
+                            if run.text.strip():
+                                font_sizes.append(run.font.size.pt)
+
+    assert font_sizes
+    assert min(font_sizes) >= 9
+
+
+def test_rendered_manifest_flows_categories_and_never_orphans_section_header(rendered_pptx):
+    prs = Presentation(str(rendered_pptx))
+    section_names = {
+        "LIGHTING", "STRUCTURAL EQUIPMENT", "EQUIPMENT & ELECTRONICS", "OTHER / CUSTOM",
+    }
+    section_counts = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if not getattr(shape, "has_table", False):
+                continue
+            table = shape.table
+            if table.cell(0, 0).text != "PART / SKU":
+                continue
+            row_labels = [row.cells[0].text.strip() for row in table.rows]
+            sections = [
+                label for label in row_labels
+                if label.removesuffix(" - CONTINUED") in section_names
+            ]
+            section_counts.append(len(sections))
+            assert row_labels[-1].removesuffix(" - CONTINUED") not in section_names
+
+    assert section_counts
+    assert any(count >= 2 for count in section_counts)
+
+
+def test_reference_pages_follow_vehicle_views_before_manifest(tmp_path, stearns_input, config):
+    reference_path = tmp_path / "reference.jpg"
+    Image.new("RGB", (1200, 800), (35, 75, 115)).save(reference_path, "JPEG")
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    paths = AppPaths(
+        project_root=config.paths.project_root,
+        package_dir=config.paths.package_dir,
+        resources_dir=config.paths.resources_dir,
+        assets_dir=config.paths.assets_dir,
+        templates_dir=config.paths.templates_dir,
+        workspace_dir=config.paths.workspace_dir,
+        workspace_config_dir=config.paths.workspace_config_dir,
+        workspace_assets_dir=config.paths.workspace_assets_dir,
+        workspace_input_dir=config.paths.workspace_input_dir,
+        workspace_output_dir=output_dir,
+        samples_dir=config.paths.samples_dir,
+    )
+    plan = build_plan(stearns_input, config)
+    plan.reference_photos = [{
+        "reference_id": "reference-1",
+        "file_name": reference_path.name,
+        "title": "Reference detail",
+        "note": "Match the installation position shown in this photo.",
+        "local_path": str(reference_path),
+        "source_relative_path": f"Build Reference Photos/{reference_path.name}",
+    }]
+
+    prs = Presentation(str(render_plan_to_ppt(plan, paths)))
+    slide_text = [
+        "\n".join(
+            getattr(shape, "text", "")
+            for shape in slide.shapes
+            if getattr(shape, "has_text_frame", False)
+        )
+        for slide in prs.slides
+    ]
+    view_indices = [
+        index for index, text in enumerate(slide_text)
+        if any(f"{view} VIEW" in text for view in ("FRONT", "SIDE", "TOP", "REAR"))
+    ]
+    reference_indices = [
+        index for index, text in enumerate(slide_text) if "BUILD REFERENCE PHOTOS" in text
+    ]
+    manifest_indices = [
+        index for index, text in enumerate(slide_text) if "PARTS MANIFEST" in text
+    ]
+    notes_index = next(index for index, text in enumerate(slide_text) if "BUILD NOTES" in text)
+
+    assert view_indices
+    assert reference_indices
+    assert manifest_indices
+    assert max(view_indices) < min(reference_indices)
+    assert max(reference_indices) < min(manifest_indices) < notes_index
 
 
 def test_cover_and_customer_output_hide_removed_and_internal_fields(rendered_pptx):
@@ -300,11 +495,122 @@ def test_concealed_speaker_renders_translucent_with_mount_callout(tmp_path, conf
         for alpha in shape._element.findall(".//" + qn("a:alphaModFix"))
     ]
 
-    assert "48000" in alpha_values
-    assert any(
-        getattr(shape, "text", "").strip() == "BEHIND GRILLE"
-        for shape in front_slide.shapes
+    assert "80000" in alpha_values
+    callout = next(
+        shape for shape in front_slide.shapes
+        if getattr(shape, "text", "").strip() == "SPEAKER BEHIND GRILLE"
     )
+    fill_alpha = callout._element.find(".//" + qn("a:solidFill") + "//" + qn("a:alpha"))
+    assert fill_alpha is not None
+    assert fill_alpha.get("val") == "70000"
+    assert callout.width < 1.42 * 914400
+    assert callout.height == int(0.18 * 914400)
+    leaders = [
+        shape for shape in front_slide.shapes
+        if shape.shape_type == MSO_SHAPE_TYPE.LINE
+    ]
+    assert leaders
+    assert any(leader.line.color.rgb == callout.fill.fore_color.rgb for leader in leaders)
+
+
+def test_concealed_speaker_callout_manual_offset_changes_export_position(tmp_path, config):
+    paths = AppPaths(
+        project_root=config.paths.project_root,
+        package_dir=config.paths.package_dir,
+        resources_dir=config.paths.resources_dir,
+        assets_dir=config.paths.assets_dir,
+        templates_dir=config.paths.templates_dir,
+        workspace_dir=config.paths.workspace_dir,
+        workspace_config_dir=config.paths.workspace_config_dir,
+        workspace_assets_dir=config.paths.workspace_assets_dir,
+        workspace_input_dir=config.paths.workspace_input_dir,
+        workspace_output_dir=tmp_path,
+        samples_dir=config.paths.samples_dir,
+    )
+    speaker = PartInput(
+        name="Siren Speaker", part_number="SA315P", part_type="siren_speaker",
+        location="BEHIND GRILL (CENTER)", quantity=1, line_id="concealed-speaker",
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CONCEALED-SPEAKER-OFFSET"},
+        parts=[speaker], notes={},
+    ), config)
+    placement = plan.planned_parts[0].placements[0]
+    placement.callout_dx = 0.10
+    placement.callout_dy = -0.05
+
+    prs = Presentation(str(render_plan_to_ppt(plan, paths)))
+    front_slide = next(
+        slide for slide in prs.slides
+        if any("FRONT VIEW" in getattr(shape, "text", "") for shape in slide.shapes)
+    )
+    callout = next(
+        shape for shape in front_slide.shapes
+        if getattr(shape, "text", "").strip() == "SPEAKER BEHIND GRILLE"
+    )
+    speaker_picture = next(
+        shape for shape in front_slide.shapes
+        if shape.shape_type == MSO_SHAPE_TYPE.PICTURE
+        and shape._element.find(".//" + qn("a:alphaModFix")) is not None
+    )
+
+    assert callout.left + callout.width // 2 > speaker_picture.left + speaker_picture.width // 2
+    assert any(shape.shape_type == MSO_SHAPE_TYPE.LINE for shape in front_slide.shapes)
+
+
+def test_custom_location_points_share_one_legend_card(tmp_path, config):
+    """Edina regression: six visual heads are one qty-six legend entry."""
+    paths = AppPaths(
+        project_root=config.paths.project_root,
+        package_dir=config.paths.package_dir,
+        resources_dir=config.paths.resources_dir,
+        assets_dir=config.paths.assets_dir,
+        templates_dir=config.paths.templates_dir,
+        workspace_dir=config.paths.workspace_dir,
+        workspace_config_dir=config.paths.workspace_config_dir,
+        workspace_assets_dir=config.paths.workspace_assets_dir,
+        workspace_input_dir=config.paths.workspace_input_dir,
+        workspace_output_dir=tmp_path,
+        samples_dir=config.paths.samples_dir,
+    )
+    points = [
+        {"x": 0.345 + index * 0.06, "y": 0.621, "head_index": index}
+        for index in range(6)
+    ]
+    part = PartInput(
+        name="Warning Light 1", part_number="ION", part_type="warning_light",
+        raw_color="Red/White / Blue/White", driver_color="Red/White",
+        passenger_color="Blue/White", location="Front Grill", quantity=6,
+        line_id="edina-front-grille",
+        components=[
+            {"part_number": "XI2D", "color": "Red/White", "quantity": 3},
+            {"part_number": "XI2E", "color": "Blue/White", "quantity": 3},
+        ],
+        picker_config={"mode": "split", "custom_location": {
+            "label": "Front Grill", "placements": {"front": points},
+        }},
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "EDINA-GRILLE-LEGEND"},
+        parts=[part], notes={},
+    ), config)
+    assert sum(
+        len(placement.instances)
+        for placement in plan.planned_parts[0].placements
+        if placement.view == "front"
+    ) == 6
+
+    prs = Presentation(str(render_plan_to_ppt(plan, paths)))
+    front_slide = next(
+        slide for slide in prs.slides
+        if any("FRONT VIEW" in getattr(shape, "text", "") for shape in slide.shapes)
+    )
+    legend_cards = [
+        shape.text for shape in front_slide.shapes
+        if "Front Grill" in getattr(shape, "text", "") and "QTY:" in shape.text
+    ]
+    assert len(legend_cards) == 1
+    assert "QTY: 6" in legend_cards[0]
 
 
 def test_render_failure_legend_only_lists_failed_current_view_components():
@@ -382,6 +688,52 @@ def test_manifest_groups_use_separate_customer_facing_categories():
         ("Equipment & Electronics", ["Radio Head"]),
         ("Other / Custom", ["Shop-Supplied Item"]),
     ]
+
+
+def test_manifest_categories_flow_on_one_page_with_clear_section_rows():
+    raw = SimpleNamespace(
+        new_or_used="New", source="", supply_type="new",
+        customer_condition="", customer_source="",
+    )
+    groups = [
+        ("Lighting", [_ManifestEntry(raw=raw, location="Grille", name="Warning light")]),
+        ("Structural Equipment", [_ManifestEntry(raw=raw, location="Front", name="Push bumper")]),
+        ("Equipment & Electronics", [_ManifestEntry(raw=raw, location="Console", name="Control head")]),
+    ]
+
+    pages = _manifest_page_rows(groups, Inches(6.0))
+
+    assert len(pages) == 1
+    assert [value for kind, value, _height in pages[0] if kind == "section"] == [
+        "Lighting", "Structural Equipment", "Equipment & Electronics",
+    ]
+    assert pages[0][-1][0] == "entry"
+
+
+def test_manifest_section_header_moves_with_first_item_to_next_page():
+    raw = SimpleNamespace(
+        new_or_used="New", source="", supply_type="new",
+        customer_condition="", customer_source="",
+    )
+    first = _ManifestEntry(raw=raw, location="Grille", name="Warning light")
+    second = _ManifestEntry(raw=raw, location="Front", name="Push bumper")
+    first_height = _manifest_row_height(first)
+    second_height = _manifest_row_height(second)
+    just_too_short = (
+        MANIFEST_HDR_ROW_H
+        + MANIFEST_SECTION_ROW_H + first_height
+        + MANIFEST_SECTION_ROW_H + second_height
+        - 1
+    )
+
+    pages = _manifest_page_rows([
+        ("Lighting", [first]),
+        ("Structural Equipment", [second]),
+    ], just_too_short)
+
+    assert len(pages) == 2
+    assert all(page[-1][0] == "entry" for page in pages)
+    assert pages[1][0][0:2] == ("section", "Structural Equipment")
 
 
 def test_manifest_groups_order_lighting_by_function_before_name():
@@ -464,6 +816,50 @@ def test_manifest_promotes_selected_skus_and_keeps_guided_components_and_accesso
     selected_sku = groups[0][1][0]
     assert "Lens: Smoked" in selected_sku.detail
     assert selected_sku.comment == "Confirm final aiming with the customer."
+
+
+def test_manifest_keeps_exact_console_base_and_included_motion_component_visible():
+    def planned(name, *, line_id, parent_line_id="", part_number="", part_type="console", picker_config=None):
+        return SimpleNamespace(
+            category="structural",
+            render_kind="none",
+            placements=[],
+            raw=SimpleNamespace(
+                name=name,
+                include=True,
+                notes="",
+                comment="",
+                part_number=part_number,
+                location="IN CENTER CONSOLE",
+                part_type=part_type,
+                line_id=line_id,
+                parent_line_id=parent_line_id,
+                components=[],
+                picker_config=picker_config or {},
+                manufacturer="Gamber Johnson",
+                raw_color="",
+                lens="",
+                quantity=1,
+                new_or_used="New",
+                source="",
+            ),
+        )
+
+    parent = planned(
+        "Center Console", line_id="console", part_number="7170-0734-04",
+    )
+    motion = planned(
+        "Center Console · Motion Attachment", line_id="motion", parent_line_id="console",
+        part_number="7160-0220", part_type="motion_attachment",
+        picker_config={"console_kit_included": True},
+    )
+
+    entries = _manifest_groups([motion, parent])[0][1]
+
+    assert [(entry.name, entry.part_number, entry.indent) for entry in entries] == [
+        ("Center Console", "7170-0734-04", 0),
+        ("Motion Attachment", "7160-0220", 1),
+    ]
 
 
 def test_manifest_combines_standard_duo_skus_into_one_compact_shop_row():
@@ -595,6 +991,29 @@ def test_build_legend_card_displays_children_by_parent_line_id():
     )
     assert "+ Magnetic Mic  ·  MMSU-1" in text
     assert "QTY: 2" in text
+    card = next(
+        shape for shape in slide.shapes
+        if "+ Magnetic Mic" in getattr(shape, "text", "")
+    )
+    supporting_runs = [
+        run for paragraph in card.text_frame.paragraphs[1:]
+        for run in paragraph.runs if run.text.strip()
+    ]
+    assert supporting_runs
+    assert all(str(run.font.color.rgb) == "000000" for run in supporting_runs)
+
+
+def test_customer_supplied_manifest_source_is_compact_and_explicit():
+    raw = SimpleNamespace(
+        supply_type="customer_supplied", customer_condition="used",
+        customer_source="", new_or_used="Used", source="",
+    )
+    entry = _ManifestEntry(
+        raw=raw, location="CONSOLE", name="Customer radio", quantity=1,
+    )
+
+    assert _manifest_source_label(raw) == "Customer supplied\nUsed - Source needed"
+    assert _manifest_row_height(entry) == Inches(0.38)
 
 
 def test_manifest_hides_fixture_ids_and_locations_repeating_the_part_name():

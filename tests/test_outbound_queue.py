@@ -48,11 +48,11 @@ def test_enqueue_proposal_writes_a_json_payload(paths):
 
 
 def test_enqueue_export_writes_a_json_payload(paths, tmp_path):
-    pptx = tmp_path / "build_sheet.pptx"
-    pptx.write_bytes(b"PPTX")
+    pdf = tmp_path / "build_sheet.pdf"
+    pdf.write_bytes(b"%PDF")
     assert outbound_queue.enqueue_export(
         paths,
-        local_path=pptx,
+        local_path=pdf,
         agency="Stearns County Sheriff",
         year="2026",
     )
@@ -61,13 +61,13 @@ def test_enqueue_export_writes_a_json_payload(paths, tmp_path):
     assert len(files) == 1
     data = json.loads(files[0].read_text("utf-8"))
     assert data["type"] == "export"
-    assert data["local_path"] == str(pptx)
+    assert data["local_path"] == str(pdf)
     assert data["agency"] == "Stearns County Sheriff"
     assert data["year"] == "2026"
 
 
 def test_queue_depth_counts_each_kind(paths, tmp_path):
-    pptx = tmp_path / "x.pptx"; pptx.write_bytes(b"x")
+    pdf = tmp_path / "x.pdf"; pdf.write_bytes(b"%PDF")
     outbound_queue.enqueue_proposal(
         paths, target_file="agencies/a.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
@@ -76,7 +76,7 @@ def test_queue_depth_counts_each_kind(paths, tmp_path):
         paths, target_file="agencies/b.json", serialized_content='{"name":"x"}',
         summary="s", category="general",
     )
-    outbound_queue.enqueue_export(paths, local_path=pptx, agency="A", year="2026")
+    outbound_queue.enqueue_export(paths, local_path=pdf, agency="A", year="2026")
     depth = outbound_queue.queue_depth(paths)
     assert depth == {"proposals": 2, "exports": 1}
 
@@ -127,9 +127,9 @@ def test_drain_proposal_failure_leaves_queue_file(paths, monkeypatch):
 
 
 def test_drain_export_success_removes_queue_file(paths, monkeypatch, tmp_path):
-    pptx = tmp_path / "build.pptx"; pptx.write_bytes(b"PPTX")
+    pdf = tmp_path / "build.pdf"; pdf.write_bytes(b"%PDF")
     outbound_queue.enqueue_export(
-        paths, local_path=pptx, agency="Stearns", year="2026",
+        paths, local_path=pdf, agency="Stearns", year="2026",
     )
     from dtm_buildsheet.app.services import exports_upload_service
     monkeypatch.setattr(
@@ -144,8 +144,8 @@ def test_drain_export_success_removes_queue_file(paths, monkeypatch, tmp_path):
 
 
 def test_drain_export_discards_when_local_file_gone(paths):
-    """User moved or deleted the source PPTX — no point retrying forever."""
-    ghost_path = paths.workspace_dir / "deleted-after-queue.pptx"
+    """User moved or deleted the source PDF — no point retrying forever."""
+    ghost_path = paths.workspace_dir / "deleted-after-queue.pdf"
     # Write then immediately delete to simulate "queued then user deleted".
     ghost_path.write_bytes(b"x")
     outbound_queue.enqueue_export(
@@ -156,6 +156,29 @@ def test_drain_export_discards_when_local_file_gone(paths):
     # We don't bump succeeded — but we DID remove the queue file.
     queue_dir = paths.workspace_dir / ".pending_outbound" / "exports"
     assert len(list(queue_dir.glob("*.json"))) == 0
+
+
+def test_enqueue_and_drain_retire_powerpoint_exports(paths, tmp_path):
+    pptx = tmp_path / "retired.pptx"
+    pptx.write_bytes(b"PPTX")
+    assert outbound_queue.enqueue_export(
+        paths, local_path=pptx, agency="A", year="2026",
+    ) is False
+
+    queue_dir = paths.workspace_dir / ".pending_outbound" / "exports"
+    queue_dir.mkdir(parents=True, exist_ok=True)
+    legacy = queue_dir / "legacy.json"
+    legacy.write_text(json.dumps({
+        "type": "export",
+        "local_path": str(pptx),
+        "agency": "A",
+        "year": "2026",
+    }), encoding="utf-8")
+
+    report = outbound_queue.drain_queue(paths)
+    assert report["exports_retried"] == 1
+    assert report["exports_succeeded"] == 0
+    assert not legacy.exists()
 
 
 def test_drain_handles_corrupt_queue_file(paths):

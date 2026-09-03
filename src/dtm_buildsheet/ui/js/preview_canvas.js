@@ -19,6 +19,7 @@ let _pvInspPl           = null;   // placement object open in inspector
 let _pvInspPp           = null;   // part object open in inspector
 let _pvInspAr           = 0;      // W/H aspect ratio captured when the inspector opened
 let _pvDrag             = null;   // active drag state (see pvDragStart)
+let _pvCalloutDrag      = null;   // active concealed-speaker tag drag
 let _pvPendingOverrides = {};     // {override_key: overrideDict} — short-lived autosave queue
 let _pvInFlightOverrides = {};    // batch currently on its way to the server
 let _pvConfirmedOverrides = {};   // saved locally until the next full plan reload
@@ -246,13 +247,6 @@ function pvRenderPlacement(frame, pp, pl, basePl = pl) {
       icon.appendChild(dot);
     }
 
-    if (slotIdx === 0 && pl.callout_label) {
-      const callout = document.createElement("span");
-      callout.className = "pv-concealed-callout";
-      callout.textContent = pl.callout_label;
-      icon.appendChild(callout);
-    }
-
     icon.addEventListener("mousedown", e => {
       if (e.button !== 0) return;
       pvDragStart(e, basePl, pp, slotIdx);
@@ -260,6 +254,54 @@ function pvRenderPlacement(frame, pp, pl, basePl = pl) {
 
     frame.appendChild(icon);
   });
+
+  if (pl.callout_label && (pl.instances || []).length) {
+    pvRenderConcealedCallout(frame, pl, basePl);
+  }
+}
+
+function pvRenderConcealedCallout(frame, pl, basePl) {
+  const instances = pl.instances || [];
+  const first = instances[0];
+  const x = (first.x_pct ?? 0) + (pl.callout_dx || 0);
+  const y = (first.y_pct ?? 0)
+    + (first.h_pct ?? pl.icon_h_pct ?? 0.02) / 2
+    + 0.04
+    + (pl.callout_dy || 0);
+  const nearest = instances.reduce((best, inst) => {
+    const bestDistance = ((best.x_pct ?? 0) - x) ** 2 + ((best.y_pct ?? 0) - y) ** 2;
+    const distance = ((inst.x_pct ?? 0) - x) ** 2 + ((inst.y_pct ?? 0) - y) ** 2;
+    return distance < bestDistance ? inst : best;
+  }, first);
+  const layerVal = pl.layer || 0;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add("pv-concealed-callout-line");
+  svg.setAttribute("viewBox", "0 0 100 100");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.dataset.overrideKey = pl.override_key;
+  svg.dataset.groupKey = pl.group_key || "";
+  svg.style.zIndex = layerVal + 199;
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", (x * 100).toFixed(3));
+  line.setAttribute("y1", (y * 100).toFixed(3));
+  line.setAttribute("x2", ((nearest.x_pct ?? 0) * 100).toFixed(3));
+  line.setAttribute("y2", ((nearest.y_pct ?? 0) * 100).toFixed(3));
+  line.setAttribute("vector-effect", "non-scaling-stroke");
+  svg.appendChild(line);
+  frame.appendChild(svg);
+
+  const callout = document.createElement("span");
+  callout.className = "pv-concealed-callout";
+  callout.textContent = pl.callout_label;
+  callout.title = "Drag to move this speaker label";
+  callout.dataset.overrideKey = pl.override_key;
+  callout.dataset.groupKey = pl.group_key || "";
+  callout.style.left = `${(x * 100).toFixed(3)}%`;
+  callout.style.top = `${(y * 100).toFixed(3)}%`;
+  callout.style.zIndex = layerVal + 200;
+  callout.addEventListener("mousedown", e => pvCalloutDragStart(e, basePl));
+  frame.appendChild(callout);
 }
 
 // ── override merging ──────────────────────────────────────
@@ -281,6 +323,8 @@ function pvMergeOverride(pl, ov) {
   const liveFlipH  = ov.flip_h     != null ? ov.flip_h    : (pl.flip_h   ?? false);
   const liveFlipV  = ov.flip_v     != null ? ov.flip_v    : (pl.flip_v   ?? false);
   const liveLayer  = ov.layer      != null ? ov.layer     : (pl.layer    ?? 0);
+  const liveCalloutDx = ov.callout_dx != null ? ov.callout_dx : (pl.callout_dx ?? 0);
+  const liveCalloutDy = ov.callout_dy != null ? ov.callout_dy : (pl.callout_dy ?? 0);
 
   // Width/height factors vs the saved baseline (icon_w_in/icon_h_in already
   // reflects any server-saved size override). Two paths:
@@ -328,6 +372,8 @@ function pvMergeOverride(pl, ov) {
     flip_h:   liveFlipH,
     flip_v:   liveFlipV,
     layer:    liveLayer,
+    callout_dx: liveCalloutDx,
+    callout_dy: liveCalloutDy,
     instances: (pl.instances || []).map(inst => {
       const instLeft = (inst.x_pct ?? 0) < 0.5;
       const instTop = (inst.y_pct ?? 0) < 0.5;
@@ -664,6 +710,65 @@ function pvDragEnd(e) {
     drag, rawDxFrac, rawDyFrac,
   );
 
+  pvUpdateBadge();
+  pvRenderView(_pvView);
+  pvScheduleAutosave();
+}
+
+function pvCalloutDragStart(e, basePl) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const frame = e.currentTarget.closest(".pv-frame");
+  if (!frame) return;
+  const existing = pvEffectiveOverride(basePl);
+  _pvCalloutDrag = {
+    basePl,
+    frameRect: frame.getBoundingClientRect(),
+    startX: e.clientX,
+    startY: e.clientY,
+    existing: { ...existing },
+    priorPending: _pvPendingOverrides[basePl.override_key]
+      ? { ..._pvPendingOverrides[basePl.override_key] }
+      : null,
+    savedDx: existing.callout_dx ?? basePl.callout_dx ?? 0,
+    savedDy: existing.callout_dy ?? basePl.callout_dy ?? 0,
+    dxFrac: 0,
+    dyFrac: 0,
+  };
+  e.currentTarget.classList.add("pv-concealed-callout--dragging");
+  document.addEventListener("mousemove", pvCalloutDragMove);
+  document.addEventListener("mouseup", pvCalloutDragEnd);
+}
+
+function pvCalloutDragMove(e) {
+  if (!_pvCalloutDrag) return;
+  const drag = _pvCalloutDrag;
+  drag.dxFrac = (e.clientX - drag.startX) / drag.frameRect.width;
+  drag.dyFrac = (e.clientY - drag.startY) / drag.frameRect.height;
+  _pvPendingOverrides[drag.basePl.override_key] = {
+    ...drag.existing,
+    callout_dx: +(drag.savedDx + drag.dxFrac).toFixed(6),
+    callout_dy: +(drag.savedDy + drag.dyFrac).toFixed(6),
+  };
+  pvRenderView(_pvView);
+}
+
+function pvCalloutDragEnd() {
+  if (!_pvCalloutDrag) return;
+  document.removeEventListener("mousemove", pvCalloutDragMove);
+  document.removeEventListener("mouseup", pvCalloutDragEnd);
+  const drag = _pvCalloutDrag;
+  _pvCalloutDrag = null;
+  if (Math.abs(drag.dxFrac) < 0.003 && Math.abs(drag.dyFrac) < 0.003) {
+    if (drag.priorPending) {
+      _pvPendingOverrides[drag.basePl.override_key] = drag.priorPending;
+    } else {
+      delete _pvPendingOverrides[drag.basePl.override_key];
+    }
+    pvRenderView(_pvView);
+    return;
+  }
   pvUpdateBadge();
   pvRenderView(_pvView);
   pvScheduleAutosave();

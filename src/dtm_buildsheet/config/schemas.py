@@ -124,9 +124,56 @@ def _validate_vehicle_layouts(normalized: dict) -> None:
     if not isinstance(vehicles, dict):
         raise ValueError("vehicle_layouts.json must contain a 'vehicles' object")
 
+    # A placeholder vehicle may reuse a reviewed geometry layout until its own
+    # artwork/placements are available.  Expand that inheritance at the config
+    # boundary so every downstream consumer still receives the ordinary
+    # ``views``/``fixtures`` shape and does not need a second code path.
+    resolving: set[str] = set()
+    resolved: set[str] = set()
+
+    def resolve_layout(vehicle_type: str) -> None:
+        if vehicle_type in resolved:
+            return
+        if vehicle_type in resolving:
+            raise ValueError(
+                f"vehicle_layouts.json layout_source cycle includes '{vehicle_type}'"
+            )
+        vehicle = vehicles.get(vehicle_type)
+        if not isinstance(vehicle, dict):
+            raise ValueError(f"vehicle_layouts.json vehicle '{vehicle_type}' must be an object")
+        source_id = str(vehicle.get("layout_source") or "").strip()
+        if source_id:
+            if source_id == vehicle_type or source_id not in vehicles:
+                raise ValueError(
+                    f"vehicle_layouts.json vehicle '{vehicle_type}' has unknown layout_source "
+                    f"'{source_id}'"
+                )
+            resolving.add(vehicle_type)
+            resolve_layout(source_id)
+            source = vehicles[source_id]
+            for key in ("views", "fixtures", "view_order"):
+                if key not in vehicle and key in source:
+                    vehicle[key] = deepcopy(source[key])
+            resolving.remove(vehicle_type)
+        resolved.add(vehicle_type)
+
+    for vehicle_type in vehicles:
+        resolve_layout(vehicle_type)
+
     for vehicle_type, vehicle in vehicles.items():
         if not isinstance(vehicle, dict):
             raise ValueError(f"vehicle_layouts.json vehicle '{vehicle_type}' must be an object")
+
+        aliases = vehicle.get("aliases", [])
+        if not isinstance(aliases, list) or not all(isinstance(value, str) for value in aliases):
+            raise ValueError(
+                f"vehicle_layouts.json vehicle '{vehicle_type}' aliases must be a list of strings"
+            )
+        vehicle["aliases"] = [value.strip() for value in aliases if value.strip()]
+        if "placeholder" in vehicle and not isinstance(vehicle["placeholder"], bool):
+            raise ValueError(
+                f"vehicle_layouts.json vehicle '{vehicle_type}' placeholder must be a boolean"
+            )
 
         # view_order must be a list of strings when present
         view_order = vehicle.get("view_order")

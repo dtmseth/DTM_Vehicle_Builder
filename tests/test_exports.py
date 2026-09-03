@@ -9,9 +9,13 @@ import pytest
 
 from dtm_buildsheet.app.services.export_service import (
     _find_soffice,
+    _stamp_export_on_project,
     export_to_pdf,
     open_file,
 )
+from dtm_buildsheet.domain.project_models import BuildUnit, IndividualUnit
+from dtm_buildsheet.inputs.project_entry import load_project, new_project, save_project
+from dtm_buildsheet.paths import AppPaths
 
 
 # ── _find_soffice ──────────────────────────────────────────────────────────────
@@ -50,6 +54,73 @@ class TestFindSoffice:
 # ── export_to_pdf ──────────────────────────────────────────────────────────────
 
 class TestExportToPdf:
+    def test_finalized_reexport_requests_explicit_shop_overwrite(self, tmp_path):
+        paths = AppPaths(
+            workspace_dir=tmp_path,
+            workspace_projects_dir=tmp_path / "projects",
+            workspace_output_dir=tmp_path / "output",
+        )
+        pdf = tmp_path / "output" / "updated.pdf"
+        pdf.parent.mkdir(parents=True)
+        pdf.write_bytes(b"%PDF updated")
+        project = new_project(project_id="project-1")
+        project.build_units = [BuildUnit(
+            unit_id="group-1",
+            individuals=[IndividualUnit(
+                individual_id="vehicle-1",
+                status="finalized",
+                pdf_path="old.pdf",
+                shop_pdf_item_id="shop-pdf-1",
+                shop_pdf_path="Shop Project Database/vehicle/old.pdf",
+            )],
+        )]
+        save_project(project, paths)
+
+        prompt = _stamp_export_on_project({
+            "project_id": "project-1",
+            "unit_id": "group-1",
+            "individual_id": "vehicle-1",
+        }, pdf, paths)
+
+        assert prompt == {
+            "required": True,
+            "project_id": "project-1",
+            "unit_id": "group-1",
+            "individual_id": "vehicle-1",
+            "current_shop_pdf_path": "Shop Project Database/vehicle/old.pdf",
+        }
+        stored = load_project("project-1", paths).build_units[0].individuals[0]
+        assert stored.pdf_path == str(pdf)
+        assert stored.shop_pdf_item_id == "shop-pdf-1"
+        assert stored.shop_pdf_path == "Shop Project Database/vehicle/old.pdf"
+
+    def test_export_without_existing_shop_pdf_does_not_request_overwrite(self, tmp_path):
+        paths = AppPaths(
+            workspace_dir=tmp_path,
+            workspace_projects_dir=tmp_path / "projects",
+            workspace_output_dir=tmp_path / "output",
+        )
+        pdf = tmp_path / "output" / "first.pdf"
+        pdf.parent.mkdir(parents=True)
+        pdf.write_bytes(b"%PDF first")
+        project = new_project(project_id="project-1")
+        project.build_units = [BuildUnit(
+            unit_id="group-1",
+            individuals=[IndividualUnit(
+                individual_id="vehicle-1",
+                status="finalized",
+            )],
+        )]
+        save_project(project, paths)
+
+        prompt = _stamp_export_on_project({
+            "project_id": "project-1",
+            "unit_id": "group-1",
+            "individual_id": "vehicle-1",
+        }, pdf, paths)
+
+        assert prompt is None
+
     def test_missing_output_path_returns_error(self):
         result = export_to_pdf({})
         assert result["ok"] is False

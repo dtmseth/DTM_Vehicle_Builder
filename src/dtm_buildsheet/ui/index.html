@@ -34,6 +34,13 @@
     <span class="cloud-status-initials" id="cloud-status-initials" hidden></span>
     <span class="cloud-status-text" id="cloud-status-text">Connecting…</span>
     <span class="cloud-status-spinner" id="cloud-status-spinner" hidden aria-label="Syncing">⟳</span>
+    <span class="photo-cache-progress-panel" id="photo-cache-progress-panel" hidden>
+      <span class="photo-cache-progress-title" id="photo-cache-progress-title">Preparing photo thumbnails</span>
+      <span class="photo-cache-progress-track" id="photo-cache-progress-track" role="progressbar" aria-label="Photo thumbnail preparation">
+        <span class="photo-cache-progress-fill" id="photo-cache-progress-fill"></span>
+      </span>
+      <span class="photo-cache-progress-count" id="photo-cache-progress-count"></span>
+    </span>
   </button>
 </div>
 
@@ -1250,9 +1257,30 @@
         <button class="btn btn-primary btn-sm" id="btn-new-project">+ New Project</button>
       </div>
       <div id="proj-list-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">
-        No projects yet. Click <strong>+ New Project</strong> to get started.
+        No active projects. Click <strong>+ New Project</strong> to get started, or open Project Archives below.
       </div>
       <div id="proj-list-rows" hidden></div>
+      <div class="proj-list-footer">
+        <button class="btn btn-secondary btn-sm" id="btn-project-archives">Project Archives</button>
+        <span id="proj-archive-count" class="proj-archive-count"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completed-project archive tree -->
+  <div id="proj-archive-view" hidden>
+    <div class="card">
+      <div class="card-title">
+        <div>
+          <div>Project Archives</div>
+          <div class="proj-archive-intro">Completed projects organized by agency and build year.</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-project-archives-back">← Active Projects</button>
+      </div>
+      <div id="proj-archive-empty" class="proj-empty-msg" hidden>
+        No completed projects yet. Open an active project and mark it completed when it is ready.
+      </div>
+      <div id="proj-archive-tree"></div>
     </div>
   </div>
 
@@ -1264,7 +1292,10 @@
           <div id="proj-detail-agency" style="font-size:16px;font-weight:700;color:var(--navy)"></div>
           <div id="proj-detail-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-proj-detail-back">← Projects</button>
+        <div class="proj-detail-header-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-proj-complete"></button>
+          <button class="btn btn-secondary btn-sm" id="btn-proj-detail-back">← Projects</button>
+        </div>
       </div>
       <div class="proj-tab-bar">
         <button class="proj-tab proj-dtab active" data-ptab="overview">Overview</button>
@@ -1500,6 +1531,7 @@
       <div class="card-title">Build Notes</div>
       <p class="field-hint" style="margin-top:0">Project notes are included automatically. Installation notes and delivery requirements save as you type and appear on the build-notes page.</p>
       <div id="pbe-final-notes-content"></div>
+      <div id="pbe-reference-photos-content"></div>
       <div id="pbe-final-notes-status" class="proj-form-status" style="display:none"></div>
     </div>
 
@@ -1514,6 +1546,55 @@
   </div><!-- end proj-build-editor -->
 
 </div><!-- end tab-projects -->
+
+<div class="modal-overlay" id="reference-photo-modal" role="dialog" aria-modal="true" aria-labelledby="reference-photo-modal-title" hidden>
+  <div class="modal reference-photo-modal">
+    <div class="modal-title">
+      <span id="reference-photo-modal-title">Build Reference Photos</span>
+      <button class="modal-close" id="reference-photo-modal-close" aria-label="Close reference photos">✕</button>
+    </div>
+    <div id="reference-photo-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="reference-photo-modal-save">Save changes</button>
+      <button class="btn btn-primary" id="reference-photo-modal-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="photo-gallery-modal" role="dialog" aria-modal="true" aria-labelledby="photo-gallery-title" hidden>
+  <div class="modal photo-gallery-modal">
+    <div class="modal-title">
+      <span id="photo-gallery-title">Photos</span>
+      <button class="modal-close" id="photo-gallery-close" aria-label="Close photo gallery">✕</button>
+    </div>
+    <div id="photo-gallery-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="photo-gallery-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="photo-use-modal" role="dialog" aria-modal="true" aria-labelledby="photo-use-title" hidden>
+  <div class="modal photo-use-modal">
+    <div class="modal-title">
+      <span id="photo-use-title">Use as Reference Photos</span>
+      <button class="modal-close" id="photo-use-close" aria-label="Close reference destination">✕</button>
+    </div>
+    <p class="field-hint" id="photo-use-intro">Choose a project and, if needed, a unit group.</p>
+    <div class="form-group" id="photo-use-project-group">
+      <label for="photo-use-project">Destination project</label>
+      <select id="photo-use-project"></select>
+    </div>
+    <div class="form-group">
+      <label for="photo-use-unit-group" id="photo-use-unit-group-label">Unit group (optional)</label>
+      <select id="photo-use-unit-group"><option value="">Project only (assign later)</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="photo-use-cancel">Cancel</button>
+      <button class="btn btn-primary" id="photo-use-confirm">Add Reference Photos</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="pbe-load-preset-modal" role="dialog" aria-modal="true" aria-labelledby="pbe-load-preset-title">
   <div class="modal pbe-load-preset-modal">
@@ -1537,11 +1618,14 @@
 <!-- ══ AGENCY CREATE MODAL ══ -->
 <div class="modal-overlay" id="agency-create-modal" role="dialog" aria-modal="true">
   <div class="modal" style="max-width:680px">
-    <div class="modal-title">New Agency
+    <div class="modal-title"><span id="agency-modal-title">New Agency</span>
       <button class="modal-close" id="agency-create-close">✕</button>
     </div>
     <p class="field-hint">Agency name is required. Contact and address details are optional, but helpful for project coordination.</p>
-    <div class="form-group"><label>Agency Name <span style="color:var(--red)">*</span></label><input id="ac-name" type="text" placeholder="e.g. Springfield PD" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Agency Name <span style="color:var(--red)">*</span></label><input id="ac-name" type="text" placeholder="e.g. Springfield Police Department" /></div>
+      <div class="form-group"><label>Agency Abbreviation</label><input id="ac-abbreviation" type="text" maxlength="40" placeholder="e.g. SPD" /><div class="field-hint">Used in build folders and filenames. Suggested automatically; editable for names such as ICE or HSI.</div></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label>Contact Name</label><input id="ac-contact-name" type="text" placeholder="Full name" /></div>
       <div class="form-group"><label>Title</label><input id="ac-contact-title" type="text" placeholder="e.g. Fleet Manager" /></div>
@@ -1664,7 +1748,7 @@
     <div id="build-finalization-body"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="build-finalization-cancel">Close</button>
-      <button class="btn btn-primary" id="build-finalization-save" style="display:none">Finalize build</button>
+      <button class="btn btn-primary" id="build-finalization-save" style="display:none">Finalize design</button>
     </div>
   </div>
 </div>
@@ -1701,7 +1785,7 @@
 
 <!-- ══ INDIVIDUAL UNIT EDIT MODAL ══ -->
 <div id="ind-edit-modal" class="modal-overlay" role="dialog" aria-modal="true">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:680px">
     <div class="modal-title">
       <span id="ind-edit-modal-title">Edit Unit Details</span>
       <button class="modal-close" onclick="PT_closeIndModal()" title="Close">✕</button>
@@ -1732,18 +1816,39 @@
         <input type="text" id="ind-edit-color" placeholder="e.g. White">
       </div>
       <div class="form-group">
-        <label>VIN</label>
+        <label>Actual VIN</label>
         <input type="text" id="ind-edit-vin" placeholder="17-char VIN">
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Existing Unit #</label>
-        <input type="text" id="ind-edit-existing-unit" placeholder="Previous unit #">
+    <div class="proj-existing-vehicle-modal">
+      <div class="proj-section-label">Existing / replaced vehicle (optional)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Year</label>
+          <input type="text" id="ind-edit-existing-year" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Make</label>
+          <input type="text" id="ind-edit-existing-make" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="ind-edit-existing-model" placeholder="Optional">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Existing VIN</label>
-        <input type="text" id="ind-edit-existing-vin" placeholder="Previous VIN">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Build Type</label>
+          <input type="text" id="ind-edit-existing-build-type" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Unit #</label>
+          <input type="text" id="ind-edit-existing-unit-number" placeholder="03">
+        </div>
+        <div class="form-group">
+          <label>VIN</label>
+          <input type="text" id="ind-edit-existing-vin" placeholder="17-char VIN">
+        </div>
       </div>
     </div>
     <div class="form-group">
@@ -2315,6 +2420,7 @@
 
 <script src="/ui/js/projects/state.js"></script>
 <script src="/ui/js/projects/api.js"></script>
+<script src="/ui/js/projects/reference_photos.js"></script>
 <script src="/ui/js/projects/combo_search.js"></script>
 <script src="/ui/js/projects/list_view.js"></script>
 <script src="/ui/js/projects/detail_overview.js"></script>

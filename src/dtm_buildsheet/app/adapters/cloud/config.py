@@ -37,13 +37,10 @@ class CloudConfig:
     file at process start to keep the desktop bundle portable across dev /
     CI / future variants.
 
-    Export-target fields (``exports_*``) name a SECOND SharePoint library on
-    the same site where generated PPTX build sheets are auto-uploaded after
-    every successful generate. The library lives outside the vehicle-builder
-    one so it can be accessed through normal team SharePoint without anyone
-    needing the app installed. The drive_id is resolved at runtime by
-    listing /sites/{site_id}/drives and matching by display name, because
-    SharePoint's internal library names can lag user-facing renames.
+    Export-target fields (``exports_*``) describe the legacy company PDF
+    mirror. Shop publication uses its own explicitly enabled ``shop_*`` target
+    so installing an updated app cannot create or change Shop folders before
+    the migration dry run and cutover are approved.
     """
 
     tenant_id: str
@@ -58,6 +55,16 @@ class CloudConfig:
     exports_library_name: str = ""
     exports_library_internal_name: str = ""
     exports_base_folder: str = ""  # e.g. "Vehicle Builder Projects" inside the library
+    company_library_name: str = ""
+    company_library_internal_name: str = ""
+    company_vehicle_root: str = "Vehicle Project Database"
+    company_folder_provisioning_enabled: bool = False
+    company_vehicle_folders_enabled: bool = False
+    shop_folder_provisioning_enabled: bool = False
+    shop_publication_enabled: bool = False
+    shop_library_name: str = ""
+    shop_library_internal_name: str = ""
+    shop_build_photos_root: str = "Shop Project Database"
 
     @property
     def authority(self) -> str:
@@ -66,6 +73,44 @@ class CloudConfig:
     @property
     def exports_enabled(self) -> bool:
         return bool(self.exports_library_name or self.exports_library_internal_name)
+
+    @property
+    def shop_target_configured(self) -> bool:
+        return bool(
+            self.shop_publication_enabled
+            and (self.shop_library_name or self.shop_library_internal_name)
+        )
+
+    @property
+    def company_target_configured(self) -> bool:
+        return bool(
+            self.company_vehicle_folders_enabled
+            and (
+                self.company_library_name
+                or self.company_library_internal_name
+                or self.exports_library_name
+                or self.exports_library_internal_name
+            )
+        )
+
+    @property
+    def company_provisioning_target_configured(self) -> bool:
+        return bool(
+            self.company_folder_provisioning_enabled
+            and (
+                self.company_library_name
+                or self.company_library_internal_name
+                or self.exports_library_name
+                or self.exports_library_internal_name
+            )
+        )
+
+    @property
+    def shop_provisioning_target_configured(self) -> bool:
+        return bool(
+            self.shop_folder_provisioning_enabled
+            and (self.shop_library_name or self.shop_library_internal_name)
+        )
 
 
 class CloudConfigMissing(RuntimeError):
@@ -144,6 +189,12 @@ def load_cloud_config_from_env() -> CloudConfig:
         "exports_library_name": "DTM_EXPORTS_LIBRARY_NAME",
         "exports_library_internal_name": "DTM_EXPORTS_LIBRARY_INTERNAL_NAME",
         "exports_base_folder": "DTM_EXPORTS_BASE_FOLDER",
+        "company_library_name": "DTM_COMPANY_LIBRARY_NAME",
+        "company_library_internal_name": "DTM_COMPANY_LIBRARY_INTERNAL_NAME",
+        "company_vehicle_root": "DTM_COMPANY_VEHICLE_ROOT",
+        "shop_library_name": "DTM_SHOP_LIBRARY_NAME",
+        "shop_library_internal_name": "DTM_SHOP_LIBRARY_INTERNAL_NAME",
+        "shop_build_photos_root": "DTM_SHOP_BUILD_PHOTOS_ROOT",
     }
     for field_name, env_name in optional.items():
         raw = os.environ.get(env_name, "").strip()
@@ -151,5 +202,31 @@ def load_cloud_config_from_env() -> CloudConfig:
             raw = str(file_values.get(field_name, "")).strip()
         if raw:
             values[field_name] = raw
+
+    raw_shop_enabled = os.environ.get("DTM_SHOP_PUBLICATION_ENABLED", "").strip()
+    if not raw_shop_enabled:
+        raw_shop_enabled = str(file_values.get("shop_publication_enabled", "")).strip()
+    if raw_shop_enabled:
+        values["shop_publication_enabled"] = raw_shop_enabled.casefold() in {
+            "1", "true", "yes", "on",
+        }
+
+    raw_company_enabled = os.environ.get("DTM_COMPANY_VEHICLE_FOLDERS_ENABLED", "").strip()
+    if not raw_company_enabled:
+        raw_company_enabled = str(file_values.get("company_vehicle_folders_enabled", "")).strip()
+    if raw_company_enabled:
+        values["company_vehicle_folders_enabled"] = raw_company_enabled.casefold() in {
+            "1", "true", "yes", "on",
+        }
+
+    for field_name, env_name in (
+        ("company_folder_provisioning_enabled", "DTM_COMPANY_FOLDER_PROVISIONING_ENABLED"),
+        ("shop_folder_provisioning_enabled", "DTM_SHOP_FOLDER_PROVISIONING_ENABLED"),
+    ):
+        raw = os.environ.get(env_name, "").strip()
+        if not raw:
+            raw = str(file_values.get(field_name, "")).strip()
+        if raw:
+            values[field_name] = raw.casefold() in {"1", "true", "yes", "on"}
 
     return CloudConfig(**values)

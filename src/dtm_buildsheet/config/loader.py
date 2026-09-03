@@ -20,6 +20,28 @@ class ConfigBundle:
     config_warnings: list[str] = field(default_factory=list)
 
 
+def resolve_vehicle_type(value: str, vehicle_layouts: dict) -> str:
+    """Return the canonical config key for a saved vehicle value.
+
+    Older projects contain display-case model names (for example ``Tahoe``)
+    while layout IDs are canonical keys (``TAHOE``).  Exact, case-insensitive
+    ID and explicit-alias matching keeps those projects usable without
+    rewriting their records merely by opening them.
+    """
+    raw = str(value or "").strip()
+    if not raw:
+        return raw
+    vehicles = vehicle_layouts.get("vehicles", {})
+    if raw in vehicles:
+        return raw
+    folded = raw.casefold()
+    for vehicle_id, vehicle in vehicles.items():
+        candidates = [vehicle_id, *(vehicle.get("aliases") or [])]
+        if any(str(candidate).strip().casefold() == folded for candidate in candidates):
+            return vehicle_id
+    return raw
+
+
 def model_lookup_keys(value: str) -> set[str]:
     raw = (value or "").strip().upper()
     compact = re.sub(r"[^A-Z0-9]+", "", raw)

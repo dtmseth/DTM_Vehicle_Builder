@@ -6,5 +6,15 @@
   "sharepoint_drive_id": "b!CQst139a6kOnvdfufzPqT89TYwhULOtMo2cQpqqFKDJkEtyg-IuVRbI1ITFPoEKF",
   "exports_library_name": "Company Files",
   "exports_library_internal_name": "Build Photos",
-  "exports_base_folder": "Vehicle Builder Projects"
+  "exports_base_folder": "Vehicle Builder Projects",
+  "company_folder_provisioning_enabled": true,
+  "company_vehicle_folders_enabled": true,
+  "company_library_name": "Company Files",
+  "company_library_internal_name": "Build Photos",
+  "company_vehicle_root": "Vehicle Project Database",
+  "shop_folder_provisioning_enabled": true,
+  "shop_publication_enabled": true,
+  "shop_library_name": "Shop Documents",
+  "shop_library_internal_name": "",
+  "shop_build_photos_root": "Shop Project Database"
 }

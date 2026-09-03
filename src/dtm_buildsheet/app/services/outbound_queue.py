@@ -152,6 +152,10 @@ def enqueue_export(
     """Persist a failed export upload for later retry. ``local_path`` must
     still be on disk at retry time; if it's been deleted, drain logs and
     discards the queue entry."""
+    requested_name = str(filename or local_path.name).replace("\\", "/").rsplit("/", 1)[-1]
+    if Path(requested_name).suffix.casefold() != ".pdf":
+        logger.info("Not queueing retired non-PDF export: %s", requested_name)
+        return False
     queue_dir = _queue_dir(paths, _EXPORTS_KIND)
     queue_dir.mkdir(parents=True, exist_ok=True)
     stem = _safe_filename(local_path.stem)
@@ -275,6 +279,11 @@ def _drain_exports(paths: AppPaths) -> dict[str, int]:
             continue
         retried += 1
         local_path = Path(payload.get("local_path", ""))
+        requested_name = str(payload.get("filename") or local_path.name).replace("\\", "/").rsplit("/", 1)[-1]
+        if Path(requested_name).suffix.casefold() != ".pdf":
+            logger.info("Discarding retired non-PDF export queue entry: %s", requested_name)
+            _safe_unlink(queue_path)
+            continue
         if not local_path.exists():
             # The user moved or deleted the source file. No point holding
             # the queue entry forever — drop it.

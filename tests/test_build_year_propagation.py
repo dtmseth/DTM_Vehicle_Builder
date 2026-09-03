@@ -68,7 +68,8 @@ def test_individual_draft_uses_project_build_year(tmp_path):
     draft = load_draft(result["draft_id"], paths.workspace_drafts_dir)
     assert draft.vehicle_info["BuildYear"] == "2027"
     assert draft.vehicle_info["NewVehicle"]["YEAR"] == "2027"
-    assert draft.vehicle_info["NewVehicle"]["MODEL"].startswith("2027 ")
+    assert draft.vehicle_info["NewVehicle"]["MAKE"] == "Ford"
+    assert draft.vehicle_info["NewVehicle"]["MODEL"] == "Police Interceptor Utility"
 
 
 def test_regeneration_refreshes_old_draft_to_project_build_year(tmp_path, monkeypatch):
@@ -120,7 +121,8 @@ def test_regeneration_refreshes_old_draft_to_project_build_year(tmp_path, monkey
     assert result["ok"] is True, result.get("error")
     assert captured["info"]["BuildYear"] == "2027"
     assert captured["info"]["NewVehicle"]["YEAR"] == "2027"
-    assert captured["info"]["NewVehicle"]["MODEL"].startswith("2027 ")
+    assert captured["info"]["NewVehicle"]["MAKE"] == "Ford"
+    assert captured["info"]["NewVehicle"]["MODEL"] == "Police Interceptor Utility"
 
 
 def test_output_filename_prefers_build_year_over_vehicle_year():
@@ -133,8 +135,8 @@ def test_output_filename_prefers_build_year_over_vehicle_year():
         }
     )
 
-    assert "_02_2027_Updated_" in name
-    assert "_02_2026_Updated_" not in name
+    assert "2027_GFP_Vehicle_Patrol_Unit_02_" in name
+    assert "_2026_Vehicle_Patrol_Unit_02_" not in name
 
 
 def test_rendered_build_package_uses_build_year(tmp_path, app_paths):
@@ -158,7 +160,7 @@ def test_rendered_build_package_uses_build_year(tmp_path, app_paths):
     )
 
     output = render_plan_to_ppt(plan, paths)
-    assert "_2027_Updated_" in output.name
+    assert "2027_GFPD_PIU_Patrol_Unit_02_" in output.name
 
     from pptx import Presentation
 

@@ -4398,11 +4398,6 @@ const _CONSOLE_STANDARD_FACEPLATES = {
     cup_holder: "havis_cup2_1001", oem_relocation_plate: "havis_factory_component_relocation_plate",
   },
 };
-const _CONSOLE_STYLE_LABELS = {
-  low_profile: "Low-profile", standard_width: "Standard width", wide_body: "Wide body",
-  standard: "Standard", short: "Short", angled: "Angled", flat: "Flat", enclosed: "Enclosed",
-};
-
 function _pickerNewConsoleSetup(saved = null) {
   const source = saved?.choices || saved || {};
   const copyChoice = value => value && typeof value === "object"
@@ -4483,10 +4478,6 @@ function _pickerConsoleStyleForProduct(product) {
   return product?.product_id || "other";
 }
 
-function _pickerConsoleStyleLabel(style) {
-  return _CONSOLE_STYLE_LABELS[style] || String(style || "Other console").replace(/_/g, " ");
-}
-
 function _pickerConsoleCatalogProducts(setup) {
   const brand = _pickerConsoleBrand().toLowerCase();
   return (setup.catalog.consoles || []).filter(product =>
@@ -4523,41 +4514,65 @@ function _pickerConsoleKitMatchesFeature(included, wanted) {
   return included === wanted || included === "any";
 }
 
-function _pickerResolveConsoleKit(setup) {
+function _pickerConsoleBundleFeatureRequest(setup) {
+  const armSupply = _pickerSupplyFromRecord(setup.choices.armRest || {});
+  const motionSupply = _pickerSupplyFromRecord(setup.choices.motionAttachment || {});
+  return {
+    armrest: armSupply.supplyType === "customer_supplied"
+      ? "" : _pickerConsoleFeatureRole(setup.choices.armRest, "armrest"),
+    motion: motionSupply.supplyType === "customer_supplied"
+      ? "" : _pickerConsoleFeatureRole(setup.choices.motionAttachment, "motion"),
+  };
+}
+
+function _pickerConsoleKitCoverage(setup, choice) {
+  const product = _pickerConsoleProductById(setup, choice?.product_id);
+  const included = product?.console_kit?.included || {};
+  const wanted = _pickerConsoleBundleFeatureRequest(setup);
+  return Number(_pickerConsoleKitMatchesFeature(included.armrest, wanted.armrest))
+    + Number(_pickerConsoleKitMatchesFeature(included.motion_attachment, wanted.motion));
+}
+
+function _pickerRecommendConsoleKit(setup) {
   const style = setup.choices.style;
   if (!style) return null;
   // Gamber-Johnson's current console_kit fields describe bundled order
   // contents, not cutout geometry. Neither customer-supplied condition may
   // therefore select a kit that bills another copy of that accessory.
-  const armSupply = _pickerSupplyFromRecord(setup.choices.armRest || {});
-  const motionSupply = _pickerSupplyFromRecord(setup.choices.motionAttachment || {});
-  const wantedArmrest = armSupply.supplyType === "customer_supplied"
-    ? "" : _pickerConsoleFeatureRole(setup.choices.armRest, "armrest");
-  const wantedMotion = motionSupply.supplyType === "customer_supplied"
-    ? "" : _pickerConsoleFeatureRole(setup.choices.motionAttachment, "motion");
+  const wanted = _pickerConsoleBundleFeatureRequest(setup);
   const candidates = _pickerConsoleCatalogProducts(setup).filter(product => _pickerConsoleStyleForProduct(product) === style);
   const eligible = candidates.filter(product => {
     const included = product.console_kit?.included || {};
-    return !(included.armrest && !_pickerConsoleKitMatchesFeature(included.armrest, wantedArmrest))
-      && !(included.motion_attachment && !_pickerConsoleKitMatchesFeature(included.motion_attachment, wantedMotion));
+    return !(included.armrest && !_pickerConsoleKitMatchesFeature(included.armrest, wanted.armrest))
+      && !(included.motion_attachment && !_pickerConsoleKitMatchesFeature(included.motion_attachment, wanted.motion));
   });
   const rank = product => {
     const included = product.console_kit?.included || {};
     let score = 0;
-    if (included.armrest && _pickerConsoleKitMatchesFeature(included.armrest, wantedArmrest)) score += 4;
-    if (included.motion_attachment && _pickerConsoleKitMatchesFeature(included.motion_attachment, wantedMotion)) score += 4;
+    if (included.armrest && _pickerConsoleKitMatchesFeature(included.armrest, wanted.armrest)) score += 4;
+    if (included.motion_attachment && _pickerConsoleKitMatchesFeature(included.motion_attachment, wanted.motion)) score += 4;
     if (product.console_kit) score += 1;
     if (/discontinued/i.test(String(product.model || ""))) score -= 10;
     return score;
   };
   const product = [...eligible].sort((a, b) => rank(b) - rank(a) || String(a.model || "").localeCompare(String(b.model || "")))[0] || null;
-  const choice = _pickerConsoleChoiceFromProduct(product);
-  if (!choice) return null;
-  // Resolving a better-fitting kit swaps only the catalog identity. Supply is
-  // a user decision and must survive a kit re-resolution unchanged.
-  Object.assign(choice, _pickerSupplyPayload(_pickerSupplyFromRecord(setup.choices.consoleChoice || {})));
+  return _pickerConsoleChoiceFromProduct(product);
+}
+
+function _pickerApplyConsoleRecommendation(setup, recommendation) {
+  if (!recommendation) return null;
+  const choice = {
+    ...recommendation,
+    // Supply belongs to the explicitly selected base console, so keep it when
+    // the user deliberately accepts a different package recommendation.
+    ..._pickerSupplyPayload(_pickerSupplyFromRecord(setup.choices.consoleChoice || {})),
+  };
   setup.choices.consoleChoice = choice;
+  setup.choices.style = _pickerConsoleStyleForProduct(
+    _pickerConsoleProductById(setup, choice.product_id),
+  );
   _pickerState.sel = { product_id: choice.product_id, model: choice.model, mfr: choice.manufacturer_label, sku: choice.part_number };
+  _pickerConsoleSyncFaceplates(setup);
   return choice;
 }
 
@@ -4584,13 +4599,30 @@ function _pickerConsoleSyncFaceplates(setup) {
     ...(included.cup_holder ? [_pickerConsoleFaceplateChoice(setup, "cup_holder", { included: true, required: true })] : []),
     ...(included.oem_relocation_plate ? [_pickerConsoleFaceplateChoice(setup, "oem_relocation_plate", { included: true, required: true })] : []),
   ].filter(Boolean);
-  const automaticIds = new Set(automatic.map(choice => choice.product_id));
-  const extras = (setup.choices.faceplates || []).filter(choice => !choice.auto_kind && !automaticIds.has(choice.product_id));
-  const priorSupply = new Map((setup.choices.faceplates || []).map(choice => [choice.product_id, _pickerSupplyPayload(_pickerSupplyFromRecord(choice))]));
-  setup.choices.faceplates = [...automatic, ...extras].map(choice => ({
-    ...choice,
-    ...(priorSupply.get(choice.product_id) || _pickerSupplyPayload(_pickerSupplyFromRecord(choice))),
-  }));
+  const automaticById = new Map(automatic.map(choice => [choice.product_id, choice]));
+  const reconciled = [];
+  // Required items may change when the explicit base SKU changes, but their
+  // presence is independent from the install order the user arranged. Walk
+  // the existing lineup in place, refresh automatic metadata without moving
+  // it, remove automatic rows no longer supplied by the base, and append only
+  // genuinely new required rows.
+  for (const prior of (setup.choices.faceplates || [])) {
+    const currentAutomatic = automaticById.get(prior.product_id);
+    if (prior.auto_kind && !currentAutomatic) continue;
+    if (currentAutomatic) {
+      reconciled.push({
+        ...currentAutomatic,
+        ..._pickerSupplyPayload(_pickerSupplyFromRecord(prior)),
+      });
+      automaticById.delete(prior.product_id);
+    } else {
+      reconciled.push(prior);
+    }
+  }
+  for (const choice of automatic) {
+    if (automaticById.has(choice.product_id)) reconciled.push(choice);
+  }
+  setup.choices.faceplates = reconciled;
 }
 
 function _pickerConsoleHasCompatibleSku(product) {
@@ -4674,7 +4706,6 @@ async function _pickerBeginConsoleSetup(saved = null) {
         _pickerConsoleProductById(setup, setup.choices.consoleChoice.product_id),
       );
     }
-    if (setup.choices.style) _pickerResolveConsoleKit(setup);
     _pickerConsoleSyncFaceplates(setup);
   } catch (error) {
     console.error("console setup catalog load failed:", error);
@@ -4709,26 +4740,6 @@ function _pickerConsoleFaceplateCards(setup) {
       + `<small>${esc(choice.part_number)}${price}${isAdded ? " · added" : ""}</small></button>`;
   }).join("");
   return `<div class="console-faceplate-catalog">${cards || `<div class="console-empty">No matching faceplates are available.</div>`}</div>`;
-}
-
-function _pickerConsoleStyleCards(setup) {
-  const byStyle = new Map();
-  for (const product of _pickerConsoleCatalogProducts(setup)) {
-    const style = _pickerConsoleStyleForProduct(product);
-    const list = byStyle.get(style) || [];
-    list.push(product);
-    byStyle.set(style, list);
-  }
-  return [...byStyle.entries()].sort(([a], [b]) => _pickerConsoleStyleLabel(a).localeCompare(_pickerConsoleStyleLabel(b)))
-    .map(([style, products]) => {
-      const selected = setup.choices.style === style;
-      const kitCount = products.filter(product => product.console_kit).length;
-      return `<button type="button" class="console-catalog-card console-style-card${selected ? " is-added" : ""}" data-console-style="${esc(style)}">
-        <span class="console-catalog-card-brand">${kitCount ? `${kitCount} compatible kit${kitCount === 1 ? "" : "s"}` : "Compatible console"}</span>
-        <strong>${esc(_pickerConsoleStyleLabel(style))}</strong>
-        <small>${esc(products.length === 1 ? products[0].model : `${products.length} compatible console kits`)}</small>
-      </button>`;
-    }).join("") || `<div class="console-empty">No compatible console kits are available for this vehicle and preferred brand.</div>`;
 }
 
 function _pickerConsoleOrderCards(setup) {
@@ -4929,20 +4940,27 @@ function _pickerRenderConsoleSetup() {
   const printerFlow = _pickerConsolePrinterFlow(setup);
   const selectedKit = setup.choices.consoleChoice;
   const included = _pickerConsoleIncludedFeatures(setup);
+  const recommendedKit = _pickerRecommendConsoleKit(setup);
+  const recommendationDiffers = !!recommendedKit
+    && recommendedKit.part_number !== selectedKit?.part_number
+    && _pickerConsoleKitCoverage(setup, recommendedKit) > _pickerConsoleKitCoverage(setup, selectedKit);
   const kitSummary = selectedKit
-    ? `<div class="console-kit-summary"><strong>Selected kit: ${esc(_pickerConsoleChoiceLabel(selectedKit))}</strong><span>${Object.keys(included).length ? `Includes ${esc(Object.keys(included).map(key => ({ cup_holder: "cup holder faceplate", oem_relocation_plate: "OEM relocation plate", armrest: "armrest", motion_attachment: "motion attachment" }[key] || key.replace(/_/g, " "))).join(", "))}. Included items stay on the shop manifest but are not billed separately.` : "This kit has no recorded included add-ons."}</span>${_pickerConsoleConditionHtml(selectedKit, { key: "consoleChoice" })}</div>`
-    : `<div class="console-kit-summary console-kit-summary--empty">Choose a console style to match a compatible kit from QuickBooks.</div>`;
+    ? `<div class="console-kit-summary"><strong>Base console: ${esc(_pickerConsoleChoiceLabel(selectedKit))}</strong><span>${Object.keys(included).length ? `Includes ${esc(Object.keys(included).map(key => ({ cup_holder: "cup holder faceplate", oem_relocation_plate: "OEM relocation plate", armrest: "armrest", motion_attachment: "motion attachment" }[key] || key.replace(/_/g, " "))).join(", "))}.` : "No recorded included add-ons."}</span>${_pickerConsoleConditionHtml(selectedKit, { key: "consoleChoice" })}</div>`
+    : `<div class="console-kit-summary console-kit-summary--empty">Choose the exact base console on the Parts tab.</div>`;
+  const recommendation = recommendationDiffers
+    ? `<div class="console-kit-recommendation"><div><span class="guided-chip">OPTIONAL</span><strong>${esc(recommendedKit.part_number)} includes more of the selected hardware</strong><small>Your base SKU stays ${esc(selectedKit.part_number)} unless you apply this suggestion.</small></div><button type="button" class="btn btn-secondary" data-console-use-recommendation="${esc(recommendedKit.product_id)}">Use ${esc(recommendedKit.part_number)}</button></div>`
+    : "";
   details.innerHTML = `<section class="console-setup" data-console-setup>
-    <header class="console-setup-header"><div><span class="guided-chip">CONSOLE</span><h2>Build a Center Console Kit</h2><p>Choose the console style and needed features. The picker selects the matching kit and bills only hardware that is not already included with it.</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></header>${error}
-    <section class="console-faceplate-section"><div class="console-section-heading"><div><div class="console-section-kicker">1 · Choose a style</div><h3>Which style of console fits this build?</h3><p>Only vehicle-compatible ${esc(consoleBrand || "preferred-brand")} console kits are shown.</p></div></div><div class="console-faceplate-catalog console-style-catalog">${_pickerConsoleStyleCards(setup)}</div>${kitSummary}</section>
-    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">2 · Choose features</div><h3>What should the kit include?</h3><p>We select the kit that already contains these pieces when possible. A dock or other hardware that is not part of a kit is added and billed separately.</p></div></div>${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose an armrest, if this console needs one.")}${printerFlow}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device, if this console needs one.")}${pedestalSection}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}${micClipSection}${_pickerConsoleRadioMicReconciliationQuestion(setup)}${_pickerConsoleMagMicQuestion(setup)}</section>
-    <section class="console-faceplate-section console-faceplate-section--order"><div class="console-section-heading"><div><div class="console-section-kicker">3 · Plan the faceplate lineup</div><h3>Core and radio faceplates are always stocked</h3><p>Every console receives a Core and radio faceplate. Vehicle-specific kits also include their OEM relocation plate and, when listed, a cupholder faceplate. Drag rows to give the shop the install order.</p>${faceplateBrandNote}</div><label class="console-faceplate-search"><span>Add another faceplate</span><input id="picker-console-faceplate-search" value="${esc(setup.faceplateSearch || "")}" placeholder="Search optional faceplates, pockets…"></label></div><div class="console-faceplate-order" id="picker-console-faceplate-order">${_pickerConsoleOrderCards(setup)}</div><div class="console-extra-faceplates">${_pickerConsoleFaceplateCards(setup)}</div></section>
+    <header class="console-setup-header"><div><span class="guided-chip">CONSOLE</span><h2>Set Up Center Console</h2><p>The base SKU stays exactly as selected. Add the hardware the shop will install.</p></div><button class="guided-close" type="button" onclick="_pickerClearSelection()" title="Close">✕</button></header>${error}
+    <section class="console-faceplate-section"><div class="console-section-heading"><div><div class="console-section-kicker">1 · Base console</div><h3>Exact SKU</h3></div></div>${kitSummary}${recommendation}</section>
+    <section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">2 · Components</div><h3>Installed hardware</h3><p>Every selected part stays on the build sheet. A covered part is simply not billed twice.</p></div></div>${_pickerConsoleComponentSection(setup, "armRest", "Armrest", "Choose an armrest, if this console needs one.")}${printerFlow}${_pickerConsoleComponentSection(setup, "motionAttachment", "Motion attachment", "Choose a motion device, if this console needs one.")}${pedestalSection}${_pickerConsoleComponentSection(setup, "dockingStation", "Docking station", "Choose the computer dock or cradle that belongs on this console.")}${micClipSection}${_pickerConsoleRadioMicReconciliationQuestion(setup)}${_pickerConsoleMagMicQuestion(setup)}</section>
+    <section class="console-faceplate-section console-faceplate-section--order"><div class="console-section-heading"><div><div class="console-section-kicker">3 · Faceplate lineup</div><h3>Core and radio faceplates are always stocked</h3><p>Every console receives a Core and radio faceplate. Vehicle-specific kits also include their OEM relocation plate and, when listed, a cupholder faceplate. Drag rows to give the shop the install order.</p>${faceplateBrandNote}</div><label class="console-faceplate-search"><span>Add another faceplate</span><input id="picker-console-faceplate-search" value="${esc(setup.faceplateSearch || "")}" placeholder="Search optional faceplates, pockets…"></label></div><div class="console-faceplate-order" id="picker-console-faceplate-order">${_pickerConsoleOrderCards(setup)}</div><div class="console-extra-faceplates">${_pickerConsoleFaceplateCards(setup)}</div></section>
     ${wingSection ? `<section class="console-components-section"><div class="console-section-heading"><div><div class="console-section-kicker">Optional vehicle fitment</div><h3>Console wings</h3><p>Choose vehicle-specific side wings only when the build needs them.</p></div></div>${wingSection}</section>` : ""}
   </section>`;
 
-  details.querySelectorAll("[data-console-style]").forEach(button => button.addEventListener("click", () => {
-    setup.choices.style = button.dataset.consoleStyle;
-    _pickerResolveConsoleKit(setup);
+  details.querySelectorAll("[data-console-use-recommendation]").forEach(button => button.addEventListener("click", () => {
+    const product = _pickerConsoleProductById(setup, button.dataset.consoleUseRecommendation);
+    _pickerApplyConsoleRecommendation(setup, _pickerConsoleChoiceFromProduct(product));
     _pickerConsoleSyncFaceplates(setup);
     _pickerRenderConsoleSetup();
     _pickerUpdateFooter();
@@ -5013,7 +5031,6 @@ function _pickerRenderConsoleSetup() {
     }
     if (key === "printer" && !setup.choices.printer) _pickerConsoleClearPrinterChoices(setup);
     if (["armRest", "motionAttachment"].includes(key)) {
-      _pickerResolveConsoleKit(setup);
       _pickerConsoleSyncFaceplates(setup);
     }
     setup.openComponent = "";
@@ -5038,7 +5055,6 @@ function _pickerRenderConsoleSetup() {
       const key = button.dataset.consoleConditionKey;
       if (setup.choices[key]) Object.assign(setup.choices[key], payload);
       if (["armRest", "motionAttachment"].includes(key)) {
-        _pickerResolveConsoleKit(setup);
         _pickerConsoleSyncFaceplates(setup);
       }
     }
@@ -5152,26 +5168,35 @@ function _pickerConsoleComponentRows(ownerLineId, ownerName) {
   const choices = _pickerState.consoleSetup?.choices || {};
   const included = _pickerConsoleIncludedFeatures(_pickerState.consoleSetup || { choices, catalog: {} });
   const rows = [];
-  const add = (name, choice, partType, location, componentKey) => {
+  const add = (name, choice, partType, location, componentKey, coveredByKit = false) => {
     if (!choice?.part_number) return;
+    const includedWithKit = coveredByKit
+      && _pickerSupplyFromRecord(choice).supplyType !== "customer_supplied";
     rows.push({ name: `${ownerName} · ${name}`, location, manufacturer: choice.manufacturer_label || "", part_number: choice.part_number,
       quantity: 1, ..._pickerSupplyPayload(_pickerSupplyFromRecord(choice)), parent_line_id: ownerLineId,
-      // These are real, billed console components. Keep them under the
-      // console in the manifest while preserving one owner marker so any
-      // component edit returns to the unified console setup.
+      // Physical presence and billing are independent. Every selected item is
+      // a real manifest/build-sheet row; the estimate layer alone suppresses
+      // a row whose price is already covered by the selected base package.
       accessory_category: "console_component", accessory_parent_product: "", part_type: partType,
-      picker_config: { console_setup_owner_line_id: ownerLineId, console_component_key: componentKey } });
+      notes: includedWithKit ? "Included with selected console kit — do not bill separately." : "",
+      picker_config: {
+        ...(includedWithKit ? { console_kit_included: true } : {}),
+        console_setup_owner_line_id: ownerLineId,
+        console_component_key: componentKey,
+      } });
   };
-  if (!_pickerConsoleKitMatchesFeature(included.armrest, _pickerConsoleFeatureRole(choices.armRest, "armrest"))) {
-    add("Armrest", choices.armRest, "arm_rest", "IN CENTER CONSOLE", "armRest");
-  }
+  add(
+    "Armrest", choices.armRest, "arm_rest", "IN CENTER CONSOLE", "armRest",
+    _pickerConsoleKitMatchesFeature(included.armrest, _pickerConsoleFeatureRole(choices.armRest, "armrest")),
+  );
   const motionLocation = choices.motionLocation === "mounted_to_pedestal" ? "MOUNTED TO PEDESTAL" : "MOUNTED TO CONSOLE";
   if (_pickerConsolePedestalRequired()) {
     add("Computer Pedestal / Mount Base", choices.pedestalMount, "pedestal_mount", _pickerConsolePedestalLocation(choices.pedestalMount), "pedestalMount");
   }
-  if (!_pickerConsoleKitMatchesFeature(included.motion_attachment, _pickerConsoleFeatureRole(choices.motionAttachment, "motion"))) {
-    add("Motion Attachment", choices.motionAttachment, "motion_attachment", motionLocation, "motionAttachment");
-  }
+  add(
+    "Motion Attachment", choices.motionAttachment, "motion_attachment", motionLocation, "motionAttachment",
+    _pickerConsoleKitMatchesFeature(included.motion_attachment, _pickerConsoleFeatureRole(choices.motionAttachment, "motion")),
+  );
   add("Docking Station", choices.dockingStation, "docking_station", "IN CENTER CONSOLE", "dockingStation");
   add("Radio Mic Clip", choices.radioMicClip, "radio_mic_clip", "ON CENTER CONSOLE", "radioMicClip");
   if (choices.addMagMic === true && (
@@ -5355,6 +5380,12 @@ const _SYSTEM_LOC = {
     { value: "equipment_tray", label: "On equipment tray" },
     { value: "behind_passenger_seat", label: "Behind passenger seat" },
   ],
+  cameraAntenna: [
+    { value: "rear_right_roof", label: "Rear right roof" },
+    { value: "rear_left_roof", label: "Rear left roof" },
+    { value: "front_right_roof", label: "Front right roof" },
+    { value: "front_left_roof", label: "Front left roof" },
+  ],
   frontCamera: [
     { value: "rearview_mirror", label: "Behind rearview mirror" },
     { value: "upper_windshield", label: "Upper windshield" },
@@ -5536,17 +5567,36 @@ const _SYSTEM_DEFS = {
     intro: "Record the kit ownership and the camera/DVR locations the shop needs. Only DTM purchases need ordering text.",
     defaults: {
       systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
+      cameraAntennaStyle: "", cameraAntennaStyleCustom: "", cameraAntennaLoc: "rear_right_roof", cameraAntennaLocPlacement: null,
       cameraParts: [], rearSeatLoc: "",
       bodyDockLoc: "", wirelessMicLoc: "",
     },
     steps(c) {
       const extendedCamera = _cameraSupportsExtendedComponents(_systemCameraPlatform(c));
+      const antennaStyles = [
+        ["whip", "Whip style", "Flexible whip-style camera antenna"],
+        ["cylinder", "Cylinder style", "Short cylindrical camera antenna"],
+        ["axon_fin", "Axon fin", "Axon fin-style roof antenna"],
+        ["custom", "Custom", "Record another antenna style"],
+        ...(c.cameraAntennaStyle === "__legacy_unrecorded__"
+          ? [["__legacy_unrecorded__", "Not recorded (existing build)", "This camera setup predates antenna questions"]]
+          : []),
+      ];
+      const antennaLocations = [
+        ..._SYSTEM_LOC.cameraAntenna,
+        ...(c.cameraAntennaLoc === "__legacy_unrecorded__"
+          ? [{ value: "__legacy_unrecorded__", label: "Not recorded (existing build)" }]
+          : []),
+      ];
       const cameraOptions = [
         ["front", "Front-facing camera", "Forward road view"], ["rear_seat", "Prisoner / rear-seat camera", "Cabin or prisoner-area view"],
         ...(extendedCamera ? [["rear", "Rear / backup camera", "Rear exterior view"], ["body_dock", "Body-camera dock", "Dock for a body-worn camera"], ["wireless_mic", "Wireless microphone charger", "Charger for a wireless mic"]] : []),
       ];
       return [
         ..._systemSupplySteps("camera", "camera system", c),
+        _systemStep("cameraAntennaStyle", "choice", "What camera antenna style will be installed?", "Choose the physical antenna style the shop should expect.", antennaStyles),
+        ...(c.cameraAntennaStyle === "custom" ? [_systemStep("cameraAntennaStyleCustom", "textarea", "Describe the custom camera antenna", "Enter the antenna style or identifying details the shop needs.", [])] : []),
+        _systemLocationStep("cameraAntennaLoc", "Where will the camera antenna go?", "Rear right roof is the default; choose another roof position or a custom location when needed.", antennaLocations, { vehiclePlacement: true }),
         _systemLocationStep("dvrLoc", "Where will the camera DVR / recorder go?", "Pick the location the shop should use for the recorder.", _SYSTEM_LOC.cameraDvr),
         _systemStep("cameraParts", "multi", "Which camera components are included?", "Select every component the shop should install. Location questions will follow for each selection.", cameraOptions),
         ...(c.cameraParts || []).includes("rear_seat") ? [_systemLocationStep("rearSeatLoc", "Where will the prisoner / rear-seat camera go?", "Pick the final cabin-camera location.", _SYSTEM_LOC.rearSeatCamera)] : [],
@@ -5636,7 +5686,8 @@ async function _pickerStartSystemCustomPlacement(step) {
   loc.customStage = "placement";
   loc.autoLocation = "";
   loc.name_pattern = "";
-  loc.base_label = "Radio Antenna";
+  loc.base_label = state.kind === "camera" && step.key === "cameraAntennaLoc"
+    ? "Camera Antenna" : "Radio Antenna";
   loc.catalog_names = [];
 
   const views = loc.layouts?.vehicles?.[loc.vehicle]?.views || {};
@@ -5756,6 +5807,16 @@ function _systemDefaults(kind, existing = {}) {
     base.refreshCables = (base.refreshCables || []).map(id =>
       id === "camera_signal_data_cable" ? "signal_data_cable" : id
     );
+    const isLegacyCamera = !existing.cameraAntennaStyle && [
+      "dvrLoc", "cameraParts", "rearSeatLoc", "bodyDockLoc", "wirelessMicLoc",
+    ].some(key => Object.prototype.hasOwnProperty.call(existing, key));
+    if (isLegacyCamera) {
+      // Existing camera builds had no antenna questions. Keep them complete
+      // and editable without pretending that a particular style/location was
+      // chosen. A later explicit selection replaces these compatibility values.
+      base.cameraAntennaStyle = "__legacy_unrecorded__";
+      base.cameraAntennaLoc = "__legacy_unrecorded__";
+    }
   }
   return base;
 }
@@ -6098,6 +6159,19 @@ function _systemComponentRows(kind, c) {
     }
   } else if (kind === "camera") {
     add("camera_dvr", "Camera DVR / recorder", "camera_dvr", answer("dvrLoc"), `Platform: ${_systemProductLabel(c) || _systemCameraPlatform(c)}`);
+    if (c.cameraAntennaStyle !== "__legacy_unrecorded__" && c.cameraAntennaLoc !== "__legacy_unrecorded__") {
+      const antennaStyle = c.cameraAntennaStyle === "custom"
+        ? String(c.cameraAntennaStyleCustom || "").trim()
+        : answer("cameraAntennaStyle");
+      const antennaPickerConfig = c.cameraAntennaLoc === "__custom__"
+        ? { custom_location: { ...(c.cameraAntennaLocPlacement || {}), label: answer("cameraAntennaLoc") } }
+        : null;
+      add(
+        "camera_antenna", "Camera antenna", "camera_antenna",
+        answer("cameraAntennaLoc"), antennaStyle,
+        antennaPickerConfig,
+      );
+    }
     const map = {
       front: ["Front-facing camera", "front_camera", "Upper windshield", "Fixed location"],
       rear_seat: ["Prisoner / rear-seat camera", "rear_seat_camera", answer("rearSeatLoc"), "Selected camera component"],
@@ -6281,6 +6355,9 @@ function _pickerRenderSystemIn(el) {
       if (key === "cameraBrand" && !_cameraSupportsExtendedComponents(selected)) {
         target.cameraParts = (target.cameraParts || []).filter(part => ["front", "rear_seat"].includes(part));
         target.bodyDockLoc = ""; target.wirelessMicLoc = "";
+      }
+      if (key === "cameraAntennaStyle" && selected !== "custom") {
+        target.cameraAntennaStyleCustom = "";
       }
     }
     _systemClampStep(); _pickerRefreshSystemView();
@@ -7070,6 +7147,16 @@ async function _pickerDoAdd(addAndContinue) {
         picker_config: pickerConfig,
         ...(partTypeId ? { part_type: partTypeId } : {}),
       };
+      if (_pickerState.consoleSetup?.active) {
+        const baseConsole = _pickerState.consoleSetup.choices?.consoleChoice;
+        // A console is one exact orderable base, not a color/configuration
+        // parent whose SKU belongs only in the expandable component list.
+        // Store the authoritative SKU on the build row itself so the manifest,
+        // PDF, estimate, and edit path all identify the same selected item.
+        payload.part_number = baseConsole?.part_number || payload.part_number;
+        payload.manufacturer = baseConsole?.manufacturer_label || payload.manufacturer;
+        payload.components = [];
+      }
       if (isWindowTint) {
         payload.name = "Window Tint";
         payload.quantity = _pickerState.tint.windows.length;

@@ -8,11 +8,13 @@ How data flows from a project record to a generated build sheet.
 
 ```
 ProjectRecord                        workspace/projects/{project_id}/project.json
+  ├── reference_assets[]             portable Company/Shop identity + unit-group assignment notes
   └── BuildUnit[]                    vehicle model + build type + preset + quantity
         └── IndividualUnit[]         one unit per vehicle (VIN, year, color, unit #)
               └── draft_id ──────►  BuildDraft    workspace/drafts/{draft_id}.json
                                     (parts list + vehicle info + unit notes + shared project note + overrides)
-              └── output_path ───►  generated .pptx / exported .pdf
+              ├── output_path ───►  local .pptx conversion artifact / exported .pdf
+              └── folder item IDs ► durable Company/Shop physical-vehicle package identity
 ```
 
 A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying a preset copies its parts into the draft; subsequent edits to the draft do not affect the preset.
@@ -28,7 +30,7 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | Presets | `workspace/presets/*.json` (bundled app) or `resources/presets/` (dev) — synced from SharePoint `/Settings/presets/` | `app/services/preset_service.py` |
 | Agencies (per-record) | `workspace/agencies/{agency_id}.json` — synced from SharePoint `/Settings/agencies/` | `app/services/agency_service.py` |
 | Sales reps (per-record) | `workspace/sales_reps/{rep_id}.json` — synced from SharePoint `/Settings/sales_reps/` | `app/services/sales_rep_service.py` |
-| Generated outputs | Timestamped files in `workspace/output/`; customer PDFs and internal PPTX sources use separate SharePoint trees | `app/services/generation_service.py`, `export_service.py`, `exports_upload_service.py` |
+| Generated outputs | Timestamped local files in `workspace/output/`; PDF-only cloud distribution | `generation_service.py`, `export_service.py`, `company_vehicle_folder_service.py`, `shop_publication_service.py` |
 
 ---
 
@@ -42,6 +44,9 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 | List / get / save / clone / delete preset | `GET/POST/DELETE /api/presets/*` | `preset_service.py` |
 | Generate build sheet | `POST /generate` | `generation_service.py` → `generator.py` |
 | Export PDF | `POST /api/export/pdf` | `export_service.py` |
+| List/save/discover/import/remove references | `GET/POST /api/project/{id}/references/*` | `reference_photo_service.py`, `reference_library_service.py` |
+| Reconcile direct project-folder photo uploads | `POST /api/project/{id}/photo-gallery` with `discover_folder` | `project_photo_folder_service.py`, `photo_gallery_service.py` |
+| Finalize/reopen vehicle | `GET/POST /api/project/{id}/unit/{uid}/individual/{iid}/finalization/*` | `finalization_service.py` → `shop_publication_service.py` |
 
 ---
 
@@ -62,52 +67,97 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    delivery requirements save as they are typed.
    Project Details owns one shared note that is carried into every build draft without replacing unit-specific notes.
 
-5. **Preview / Edit in PowerPoint** — the per-build action is "📊 Preview / Edit in PowerPoint", not a separate Generate step. Behind the scenes:
-   - `POST /api/build/render-status` decides whether the existing PPTX is fresh, stale (source changed), or manually edited in PowerPoint since the last render.
-   - Stale + not edited → silent re-render via `POST /api/draft/generate`.
-   - Stale + edited → modal asks whether to discard the manual edits or open the existing file as-is.
-   - Fresh → just open.
+5. **Assign references** — the project-photo gallery adds organized media as assigned or unassigned;
+   the unit-group thumbnail gallery assigns multiple project/reusable photos to every vehicle in that
+   group, edits shop notes inline, and stores only portable drive/item identity plus the note. New project-wide and individual assignments are
+   not created, though the shared UI/renderer/finalization/publisher resolver continues honoring
+   legacy records at those scopes. The exact year-level Company **Reference Photos & Videos** folder
+   is the unassigned-photo inbox: opening the project reconciles direct OneDrive/SharePoint JPG/PNG
+   uploads into project metadata. Videos remain Company-only design context.
 
-   Generation stamps `IndividualUnit.output_path`, `last_rendered_at`, and `last_rendered_by` (display name of the signed-in M365 user) on the project record server-side; no follow-up `/api/project/save` from the UI is needed.
+6. **Export PDF** — **PDF Options → Export / update PDF** checks whether the local conversion source
+   is fresh, regenerates internally when needed, places adaptive reference-photo pages immediately
+   after the vehicle visuals and before the parts manifest, converts to PDF, and adds sanitized
+   relative links to full-resolution copied photos. There is no user-facing PowerPoint action.
+   Generation/export stamps paths, actor, and timestamps server-side. If the vehicle is already
+   finalized and owns a published Shop PDF, the completed export prompts before explicitly
+   replacing that Shop package; declining keeps the prior Shop copy.
 
-6. **Export PDF** — "📄 Export PDF" runs the same staleness check, regenerates if needed, then exports the PDF and uploads it to the SharePoint exports library. Updates `pdf_path`, `last_exported_at`, `last_exported_by` on the project record.
+7. **Finalize design** — individual vehicles require a unit number or VIN, current PDF, available
+   assigned references, and acknowledgement of advisory equipment warnings. Design finalization locks the
+   draft and, only when the Shop cutover is explicitly enabled, publishes the PDF and effective
+   photos. Reopening records actor/reason and withdraws exact app-owned Shop item IDs without touching
+   Completed Build Photos.
 
-7. **View PDF / Open PDF folder** — visible once the corresponding artifact exists. If a shared
-   project contains an absolute export path from another computer, View PDF / Preview downloads the
-   matching agency/year/filename from the SharePoint exports library into this install's approved
-   output folder before opening it. "Open PDF folder" tries an OneDrive-synced path first, falling
-   back to the SharePoint web URL via Graph's `drives/{id}.webUrl`.
+8. **View PDF / Open folder** — View PDF opens/hydrates the current PDF. Once a Shop package exists,
+   the folder action uses the stored Shop PDF path to open the exact vehicle folder through a local
+   OneDrive sync or its SharePoint URL; otherwise it retains the legacy agency/year fallback.
+
+9. **Past-photo project and archive** — old completed-build photos map to an ordinary project for
+   their actual agency/build year, with only known model/build-type/unit data. No historical marker,
+   label, draft, PDF, finalization, or QBO data is invented. After the copied photos are verified,
+   mark the project completed; it moves from Active Projects to the Agency → Build Year Project
+   Archives tree and can be reopened later.
 
 ---
 
 ## Export Location
 
 Generated `.pptx` and `.pdf` files are written with timestamps to the local app output folder
-(`workspace/output/`). When cloud mode and the export library are configured, SharePoint uses
-deterministic filenames for the normal Replace path and separates customer-ready PDFs from editable
-PowerPoint sources:
+(`workspace/output/`). PPTX is a conversion artifact and new cloud upload/queue entry points reject
+it. The legacy pre-v3.5.0 PDF path was:
 
 ```text
 {exports_base_folder}/{agency}/{year}/{stable vehicle name}.pdf
-{exports_base_folder}/_DTM Internal PowerPoint Sources/{agency}/{year}/{stable vehicle name}.pptx
 ```
 
-The build-card folder action opens only the agency/year PDF folder. The internal PowerPoint tree is
-an accident-prevention boundary, not a separate SharePoint permission boundary; app users who can
-edit shared builds still need delegated access so another workstation can hydrate the source.
-Downloads try the new canonical location first and then the legacy combined agency/year location,
-so older project records remain usable during migration.
+The two independent v3.5.0 production paths are:
+
+```text
+Company Files/Vehicle Project Database/{agency}/{agency abbreviation} - {year}/
+  Reference Photos & Videos/
+  {canonical vehicle}/{canonical vehicle}.pdf
+
+Shop Documents/Shop Project Database/{agency}/{agency abbreviation} - {year}/{canonical vehicle}/
+  {canonical vehicle}.pdf
+  Build Reference Photos/
+  Completed Build Photos/
+```
+
+The canonical vehicle label is `{year} {agency abbreviation} {short model} - {build type} - Unit {number} - VIN {last
+six}` with unavailable identifier segments omitted. The make is not included; Police Interceptor
+Utility is `PIU`, while other vehicles use recognizable model names such as `Durango`, `F-150`, and
+`Traverse`. Unit number and VIN always mean the actual/new vehicle identifiers. Existing or trade-in
+identifiers are shown only as optional metadata in the dedicated **Existing Vehicle** fields/card;
+they are never current card identity or folder, filename, export, or QBO naming fallbacks. The cover
+uses separate **Build Type** and **Unit #** rows for both vehicles rather than combining them into an
+ambiguous `Patrol #1`-style value. Stored folder item IDs, not the mutable current-vehicle label, own
+the physical vehicle. A naming change moves/renames the existing folder by ID so completed photos
+remain attached.
+
+Agency Abbreviation is editable in Agency Manager. It defaults to initials of meaningful words,
+the county name for a county sheriff, or a short explicit acronym; the saved override wins. `&` is
+supported and preserved in visible names. Agency Manager and project search also recover identities
+retained by projects when an agency file is absent, and prevent deletion of in-use agencies.
+
+Folder pre-creation is independently gated from PDF publication. The provisioning flags are enabled
+in the current working-tree configuration after the approved live skeleton run. Project save
+creates/reconciles agency/year/reference folders, and every known individual creates the
+applicable vehicle/photo folders. Standalone Agency Manager and imported QBO Customer records never
+create roots. Existing records without a
+unit number or VIN use a stable `Pending ID` suffix derived from `individual_id`; saved folder item
+IDs drive the later rename when real identity arrives, while periodic cloud sync retries durable
+pending/error states. Ordinary project edits preserve these server-owned folder IDs, publication
+state, output metadata, and QBO links even when an older/partial browser payload omits them.
 
 The `project_id` is passed with every `/api/draft/generate` call so the backend can refresh unit labels and agency/year metadata from the current project record before rendering. Custom per-project output folders and the old standalone export-folder picker are no longer used.
 
-Before replacing an existing vehicle export, the Builds UI asks whether to replace the prior
-PPTX/PDF pair or keep both and create a version. Replace is the default. Cleanup runs only after the
-new PPTX and project record save succeed, and removes every older timestamped PPTX/PDF sharing that
-vehicle's stable filename prefix, both locally and across the new/legacy SharePoint trees. The
-SharePoint canonical filename is itself overwritten atomically, and remote mutation is serialized
-with retry uploads so a delayed queue worker cannot resurrect a deleted version. If the operator
-explicitly chooses **Keep both**, that export retains its timestamped SharePoint filename instead of
-overwriting the canonical artifact.
+Before replacing an existing local export, the UI still permits Replace or Keep both for backward
+compatibility. A separate post-export confirmation controls replacement of an existing finalized
+Shop PDF. Cloud per-vehicle publication is deterministic and item-ID based. The migration dry
+run reports legacy outputs/folders, missing identifiers, and same-agency/year duplicate
+projects; it never moves or merges them automatically. Existing Shop photos must be copied and
+verified before app cutover; source-location deletion is a separate final approval.
 
 ---
 

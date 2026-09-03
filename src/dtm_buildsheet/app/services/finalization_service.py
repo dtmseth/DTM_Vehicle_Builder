@@ -10,7 +10,19 @@ from ...paths import AppPaths
 from .draft_service import _current_user_display_name, load_draft_for_request
 
 
-CHECK_VERSION = "3"
+CHECK_VERSION = "4"
+
+_CONSOLE_SETUP_FACT_TYPES = {
+    "armRest": "arm_rest",
+    "motionAttachment": "motion_attachment",
+    "pedestalMount": "pedestal_mount",
+    "dockingStation": "docking_station",
+    "radioMicClip": "radio_mic_clip",
+    "printer": "printer",
+    "printerPower": "printer_power",
+    "printerUsb": "printer_usb",
+    "wings": "special_face_plate",
+}
 
 
 def _utcnow() -> str:
@@ -76,6 +88,26 @@ def _equipment_facts(draft) -> list[dict[str, str]]:
                 "product_id": str(component.get("product_id") or "").strip().lower(),
                 "system_type": str(component.get("system_type") or picker.get("system_type") or "").strip().lower(),
             })
+        # Older console drafts may retain a selected physical component only
+        # in the round-trip setup snapshot because matching kit contents were
+        # omitted as separate rows. Treat those explicit saved selections as
+        # installed facts so design checks do not contradict the picker.
+        console_setup = picker.get("console_setup")
+        if isinstance(console_setup, dict):
+            choices = console_setup.get("choices", console_setup)
+            if isinstance(choices, dict):
+                for key, part_type in _CONSOLE_SETUP_FACT_TYPES.items():
+                    choice = choices.get(key)
+                    if not isinstance(choice, dict):
+                        continue
+                    facts.append({
+                        "name": str(choice.get("model") or key).strip().lower(),
+                        "part_type": part_type,
+                        "part_number": str(choice.get("part_number") or "").strip().lower(),
+                        "location": "in center console",
+                        "product_id": str(choice.get("product_id") or "").strip().lower(),
+                        "system_type": "",
+                    })
     return facts
 
 
@@ -319,6 +351,13 @@ def _check(project_id: str, unit_id: str, individual_id: str, paths: AppPaths) -
         return {"ok": False, "error": "Configure this build before finalizing"}
     draft = load_draft_for_request(holder.draft_id, paths)
     blocking = []
+    if individual_id:
+        from ...domain.vehicle_naming import vehicle_identity_ready
+        if not vehicle_identity_ready(holder):
+            blocking.append({
+                "id": "vehicle_identifier_required",
+                "message": "Add a unit number or VIN before finalizing this vehicle.",
+            })
     if not str(holder.pdf_path or "").strip():
         blocking.append({"id": "pdf_required", "message": "Export a PDF before finalizing."})
     else:
@@ -333,7 +372,34 @@ def _check(project_id: str, unit_id: str, individual_id: str, paths: AppPaths) -
         "status": "blocked" if blocking else "passed",
         "message": blocking[0]["message"] if blocking else "The exported PDF matches the latest build changes.",
     }
-    checks = [pdf_check, *equipment_checks]
+    reference_checks = []
+    if project.reference_assets:
+        from .reference_package_service import resolve_reference_package
+        package = resolve_reference_package(
+            project,
+            unit_id=unit_id,
+            individual_id=individual_id,
+            paths=paths,
+        )
+        if package.errors:
+            blocking.append({
+                "id": "reference_photos_unavailable",
+                "message": "One or more assigned build reference photos could not be loaded.",
+                "details": list(package.errors),
+            })
+        reference_checks.append({
+            "id": "reference_photos_available",
+            "title": "Build reference photos",
+            "status": "blocked" if package.errors else "passed",
+            "message": (
+                "One or more assigned reference photos are unavailable."
+                if package.errors else f"{len(package.entries)} assigned reference photo(s) are ready."
+            ),
+        })
+    if blocking:
+        pdf_check["status"] = "blocked"
+        pdf_check["message"] = blocking[0]["message"]
+    checks = [pdf_check, *reference_checks, *equipment_checks]
     fingerprint = _draft_fingerprint(draft)
     return {
         "ok": True,
@@ -402,8 +468,26 @@ def handle_finalize_build(project_id: str, unit_id: str, individual_id: str, bod
             {"id": warning["id"], "note": notes[warning["id"]], "at": now}
             for warning in result["warnings"]
         ]
+        publication_scheduled = False
+        if individual_id:
+            from .shop_publication_service import shop_publication_configured
+            if shop_publication_configured() or holder.shop_pdf_item_id:
+                holder.shop_publication_status = "pending"
+                holder.shop_publication_error = ""
         save_project(result["project"], paths)
-        return {"ok": True, "status": holder.status, "finalized_at": now, "finalized_by": holder.finalized_by}
+        if individual_id:
+            from .shop_publication_service import schedule_vehicle_publication
+            publication_scheduled = schedule_vehicle_publication(
+                project_id, unit_id, individual_id, paths,
+            )
+        return {
+            "ok": True,
+            "status": holder.status,
+            "finalized_at": now,
+            "finalized_by": holder.finalized_by,
+            "shop_publication_status": getattr(holder, "shop_publication_status", ""),
+            "shop_publication_scheduled": publication_scheduled,
+        }
     except FileNotFoundError:
         return {"ok": False, "error": "Project or draft not found"}
     except Exception as exc:
@@ -424,8 +508,30 @@ def handle_reopen_build(project_id: str, unit_id: str, individual_id: str, body:
         holder.reopened_at = now
         holder.reopened_by = _current_user_display_name() or "Local User"
         holder.reopen_reason = reason
+        withdrawal_scheduled = False
+        if individual_id and (
+            holder.shop_pdf_item_id
+            or holder.shop_reference_items
+            or holder.shop_publication_status in {
+                "published", "pending", "publishing", "error",
+            }
+        ):
+            holder.shop_publication_status = "withdrawal_pending"
+            holder.shop_publication_error = ""
         save_project(project, paths)
-        return {"ok": True, "status": holder.status, "reopened_at": now, "reopened_by": holder.reopened_by}
+        if individual_id and holder.shop_publication_status == "withdrawal_pending":
+            from .shop_publication_service import schedule_vehicle_withdrawal
+            withdrawal_scheduled = schedule_vehicle_withdrawal(
+                project_id, unit_id, individual_id, paths,
+            )
+        return {
+            "ok": True,
+            "status": holder.status,
+            "reopened_at": now,
+            "reopened_by": holder.reopened_by,
+            "shop_publication_status": getattr(holder, "shop_publication_status", ""),
+            "shop_withdrawal_scheduled": withdrawal_scheduled,
+        }
     except FileNotFoundError:
         return {"ok": False, "error": "Project not found"}
     except Exception as exc:

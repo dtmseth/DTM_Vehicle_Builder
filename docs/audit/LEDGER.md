@@ -1292,3 +1292,145 @@ surface. Owner supplied an 8-item starting flaw list. Curation queue is now full
 - **Verification:** new draft-service regressions cover successful radio-first reconciliation,
   preservation of a cable-refresh child, and rejection of a malformed shared-clip request; included
   in the same 133-passing cloud-off focused suite above.
+
+## Session 2026-09-01 — console SKU authority and component visibility
+
+### FINDING-043: console feature selection silently replaced the chosen base SKU and hid covered components — RESOLVED
+- **Location:** `ui/js/part_picker.js` console setup/recommendation and component-row generation;
+  `app/services/finalization_service.py` console setup facts.
+- **Category:** picker intent / manifest-quote coupling · **Severity:** HIGH · **Status:** RESOLVED.
+- **Owner repro:** selecting Gamber-Johnson `7170-0734-00`, then adding Mongoose motion hardware,
+  could replace the base with a bundled SKU such as `7170-0734-04`. A matching selected Mongoose
+  was then omitted as a row, and the final-design dock/motion check could report no motion device.
+- **Mechanism:** `_pickerResolveConsoleKit` was called on setup entry and every armrest/motion or
+  supply change. It wrote the score winner directly into both `consoleChoice` and global picker
+  selection. Component generation used the same kit match as a presence filter, so a component
+  covered by that billing package disappeared from the persisted build.
+- **Fix:** the exact selected base SKU is authoritative. Kit scoring is side-effect-free and shown
+  only as an optional **Use suggested SKU** action. The console parent stores the exact SKU rather
+  than a product-model display placeholder. Every selected physical console component is persisted;
+  `console_kit_included` suppresses only its Estimate charge. Finalization also reads explicit
+  component choices from older `picker_config.console_setup` snapshots.
+- **Verification:** focused Estimate/finalization/render regressions and the console browser smoke flow
+  cover `7170-0734-00` + `7160-0220`, explicit recommendation without substitution, nested component
+  persistence, Estimate inclusion/suppression, manifest visibility, and edit round-trip. The complete
+  cloud-off suite passes 2,224 tests with 1 skipped; all six goldens and contract snapshots remain
+  unchanged, and all 28 browser smoke flows pass.
+
+### FINDING-044: console required-faceplate sync reset the user's install order — RESOLVED
+- **Location:** `ui/js/part_picker.js::_pickerConsoleSyncFaceplates`.
+- **Category:** picker round-trip / user intent · **Severity:** MEDIUM · **Status:** RESOLVED.
+- **Mechanism:** every synchronization rebuilt the lineup as required Core/Radio/Cup/OEM plates
+  followed by optional plates. Setup load, armrest/motion changes, supply changes, or an explicit
+  base-kit change could therefore discard a valid user arrangement even though the saved snapshot
+  had retained it.
+- **Fix:** synchronization now reconciles by product ID while walking the current lineup in place,
+  refreshes required metadata without moving a row, removes only obsolete automatic rows, and
+  appends only newly required plates.
+- **Verification:** the console browser regression moves Radio ahead of Core, changes armrest and
+  motion hardware, saves, reopens, and explicitly changes the base kit; the arranged order survives
+  every boundary. It is included in the 2,233-passing cloud-off suite and 28/28 browser flows.
+
+### FINDING-045: existing/trade-in VIN leaked into current-vehicle identity — RESOLVED
+- **Location:** `domain/vehicle_naming.py`, `ui/js/projects/state.js`, generated project info, and
+  `ppt_helpers.py` overview rendering.
+- **Category:** identity / filesystem / accounting naming · **Severity:** HIGH · **Status:** RESOLVED.
+- **Mechanism:** canonical Python and browser helpers used `vin || existing_vin`, and legacy
+  project-info naming/rendering similarly fell back from `NewVehicle.VIN` to `ExistingVehicle.VIN`.
+  A trade-in VIN could therefore name the current vehicle's card, folders, files, exports, and QBO
+  Project or appear as the current VIN on output.
+- **Fix:** only the actual `vin` / `NewVehicle.VIN` is eligible for current-vehicle identity and
+  naming. The replaced VIN remains round-trippable and editable, but renders only in the dedicated
+  Existing Vehicle card. Draft creation, project-save refresh, and export refresh keep the two VINs
+  in separate blocks.
+- **Verification:** domain naming, project-to-draft, overview-render, and browser-card regressions
+  use distinct actual/existing VINs and assert that the existing VIN never becomes current identity.
+  The intentional cover change passed a 13-page Granite Falls PDF review and all six goldens.
+
+### FINDING-046: photo warmup recursively rescanned every completed project at each launch — RESOLVED
+- **Location:** `app/services/photo_gallery_service.py::_prepare_thumbnail_cache` and the header
+  photo-preparation status.
+- **Category:** startup performance / external media discovery · **Severity:** HIGH · **Status:**
+  RESOLVED.
+- **Mechanism:** the process-local completed-gallery result cache was empty after every restart, so
+  cache preparation enumerated every stored Completed Build Photos path before it could finish the
+  45-project discovery phase—even when all saved photo metadata and local thumbnails were unchanged.
+- **Fix:** startup persists a deterministic fingerprint of saved project-photo identities/eTags. An
+  unchanged catalog returns immediately without starting a worker. A changed catalog registers and
+  warms only saved reference metadata; completed folders are scanned on demand for the project or
+  gallery being viewed, with the existing persisted presence result supplying the immediate button.
+- **Verification:** focused cache tests assert an unchanged catalog starts no worker and startup
+  never calls completed-folder scanning. The complete cloud-off suite passes 2,233 tests with 1
+  skipped, and all 28 browser smoke flows pass.
+
+### FINDING-047: direct year-folder photo uploads never became Project Photos — RESOLVED
+- **Location:** project Overview/photo gallery, `project_photo_folder_service.py`, and the Company
+  year-level `Reference Photos & Videos` folder.
+- **Category:** file/app round trip · **Severity:** HIGH · **Status:** RESOLVED.
+- **Mechanism:** physical Company media was available only through the broad same-agency source
+  browser. The Project Photos gallery rendered exclusively from `reference_assets`, so a JPG/PNG
+  dropped through OneDrive or SharePoint into the project's own folder remained invisible until the
+  user found and imported it manually.
+- **Fix:** opening a project asynchronously scans only its exact year-level folder and reconciles
+  supported photos into durable unassigned metadata. Videos remain Company-only. A direct folder
+  action exposes the inbox. Removal records a stable exclusion without deleting the source, and an
+  explicit re-add clears that exclusion. Operational reconciliation does not advance the project's
+  design timestamp.
+- **Verification:** focused service regressions cover nested direct uploads, video exclusion,
+  operational timestamp preservation, durable removal/re-add, assigned missing-source retention,
+  and non-blocking change polling. The complete cloud-off suite and all 28 browser smoke flows pass.
+
+### FINDING-048: existing/trade-in unit number leaked into current-vehicle identity — RESOLVED
+- **Location:** `domain/vehicle_naming.py`, project UI, generated project info, draft refresh, and
+  PowerPoint headers/vehicle cards.
+- **Category:** identity / filesystem / accounting naming · **Severity:** HIGH · **Status:** RESOLVED.
+- **Mechanism:** the same legacy fallback corrected for VIN in FINDING-045 remained for unit number.
+  When the actual unit number was blank, `existing_unit_number` / `ExistingVehicle.UNIT ID` could
+  become the card, folder, filename, PDF, export, or QBO identity. Draft creation/refresh could also
+  invent `Unit-1`, making an unsupplied value look official.
+- **Fix:** only `unit_number` / `NewVehicle.UNIT ID` is eligible for current identity. Replaced-
+  vehicle year, make, model, build type, unit, and VIN now have explicit optional fields and render
+  only in the Existing Vehicle card. Generated/refreshed project info keeps the blocks separate,
+  refreshes both VINs, and leaves an unknown actual unit blank rather than inventing one. The cover
+  uses distinct **Build Type** and **Unit #** rows instead of a combined `Patrol #1` value.
+- **Verification:** focused naming, draft creation/refresh, overview-render, folder-provisioning,
+  codec, editor-source, and browser-source regressions use distinct actual/existing identifiers and
+  assert that only actual values become current identity. The Granite Falls PDF visibly shows blank
+  New Vehicle Unit #, actual VIN `…B76739`, Existing Vehicle Unit # 03, and existing VIN `…B19177`.
+
+### FINDING-049: project edits could drop durable nested operational identity — RESOLVED
+- **Location:** `app/services/project_service.py::handle_save_project`.
+- **Category:** persistence / SharePoint ownership · **Severity:** HIGH · **Status:** RESOLVED.
+- **Mechanism:** replacing `build_units` trusted the browser to echo every QBO/output/finalization and
+  Company/Shop item-ID field. A partial or older payload could erase durable folder identity; the
+  next provision pass then had no item ID to move and could create a second readable folder.
+- **Fix:** the backend now merges server-owned unit/group operational fields by stable `unit_id` and
+  `individual_id`; editable identity facts still come from the request. Optional replaced-vehicle
+  fields are preserved only when an older/partial payload omits their keys, while explicit edits or
+  empty values are accepted.
+- **Verification:** a focused endpoint regression sends a deliberately sparse edit and confirms the
+  actual unit/VIN update while group/vehicle folder IDs and paths, QBO link, draft link, and optional
+  replaced-vehicle fields all survive; a second regression explicitly clears every optional field.
+
+## Session 2026-09-02 — flat vehicle folders, cover notes, and physical light count
+
+### FINDING-050: cover light-head total counted only a filtered subset of manifest rows — RESOLVED
+- **Location:** `ppt_helpers.py::fill_overview`, planner-only pre-lit bumper rows, and fixture
+  planning for Tracer/Inner Edge/Outer Edge systems.
+- **Category:** generated-output accuracy · **Severity:** HIGH · **Status:** RESOLVED.
+- **Owner repro:** the Granite Falls PB450L6 design rendered six included bumper heads but the cover
+  reported 11 light heads. The old total ran over the manifest-facing cover list, which deliberately
+  excludes the bumper's planning-only rows; it also treated multi-lamp fixture housings as one line
+  instead of their physical lamp count.
+- **Fix:** `physical_light_head_count` now runs against the complete planned-part collection and
+  combines concrete SKU quantities with per-view physical instance counts without duplicating the
+  same heads across views. Tracer housings expand by lamp count, and Inner/Outer Edge and pre-lit
+  bumper heads participate even when their billing/manifest representation is one housing or hidden.
+  Legacy fixture rows that already store the lamp count as both quantity and rendered instances are
+  recognized as one housing rather than multiplying the lamp count twice.
+  Unit-specific project notes are refreshed into generated info and render in a cover panel at the
+  same domain-to-output boundary.
+- **Verification:** focused regressions cover direct DUO components, multi-view placements, PB450L
+  virtual rows, a quantity-two five-lamp Tracer, a ten-head Inner Edge, and bar exclusion. The actual
+  Granite Falls plan now computes 17; its 17-page PPTX/PDF shows **17 Light Heads** and **Unit Notes:
+  New unit number not assigned.** without overflow, and every page was visually reviewed.

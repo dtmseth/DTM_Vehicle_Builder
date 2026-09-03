@@ -8,7 +8,11 @@ function _ptFillIndModal(vm, ind, title) {
   $("ind-edit-model").value         = vm.model || ind.model    || "";
   $("ind-edit-color").value         = ind.color                || "";
   $("ind-edit-vin").value           = ind.vin                  || "";
-  $("ind-edit-existing-unit").value = ind.existing_unit_number || "";
+  $("ind-edit-existing-year").value = ind.existing_year        || "";
+  $("ind-edit-existing-make").value = ind.existing_make        || "";
+  $("ind-edit-existing-model").value = ind.existing_model      || "";
+  $("ind-edit-existing-build-type").value = ind.existing_build_type || "";
+  $("ind-edit-existing-unit-number").value = ind.existing_unit_number || "";
   $("ind-edit-existing-vin").value  = ind.existing_vin         || "";
   $("ind-edit-notes").value         = ind.notes                || "";
 }
@@ -25,7 +29,7 @@ window.PT_openIndModal = function (uid, indIdx) {
   _ptEnsureIndividuals(u);
   const ind = u.individuals[indIdx];
   if (!ind) return;
-  const vm = _PT.vehicleMap[u.vehicle_model] || {};
+  const vm = _ptVehicleConfig(u.vehicle_model);
   _ptFillIndModal(vm, ind, `Edit: ${_ptUnitLabel(u, ind, indIdx)}`);
   const setupSec = $("ind-modal-setup-section");
   if (setupSec) setupSec.style.display = "none";
@@ -47,7 +51,7 @@ window.PT_openDetailIndModal = function (projectId, unitId, individualId) {
   _PT.indModalIdx        = null;
   _PT.viewProject        = project;
   const indIdx = unit.individuals.indexOf(ind);
-  const vm     = _PT.vehicleMap[unit.vehicle_model] || {};
+  const vm     = _ptVehicleConfig(unit.vehicle_model);
   _ptFillIndModal(vm, ind, `${_ptUnitLabel(unit, ind, indIdx)}`);
   const setupSec = $("ind-modal-setup-section");
   if (setupSec) setupSec.style.display = "";
@@ -72,14 +76,18 @@ window.PT_saveIndModal = function () {
   _ptEnsureIndividuals(u);
   const ind = u.individuals[_PT.indModalIdx];
   if (!ind) return;
-  const vm = _PT.vehicleMap[u.vehicle_model] || {};
+  const vm = _ptVehicleConfig(u.vehicle_model);
   ind.unit_number          = $("ind-edit-unit-number").value.trim();
   ind.year                 = $("ind-edit-year").value.trim();
   ind.make                 = vm.make  || "";
   ind.model                = vm.model || "";
   ind.color                = $("ind-edit-color").value.trim();
   ind.vin                  = $("ind-edit-vin").value.trim();
-  ind.existing_unit_number = $("ind-edit-existing-unit").value.trim();
+  ind.existing_year        = $("ind-edit-existing-year").value.trim();
+  ind.existing_make        = $("ind-edit-existing-make").value.trim();
+  ind.existing_model       = $("ind-edit-existing-model").value.trim();
+  ind.existing_build_type  = $("ind-edit-existing-build-type").value.trim();
+  ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
   ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
   ind.notes                = $("ind-edit-notes").value.trim();
   PT_closeIndModal();
@@ -94,14 +102,18 @@ async function _ptSaveDetailIndModal(thenBuild) {
   const ind = unit.individuals.find(i => i.individual_id === _PT.indModalIndId);
   if (!ind) { PT_closeIndModal(); return; }
 
-  const vm = _PT.vehicleMap[unit.vehicle_model] || {};
+  const vm = _ptVehicleConfig(unit.vehicle_model);
   ind.unit_number          = $("ind-edit-unit-number").value.trim();
   ind.year                 = $("ind-edit-year").value.trim();
   ind.make                 = vm.make  || "";
   ind.model                = vm.model || "";
   ind.color                = $("ind-edit-color").value.trim();
   ind.vin                  = $("ind-edit-vin").value.trim();
-  ind.existing_unit_number = $("ind-edit-existing-unit").value.trim();
+  ind.existing_year        = $("ind-edit-existing-year").value.trim();
+  ind.existing_make        = $("ind-edit-existing-make").value.trim();
+  ind.existing_model       = $("ind-edit-existing-model").value.trim();
+  ind.existing_build_type  = $("ind-edit-existing-build-type").value.trim();
+  ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
   ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
   ind.notes                = $("ind-edit-notes").value.trim();
 

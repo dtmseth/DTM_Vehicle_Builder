@@ -502,14 +502,38 @@ def test_resolve_skips_console_parts_included_with_kit(paths):
     _write_parts_db(paths, {
         "kit": _linked_product("Console kit", "KIT", "1", 500.0),
         "cup": _linked_product("Cup holder", "CUP", "2", 25.0),
+        "motion": _linked_product("Mongoose", "MOTION", "3", 100.0),
     })
     draft = new_draft(parts=[
         DraftPart(name="Center Console", part_number="KIT"),
         DraftPart(name="Cup Holder Faceplate", part_number="CUP", picker_config={"console_kit_included": True}),
+        DraftPart(
+            name="Motion Attachment", part_number="MOTION", part_type="motion_attachment",
+            picker_config={"console_kit_included": True},
+        ),
     ])
     lines, problems = est.resolve_build_lines(paths, draft)
     assert problems == []
     assert [line["part_number"] for line in lines] == ["KIT"]
+
+
+def test_resolve_bills_selected_console_component_when_base_does_not_cover_it(paths):
+    _write_parts_db(paths, {
+        "base": _linked_product("Console base", "7170-0734-00", "1", 645.0),
+        "motion": _linked_product("Mongoose", "7160-0220", "2", 458.0),
+    })
+    draft = new_draft(parts=[
+        DraftPart(name="Center Console", part_number="7170-0734-00"),
+        DraftPart(
+            name="Center Console · Motion Attachment", part_number="7160-0220",
+            part_type="motion_attachment", parent_line_id="console-line",
+        ),
+    ])
+
+    lines, problems = est.resolve_build_lines(paths, draft)
+
+    assert problems == []
+    assert [line["part_number"] for line in lines] == ["7170-0734-00", "7160-0220"]
 
 
 # ── pending-QB parts (docs/PARTS_DB_AND_PICKER.md) ───────────────────────────────
@@ -773,7 +797,7 @@ def test_create_estimate_uses_top_level_customer_and_estimate(paths, monkeypatch
     assert payload["ProjectRef"]["value"] == "447322633"
     assert payload["Line"][0]["SalesItemLineDetail"]["ItemRef"]["value"] == "1"
     assert payload["Line"][0]["Amount"] == 500.0
-    assert "Unit 12 | Build 2026" in payload["CustomerMemo"]["value"]
+    assert "2026 LP Tahoe | Patrol | Unit 12" in payload["CustomerMemo"]["value"]
     assert "Lakeville PD" not in payload["CustomerMemo"]["value"]
     assert "Vehicle: 2026 Tahoe" in payload["CustomerMemo"]["value"]
     assert "Build 26-043" in payload["CustomerMemo"]["value"]
@@ -1090,7 +1114,7 @@ def test_create_estimate_requires_real_project_link(paths, monkeypatch):
     result = est.create_estimate(paths, project_id=pid, individual_id="ind1")
 
     assert result["ok"] is False and result["error"] == "project_not_linked"
-    assert result["project"]["project_name"] == "Unit 12 | Build 2026"
+    assert result["project"]["project_name"] == "2026 Tahoe | Patrol | Unit 12"
     assert fake.created_estimates == []
 
 
@@ -1126,7 +1150,7 @@ def test_bind_project_persists_true_project_id_and_stable_name(paths):
     assert result == {
         "ok": True,
         "qb_project_id": "447322633",
-        "project_name": "Unit 12 | Build 2026",
+        "project_name": "2026 Tahoe | Patrol | Unit 12",
     }
     saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
     assert saved.qb_project_id == "447322633"
@@ -1166,7 +1190,7 @@ def test_project_can_be_previewed_and_linked_before_unit_is_configured(paths):
 
     assert preview["ok"] is True
     assert preview["project"]["ready"] is False
-    assert preview["project"]["project_name"] == "Unit 12 | Build 2026"
+    assert preview["project"]["project_name"] == "2026 Tahoe | Patrol | Unit 12"
     linked = est.bind_project(
         paths,
         project_id=pid,
@@ -1192,10 +1216,10 @@ def test_project_preview_does_not_resurface_legacy_agency_prefixed_name(paths):
 
     assert preview["ok"] is True
     assert preview["project"]["ready"] is True
-    assert preview["project"]["project_name"] == "Unit 12 | Build 2026"
+    assert preview["project"]["project_name"] == "2026 Tahoe | Patrol | Unit 12"
 
 
-def test_bind_project_offers_stable_automatic_name_when_unit_number_is_missing(paths):
+def test_bind_project_uses_vin_last_six_when_unit_number_is_missing(paths):
     aid = _make_agency(paths, qb_customer_id="CUST9")
     pid = _make_project(paths, aid, [])
     assert est.bind_project(paths, project_id=pid, individual_id="ind1", qb_project_id="not-an-id") == {
@@ -1210,20 +1234,10 @@ def test_bind_project_offers_stable_automatic_name_when_unit_number_is_missing(p
     unit.vin = "VIN123456"
     project_entry.save_project(project, paths)
     result = est.bind_project(paths, project_id=pid, individual_id="ind1", qb_project_id="123")
-    assert result["ok"] is False and result["error"] == "project_identity_required"
-    assert result["project"]["auto_label"] == "Patrol #1"
-
-    accepted = est.bind_project(
-        paths,
-        project_id=pid,
-        individual_id="ind1",
-        qb_project_id="123",
-        accept_auto_name=True,
-    )
-    assert accepted == {
+    assert result == {
         "ok": True,
         "qb_project_id": "123",
-        "project_name": "Patrol #1 | Build 2026",
+        "project_name": "2026 Tahoe | Patrol | VIN 123456",
     }
 
     project = project_entry.load_project(pid, paths)
@@ -1232,7 +1246,7 @@ def test_bind_project_offers_stable_automatic_name_when_unit_number_is_missing(p
     project_entry.save_project(project, paths)
     saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
     assert saved.qb_project_id == "123"
-    assert saved.qb_project_name == "Patrol #1 | Build 2026"
+    assert saved.qb_project_name == "2026 Tahoe | Patrol | VIN 123456"
 
 
 def test_create_estimate_requires_customer_confirmation_then_creates_top_level_customer(paths, monkeypatch):

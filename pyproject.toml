@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dtm-buildsheet"
-version = "3.4.0"
+version = "3.5.0"
 description = "GUI-first DTM build sheet generator"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,6 +12,7 @@ dependencies = [
   "lxml>=6.1,<7",
   "openpyxl>=3.1,<4",
   "Pillow>=12.3,<13",
+  "PyMuPDF>=1.27,<2",
   "python-pptx>=1.0,<2",
   "pywebview>=5.0,<6",
   "msal>=1.37,<2",
@@ -199,11 +200,10 @@ ignore_imports = [
   # BASELINE (discovered) — services call Graph/HTTP directly instead of an
   # adapter port; Phase E findings via §8.1 Step 7 ledger:
   "dtm_buildsheet.app.services.exports_upload_service -> requests",
-  "dtm_buildsheet.app.services.build_state_service -> requests",
 ]
 
 [tool.bumpversion]
-current_version = "3.4.0"
+current_version = "3.5.0"
 commit = true
 tag = true
 tag_name = "v{new_version}"

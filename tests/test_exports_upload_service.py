@@ -128,9 +128,13 @@ def test_upload_in_background_does_not_raise(tmp_path):
     assert completed == [False]
 
 
-def test_upload_uses_canonical_internal_path_for_powerpoint(tmp_path, monkeypatch):
+def test_upload_rejects_powerpoint_and_uses_canonical_path_for_pdf(tmp_path, monkeypatch):
     pptx = tmp_path / "ICE_Unit-2_Updated_Aug21_2026_10-45-53AM.pptx"
     pptx.write_bytes(b"PK\x03\x04pptx")
+    assert exports_upload_service.upload_export(pptx, agency="ICE", year="2026") is False
+
+    pdf = tmp_path / "ICE_Unit-2_Updated_Aug21_2026_10-45-53AM.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
     bundle = SimpleNamespace(storage=SimpleNamespace(_token_provider=lambda: "TOKEN"))
     config = SimpleNamespace(
         exports_enabled=True,
@@ -151,18 +155,17 @@ def test_upload_uses_canonical_internal_path_for_powerpoint(tmp_path, monkeypatc
         ) or True,
     )
 
-    assert exports_upload_service.upload_export(pptx, agency="ICE", year="2026") is True
+    assert exports_upload_service.upload_export(pdf, agency="ICE", year="2026") is True
     assert uploaded["remote_path"] == (
-        "Vehicle Builder Projects/_DTM Internal PowerPoint Sources/ICE/2026/"
-        "ICE_Unit-2_Updated.pptx"
+        "Vehicle Builder Projects/ICE/2026/ICE_Unit-2_Updated.pdf"
     )
 
     uploaded.clear()
     assert exports_upload_service.upload_export(
-        pptx, agency="ICE", year="2026", canonicalize=False,
+        pdf, agency="ICE", year="2026", canonicalize=False,
     ) is True
     assert uploaded["remote_path"].endswith(
-        "/ICE_Unit-2_Updated_Aug21_2026_10-45-53AM.pptx"
+        "/ICE_Unit-2_Updated_Aug21_2026_10-45-53AM.pdf"
     )
 
 

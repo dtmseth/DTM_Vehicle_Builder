@@ -192,6 +192,32 @@ def test_apply_overrides_translate_preserves_anchor():
     assert pl.translate_dy == -0.05
 
 
+def test_apply_overrides_concealed_callout_offsets_round_trip():
+    plan = _make_plan(_make_placement(
+        callout_label="SPEAKER BEHIND GRILLE",
+        mount_visibility="behind_grille",
+    ))
+
+    result = apply_overrides(plan, {
+        "led_bar:front": {"callout_dx": 0.125, "callout_dy": -0.075}
+    })
+
+    placement = result.planned_parts[0].placements[0]
+    assert placement.callout_dx == 0.125
+    assert placement.callout_dy == -0.075
+    serialized = result.to_dict()["planned_parts"][0]["placements"][0]
+    assert serialized["callout_dx"] == 0.125
+    assert serialized["callout_dy"] == -0.075
+
+
+def test_default_concealed_callout_offsets_do_not_churn_plan_json():
+    serialized = _make_plan(_make_placement()).to_dict()
+    placement = serialized["planned_parts"][0]["placements"][0]
+
+    assert "callout_dx" not in placement
+    assert "callout_dy" not in placement
+
+
 # ── size_scale ────────────────────────────────────────────────────────────────
 
 def test_apply_overrides_size_scale():
@@ -298,6 +324,39 @@ def test_preview_service_full_plan(app_paths, stearns_input):
     assert "planned_parts" in res
     assert len(res["views"]) > 0
     assert len(res["planned_parts"]) > 0
+
+
+def test_preview_service_exposes_saved_concealed_callout_offsets(app_paths):
+    from dtm_buildsheet.app.services.preview_service import handle_preview_plan
+    from dtm_buildsheet.inputs.project_drafts import draft_from_project_input, save_draft
+
+    project = ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "CALLOUT-PREVIEW"},
+        parts=[PartInput(
+            name="Siren Speaker", part_number="SA315P", part_type="siren_speaker",
+            location="BEHIND GRILL (CENTER)", quantity=1, line_id="speaker-line",
+        )],
+        notes={},
+    )
+    draft = draft_from_project_input(project)
+    draft.placement_overrides["speaker-line:front"] = {
+        "callout_dx": 0.12,
+        "callout_dy": -0.04,
+    }
+    save_draft(draft, app_paths.workspace_drafts_dir)
+
+    res = handle_preview_plan({"draft_id": draft.draft_id}, app_paths)
+
+    assert res["ok"], res.get("error")
+    placement = next(
+        pl
+        for part in res["planned_parts"]
+        for pl in part["placements"]
+        if pl["override_key"] == "speaker-line:front"
+    )
+    assert placement["callout_label"] == "SPEAKER BEHIND GRILLE"
+    assert placement["callout_dx"] == 0.12
+    assert placement["callout_dy"] == -0.04
 
 
 @pytest.mark.parametrize(("quantity", "sku"), [(1, "PSL1BB"), (2, "PSL2BB")])

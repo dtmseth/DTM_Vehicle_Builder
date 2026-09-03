@@ -858,7 +858,7 @@ def test_siren_behind_grille_has_concealed_mount_callout(config):
     ), config)
     placement = plan.planned_parts[0].placements[0]
     assert placement.mount_visibility == "behind_grille"
-    assert placement.callout_label == "BEHIND GRILLE"
+    assert placement.callout_label == "SPEAKER BEHIND GRILLE"
 
 
 def test_guided_radio_antenna_uses_its_individual_condition(config):
