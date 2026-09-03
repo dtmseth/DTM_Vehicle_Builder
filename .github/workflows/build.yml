@@ -227,16 +227,16 @@ jobs:
           DRIVE_ID: ${{ secrets.SHAREPOINT_DRIVE_ID }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          # Installers exceed Graph's 4MB simple-upload threshold, so we
-          # use an upload-session per file. Created-by-resumable: yes,
-          # but here we send one big chunk per file (Graph permits up to
-          # 60 MiB in a single Content-Range PUT).
+          # Installers exceed Graph's 4MB simple-upload threshold. Upload
+          # sessions require every non-final fragment to be a multiple of
+          # 320 KiB, so use 10 MiB fragments (exactly 32 x 320 KiB).
           set -euo pipefail
           upload_via_session() {
             local local_path="$1"
             local remote_name="$2"
             local size
             size=$(stat -c %s "$local_path")
+            local chunk_size=$((10 * 1024 * 1024))
             local create_url="https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/Releases/${remote_name}:/createUploadSession"
             local upload_url
             upload_url=$(curl -fsS -X POST "$create_url" \
@@ -244,10 +244,30 @@ jobs:
               -H "Content-Type: application/json" \
               -d '{"item":{"@microsoft.graph.conflictBehavior":"replace"}}' \
               | python3 -c "import sys,json; print(json.load(sys.stdin)['uploadUrl'])")
-            curl -fsS -X PUT "$upload_url" \
-              -H "Content-Length: ${size}" \
-              -H "Content-Range: bytes 0-$((size-1))/${size}" \
-              --data-binary "@${local_path}"
+
+            local chunk_path
+            chunk_path=$(mktemp "${RUNNER_TEMP}/dtm-sharepoint-upload.XXXXXX")
+            trap 'rm -f "$chunk_path"' RETURN
+            local offset=0
+            local chunk_index=0
+            while (( offset < size )); do
+              local remaining=$((size - offset))
+              local length=$chunk_size
+              if (( remaining < length )); then
+                length=$remaining
+              fi
+              local last=$((offset + length - 1))
+
+              dd if="$local_path" of="$chunk_path" \
+                bs="$chunk_size" skip="$chunk_index" count=1 status=none
+              curl -fsS -X PUT "$upload_url" \
+                -H "Content-Length: ${length}" \
+                -H "Content-Range: bytes ${offset}-${last}/${size}" \
+                --data-binary "@${chunk_path}" > /dev/null
+
+              offset=$((last + 1))
+              chunk_index=$((chunk_index + 1))
+            done
             echo "Uploaded ${remote_name} (${size} bytes)"
           }
           upload_simple() {
