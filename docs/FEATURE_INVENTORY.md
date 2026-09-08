@@ -560,7 +560,11 @@ mirrored to SharePoint as shared work records.
 | `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
 | `quote_numbers` | list[str] | Every quote/reference number associated with the single agency/build-year project |
 | `reference_assets` | list[BuildReferenceAsset] | Portable Company/Shop source identities; zero assignments means an unassigned project photo, while new shop references use unit-group assignments (legacy project/individual assignments remain compatible) |
-| `project_status` | str | `active` or `completed`; controls active-list vs Project Archives placement |
+| `project_status` | str | `active`, `inactive`, or `completed`; controls the Projects status tab |
+| `inactive_at` / `inactive_by` / `inactive_reason` | str | Optional stale-project context and audit projection |
+| `completed_at` / `completed_by` | str | Completion audit projection |
+| `reactivated_at` / `reactivated_by` | str | Latest return-to-Active audit projection |
+| `project_lifecycle_history` | list[dict] | Full immutable Active/Inactive/Completed transition history |
 | `created_at` / `updated_at` | str | ISO timestamps |
 
 Each `IndividualUnit` within a `BuildUnit` carries its own `draft_id`, local output paths, QBO links,
@@ -574,7 +578,20 @@ preserve them, while explicit empty keys clear them.
 
 Past-photo imports are ordinary sparse projects/units for their actual agency and build year. They
 persist only known fields and are marked completed at project level after their photo copy is
-verified. Project Archives organizes completed records under Agency → Build Year and supports reopen.
+verified. The Completed tab organizes those records under Agency → Build Year and supports reopen.
+Active, Inactive, and Completed share one search control whose query is retained independently per
+tab; completed search results automatically expand their matching Agency → Build Year branches.
+Mark Inactive uses an in-app dialog with an optional reason so it remains reliable inside pywebview.
+Active rows show one derived workflow badge instead of another editable status. Mark Inactive and
+Delete live under a three-dot menu; Delete also removes that project's Operations records/history.
+Inactive projects are absent from Operations until reactivated. At DTM is the green completed
+Vehicle Availability state; Delivered is the last Final Finish state, and all vehicles reaching it
+moves the project to Completed automatically.
+
+The new-project wizard and existing-project editor can create a missing vehicle directly from either
+vehicle selector. Make and Model are required; the server creates or reuses a shared, collision-safe
+vehicle ID and stores a no-image `placeholder: true` layout. The new option is selected immediately
+and remains labeled **artwork pending** until its artwork is completed in Vehicle Manager.
 
 ### Project Detail View
 The project detail view centers the Overview/build-card workflow, with editing available from the
@@ -590,7 +607,8 @@ project controls and each configured vehicle opening its embedded build editor:
   photo viewing, and **Folder options**; unit-group headers own reference-photo actions. Final
   Review remains separate and last. User-facing PowerPoint actions and configured/PPT/PDF/custom
   badges are absent. Individual units can open the manual QBO Project setup/link walkthrough before
-  a draft exists. Project actions use **Export / update all PDFs** plus batch QuickBooks options.
+  a draft exists, or store/clear a read-only link to an existing QBO Invoice without changing QBO.
+  Project actions use **Export / update all PDFs** plus batch QuickBooks options.
 - **Build reference photos**: the Project Overview shows one selectable **Project photos** gallery
   with assigned/unassigned states and notes, while the unit-group header and builder notes area open
   a thumbnail-card gallery with tags, inline note editing, multi-select removal, and a multi-select
@@ -604,7 +622,7 @@ project controls and each configured vehicle opening its embedded build editor:
   into Project Photos. Videos stay Company-only. Explicitly removed folder photos remain excluded
   until the user adds them again. Effective photos use adaptive orientation-aware appendix pages with
   assignment notes.
-- **Photo galleries and folders**: Project Overview and Project Archives open project reference and
+- **Photo galleries and folders**: Project Overview and the Projects Completed tab open project reference and
   completed galleries; unit-group headers own reference controls, and individual vehicle cards open
   only their completed photos. Completed photos scan only exact stored vehicle
   folders in the background; the last authoritative completed-photo presence is cached locally for
@@ -829,6 +847,7 @@ Load Preset next to Save as New Preset in both action areas.
 | `/generate` | Run full pipeline on last-uploaded workbook, return result paths |
 | `/api/catalog/save` | Validate and save `part_catalog.json` |
 | `/api/layouts/save` | Validate and save `vehicle_layouts.json` |
+| `/api/layouts/vehicles/create` | Create or reuse a Make/Model vehicle placeholder with artwork pending |
 | `/api/manifest/save` | Validate and save `asset_manifest.json` |
 | `/api/parts-library/save` | Validate and save `parts_library.json` |
 | `/api/workbook-rules/save` | Validate and save `workbook_rules.json` |
@@ -1004,6 +1023,8 @@ identifier segments. Estimate review refreshes Retail prices, excludes customer-
 lines, handles zero-price/billed faceplate rules, supports labor/install-supplies presets, delivery,
 and a non-compounding 4% card fee. A changed linked QBO Estimate raises a loud conflict and offers
 differences, overwrite, or create-new; the service repeats the conflict check just before update.
+An individual vehicle may also store `qb_invoice_id` from a numeric ID or pasted QBO Invoice URL.
+This is reference metadata only and performs no Invoice API write.
 
 ## Vehicle Design Finalization
 

@@ -194,3 +194,90 @@ you're touching. New gotchas get appended to the bottom with a date.
     PPTX sources live under `_DTM Internal PowerPoint Sources`. Hydration and cleanup must use the
     shared path helpers and preserve the legacy combined-folder fallback. Remote upload/delete is
     serialized so an outbound retry cannot resurrect a replaced artifact.
+40. **Creating a SharePoint list needs a different delegated scope than using it.** The one-time
+    operations provisioner requests `Sites.Manage.All`; the read-only rollout uses the existing
+    `Sites.Read.All` consent, and the future write pilot must explicitly acquire
+    `Sites.ReadWrite.All`. Asking silently for the future write scope makes MSAL fail even though the
+    signed-in user and list access are healthy. Never add `Sites.Manage.All` to ordinary startup
+    token acquisition. Create permanent machine names of at most 32 characters, validate all
+    columns, and address the lists by GUID afterward. Graph may preserve a longer display name while
+    silently truncating the internal field name.
+41. **DTM app roles come from the ID token, not the Microsoft Graph access token.** The Graph token's
+    audience is Graph and its permissions are not DTM workspace roles. Use only MSAL-validated
+    `id_token_claims`; on a fast access-token cache hit, recover the validated ID token from MSAL's
+    encrypted cache. Unknown role values and cloud-enabled local-identity fallbacks grant no
+    Operations capability.
+42. **Builder projection must never replace an entire Operations record.** Map through the narrow
+    `BuilderVehicleProjection`, merge only its explicit fields, and relate rows by the opaque
+    `IndividualUnit.individual_id`. Names, unit numbers, and VINs can change. Projection preview
+    must use `list_vehicles()` so inspecting candidates cannot trigger pending-event repair writes.
+    Ordinary project saves now upsert this narrow projection automatically. The legacy pilot POST
+    remains create-only and cannot be used to alter an existing row.
+43. **The Operations pilot browser payload is not record data.** It contains only the opaque
+    Builder vehicle ID, an exact confirmation token, and a one-use request ID. The server re-derives
+    the complete `BuilderVehicleProjection` from current project records, repeats the
+    `projects.edit` check, and calls the create-only service. Never accept identity, VIN, agency,
+    lifecycle, or workstream fields from this browser request, and never reuse the pilot route to
+    update an existing Operations row. Routine queries use the read repository; only the confirmed
+    foreground action may invoke the separate writer that requests `Sites.ReadWrite.All`.
+44. **Do not load Operations projection candidates on every populated-backlog view.** The normal
+    vehicle endpoint already reads the complete current list. A second automatic preview query
+    doubles Graph work and slows the tab as production grows. Auto-load candidates only for the
+    empty first-run state; afterward the authorized header action loads them on demand. After each
+    confirmed creation, discard the preview so the next click compares against fresh list state.
+45. **Operations bulk seeding must not introduce a bulk mutation authority.** The UI may confirm a
+    reviewed Active + Completed candidate set once, but it must call the existing create-only route
+    sequentially with one request ID per vehicle. Stop on the first failure, retain completed pairs,
+    and refresh the preview before retrying. Import Completed projects as
+    `ProjectState=completed`; do not invent acceptance, delivery, workstream statuses, or historical
+    milestone dates. Normalize Builder finalization timestamps to UTC whole seconds before compare
+    or Graph's precision loss makes every finalized row look perpetually stale.
+46. **Project-wide Operations status changes are still per-vehicle commands.** The project group is
+    a UI convenience because its vehicles usually share a status; it must call the one-vehicle
+    status route sequentially with each current revision and a separate request ID. Stop on the
+    first failure, refresh the shared state, and retain one event per successfully changed vehicle.
+    Keep the individual action available for exceptions, and never replace this with an unchecked
+    project-row overwrite or one synthetic project event.
+47. **Operations history reads must not reconcile pending events.** The normal history UI uses the
+    `Sites.Read.All` repository, so `list_events()` may query only applied event rows and must never
+    patch a pending marker or current record. Recovery remains a writer-path concern through
+    `get_vehicle()`, duplicate-request lookup, and mutation retries. Otherwise merely opening a
+    timeline can fail for read-only users or unexpectedly ask them for write consent.
+48. **Operations schedule edits are patches, and every date is independent.** Do not make users
+    re-enter existing fields or enforce acceptance, Monday, ordering, or cross-field dependencies.
+    Send only changed fields and issue one revision-checked command/event per vehicle. Continue to
+    derive Prospective/Unscheduled/Scheduled from acceptance plus `ScheduledWeekOf`. Store a manual
+    **Must Deliver On** date in `MustDeliverOverrideDate`; `MustDeliverByDate` is the effective
+    projection and returns to its 60-day calculation when the override is cleared. `parts_ready`
+    must also backfill a missing Parts Received milestone because that state logically implies all
+    parts were received.
+49. **Projects lifecycle tabs are one list surface, not separate storage or an archive route.**
+    Filter the already loaded project records by the durable `project_status` values `active`,
+    `inactive`, and `completed`. Preserve the selected tab when returning from detail. Completed
+    projects keep the Agency → Build Year tree inside the Completed tab; inactive projects remain
+    fully recoverable and may carry an optional reason. Lifecycle changes must continue through the
+    existing server endpoint so timestamps and `project_lifecycle_history` are preserved. Mirror
+    lifecycle to Operations by opaque project ID; inactive rows retain their history but are hidden
+    from the Operations workspace until reactivated.
+50. **Parts Ordered is a real schema-v3 milestone, not a UI alias.** `ordered` is a stable
+    `PartsStatus` choice and writes `PartsOrderedAtUtc`. The live upgrade must both add that
+    permanent column and extend the existing SharePoint choice list. Never infer an order date when
+    imported work skips directly to Partially Received or Received.
+51. **Project prompts must be app modals, and selector-created vehicles remain placeholders.** Native
+    `prompt()` is not reliable inside every pywebview host, so lifecycle reasons and Make/Model entry
+    use DOM modals. The project vehicle route must save through the ordinary validated
+    `vehicle_layouts.json` service, create no artwork, reuse exact Make/Model matches, and refresh both
+    project selectors immediately. Placeholder layouts still need all standard view stubs and the
+    placement/fixture canvases must not request intentionally absent artwork. Keep
+    Active/Inactive/Completed search text separate; a Completed
+    search may expand matching groups but must not flatten or rewrite the stored project records.
+    The config migration must continue forward-normalizing older user-created placeholders so
+    workstations that cached the early four-view shape gain metadata-only internal stubs and bottom
+    Side/Top logos without borrowing artwork or fixtures.
+52. **Project deletion and delivery completion cross the Builder/Operations boundary.** Delete
+    Operations events and current rows by the exact Builder project ID before removing the Builder
+    record; if shared cleanup fails, leave the Builder project in place for a safe retry. Mark a
+    project Completed only after every current `IndividualUnit.individual_id` has an Operations row
+    whose Final Finish status is Delivered. Vehicle Availability ends at At DTM and should render
+    green there. Keep legacy availability=`delivered` values readable, but never infer completion
+    from them, a partial match, or a name-based match.

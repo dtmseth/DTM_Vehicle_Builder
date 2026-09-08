@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 
@@ -155,10 +156,14 @@ def handle_get_project(project_id: str, paths: AppPaths) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
-def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) -> dict:
-    """Move one project between the active list and Project Archives."""
-    if not isinstance(body.get("completed"), bool):
-        return {"ok": False, "error": "completed must be true or false"}
+def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -> dict:
+    """Move one project among Active, Inactive, and Completed."""
+    target_status = str(body.get("status") or "").strip().lower()
+    if target_status not in {"active", "inactive", "completed"}:
+        return {
+            "ok": False,
+            "error": "status must be active, inactive, or completed",
+        }
     try:
         project = load_project(project_id, paths)
     except FileNotFoundError:
@@ -166,22 +171,42 @@ def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) 
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
 
-    completed = body["completed"]
-    target_status = "completed" if completed else "active"
     if project.project_status == target_status:
         return {"ok": True, "unchanged": True, "project": asdict(project)}
 
     now = datetime.now(timezone.utc).isoformat()
     actor = str(body.get("actor") or "").strip()
+    reason = str(body.get("reason") or "").strip()
+    previous_status = project.project_status
     project.project_status = target_status
-    if completed:
+    if target_status == "inactive":
+        project.inactive_at = now
+        project.inactive_by = actor
+        project.inactive_reason = reason
+        project.completed_at = ""
+        project.completed_by = ""
+    elif target_status == "completed":
         project.completed_at = now
         project.completed_by = actor
+        project.inactive_at = ""
+        project.inactive_by = ""
+        project.inactive_reason = ""
     else:
         project.reactivated_at = now
         project.reactivated_by = actor
+        project.inactive_at = ""
+        project.inactive_by = ""
+        project.inactive_reason = ""
         project.completed_at = ""
         project.completed_by = ""
+    project.project_lifecycle_history.append({
+        "event_id": str(uuid.uuid4()),
+        "from_status": previous_status,
+        "to_status": target_status,
+        "occurred_at": now,
+        "actor": actor,
+        "reason": reason,
+    })
     path = save_project(project, paths)
     return {
         "ok": True,
@@ -189,6 +214,20 @@ def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) 
         "project": asdict(project),
         "path": str(path),
     }
+
+
+def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) -> dict:
+    """Backward-compatible Active/Completed wrapper for the existing UI."""
+    if not isinstance(body.get("completed"), bool):
+        return {"ok": False, "error": "completed must be true or false"}
+    return handle_set_project_lifecycle(
+        project_id,
+        {
+            **body,
+            "status": "completed" if body["completed"] else "active",
+        },
+        paths,
+    )
 
 
 def _normalized_agency_year(customer: CustomerInfo) -> tuple[str, str] | None:

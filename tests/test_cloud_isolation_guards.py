@@ -15,8 +15,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from dtm_buildsheet.app.adapters import wiring
 from dtm_buildsheet.app.adapters.wiring import save_via_proposal
+from dtm_buildsheet.app.adapters.cloud.sharepoint_operations_repository import (
+    SharePointOperationsRepository,
+)
+from dtm_buildsheet.app.adapters.interfaces import OperationsRepositoryError
 from dtm_buildsheet.app.services import shared_work_service
 
 
@@ -76,3 +82,15 @@ def test_ensure_signed_in_refuses_in_test_env(monkeypatch):
     """No OAuth prompts during pytest, even if a test re-enables cloud."""
     monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
     assert wiring.ensure_signed_in_for_cloud() is False
+
+
+def test_real_operations_repository_session_refuses_in_test_env():
+    repository = SharePointOperationsRepository(
+        token_provider=lambda: "TOKEN",
+        site_id="site-id",
+        operations_list_id="operations-id",
+        events_list_id="events-id",
+    )
+
+    with pytest.raises(OperationsRepositoryError, match="test environment"):
+        repository.get_vehicle("vehicle-1")

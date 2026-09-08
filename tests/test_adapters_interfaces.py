@@ -9,6 +9,7 @@ from dtm_buildsheet.app.adapters import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    OperationsRepository,
     ProposalStatus,
     UserIdentity,
 )
@@ -16,6 +17,9 @@ from dtm_buildsheet.app.adapters.noop import (
     InMemoryChangeProposalGateway,
     LocalIdentityProvider,
     NoOpNotificationGateway,
+)
+from dtm_buildsheet.app.adapters.memory_operations_repository import (
+    InMemoryOperationsRepository,
 )
 from dtm_buildsheet.app.adapters.wiring import (
     AdapterBundle,
@@ -68,6 +72,7 @@ def test_local_identity_provider_returns_stable_user():
     user = provider.signin()
     assert isinstance(user, UserIdentity)
     assert user.provider == "local"
+    assert user.roles == frozenset({"AppAdmin"})
     assert provider.current_user() == user
     provider.signout()  # tolerated, but identity remains for this adapter
     assert provider.is_signed_in() is True
@@ -138,6 +143,21 @@ def test_noop_notification_gateway_is_silent():
     assert gateway.notify_release_published("1.3.0", "mac") is None
 
 
+# ── OperationsRepository ─────────────────────────────────────────────────────
+
+
+def test_operations_repository_interface_shape():
+    assert OperationsRepository.__abstractmethods__ == {
+        "get_vehicle",
+        "list_vehicles",
+        "create_vehicle",
+        "commit_transition",
+        "delete_project",
+        "find_event_by_request_id",
+        "list_events",
+    }
+
+
 # ── Wiring ───────────────────────────────────────────────────────────────────
 
 
@@ -148,6 +168,8 @@ def test_build_local_bundle_returns_concrete_adapters():
     assert isinstance(bundle.identity, IdentityProvider)
     assert isinstance(bundle.proposals, ChangeProposalGateway)
     assert isinstance(bundle.notifications, NotificationGateway)
+    assert isinstance(bundle.operations, InMemoryOperationsRepository)
+    assert bundle.operations_writer is bundle.operations
 
 
 def test_get_active_bundle_is_overridable():
@@ -165,7 +187,7 @@ def test_get_active_bundle_is_overridable():
 
 @pytest.mark.parametrize(
     "interface",
-    [IdentityProvider, ChangeProposalGateway, NotificationGateway],
+    [IdentityProvider, ChangeProposalGateway, NotificationGateway, OperationsRepository],
 )
 def test_interfaces_are_pure_abstract_bases(interface):
     # Each interface ABC should be instantiation-blocked until subclassed.

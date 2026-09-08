@@ -60,10 +60,50 @@ def _migrate_historical_vehicle_placeholders(data: dict) -> dict:
     return data
 
 
+def _migrate_artwork_pending_vehicle_shape(data: dict) -> dict:
+    """Complete the metadata-only view shape of user-created placeholders.
+
+    Early artwork-pending entries carried only the four external view stubs.
+    Repair those entries in memory without assigning borrowed artwork,
+    placement geometry, or fixtures.
+    """
+
+    labels = {
+        "front": ("Front", "external", "standard"),
+        "side": ("Side", "external", "grid"),
+        "top": ("Top", "external", "grid"),
+        "rear": ("Rear", "external", "standard"),
+        "internal.console": ("Console", "internal", "standard"),
+        "internal.cargo": ("Cargo Area", "internal", "standard"),
+        "internal.rear_seat": ("Rear Seat", "internal", "standard"),
+    }
+    for vehicle in data.get("vehicles", {}).values():
+        if not isinstance(vehicle, dict) or not vehicle.get("placeholder"):
+            continue
+        if str(vehicle.get("layout_source") or "").strip():
+            continue
+        views = vehicle.setdefault("views", {})
+        for view_id, (label, category, legend_layout) in labels.items():
+            view = views.setdefault(view_id, {})
+            view.setdefault("label", label)
+            view.setdefault("category", category)
+            view.setdefault("legend_layout", legend_layout)
+            view.setdefault("coord_space", "relative_image")
+            view.setdefault("locations", {})
+            if view_id in {"side", "top"}:
+                view["logo_position"] = "bottom"
+            else:
+                view.setdefault("logo_position", "top-right")
+        vehicle.setdefault("fixtures", {})
+        vehicle["view_order"] = list(labels)
+    return data
+
+
 _MIGRATIONS: dict[str, list] = {
     "vehicle_layouts.json": [
         _migrate_vehicle_layouts_spacing,
         _migrate_historical_vehicle_placeholders,
+        _migrate_artwork_pending_vehicle_shape,
     ],
     # parts_db.json starts at schema_version 1; no migrations registered yet.
     # Hook point for future field changes (Phase 5 light naming, etc.).

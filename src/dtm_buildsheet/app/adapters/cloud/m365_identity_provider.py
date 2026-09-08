@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 
 import requests
 
+from ....domain.operations_policy import AppRole
 from ..interfaces import IdentityProvider, UserIdentity
 from .config import GRAPH_ENDPOINT
 from .msal_client import CloudAuthError, MsalClient
@@ -48,6 +50,9 @@ class M365IdentityProvider(IdentityProvider):
 
     def current_user(self) -> UserIdentity | None:
         if self._cached_identity is not None:
+            roles = self._app_roles()
+            if roles != self._cached_identity.roles:
+                self._cached_identity = replace(self._cached_identity, roles=roles)
             return self._cached_identity
         if not self._msal.has_cached_account():
             return None
@@ -120,4 +125,11 @@ class M365IdentityProvider(IdentityProvider):
                 for k, v in payload.items()
                 if k in ("givenName", "surname", "jobTitle") and v
             },
+            roles=self._app_roles(),
         )
+
+    def _app_roles(self) -> frozenset[str]:
+        get_roles = getattr(self._msal, "get_app_roles", None)
+        claimed = get_roles() if callable(get_roles) else frozenset()
+        known = {role.value for role in AppRole}
+        return frozenset(str(role) for role in claimed if str(role) in known)

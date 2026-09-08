@@ -22,7 +22,7 @@ agency and build year. They may contain only vehicle model, optional build type/
 photos; no historical vehicle type, checkbox, label, or migration marker exists. The absence of a
 draft, generated PDF, finalization, and QuickBooks data is simply the absence of that data. Once the
 reviewed photos have been copied and verified, the project is marked completed and appears in
-**Project Archives**. Completed is a reversible project lifecycle state, not a different schema.
+the Projects **Completed** tab. Completed is a reversible project lifecycle state, not a different schema.
 
 Every reusable item is a **project photo**. A project photo may be **unassigned** or assigned to one
 or more `BuildUnit` groups. Only a group's assigned photos appear in its build sheets and Shop
@@ -287,13 +287,13 @@ The reviewed live source mapping and per-folder sparse translations are maintain
 
 1. Enforce uniqueness for new projects and report existing agency/year duplicates.
 2. Ship backward-compatible reference persistence, sparse past-project support, completion state,
-   Project Archives, and cloud-off UI/output behavior.
+   Projects Completed tab, and cloud-off UI/output behavior.
 3. Add lifecycle folder provisioning and Company/Shop drive-item operations; verify the approved
    live skeleton without enabling PDF publication.
 4. Inventory the existing Shop **Build Photos** tree read-only. Map each reviewed folder to an
    ordinary project for its agency/build year, creating sparse model/build-type/unit entries only
    from known data. Consolidate multiple build folders for the same agency/year into that single
-   project, and mark imported projects completed so they open in Project Archives. Never infer an
+   project, and mark imported projects completed so they open in the Projects Completed tab. Never infer an
    agency, year, vehicle model, build type, unit, or VIN from an ambiguous folder name.
 5. Back up the source inventory and project records, then **copy** the reviewed photo set into the
    newly provisioned **Completed Build Photos** destinations. Do not move or delete source photos.
@@ -343,7 +343,7 @@ finalization state, Estimates, or linked QBO IDs.
 
 - Legacy projects without reference fields round-trip unchanged.
 - Duplicate agency/year creation is rejected server-side and redirects users to the existing project.
-- Completed projects leave the active list, appear under Agency → Build Year in Project Archives,
+- Completed projects leave the Active tab, appear under Agency → Build Year in the Projects Completed tab,
   and return to the active list when reopened.
 - Assigned/unassigned project-photo round trips and legacy project/group/unit de-duplication are tested.
 - Historical Company reference and Shop completed photos are reusable without moving their source.

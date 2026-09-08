@@ -1203,6 +1203,36 @@ def test_project_can_be_previewed_and_linked_before_unit_is_configured(paths):
     assert saved.qb_project_id == "447322633"
 
 
+def test_bind_invoice_accepts_id_or_invoice_url_and_can_unlink(paths):
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [])
+
+    linked = est.bind_invoice(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_invoice_id="https://qbo.intuit.com/app/invoice?txnId=98765",
+    )
+    assert linked == {"ok": True, "qb_invoice_id": "98765", "linked": True}
+    assert project_entry.load_project(pid, paths).build_units[0].individuals[0].qb_invoice_id == "98765"
+
+    assert est.bind_invoice(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_invoice_id="https://qbo.intuit.com/app/customer?id=123",
+    ) == {"ok": False, "error": "invalid_invoice_id"}
+
+    unlinked = est.bind_invoice(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_invoice_id="",
+    )
+    assert unlinked == {"ok": True, "qb_invoice_id": "", "linked": False}
+    assert project_entry.load_project(pid, paths).build_units[0].individuals[0].qb_invoice_id == ""
+
+
 def test_project_preview_does_not_resurface_legacy_agency_prefixed_name(paths):
     aid = _make_agency(paths, qb_customer_id="CUST9")
     pid = _make_project(paths, aid, [])

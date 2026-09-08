@@ -178,6 +178,9 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | No plaintext token storage | ✅ | Tokens are ephemeral in memory |
 | No credentials in logs | ✅ | Verified in audit |
 | Signed redirect URLs excluded from logs/errors | ✅ | `SharePointGraphProvider` converts HTTP and transport failures to safe summaries without request/redirect URLs |
+| Least-privilege list provisioning | ✅ | Read-only Operations uses `Sites.Read.All`; `Sites.Manage.All` is requested only by the explicit one-time provisioner; the create-one pilot requests `Sites.ReadWrite.All` interactively only after an authorized foreground confirmation |
+| Operations concurrency and retry | ✅ | GUID-addressed lists, unique request IDs, eTag preconditions, pending snapshots, and applied/conflict markers prevent stale overwrites and reconcile interrupted two-list writes |
+| Test isolation for operations lists | ✅ | Real `requests.Session` operations access refuses to run under pytest unless an explicit fake-cloud opt-in is set |
 | CSRF protection | ✅ | MSAL handles state internally |
 | HTTPS only | ✅ | Microsoft Graph is HTTPS-only |
 | Discovery document | ✅ | MSAL handles automatically |

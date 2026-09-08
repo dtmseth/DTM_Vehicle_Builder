@@ -9,6 +9,7 @@ window._PT = {
   vehicleMap:     {},
   projects:       [],
   agencies:       [],
+  operationsByProject: {},
   projectOptions: {
     build_types:     ["Patrol", "Admin", "Unmarked", "K-9", "Fire"],
     camera_brands:   [],
@@ -27,7 +28,10 @@ window._PT = {
   viewProject:    null,     // project open in detail view
   fromDetail:     false,    // editor opened from detail (not list)
   isWizard:       false,    // true when creating a new project
-  listMode:       "active", // active | archive
+  listMode:       "active", // active | inactive | completed
+  listSearch:     { active: "", inactive: "", completed: "" },
+  inactiveProjectId: null,
+  vehicleCreateTarget: null,
 
   // individual unit modal context
   indModalUid:        null,

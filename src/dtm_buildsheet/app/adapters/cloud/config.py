@@ -47,6 +47,8 @@ class CloudConfig:
     client_id: str
     sharepoint_site_id: str
     sharepoint_drive_id: str
+    operations_list_id: str = ""
+    operations_events_list_id: str = ""
     # Export-target library lookup. The two names are tried in order
     # against /sites/{site_id}/drives.name — give the display name first;
     # the internal-name fallback covers libraries that were renamed in the
@@ -157,6 +159,10 @@ def load_cloud_config_from_env() -> CloudConfig:
     are filled from the matching key in ``cloud_config.json`` (``tenant_id``,
     ``client_id``, ``sharepoint_site_id``, ``sharepoint_drive_id``).
 
+    Validated operations list GUIDs are optional and may be supplied through
+    DTM_OPERATIONS_LIST_ID / DTM_OPERATIONS_EVENTS_LIST_ID or the matching
+    lower-case JSON keys.
+
     Raises CloudConfigMissing if a field is unresolvable from either source.
     """
     required = {
@@ -186,6 +192,8 @@ def load_cloud_config_from_env() -> CloudConfig:
     # Optional export-target fields. Absence just means auto-upload is off
     # for this install — no CloudConfigMissing.
     optional = {
+        "operations_list_id": "DTM_OPERATIONS_LIST_ID",
+        "operations_events_list_id": "DTM_OPERATIONS_EVENTS_LIST_ID",
         "exports_library_name": "DTM_EXPORTS_LIBRARY_NAME",
         "exports_library_internal_name": "DTM_EXPORTS_LIBRARY_INTERNAL_NAME",
         "exports_base_folder": "DTM_EXPORTS_BASE_FOLDER",
@@ -230,3 +238,25 @@ def load_cloud_config_from_env() -> CloudConfig:
             values[field_name] = raw.casefold() in {"1", "true", "yes", "on"}
 
     return CloudConfig(**values)
+
+
+def save_operations_list_ids(
+    *,
+    operations_list_id: str,
+    operations_events_list_id: str,
+) -> Path:
+    """Persist non-secret operations list GUIDs after validated provisioning."""
+
+    current_id = str(operations_list_id or "").strip()
+    events_id = str(operations_events_list_id or "").strip()
+    if not current_id or not events_id:
+        raise ValueError("Both validated operations list IDs are required")
+    path = cloud_config_path()
+    payload = _load_cloud_config_file()
+    payload["operations_list_id"] = current_id
+    payload["operations_events_list_id"] = events_id
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+    return path

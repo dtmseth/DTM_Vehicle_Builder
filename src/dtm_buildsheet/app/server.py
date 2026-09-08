@@ -22,6 +22,7 @@ from .routes import config as config_routes
 from .routes import drafts as draft_routes
 from .routes import exports as export_routes
 from .routes import generation as generation_routes
+from .routes import operations as operations_routes
 from .routes import preview as preview_routes
 from .routes import parts_db as parts_db_routes
 from .routes import photo_gallery as photo_gallery_routes
@@ -112,6 +113,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/operations/"):
+            if not operations_routes.route_operations(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/quickbooks/"):
             if not quickbooks_routes.route_quickbooks(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
@@ -140,6 +144,8 @@ class Handler(BaseHTTPRequestHandler):
             self._api(export_routes.post_pdf(body, self.paths))
         elif path in config_routes.POST_ROUTES:
             self._api(config_routes.post_save(path, body, self.paths))
+        elif path == config_routes.CREATE_PLACEHOLDER_VEHICLE_ROUTE:
+            self._api(config_routes.post_create_placeholder_vehicle(body, self.paths))
         elif path == "/api/assets/upload":
             self._api(asset_routes.post_upload(body, self.paths))
         elif path == "/api/assets/delete":
@@ -181,6 +187,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith("/api/operations/"):
+            if not operations_routes.route_operations(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/quickbooks/"):
             if not quickbooks_routes.route_quickbooks(self, "POST", path, body, self.paths):

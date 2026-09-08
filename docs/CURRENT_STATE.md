@@ -1,6 +1,6 @@
 # DTM Vehicle Builder — Current State
 
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-08
 
 **Current release:** [v3.5.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.5.0)
 
@@ -225,7 +225,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   Remove from project. The source browser overlays **Completed** on Shop photos, uses the canonical
   vehicle name as the primary label, and omits folder-path clutter. Active galleries remove only
   metadata, and empty galleries show one centered Add action. Project completion requires a
-  confirmation dialog before moving the record into Project Archives.
+  confirmation dialog before moving the record into the Projects **Completed** tab.
 - Unit-group **Build Reference Photos** now uses the thumbnail-card gallery rather than the legacy
   filename-row editor. It supports inline shop-note editing, multi-select removal, and an **Add photos**
   picker that keeps multi-select assignment. Project and group counts refresh immediately after edits.
@@ -301,7 +301,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 - Past-photo data uses ordinary sparse agency/year projects with only the real model/build-type/unit
   data and photos that are known—there is no historical vehicle marker or label. A reversible
   project-level completion state moves these projects out of the active list into a collapsible
-  Agency → Build Year **Project Archives** view.
+  Projects **Completed** tab, retaining the collapsible Agency → Build Year grouping.
 - Additive Company/Shop lifecycle provisioning is now enabled for the approved folder skeletons.
   The two roots and all nine current project trees were created and verified; 23 existing vehicles
   use stable placeholders. Fergus County Sheriffs Department, Homeland Security Investigations
@@ -377,7 +377,27 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   each library, zero `Build(s)` children beneath any project year, zero surviving deleted IDs, and
   exact local/cloud JSON equality for all 45 projects. The rollback/audit snapshot is in
   `/private/tmp/dtm-flat-folder-migration-BqfxjI` on the migration workstation.
-- Cloud-off verification for this working tree passes **2,244 passed, 1 skipped**; contract snapshots
+- **Operations and lifecycle working-tree expansion (2026-09-08):** the role-gated Operations tab
+  uses the validated live SharePoint current-row/event lists for 78 vehicles. Project-wide and
+  individual one-click statuses preserve per-vehicle history; scheduling accepts any subset of its
+  four optional dates. Parts now includes a dated **Ordered** milestone before Partially Received,
+  Received, and Parts Ready. Statuses are white when unstarted, light yellow while intermediate, and
+  green at each workstream's finished state. Vehicle Availability now finishes at **At DTM**;
+  **Delivered** is the final Final Finish step. The schema-v4 upgrade appended that choice to the
+  live `FinalFinishStatus` column and revalidated both lists without renaming or adding a column.
+  Marking every exact project vehicle Delivered automatically completes the project. Project saves
+  create or refresh Operations projections, lifecycle changes mirror by opaque ID, inactive rows are
+  hidden without losing history, and deletion cascades exact Operations records before deleting the
+  Builder project. The Projects viewer is one count-aware **Active / Inactive / Completed** surface
+  with per-tab search, a single derived Active workflow badge, and a three-dot lifecycle/delete menu.
+  Inactive projects support an optional reason and reactivation, while Completed retains Agency →
+  Build Year grouping and reversible reopening. Individual units can store an existing QBO Invoice
+  ID/URL as a read-only association, and either project vehicle selector can create and immediately
+  select a shared Make/Model vehicle with artwork pending.
+- Cloud-off verification for this working tree passes **2,376 passed, 1 skipped**; the one skipped
+  export is platform-dependent. The updater test that writes a fake installer to the user's
+  Downloads folder also passed in its approved environment.
+  Contract snapshots
   remain unchanged. All six PowerPoint goldens were intentionally re-recorded after focused tests and
   visual PDF review. Continuous manifest pagination changed the golden slide counts (admin draft,
   patrol draft, realistic workbook, full build, location sweep, Tuesday sample) from
@@ -392,7 +412,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   visually reviewed for category continuity, non-orphaned headings, line visibility, and target choice.
   The responsive completed-photo gallery, file-presence-driven completed-photo actions, fast-preview/exact-cache tiers,
   real-file portrait bounds, assigned/unassigned project-photo round
-  trip, destination-project/optional-group dialog, full-resolution viewer, archive actions, and
+  trip, destination-project/optional-group dialog, full-resolution viewer, lifecycle-tab actions, and
   pending-image Vehicle Manager cards were also visually reviewed in the cloud-off local app.
 
 ## Roadmap position
@@ -437,4 +457,3 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
 - Do not move golden outputs merely to make tests green. Intentional renderer changes need focused
   behavioral coverage plus a representative export check; reserve owner review for ambiguous or
   high-impact visual redesigns rather than every digest update.
-- Preserve `.hermes/` as unrelated local scratch data; it is intentionally untracked.

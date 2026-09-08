@@ -178,6 +178,9 @@ not allowed. A `layout_source` entry inherits missing `views`, `fixtures`, and `
 validated config boundary so planners/renderers still receive the ordinary expanded shape. Cycles
 and missing sources are rejected. `placeholder: true` is surfaced in Settings and project vehicle
 selectors as **artwork pending**. The UI clears it after front/side/top/rear PNGs are all present.
+Project vehicle selectors may create these placeholders from Make and Model alone through the narrow
+`POST /api/layouts/vehicles/create` route. That route creates no image assets, reuses an exact existing
+make/model match, and resolves ID collisions without asking project users to edit configuration JSON.
 Older shared settings files are forward-merged with the concrete historical model placeholders when
 PIU and F-150 bases exist, so a pre-feature SharePoint mirror cannot temporarily hide them.
 
@@ -724,6 +727,8 @@ current production defaults after the live folder and package verification.
   "client_id": "...",
   "sharepoint_site_id": "...",
   "sharepoint_drive_id": "...",
+  "operations_list_id": "...",
+  "operations_events_list_id": "...",
 
   "exports_library_name": "Company Files",
   "exports_library_internal_name": "Documents",
@@ -754,11 +759,16 @@ publishes it.
 Library display and internal names are both optional candidates because a SharePoint rename may not
 change the backend drive name.
 
+`operations_list_id` and `operations_events_list_id` are non-secret SharePoint list GUIDs written
+only after the operations provisioner successfully re-reads and validates every column. Runtime
+operations code uses these GUIDs rather than list titles or URLs.
+
 Environment overrides use `DTM_COMPANY_FOLDER_PROVISIONING_ENABLED`,
 `DTM_COMPANY_VEHICLE_FOLDERS_ENABLED`, `DTM_COMPANY_LIBRARY_NAME`,
 `DTM_COMPANY_LIBRARY_INTERNAL_NAME`, `DTM_COMPANY_VEHICLE_ROOT`,
 `DTM_SHOP_FOLDER_PROVISIONING_ENABLED`, `DTM_SHOP_PUBLICATION_ENABLED`, `DTM_SHOP_LIBRARY_NAME`,
-`DTM_SHOP_LIBRARY_INTERNAL_NAME`, and `DTM_SHOP_BUILD_PHOTOS_ROOT`.
+`DTM_SHOP_LIBRARY_INTERNAL_NAME`, `DTM_SHOP_BUILD_PHOTOS_ROOT`, `DTM_OPERATIONS_LIST_ID`, and
+`DTM_OPERATIONS_EVENTS_LIST_ID`.
 
 ---
 

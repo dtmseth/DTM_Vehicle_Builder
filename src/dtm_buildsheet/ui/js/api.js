@@ -15,7 +15,13 @@ const api = (path, body) =>
     : {cache:"no-store"}
   ).then(async r => {
     try {
-      return await r.json();
+      const payload = await r.json();
+      if (payload?.ok && payload.operations_sync?.ok === false) {
+        const message = payload.operations_sync.error ||
+          "The Builder change was saved, but Operations could not be synchronized";
+        setTimeout(() => toast(message, "error"), 50);
+      }
+      return payload;
     } catch (_) {
       throw new Error(`${path} → ${r.status} ${r.statusText} (non-JSON response)`);
     }

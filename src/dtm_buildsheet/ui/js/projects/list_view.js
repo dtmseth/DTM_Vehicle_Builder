@@ -1,40 +1,188 @@
 // ── Projects module: project list view ────────────────────────────────────────
 
+function _ptProjectMatchesSearch(project, query) {
+  if (!query) return true;
+  const customer = project.customer || {};
+  const values = [
+    project.project_id,
+    project.project_notes,
+    project.inactive_reason,
+    ...(project.quote_numbers || []),
+    customer.name,
+    customer.agency,
+    customer.agency_abbreviation,
+    customer.build_year,
+    customer.sales_rep,
+    customer.quote_number,
+    customer.contact,
+    customer.phone,
+    customer.email,
+  ];
+  (project.build_units || []).forEach(unit => {
+    values.push(unit.vehicle_model, unit.build_type);
+    (unit.individuals || []).forEach(vehicle => {
+      values.push(
+        vehicle.unit_number,
+        vehicle.vin,
+        vehicle.year,
+        vehicle.make,
+        vehicle.model,
+        vehicle.color,
+        vehicle.notes,
+      );
+    });
+  });
+  return values.some(value => String(value || "").toLowerCase().includes(query));
+}
+
+function _ptProjectProgress(project) {
+  const allOperations = _PT.operationsByProject?.[project.project_id] || [];
+  const individualIds = new Set((project.build_units || []).flatMap(unit =>
+    (unit.individuals || []).map(individual => individual.individual_id).filter(Boolean)
+  ));
+  const vehicles = individualIds.size
+    ? allOperations.filter(vehicle => individualIds.has(vehicle.vehicle_id))
+    : allOperations;
+  if (!vehicles.length) return { key: "estimate-sent", label: "Estimate Sent" };
+
+  const all = (field, values) => vehicles.every(vehicle => values.includes(String(vehicle[field] || "")));
+  const any = (field, values) => vehicles.some(vehicle => values.includes(String(vehicle[field] || "")));
+  if (all("final_finish_status", ["delivered"])) {
+    return { key: "delivered", label: "Delivered" };
+  }
+  if (all("final_finish_status", ["ready_for_delivery", "delivered"])) {
+    return { key: "ready-deliver", label: "Ready to Deliver" };
+  }
+  if (any("shop_status", ["in_progress", "complete"]) ||
+      any("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"])) {
+    return { key: "building", label: "Build in Progress" };
+  }
+  if (all("parts_status", ["parts_ready"]) &&
+      all("vehicle_availability_status", ["at_dtm", "delivered"])) {
+    return { key: "ready-build", label: "Ready to Build" };
+  }
+
+  const accepted = all("acceptance_status", ["accepted"]);
+  const logisticsStarted = any("parts_status", ["ordered", "partially_received", "received", "parts_ready"]) ||
+    any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
+  if (accepted && logisticsStarted) {
+    const common = (field, fallback) => {
+      const values = new Set(vehicles.map(vehicle => String(vehicle[field] || fallback)));
+      return values.size === 1 ? [...values][0] : "mixed";
+    };
+    const labels = {
+      mixed: "Mixed",
+      not_started: "Not started",
+      ordered: "Ordered",
+      partially_received: "Partially received",
+      received: "Received",
+      parts_ready: "Parts ready",
+      awaiting_details: "Awaiting details",
+      waiting_on_dealer: "Waiting on dealer",
+      waiting_on_agency: "Waiting on agency",
+      ready_for_pickup: "Ready for pickup",
+      at_dtm: "At DTM",
+      delivered: "Delivered",
+    };
+    const parts = common("parts_status", "not_started") || "not_started";
+    const vehicle = common("vehicle_availability_status", "awaiting_details");
+    return {
+      key: "logistics",
+      label: `Parts: ${labels[parts] || parts} · Vehicle: ${labels[vehicle] || vehicle}`,
+    };
+  }
+  return accepted
+    ? { key: "estimate-accepted", label: "Estimate Accepted" }
+    : { key: "estimate-sent", label: "Estimate Sent" };
+}
+
 function _ptRenderList() {
-  const activeProjects = _PT.projects.filter(p => p.project_status !== "completed");
-  const archiveCount = _PT.projects.length - activeProjects.length;
-  $("proj-archive-count").textContent = archiveCount
-    ? `${archiveCount} completed project${archiveCount === 1 ? "" : "s"}`
-    : "";
-  if (!activeProjects.length) {
+  const statuses = ["active", "inactive", "completed"];
+  const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "active";
+  const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
+  const counts = Object.fromEntries(statuses.map(status => [
+    status,
+    _PT.projects.filter(project => project.project_status === status).length,
+  ]));
+  statuses.forEach(status => {
+    const count = $(`proj-${status}-count`);
+    if (count) count.textContent = counts[status];
+  });
+  document.querySelectorAll("[data-project-list-status]").forEach(button => {
+    const selected = button.dataset.projectListStatus === mode;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  const search = $("proj-list-search");
+  if (search) {
+    search.placeholder = `Search ${mode} projects…`;
+    if (search.value !== (_PT.listSearch?.[mode] || "")) {
+      search.value = _PT.listSearch?.[mode] || "";
+    }
+  }
+
+  const completed = mode === "completed";
+  $("proj-standard-panel").hidden = completed;
+  $("proj-completed-panel").hidden = !completed;
+  if (completed) {
+    _ptRenderArchive(query);
+    return;
+  }
+
+  const projects = _PT.projects.filter(project =>
+    project.project_status === mode && _ptProjectMatchesSearch(project, query)
+  );
+  if (!projects.length) {
+    $("proj-list-empty").textContent = query
+      ? `No ${mode} projects match this search.`
+      : mode === "inactive"
+        ? "No inactive projects."
+        : "No active projects. Click + New Project to get started.";
     show("proj-list-empty");
     hide("proj-list-rows");
     return;
   }
   hide("proj-list-empty");
   show("proj-list-rows");
-  $("proj-list-rows").innerHTML = activeProjects.map(p => {
+  $("proj-list-rows").innerHTML = projects.map(p => {
     const name = esc(_ptProjName(p));
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const pid  = esc(p.project_id);
+    const progress = mode === "active" ? _ptProjectProgress(p) : null;
     return `<div class="proj-row proj-row-clickable" onclick="PT_open('${pid}')">
       <div class="proj-row-main">
-        <div class="proj-row-agency">${name}</div>
-        <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}</div>
+        <div class="proj-row-heading">
+          <div class="proj-row-agency">${name}</div>
+          ${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}
+        </div>
+        <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
       </div>
       <div class="proj-row-actions" onclick="event.stopPropagation()">
         <button class="btn btn-primary btn-sm" onclick="PT_open('${pid}')">Open</button>
-        <button class="btn btn-danger btn-sm"  onclick="PT_del('${pid}')">Delete</button>
+        <details class="proj-row-menu">
+          <summary aria-label="More actions for ${name}" title="More actions">⋯</summary>
+          <div class="proj-row-menu-items">
+            ${mode === "active"
+              ? `<button type="button" onclick="PT_setProjectLifecycle('${pid}','inactive')">Mark inactive</button>`
+              : `<button type="button" onclick="PT_setProjectLifecycle('${pid}','active')">Reactivate</button>`}
+            <button type="button" class="proj-row-menu-danger" onclick="PT_del('${pid}')">Delete project</button>
+          </div>
+        </details>
       </div>
     </div>`;
   }).join("");
 }
 
-function _ptRenderArchive() {
-  const projects = _PT.projects.filter(p => p.project_status === "completed");
+function _ptRenderArchive(query = "") {
+  const projects = _PT.projects.filter(project =>
+    project.project_status === "completed" && _ptProjectMatchesSearch(project, query)
+  );
   $("proj-archive-empty").hidden = projects.length > 0;
   if (!projects.length) {
     $("proj-archive-tree").innerHTML = "";
+    $("proj-archive-empty").textContent = query
+      ? "No completed projects match this search."
+      : "No completed projects yet.";
     return;
   }
 
@@ -76,12 +224,12 @@ function _ptRenderArchive() {
               </div>
             </div>`;
           }).join("");
-        return `<details class="proj-archive-year">
+        return `<details class="proj-archive-year"${query ? " open" : ""}>
           <summary><span>${esc(year)}</span><span>${entries.length} project${entries.length === 1 ? "" : "s"}</span></summary>
           <div class="proj-archive-year-projects">${projectRows}</div>
         </details>`;
       }).join("");
-    return `<details class="proj-archive-agency">
+    return `<details class="proj-archive-agency"${query ? " open" : ""}>
       <summary><span>${esc(agency)}</span><span>${count} project${count === 1 ? "" : "s"}</span></summary>
       <div class="proj-archive-years">${yearRows}</div>
     </details>`;
@@ -103,8 +251,85 @@ window.PT_open = function (pid) {
 };
 
 window.PT_openArchived = function (pid) {
-  _PT.listMode = "archive";
+  _PT.listMode = "completed";
   PT_open(pid);
+};
+
+function _ptCloseInactiveProjectModal() {
+  const modal = $("project-inactive-modal");
+  modal?.classList.remove("open");
+  if (modal) modal.hidden = true;
+  _PT.inactiveProjectId = null;
+}
+
+function _ptOpenInactiveProjectModal(pid) {
+  const project = (_PT.projects || []).find(item => item.project_id === pid) ||
+    (_PT.viewProject?.project_id === pid ? _PT.viewProject : null);
+  if (!project) return;
+  _PT.inactiveProjectId = pid;
+  $("project-inactive-project").textContent = _ptProjName(project);
+  $("project-inactive-reason").value = project.inactive_reason || "";
+  $("project-inactive-status").hidden = true;
+  const modal = $("project-inactive-modal");
+  modal.hidden = false;
+  modal.classList.add("open");
+  requestAnimationFrame(() => $("project-inactive-reason")?.focus());
+}
+
+async function _ptApplyProjectLifecycle(pid, status, reason = "") {
+  const button = $("project-inactive-save");
+  const statusMessage = $("project-inactive-status");
+  if (status === "inactive") {
+    button.disabled = true;
+    button.textContent = "Saving…";
+    statusMessage.textContent = "Updating project…";
+    statusMessage.hidden = false;
+  }
+  try {
+    const result = await api(`/api/project/${encodeURIComponent(pid)}/lifecycle`, {
+      status,
+      reason,
+    });
+    if (!result.ok) {
+      toast(result.error || "Project status could not be changed", "error");
+      if (status === "inactive") {
+        statusMessage.textContent = result.error || "Project status could not be changed.";
+      }
+      return;
+    }
+    if (status === "inactive") _ptCloseInactiveProjectModal();
+    await _ptLoadAll();
+    _PT.viewProject = null;
+    toast(status === "inactive" ? "Project moved to Inactive" : "Project returned to Active", "success");
+    _ptShowList(status);
+  } catch (error) {
+    toast(error.message || "Project status could not be changed", "error");
+    if (status === "inactive") {
+      statusMessage.textContent = error.message || "Project status could not be changed.";
+    }
+  } finally {
+    if (status === "inactive") {
+      button.disabled = false;
+      button.textContent = "Mark Inactive";
+    }
+  }
+}
+
+window.PT_setProjectLifecycle = function (pid, status) {
+  if (status === "inactive") {
+    _ptOpenInactiveProjectModal(pid);
+    return;
+  }
+  _ptApplyProjectLifecycle(pid, status);
+};
+
+window.PT_confirmProjectInactive = function () {
+  if (!_PT.inactiveProjectId) return;
+  _ptApplyProjectLifecycle(
+    _PT.inactiveProjectId,
+    "inactive",
+    $("project-inactive-reason").value.trim(),
+  );
 };
 
 window.PT_setProjectCompleted = async function (pid, completed) {
@@ -113,7 +338,7 @@ window.PT_setProjectCompleted = async function (pid, completed) {
     const label = project
       ? `${project.customer?.agency || "this project"}${project.customer?.build_year ? ` ${project.customer.build_year}` : ""}`
       : "this project";
-    if (!confirm(`Mark ${label} completed?\n\nIt will move to Project Archives. Completed photos will remain available, and the project can be reopened later.`)) return;
+    if (!confirm(`Mark ${label} completed?\n\nIt will move to the Completed tab. Completed photos will remain available, and the project can be reopened later.`)) return;
   }
   try {
     const result = await api(`/api/project/${encodeURIComponent(pid)}/completion`, {
@@ -125,8 +350,8 @@ window.PT_setProjectCompleted = async function (pid, completed) {
     }
     await _ptLoadAll();
     _PT.viewProject = null;
-    toast(completed ? "Project moved to Project Archives" : "Project returned to Active Projects", "success");
-    _ptShowList(completed ? "archive" : "active");
+    toast(completed ? "Project moved to Completed" : "Project returned to Active", "success");
+    _ptShowList(completed ? "completed" : "active");
   } catch (error) {
     toast(error.message || "Project status could not be changed", "error");
   }
@@ -140,7 +365,7 @@ window.PT_setProjectCompleted = async function (pid, completed) {
     try {
       const res = await api(`/api/project/${encodeURIComponent(_delPid)}/delete`, { delete_files: deleteFiles });
       if (res.ok) {
-        toast(deleteFiles ? "Project and output files deleted" : "Project deleted", "success");
+        toast(deleteFiles ? "Project, Operations history, and output files deleted" : "Project and Operations history deleted", "success");
         if (_PT.viewProject?.project_id === _delPid) _PT.viewProject = null;
         await _ptLoadAll();
         _ptShowList();
@@ -160,7 +385,7 @@ window.PT_setProjectCompleted = async function (pid, completed) {
     const p = _PT.projects.find(x => x.project_id === pid);
     const name = p ? _ptProjName(p) : pid;
     $("del-project-modal-msg").textContent =
-      `"${name}" — choose what to delete. Output files are the build sheets in the project output folder.`;
+      `"${name}" — deleting the project also permanently deletes its Operations records and status history. Choose whether to delete its output files too.`;
     $("del-project-modal").classList.add("open");
   };
 

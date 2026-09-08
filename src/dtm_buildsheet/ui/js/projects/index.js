@@ -4,26 +4,19 @@
 // ── View switching ─────────────────────────────────────────────────────────────
 
 function _ptShowList(mode = _PT.listMode || "active") {
-  _PT.listMode = mode === "archive" ? "archive" : "active";
-  if (_PT.listMode === "archive") {
-    hide("proj-list-view");
-    show("proj-archive-view");
-  } else {
-    show("proj-list-view");
-    hide("proj-archive-view");
-  }
+  if (mode === "archive") mode = "completed";
+  _PT.listMode = ["active", "inactive", "completed"].includes(mode) ? mode : "active";
+  show("proj-list-view");
   hide("proj-detail-view");
   hide("proj-editor");
   hide("proj-build-editor");
   _ptRenderList();
-  _ptRenderArchive();
 }
 
 function _ptShowDetail(project) {
   _PT.viewProject      = project;
   _PT.editTabEditable  = false;
   hide("proj-list-view");
-  hide("proj-archive-view");
   show("proj-detail-view");
   hide("proj-editor");
   hide("proj-build-editor");
@@ -32,6 +25,10 @@ function _ptShowDetail(project) {
   const n = (project.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
   $("proj-detail-meta").textContent = n + " unit" + (n !== 1 ? "s" : "");
   const completed = project.project_status === "completed";
+  const inactive = project.project_status === "inactive";
+  const inactiveBtn = $("btn-proj-inactive");
+  inactiveBtn.hidden = completed;
+  inactiveBtn.textContent = inactive ? "Reactivate Project" : "Mark Project Inactive";
   const completionBtn = $("btn-proj-complete");
   completionBtn.textContent = completed ? "Reopen Project" : "Mark Project Completed";
   completionBtn.className = `btn btn-sm ${completed ? "btn-primary" : "btn-secondary"}`;
@@ -46,7 +43,6 @@ function _ptShowEditor(project, activeTab) {
   _PT.isWizard   = !project;
   _PT.editId     = project?.project_id || null;
   hide("proj-list-view");
-  hide("proj-archive-view");
   hide("proj-detail-view");
   show("proj-editor");
   hide("proj-build-editor");
@@ -138,15 +134,19 @@ function _ptWizardNext() {
 function _ptBind() {
   if (typeof _ptBindReferencePhotoModal === "function") _ptBindReferencePhotoModal();
   document.addEventListener("click", event => {
-    const openMenus = [...document.querySelectorAll(".proj-build-action-menu[open]")];
+    const openMenus = [...document.querySelectorAll(
+      ".proj-build-action-menu[open], .proj-row-menu[open]"
+    )];
     if (!openMenus.length) return;
     const target = event.target instanceof Element ? event.target : null;
-    const targetMenu = target?.closest(".proj-build-action-menu") || null;
+    const targetMenu = target?.closest(".proj-build-action-menu, .proj-row-menu") || null;
     const insideOpenMenu = !!targetMenu && openMenus.includes(targetMenu);
     openMenus.forEach(menu => {
       if (menu !== targetMenu) menu.removeAttribute("open");
     });
-    if (insideOpenMenu && target?.closest(".proj-build-action-menu-items button")) {
+    if (insideOpenMenu && target?.closest(
+      ".proj-build-action-menu-items button, .proj-row-menu-items button"
+    )) {
       targetMenu.removeAttribute("open");
     }
     if (!insideOpenMenu) {
@@ -155,8 +155,30 @@ function _ptBind() {
     }
   }, true);
   $("btn-new-project").addEventListener("click", () => _ptShowEditor(null));
-  $("btn-project-archives").addEventListener("click", () => _ptShowList("archive"));
-  $("btn-project-archives-back").addEventListener("click", () => _ptShowList("active"));
+  document.querySelectorAll("[data-project-list-status]").forEach(button => {
+    button.addEventListener("click", () => _ptShowList(button.dataset.projectListStatus));
+  });
+  $("proj-list-search").addEventListener("input", event => {
+    _PT.listSearch[_PT.listMode] = event.target.value;
+    _ptRenderList();
+  });
+  $("project-inactive-form").addEventListener("submit", event => {
+    event.preventDefault();
+    PT_confirmProjectInactive();
+  });
+  $("project-inactive-close").addEventListener("click", _ptCloseInactiveProjectModal);
+  $("project-inactive-cancel").addEventListener("click", _ptCloseInactiveProjectModal);
+  $("project-inactive-modal").addEventListener("click", event => {
+    if (event.target === $("project-inactive-modal")) _ptCloseInactiveProjectModal();
+  });
+  $("btn-proj-inactive").addEventListener("click", () => {
+    if (_PT.viewProject) {
+      PT_setProjectLifecycle(
+        _PT.viewProject.project_id,
+        _PT.viewProject.project_status === "inactive" ? "active" : "inactive",
+      );
+    }
+  });
   $("btn-proj-complete").addEventListener("click", () => {
     if (_PT.viewProject) {
       PT_setProjectCompleted(
@@ -267,5 +289,5 @@ function _ptBind() {
 window.initProjectsTab = async function () {
   if (!_PT.inited) { _ptBind(); _PT.inited = true; }
   await _ptLoadAll();
-  _ptShowList("active");
+  _ptShowList(_PT.listMode);
 };

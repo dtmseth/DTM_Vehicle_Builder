@@ -180,14 +180,18 @@ class ProjectRecord:
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
-    # Project lifecycle controls active-list vs archive placement. Completion
-    # is organizational and reversible; sparse imported projects use the same
-    # schema as current work.
+    # Project lifecycle controls Active / Inactive / Completed placement.
+    # Lifecycle is organizational and reversible; it is deliberately separate
+    # from per-vehicle customer acceptance and production operations.
     project_status: str = "active"
+    inactive_at: str = ""
+    inactive_by: str = ""
+    inactive_reason: str = ""
     completed_at: str = ""
     completed_by: str = ""
     reactivated_at: str = ""
     reactivated_by: str = ""
+    project_lifecycle_history: list[dict[str, str]] = field(default_factory=list)
     # A short instruction that belongs on every build sheet generated for this
     # project (and therefore this project build year).  Unit-specific final
     # page notes remain on the BuildDraft instead of being duplicated here.

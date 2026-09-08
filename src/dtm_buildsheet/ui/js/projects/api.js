@@ -1,18 +1,28 @@
 // ── Projects module: data loading ─────────────────────────────────────────────
 
 async function _ptLoadAll() {
-  const [pr, lr, pjr, opts, agencies] = await Promise.all([
+  const [pr, lr, pjr, opts, agencies, operations] = await Promise.all([
     api("/api/presets").catch(e  => { console.error("Projects: presets load failed", e);  return null; }),
     api("/api/layouts").catch(e  => { console.error("Projects: layouts load failed", e);  return null; }),
     api("/api/projects").catch(e => { console.error("Projects: projects load failed", e); return null; }),
     api("/api/project-options").catch(e => { console.error("Projects: options load failed", e); return null; }),
     api("/api/agencies").catch(e => { console.error("Projects: agencies load failed", e); return null; }),
+    api("/api/operations/vehicles").catch(() => null),
   ]);
   if (pr)   { _PT.presets         = pr.presets   || []; }
   if (lr)   { _PT.vehicleMap      = lr.vehicles  || {}; _PT.vehicles = Object.keys(_PT.vehicleMap).sort(); }
   if (pjr)  { _PT.projects        = pjr.projects || []; }
   if (opts && !opts.error) { _PT.projectOptions = opts; }
   if (agencies?.ok) { _PT.agencies = agencies.agencies || []; }
+  _PT.operationsByProject = {};
+  if (operations?.ok) {
+    (operations.vehicles || []).forEach(vehicle => {
+      const projectId = String(vehicle.project_id || "");
+      if (!projectId) return;
+      if (!_PT.operationsByProject[projectId]) _PT.operationsByProject[projectId] = [];
+      _PT.operationsByProject[projectId].push(vehicle);
+    });
+  }
 }
 
 // Load preference option sources lazily.  The source lists are shared by the

@@ -67,6 +67,8 @@ function _ptQuickBooksOptionsMarkup(projectId, unitId, individualId, holder, dis
         onclick="PT_setupQbProject('${projectId}','${individualId}')">${String(holder.qb_project_id || "").trim() ? "Manage QB project" : "Set up QB project"}</button>
       <button type="button"${disabledAttrs}
         onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update estimate" : "Create estimate"}</button>
+      <button type="button"
+        onclick="PT_linkQbInvoice('${projectId}','${individualId}')">${String(holder.qb_invoice_id || "").trim() ? "Manage invoice link" : "Connect invoice"}</button>
     </div>
   </details>`;
 }
@@ -1668,6 +1670,67 @@ window.PT_setupQbProject = async function (projectId, individualId) {
       _ptRenderOverview(updated);
     }
   });
+};
+
+window.PT_linkQbInvoice = function (projectId, individualId) {
+  const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
+  let vehicle = null;
+  for (const buildUnit of (project?.build_units || [])) {
+    vehicle = (buildUnit.individuals || []).find(item => item.individual_id === individualId);
+    if (vehicle) break;
+  }
+  if (!vehicle) {
+    toast("Could not find this vehicle", "error");
+    return;
+  }
+  const existingId = String(vehicle.qb_invoice_id || "").trim();
+  _ptOpenEstModal(
+    existingId ? "Manage invoice link" : "Connect an existing invoice",
+    `<p class="qb-setup-intro">Paste the numeric QuickBooks invoice ID or the invoice page address. This is a read-only link: it will not create or change an invoice in QuickBooks.</p>
+     <label for="qb-invoice-id" style="font-size:12px;font-weight:600;color:var(--navy)">Invoice ID or invoice URL</label>
+     <input id="qb-invoice-id" class="qb-setup-input" autocomplete="off" placeholder="Invoice ID or QuickBooks invoice URL" value="${_ptEscAttr(existingId)}" />
+     ${existingId ? `<p class="qb-setup-hint">Clear this field and choose Remove link to disconnect the invoice from this vehicle.</p>` : ""}`,
+    existingId ? "Save invoice link" : "Connect invoice",
+  );
+  const controls = _ptEstModalEls();
+  const input = $("qb-invoice-id");
+  const refresh = () => {
+    const value = String(input?.value || "").trim();
+    controls.create.disabled = !value && !existingId;
+    controls.create.textContent = !value && existingId ? "Remove link" :
+      existingId ? "Save invoice link" : "Connect invoice";
+  };
+  input?.addEventListener("input", refresh);
+  refresh();
+  controls.create.onclick = async () => {
+    controls.create.disabled = true;
+    controls.create.textContent = "Saving…";
+    try {
+      const result = await api("/api/quickbooks/invoices/bind", {
+        project_id: projectId,
+        individual_id: individualId,
+        qb_invoice_id: String(input?.value || "").trim(),
+      });
+      if (!result?.ok) {
+        toast(result?.error === "invalid_invoice_id"
+          ? "Enter a numeric invoice ID or paste a QuickBooks invoice page address"
+          : result?.error || "Invoice link could not be saved", "error");
+        refresh();
+        return;
+      }
+      controls.modal?.classList.remove("open");
+      await _ptLoadAll();
+      const updated = _PT.projects.find(item => item.project_id === projectId);
+      if (updated) {
+        _PT.viewProject = updated;
+        _ptRenderOverview(updated);
+      }
+      toast(result.linked ? "Invoice connected to vehicle" : "Invoice link removed", "success");
+    } catch (_) {
+      toast("Invoice link could not be saved", "error");
+      refresh();
+    }
+  };
 };
 
 window.PT_buildCreateEstimate = async function (projectId, unitId, individualId) {

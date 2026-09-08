@@ -66,10 +66,42 @@ Input adapter -> ProjectInput -> BuildPlan -> renderer/exporter
 
 ## UI Structure
 
-The app has two main tabs: **Projects** and **Settings**.
+The app has three workspace families: **Projects**, capability-gated **Operations**, and
+**Settings**.
+
+**Operations** provides a project-grouped shared-vehicle backlog, Builder projection preview,
+explicit vehicle creation, and capability-gated status updates. Its header tab appears only
+when the signed-in identity has `operations.view` and the validated operations repository is
+configured. Every Operations API route repeats the capability check; browser visibility is not the
+authorization decision. The projection preview additionally requires `projects.edit`, compares
+rows by opaque `IndividualUnit.individual_id`, and uses the repository's strictly read-only list
+query. The pilot POST additionally requires explicit selection confirmation and a one-use request
+ID, re-derives the projection from server-side project records, and calls only the create command;
+existing rows cannot be changed through it. Its write repository lazily requests the separate
+`Sites.ReadWrite.All` scope only during that foreground action. The add picker is also lazy: after
+the first row exists, it queries projection candidates only when an authorized user clicks the
+header action, avoiding duplicate full-list reads during ordinary backlog viewing. The tested
+general mutation service can merge only Builder-owned fields while preserving production state,
+but no project-save write hook is enabled yet. Bulk seeding is browser orchestration over that same
+one-vehicle route, not a more powerful mutation API: requests run sequentially, have independent
+idempotency IDs, and stop safely at the first failure. A later preview derives the remaining set.
+Project-wide status changes follow the same bounded pattern through the one-vehicle
+`/api/operations/status` route. Each request supplies the vehicle's expected revision and produces
+its own immutable history event; the service remains the authority for capabilities, normal
+transitions, corrections, and milestone timestamps. Individual vehicle actions use the same route
+for exceptions to the usual common project status. The vehicle history route reads applied events
+through the ordinary `Sites.Read.All` repository and never invokes pending-event reconciliation;
+viewing a timeline therefore cannot trigger a write or an interactive write-consent prompt.
+Scheduling is another one-vehicle command boundary. Project-level scheduling is browser
+orchestration over that route, not a project-row write: each vehicle is revision checked, receives
+only the fields the user changed, and records its own schedule event. The schedule bucket remains
+derived from acceptance plus Scheduled Week. **Must Deliver On** uses the 60-day calculation unless
+the separate manual override date is present; keeping both fields prevents later calculation from
+silently erasing an explicit commitment.
 
 **Projects tab** manages the full project lifecycle:
-- `#proj-list-view` — scrollable list of all projects
+- `#proj-list-view` — one list surface with Active / Inactive / Completed status tabs; Completed
+  retains Agency → Build Year grouping
 - `#proj-detail-view` — detail view with Overview / Edit sub-tabs and build actions on the cards
 - `#proj-editor` — 4-step wizard for new projects only
 - `#proj-build-editor` — embedded build editor (in-place; no tab switch required)

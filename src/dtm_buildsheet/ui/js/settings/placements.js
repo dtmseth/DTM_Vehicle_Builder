@@ -76,7 +76,10 @@ function loadVehicleCanvas(){
     ctx.fillText(`No image: assets/vehicles/${_activeVehicle}_${_activeView}.png`, CW/2, CH/2);
     drawDots(ctx,[0,0,CW,CH]);
   };
-  _vehicleImg.src=`/assets/vehicles/${_activeVehicle}_${_activeView}.png`;
+  const vehicleConfig=_layouts?.vehicles?.[_activeVehicle]||{};
+  const artworkVehicle=vehicleConfig.placeholder ? String(vehicleConfig.layout_source||"") : _activeVehicle;
+  if(artworkVehicle) _vehicleImg.src=`/assets/vehicles/${artworkVehicle}_${_activeView}.png`;
+  else _vehicleImg.onerror();
 
   canvas.onclick=e=>{
     if(!_selectedLocKey)return;

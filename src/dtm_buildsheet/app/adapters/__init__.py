@@ -12,6 +12,10 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    OperationsAlreadyExistsError,
+    OperationsConflictError,
+    OperationsRepository,
+    OperationsRepositoryError,
     ProposalStatus,
     UserIdentity,
 )
@@ -20,6 +24,10 @@ __all__ = [
     "ChangeProposalGateway",
     "IdentityProvider",
     "NotificationGateway",
+    "OperationsAlreadyExistsError",
+    "OperationsConflictError",
+    "OperationsRepository",
+    "OperationsRepositoryError",
     "ProposalStatus",
     "UserIdentity",
 ]

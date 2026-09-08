@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ...domain.operations_models import OperationsEvent, VehicleOperations
+
 
 @dataclass(frozen=True)
 class UserIdentity:
@@ -19,6 +21,7 @@ class UserIdentity:
     email: str
     provider: str
     extra: dict[str, str] = field(default_factory=dict)
+    roles: frozenset[str] = field(default_factory=frozenset)
 
 
 ProposalState = Literal["pending", "approved", "rejected", "merged", "unknown"]
@@ -116,3 +119,59 @@ class NotificationGateway(ABC):
 
     @abstractmethod
     def notify_release_published(self, version: str, platform: str) -> None: ...
+
+
+class OperationsRepositoryError(RuntimeError):
+    """Base error for operations persistence adapters."""
+
+
+class OperationsConflictError(OperationsRepositoryError):
+    """The expected operations revision no longer matches storage."""
+
+
+class OperationsAlreadyExistsError(OperationsRepositoryError):
+    """An operations record already exists for the durable vehicle ID."""
+
+
+class OperationsRepository(ABC):
+    """Persistence port for current operations state and immutable events.
+
+    Concrete repositories must commit a current-record mutation and its event
+    as one idempotent logical operation. SharePoint may need reconciliation to
+    provide that contract because it has no cross-list transaction.
+    """
+
+    @abstractmethod
+    def get_vehicle(self, vehicle_id: str) -> VehicleOperations | None: ...
+
+    @abstractmethod
+    def list_vehicles(self) -> list[VehicleOperations]: ...
+
+    @abstractmethod
+    def create_vehicle(
+        self,
+        record: VehicleOperations,
+        event: OperationsEvent,
+    ) -> VehicleOperations: ...
+
+    @abstractmethod
+    def commit_transition(
+        self,
+        record: VehicleOperations,
+        event: OperationsEvent,
+        *,
+        expected_revision: int,
+    ) -> VehicleOperations: ...
+
+    @abstractmethod
+    def find_event_by_request_id(self, request_id: str) -> OperationsEvent | None: ...
+
+    @abstractmethod
+    def list_events(self, vehicle_id: str) -> list[OperationsEvent]:
+        """Return applied history without repairing or otherwise writing storage."""
+        ...
+
+    @abstractmethod
+    def delete_project(self, project_id: str) -> tuple[int, int]:
+        """Delete current rows and events for one exact Builder project ID."""
+        ...

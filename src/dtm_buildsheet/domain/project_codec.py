@@ -252,6 +252,19 @@ def project_from_dict(d: dict) -> ProjectRecord:
     if customer.quote_number and customer.quote_number not in quote_numbers:
         quote_numbers.insert(0, customer.quote_number)
     references_raw = d.get("reference_assets", [])
+    lifecycle_raw = d.get("project_lifecycle_history", [])
+    lifecycle_history = [
+        {
+            "event_id": str(item.get("event_id", "") or "").strip(),
+            "from_status": str(item.get("from_status", "") or "").strip(),
+            "to_status": str(item.get("to_status", "") or "").strip(),
+            "occurred_at": str(item.get("occurred_at", "") or "").strip(),
+            "actor": str(item.get("actor", "") or "").strip(),
+            "reason": str(item.get("reason", "") or "").strip(),
+        }
+        for item in lifecycle_raw
+        if isinstance(item, dict)
+    ] if isinstance(lifecycle_raw, list) else []
     return ProjectRecord(
         project_id=str(d["project_id"]),
         created_at=str(d.get("created_at", _utcnow())),
@@ -261,13 +274,17 @@ def project_from_dict(d: dict) -> ProjectRecord:
         build_units=[build_unit_from_dict(u) for u in d.get("build_units", [])],
         project_status=(
             str(d.get("project_status", "active"))
-            if str(d.get("project_status", "active")) in {"active", "completed"}
+            if str(d.get("project_status", "active")) in {"active", "inactive", "completed"}
             else "active"
         ),
+        inactive_at=str(d.get("inactive_at", "")),
+        inactive_by=str(d.get("inactive_by", "")),
+        inactive_reason=str(d.get("inactive_reason", "")),
         completed_at=str(d.get("completed_at", "")),
         completed_by=str(d.get("completed_by", "")),
         reactivated_at=str(d.get("reactivated_at", "")),
         reactivated_by=str(d.get("reactivated_by", "")),
+        project_lifecycle_history=lifecycle_history,
         project_notes=str(d.get("project_notes", "") or "").strip(),
         quote_numbers=quote_numbers,
         reference_assets=[

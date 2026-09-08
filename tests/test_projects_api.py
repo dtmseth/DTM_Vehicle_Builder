@@ -558,6 +558,43 @@ class TestProjectCompletion:
             "ok": False, "error": "Project not found: missing",
         }
 
+    def test_inactive_project_records_reason_and_lifecycle_history(self, tmp_path):
+        from dtm_buildsheet.app.services.project_service import handle_set_project_lifecycle
+
+        paths = _paths(tmp_path)
+        created = handle_save_project(_project_body(), paths)
+        project_id = created["project_id"]
+
+        inactive = handle_set_project_lifecycle(project_id, {
+            "status": "inactive",
+            "actor": "Seth",
+            "reason": "Quote went stale",
+        }, paths)
+
+        assert inactive["ok"] is True
+        assert inactive["project"]["project_status"] == "inactive"
+        assert inactive["project"]["inactive_at"]
+        assert inactive["project"]["inactive_by"] == "Seth"
+        assert inactive["project"]["inactive_reason"] == "Quote went stale"
+        assert inactive["project"]["project_lifecycle_history"][-1]["to_status"] == "inactive"
+
+        active = handle_set_project_lifecycle(project_id, {
+            "status": "active",
+            "actor": "Seth",
+        }, paths)
+        assert active["project"]["project_status"] == "active"
+        assert active["project"]["inactive_at"] == ""
+        assert len(active["project"]["project_lifecycle_history"]) == 2
+
+    def test_lifecycle_rejects_unknown_status(self, tmp_path):
+        from dtm_buildsheet.app.services.project_service import handle_set_project_lifecycle
+
+        paths = _paths(tmp_path)
+        assert handle_set_project_lifecycle("missing", {"status": "paused"}, paths) == {
+            "ok": False,
+            "error": "status must be active, inactive, or completed",
+        }
+
 
 # ── handle_delete_project ──────────────────────────────────────────────────────
 

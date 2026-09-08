@@ -290,6 +290,29 @@ class TestProjectFromDict:
         assert p.completed_at == "2026-08-27T12:00:00+00:00"
         assert p.completed_by == "Seth"
 
+    def test_inactive_project_lifecycle_round_trip(self):
+        p = project_from_dict({
+            "project_id": "p1",
+            "created_at": "t",
+            "updated_at": "t",
+            "project_status": "inactive",
+            "inactive_at": "2026-09-03T12:00:00+00:00",
+            "inactive_by": "Seth",
+            "inactive_reason": "Customer stopped responding",
+            "project_lifecycle_history": [{
+                "event_id": "event-1",
+                "from_status": "active",
+                "to_status": "inactive",
+                "occurred_at": "2026-09-03T12:00:00+00:00",
+                "actor": "Seth",
+                "reason": "Customer stopped responding",
+            }],
+        })
+
+        assert p.project_status == "inactive"
+        assert p.inactive_reason == "Customer stopped responding"
+        assert p.project_lifecycle_history[0]["to_status"] == "inactive"
+
     def test_unknown_project_status_falls_back_to_active(self):
         p = project_from_dict({
             "project_id": "p1", "created_at": "t", "updated_at": "t",

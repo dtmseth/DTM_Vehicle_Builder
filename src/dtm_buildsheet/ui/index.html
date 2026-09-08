@@ -21,6 +21,7 @@
   </div>
   <div class="header-tabs">
     <button class="htab" data-tab="projects">📋 Projects</button>
+    <button class="htab" id="operations-header-tab" data-tab="operations" hidden>🏭 Operations</button>
     <button class="htab" data-tab="general-settings">⚙️ General Settings</button>
     <button class="htab" data-tab="advanced-settings">🔧 Advanced Settings</button>
   </div>
@@ -91,6 +92,139 @@
       <button class="btn btn-secondary" id="cloud-modal-switch" type="button">👤 Switch user</button>
       <button class="btn btn-secondary" id="cloud-modal-signin" type="button" hidden>🔑 Sign in</button>
       <button class="btn btn-secondary" id="cloud-modal-done" type="button" style="margin-left:auto">Done</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════ OPERATIONS TAB (PROJECT-GROUPED PRODUCTION BACKLOG) ═══════════ -->
+<div id="tab-operations" class="main-content" hidden>
+  <div class="card operations-shell">
+    <div class="card-title operations-title">
+      <div>
+        <span>Vehicle Operations</span>
+        <small>Shared production backlog</small>
+      </div>
+      <div class="operations-title-actions">
+        <span class="operations-readonly-badge">Role-based access</span>
+        <button class="btn btn-secondary btn-sm" id="operations-add-builder" type="button" hidden>Add Builder vehicle</button>
+        <button class="btn btn-secondary btn-sm" id="operations-refresh" type="button">Refresh</button>
+      </div>
+    </div>
+
+    <div id="operations-message" class="operations-message" role="status">Loading Operations…</div>
+
+    <div id="operations-content" hidden>
+      <div class="operations-metrics" id="operations-metrics"></div>
+      <div class="operations-toolbar">
+        <div class="operations-filters" id="operations-filters" aria-label="Filter operations vehicles">
+          <button class="operations-filter active" type="button" data-operations-filter="active">Active</button>
+          <button class="operations-filter" type="button" data-operations-filter="unscheduled">Unscheduled</button>
+          <button class="operations-filter" type="button" data-operations-filter="scheduled">Scheduled</button>
+          <button class="operations-filter" type="button" data-operations-filter="prospective">Not accepted</button>
+          <button class="operations-filter" type="button" data-operations-filter="completed">Completed</button>
+        </div>
+        <label class="operations-search">
+          <span>Search</span>
+          <input id="operations-search" type="search" placeholder="Agency, unit, VIN…" autocomplete="off">
+        </label>
+      </div>
+      <div id="operations-projection-panel" class="operations-projection-panel" hidden></div>
+      <div id="operations-empty" class="operations-empty" hidden></div>
+      <div id="operations-rows" class="operations-rows"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="operations-status-modal" role="dialog" aria-modal="true" aria-labelledby="operations-status-title" hidden>
+  <div class="modal operations-status-modal">
+    <div class="modal-title">
+      <span id="operations-status-title">Update project status</span>
+      <button class="modal-close" id="operations-status-close" type="button" aria-label="Close status editor">×</button>
+    </div>
+    <p class="operations-status-scope" id="operations-status-scope"></p>
+    <form id="operations-status-form">
+      <div class="form-row operations-status-form-row">
+        <div class="form-group">
+          <label for="operations-status-workstream">Status to update</label>
+          <select id="operations-status-workstream"></select>
+        </div>
+        <div class="form-group">
+          <label for="operations-status-value">Set to</label>
+          <select id="operations-status-value"></select>
+          <small id="operations-status-current"></small>
+        </div>
+      </div>
+      <div class="form-group operations-status-date" id="operations-status-date-wrap" hidden>
+        <label for="operations-status-date">Effective date <span>optional</span></label>
+        <input id="operations-status-date" type="date">
+      </div>
+      <div class="form-group operations-status-reason" id="operations-status-reason-wrap">
+        <label for="operations-status-reason">Correction note <span>only needed for reversals or skipped steps</span></label>
+        <textarea id="operations-status-reason" rows="2" placeholder="Explain a correction when required"></textarea>
+      </div>
+      <div class="operations-status-guidance" id="operations-status-guidance" role="status"></div>
+      <div class="operations-status-progress" id="operations-status-progress" role="status" hidden></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="operations-status-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="operations-status-apply" type="submit">Apply status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="operations-schedule-modal" role="dialog" aria-modal="true" aria-labelledby="operations-schedule-title" hidden>
+  <div class="modal operations-schedule-modal">
+    <div class="modal-title">
+      <span id="operations-schedule-title">Edit project schedule</span>
+      <button class="modal-close" id="operations-schedule-close" type="button" aria-label="Close schedule editor">×</button>
+    </div>
+    <p class="operations-status-scope" id="operations-schedule-scope"></p>
+    <form id="operations-schedule-form">
+      <div class="operations-schedule-current" id="operations-schedule-current"></div>
+      <div class="form-group">
+        <label for="operations-scheduled-week">Scheduled week <span>optional</span></label>
+        <input id="operations-scheduled-week" data-operations-schedule-field="scheduled_week_of" type="date">
+      </div>
+      <div class="form-row operations-schedule-dates">
+        <div class="form-group">
+          <label for="operations-planned-start">Planned start <span>optional</span></label>
+          <input id="operations-planned-start" data-operations-schedule-field="planned_start_date" type="date">
+        </div>
+        <div class="form-group">
+          <label for="operations-target-finish">Target finish <span>optional</span></label>
+          <input id="operations-target-finish" data-operations-schedule-field="target_finish_date" type="date">
+        </div>
+      </div>
+      <div class="form-group operations-schedule-deadline">
+        <label for="operations-must-deliver">Must Deliver On <span>optional manual date</span></label>
+        <input id="operations-must-deliver" data-operations-schedule-field="must_deliver_override_date" type="date">
+        <small>Leave this alone to use the automatic 60-day date when it is available. Clear it to return to automatic.</small>
+      </div>
+      <label class="operations-schedule-clear">
+        <input id="operations-schedule-clear" type="checkbox">
+        <span>Clear scheduled week, planned start, and target finish</span>
+      </label>
+      <div class="operations-status-guidance" id="operations-schedule-guidance" role="status"></div>
+      <div class="operations-status-progress" id="operations-schedule-progress" role="status" hidden></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="operations-schedule-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="operations-schedule-apply" type="submit">Save schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="operations-history-modal" role="dialog" aria-modal="true" aria-labelledby="operations-history-title" hidden>
+  <div class="modal operations-history-modal">
+    <div class="modal-title">
+      <span id="operations-history-title">Vehicle history</span>
+      <button class="modal-close" id="operations-history-close" type="button" aria-label="Close vehicle history">×</button>
+    </div>
+    <p class="operations-status-scope" id="operations-history-scope"></p>
+    <div id="operations-history-body" class="operations-history-body" aria-live="polite"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="operations-history-done" type="button">Done</button>
     </div>
   </div>
 </div>
@@ -1256,31 +1390,25 @@
         Projects
         <button class="btn btn-primary btn-sm" id="btn-new-project">+ New Project</button>
       </div>
-      <div id="proj-list-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:13px">
-        No active projects. Click <strong>+ New Project</strong> to get started, or open Project Archives below.
+      <div class="proj-list-tabs" role="tablist" aria-label="Project status">
+        <button class="proj-list-tab active" type="button" role="tab" aria-selected="true" data-project-list-status="active">Active <span id="proj-active-count">0</span></button>
+        <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="inactive">Inactive <span id="proj-inactive-count">0</span></button>
+        <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="completed">Completed <span id="proj-completed-count">0</span></button>
       </div>
-      <div id="proj-list-rows" hidden></div>
-      <div class="proj-list-footer">
-        <button class="btn btn-secondary btn-sm" id="btn-project-archives">Project Archives</button>
-        <span id="proj-archive-count" class="proj-archive-count"></span>
+      <label class="proj-list-search">
+        <input id="proj-list-search" type="search" aria-label="Search projects in the selected status" placeholder="Search active projects…" autocomplete="off">
+      </label>
+      <div id="proj-standard-panel">
+        <div id="proj-list-empty" class="proj-empty-msg" hidden></div>
+        <div id="proj-list-rows" hidden></div>
       </div>
-    </div>
-  </div>
-
-  <!-- Completed-project archive tree -->
-  <div id="proj-archive-view" hidden>
-    <div class="card">
-      <div class="card-title">
-        <div>
-          <div>Project Archives</div>
-          <div class="proj-archive-intro">Completed projects organized by agency and build year.</div>
+      <div id="proj-completed-panel" hidden>
+        <div class="proj-archive-intro">Completed projects organized by agency and build year.</div>
+        <div id="proj-archive-empty" class="proj-empty-msg" hidden>
+          No completed projects yet.
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-project-archives-back">← Active Projects</button>
+        <div id="proj-archive-tree"></div>
       </div>
-      <div id="proj-archive-empty" class="proj-empty-msg" hidden>
-        No completed projects yet. Open an active project and mark it completed when it is ready.
-      </div>
-      <div id="proj-archive-tree"></div>
     </div>
   </div>
 
@@ -1293,6 +1421,7 @@
           <div id="proj-detail-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
         </div>
         <div class="proj-detail-header-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-proj-inactive"></button>
           <button class="btn btn-secondary btn-sm" id="btn-proj-complete"></button>
           <button class="btn btn-secondary btn-sm" id="btn-proj-detail-back">← Projects</button>
         </div>
@@ -1546,6 +1675,54 @@
   </div><!-- end proj-build-editor -->
 
 </div><!-- end tab-projects -->
+
+<div class="modal-overlay" id="project-inactive-modal" role="dialog" aria-modal="true" aria-labelledby="project-inactive-title" hidden>
+  <div class="modal project-simple-modal">
+    <div class="modal-title">
+      <span id="project-inactive-title">Mark Project Inactive</span>
+      <button class="modal-close" id="project-inactive-close" type="button" aria-label="Close inactive project dialog">×</button>
+    </div>
+    <p class="project-modal-intro" id="project-inactive-project"></p>
+    <form id="project-inactive-form">
+      <div class="form-group">
+        <label for="project-inactive-reason">Why is this project inactive? <span>optional</span></label>
+        <textarea id="project-inactive-reason" rows="3" maxlength="500" placeholder="Example: Quote went stale"></textarea>
+      </div>
+      <div id="project-inactive-status" class="proj-form-status" role="status" hidden></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="project-inactive-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="project-inactive-save" type="submit">Mark Inactive</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="project-vehicle-create-modal" role="dialog" aria-modal="true" aria-labelledby="project-vehicle-create-title" hidden>
+  <div class="modal project-simple-modal">
+    <div class="modal-title">
+      <span id="project-vehicle-create-title">Add a Vehicle</span>
+      <button class="modal-close" id="project-vehicle-create-close" type="button" aria-label="Close add vehicle dialog">×</button>
+    </div>
+    <p class="project-modal-intro">Add the vehicle now and use it on this project. It will be marked <strong>artwork pending</strong>; images and placement details can be added later in Vehicle Manager.</p>
+    <form id="project-vehicle-create-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="project-vehicle-create-make">Make <span class="req">*</span></label>
+          <input id="project-vehicle-create-make" type="text" maxlength="80" placeholder="e.g. Ford" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label for="project-vehicle-create-model">Model <span class="req">*</span></label>
+          <input id="project-vehicle-create-model" type="text" maxlength="80" placeholder="e.g. Explorer" autocomplete="off" required>
+        </div>
+      </div>
+      <div id="project-vehicle-create-status" class="proj-form-status" role="status" hidden></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="project-vehicle-create-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="project-vehicle-create-save" type="submit">Add Vehicle</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="modal-overlay" id="reference-photo-modal" role="dialog" aria-modal="true" aria-labelledby="reference-photo-modal-title" hidden>
   <div class="modal reference-photo-modal">
@@ -2420,6 +2597,7 @@
 
 <script src="/ui/js/projects/state.js"></script>
 <script src="/ui/js/projects/api.js"></script>
+<script src="/ui/js/projects/vehicle_create.js"></script>
 <script src="/ui/js/projects/reference_photos.js"></script>
 <script src="/ui/js/projects/combo_search.js"></script>
 <script src="/ui/js/projects/list_view.js"></script>
@@ -2430,6 +2608,7 @@
 <script src="/ui/js/projects/individual_modal.js"></script>
 <script src="/ui/js/projects/wizard.js"></script>
 <script src="/ui/js/projects/index.js"></script>
+<script src="/ui/js/operations.js"></script>
 <script src="/ui/js/update_banner.js"></script>
 <script src="/ui/js/main.js"></script>
 

@@ -9,6 +9,7 @@ from dtm_buildsheet.app.adapters.cloud.config import (
     CloudConfig,
     CloudConfigMissing,
     load_cloud_config_from_env,
+    save_operations_list_ids,
 )
 from dtm_buildsheet.app.adapters.cloud.sharepoint_graph_provider import (
     SMALL_UPLOAD_LIMIT_BYTES,
@@ -21,6 +22,7 @@ from dtm_buildsheet.app.adapters.cloud.graph_drive_gateway import (
 )
 from dtm_buildsheet.app.adapters.wiring import (
     CLOUD_ENV_FLAG,
+    build_internal_team_bundle,
     build_local_bundle,
     get_active_bundle,
     set_active_bundle,
@@ -260,6 +262,90 @@ def test_load_cloud_config_from_file_fallback(monkeypatch, tmp_path):
     assert cfg.client_id == "c"
     assert cfg.sharepoint_site_id == "s"
     assert cfg.sharepoint_drive_id == "d"
+
+
+def test_operations_list_ids_round_trip_through_cloud_config(monkeypatch, tmp_path):
+    config_file = tmp_path / "cloud_config.json"
+    config_file.write_text(
+        '{"tenant_id":"t","client_id":"c","sharepoint_site_id":"s",'
+        '"sharepoint_drive_id":"d","existing_setting":"preserved"}'
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.cloud_config_path",
+        lambda: config_file,
+    )
+    for name in (
+        "DTM_AZURE_TENANT_ID",
+        "DTM_AZURE_CLIENT_ID",
+        "DTM_SHAREPOINT_SITE_ID",
+        "DTM_SHAREPOINT_DRIVE_ID",
+        "DTM_OPERATIONS_LIST_ID",
+        "DTM_OPERATIONS_EVENTS_LIST_ID",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    save_operations_list_ids(
+        operations_list_id="operations-guid",
+        operations_events_list_id="events-guid",
+    )
+    cfg = load_cloud_config_from_env()
+
+    assert cfg.operations_list_id == "operations-guid"
+    assert cfg.operations_events_list_id == "events-guid"
+    assert '"existing_setting": "preserved"' in config_file.read_text()
+
+
+def test_operations_bundle_separates_read_and_foreground_write_scopes(monkeypatch):
+    config = CloudConfig(
+        tenant_id="tenant",
+        client_id="client",
+        sharepoint_site_id="site",
+        sharepoint_drive_id="drive",
+        operations_list_id="operations",
+        operations_events_list_id="events",
+    )
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.config.load_cloud_config_from_env",
+        lambda: config,
+    )
+
+    class _Msal:
+        calls: list[dict] = []
+
+        def __init__(self, received_config):
+            assert received_config == config
+
+        def acquire_token(self, **kwargs):
+            self.calls.append(kwargs)
+            return "TOKEN"
+
+        def has_cached_account(self):
+            return False
+
+        def get_app_roles(self):
+            return frozenset()
+
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.adapters.cloud.msal_client.MsalClient",
+        _Msal,
+    )
+
+    bundle = build_internal_team_bundle()
+
+    assert bundle.operations is not None
+    assert bundle.operations._token_provider() == "TOKEN"  # noqa: SLF001
+    assert bundle.operations_writer is not None
+    assert bundle.operations_writer._token_provider() == "TOKEN"  # noqa: SLF001
+    assert _Msal.calls == [
+        {
+            "scopes": ("Sites.Read.All",),
+            "interactive_ok": False,
+        },
+        {
+            "scopes": ("Sites.ReadWrite.All",),
+            "interactive_ok": True,
+        },
+    ]
 
 
 def test_cloud_enabled_reads_file_when_env_unset(monkeypatch, tmp_path):

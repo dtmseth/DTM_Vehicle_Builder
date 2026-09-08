@@ -262,6 +262,30 @@ class TestVehicleLayoutsSchema:
         assert migrated["vehicles"]["MACH-E"]["layout_source"] == "PIU"
         assert migrated["vehicles"]["SILVERADO 3500"]["layout_source"] == "F-150"
 
+    def test_older_user_created_placeholder_gains_metadata_stubs_without_artwork(self):
+        migrated = migrate("vehicle_layouts.json", {"vehicles": {
+            "CUSTOM": {
+                "make": "Example",
+                "model": "Vehicle",
+                "placeholder": True,
+                "fixtures": {},
+                "views": {
+                    name: {"locations": {}, "logo_position": "top-right"}
+                    for name in ("front", "side", "top", "rear")
+                },
+                "view_order": ["front", "side", "top", "rear"],
+            },
+        }})
+        vehicle = migrated["vehicles"]["CUSTOM"]
+
+        assert vehicle["fixtures"] == {}
+        assert vehicle["views"]["side"]["logo_position"] == "bottom"
+        assert vehicle["views"]["top"]["logo_position"] == "bottom"
+        assert vehicle["views"]["internal.console"]["category"] == "internal"
+        assert vehicle["view_order"][-3:] == [
+            "internal.console", "internal.cargo", "internal.rear_seat",
+        ]
+
 
 # ── bundled vehicle_layouts.json has correct new fields ───────────────────────
 

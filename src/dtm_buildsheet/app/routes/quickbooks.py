@@ -22,6 +22,7 @@ POST:
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/preview — preview a vehicle's local QBO Project link
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
+- /api/quickbooks/invoices/bind — store or clear a read-only existing Invoice link
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
 - /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
 - /api/quickbooks/estimates/create — create one vehicle's estimate
@@ -222,6 +223,17 @@ def route_quickbooks(
                 individual_id=body.get("individual_id", ""),
                 qb_project_id=body.get("qb_project_id", ""),
                 accept_auto_name=bool(body.get("accept_auto_name", False)),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/invoices/bind":
+        _send_json(
+            handler,
+            qb_estimate_service.bind_invoice(
+                paths,
+                project_id=body.get("project_id", ""),
+                individual_id=body.get("individual_id", ""),
+                qb_invoice_id=body.get("qb_invoice_id", ""),
             ),
         )
         return True

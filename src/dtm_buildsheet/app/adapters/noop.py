@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from ...domain.operations_policy import AppRole
 from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
@@ -18,6 +19,7 @@ _LOCAL_USER = UserIdentity(
     display_name="Local User",
     email="local@example.invalid",
     provider="local",
+    roles=frozenset({AppRole.APP_ADMIN.value}),
 )
 
 

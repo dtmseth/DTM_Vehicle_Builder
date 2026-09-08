@@ -20,4 +20,7 @@ window.addEventListener("DOMContentLoaded", async()=>{
       && typeof qbConsumeReturnTab === "function" && qbConsumeReturnTab()) return;
   // All tab-specific scripts are now loaded — open Projects tab as default
   switchTab("projects");
+  // Access discovery is non-blocking so a slow or signed-out Microsoft
+  // session cannot delay the existing Projects experience.
+  if (typeof initOperationsAccess === "function") initOperationsAccess();
 });

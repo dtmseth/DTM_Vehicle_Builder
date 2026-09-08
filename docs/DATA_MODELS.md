@@ -88,6 +88,7 @@ class IndividualUnit:
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
     qb_estimate_snapshot_at: str = ""
+    qb_invoice_id: str = ""  # read-only link to an existing QBO Invoice
     company_vehicle_folder_id: str = ""
     company_vehicle_folder_path: str = ""
     company_folder_status: str = "not_provisioned"
@@ -103,6 +104,8 @@ The Estimate snapshot is deliberately narrower than the raw QBO object: it track
 project references, document number, memo fields, and material line IDs, descriptions, quantities,
 prices, and amounts. Provider metadata such as `SyncToken` and update timestamps is excluded so it
 does not create false conflicts.
+`qb_invoice_id` is optional normalized reference metadata from a numeric ID or pasted QBO Invoice
+URL. Saving or clearing it does not mutate QuickBooks.
 
 Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
 actual vehicle being built and is the only VIN eligible for current card identity, folders,
@@ -127,11 +130,15 @@ class ProjectRecord:
     build_units: list[BuildUnit] = field(default_factory=list)
     reference_assets: list[BuildReferenceAsset] = field(default_factory=list)
     reference_source_exclusions: list[str] = field(default_factory=list)
-    project_status: str = "active"  # active | completed
+    project_status: str = "active"  # active | inactive | completed
+    inactive_at: str = ""
+    inactive_by: str = ""
+    inactive_reason: str = ""
     completed_at: str = ""
     completed_by: str = ""
     reactivated_at: str = ""
     reactivated_by: str = ""
+    project_lifecycle_history: list[dict[str, str]] = field(default_factory=list)
     project_notes: str = ""   # shown on every build's final PowerPoint page
     company_year_folder_id: str = ""
     company_year_folder_path: str = ""
@@ -146,9 +153,39 @@ project) and mirrored to SharePoint. Drafts remain durable records keyed by `dra
 customer PDFs and internal PPTX sources use the configured output trees; record-side output paths
 are compatibility locators, not a per-project `export_dir` setting.
 
-Legacy projects default to `active`. Completed projects use the same data model and remain fully
-browseable; `project_status` controls active-list versus Project Archives placement and can be
-reversed with the project completion service.
+Legacy projects default to `active`. Inactive and completed projects use the same data model and
+remain fully browseable; `project_status` controls Active / Inactive / Completed placement and can
+be reversed. Every lifecycle change is appended to `project_lifecycle_history`; current inactive,
+completion, and reactivation fields remain convenient projections.
+
+## VehicleOperations and OperationsEvent
+
+The production-operations extension deliberately uses separate domain records instead of growing
+`ProjectRecord` into a shared workflow database. `VehicleOperations` is the query-friendly current
+projection for one `IndividualUnit.individual_id`; `OperationsEvent` is its immutable timeline.
+`BuilderVehicleProjection` is the intentionally narrow transfer object for vehicle identity,
+agency/year, salesperson, lifecycle, and design-finalization facts. It contains no scheduling,
+production, delivery, acceptance, or QBO-observation fields, so a Builder refresh cannot erase
+those independently owned values.
+Status values, automatic milestone dates, availability, the derived 60-day Must Deliver On date,
+its separate optional manual override, patch-based scheduling,
+QBO observation, roles, and SharePoint field names are defined in
+[OPERATIONS_SYSTEM.md](OPERATIONS_SYSTEM.md), [OPERATIONS_SCHEMA.md](OPERATIONS_SCHEMA.md), and
+[OPERATIONS_ROLES.md](OPERATIONS_ROLES.md).
+
+The SharePoint adapter uses each event as a short-lived commit journal because Graph cannot make a
+cross-list transaction. A pending event stores the complete intended `VehicleOperations` snapshot;
+the adapter applies that snapshot with the current item's eTag and revision, then marks the event
+applied. Retrying the same request resumes the pending write instead of creating another event.
+Conflicted attempts are retained for administration but excluded from the accepted vehicle
+timeline. Applied event content is never rewritten by normal workflows.
+
+`UserIdentity.roles` contains only known app-role values taken from MSAL-validated ID-token claims.
+The role claim is recovered from MSAL's encrypted token cache on a normal access-token cache hit;
+the application does not decode the Microsoft Graph access token or persist a second role file.
+Unknown values are discarded before capabilities are calculated. Cloud-off development uses the
+synthetic `AppAdmin` identity, while a cloud-enabled fallback to a local identity fails closed for
+Operations.
 
 `BuildReferenceAsset` stores portable source identity plus assignments, not image bytes. Zero
 assignments means an unassigned project photo; current writes assign photos only to unit groups.
@@ -195,6 +232,8 @@ Lives in `workspace/sales_reps/{rep_id}.json`. Mirrored to SharePoint.
 | `domain/input_models.py` | `ProjectInput`, `PartInput` |
 | `domain/plan_models.py` | `BuildPlan`, `PlannedPart`, `PlannedPlacement`, `PlannedInstance` |
 | `domain/project_models.py` | `ProjectRecord`, `CustomerInfo`, `EquipmentPreferences`, `BuildUnit`, `IndividualUnit` |
+| `domain/operations_models.py` | `VehicleOperations`, `OperationsEvent`, stable workflow enums and derived-date rules |
+| `domain/operations_policy.py` | Entra app roles mapped to backend capabilities |
 | `domain/agency_models.py` | `AgencyRecord` |
 | `domain/sales_rep_models.py` | `SalesRepRecord` |
 | `domain/geometry.py` | Shared placement math (single source of truth) |

@@ -84,13 +84,184 @@ def _open_build_editor(page, base_url: str) -> None:
 
 def flow_tab_load(page, base_url: str) -> None:
     """Flow 1 — every tab/stab/inner-stab activates with zero console errors."""
+    projection_project = _api(base_url, "/api/project/save", {
+        "customer": {
+            "name": "Operations Preview PD",
+            "agency": "Operations Preview PD",
+            "agency_abbreviation": "OPPD",
+            "build_year": "2031",
+        },
+        "build_units": [{
+            "vehicle_model": "PIU",
+            "build_type": "Patrol",
+            "quantity": 1,
+            "individuals": [{
+                "individual_id": "operations-preview-vehicle",
+                "unit_number": "42",
+                "vin": "1FTFW1E50NFA12345",
+            }, {
+                "individual_id": "operations-preview-vehicle-2",
+                "unit_number": "43",
+                "vin": "1FTFW1E50NFA12346",
+            }, {
+                "individual_id": "operations-preview-vehicle-3",
+                "unit_number": "44",
+                "vin": "1FTFW1E50NFA12347",
+            }],
+        }],
+    })
+    assert projection_project["ok"] is True
     page.goto(base_url, wait_until="load")
     page.wait_for_selector(".htab[data-tab='projects']")
+
+    # Operations is capability-gated. The hermetic cloud-off identity is a
+    # synthetic AppAdmin, so synchronization and project status updates stay entirely
+    # in the shared in-memory test repository and make no external request.
+    page.wait_for_selector(".htab[data-tab='operations']:not([hidden])")
+    page.click(".htab[data-tab='operations']")
+    page.wait_for_selector("#tab-operations:not([hidden])")
+    page.wait_for_selector("#operations-content:not([hidden])")
+    assert page.locator(".operations-readonly-badge").inner_text().upper() == "ROLE-BASED ACCESS"
+    page.wait_for_selector(".operations-project-group")
+    page.locator(".operations-project-group > summary").click()
+    page.wait_for_selector(".operations-vehicle:visible")
+    assert "1FTFW1E50NFA12345" in page.locator(".operations-vehicle").first.inner_text()
+    assert page.locator("#operations-add-builder").is_visible()
+    assert page.locator(".operations-project-group").count() == 1
+    assert "3 VEHICLES" in page.locator(".operations-project-group > summary").inner_text().upper()
+    assert page.evaluate("""() => [...document.querySelectorAll('.operations-project-statuses > span')]
+      .find(item => item.querySelector('b')?.textContent.trim() === 'Parts')
+      ?.classList.contains('operations-status-tone-unstarted')""")
+    page.locator(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="parts"]'
+        '[data-operations-status-value="ordered"]'
+    ).click()
+    page.wait_for_function(
+        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('ORDERED')"
+    )
+    assert page.evaluate("""() => [...document.querySelectorAll('.operations-project-statuses > span')]
+      .find(item => item.querySelector('b')?.textContent.trim() === 'Parts')
+      ?.classList.contains('operations-status-tone-intermediate')""")
+    page.locator(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="parts"]'
+        '[data-operations-status-value="received"]'
+    ).click()
+    page.wait_for_function(
+        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('RECEIVED')"
+    )
+    page.locator(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="acceptance"]'
+        '[data-operations-status-value="accepted"]'
+    ).click()
+    page.wait_for_function(
+        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('ACCEPTED')"
+    )
+    assert page.locator('[data-operations-filter="inactive"]').count() == 0
+
+    page.click(".htab[data-tab='projects']")
+    page.wait_for_selector("#tab-projects:not([hidden])")
+    page.fill("#proj-list-search", "Operations Preview PD")
+    project_row = page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD")
+    assert project_row.count() == 1
+    assert "PARTS: RECEIVED · VEHICLE: AWAITING DETAILS" in project_row.locator(
+        ".proj-progress-badge"
+    ).inner_text().upper()
+    project_row.locator(".proj-row-menu > summary").click()
+    assert "MARK INACTIVE" in project_row.locator(".proj-row-menu-items").inner_text().upper()
+    assert "DELETE PROJECT" in project_row.locator(".proj-row-menu-items").inner_text().upper()
+    project_row.locator(".proj-row-menu > summary").click()
+
+    page.click(".htab[data-tab='operations']")
+    page.wait_for_selector(".operations-project-group")
+    if not page.locator(".operations-project-group").evaluate("element => element.open"):
+        page.locator(".operations-project-group > summary").click()
+    page.locator("[data-operations-schedule-project]").click()
+    page.wait_for_selector("#operations-schedule-modal.open")
+    page.locator("#operations-scheduled-week").fill("2031-01-06")
+    assert page.locator("#operations-schedule-apply").is_enabled()
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.locator("#operations-schedule-apply").click()
+    page.wait_for_selector("#operations-schedule-modal", state="hidden")
+    page.wait_for_function(
+        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('SCHEDULED')"
+    )
+    if not page.locator(".operations-project-group").evaluate("element => element.open"):
+        page.locator(".operations-project-group > summary").click()
+    page.locator("[data-operations-schedule-project]").click()
+    page.wait_for_selector("#operations-schedule-modal.open")
+    assert page.locator("#operations-scheduled-week").input_value() == "2031-01-06"
+    page.locator("#operations-target-finish").fill("2031-01-16")
+    page.locator("#operations-must-deliver").fill("2031-03-15")
+    assert page.locator("#operations-schedule-apply").is_enabled()
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.locator("#operations-schedule-apply").click()
+    page.wait_for_selector("#operations-schedule-modal", state="hidden")
+    page.wait_for_function(
+        "document.querySelector('.operations-vehicle').innerText.toUpperCase().includes('MAR 15, 2031')"
+    )
+    if not page.locator(".operations-project-group").evaluate("element => element.open"):
+        page.locator(".operations-project-group > summary").click()
+    page.locator("[data-operations-history-vehicle]").first.click()
+    page.wait_for_selector("#operations-history-modal.open")
+    page.wait_for_selector(".operations-timeline-event")
+    history_text = page.locator("#operations-history-body").inner_text().upper()
+    assert "PARTS CHANGED" in history_text
+    assert "RECEIVED" in history_text
+    assert "SCHEDULE CHANGED" in history_text
+    assert "JAN 6, 2031" in history_text
+    assert "MAR 15, 2031" in history_text
+    assert "ADDED TO OPERATIONS" in history_text
+    page.locator("#operations-history-done").click()
+    page.wait_for_selector("#operations-history-modal", state="hidden")
+
+    page.locator(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="parts"]'
+        '[data-operations-status-value="parts_ready"]'
+    ).click()
+    page.wait_for_function("""document.querySelector('.operations-project-statuses > span:nth-child(2)')
+      ?.classList.contains('operations-status-tone-complete')""")
+    page.locator(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="availability"]'
+        '[data-operations-status-value="at_dtm"]'
+    ).click()
+    page.wait_for_function("""document.querySelector('.operations-project-statuses > span:first-child')
+      ?.classList.contains('operations-status-tone-complete')""")
+    for finish_status in (
+        "ready_for_wash_clean_photos",
+        "ready_for_delivery",
+        "delivered",
+    ):
+        page.locator(
+            '[data-operations-status-scope="project"]'
+            '[data-operations-status-workstream="final_finish"]'
+            f'[data-operations-status-value="{finish_status}"]'
+        ).click()
+        if finish_status != "delivered":
+            page.wait_for_selector(
+                '[data-operations-status-scope="project"]'
+                '[data-operations-status-workstream="final_finish"]'
+                f'[data-operations-status-value="{finish_status}"].active'
+            )
+    page.wait_for_function("document.querySelectorAll('.operations-project-group').length === 0")
+    page.locator('[data-operations-filter="completed"]').click()
+    page.wait_for_selector(".operations-project-group")
+    assert page.evaluate("""() => document.querySelector('.operations-project-statuses > span:first-child')
+      ?.classList.contains('operations-status-tone-complete')""")
+    assert page.evaluate("""() => document.querySelector('.operations-project-statuses > span:last-child')
+      ?.classList.contains('operations-status-tone-complete')""")
 
     # Projects
     page.click(".htab[data-tab='projects']")
     page.wait_for_selector("#tab-projects:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
+    page.locator('[data-project-list-status="completed"]').click()
+    page.fill("#proj-list-search", "Operations Preview PD")
+    page.wait_for_selector(".proj-archive-project")
 
     # General Settings + its public stabs, including the production-enabled
     # QuickBooks connection surface.
@@ -1040,6 +1211,26 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     page.click(".htab[data-tab='projects']")
     page.wait_for_selector("#tab-projects:not([hidden])")
     page.evaluate("projectId => PT_open(projectId)", project_id)
+    page.locator('.proj-dtab[data-ptab="edit"]').click()
+    page.locator('#proj-ptab-edit button[onclick="PT_enterEditMode()"]').click()
+    page.locator(".proj-vehicle-picker").first.get_by_role(
+        "button", name="New vehicle"
+    ).click()
+    page.wait_for_selector("#project-vehicle-create-modal.open")
+    page.fill("#project-vehicle-create-make", "Rivian")
+    page.fill("#project-vehicle-create-model", "R1T")
+    page.click("#project-vehicle-create-save")
+    page.wait_for_selector("#project-vehicle-create-modal.open", state="hidden")
+    assert page.locator(".et-u-vehicle").first.input_value() == "R1T"
+    assert "artwork pending" in page.locator(".et-u-vehicle").first.inner_text()
+    layouts = _api(base_url, "/api/layouts")
+    created_vehicle = layouts["vehicles"]["R1T"]
+    assert created_vehicle["make"] == "Rivian"
+    assert created_vehicle["model"] == "R1T"
+    assert created_vehicle["placeholder"] is True
+    assert all(not view.get("image") for view in created_vehicle["views"].values())
+    page.locator('#proj-ptab-edit button[onclick="PT_cancelEditMode()"]').click()
+    page.locator('.proj-dtab[data-ptab="overview"]').click()
     card = page.locator("#build-card-overview-ind-1")
     card.wait_for()
 
@@ -1306,15 +1497,16 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     completion_dialogs = []
     page.once("dialog", lambda dialog: (completion_dialogs.append(dialog.message), dialog.accept()))
     page.click("#btn-proj-complete")
-    assert completion_dialogs and "move to Project Archives" in completion_dialogs[0]
-    page.wait_for_selector("#proj-archive-view:not([hidden])")
-    assert page.locator("#proj-list-view").is_hidden()
+    assert completion_dialogs and "move to the Completed tab" in completion_dialogs[0]
+    page.wait_for_selector('#proj-list-view:not([hidden]) [data-project-list-status="completed"].active')
+    assert page.locator("#proj-completed-panel").is_visible()
+    page.fill("#proj-list-search", "Overview Notes")
     agency_branch = page.locator("#proj-archive-tree .proj-archive-agency").filter(
         has_text="Overview Notes PD"
     )
-    agency_branch.locator(":scope > summary").click()
+    assert agency_branch.get_attribute("open") is not None
     year_branch = agency_branch.locator(".proj-archive-year").filter(has_text="2026")
-    year_branch.locator(":scope > summary").click()
+    assert year_branch.get_attribute("open") is not None
     archived_project = year_branch.locator(".proj-archive-project")
     assert "PIU" in archived_project.inner_text()
     assert archived_project.get_by_role("button", name="View completed photos").count() == 0
@@ -1324,6 +1516,26 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     assert page.locator("#btn-proj-complete").inner_text() == "Reopen Project"
     page.click("#btn-proj-complete")
     page.wait_for_selector("#proj-list-view:not([hidden])")
+    assert page.locator('[data-project-list-status="active"]').get_attribute("aria-selected") == "true"
+    page.fill("#proj-list-search", "Overview Notes")
+    active_row = page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD")
+    assert active_row.count() == 1
+    active_row.get_by_role("button", name="Open", exact=True).click()
+    page.wait_for_selector("#proj-detail-view:not([hidden])")
+    page.click("#btn-proj-inactive")
+    page.wait_for_selector("#project-inactive-modal.open")
+    page.fill("#project-inactive-reason", "Quote went stale")
+    page.click("#project-inactive-save")
+    page.wait_for_selector("#project-inactive-modal.open", state="hidden")
+    page.wait_for_selector('[data-project-list-status="inactive"].active')
+    assert page.locator("#proj-list-search").input_value() == ""
+    page.fill("#proj-list-search", "Quote went stale")
+    inactive_row = page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD")
+    assert "Quote went stale" in inactive_row.inner_text()
+    inactive_row.locator(".proj-row-menu > summary").click()
+    inactive_row.get_by_role("button", name="Reactivate").click()
+    page.wait_for_selector('[data-project-list-status="active"].active')
+    assert page.locator("#proj-list-search").input_value() == "Overview Notes"
     assert page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD").count() == 1
 
 

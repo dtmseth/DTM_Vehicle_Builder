@@ -143,7 +143,10 @@ function loadFixtureCanvas(){
     ctx.fillText(`No image: assets/vehicles/${_fixtureVehicle}_${_fixtureView}.png`,350,230);
     drawFixtureDots(ctx,[0,0,700,460]);
   };
-  _fixtureVehicleImg.src=`/assets/vehicles/${_fixtureVehicle}_${_fixtureView}.png`;
+  const vehicleConfig=_layouts?.vehicles?.[_fixtureVehicle]||{};
+  const artworkVehicle=vehicleConfig.placeholder ? String(vehicleConfig.layout_source||"") : _fixtureVehicle;
+  if(artworkVehicle) _fixtureVehicleImg.src=`/assets/vehicles/${artworkVehicle}_${_fixtureView}.png`;
+  else _fixtureVehicleImg.onerror();
   canvas.onclick=e=>{
     if(!_selectedFixtureId)return;
     const rect=canvas.getBoundingClientRect();

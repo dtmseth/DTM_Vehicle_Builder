@@ -1000,6 +1000,54 @@ def bind_project(
     }
 
 
+def _normalize_qb_invoice_id(value: str) -> str:
+    """Accept a numeric Invoice ID or an invoice URL copied from QBO."""
+
+    raw = str(value or "").strip()
+    if re.fullmatch(r"[0-9]+", raw):
+        return raw
+    try:
+        parsed = urlparse(raw)
+        query = parse_qs(parsed.query)
+    except ValueError:
+        return ""
+    if "invoice" not in parsed.path.lower():
+        return ""
+    for key in ("txnId", "invoiceId", "invoice_id", "id"):
+        candidate = (query.get(key) or [""])[0].strip()
+        if re.fullmatch(r"[0-9]+", candidate):
+            return candidate
+    return ""
+
+
+def bind_invoice(
+    paths: AppPaths,
+    *,
+    project_id: str,
+    individual_id: str,
+    qb_invoice_id: str,
+) -> dict:
+    """Store or clear a read-only link to an existing QBO Invoice."""
+
+    loaded = _load_individual(paths, project_id, individual_id)
+    if isinstance(loaded, dict):
+        return loaded
+    project, _build_unit, unit = loaded
+    raw = str(qb_invoice_id or "").strip()
+    normalized = _normalize_qb_invoice_id(raw) if raw else ""
+    if raw and not normalized:
+        return {"ok": False, "error": "invalid_invoice_id"}
+
+    unit.qb_invoice_id = normalized
+    from ...inputs import project_entry
+    project_entry.save_project(project, paths)
+    return {
+        "ok": True,
+        "qb_invoice_id": normalized,
+        "linked": bool(normalized),
+    }
+
+
 def create_estimate(
     paths: AppPaths,
     *,

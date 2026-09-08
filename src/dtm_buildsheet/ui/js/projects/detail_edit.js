@@ -221,7 +221,10 @@ function _ptRenderEditUnits() {
       <div class="form-row">
         <div class="form-group proj-vehicle-group">
           <label>Vehicle Model</label>
-          <select class="et-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
+          <div class="proj-vehicle-picker">
+            <select class="et-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
+            <button class="btn btn-secondary btn-sm" type="button" onclick="PT_openProjectVehicleCreate('${esc(u.uid)}','detail')">+ New vehicle</button>
+          </div>
         </div>
         <div class="form-group proj-buildtype-group">
           <label>Build Type</label>

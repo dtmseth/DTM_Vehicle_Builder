@@ -2,8 +2,10 @@
 // TAB ROUTING
 // ═══════════════════════════════════════════════════════
 //
-// Three top-level header tabs:
+// Four top-level header tabs (Operations is capability-gated and hidden until
+// the session endpoint confirms access):
 //   - projects           → #tab-projects (project manager)
+//   - operations         → #tab-operations (shared production backlog)
 //   - general-settings   → #tab-settings + #stab-bar-general
 //   - advanced-settings  → #tab-settings + #stab-bar-advanced
 //
@@ -122,10 +124,15 @@ function switchTab(t) {
   });
 
   $("tab-projects").hidden = t !== "projects";
+  $("tab-operations").hidden = t !== "operations";
   $("tab-settings").hidden = (t !== "general-settings" && t !== "advanced-settings");
 
   if (t === "projects") {
     initProjectsTab();
+    return;
+  }
+  if (t === "operations") {
+    if (typeof initOperationsTab === "function") initOperationsTab();
     return;
   }
 

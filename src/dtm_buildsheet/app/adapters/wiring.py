@@ -11,9 +11,11 @@ from .interfaces import (
     ChangeProposalGateway,
     IdentityProvider,
     NotificationGateway,
+    OperationsRepository,
     ProposalAction,
     ProposalCategory,
 )
+from .memory_operations_repository import InMemoryOperationsRepository
 from .noop import (
     InMemoryChangeProposalGateway,
     LocalIdentityProvider,
@@ -38,6 +40,8 @@ class AdapterBundle:
     identity: IdentityProvider
     proposals: ChangeProposalGateway
     notifications: NotificationGateway
+    operations: OperationsRepository | None = None
+    operations_writer: OperationsRepository | None = None
 
 
 def build_local_bundle() -> AdapterBundle:
@@ -47,11 +51,14 @@ def build_local_bundle() -> AdapterBundle:
     work added `build_internal_team_bundle()` alongside this one; the choice
     between them is build-time / env-driven, not runtime user config.
     """
+    operations = InMemoryOperationsRepository()
     return AdapterBundle(
         storage=LocalStorageProvider(),
         identity=LocalIdentityProvider(),
         proposals=InMemoryChangeProposalGateway(),
         notifications=NoOpNotificationGateway(),
+        operations=operations,
+        operations_writer=operations,
     )
 
 
@@ -70,7 +77,12 @@ def build_internal_team_bundle() -> AdapterBundle:
     from .cloud.config import load_cloud_config_from_env
     from .cloud.m365_identity_provider import M365IdentityProvider
     from .cloud.msal_client import MsalClient
+    from .cloud.operations_list_schema import (
+        OPERATIONS_LIST_READ_SCOPES,
+        OPERATIONS_LIST_RUNTIME_SCOPES,
+    )
     from .cloud.sharepoint_graph_provider import SharePointGraphProvider
+    from .cloud.sharepoint_operations_repository import SharePointOperationsRepository
     from .cloud.sharepoint_proposals_gateway import SharePointPendingChangesGateway
 
     config = load_cloud_config_from_env()
@@ -79,11 +91,35 @@ def build_internal_team_bundle() -> AdapterBundle:
         config,
         token_provider=lambda: msal_client.acquire_token(interactive_ok=False),
     )
+    operations = None
+    operations_writer = None
+    if config.operations_list_id and config.operations_events_list_id:
+        operations = SharePointOperationsRepository.from_config(
+            config,
+            # Ordinary backlog reads reuse the normal sign-in's read consent.
+            # They must never silently ask for the separate pilot write scope.
+            token_provider=lambda: msal_client.acquire_token(
+                scopes=OPERATIONS_LIST_READ_SCOPES,
+                interactive_ok=False,
+            ),
+        )
+        operations_writer = SharePointOperationsRepository.from_config(
+            config,
+            # This token provider is lazy. Sites.ReadWrite.All is requested
+            # interactively only after an authorized user confirms the
+            # foreground one-vehicle pilot action.
+            token_provider=lambda: msal_client.acquire_token(
+                scopes=OPERATIONS_LIST_RUNTIME_SCOPES,
+                interactive_ok=True,
+            ),
+        )
     return AdapterBundle(
         storage=storage,
         identity=M365IdentityProvider(msal_client),
         proposals=SharePointPendingChangesGateway(storage),
         notifications=NoOpNotificationGateway(),
+        operations=operations,
+        operations_writer=operations_writer,
     )
 
 
