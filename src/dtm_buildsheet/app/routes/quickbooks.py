@@ -22,7 +22,7 @@ POST:
 - /api/quickbooks/push-vehicle-job — legacy per-vehicle sub-customer (job) bridge
 - /api/quickbooks/projects/preview — preview a vehicle's local QBO Project link
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
-- /api/quickbooks/invoices/bind — store or clear a read-only existing Invoice link
+- /api/quickbooks/estimates/bind — verify and store a read-only existing Estimate link
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
 - /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
 - /api/quickbooks/estimates/create — create one vehicle's estimate
@@ -38,10 +38,13 @@ from __future__ import annotations
 import json
 import logging
 import secrets
+import uuid
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 from ...paths import AppPaths
+from ..adapters import wiring
+from ..adapters.interfaces import OperationsRepositoryError
 from ..services import (
     customer_pricing_service,
     qb_estimate_service,
@@ -49,6 +52,11 @@ from ..services import (
     qb_sync_service,
     quickbooks_service,
 )
+from ..services.operations_access_service import (
+    actor_from_access_session,
+    describe_access_session,
+)
+from ..services.operations_service import OperationsService, OperationsServiceError
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +91,65 @@ def _redirect(handler: BaseHTTPRequestHandler, location: str) -> None:
     handler.send_header("Location", location)
     handler.send_header("Cache-Control", "no-store")
     handler.end_headers()
+
+
+def _share_estimate_observation(result: dict, *, individual_id: str) -> dict:
+    """Copy safe Estimate metadata into Operations for non-QBO users."""
+
+    observation = result.get("observation")
+    if not result.get("ok") or not isinstance(observation, dict):
+        return result
+    try:
+        bundle = wiring.get_active_bundle()
+        if bundle.operations is None:
+            result["operations_sync"] = {
+                "ok": True, "skipped": "operations_not_configured",
+            }
+            return result
+        if bundle.operations_writer is None:
+            result["operations_sync"] = {
+                "ok": False, "error": "Operations write access is not configured",
+            }
+            return result
+        session = describe_access_session(
+            bundle=bundle,
+            cloud_enabled=wiring._cloud_flag_enabled(),  # noqa: SLF001
+        )
+        actor = actor_from_access_session(session)
+        if actor is None:
+            result["operations_sync"] = {
+                "ok": False,
+                "error": "Sign in with Microsoft 365 to share the Estimate status",
+            }
+            return result
+        current = bundle.operations_writer.get_vehicle(individual_id)
+        if current is None:
+            result["operations_sync"] = {
+                "ok": False,
+                "error": "The Estimate was connected, but its Operations vehicle was not found",
+            }
+            return result
+        mutation = OperationsService(bundle.operations_writer).observe_qbo_estimate(
+            vehicle_id=individual_id,
+            actor=actor,
+            request_id=str(uuid.uuid4()),
+            source_client="builder_desktop",
+            expected_revision=current.revision,
+            **observation,
+        )
+        result["operations_sync"] = {
+            "ok": True,
+            "revision": mutation.record.revision,
+            "acceptance_status": mutation.record.acceptance_status.value,
+            "acceptance_source": mutation.record.acceptance_source,
+        }
+    except (OperationsServiceError, OperationsRepositoryError, ValueError, RuntimeError):
+        logger.exception("Connected Estimate could not be shared to Operations")
+        result["operations_sync"] = {
+            "ok": False,
+            "error": "The Estimate was connected, but its shared status could not be updated",
+        }
+    return result
 
 
 def route_quickbooks(
@@ -226,14 +293,20 @@ def route_quickbooks(
             ),
         )
         return True
-    if method == "POST" and path == "/api/quickbooks/invoices/bind":
+    if method == "POST" and path == "/api/quickbooks/estimates/bind":
         _send_json(
             handler,
-            qb_estimate_service.bind_invoice(
-                paths,
-                project_id=body.get("project_id", ""),
-                individual_id=body.get("individual_id", ""),
-                qb_invoice_id=body.get("qb_invoice_id", ""),
+            _share_estimate_observation(
+                _estimate_call(
+                    "connection",
+                    qb_estimate_service.bind_estimate,
+                    paths,
+                    project_id=body.get("project_id", ""),
+                    individual_id=body.get("individual_id", ""),
+                    qb_estimate_id=body.get("qb_estimate_id", ""),
+                    replace_existing=bool(body.get("replace_existing", False)),
+                ),
+                individual_id=str(body.get("individual_id") or ""),
             ),
         )
         return True
@@ -252,21 +325,24 @@ def route_quickbooks(
     if method == "POST" and path == "/api/quickbooks/estimates/create":
         _send_json(
             handler,
-            _estimate_call(
-                "creation",
-                qb_estimate_service.create_estimate,
-                paths,
-                project_id=body.get("project_id", ""),
-                individual_id=body.get("individual_id", ""),
-                memo=body.get("memo", ""),
-                customer_confirmed=bool(body.get("customer_confirmed", False)),
-                customer_fields=body.get("customer_fields") or None,
-                existing_action=body.get("existing_action", ""),
-                attach_pdf=bool(body.get("attach_pdf", False)),
-                pricing_mode=body.get("pricing_mode", "retail"),
-                custom_pricing=body.get("custom_pricing") or None,
-                additional_charges=body.get("additional_charges") or None,
-                overwrite_qb_changes=bool(body.get("overwrite_qb_changes", False)),
+            _share_estimate_observation(
+                _estimate_call(
+                    "creation",
+                    qb_estimate_service.create_estimate,
+                    paths,
+                    project_id=body.get("project_id", ""),
+                    individual_id=body.get("individual_id", ""),
+                    memo=body.get("memo", ""),
+                    customer_confirmed=bool(body.get("customer_confirmed", False)),
+                    customer_fields=body.get("customer_fields") or None,
+                    existing_action=body.get("existing_action", ""),
+                    attach_pdf=bool(body.get("attach_pdf", False)),
+                    pricing_mode=body.get("pricing_mode", "retail"),
+                    custom_pricing=body.get("custom_pricing") or None,
+                    additional_charges=body.get("additional_charges") or None,
+                    overwrite_qb_changes=bool(body.get("overwrite_qb_changes", False)),
+                ),
+                individual_id=str(body.get("individual_id") or ""),
             ),
         )
         return True

@@ -252,6 +252,8 @@ class OperationsProjectSyncService:
         self,
         project: ProjectRecord,
         actor: OperationsActor,
+        *,
+        allow_project_rebind: bool = False,
     ) -> dict:
         if not has_capability(actor.roles, Capability.PROJECTS_EDIT):
             raise OperationsAuthorizationError(
@@ -273,6 +275,7 @@ class OperationsProjectSyncService:
                 request_id=str(uuid.uuid4()),
                 source_client="builder_desktop",
                 expected_revision=existing.revision if existing is not None else None,
+                allow_project_rebind=allow_project_rebind,
             )
             current[projection.vehicle_id] = result.record
             if result.unchanged:

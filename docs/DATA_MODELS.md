@@ -88,7 +88,7 @@ class IndividualUnit:
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
     qb_estimate_snapshot_at: str = ""
-    qb_invoice_id: str = ""  # read-only link to an existing QBO Invoice
+    qb_invoice_id: str = ""  # legacy inert compatibility field; no current UI/API
     company_vehicle_folder_id: str = ""
     company_vehicle_folder_path: str = ""
     company_folder_status: str = "not_provisioned"
@@ -104,8 +104,10 @@ The Estimate snapshot is deliberately narrower than the raw QBO object: it track
 project references, document number, memo fields, and material line IDs, descriptions, quantities,
 prices, and amounts. Provider metadata such as `SyncToken` and update timestamps is excluded so it
 does not create false conflicts.
-`qb_invoice_id` is optional normalized reference metadata from a numeric ID or pasted QBO Invoice
-URL. Saving or clearing it does not mutate QuickBooks.
+`qb_invoice_id` remains readable only so the post-v3.6.0 removal of Invoice linking does not make an
+older project file malformed. Current UI and routes neither create nor edit it. Existing Estimate
+connections use `qb_estimate_id`; verified snapshots/check times mirror with the project while the
+narrow status observation is also copied to the SharePoint Operations record.
 
 Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
 actual vehicle being built and is the only VIN eligible for current card identity, folders,

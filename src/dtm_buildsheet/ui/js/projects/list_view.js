@@ -332,6 +332,115 @@ window.PT_confirmProjectInactive = function () {
   );
 };
 
+function _ptCloseCompletionConflictModal() {
+  const modal = $("project-completion-conflict-modal");
+  modal?.classList.remove("open");
+  if (modal) modal.hidden = true;
+  _PT.completionConflict = null;
+}
+
+function _ptCompletionSideHtml(title, project) {
+  const vehicles = project?.vehicles || [];
+  const rows = vehicles.length
+    ? vehicles.map(vehicle => {
+        const facts = [
+          vehicle.unit_number ? `Unit ${vehicle.unit_number}` : "",
+          vehicle.vin ? `VIN ${vehicle.vin}` : "",
+          vehicle.build_type || "",
+        ].filter(Boolean).join(" · ");
+        return `<li><strong>${esc(vehicle.label || vehicle.vehicle_model || "Vehicle")}</strong>${facts ? `<small>${esc(facts)}</small>` : ""}</li>`;
+      }).join("")
+    : "<li>No individual vehicle details are saved.</li>";
+  const quotes = (project?.quote_numbers || []).filter(Boolean).join(", ") || "No quote numbers";
+  return `<section class="project-completion-side">
+    <h3>${esc(title)}</h3>
+    <small>${Number(project?.vehicle_count || 0)} vehicle${Number(project?.vehicle_count || 0) === 1 ? "" : "s"} · ${esc(quotes)}</small>
+    <ul class="project-completion-vehicles">${rows}</ul>
+  </section>`;
+}
+
+function _ptRefreshCompletionConflictChoice() {
+  const choice = document.querySelector('input[name="project-completion-resolution"]:checked')?.value || "";
+  const confirmBox = $("project-completion-overwrite-confirm");
+  const confirmation = $("project-completion-overwrite-text");
+  const apply = $("project-completion-conflict-apply");
+  if (confirmBox) confirmBox.hidden = choice !== "overwrite";
+  if (apply) {
+    apply.disabled = !choice || (choice === "overwrite" && confirmation?.value.trim() !== "OVERWRITE");
+    apply.textContent = choice === "merge" ? "Merge & Complete" :
+      choice === "overwrite" ? "Overwrite & Complete" : "Complete Project";
+    apply.className = `btn ${choice === "overwrite" ? "btn-danger" : "btn-primary"}`;
+  }
+}
+
+function _ptOpenCompletionConflictModal(pid, result) {
+  _PT.completionConflict = { pid, result };
+  $("project-completion-conflict-comparison").innerHTML =
+    _ptCompletionSideHtml("Already completed", result.completed_project) +
+    _ptCompletionSideHtml("Active project", result.active_project);
+  document.querySelectorAll('input[name="project-completion-resolution"]').forEach(input => {
+    input.checked = false;
+  });
+  $("project-completion-overwrite-text").value = "";
+  $("project-completion-conflict-status").hidden = true;
+  _ptRefreshCompletionConflictChoice();
+  const modal = $("project-completion-conflict-modal");
+  modal.hidden = false;
+  modal.classList.add("open");
+}
+
+async function _ptRequestProjectCompletion(pid, completed, extra = {}) {
+  try {
+    const result = await api(`/api/project/${encodeURIComponent(pid)}/completion`, {
+      completed: !!completed,
+      ...extra,
+    });
+    if (!result.ok) {
+      if (result.error_code === "completed_project_exists_for_agency_year") {
+        _ptOpenCompletionConflictModal(pid, result);
+        return;
+      }
+      toast(result.error || "Project status could not be changed", "error");
+      return;
+    }
+    _ptCloseCompletionConflictModal();
+    await _ptLoadAll();
+    _PT.viewProject = null;
+    const completionMessage = result.resolution === "merge"
+      ? "Projects merged and moved to Completed"
+      : result.resolution === "overwrite"
+        ? "Completed project replaced with the active project"
+        : completed ? "Project moved to Completed" : "Project returned to Active";
+    toast(completionMessage, "success");
+    _ptShowList(completed ? "completed" : "active");
+  } catch (error) {
+    toast(error.message || "Project status could not be changed", "error");
+  }
+}
+
+window.PT_applyCompletionConflict = async function () {
+  const context = _PT.completionConflict;
+  if (!context) return;
+  const resolution = document.querySelector('input[name="project-completion-resolution"]:checked')?.value || "";
+  if (!resolution) return;
+  const confirmation = $("project-completion-overwrite-text").value.trim();
+  if (resolution === "overwrite" && confirmation !== "OVERWRITE") return;
+  const apply = $("project-completion-conflict-apply");
+  const status = $("project-completion-conflict-status");
+  apply.disabled = true;
+  apply.textContent = resolution === "overwrite" ? "Overwriting…" : "Merging…";
+  status.hidden = false;
+  status.textContent = "Updating the project and Operations records…";
+  await _ptRequestProjectCompletion(context.pid, true, {
+    conflict_resolution: resolution,
+    overwrite_confirmation: confirmation,
+  });
+  if (_PT.completionConflict) {
+    status.textContent = "The projects could not be combined. Nothing else will be attempted.";
+    _ptRefreshCompletionConflictChoice();
+  }
+};
+
 window.PT_setProjectCompleted = async function (pid, completed) {
   if (completed) {
     const project = (_PT.projects || []).find(item => item.project_id === pid) || _PT.viewProject;
@@ -340,21 +449,7 @@ window.PT_setProjectCompleted = async function (pid, completed) {
       : "this project";
     if (!confirm(`Mark ${label} completed?\n\nIt will move to the Completed tab. Completed photos will remain available, and the project can be reopened later.`)) return;
   }
-  try {
-    const result = await api(`/api/project/${encodeURIComponent(pid)}/completion`, {
-      completed: !!completed,
-    });
-    if (!result.ok) {
-      toast(result.error || "Project status could not be changed", "error");
-      return;
-    }
-    await _ptLoadAll();
-    _PT.viewProject = null;
-    toast(completed ? "Project moved to Completed" : "Project returned to Active", "success");
-    _ptShowList(completed ? "completed" : "active");
-  } catch (error) {
-    toast(error.message || "Project status could not be changed", "error");
-  }
+  await _ptRequestProjectCompletion(pid, completed);
 };
 
 // ── Delete project modal ───────────────────────────────────────────────────────

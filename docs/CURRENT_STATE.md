@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-08
 
-**Current release:** [v3.5.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.5.0)
+**Current release:** [v3.6.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.6.0)
 
 This is the short operational handoff for the repository. It replaces dated session handoffs and
 release checklists. Long-lived design and behavior remain documented in `ROADMAP.md`,
@@ -377,7 +377,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   each library, zero `Build(s)` children beneath any project year, zero surviving deleted IDs, and
   exact local/cloud JSON equality for all 45 projects. The rollback/audit snapshot is in
   `/private/tmp/dtm-flat-folder-migration-BqfxjI` on the migration workstation.
-- **Operations and lifecycle working-tree expansion (2026-09-08):** the role-gated Operations tab
+- **Operations and lifecycle production expansion (v3.6.0, 2026-09-08):** the role-gated Operations tab
   uses the validated live SharePoint current-row/event lists for 78 vehicles. Project-wide and
   individual one-click statuses preserve per-vehicle history; scheduling accepts any subset of its
   four optional dates. Parts now includes a dated **Ordered** milestone before Partially Received,
@@ -391,10 +391,16 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   Builder project. The Projects viewer is one count-aware **Active / Inactive / Completed** surface
   with per-tab search, a single derived Active workflow badge, and a three-dot lifecycle/delete menu.
   Inactive projects support an optional reason and reactivation, while Completed retains Agency →
-  Build Year grouping and reversible reopening. Individual units can store an existing QBO Invoice
-  ID/URL as a read-only association, and either project vehicle selector can create and immediately
+  Build Year grouping and reversible reopening. Either project vehicle selector can create and immediately
   select a shared Make/Model vehicle with artwork pending.
-- Cloud-off verification for this working tree passes **2,376 passed, 1 skipped**; the one skipped
+- **Post-v3.6.0 working tree:** a completed project no longer blocks a new active project for the
+  same agency/build year. Completing that later project stops at a side-by-side vehicle comparison
+  with Cancel, Merge, or strongly confirmed Overwrite; merge keeps distinct stable vehicle IDs and
+  Operations history. The QuickBooks menu now connects existing Estimates rather than Invoices.
+  Connection is verified and read-only, writes the last-known status/check time to SharePoint
+  Operations, preserves prior manual acceptance, and is visibly separate from the guarded Update
+  Estimate action.
+- Cloud-off verification for this working tree passes **2,387 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's
   Downloads folder also passed in its approved environment.
   Contract snapshots

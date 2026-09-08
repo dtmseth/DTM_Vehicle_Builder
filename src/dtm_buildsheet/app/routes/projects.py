@@ -103,9 +103,32 @@ def _sync_project_lifecycle(result: dict, paths: AppPaths, *, reason: str = "") 
         return result
     try:
         project = load_project(project_id, paths)
-        result["operations_sync"] = OperationsProjectSyncService(
-            repository
-        ).sync_lifecycle(project, actor, reason=reason)
+        service = OperationsProjectSyncService(repository)
+        resolution = str(result.get("resolution") or "")
+        if resolution in {"merge", "overwrite"}:
+            removed = None
+            if resolution == "overwrite":
+                # Overwrite deliberately discards the older completed vehicles
+                # and their Operations history before the active vehicles are
+                # rebound to the retained completed-project identity.
+                removed = service.delete_project(project.project_id, actor)
+            synchronized = service.sync_project(
+                project, actor, allow_project_rebind=True,
+            )
+            result["operations_sync"] = {
+                "ok": True,
+                "resolution": resolution,
+                "removed_completed_project": removed,
+                "synchronized": synchronized,
+                # Historical events for moved vehicles keep their original
+                # project ID for auditability. Current rows now point at the
+                # retained completed project through sync_project above.
+                "source_history_preserved": True,
+            }
+        else:
+            result["operations_sync"] = service.sync_lifecycle(
+                project, actor, reason=reason,
+            )
     except (OperationsServiceError, OperationsRepositoryError, ValueError):
         result["operations_sync"] = {
             "ok": False,

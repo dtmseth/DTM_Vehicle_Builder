@@ -1000,8 +1000,8 @@ def bind_project(
     }
 
 
-def _normalize_qb_invoice_id(value: str) -> str:
-    """Accept a numeric Invoice ID or an invoice URL copied from QBO."""
+def _normalize_qb_estimate_id(value: str) -> str:
+    """Accept a numeric Estimate ID or an Estimate URL copied from QBO."""
 
     raw = str(value or "").strip()
     if re.fullmatch(r"[0-9]+", raw):
@@ -1011,40 +1011,127 @@ def _normalize_qb_invoice_id(value: str) -> str:
         query = parse_qs(parsed.query)
     except ValueError:
         return ""
-    if "invoice" not in parsed.path.lower():
+    if "estimate" not in parsed.path.lower():
         return ""
-    for key in ("txnId", "invoiceId", "invoice_id", "id"):
+    for key in ("txnId", "estimateId", "estimate_id", "id"):
         candidate = (query.get(key) or [""])[0].strip()
         if re.fullmatch(r"[0-9]+", candidate):
             return candidate
     return ""
 
 
-def bind_invoice(
+def bind_estimate(
     paths: AppPaths,
     *,
     project_id: str,
     individual_id: str,
-    qb_invoice_id: str,
+    qb_estimate_id: str,
+    replace_existing: bool = False,
 ) -> dict:
-    """Store or clear a read-only link to an existing QBO Invoice."""
+    """Verify and store a read-only link to an existing QBO Estimate.
+
+    Linking never edits QuickBooks. The safe snapshot and check time are saved
+    with the project so they mirror to SharePoint for users without a QBO
+    connection. Updating that Estimate remains a separate guarded command.
+    """
 
     loaded = _load_individual(paths, project_id, individual_id)
     if isinstance(loaded, dict):
         return loaded
     project, _build_unit, unit = loaded
-    raw = str(qb_invoice_id or "").strip()
-    normalized = _normalize_qb_invoice_id(raw) if raw else ""
+    raw = str(qb_estimate_id or "").strip()
+    normalized = _normalize_qb_estimate_id(raw) if raw else ""
     if raw and not normalized:
-        return {"ok": False, "error": "invalid_invoice_id"}
+        return {"ok": False, "error": "invalid_estimate_id"}
 
-    unit.qb_invoice_id = normalized
     from ...inputs import project_entry
+    if not normalized:
+        unit.qb_estimate_id = ""
+        unit.qb_estimate_snapshot = {}
+        unit.qb_estimate_snapshot_at = ""
+        project_entry.save_project(project, paths)
+        return {
+            "ok": True,
+            "qb_estimate_id": "",
+            "linked": False,
+            "observation": {
+                "qbo_project_id": unit.qb_project_id,
+                "qbo_project_name": unit.qb_project_name,
+                "qbo_estimate_id": "",
+                "qbo_estimate_number": "",
+                "qbo_estimate_status": "",
+                "qbo_estimate_accepted_at": "",
+                "qbo_estimate_last_modified_at": "",
+                "qbo_diff_status": "not_linked",
+            },
+        }
+
+    existing_id = str(unit.qb_estimate_id or "").strip()
+    if existing_id and normalized != existing_id and not replace_existing:
+        return {
+            "ok": False,
+            "error": "estimate_connection_replacement_confirmation_required",
+            "existing_estimate_id": existing_id,
+        }
+    for candidate_project in project_entry.list_projects(paths):
+        for candidate_unit in candidate_project.build_units:
+            for candidate in candidate_unit.individuals:
+                if (
+                    str(candidate.qb_estimate_id or "").strip() == normalized
+                    and (
+                        candidate_project.project_id != project_id
+                        or candidate.individual_id != individual_id
+                    )
+                ):
+                    return {
+                        "ok": False,
+                        "error": "estimate_already_linked_to_another_vehicle",
+                        "existing_project_id": candidate_project.project_id,
+                        "existing_individual_id": candidate.individual_id,
+                    }
+
+    client, error = qb_sync_service._build_client(paths)
+    if error:
+        return error
+    try:
+        estimate = client.read_estimate(normalized)
+    except QuickBooksApiError:
+        logger.warning("QuickBooks existing Estimate lookup failed")
+        return {"ok": False, "error": "estimate_lookup_failed"}
+    if not estimate:
+        return {"ok": False, "error": "existing_estimate_not_found"}
+
+    snapshot = _estimate_snapshot(estimate)
+    checked_at = datetime.now(timezone.utc).isoformat()
+    qbo_project_id = str(snapshot.get("project_id") or unit.qb_project_id or "").strip()
+    if not unit.qb_project_id and qbo_project_id:
+        unit.qb_project_id = qbo_project_id
+    unit.qb_estimate_id = normalized
+    unit.qb_estimate_snapshot = snapshot
+    unit.qb_estimate_snapshot_at = checked_at
     project_entry.save_project(project, paths)
+    metadata = estimate.get("MetaData") if isinstance(estimate.get("MetaData"), dict) else {}
+    status = str(estimate.get("TxnStatus") or "").strip()
+    accepted_at = str(estimate.get("AcceptedDate") or "").strip()
     return {
         "ok": True,
-        "qb_invoice_id": normalized,
-        "linked": bool(normalized),
+        "qb_estimate_id": normalized,
+        "estimate_number": str(estimate.get("DocNumber") or "").strip(),
+        "estimate_status": status,
+        "checked_at": checked_at,
+        "linked": True,
+        "observation": {
+            "qbo_project_id": qbo_project_id,
+            "qbo_project_name": unit.qb_project_name,
+            "qbo_estimate_id": normalized,
+            "qbo_estimate_number": str(estimate.get("DocNumber") or "").strip(),
+            "qbo_estimate_status": status,
+            "qbo_estimate_accepted_at": accepted_at,
+            "qbo_estimate_last_modified_at": str(
+                metadata.get("LastUpdatedTime") or ""
+            ).strip(),
+            "qbo_diff_status": "unchanged",
+        },
     }
 
 
@@ -1301,6 +1388,22 @@ def create_estimate(
         "qb_project_id": unit.qb_project_id,
         "project_name": project_name,
         "attachment": attachment,
+        "observation": {
+            "qbo_project_id": unit.qb_project_id,
+            "qbo_project_name": unit.qb_project_name,
+            "qbo_estimate_id": estimate_id,
+            "qbo_estimate_number": str(result.get("doc_number") or "").strip(),
+            "qbo_estimate_status": str(
+                snapshot_source.get("TxnStatus") or ""
+            ).strip(),
+            "qbo_estimate_accepted_at": str(
+                snapshot_source.get("AcceptedDate") or ""
+            ).strip(),
+            "qbo_estimate_last_modified_at": str(
+                (snapshot_source.get("MetaData") or {}).get("LastUpdatedTime") or ""
+            ).strip() if isinstance(snapshot_source.get("MetaData"), dict) else "",
+            "qbo_diff_status": "unchanged",
+        },
     }
 
 

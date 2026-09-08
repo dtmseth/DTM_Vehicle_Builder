@@ -113,6 +113,8 @@ class IndividualUnit:
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict[str, Any] = field(default_factory=dict)
     qb_estimate_snapshot_at: str = ""
+    # Legacy v3.6.0 compatibility only. Invoice linking has no current UI/API;
+    # keep the field readable so an older shared project remains valid.
     qb_invoice_id: str = ""
     # Durable SharePoint package identity. Folder/item IDs remain authoritative
     # when the readable year/model/build-type/unit/VIN label changes.

@@ -307,13 +307,14 @@ class OperationsService:
         source_client: OperationsSource | str,
         expected_revision: int | None = None,
         source_app_version: str = "",
+        allow_project_rebind: bool = False,
     ) -> OperationsMutationResult:
         """Create or refresh only the fields that Builder owns.
 
         Production workstream fields are deliberately absent from
         ``BuilderVehicleProjection`` and therefore survive every Builder save.
         Moving an existing vehicle to a different opaque project ID is rejected
-        rather than silently relinking historical operations.
+        unless the caller explicitly enables the reviewed project merge path.
         """
 
         self._require(actor, Capability.PROJECTS_EDIT)
@@ -345,16 +346,21 @@ class OperationsService:
                 project_state=normalized.project_state,
                 source_app_version=source_app_version,
             )
-        if current.project_id != normalized.project_id:
+        project_rebound = current.project_id != normalized.project_id
+        if project_rebound and not allow_project_rebind:
             raise OperationsConflictError(
                 "Builder vehicle is already linked to a different project"
             )
         self._check_expected_revision(current, expected_revision)
         changes = self.projection_changes(current, normalized)
+        if project_rebound:
+            changes["project_id"] = (current.project_id, normalized.project_id)
         if not changes:
             return OperationsMutationResult(record=current, event=None, unchanged=True)
 
         updated = replace(current)
+        if project_rebound:
+            updated.project_id = normalized.project_id
         for field_name in _BUILDER_PROJECTION_FIELDS:
             setattr(updated, field_name, getattr(normalized, field_name))
         previous_value = json.dumps(
@@ -716,6 +722,101 @@ class OperationsService:
             source_app_version=source_app_version,
             occurred_at=now,
             performed_by_name=performed_by_name,
+        )
+
+    def observe_qbo_estimate(
+        self,
+        *,
+        vehicle_id: str,
+        actor: OperationsActor,
+        request_id: str,
+        source_client: OperationsSource | str,
+        qbo_project_id: str = "",
+        qbo_project_name: str = "",
+        qbo_estimate_id: str = "",
+        qbo_estimate_number: str = "",
+        qbo_estimate_status: str = "",
+        qbo_estimate_accepted_at: str = "",
+        qbo_estimate_last_modified_at: str = "",
+        qbo_diff_status: str = "unchanged",
+        expected_revision: int | None = None,
+        source_app_version: str = "",
+    ) -> OperationsMutationResult:
+        """Store one safe, shared QBO observation without financial line data.
+
+        A QBO accepted/closed state may latch a not-yet-accepted vehicle to
+        accepted. A prior manual acceptance is never cleared or relabeled when
+        a linked Estimate is still pending.
+        """
+
+        self._require(actor, Capability.OPERATIONS_QBO_OBSERVE)
+        request_id = self._required(request_id, "request_id")
+        vehicle_id = self._required(vehicle_id, "vehicle_id")
+        duplicate = self._duplicate_result(request_id, vehicle_id)
+        if duplicate is not None:
+            return duplicate
+        current = self._get(vehicle_id)
+        self._check_expected_revision(current, expected_revision)
+        diff_status = str(qbo_diff_status or "not_linked").strip().lower()
+        if diff_status not in {"not_linked", "untracked", "unchanged", "modified", "missing"}:
+            raise OperationsValidationError("Invalid QBO difference status")
+
+        now = _utc_iso(self._clock())
+        previous = {
+            "estimate_id": current.qbo_estimate_id,
+            "estimate_number": current.qbo_estimate_number,
+            "estimate_status": current.qbo_estimate_status,
+            "diff_status": current.qbo_diff_status,
+            "checked_at": current.qbo_checked_at,
+        }
+        updated = replace(current)
+        updated.qbo_project_id = str(qbo_project_id or "").strip()
+        updated.qbo_project_name = str(qbo_project_name or "").strip()
+        updated.qbo_estimate_id = str(qbo_estimate_id or "").strip()
+        updated.qbo_estimate_number = str(qbo_estimate_number or "").strip()
+        updated.qbo_estimate_status = str(qbo_estimate_status or "").strip()
+        updated.qbo_estimate_accepted_at = str(qbo_estimate_accepted_at or "").strip()
+        updated.qbo_estimate_last_modified_at = str(
+            qbo_estimate_last_modified_at or ""
+        ).strip()
+        updated.qbo_checked_at = now
+        updated.qbo_checked_by_id = actor.user_id
+        updated.qbo_checked_by_name = actor.display_name
+        updated.qbo_diff_status = diff_status
+
+        if (
+            updated.qbo_estimate_status.casefold() in {"accepted", "closed"}
+            and current.acceptance_status == AcceptanceStatus.NOT_ACCEPTED
+        ):
+            updated.acceptance_status = AcceptanceStatus.ACCEPTED
+            updated.accepted_at = updated.qbo_estimate_accepted_at or now
+            updated.acceptance_source = AcceptanceSource.QBO.value
+            updated.acceptance_changed_at = now
+
+        current_value = {
+            "estimate_id": updated.qbo_estimate_id,
+            "estimate_number": updated.qbo_estimate_number,
+            "estimate_status": updated.qbo_estimate_status,
+            "diff_status": updated.qbo_diff_status,
+            "checked_at": updated.qbo_checked_at,
+        }
+        return self._commit(
+            current=current,
+            updated=updated,
+            request_id=request_id,
+            actor=actor,
+            source=self._source(source_client),
+            workstream=OperationsWorkstream.QBO,
+            event_type=OperationsEventType.QBO_OBSERVED,
+            previous_value=json.dumps(
+                previous, ensure_ascii=False, separators=(",", ":"), sort_keys=True,
+            ),
+            new_value=json.dumps(
+                current_value, ensure_ascii=False, separators=(",", ":"), sort_keys=True,
+            ),
+            reason="",
+            source_app_version=source_app_version,
+            occurred_at=now,
         )
 
     def change_schedule(

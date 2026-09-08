@@ -1203,34 +1203,97 @@ def test_project_can_be_previewed_and_linked_before_unit_is_configured(paths):
     assert saved.qb_project_id == "447322633"
 
 
-def test_bind_invoice_accepts_id_or_invoice_url_and_can_unlink(paths):
+def test_bind_estimate_verifies_url_saves_snapshot_and_can_unlink(paths, monkeypatch):
     aid = _make_agency(paths, qb_customer_id="CUST9")
     pid = _make_project(paths, aid, [])
+    fake = FakeClient()
+    fake.estimate_to_read = {
+        "Id": "98765",
+        "SyncToken": "7",
+        "DocNumber": "2041",
+        "TxnStatus": "Accepted",
+        "AcceptedDate": "2026-09-07T14:00:00Z",
+        "ProjectRef": {"value": "447322633"},
+        "CustomerRef": {"value": "CUST9"},
+        "MetaData": {"LastUpdatedTime": "2026-09-07T15:00:00Z"},
+        "Line": [],
+    }
+    monkeypatch.setattr(sync, "_build_client", lambda _paths: (fake, None))
 
-    linked = est.bind_invoice(
+    linked = est.bind_estimate(
         paths,
         project_id=pid,
         individual_id="ind1",
-        qb_invoice_id="https://qbo.intuit.com/app/invoice?txnId=98765",
+        qb_estimate_id="https://qbo.intuit.com/app/estimate?txnId=98765",
     )
-    assert linked == {"ok": True, "qb_invoice_id": "98765", "linked": True}
-    assert project_entry.load_project(pid, paths).build_units[0].individuals[0].qb_invoice_id == "98765"
+    assert linked["ok"] is True
+    assert linked["qb_estimate_id"] == "98765"
+    assert linked["estimate_number"] == "2041"
+    assert linked["estimate_status"] == "Accepted"
+    assert linked["observation"]["qbo_diff_status"] == "unchanged"
+    saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
+    assert saved.qb_estimate_id == "98765"
+    assert saved.qb_estimate_snapshot["doc_number"] == "2041"
+    assert saved.qb_estimate_snapshot_at
+    assert saved.qb_project_id == "447322633"
 
-    assert est.bind_invoice(
+    replacement = est.bind_estimate(
         paths,
         project_id=pid,
         individual_id="ind1",
-        qb_invoice_id="https://qbo.intuit.com/app/customer?id=123",
-    ) == {"ok": False, "error": "invalid_invoice_id"}
-
-    unlinked = est.bind_invoice(
-        paths,
-        project_id=pid,
-        individual_id="ind1",
-        qb_invoice_id="",
+        qb_estimate_id="12345",
     )
-    assert unlinked == {"ok": True, "qb_invoice_id": "", "linked": False}
-    assert project_entry.load_project(pid, paths).build_units[0].individuals[0].qb_invoice_id == ""
+    assert replacement["error"] == "estimate_connection_replacement_confirmation_required"
+    assert project_entry.load_project(pid, paths).build_units[0].individuals[0].qb_estimate_id == "98765"
+
+    assert est.bind_estimate(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_estimate_id="https://qbo.intuit.com/app/customer?id=123",
+    ) == {"ok": False, "error": "invalid_estimate_id"}
+
+    unlinked = est.bind_estimate(
+        paths,
+        project_id=pid,
+        individual_id="ind1",
+        qb_estimate_id="",
+    )
+    assert unlinked["ok"] is True and unlinked["linked"] is False
+    saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
+    assert saved.qb_estimate_id == ""
+    assert saved.qb_estimate_snapshot == {}
+    assert saved.qb_estimate_snapshot_at == ""
+
+
+def test_bind_estimate_rejects_link_already_used_by_another_vehicle(paths, monkeypatch):
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    first_id = _make_project(paths, aid, [], quote="26-100")
+    second_id = _make_project(paths, aid, [], quote="26-101")
+    second = project_entry.load_project(second_id, paths)
+    second.build_units[0].individuals[0].individual_id = "ind2"
+    project_entry.save_project(second, paths)
+    fake = FakeClient()
+    fake.estimate_to_read = {"Id": "98765", "DocNumber": "2041", "Line": []}
+    monkeypatch.setattr(sync, "_build_client", lambda _paths: (fake, None))
+
+    assert est.bind_estimate(
+        paths,
+        project_id=first_id,
+        individual_id="ind1",
+        qb_estimate_id="98765",
+    )["ok"] is True
+
+    duplicate = est.bind_estimate(
+        paths,
+        project_id=second_id,
+        individual_id="ind2",
+        qb_estimate_id="98765",
+    )
+
+    assert duplicate["ok"] is False
+    assert duplicate["error"] == "estimate_already_linked_to_another_vehicle"
+    assert duplicate["existing_project_id"] == first_id
 
 
 def test_project_preview_does_not_resurface_legacy_agency_prefixed_name(paths):

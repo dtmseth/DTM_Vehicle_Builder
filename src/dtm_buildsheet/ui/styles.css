@@ -1290,6 +1290,24 @@
     .project-simple-modal{width:520px}
     .project-modal-intro{color:var(--muted);font-size:13px;line-height:1.45;margin:0 0 16px}
     .project-simple-modal textarea{box-sizing:border-box;resize:vertical;width:100%}
+    .project-completion-conflict-modal{width:760px;max-height:88vh;overflow:auto}
+    .project-completion-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    .project-completion-side{border:1px solid var(--border);border-radius:9px;padding:12px;background:#fff}
+    .project-completion-side h3{font-size:13px;color:var(--navy);margin:0 0 3px}
+    .project-completion-side>small{display:block;color:var(--muted);margin-bottom:9px}
+    .project-completion-vehicles{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+    .project-completion-vehicles li{padding:7px 8px;border-radius:6px;background:#f6f7fb;font-size:12px;line-height:1.35}
+    .project-completion-vehicles li small{display:block;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+    .project-completion-options{display:grid;gap:8px;margin-bottom:12px}
+    .project-completion-options>label{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:#fff}
+    .project-completion-options input{margin-top:3px}
+    .project-completion-options span{display:grid;gap:3px}
+    .project-completion-options small{color:var(--muted);line-height:1.35}
+    .project-completion-overwrite-option{border-color:#d37a74!important;background:#fff5f4!important}
+    .project-completion-overwrite-confirm{padding:11px;border:2px solid #c8443d;border-radius:8px;background:#fff0ef;margin-bottom:12px}
+    .project-completion-overwrite-confirm label{display:block;color:#8c2d28;font-size:12px;margin-bottom:7px}
+    .project-completion-overwrite-confirm input{box-sizing:border-box;width:100%}
+    @media (max-width:760px){.project-completion-comparison{grid-template-columns:1fr}.project-completion-conflict-modal{width:calc(100vw - 28px)}}
     @media(max-width:560px){.proj-vehicle-picker{align-items:stretch;flex-direction:column}}
     .proj-buildtype-group{min-width:120px}
     .proj-qty-group{max-width:80px;min-width:60px}

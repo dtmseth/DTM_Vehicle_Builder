@@ -171,6 +171,18 @@ function _ptBind() {
   $("project-inactive-modal").addEventListener("click", event => {
     if (event.target === $("project-inactive-modal")) _ptCloseInactiveProjectModal();
   });
+  document.querySelectorAll('input[name="project-completion-resolution"]').forEach(input => {
+    input.addEventListener("change", _ptRefreshCompletionConflictChoice);
+  });
+  $("project-completion-overwrite-text").addEventListener("input", _ptRefreshCompletionConflictChoice);
+  $("project-completion-conflict-close").addEventListener("click", _ptCloseCompletionConflictModal);
+  $("project-completion-conflict-cancel").addEventListener("click", _ptCloseCompletionConflictModal);
+  $("project-completion-conflict-apply").addEventListener("click", PT_applyCompletionConflict);
+  $("project-completion-conflict-modal").addEventListener("click", event => {
+    if (event.target === $("project-completion-conflict-modal")) {
+      _ptCloseCompletionConflictModal();
+    }
+  });
   $("btn-proj-inactive").addEventListener("click", () => {
     if (_PT.viewProject) {
       PT_setProjectLifecycle(

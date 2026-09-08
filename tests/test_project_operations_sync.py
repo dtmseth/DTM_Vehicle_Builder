@@ -106,3 +106,125 @@ def test_project_routes_sync_lifecycle_and_cascade_delete(monkeypatch, tmp_path)
     assert payload["operations_sync"]["events_deleted"] == 2
     assert repository.get_vehicle("vehicle-1") is None
     assert not (paths.workspace_projects_dir / "project-1" / "project.json").exists()
+
+
+def test_project_completion_merge_rebinds_operations_and_preserves_vehicle_history(
+    monkeypatch, tmp_path,
+):
+    paths = _paths(tmp_path)
+    repository = InMemoryOperationsRepository()
+    set_active_bundle(replace(
+        build_local_bundle(),
+        operations=repository,
+        operations_writer=repository,
+    ))
+    monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: False)
+
+    completed = _project()
+    status, payload, handled = call_route(
+        route_projects, "POST", "/api/project/save", asdict(completed), paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+    status, payload, handled = call_route(
+        route_projects,
+        "POST",
+        "/api/project/project-1/completion",
+        {"completed": True},
+        paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+
+    active = _project()
+    active.project_id = "project-2"
+    active.build_units[0].unit_id = "group-2"
+    active.build_units[0].individuals[0].individual_id = "vehicle-2"
+    active.build_units[0].individuals[0].unit_number = "22"
+    status, payload, handled = call_route(
+        route_projects, "POST", "/api/project/save", asdict(active), paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+    assert repository.get_vehicle("vehicle-2").project_id == "project-2"
+
+    status, conflict, handled = call_route(
+        route_projects,
+        "POST",
+        "/api/project/project-2/completion",
+        {"completed": True},
+        paths,
+    )
+    assert (status, handled) == (200, True)
+    assert conflict["error_code"] == "completed_project_exists_for_agency_year"
+
+    status, merged, handled = call_route(
+        route_projects,
+        "POST",
+        "/api/project/project-2/completion",
+        {"completed": True, "conflict_resolution": "merge"},
+        paths,
+    )
+
+    assert (status, handled, merged["ok"]) == (200, True, True)
+    assert merged["operations_sync"]["synchronized"]["updated"] == 1
+    assert repository.get_vehicle("vehicle-2").project_id == "project-1"
+    assert repository.get_vehicle("vehicle-2").project_state.value == "completed"
+    assert len(repository.list_events("vehicle-2")) == 2
+
+
+def test_project_completion_overwrite_removes_old_operations_and_keeps_replacement(
+    monkeypatch, tmp_path,
+):
+    paths = _paths(tmp_path)
+    repository = InMemoryOperationsRepository()
+    set_active_bundle(replace(
+        build_local_bundle(),
+        operations=repository,
+        operations_writer=repository,
+    ))
+    monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: False)
+
+    completed = _project()
+    status, payload, handled = call_route(
+        route_projects, "POST", "/api/project/save", asdict(completed), paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+    status, payload, handled = call_route(
+        route_projects,
+        "POST",
+        "/api/project/project-1/completion",
+        {"completed": True},
+        paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+    assert len(repository.list_events("vehicle-1")) == 2
+
+    active = _project()
+    active.project_id = "project-2"
+    active.build_units[0].unit_id = "group-2"
+    active.build_units[0].individuals[0].individual_id = "vehicle-2"
+    active.build_units[0].individuals[0].unit_number = "22"
+    status, payload, handled = call_route(
+        route_projects, "POST", "/api/project/save", asdict(active), paths,
+    )
+    assert (status, handled, payload["ok"]) == (200, True, True)
+
+    status, overwritten, handled = call_route(
+        route_projects,
+        "POST",
+        "/api/project/project-2/completion",
+        {
+            "completed": True,
+            "conflict_resolution": "overwrite",
+            "overwrite_confirmation": "OVERWRITE",
+        },
+        paths,
+    )
+
+    assert (status, handled, overwritten["ok"]) == (200, True, True)
+    removed = overwritten["operations_sync"]["removed_completed_project"]
+    assert removed == {"ok": True, "records_deleted": 1, "events_deleted": 2}
+    assert repository.get_vehicle("vehicle-1") is None
+    assert repository.list_events("vehicle-1") == []
+    replacement = repository.get_vehicle("vehicle-2")
+    assert replacement.project_id == "project-1"
+    assert replacement.project_state.value == "completed"
+    assert len(repository.list_events("vehicle-2")) == 2

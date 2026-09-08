@@ -72,9 +72,10 @@ manually maintained vehicles. Clearing the override restores the automatic date.
 use white for unstarted/not-ready, light yellow for intermediate, and green for the completed state.
 At DTM completes Vehicle Availability; Delivered is the last Final Finish step and automatically
 completes the project only after every exact project vehicle reaches it. Active project rows derive
-one limited workflow badge, and individual units can store a read-only existing QBO Invoice ID or
-URL without writing to QBO. The schema-v4 live choice upgrade was applied and both lists revalidated
-on 2026-09-08. The next gate is a production status/schedule pilot, followed by duration summaries.
+one limited workflow badge. The schema-v4 live choice upgrade was applied and both lists revalidated
+on 2026-09-08. The next working-tree slice replaces the short-lived Invoice reference action with a
+verified, read-only existing-Estimate connection and shared status/freshness observation. The next
+gate is a production status/schedule pilot, followed by duration summaries.
 
 ## Working method
 
@@ -223,6 +224,10 @@ not add palletization, Paused/Blocked, a general operations note, or a manually 
 Production Status.
 
 ## Phase 5 — QBO observation and existing-Estimate link
+
+Working-tree status: paste-ID/URL connection, one-Estimate-per-vehicle guard, shared observation,
+24-hour stale display, accepted-state latch, manual-acceptance preservation, and the separate
+guarded Update action are implemented. Search/selection and background refresh remain deferred.
 
 ### Deliverables
 

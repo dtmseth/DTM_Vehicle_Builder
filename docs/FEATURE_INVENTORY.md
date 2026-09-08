@@ -607,7 +607,9 @@ project controls and each configured vehicle opening its embedded build editor:
   photo viewing, and **Folder options**; unit-group headers own reference-photo actions. Final
   Review remains separate and last. User-facing PowerPoint actions and configured/PPT/PDF/custom
   badges are absent. Individual units can open the manual QBO Project setup/link walkthrough before
-  a draft exists, or store/clear a read-only link to an existing QBO Invoice without changing QBO.
+  a draft exists, or verify/store/clear a read-only link to an existing QBO Estimate without
+  changing QBO. **Connect existing estimate** is separate from the guarded **Update connected
+  estimate** write action.
   Project actions use **Export / update all PDFs** plus batch QuickBooks options.
 - **Build reference photos**: the Project Overview shows one selectable **Project photos** gallery
   with assigned/unassigned states and notes, while the unit-group header and builder notes area open
@@ -1023,8 +1025,9 @@ identifier segments. Estimate review refreshes Retail prices, excludes customer-
 lines, handles zero-price/billed faceplate rules, supports labor/install-supplies presets, delivery,
 and a non-compounding 4% card fee. A changed linked QBO Estimate raises a loud conflict and offers
 differences, overwrite, or create-new; the service repeats the conflict check just before update.
-An individual vehicle may also store `qb_invoice_id` from a numeric ID or pasted QBO Invoice URL.
-This is reference metadata only and performs no Invoice API write.
+An individual vehicle may connect an existing Estimate by numeric ID or pasted QBO Estimate URL.
+The read verifies the transaction, saves a comparison baseline, and publishes only narrow
+ID/number/status/freshness metadata to Operations for non-QBO users. Invoice linking is not exposed.
 
 ## Vehicle Design Finalization
 

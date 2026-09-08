@@ -40,8 +40,7 @@ and realm binding were removed locally after promotion so it cannot compete with
 profile's rotating refresh token.
 
 **Write boundary**: the app writes **Customers and non-posting Estimates** —
-never creates or edits Invoices, Payments, or any posting transaction. It may store a read-only
-Invoice ID association on a vehicle. (A sandbox-only Item-seeding tool exists,
+never creates, edits, or links Invoices, Payments, or any posting transaction. (A sandbox-only Item-seeding tool exists,
 hard-gated to `environment == "sandbox"`.)
 
 Agency saves synchronously create/update their top-level QBO Customer and return the result to the
@@ -592,17 +591,11 @@ the Builder, review every Estimate, and turn on **Bank transfer — 1% per trans
 QBO after creation when required. Those are explicit product/API constraints, not incomplete
 connection setup.
 
-Existing Invoices can be associated with an individual vehicle through its QuickBooks menu by
-pasting a numeric Invoice ID or QBO Invoice page URL. The normalized `qb_invoice_id` is stored on
-the Builder vehicle and can be cleared later. This action is local/read-only: it does not fetch,
-create, update, convert, or delete any QBO transaction.
-
-**Planned operations extension — link an existing Estimate:** an authorized connected Builder user
-may search the current company by Estimate number/customer or paste a QBO Estimate ID, preview the
-match, and explicitly attach it to one individual Builder vehicle. The service must verify the
-Estimate and its Customer/Project relationship, refuse an Estimate already linked to another
-vehicle unless an administrator performs a reasoned correction, and capture the same canonical
-conflict baseline used after app-created Estimates. Linking does not import QBO header or line data
+**Working-tree operations extension — link an existing Estimate:** an authorized connected Builder
+user may paste a QBO Estimate ID or Estimate page URL and explicitly attach it to one individual
+Builder vehicle. The service verifies the Estimate, refuses an Estimate already linked to another
+vehicle, requires confirmation before replacing a different existing connection, and captures the
+same canonical conflict baseline used after app-created Estimates. Linking does not import QBO header or line data
 into Builder-authored project/build fields. A successful read publishes only the narrow status,
 accepted/modified/check times, IDs, and diff classification to `DTMVehicleOperations` so coworkers
 without a QBO connection see a timestamped shared observation. Refresh remains explicit or
@@ -612,7 +605,7 @@ linking never replaces or clears that acceptance timestamp/source. An accepted E
 separate QBO confirmation evidence; a non-accepted Estimate produces a visible mismatch while the
 manual acceptance remains until an authorized user explicitly corrects it. Updating still requires the
 existing fresh-read/diff/overwrite confirmation, while Create New remains visible but discouraged.
-The former Estimate ID and baseline remain in event/history when a link is replaced.
+The prior shared observation remains in event history when a link is replaced.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll

@@ -572,6 +572,61 @@ class TestAcceptance:
         assert repository.list_events("vehicle-1")[-1].reason
 
 
+class TestQboObservation:
+    def test_accepted_estimate_is_shared_and_latches_acceptance(self):
+        service, repository, record = _service()
+
+        result = service.observe_qbo_estimate(
+            vehicle_id="vehicle-1",
+            actor=_actor(AppRole.BUILDER_EDITOR),
+            request_id="observe-estimate",
+            source_client="builder_desktop",
+            expected_revision=record.revision,
+            qbo_project_id="447322633",
+            qbo_estimate_id="98765",
+            qbo_estimate_number="2041",
+            qbo_estimate_status="Accepted",
+            qbo_estimate_accepted_at="2026-09-03T14:00:00+00:00",
+            qbo_estimate_last_modified_at="2026-09-03T14:15:00+00:00",
+            qbo_diff_status="unchanged",
+        )
+
+        assert result.record.qbo_estimate_id == "98765"
+        assert result.record.qbo_checked_at == NOW_ISO
+        assert result.record.acceptance_status == AcceptanceStatus.ACCEPTED
+        assert result.record.acceptance_source == "qbo"
+        assert result.record.accepted_at == "2026-09-03T14:00:00+00:00"
+        assert result.event.event_type.value == "qbo_observed"
+        assert repository.list_events("vehicle-1")[-1].workstream == OperationsWorkstream.QBO
+
+    def test_pending_estimate_never_overwrites_manual_acceptance(self):
+        service, _, record = _service()
+        accepted = service.change_acceptance(
+            vehicle_id="vehicle-1",
+            new_status="accepted",
+            acceptance_source="manual",
+            actor=_actor(AppRole.BUILDER_EDITOR),
+            request_id="manual-acceptance",
+            source_client="builder_desktop",
+            expected_revision=record.revision,
+        )
+
+        observed = service.observe_qbo_estimate(
+            vehicle_id="vehicle-1",
+            actor=_actor(AppRole.BUILDER_EDITOR),
+            request_id="observe-pending-estimate",
+            source_client="builder_desktop",
+            expected_revision=accepted.record.revision,
+            qbo_estimate_id="98765",
+            qbo_estimate_number="2041",
+            qbo_estimate_status="Pending",
+        )
+
+        assert observed.record.acceptance_status == AcceptanceStatus.ACCEPTED
+        assert observed.record.acceptance_source == "manual"
+        assert observed.record.qbo_estimate_status == "Pending"
+
+
 class TestScheduling:
     @staticmethod
     def _accepted_service():

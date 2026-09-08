@@ -213,6 +213,43 @@ def test_unchanged_projection_is_noop_and_different_project_is_rejected():
         )
 
 
+def test_reviewed_project_merge_can_rebind_vehicle_without_losing_status_history():
+    repository = InMemoryOperationsRepository()
+    service = _service(repository)
+    projection = _projection()
+    service.upsert_builder_projection(
+        projection,
+        actor=_actor(AppRole.BUILDER_EDITOR),
+        request_id="create-before-merge",
+        source_client="builder_desktop",
+    )
+    service.change_status(
+        vehicle_id="vehicle-1",
+        workstream="parts",
+        new_status="received",
+        actor=_actor(AppRole.PARTS_EDITOR),
+        request_id="parts-before-merge",
+        source_client="builder_desktop",
+    )
+    moved = BuilderVehicleProjection(
+        **{**projection.__dict__, "project_id": "completed-project"}
+    )
+
+    rebound = service.upsert_builder_projection(
+        moved,
+        actor=_actor(AppRole.BUILDER_EDITOR),
+        request_id="reviewed-project-merge",
+        source_client="builder_desktop",
+        expected_revision=1,
+        allow_project_rebind=True,
+    )
+
+    assert rebound.record.project_id == "completed-project"
+    assert rebound.record.parts_status == "received"
+    assert rebound.event.project_id == "completed-project"
+    assert len(repository.list_events("vehicle-1")) == 3
+
+
 def test_preview_is_read_only_and_classifies_new_update_and_current():
     repository = InMemoryOperationsRepository()
     service = _service(repository)

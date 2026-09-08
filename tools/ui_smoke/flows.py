@@ -1302,7 +1302,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     qb_menu.locator("summary").click()
     qb_button = qb_menu.get_by_role("button", name="Set up QB project")
     assert not qb_button.is_disabled()
-    assert qb_menu.get_by_role("button", name="Create estimate").is_disabled()
+    assert qb_menu.get_by_role("button", name="Create new estimate").is_disabled()
     qb_button.click()
     page.wait_for_selector("#qb-est-modal.open")
     assert page.locator("#qb-est-title").inner_text() == "Set up the QuickBooks Project"
@@ -1319,7 +1319,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     qb_menu = card.locator(".proj-build-action-menu").filter(has_text="QuickBooks")
     qb_menu.locator("summary").click()
     assert qb_menu.get_by_role("button", name="Manage QB project").count() == 1
-    assert qb_menu.get_by_role("button", name="Create estimate").is_disabled()
+    assert qb_menu.get_by_role("button", name="Create new estimate").is_disabled()
     reference_button = page.get_by_role("button", name="Project photos", exact=True)
     reference_button.click()
     assert qb_menu.get_attribute("open") is None
@@ -3623,7 +3623,7 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     page.wait_for_selector("#qb-est-modal", state="attached")
     page.evaluate("() => window.PT_buildCreateEstimate('project-1', 'unit-1', 'vehicle-1')")
     page.wait_for_selector("#qb-est-modal.open")
-    assert page.locator("#qb-est-title").inner_text() == "Create QuickBooks estimate"
+    assert page.locator("#qb-est-title").inner_text() == "Create new QuickBooks estimate"
     assert page.locator("[data-qb-est-custom-price='whelen']").input_value() == "38"
     assert page.locator("#qb-est-charge-preset").input_value() == "patrol"
     assert page.locator("#qb-est-labor-amount").input_value() == "1000"
@@ -3649,6 +3649,7 @@ def flow_quickbooks_estimate_review_modal(page, base_url: str) -> None:
     })
     page.evaluate("() => window.PT_buildCreateEstimate('project-1', 'unit-1', 'vehicle-1')")
     page.wait_for_selector("#qb-est-modal.open")
+    assert page.locator("#qb-est-title").inner_text() == "Update connected QuickBooks estimate"
     assert page.locator(".qb-est-change-alert--danger").count() == 1
     assert "changed outside Vehicle Builder" in page.locator(".qb-est-change-alert--danger").inner_text()
     page.locator(".qb-est-change-alert summary").click()

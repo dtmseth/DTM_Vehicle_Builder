@@ -31,6 +31,7 @@ window._PT = {
   listMode:       "active", // active | inactive | completed
   listSearch:     { active: "", inactive: "", completed: "" },
   inactiveProjectId: null,
+  completionConflict: null,
   vehicleCreateTarget: null,
 
   // individual unit modal context

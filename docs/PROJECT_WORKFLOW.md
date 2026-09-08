@@ -99,6 +99,12 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    mark the project completed; it moves from Active Projects to the Agency → Build Year Project
    Archives tree and can be reopened later.
 
+10. **Repeated agency/year work** — a completed project does not block creation of a new active
+    project for that agency and build year. When the newer project is completed, the app first shows
+    both vehicle sets and requires Cancel, Merge, or Overwrite. Merge retains both distinct vehicle
+    sets under the older completed project identity. Overwrite removes the older completed vehicles
+    and Operations history, requires typing `OVERWRITE`, then substitutes the active vehicles.
+
 ---
 
 ## Export Location

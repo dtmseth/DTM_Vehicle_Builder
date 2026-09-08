@@ -174,6 +174,39 @@ def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -
     if project.project_status == target_status:
         return {"ok": True, "unchanged": True, "project": asdict(project)}
 
+    if target_status == "completed":
+        conflict = _agency_year_conflict(
+            project.customer,
+            paths,
+            exclude_project_id=project.project_id,
+            statuses={"completed"},
+        )
+        if conflict is not None:
+            resolution = str(body.get("conflict_resolution") or "").strip().lower()
+            if not resolution:
+                return _completion_conflict_result(project, conflict)
+            if resolution not in {"merge", "overwrite"}:
+                return {
+                    "ok": False,
+                    "error_code": "invalid_completion_resolution",
+                    "error": "Choose merge, overwrite, or cancel.",
+                }
+            if resolution == "overwrite" and str(
+                body.get("overwrite_confirmation") or ""
+            ).strip() != "OVERWRITE":
+                return {
+                    "ok": False,
+                    "error_code": "overwrite_confirmation_required",
+                    "error": "Type OVERWRITE to confirm replacing the completed project.",
+                }
+            return _resolve_completed_project_conflict(
+                project,
+                conflict,
+                resolution=resolution,
+                actor=str(body.get("actor") or "").strip(),
+                paths=paths,
+            )
+
     now = datetime.now(timezone.utc).isoformat()
     actor = str(body.get("actor") or "").strip()
     reason = str(body.get("reason") or "").strip()
@@ -272,6 +305,7 @@ def _agency_year_conflict(
     paths: AppPaths,
     *,
     exclude_project_id: str = "",
+    statuses: set[str] | None = None,
 ):
     wanted = _normalized_agency_year(customer)
     if wanted is None:
@@ -281,9 +315,178 @@ def _agency_year_conflict(
             candidate for candidate in list_projects(paths)
             if candidate.project_id != exclude_project_id
             and _normalized_agency_year(candidate.customer) == wanted
+            and (statuses is None or candidate.project_status in statuses)
         ),
         None,
     )
+
+
+def _project_vehicle_comparison(project) -> dict:
+    vehicles = []
+    for build_unit in project.build_units:
+        if build_unit.individuals:
+            for ordinal, individual in enumerate(build_unit.individuals, start=1):
+                vehicles.append({
+                    "individual_id": individual.individual_id,
+                    "label": vehicle_display_name(
+                        project, build_unit, individual, ordinal=ordinal,
+                    ),
+                    "unit_number": individual.unit_number,
+                    "vin": individual.vin,
+                    "vehicle_model": build_unit.vehicle_model,
+                    "build_type": build_unit.build_type,
+                })
+        else:
+            vehicles.append({
+                "individual_id": "",
+                "label": vehicle_display_name(project, build_unit, None),
+                "unit_number": "",
+                "vin": "",
+                "vehicle_model": build_unit.vehicle_model,
+                "build_type": build_unit.build_type,
+            })
+    return {
+        "project_id": project.project_id,
+        "project_status": project.project_status,
+        "agency": project.customer.agency,
+        "build_year": project.customer.build_year,
+        "quote_numbers": list(project.quote_numbers),
+        "project_notes": project.project_notes,
+        "build_group_count": len(project.build_units),
+        "vehicle_count": sum(unit.quantity for unit in project.build_units),
+        "vehicles": vehicles,
+    }
+
+
+def _completion_conflict_result(source, completed) -> dict:
+    return {
+        "ok": False,
+        "error_code": "completed_project_exists_for_agency_year",
+        "error": (
+            f"A completed {source.customer.build_year.strip()} project already exists for "
+            f"{source.customer.agency.strip() or 'this agency'}. Compare the projects before "
+            "merging or overwriting anything."
+        ),
+        "active_project": _project_vehicle_comparison(source),
+        "completed_project": _project_vehicle_comparison(completed),
+    }
+
+
+def _unique_strings(*groups) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in (item for group in groups for item in group):
+        cleaned = str(value or "").strip()
+        if cleaned and cleaned.casefold() not in seen:
+            seen.add(cleaned.casefold())
+            result.append(cleaned)
+    return result
+
+
+def _merged_notes(first: str, second: str) -> str:
+    return "\n\n".join(_unique_strings([first], [second]))
+
+
+def _resolve_completed_project_conflict(
+    source,
+    completed,
+    *,
+    resolution: str,
+    actor: str,
+    paths: AppPaths,
+) -> dict:
+    source_unit_ids = {unit.unit_id for unit in source.build_units}
+    completed_unit_ids = {unit.unit_id for unit in completed.build_units}
+    source_vehicle_ids = {
+        individual.individual_id
+        for unit in source.build_units
+        for individual in unit.individuals
+    }
+    completed_vehicle_ids = {
+        individual.individual_id
+        for unit in completed.build_units
+        for individual in unit.individuals
+    }
+    if resolution == "merge" and (
+        source_unit_ids.intersection(completed_unit_ids)
+        or source_vehicle_ids.intersection(completed_vehicle_ids)
+    ):
+        return {
+            "ok": False,
+            "error_code": "project_merge_identity_conflict",
+            "error": (
+                "These projects reuse an internal build or vehicle ID, so they cannot be "
+                "merged safely. Cancel and review the projects instead."
+            ),
+        }
+
+    now = datetime.now(timezone.utc).isoformat()
+    old_vehicle_ids = sorted(completed_vehicle_ids)
+    if resolution == "merge":
+        completed.build_units.extend(source.build_units)
+        completed.project_notes = _merged_notes(
+            completed.project_notes, source.project_notes,
+        )
+        completed.reference_assets.extend(
+            asset for asset in source.reference_assets
+            if asset.reference_id not in {
+                existing.reference_id for existing in completed.reference_assets
+            }
+        )
+        completed.reference_source_exclusions = _unique_strings(
+            completed.reference_source_exclusions,
+            source.reference_source_exclusions,
+        )
+        completed.quote_numbers = _unique_strings(
+            completed.quote_numbers,
+            source.quote_numbers,
+            [completed.customer.quote_number, source.customer.quote_number],
+        )
+        # The active project contains the most recently entered agency/contact
+        # facts and preferences. Builds retain their own drafts and stable IDs.
+        completed.customer = source.customer
+        completed.preferences = source.preferences
+    else:
+        completed.customer = source.customer
+        completed.preferences = source.preferences
+        completed.build_units = source.build_units
+        completed.project_notes = source.project_notes
+        completed.quote_numbers = _unique_strings(
+            source.quote_numbers, [source.customer.quote_number],
+        )
+        completed.reference_assets = source.reference_assets
+        completed.reference_source_exclusions = source.reference_source_exclusions
+
+    completed.project_status = "completed"
+    completed.completed_at = now
+    completed.completed_by = actor
+    completed.inactive_at = ""
+    completed.inactive_by = ""
+    completed.inactive_reason = ""
+    completed.project_lifecycle_history.extend(source.project_lifecycle_history)
+    completed.project_lifecycle_history.append({
+        "event_id": str(uuid.uuid4()),
+        "from_status": source.project_status,
+        "to_status": "completed",
+        "occurred_at": now,
+        "actor": actor,
+        "reason": (
+            f"{resolution.title()}d project {source.project_id} into completed "
+            f"project {completed.project_id}"
+        ),
+    })
+    save_project(completed, paths)
+    delete_project(source.project_id, paths)
+    return {
+        "ok": True,
+        "unchanged": False,
+        "resolution": resolution,
+        "project": asdict(completed),
+        "project_id": completed.project_id,
+        "removed_project_id": source.project_id,
+        "old_completed_vehicle_ids": old_vehicle_ids,
+        "moved_vehicle_ids": sorted(source_vehicle_ids),
+    }
 
 
 def handle_save_project(body: dict, paths: AppPaths) -> dict:
@@ -315,6 +518,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 candidate_customer,
                 paths,
                 exclude_project_id=project.project_id,
+                statuses={"active"},
             )
             if conflict is not None:
                 return {

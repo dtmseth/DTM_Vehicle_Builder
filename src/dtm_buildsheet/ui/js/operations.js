@@ -630,7 +630,10 @@ function _operationsVehicleMarkup(vehicle) {
       ? "Unscheduled"
       : `Week of ${_operationsDate(vehicle.scheduled_week_of)}`;
   const qbo = vehicle.qbo_estimate_number
-    ? `Estimate ${vehicle.qbo_estimate_number}${vehicle.qbo_observation_stale ? " · data may be stale" : ""}`
+    ? `Estimate ${vehicle.qbo_estimate_number}`
+      + (vehicle.qbo_estimate_status ? ` · ${vehicle.qbo_estimate_status}` : "")
+      + (vehicle.qbo_checked_at ? ` · checked ${_operationsDateTime(vehicle.qbo_checked_at)}` : "")
+      + (vehicle.qbo_observation_stale ? " · data may be stale" : "")
     : "No linked estimate";
   const canEdit = _operationsEditableWorkstreams().length > 0;
   return `<article class="operations-vehicle">

@@ -1697,6 +1697,36 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="project-completion-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="project-completion-conflict-title" hidden>
+  <div class="modal project-completion-conflict-modal">
+    <div class="modal-title">
+      <span id="project-completion-conflict-title">Completed Project Already Exists</span>
+      <button class="modal-close" id="project-completion-conflict-close" type="button" aria-label="Close project comparison">×</button>
+    </div>
+    <p class="project-modal-intro">Compare both projects before deciding. Nothing has been merged, replaced, or deleted yet.</p>
+    <div id="project-completion-conflict-comparison" class="project-completion-comparison"></div>
+    <div class="project-completion-options">
+      <label>
+        <input type="radio" name="project-completion-resolution" value="merge">
+        <span><strong>Merge vehicles</strong><small>Keep the completed vehicles and add the active project's distinct vehicles alongside them.</small></span>
+      </label>
+      <label class="project-completion-overwrite-option">
+        <input type="radio" name="project-completion-resolution" value="overwrite">
+        <span><strong>Overwrite completed project</strong><small>Permanently remove the completed project's vehicles and their Operations history, then replace them with the active project's vehicles.</small></span>
+      </label>
+    </div>
+    <div id="project-completion-overwrite-confirm" class="project-completion-overwrite-confirm" hidden>
+      <label for="project-completion-overwrite-text">Type <strong>OVERWRITE</strong> to confirm permanent replacement.</label>
+      <input id="project-completion-overwrite-text" type="text" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="project-completion-conflict-status" class="proj-form-status" role="status" hidden></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="project-completion-conflict-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="project-completion-conflict-apply" type="button" disabled>Complete Project</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="project-vehicle-create-modal" role="dialog" aria-modal="true" aria-labelledby="project-vehicle-create-title" hidden>
   <div class="modal project-simple-modal">
     <div class="modal-title">

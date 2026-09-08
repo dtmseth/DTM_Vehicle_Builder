@@ -443,6 +443,24 @@ class TestHandleSaveProject:
         assert first["ok"] is True
         assert second["ok"] is True
 
+    def test_completed_agency_year_does_not_block_a_new_active_project(self, tmp_path):
+        paths = _paths(tmp_path)
+        first = handle_save_project(_project_body(), paths)
+        assert handle_set_project_completion(
+            first["project_id"], {"completed": True}, paths,
+        )["ok"] is True
+
+        second = handle_save_project(_project_body(build_units=[{
+            "unit_id": "unit-2",
+            "vehicle_model": "F-150 Police Responder",
+            "build_type": "Patrol",
+            "quantity": 1,
+        }]), paths)
+
+        assert second["ok"] is True
+        assert second["project_id"] != first["project_id"]
+        assert len(handle_list_projects(paths)["projects"]) == 2
+
     def test_quote_number_is_preserved_as_project_metadata(self, tmp_path):
         paths = _paths(tmp_path)
         result = handle_save_project(_project_body(), paths)
@@ -557,6 +575,100 @@ class TestProjectCompletion:
         assert handle_set_project_completion("missing", {"completed": True}, paths) == {
             "ok": False, "error": "Project not found: missing",
         }
+
+    @staticmethod
+    def _vehicle_body(unit_id: str, individual_id: str, unit_number: str) -> dict:
+        return _project_body(build_units=[{
+            "unit_id": unit_id,
+            "vehicle_model": "Tahoe PPV",
+            "build_type": "Patrol",
+            "quantity": 1,
+            "individuals": [{
+                "individual_id": individual_id,
+                "unit_number": unit_number,
+                "vin": f"1GNSK{unit_number:0>12}",
+            }],
+        }])
+
+    def _completed_and_active(self, paths):
+        old = handle_save_project(self._vehicle_body("old-unit", "old-vehicle", "10"), paths)
+        assert handle_set_project_completion(
+            old["project_id"], {"completed": True, "actor": "Seth"}, paths,
+        )["ok"] is True
+        active = handle_save_project(
+            self._vehicle_body("new-unit", "new-vehicle", "20"), paths,
+        )
+        assert active["ok"] is True
+        return old["project_id"], active["project_id"]
+
+    def test_completion_returns_comparison_when_same_agency_year_is_completed(self, tmp_path):
+        paths = _paths(tmp_path)
+        old_id, active_id = self._completed_and_active(paths)
+
+        result = handle_set_project_completion(
+            active_id, {"completed": True, "actor": "Seth"}, paths,
+        )
+
+        assert result["ok"] is False
+        assert result["error_code"] == "completed_project_exists_for_agency_year"
+        assert result["completed_project"]["project_id"] == old_id
+        assert result["active_project"]["project_id"] == active_id
+        assert result["completed_project"]["vehicles"][0]["unit_number"] == "10"
+        assert result["active_project"]["vehicles"][0]["unit_number"] == "20"
+        assert load_project(active_id, paths).project_status == "active"
+
+    def test_merge_keeps_both_projects_distinct_vehicles_and_removes_active_record(self, tmp_path):
+        paths = _paths(tmp_path)
+        old_id, active_id = self._completed_and_active(paths)
+
+        result = handle_set_project_completion(active_id, {
+            "completed": True,
+            "actor": "Seth",
+            "conflict_resolution": "merge",
+        }, paths)
+
+        assert result["ok"] is True
+        assert result["resolution"] == "merge"
+        assert result["project_id"] == old_id
+        assert result["removed_project_id"] == active_id
+        merged = load_project(old_id, paths)
+        assert merged.project_status == "completed"
+        assert {unit.unit_id for unit in merged.build_units} == {"old-unit", "new-unit"}
+        assert {
+            vehicle.individual_id
+            for unit in merged.build_units
+            for vehicle in unit.individuals
+        } == {"old-vehicle", "new-vehicle"}
+        with pytest.raises(FileNotFoundError):
+            load_project(active_id, paths)
+
+    def test_overwrite_requires_strong_confirmation_then_replaces_completed_vehicles(self, tmp_path):
+        paths = _paths(tmp_path)
+        old_id, active_id = self._completed_and_active(paths)
+
+        refused = handle_set_project_completion(active_id, {
+            "completed": True,
+            "conflict_resolution": "overwrite",
+            "overwrite_confirmation": "yes",
+        }, paths)
+        assert refused["error_code"] == "overwrite_confirmation_required"
+        assert load_project(old_id, paths)
+        assert load_project(active_id, paths)
+
+        result = handle_set_project_completion(active_id, {
+            "completed": True,
+            "actor": "Seth",
+            "conflict_resolution": "overwrite",
+            "overwrite_confirmation": "OVERWRITE",
+        }, paths)
+
+        assert result["ok"] is True
+        assert result["resolution"] == "overwrite"
+        overwritten = load_project(old_id, paths)
+        assert [unit.unit_id for unit in overwritten.build_units] == ["new-unit"]
+        assert overwritten.build_units[0].individuals[0].individual_id == "new-vehicle"
+        with pytest.raises(FileNotFoundError):
+            load_project(active_id, paths)
 
     def test_inactive_project_records_reason_and_lifecycle_history(self, tmp_path):
         from dtm_buildsheet.app.services.project_service import handle_set_project_lifecycle

@@ -65,10 +65,10 @@ function _ptQuickBooksOptionsMarkup(projectId, unitId, individualId, holder, dis
     <div class="proj-build-action-menu-items">
       <button type="button"
         onclick="PT_setupQbProject('${projectId}','${individualId}')">${String(holder.qb_project_id || "").trim() ? "Manage QB project" : "Set up QB project"}</button>
-      <button type="button"${disabledAttrs}
-        onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update estimate" : "Create estimate"}</button>
       <button type="button"
-        onclick="PT_linkQbInvoice('${projectId}','${individualId}')">${String(holder.qb_invoice_id || "").trim() ? "Manage invoice link" : "Connect invoice"}</button>
+        onclick="PT_linkQbEstimate('${projectId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Manage estimate connection" : "Connect existing estimate"}</button>
+      <button type="button"${disabledAttrs}
+        onclick="PT_buildCreateEstimate('${projectId}','${unitId}','${individualId}')">${String(holder.qb_estimate_id || "").trim() ? "Update connected estimate" : "Create new estimate"}</button>
     </div>
   </details>`;
 }
@@ -1309,7 +1309,9 @@ function _ptEstimateChangeHtml(estimateId, change) {
   const modified = status === "modified";
   const unavailable = ["untracked", "check_failed"].includes(status);
   const missing = status === "missing";
-  const needsChoice = modified || unavailable || missing;
+  // Updating is always an explicit choice, even when the last-known snapshot
+  // still matches. Connecting an Estimate is a separate read-only action.
+  const needsChoice = true;
   const differences = change?.differences || [];
   const diffRows = differences.map(item => `<div class="qb-est-diff-row"><strong>${esc(item.field || "Change")}</strong><span><small>Vehicle Builder last wrote</small>${esc(item.before || "—")}</span><span><small>QuickBooks now has</small>${esc(item.after || "—")}</span></div>`).join("");
   let alert = "";
@@ -1320,7 +1322,7 @@ function _ptEstimateChangeHtml(estimateId, change) {
   } else if (missing) {
     alert = `<div class="qb-est-change-alert qb-est-change-alert--danger" role="alert"><strong>⚠ The linked QuickBooks estimate was not found</strong><p>Create a separate new estimate; the saved link will be replaced only after creation succeeds.</p></div>`;
   }
-  return `<div class="qb-est-existing-choice${modified ? " qb-est-change-conflict" : ""}" data-needs-choice="${needsChoice ? "true" : "false"}" data-modified="${modified ? "true" : "false"}">${alert}<div class="qb-est-action-choices"><strong>An estimate already exists for this vehicle.</strong>${missing ? "" : `<label><input type="radio" name="qb-est-existing-action" value="update"${needsChoice ? "" : " checked"}> ${modified ? "Overwrite the QuickBooks changes and update this estimate" : unavailable ? "Update the existing estimate anyway" : `Update existing estimate ${esc(estimateId)}`}</label>`}<label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate</label></div></div>`;
+  return `<div class="qb-est-existing-choice${modified ? " qb-est-change-conflict" : ""}" data-needs-choice="true" data-modified="${modified ? "true" : "false"}">${alert}<div class="qb-est-action-choices"><strong>Choose the QuickBooks write deliberately.</strong>${missing ? "" : `<label><input type="radio" name="qb-est-existing-action" value="update"> ${modified ? "Overwrite the QuickBooks changes and update this connected estimate" : unavailable ? "Update the connected estimate even though changes could not be verified" : `Update connected estimate ${esc(estimateId)}`}</label>`}<label><input type="radio" name="qb-est-existing-action" value="create_new"> Create a separate new estimate <small>(not recommended)</small></label></div></div>`;
 }
 
 function _ptWireEstimateChangeChoice(createButton) {
@@ -1329,8 +1331,11 @@ function _ptWireEstimateChangeChoice(createButton) {
   const refresh = () => {
     const action = document.querySelector('input[name="qb-est-existing-action"]:checked')?.value || "";
     createButton.disabled = !action;
+    const modified = box.dataset.modified === "true";
     createButton.textContent = !action ? "Choose an action above"
-      : action === "update" ? "Overwrite and update estimate" : "Create separate estimate";
+      : action === "update"
+        ? (modified ? "Overwrite QuickBooks changes" : "Update estimate in QuickBooks")
+        : "Create separate estimate";
   };
   box.querySelectorAll('input[name="qb-est-existing-action"]').forEach(input => input.addEventListener("change", refresh));
   refresh();
@@ -1672,7 +1677,7 @@ window.PT_setupQbProject = async function (projectId, individualId) {
   });
 };
 
-window.PT_linkQbInvoice = function (projectId, individualId) {
+window.PT_linkQbEstimate = function (projectId, individualId) {
   const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
   let vehicle = null;
   for (const buildUnit of (project?.build_units || [])) {
@@ -1683,38 +1688,56 @@ window.PT_linkQbInvoice = function (projectId, individualId) {
     toast("Could not find this vehicle", "error");
     return;
   }
-  const existingId = String(vehicle.qb_invoice_id || "").trim();
+  const existingId = String(vehicle.qb_estimate_id || "").trim();
   _ptOpenEstModal(
-    existingId ? "Manage invoice link" : "Connect an existing invoice",
-    `<p class="qb-setup-intro">Paste the numeric QuickBooks invoice ID or the invoice page address. This is a read-only link: it will not create or change an invoice in QuickBooks.</p>
-     <label for="qb-invoice-id" style="font-size:12px;font-weight:600;color:var(--navy)">Invoice ID or invoice URL</label>
-     <input id="qb-invoice-id" class="qb-setup-input" autocomplete="off" placeholder="Invoice ID or QuickBooks invoice URL" value="${_ptEscAttr(existingId)}" />
-     ${existingId ? `<p class="qb-setup-hint">Clear this field and choose Remove link to disconnect the invoice from this vehicle.</p>` : ""}`,
-    existingId ? "Save invoice link" : "Connect invoice",
+    existingId ? "Manage estimate connection" : "Connect an existing estimate",
+    `<div class="qb-est-change-alert"><strong>Read-only connection</strong><p>This checks that the Estimate exists and saves its number, status, last-updated time, and comparison snapshot for the rest of the team. It will not change anything in QuickBooks.</p></div>
+     <label for="qb-estimate-link-id" style="font-size:12px;font-weight:600;color:var(--navy)">Estimate ID or Estimate page URL</label>
+     <input id="qb-estimate-link-id" class="qb-setup-input" autocomplete="off" placeholder="Estimate ID or QuickBooks Estimate URL" value="${_ptEscAttr(existingId)}" />
+     ${existingId ? `<p class="qb-setup-hint">Clear this field and choose Remove connection to stop tracking this Estimate. Entering a different Estimate will require confirmation. Neither action changes QuickBooks.</p>` : ""}`,
+    existingId ? "Refresh connection" : "Connect estimate",
   );
   const controls = _ptEstModalEls();
-  const input = $("qb-invoice-id");
+  const input = $("qb-estimate-link-id");
   const refresh = () => {
     const value = String(input?.value || "").trim();
     controls.create.disabled = !value && !existingId;
-    controls.create.textContent = !value && existingId ? "Remove link" :
-      existingId ? "Save invoice link" : "Connect invoice";
+    controls.create.textContent = !value && existingId ? "Remove connection" :
+      existingId ? "Refresh connection" : "Connect estimate";
   };
   input?.addEventListener("input", refresh);
   refresh();
   controls.create.onclick = async () => {
     controls.create.disabled = true;
-    controls.create.textContent = "Saving…";
+    controls.create.textContent = "Checking…";
     try {
-      const result = await api("/api/quickbooks/invoices/bind", {
+      const value = String(input?.value || "").trim();
+      if (value && !(await _ptQbConnected())) {
+        toast("Connect QuickBooks before checking an existing Estimate", "error");
+        refresh();
+        return;
+      }
+      const replacing = !!existingId && !!value && value !== existingId;
+      if (replacing && !confirm(`Replace the connection to Estimate ${existingId}?\n\nThis only changes which Estimate this vehicle tracks. It will not edit either Estimate in QuickBooks.`)) {
+        refresh();
+        return;
+      }
+      const result = await api("/api/quickbooks/estimates/bind", {
         project_id: projectId,
         individual_id: individualId,
-        qb_invoice_id: String(input?.value || "").trim(),
+        qb_estimate_id: value,
+        replace_existing: replacing,
       });
       if (!result?.ok) {
-        toast(result?.error === "invalid_invoice_id"
-          ? "Enter a numeric invoice ID or paste a QuickBooks invoice page address"
-          : result?.error || "Invoice link could not be saved", "error");
+        toast(result?.error === "invalid_estimate_id"
+          ? "Enter a numeric Estimate ID or paste a QuickBooks Estimate page address"
+          : result?.error === "existing_estimate_not_found"
+            ? "That Estimate was not found in the connected QuickBooks company"
+            : result?.error === "estimate_already_linked_to_another_vehicle"
+              ? "That Estimate is already connected to another vehicle"
+              : result?.error === "estimate_connection_replacement_confirmation_required"
+                ? "Confirm before replacing this vehicle's Estimate connection"
+            : result?.error || "Estimate connection could not be saved", "error");
         refresh();
         return;
       }
@@ -1725,9 +1748,16 @@ window.PT_linkQbInvoice = function (projectId, individualId) {
         _PT.viewProject = updated;
         _ptRenderOverview(updated);
       }
-      toast(result.linked ? "Invoice connected to vehicle" : "Invoice link removed", "success");
+      if (result.operations_sync?.ok === false) {
+        toast(result.operations_sync.error || "Estimate connected, but its shared status was not updated", "error");
+      } else {
+        const status = result.estimate_status ? ` · ${result.estimate_status}` : "";
+        toast(result.linked
+          ? `Estimate ${result.estimate_number || result.qb_estimate_id} connected${status}`
+          : "Estimate connection removed", "success");
+      }
     } catch (_) {
-      toast("Invoice link could not be saved", "error");
+      toast("Estimate connection could not be saved", "error");
       refresh();
     }
   };
@@ -1798,8 +1828,11 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
   }
 
   try {
-    _ptOpenEstModal("Create QuickBooks estimate",
-      `<p style="font-size:13px;margin:0 0 14px">Drafts a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created.</p>
+    const isUpdate = !!v.existing_estimate_id;
+    _ptOpenEstModal(isUpdate ? "Update connected QuickBooks estimate" : "Create new QuickBooks estimate",
+      `<p style="font-size:13px;margin:0 0 14px">${isUpdate
+        ? `This is a QuickBooks write: Vehicle Builder will replace the reviewed fields and lines on connected Estimate <strong>${esc(v.existing_estimate_id)}</strong> only after you explicitly choose Update below.`
+        : "Creates a <strong>non-posting estimate</strong> under the agency's top-level customer and this vehicle's real QuickBooks Project. No sub-customer is created."}</p>
      ${_ptEstimatePricingSummary(v.pricing)}
      ${_ptEstimatePricingControls(v.pricing)}
      ${_ptAdditionalChargesHtml(v.additional_charges)}
