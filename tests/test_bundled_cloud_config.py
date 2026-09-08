@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import json
 
-from dtm_buildsheet.paths import DEFAULT_DATA_DIR
+from dtm_buildsheet.paths import (
+    AppPaths,
+    DEFAULT_DATA_DIR,
+    _merge_missing_cloud_config_keys,
+)
 
 
 REQUIRED_KEYS = {
@@ -19,6 +23,8 @@ REQUIRED_KEYS = {
     "client_id",
     "sharepoint_site_id",
     "sharepoint_drive_id",
+    "operations_list_id",
+    "operations_events_list_id",
 }
 
 
@@ -45,7 +51,14 @@ def test_bundled_cloud_config_values_are_non_empty_strings():
     """Empty IDs would pass the missing-key check but fail at runtime."""
     path = DEFAULT_DATA_DIR / "cloud_config.json"
     data = json.loads(path.read_text(encoding="utf-8"))
-    for key in ("tenant_id", "client_id", "sharepoint_site_id", "sharepoint_drive_id"):
+    for key in (
+        "tenant_id",
+        "client_id",
+        "sharepoint_site_id",
+        "sharepoint_drive_id",
+        "operations_list_id",
+        "operations_events_list_id",
+    ):
         assert isinstance(data[key], str) and data[key].strip(), (
             f"bundled cloud_config.json: {key} must be a non-empty string"
         )
@@ -60,3 +73,22 @@ def test_bundled_vehicle_folder_roots_match_the_migration_target():
     assert data["company_vehicle_folders_enabled"] is True
     assert data["shop_folder_provisioning_enabled"] is True
     assert data["shop_publication_enabled"] is True
+
+
+def test_existing_install_forward_merges_operations_list_ids(tmp_path):
+    existing = {
+        "enabled": True,
+        "tenant_id": "keep-existing-tenant",
+    }
+    destination = tmp_path / "cloud_config.json"
+    destination.write_text(json.dumps(existing), encoding="utf-8")
+
+    _merge_missing_cloud_config_keys(AppPaths(workspace_dir=tmp_path))
+
+    merged = json.loads(destination.read_text(encoding="utf-8"))
+    bundled = json.loads(
+        (DEFAULT_DATA_DIR / "cloud_config.json").read_text(encoding="utf-8")
+    )
+    assert merged["tenant_id"] == "keep-existing-tenant"
+    assert merged["operations_list_id"] == bundled["operations_list_id"]
+    assert merged["operations_events_list_id"] == bundled["operations_events_list_id"]

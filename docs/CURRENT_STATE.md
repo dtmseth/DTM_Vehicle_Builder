@@ -399,8 +399,10 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   Operations history. The QuickBooks menu now connects existing Estimates rather than Invoices.
   Connection is verified and read-only, writes the last-known status/check time to SharePoint
   Operations, preserves prior manual acceptance, and is visibly separate from the guarded Update
-  Estimate action.
-- Cloud-off verification for this working tree passes **2,387 passed, 1 skipped**; the one skipped
+  Estimate action. The v3.6.0 package omission of the two non-secret Operations list GUIDs is also
+  corrected; existing installations forward-merge them on first launch after the fix, restoring
+  both the role-gated Operations tab and Operations-derived project workflow badges.
+- Cloud-off verification for this working tree passes **2,388 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's
   Downloads folder also passed in its approved environment.
   Contract snapshots

@@ -238,6 +238,11 @@ you're touching. New gotchas get appended to the bottom with a date.
     first failure, refresh the shared state, and retain one event per successfully changed vehicle.
     Keep the individual action available for exceptions, and never replace this with an unchecked
     project-row overwrite or one synthetic project event.
+47. **Provisioned Operations list IDs must ship in the bundled cloud config.** The one-time
+    provisioner writes validated GUIDs to the current development workspace only; that file is
+    gitignored and is not packaged. Before releasing Operations, copy the two non-secret GUIDs into
+    `resources/default_data/cloud_config.json`. Existing installs receive missing keys through the
+    startup forward-merge. `test_bundled_cloud_config.py` treats both IDs as required release data.
 47. **Operations history reads must not reconcile pending events.** The normal history UI uses the
     `Sites.Read.All` repository, so `list_events()` may query only applied event rows and must never
     patch a pending marker or current record. Recovery remains a writer-path concern through
