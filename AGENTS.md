@@ -60,8 +60,9 @@ These rules are a token and developer-time constraint, not merely a formatting p
 
 ## Current work (2026-09)
 
-Production v3.5.0 is live. Per-vehicle Company/Shop folders, reference/completed-photo workflows,
-finalized Shop publication, and the non-backend folder migration are the production baseline. The
+Production v3.7.0 is live. Per-vehicle Company/Shop folders, reference/completed-photo workflows,
+finalized Shop publication, role-gated Operations workspaces, and the non-backend folder migration
+are the production baseline. The
 architectural backlog remains Phase 4's consumer migration, reviewed QuickBooks catalog-change
 governance, and the visible parts-curation queue. See
 `docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m

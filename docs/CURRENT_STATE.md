@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-09
 
-**Current release:** [v3.6.2](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.6.2)
+**Current release:** [v3.7.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.7.0)
 
 This is the short operational handoff for the repository. It replaces dated session handoffs and
 release checklists. Long-lived design and behavior remain documented in `ROADMAP.md`,
@@ -412,7 +412,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   The release's first large-file SharePoint upload received a transient Graph 503 and succeeded on
   retry; the workflow now automatically retries temporary 429/5xx and network failures for future
   release-note and installer uploads.
-- **Post-v3.6.2 working tree — Operations clarity and connected QBO refresh:** connected QuickBooks
+- **v3.7.0 — Operations clarity and connected QBO refresh:** connected QuickBooks
   startup and 30-minute refresh now imports the full safe Customer profile into Agencies as well as
   reconciling Items; completing OAuth wakes that worker immediately, and unchanged agencies are not
   rewritten or re-mirrored. Operations now uses Started / Active / Completed while retaining and
@@ -423,7 +423,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   classification instead of temporarily moving all durable-active work to Started. Bay tracking and
   project/vehicle team assignments are documented as post-scheduling-pilot additions using durable
   neutral IDs and later optional Entra linkage.
-- **Post-v3.6.2 working tree — role and scheduling gates:** every recognized operational role can
+- **v3.7.0 — role and scheduling gates:** every recognized operational role can
   read Builder project context. Sales (`BuilderEditor`) can edit Projects, Estimates, Acceptance,
   Vehicle Availability, and Parts but cannot schedule or change downstream production. Shop can
   edit only Build / Shop, Tray, and Final Finish. The browser hides disallowed controls and the
@@ -435,7 +435,7 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   diff, captures successful output, and stops at the first failure. The full suite plus all 28
   browser flows is reserved for release/merge checkpoints through `tools/verify.py release`; CI
   continues to run the full suite and coverage floor on every PR and main push.
-- **Post-v3.6.2 working tree — default work queue:** Projects and Operations now open on Active.
+- **v3.7.0 — default work queue:** Projects and Operations now open on Active.
   The Operations read boundary also excludes projects whose authoritative Builder lifecycle is
   Inactive, even when an older Operations projection still incorrectly says Active.
 - Cloud-off verification for this working tree passes **2,396 passed, 1 skipped**; the one skipped
