@@ -231,6 +231,10 @@ jobs:
           # sessions require every non-final fragment to be a multiple of
           # 320 KiB, so use 10 MiB fragments (exactly 32 x 320 KiB).
           set -euo pipefail
+          # Graph occasionally returns a transient 429/5xx while accepting a
+          # large fragment. Re-sending the same content range is safe for an
+          # upload session, so let curl retry those temporary failures.
+          CURL_RETRY=(--retry 5 --retry-delay 5 --retry-all-errors)
           upload_via_session() {
             local local_path="$1"
             local remote_name="$2"
@@ -239,7 +243,7 @@ jobs:
             local chunk_size=$((10 * 1024 * 1024))
             local create_url="https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/Releases/${remote_name}:/createUploadSession"
             local upload_url
-            upload_url=$(curl -fsS -X POST "$create_url" \
+            upload_url=$(curl "${CURL_RETRY[@]}" -fsS -X POST "$create_url" \
               -H "Authorization: Bearer ${GRAPH_TOKEN}" \
               -H "Content-Type: application/json" \
               -d '{"item":{"@microsoft.graph.conflictBehavior":"replace"}}' \
@@ -260,7 +264,7 @@ jobs:
 
               dd if="$local_path" of="$chunk_path" \
                 bs="$chunk_size" skip="$chunk_index" count=1 status=none
-              curl -fsS -X PUT "$upload_url" \
+              curl "${CURL_RETRY[@]}" -fsS -X PUT "$upload_url" \
                 -H "Content-Length: ${length}" \
                 -H "Content-Range: bytes ${offset}-${last}/${size}" \
                 --data-binary "@${chunk_path}" > /dev/null
@@ -274,7 +278,7 @@ jobs:
             # Small files (notes markdown) fit in a single PUT — no session needed.
             local local_path="$1"
             local remote_name="$2"
-            curl -fsS -X PUT \
+            curl "${CURL_RETRY[@]}" -fsS -X PUT \
               "https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:/Releases/${remote_name}:/content" \
               -H "Authorization: Bearer ${GRAPH_TOKEN}" \
               -H "Content-Type: text/markdown" \
