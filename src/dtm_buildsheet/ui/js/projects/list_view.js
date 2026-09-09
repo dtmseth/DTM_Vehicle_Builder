@@ -35,14 +35,65 @@ function _ptProjectMatchesSearch(project, query) {
   return values.some(value => String(value || "").toLowerCase().includes(query));
 }
 
-function _ptProjectProgress(project) {
+function _ptProjectOperations(project) {
   const allOperations = _PT.operationsByProject?.[project.project_id] || [];
   const individualIds = new Set((project.build_units || []).flatMap(unit =>
     (unit.individuals || []).map(individual => individual.individual_id).filter(Boolean)
   ));
-  const vehicles = individualIds.size
+  return individualIds.size
     ? allOperations.filter(vehicle => individualIds.has(vehicle.vehicle_id))
     : allOperations;
+}
+
+function _ptProjectIsAccepted(project) {
+  const vehicles = _ptProjectOperations(project);
+  return vehicles.length > 0 && vehicles.every(vehicle =>
+    String(vehicle.acceptance_status || "") === "accepted"
+  );
+}
+
+function _ptProjectListStatus(project) {
+  const storedStatus = String(project.project_status || "active");
+  if (storedStatus === "inactive" || storedStatus === "completed") return storedStatus;
+  return _ptProjectIsAccepted(project) ? "active" : "started";
+}
+
+function _ptProjectActiveSort(project) {
+  const vehicles = _ptProjectOperations(project);
+  const arrived = vehicles.length > 0 && vehicles.every(vehicle =>
+    ["received", "parts_ready"].includes(String(vehicle.parts_status || "")) &&
+    String(vehicle.vehicle_availability_status || "") === "at_dtm"
+  );
+  const deliveryDates = vehicles
+    .map(vehicle => String(vehicle.must_deliver_by_date || "").trim())
+    .filter(value => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    .sort();
+  return {
+    arrived,
+    mustDeliverBy: deliveryDates[0] || "9999-12-31",
+  };
+}
+
+function _ptSortActiveProjects(left, right) {
+  const a = _ptProjectActiveSort(left);
+  const b = _ptProjectActiveSort(right);
+  if (a.arrived !== b.arrived) return a.arrived ? -1 : 1;
+  const byDelivery = a.mustDeliverBy.localeCompare(b.mustDeliverBy);
+  if (byDelivery) return byDelivery;
+  return _ptProjName(left).localeCompare(_ptProjName(right), undefined, { numeric: true });
+}
+
+function _ptProjectDateLabel(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).toLocaleDateString(
+    undefined,
+    { month: "short", day: "numeric", year: "numeric" },
+  );
+}
+
+function _ptProjectProgress(project) {
+  const vehicles = _ptProjectOperations(project);
   if (!vehicles.length) return { key: "estimate-sent", label: "Estimate Sent" };
 
   const all = (field, values) => vehicles.every(vehicle => values.includes(String(vehicle[field] || "")));
@@ -97,12 +148,12 @@ function _ptProjectProgress(project) {
 }
 
 function _ptRenderList() {
-  const statuses = ["active", "inactive", "completed"];
-  const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "active";
+  const statuses = ["started", "active", "inactive", "completed"];
+  const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "started";
   const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
   const counts = Object.fromEntries(statuses.map(status => [
     status,
-    _PT.projects.filter(project => project.project_status === status).length,
+    _PT.projects.filter(project => _ptProjectListStatus(project) === status).length,
   ]));
   statuses.forEach(status => {
     const count = $(`proj-${status}-count`);
@@ -130,14 +181,17 @@ function _ptRenderList() {
   }
 
   const projects = _PT.projects.filter(project =>
-    project.project_status === mode && _ptProjectMatchesSearch(project, query)
+    _ptProjectListStatus(project) === mode && _ptProjectMatchesSearch(project, query)
   );
+  if (mode === "active") projects.sort(_ptSortActiveProjects);
   if (!projects.length) {
     $("proj-list-empty").textContent = query
       ? `No ${mode} projects match this search.`
       : mode === "inactive"
         ? "No inactive projects."
-        : "No active projects. Click + New Project to get started.";
+        : mode === "started"
+          ? "No started projects. Click + New Project to get started."
+          : "No active projects.";
     show("proj-list-empty");
     hide("proj-list-rows");
     return;
@@ -148,21 +202,25 @@ function _ptRenderList() {
     const name = esc(_ptProjName(p));
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const pid  = esc(p.project_id);
-    const progress = mode === "active" ? _ptProjectProgress(p) : null;
+    const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p) : null;
+    const activeSort = mode === "active" ? _ptProjectActiveSort(p) : null;
+    const deliveryLabel = activeSort && activeSort.mustDeliverBy !== "9999-12-31"
+      ? _ptProjectDateLabel(activeSort.mustDeliverBy)
+      : "";
     return `<div class="proj-row proj-row-clickable" onclick="PT_open('${pid}')">
       <div class="proj-row-main">
         <div class="proj-row-heading">
           <div class="proj-row-agency">${name}</div>
           ${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}
         </div>
-        <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
+        <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}${deliveryLabel ? ` · Must Deliver On ${esc(deliveryLabel)}` : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
       </div>
       <div class="proj-row-actions" onclick="event.stopPropagation()">
         <button class="btn btn-primary btn-sm" onclick="PT_open('${pid}')">Open</button>
         <details class="proj-row-menu">
           <summary aria-label="More actions for ${name}" title="More actions">⋯</summary>
           <div class="proj-row-menu-items">
-            ${mode === "active"
+            ${["started", "active"].includes(mode)
               ? `<button type="button" onclick="PT_setProjectLifecycle('${pid}','inactive')">Mark inactive</button>`
               : `<button type="button" onclick="PT_setProjectLifecycle('${pid}','active')">Reactivate</button>`}
             <button type="button" class="proj-row-menu-danger" onclick="PT_del('${pid}')">Delete project</button>
@@ -300,8 +358,15 @@ async function _ptApplyProjectLifecycle(pid, status, reason = "") {
     if (status === "inactive") _ptCloseInactiveProjectModal();
     await _ptLoadAll();
     _PT.viewProject = null;
-    toast(status === "inactive" ? "Project moved to Inactive" : "Project returned to Active", "success");
-    _ptShowList(status);
+    const updatedProject = _PT.projects.find(project => project.project_id === pid);
+    const destination = updatedProject ? _ptProjectListStatus(updatedProject) : status;
+    toast(
+      status === "inactive"
+        ? "Project moved to Inactive"
+        : `Project returned to ${destination === "started" ? "Started" : "Active"}`,
+      "success",
+    );
+    _ptShowList(destination);
   } catch (error) {
     toast(error.message || "Project status could not be changed", "error");
     if (status === "inactive") {
@@ -410,9 +475,12 @@ async function _ptRequestProjectCompletion(pid, completed, extra = {}) {
       ? "Projects merged and moved to Completed"
       : result.resolution === "overwrite"
         ? "Completed project replaced with the active project"
-        : completed ? "Project moved to Completed" : "Project returned to Active";
+        : completed ? "Project moved to Completed" : "Project reopened";
     toast(completionMessage, "success");
-    _ptShowList(completed ? "completed" : "active");
+    const updatedProject = _PT.projects.find(project => project.project_id === pid);
+    _ptShowList(completed
+      ? "completed"
+      : updatedProject ? _ptProjectListStatus(updatedProject) : "started");
   } catch (error) {
     toast(error.message || "Project status could not be changed", "error");
   }

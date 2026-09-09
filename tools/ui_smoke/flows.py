@@ -114,6 +114,53 @@ def flow_tab_load(page, base_url: str) -> None:
     page.goto(base_url, wait_until="load")
     page.wait_for_selector(".htab[data-tab='projects']")
 
+    # Projects with no accepted Operations vehicles live in Started. The four
+    # selected-tab tones are intentionally distinct and follow lifecycle risk.
+    page.click(".htab[data-tab='projects']")
+    project_tabs = page.locator("[data-project-list-status]")
+    assert [text.split()[0] for text in project_tabs.all_inner_texts()] == [
+        "Started", "Active", "Inactive", "Completed",
+    ]
+    selected_colors = {
+        "started": "rgb(255, 243, 205)",
+        "active": "rgb(223, 243, 228)",
+        "inactive": "rgb(253, 232, 232)",
+        "completed": "rgb(25, 135, 84)",
+    }
+    for status, expected_color in selected_colors.items():
+        page.locator(f'[data-project-list-status="{status}"]').click()
+        assert page.locator(f'[data-project-list-status="{status}"]').evaluate(
+            "button => getComputedStyle(button).backgroundColor"
+        ) == expected_color
+    page.locator('[data-project-list-status="started"]').click()
+    page.fill("#proj-list-search", "Operations Preview PD")
+    assert page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD").count() == 1
+
+    active_sort = page.evaluate("""() => {
+      const saved = _PT.operationsByProject;
+      const project = id => ({
+        project_id: id,
+        project_status: 'active',
+        customer: {agency: id, build_year: '2031'},
+        build_units: [{individuals: [{individual_id: `${id}-vehicle`}]}],
+      });
+      const operation = (id, parts, availability, date) => ({
+        vehicle_id: `${id}-vehicle`, project_id: id, acceptance_status: 'accepted',
+        parts_status: parts, vehicle_availability_status: availability,
+        must_deliver_by_date: date,
+      });
+      _PT.operationsByProject = {
+        'arrived-late': [operation('arrived-late', 'parts_ready', 'at_dtm', '2031-06-01')],
+        'arrived-soon': [operation('arrived-soon', 'received', 'at_dtm', '2031-04-01')],
+        'waiting-soon': [operation('waiting-soon', 'received', 'waiting_on_dealer', '2031-01-01')],
+      };
+      const ids = ['waiting-soon', 'arrived-late', 'arrived-soon']
+        .map(project).sort(_ptSortActiveProjects).map(item => item.project_id);
+      _PT.operationsByProject = saved;
+      return ids;
+    }""")
+    assert active_sort == ["arrived-soon", "arrived-late", "waiting-soon"]
+
     # Operations is capability-gated. The hermetic cloud-off identity is a
     # synthetic AppAdmin, so synchronization and project status updates stay entirely
     # in the shared in-memory test repository and make no external request.
@@ -163,6 +210,7 @@ def flow_tab_load(page, base_url: str) -> None:
 
     page.click(".htab[data-tab='projects']")
     page.wait_for_selector("#tab-projects:not([hidden])")
+    page.locator('[data-project-list-status="active"]').click()
     page.fill("#proj-list-search", "Operations Preview PD")
     project_row = page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD")
     assert project_row.count() == 1
@@ -202,6 +250,12 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_function(
         "document.querySelector('.operations-vehicle').innerText.toUpperCase().includes('MAR 15, 2031')"
     )
+    page.click(".htab[data-tab='projects']")
+    page.wait_for_selector("#tab-projects:not([hidden])")
+    scheduled_project_row = page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD")
+    assert "MUST DELIVER ON MAR 15, 2031" in scheduled_project_row.inner_text().upper()
+    page.click(".htab[data-tab='operations']")
+    page.wait_for_selector(".operations-project-group")
     if not page.locator(".operations-project-group").evaluate("element => element.open"):
         page.locator(".operations-project-group > summary").click()
     page.locator("[data-operations-history-vehicle]").first.click()
@@ -1516,11 +1570,11 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     assert page.locator("#btn-proj-complete").inner_text() == "Reopen Project"
     page.click("#btn-proj-complete")
     page.wait_for_selector("#proj-list-view:not([hidden])")
-    assert page.locator('[data-project-list-status="active"]').get_attribute("aria-selected") == "true"
+    assert page.locator('[data-project-list-status="started"]').get_attribute("aria-selected") == "true"
     page.fill("#proj-list-search", "Overview Notes")
-    active_row = page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD")
-    assert active_row.count() == 1
-    active_row.get_by_role("button", name="Open", exact=True).click()
+    started_row = page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD")
+    assert started_row.count() == 1
+    started_row.get_by_role("button", name="Open", exact=True).click()
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     page.click("#btn-proj-inactive")
     page.wait_for_selector("#project-inactive-modal.open")
@@ -1534,7 +1588,7 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     assert "Quote went stale" in inactive_row.inner_text()
     inactive_row.locator(".proj-row-menu > summary").click()
     inactive_row.get_by_role("button", name="Reactivate").click()
-    page.wait_for_selector('[data-project-list-status="active"].active')
+    page.wait_for_selector('[data-project-list-status="started"].active')
     assert page.locator("#proj-list-search").input_value() == "Overview Notes"
     assert page.locator("#proj-list-rows .proj-row").filter(has_text="Overview Notes PD").count() == 1
 

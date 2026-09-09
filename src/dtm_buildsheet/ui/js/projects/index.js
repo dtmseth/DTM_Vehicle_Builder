@@ -3,9 +3,9 @@
 
 // ── View switching ─────────────────────────────────────────────────────────────
 
-function _ptShowList(mode = _PT.listMode || "active") {
+function _ptShowList(mode = _PT.listMode || "started") {
   if (mode === "archive") mode = "completed";
-  _PT.listMode = ["active", "inactive", "completed"].includes(mode) ? mode : "active";
+  _PT.listMode = ["started", "active", "inactive", "completed"].includes(mode) ? mode : "started";
   show("proj-list-view");
   hide("proj-detail-view");
   hide("proj-editor");

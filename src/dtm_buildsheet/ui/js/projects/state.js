@@ -28,8 +28,8 @@ window._PT = {
   viewProject:    null,     // project open in detail view
   fromDetail:     false,    // editor opened from detail (not list)
   isWizard:       false,    // true when creating a new project
-  listMode:       "active", // active | inactive | completed
-  listSearch:     { active: "", inactive: "", completed: "" },
+  listMode:       "started", // started | active | inactive | completed
+  listSearch:     { started: "", active: "", inactive: "", completed: "" },
   inactiveProjectId: null,
   completionConflict: null,
   vehicleCreateTarget: null,

@@ -1,8 +1,8 @@
 # DTM Vehicle Builder — Current State
 
-**Last updated:** 2026-09-08
+**Last updated:** 2026-09-09
 
-**Current release:** [v3.6.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.6.0)
+**Current release:** [v3.6.1](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.6.1)
 
 This is the short operational handoff for the repository. It replaces dated session handoffs and
 release checklists. Long-lived design and behavior remain documented in `ROADMAP.md`,
@@ -402,6 +402,13 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   Estimate action. The v3.6.0 package omission of the two non-secret Operations list GUIDs is also
   corrected; existing installations forward-merge them on first launch after the fix, restoring
   both the role-gated Operations tab and Operations-derived project workflow badges.
+- **Post-v3.6.1 working tree:** Projects now exposes Started / Active / Inactive / Completed. Started
+  contains durable-active projects until every current Operations vehicle is accepted; Active is
+  the fully accepted set. Active projects with all parts Received/Parts Ready and all vehicles At DTM
+  sort first, then each group sorts by its earliest Must Deliver On date with undated projects last.
+  Selected tabs use yellow/green/red/solid-green lifecycle tones, and Active rows display the deadline
+  used for ordering. A live opaque-ID audit also removed the deleted Seth Test project's exact three
+  Operations rows and three creation events; a fresh comparison found zero project or vehicle orphans.
 - Cloud-off verification for this working tree passes **2,388 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's
   Downloads folder also passed in its approved environment.

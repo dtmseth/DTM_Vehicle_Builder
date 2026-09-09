@@ -286,3 +286,10 @@ you're touching. New gotchas get appended to the bottom with a date.
     whose Final Finish status is Delivered. Vehicle Availability ends at At DTM and should render
     green there. Keep legacy availability=`delivered` values readable, but never infer completion
     from them, a partial match, or a name-based match.
+53. **Started is a derived Projects view, not a persisted lifecycle state.** Project records still
+    store only `active`, `inactive`, or `completed`. Split durable-active records by the exact current
+    Operations vehicle IDs: every vehicle must be accepted for the project to appear in Active;
+    missing or partly accepted records stay in Started. Active ordering is project-wide: rows whose
+    every vehicle has Parts Received/Parts Ready and is At DTM come first, then each group sorts by
+    its earliest effective Must Deliver On date with undated projects last. Do not infer acceptance,
+    arrival, or deadlines from names or badges.

@@ -999,8 +999,12 @@
     .proj-list-tab{align-items:center;background:#f5f6fa;border:1px solid var(--border);border-radius:16px;color:var(--muted);cursor:pointer;display:inline-flex;font:inherit;font-size:11px;font-weight:700;gap:6px;padding:6px 11px}
     .proj-list-tab span{align-items:center;background:#e2e5ed;border-radius:10px;color:var(--navy);display:inline-flex;font-size:9px;justify-content:center;min-width:18px;padding:1px 5px}
     .proj-list-tab:hover:not(.active){background:#eef2f9;color:var(--navy)}
-    .proj-list-tab.active{background:var(--navy);border-color:var(--navy);color:#fff}
-    .proj-list-tab.active span{background:rgba(255,255,255,.2);color:#fff}
+    .proj-list-tab.active[data-project-list-status="started"]{background:#fff3cd;border-color:#e7cf82;color:#674d00}
+    .proj-list-tab.active[data-project-list-status="active"]{background:#dff3e4;border-color:#a8d6b4;color:#155b2a}
+    .proj-list-tab.active[data-project-list-status="inactive"]{background:#fde8e8;border-color:#efb9b9;color:#8b2525}
+    .proj-list-tab.active[data-project-list-status="completed"]{background:#198754;border-color:#198754;color:#fff}
+    .proj-list-tab.active span{background:rgba(255,255,255,.55);color:inherit}
+    .proj-list-tab.active[data-project-list-status="completed"] span{background:rgba(255,255,255,.2);color:#fff}
     .proj-list-search{display:block;margin:0 0 12px}
     .proj-list-search input{box-sizing:border-box;width:100%}
     #proj-standard-panel>.proj-empty-msg{padding:24px;text-align:center}

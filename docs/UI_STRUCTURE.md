@@ -70,9 +70,10 @@ scheduling calls the one-vehicle route sequentially and retains one immutable ev
 ### Projects tab
 ```
 #proj-list-view        — scrollable project list
-    status tabs         — Active / Inactive / Completed with live project counts
+    status tabs         — Started / Active / Inactive / Completed with live project counts
     status search       — searches only the selected tab and remembers one query per tab
-    Active              — derived workflow badge plus Open and a three-dot Inactive/Delete menu
+    Started             — durable-active projects whose current Operations vehicles are not all accepted
+    Active              — all current vehicles accepted; arrived projects first, then Must Deliver On
     Inactive            — optional note plus a three-dot Reactivate/Delete menu
     Completed           — Agency → Build Year tree, galleries/folders, Open/Reopen
 #proj-detail-view      — detail view with two sub-tabs:
@@ -89,13 +90,18 @@ scheduling calls the one-vehicle route sequentially and retains one immutable ev
     #pbe-footer        — Load Preset / Save as New Preset / Apply to Group actions + Return button
 ```
 
-The project lifecycle is stored as `active`, `inactive`, or `completed`. The selected list tab is
-preserved when opening and returning from a project. Marking a project inactive accepts an optional
-note in an app modal; it never deletes the project, builds, files, or lifecycle history. Each tab's
-search text is independent, and a Completed search expands matching agency/year groups. Completed projects retain
+The durable project lifecycle remains `active`, `inactive`, or `completed`; `started` is a derived
+list view, not a fourth stored state. A durable-active project stays in Started until every current
+vehicle's Operations row is accepted, then appears in Active. Active projects whose every vehicle
+has Parts Received/Parts Ready and is At DTM sort first; each group then sorts by its earliest
+effective Must Deliver On date, with undated projects last. The selected list tab is preserved when
+opening and returning from a project. Marking a project inactive accepts an optional note in an app
+modal; it never deletes the project, builds, files, or lifecycle history. Each tab's search text is
+independent, and a Completed search expands matching agency/year groups. Completed projects retain
 the existing grouped archive presentation inside the Completed tab rather than navigating to a
-separate archive screen.
-Active workflow badges are derived, not separately edited: Estimate Sent, Estimate Accepted,
+separate archive screen. Projects opens on Started. Selected tabs use lifecycle tones: light yellow
+Started, light green Active, light red Inactive, and solid green Completed.
+Started/Active workflow badges are derived, not separately edited: Estimate Sent, Estimate Accepted,
 combined Parts/Vehicle progress, Ready to Build, Build in Progress, Ready to Deliver, and Delivered.
 Project saves create/update their Operations projections; project deletion also removes the exact
 project's Operations rows and immutable status history after explicit confirmation.
