@@ -14,14 +14,16 @@ async function _ptLoadAll() {
   if (pjr)  { _PT.projects        = pjr.projects || []; }
   if (opts && !opts.error) { _PT.projectOptions = opts; }
   if (agencies?.ok) { _PT.agencies = agencies.agencies || []; }
-  _PT.operationsByProject = {};
   if (operations?.ok) {
+    const operationsByProject = {};
     (operations.vehicles || []).forEach(vehicle => {
       const projectId = String(vehicle.project_id || "");
       if (!projectId) return;
-      if (!_PT.operationsByProject[projectId]) _PT.operationsByProject[projectId] = [];
-      _PT.operationsByProject[projectId].push(vehicle);
+      if (!operationsByProject[projectId]) operationsByProject[projectId] = [];
+      operationsByProject[projectId].push(vehicle);
     });
+    _PT.operationsByProject = operationsByProject;
+    _PT.operationsSnapshotReady = true;
   }
 }
 

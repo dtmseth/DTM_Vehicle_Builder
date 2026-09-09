@@ -125,6 +125,7 @@ def test_access_session_maps_known_roles_and_ignores_unknown_values():
     assert "operations.view" in session["capabilities"]
     assert "operations.parts.update" in session["capabilities"]
     assert "operations.shop.update" not in session["capabilities"]
+    assert "projects.view" in session["capabilities"]
     assert session["default_workspace"] == "operations"
 
 
@@ -248,6 +249,24 @@ def test_read_service_rejects_actor_without_view_capability():
         OperationsReadService(InMemoryOperationsRepository()).list_vehicle_summaries(actor)
 
 
+def test_read_service_hides_projects_excluded_by_builder_lifecycle():
+    repository = InMemoryOperationsRepository()
+    _seed_operations_vehicle(repository)
+    actor = OperationsActor(
+        user_id="entra-1",
+        display_name="Test User",
+        roles=frozenset({AppRole.APP_ADMIN.value}),
+    )
+
+    payload = OperationsReadService(repository).list_vehicle_summaries(
+        actor,
+        hidden_project_ids=frozenset({"project-1"}),
+    )
+
+    assert payload["vehicles"] == []
+    assert payload["counts"]["total"] == 0
+
+
 def test_read_service_derives_deadline_for_legacy_direct_to_parts_ready_row():
     repository = InMemoryOperationsRepository()
     repository._records["vehicle-1"] = VehicleOperations(  # noqa: SLF001
@@ -323,7 +342,7 @@ def test_operations_routes_gate_the_list_server_side(monkeypatch, tmp_path):
         route_operations, "GET", "/api/operations/session", {}, paths,
     )
     assert (status, handled) == (200, True)
-    assert session["capabilities"] == ["operations.view"]
+    assert session["capabilities"] == ["operations.view", "projects.view"]
 
     status, payload, handled = call_route(
         route_operations, "GET", "/api/operations/vehicles", {}, paths,
@@ -343,6 +362,34 @@ def test_operations_routes_gate_the_list_server_side(monkeypatch, tmp_path):
             "scheduled": 0,
         },
     }
+
+
+def test_operations_vehicle_route_hides_builder_inactive_project_even_when_projection_is_stale(
+    monkeypatch,
+    tmp_path,
+):
+    repository = InMemoryOperationsRepository()
+    _seed_operations_vehicle(repository)
+    project = _builder_project()
+    project.project_status = "inactive"
+    set_active_bundle(_bundle(user=_user("OperationsViewer"), operations=repository))
+    monkeypatch.setattr(wiring, "_cloud_flag_enabled", lambda: True)
+    monkeypatch.setattr(
+        "dtm_buildsheet.app.routes.operations.list_projects",
+        lambda paths: [project],
+    )
+
+    status, payload, handled = call_route(
+        route_operations,
+        "GET",
+        "/api/operations/vehicles",
+        {},
+        AppPaths(workspace_dir=tmp_path),
+    )
+
+    assert (status, handled) == (200, True)
+    assert payload["vehicles"] == []
+    assert payload["counts"]["total"] == 0
 
 
 def test_operations_history_route_is_viewer_accessible_and_read_only(monkeypatch, tmp_path):

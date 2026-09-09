@@ -26,10 +26,22 @@ class OperationsReadService:
     def __init__(self, repository: OperationsRepository) -> None:
         self._repository = repository
 
-    def list_vehicle_summaries(self, actor: OperationsActor) -> dict:
+    def list_vehicle_summaries(
+        self,
+        actor: OperationsActor,
+        *,
+        hidden_project_ids: frozenset[str] = frozenset(),
+    ) -> dict:
         self._require_view(actor)
 
-        records = sorted(self._repository.list_vehicles(), key=_vehicle_sort_key)
+        records = sorted(
+            (
+                record
+                for record in self._repository.list_vehicles()
+                if record.project_id not in hidden_project_ids
+            ),
+            key=_vehicle_sort_key,
+        )
         vehicles = [_vehicle_summary(record) for record in records]
         state_counts = Counter(vehicle["project_state"] for vehicle in vehicles)
         schedule_counts = Counter(vehicle["schedule_bucket"] for vehicle in vehicles)

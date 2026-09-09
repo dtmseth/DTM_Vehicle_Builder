@@ -79,9 +79,9 @@ Moving a project inactive is manual and reversible. Age, QBO status, or lack of 
 silently inactivate a project. Each transition records time, actor, and an optional reason.
 The current lifecycle metadata and an append-only `project_lifecycle_history` live on the Builder
 project record, because a project can exist before it has an individual vehicle operations row.
-Inactive Operations rows and history are retained so reactivation restores prior work, but they are
-not shown in the Operations workspace. Deleting a project explicitly cascades through its
-Operations events and current rows before the Builder record is removed.
+Inactive Operations rows and history are retained so reactivation restores prior work, but inactive
+projects are hidden from the Operations workspace. Deleting a project explicitly cascades through
+its Operations events and current rows before the Builder record is removed.
 
 Acceptance is separate from project lifecycle. An active project may be not accepted, partially
 accepted, or accepted. Acceptance is stored per individual vehicle and summarized on the active
@@ -153,6 +153,10 @@ bucket is still derived:
 - an accepted vehicle without `ScheduledWeekOf` is Unscheduled and appears on Tyler's radar;
 - setting `ScheduledWeekOf` changes the derived display to Scheduled.
 
+The Active Operations tab provides **All / Unscheduled / Scheduled** subfilters. Scheduled projects
+sort by Scheduled Week first; projects with any unscheduled vehicle remain in Unscheduled so a
+partially scheduled project cannot disappear from Tyler's queue.
+
 The shared row stores:
 
 - optional Scheduled Week Of (the normal long-range planning unit);
@@ -169,6 +173,25 @@ Ready to Build is a separate derived readiness summary using vehicle At DTM, Par
 build-finalization information. An authorized manager can apply a visible, reasoned override when
 work intentionally proceeds without all inputs. V1 does not cascade dates, optimize bays, assign
 labor, or invent long-range day-level precision.
+
+### Later scheduling and shop-capacity additions
+
+Two planned additions should build on this same vehicle timeline after the day-to-day scheduling
+flow has been piloted:
+
+- **Bay tracking:** assign a vehicle to a durable bay ID, show current bay occupancy, and retain
+  assignment/move timestamps so the current floor view and historical bay usage do not depend on a
+  renamed display label. Do not model automatic bay optimization until the actual shop process is
+  established.
+- **Team assignments:** allow a project-level default team with an optional per-vehicle override.
+  The first version may use a small administratively managed roster of names, but assignments must
+  point at durable neutral IDs rather than storing the team/person name as identity. Later, a roster
+  entry may link to an Entra object ID as individual shop accounts become available without
+  rewriting historical assignments.
+
+Both changes need dated assignment events, correction history, and clear unassigned states. They
+are intentionally kept out of the v1 SharePoint columns until the owner has established the real
+bay list and initial team structure; this avoids permanent internal names for guessed concepts.
 
 ## 7. Production workstreams
 
@@ -363,6 +386,8 @@ Official references:
 
 - labor timeclock or technician punch tracking;
 - automated production scheduling and capacity optimization;
+- bay occupancy and movement tracking (planned after the scheduling pilot);
+- project/vehicle team assignment (planned after the initial team structure exists);
 - offline SharePoint edits;
 - a hosted custom mobile web application;
 - QBO-to-Builder line import;
@@ -388,7 +413,9 @@ Official references:
 - A derived 60-day Must Deliver By date.
 - Ready for Delivery and Delivered kept distinct within Final Finish; `at_dtm` completes Vehicle
   Availability; closeout deferred.
-- Active / Inactive / Completed project organization.
+- Started / Active / Completed organization in Operations, with inactive projects hidden and Started
+  derived from missing acceptance rather than stored as a fourth lifecycle state. Projects retains
+  all four Started / Active / Inactive / Completed tabs.
 - Separate acceptance badge on Active projects.
 - Optional Inactive reason and optional Delivery Method.
 - Final Finish editable by both Shop and Programming & QC.

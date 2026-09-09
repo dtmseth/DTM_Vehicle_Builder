@@ -27,6 +27,7 @@ class Capability(StrEnum):
     OPERATIONS_DELIVERY_UPDATE = "operations.delivery.update"
     OPERATIONS_CORRECT = "operations.correct"
     OPERATIONS_QBO_OBSERVE = "operations.qbo.observe"
+    PROJECTS_VIEW = "projects.view"
     PROJECTS_EDIT = "projects.edit"
     PROJECTS_LIFECYCLE_UPDATE = "projects.lifecycle.update"
     ESTIMATES_MANAGE = "estimates.manage"
@@ -43,13 +44,16 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
     AppRole.BUILDER_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_AVAILABILITY_UPDATE,
+        Capability.OPERATIONS_PARTS_UPDATE,
         Capability.OPERATIONS_QBO_OBSERVE,
+        Capability.PROJECTS_VIEW,
         Capability.PROJECTS_EDIT,
         Capability.PROJECTS_LIFECYCLE_UPDATE,
         Capability.ESTIMATES_MANAGE,
     }),
     AppRole.OPERATIONS_MANAGER: frozenset({
         Capability.OPERATIONS_VIEW,
+        Capability.PROJECTS_VIEW,
         Capability.OPERATIONS_AVAILABILITY_UPDATE,
         Capability.OPERATIONS_SCHEDULE_UPDATE,
         Capability.OPERATIONS_PARTS_UPDATE,
@@ -65,19 +69,25 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
     AppRole.PARTS_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_PARTS_UPDATE,
+        Capability.PROJECTS_VIEW,
     }),
     AppRole.SHOP_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_SHOP_UPDATE,
         Capability.OPERATIONS_TRAY_UPDATE,
         Capability.OPERATIONS_FINAL_FINISH_UPDATE,
+        Capability.PROJECTS_VIEW,
     }),
     AppRole.PROGRAMMING_QC_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_PROGRAMMING_QC_UPDATE,
         Capability.OPERATIONS_FINAL_FINISH_UPDATE,
+        Capability.PROJECTS_VIEW,
     }),
-    AppRole.OPERATIONS_VIEWER: frozenset({Capability.OPERATIONS_VIEW}),
+    AppRole.OPERATIONS_VIEWER: frozenset({
+        Capability.OPERATIONS_VIEW,
+        Capability.PROJECTS_VIEW,
+    }),
 }
 
 

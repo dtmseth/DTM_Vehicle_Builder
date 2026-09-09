@@ -1,7 +1,7 @@
 # Operations Roles and Capabilities
 
 **Status:** Approved V1 authorization contract
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-09
 
 The same DTM Vehicle Builder installer can expose different workspaces after Microsoft 365 sign-in.
 Microsoft Entra app roles are stable bundles, and backend capabilities enforce those roles within
@@ -38,6 +38,7 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `operations.delivery.update` | Record or correct physical delivery |
 | `operations.correct` | Regress/skip normal status flow with required reason |
 | `operations.qbo.observe` | Refresh shared QBO observation fields |
+| `projects.view` | Read Builder projects, vehicle details, build summaries, PDFs, folders, and photos |
 | `projects.edit` | Create/edit Builder projects and vehicle facts |
 | `projects.lifecycle.update` | Move projects Active/Inactive/Completed |
 | `estimates.manage` | Link/create/update QBO Estimates with safeguards |
@@ -50,12 +51,12 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | Role | Capabilities |
 |---|---|
 | `AppAdmin` | all capabilities |
-| `BuilderEditor` | `operations.view`, `operations.availability.update`, `operations.qbo.observe`, `projects.edit`, `projects.lifecycle.update`, `estimates.manage` |
-| `OperationsManager` | all `operations.*`, including scheduling, delivery, and correction; `projects.lifecycle.update` |
-| `PartsEditor` | `operations.view`, `operations.parts.update` |
-| `ShopEditor` | `operations.view`, `operations.shop.update`, `operations.tray.update`, `operations.final_finish.update` |
-| `ProgrammingQcEditor` | `operations.view`, `operations.programming_qc.update`, `operations.final_finish.update` |
-| `OperationsViewer` | `operations.view` |
+| `BuilderEditor` | `projects.view`, `projects.edit`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, `operations.availability.update`, `operations.parts.update`, `operations.qbo.observe` |
+| `OperationsManager` | `projects.view`; all `operations.*`, including scheduling, delivery, and correction; `projects.lifecycle.update` |
+| `PartsEditor` | `projects.view`, `operations.view`, `operations.parts.update` |
+| `ShopEditor` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.tray.update`, `operations.final_finish.update` |
+| `ProgrammingQcEditor` | `projects.view`, `operations.view`, `operations.programming_qc.update`, `operations.final_finish.update` |
+| `OperationsViewer` | `projects.view`, `operations.view` |
 
 Final Finish is editable by both Shop and Programming & QC because wash/clean/photos may cross team
 ownership.
@@ -74,11 +75,13 @@ ownership.
 - Audit events store the actor's Entra object ID and display name, not just email.
 - Corrections require `operations.correct` and a non-empty reason.
 
-Current rollout state: the Operations header, read routes, projection creation route, and status
-route enforce this contract. The browser shows only status workstreams granted by the session, and
-the backend repeats the capability check for every vehicle mutation. The existing Projects and
-Settings routes retain their production behavior until each is migrated behind its documented
-capability; assigning an Operations role does not yet reduce access to those older screens.
+Current rollout state: both Operations and the legacy Builder HTTP surface enforce this contract.
+The browser exposes only allowed workspaces and actions, and the server repeats the capability check
+before project, draft, setting, catalog, and QuickBooks mutations. Operations retains its finer
+workstream checks. `BuilderEditor` sees the personal QuickBooks connection surface but not the other
+General or Advanced settings; QBO catalog-linking and Retail-pricing controls remain administrative.
+`ShopEditor` can read Projects, draft equipment and build notes, folders, PDFs, and photos, but
+project/build controls remain read-only.
 
 ## 5. Shared shop identity
 
@@ -113,7 +116,10 @@ Builder project and draft libraries remain separately permissioned.
 
 - Users with one role land directly in that role's workspace.
 - Users with several operational roles may switch between their allowed workspaces.
-- Builder users retain the existing Projects experience and may open Operations if permitted.
+- Builder users retain the existing Projects experience and may open Operations; they can update
+  Acceptance, Vehicle Availability, and Parts, but not schedules or downstream production status.
+- Shop users land in Operations, may open Projects for read-only Builder context, and can update only
+  Build / Shop, Tray, and Final Finish.
 - Phone users receive only the minimal shared Power App; Power App sharing and SharePoint access
   are limited to the intended Entra users/groups.
 - A Shop user's package may still contain desktop Builder code, so unavailable local API routes

@@ -51,6 +51,7 @@ function _ptGalleryTargetProjects(sourceProject) {
 }
 
 function _ptGalleryActionMarkup(kind, sourceProject) {
+  if (!_ptCanEditProjects()) return "";
   if (kind === "completed" && _ptGalleryTargetProjects(sourceProject).length) {
     return `<div class="photo-gallery-selection-bar">
       <button type="button" class="btn btn-primary btn-sm" id="photo-gallery-use-selected" onclick="PT_chooseGalleryDestination()" disabled>Use as Reference Photo(s)</button>
@@ -75,7 +76,7 @@ function _ptGalleryEmptyMarkup(kind, warnings = [], context = {}, sourceProject 
     : context.unitId ? "No build reference photos." : "No project photos.";
   const addAction = context.unitId ? "PT_addGroupPhotos()" : "PT_addProjectPhotos()";
   return `<div class="photo-gallery-empty"><strong>${esc(title)}</strong>
-    ${kind === "reference" && sourceProject?.project_status !== "completed" ? `<button type="button" class="btn btn-primary" onclick="${addAction}">Add photos</button>` : ""}
+    ${_ptCanEditProjects() && kind === "reference" && sourceProject?.project_status !== "completed" ? `<button type="button" class="btn btn-primary" onclick="${addAction}">Add photos</button>` : ""}
     ${warnings.map(message => `<small>${esc(message)}</small>`).join("")}</div>`;
 }
 
@@ -83,13 +84,13 @@ function _ptGalleryMarkup(kind, photos, warnings = [], sourceProject = null) {
   if (!photos.length) return _ptGalleryEmptyMarkup(kind, warnings, _PT.photoGalleryContext || {}, sourceProject);
   const groupScoped = kind === "reference" && Boolean(_PT.photoGalleryContext?.unitId);
   const selectable = kind === "completed"
-    ? Boolean(_ptGalleryTargetProjects(sourceProject).length)
-    : sourceProject?.project_status !== "completed";
+    ? _ptCanEditProjects() && Boolean(_ptGalleryTargetProjects(sourceProject).length)
+    : _ptCanEditProjects() && sourceProject?.project_status !== "completed";
   return `<div class="photo-gallery-summary"><strong>${photos.length} photo${photos.length === 1 ? "" : "s"}</strong></div>
     ${warnings.map(message => `<div class="photo-gallery-warning">${esc(message)}</div>`).join("")}
     ${_ptGalleryActionMarkup(kind, sourceProject)}
     <div class="photo-gallery-grid">${photos.map((photo, index) => {
-      const canEditGroupNote = groupScoped && photo.assignment_state === "assigned";
+      const canEditGroupNote = _ptCanEditProjects() && groupScoped && photo.assignment_state === "assigned";
       const sourceTag = photo.source_kind === "shop_completed" ? "Completed build" : "Company photo";
       return `
       <article class="photo-gallery-card${groupScoped ? " photo-gallery-card--group-reference" : ""}" data-gallery-index="${index}">

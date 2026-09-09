@@ -579,12 +579,14 @@ preserve them, while explicit empty keys clear them.
 Past-photo imports are ordinary sparse projects/units for their actual agency and build year. They
 persist only known fields and are marked completed at project level after their photo copy is
 verified. The Completed tab organizes those records under Agency → Build Year and supports reopen.
-Active, Inactive, and Completed share one search control whose query is retained independently per
+Started, Active, Inactive, and Completed share one search control whose query is retained independently per
 tab; completed search results automatically expand their matching Agency → Build Year branches.
 Mark Inactive uses an in-app dialog with an optional reason so it remains reliable inside pywebview.
-Active rows show one derived workflow badge instead of another editable status. Mark Inactive and
+Started and Active rows show one derived workflow badge instead of another editable status. Mark Inactive and
 Delete live under a three-dot menu; Delete also removes that project's Operations records/history.
-Inactive projects are absent from Operations until reactivated. At DTM is the green completed
+Inactive projects and their Operations history are retained but hidden from Operations until
+reactivated. Active Operations adds All / Unscheduled / Scheduled subfilters, with Scheduled ordered
+by Scheduled Week. At DTM is the green completed
 Vehicle Availability state; Delivered is the last Final Finish state, and all vehicles reaching it
 moves the project to Completed automatically.
 

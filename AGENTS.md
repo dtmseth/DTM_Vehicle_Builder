@@ -12,9 +12,28 @@ pip (inside `.venv`): `pip install -e ".[dev]"`
 ```bash
 .venv/bin/python -m dtm_buildsheet             # GUI (port 7655)
 .venv/bin/python -m dtm_buildsheet.generator_cli book.xlsx  # CLI
-.venv/bin/python -m pytest                     # full test suite
+.venv/bin/python tools/verify.py changed       # focused, compact local verification
+.venv/bin/python tools/verify.py release       # full release gate only
 bash packaging/build_macos.sh                  # package Mac app
 ```
+
+## Mandatory verification workflow
+
+This applies to every future agent/session working in this repository:
+
+- During implementation, run `.venv/bin/python tools/verify.py changed`. It selects tests and
+  browser flows from the current Git diff and captures successful output.
+- After tiny intermediate edits, prefer syntax checks or one directly relevant test; run the
+  changed gate after a meaningful batch, not after every line-level adjustment.
+- Do not run bare full `pytest`, all 28 browser flows, or coverage during the normal inner loop.
+- Do not stream individual passing-test names or browser-flow JSON into the conversation. Successful
+  verification should be reported as compact counts/summaries; show detailed output only for the
+  first actionable failure.
+- Run `.venv/bin/python tools/verify.py release` once at an actual release/merge checkpoint, when the
+  user explicitly requests it, or after a genuinely cross-cutting core contract change. State why a
+  full gate is warranted before running it. CI remains the authoritative full-suite/coverage gate.
+
+These rules are a token and developer-time constraint, not merely a formatting preference.
 
 ## Project docs
 

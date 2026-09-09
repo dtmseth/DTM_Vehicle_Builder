@@ -15,12 +15,14 @@ window.addEventListener("DOMContentLoaded", async()=>{
     const settings=await api("/api/app-settings");
     if(settings && !_appSettings) _appSettings=settings;
   }catch(e){}
-  // Restore the QuickBooks Settings tab after a successful OAuth round-trip.
+  // Resolve Entra roles before exposing any editable workspace. This prevents
+  // older Builder controls from briefly appearing for read-only users.
+  const accessSession = typeof initOperationsAccess === "function"
+    ? await initOperationsAccess()
+    : null;
+  // Restore the QuickBooks surface after OAuth only when this role can use it.
   if (window.DTM_QUICKBOOKS_UI_ENABLED === true
       && typeof qbConsumeReturnTab === "function" && qbConsumeReturnTab()) return;
-  // All tab-specific scripts are now loaded — open Projects tab as default
-  switchTab("projects");
-  // Access discovery is non-blocking so a slow or signed-out Microsoft
-  // session cannot delay the existing Projects experience.
-  if (typeof initOperationsAccess === "function") initOperationsAccess();
+  const workspace = typeof _appFirstWorkspace === "function" ? _appFirstWorkspace() : "projects";
+  if (workspace) switchTab(workspace);
 });

@@ -80,7 +80,9 @@ def test_normalize_customer_keeps_contact_and_address_profile():
 
 def test_import_creates_new_agencies(paths):
     res = agc.upsert_agencies_from_qb([_cust(1, "Alpha PD"), _cust(2, "Beta SO")], paths)
-    assert res == {"ok": True, "created": 2, "updated": 0, "total": 2}
+    assert res == {
+        "ok": True, "created": 2, "updated": 0, "unchanged": 0, "total": 2,
+    }
     names = {a.name: a for a in agc.load_agencies(paths)}
     assert names["Alpha PD"].qb_customer_id == "1"
     assert names["Beta SO"].qb_customer_id == "2"
@@ -158,7 +160,7 @@ def test_import_matches_by_qb_id_over_name(paths):
     agc.upsert_agencies_from_qb([_cust(1, "Alpha PD")], paths)
     # The customer was renamed in QB but keeps the same Id → still one agency.
     res = agc.upsert_agencies_from_qb([_cust(1, "Alpha Police Department")], paths)
-    assert res["created"] == 0 and res["updated"] == 1
+    assert res["created"] == 0 and res["unchanged"] == 1
     assert len(agc.load_agencies(paths)) == 1
 
 
@@ -166,8 +168,29 @@ def test_import_is_idempotent(paths):
     custs = [_cust(1, "Alpha PD"), _cust(2, "Beta SO")]
     agc.upsert_agencies_from_qb(custs, paths)
     res = agc.upsert_agencies_from_qb(custs, paths)
-    assert res["created"] == 0 and res["updated"] == 2
+    assert res["created"] == 0 and res["updated"] == 0 and res["unchanged"] == 2
     assert len(agc.load_agencies(paths)) == 2
+
+
+def test_idempotent_import_does_not_rewrite_or_remirror(paths, monkeypatch):
+    mirrored = []
+    import dtm_buildsheet.app.services.shared_work_service as shared_work
+
+    monkeypatch.setattr(
+        shared_work,
+        "save_settings_to_cloud_batch_in_background",
+        lambda items: mirrored.extend(items),
+    )
+    agc.upsert_agencies_from_qb([_cust(1, "Alpha PD")], paths)
+    mirrored.clear()
+    agency_path = next((paths.workspace_dir / "agencies").glob("*.json"))
+    before = agency_path.read_bytes()
+
+    res = agc.upsert_agencies_from_qb([_cust(1, "Alpha PD")], paths)
+
+    assert res["unchanged"] == 1
+    assert agency_path.read_bytes() == before
+    assert mirrored == []
 
 
 def test_import_skips_nameless_customers(paths):
@@ -229,3 +252,27 @@ def test_import_customers_delegates_to_agency_service(paths, monkeypatch):
     res = sync.import_customers(paths)
     assert res["created"] == 2
     assert {a.name for a in agc.load_agencies(paths)} == {"Alpha PD", "Beta SO"}
+
+
+def test_automatic_sync_refreshes_catalog_and_customer_agencies(paths, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        sync,
+        "run_full_sync",
+        lambda _paths: calls.append("catalog") or {
+            "ok": True, "item_count": 3, "reconciled": {"ok": True},
+        },
+    )
+    monkeypatch.setattr(
+        sync,
+        "import_customers",
+        lambda _paths: calls.append("customers") or {
+            "ok": True, "created": 1, "updated": 2, "unchanged": 4, "total": 7,
+        },
+    )
+
+    result = sync.run_automatic_sync(paths)
+
+    assert calls == ["catalog", "customers"]
+    assert result["ok"] is True
+    assert result["customers"]["total"] == 7

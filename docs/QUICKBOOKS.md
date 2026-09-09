@@ -209,7 +209,10 @@ all write operations still require their backend checks and explicit confirmatio
   notes, taxable flag, and billing/shipping addresses). Linking fills only EMPTY local fields;
   it never overwrites the agency name or a populated app field. A Customer import never schedules
   Company/Shop vehicle folders; only a saved vehicle project enters that lifecycle. Routes
-  `GET /customers/preview`, `POST /customers/import`. Tests: `tests/test_qb_customer_sync.py` (14).
+  `GET /customers/preview`, `POST /customers/import`. Connected startup/30-minute refresh now runs
+  this safe Customer/Agency import along with Item reconciliation, and a newly completed OAuth
+  connection wakes the worker immediately. Unchanged agencies are neither rewritten nor mirrored
+  to SharePoint. The reviewed manual pull remains available for diagnostics.
 - **Slice 2 (up-sync):** `api_client.create_customer()` / `update_customer()` (sparse) /
   `read_customer()` / `find_customer_by_display_name()`. `agency_service.set_qb_customer_id()`
   writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push). A new app agency
@@ -479,7 +482,8 @@ GOTCHAS):
   only explicit `link_item`/`unlink_item`/`reconcile_linked_parts` touch it, and reconcile only
   writes QB-owned fields on already-linked products.
 - **Customer import never clobbers user data**: fills only empty local customer-profile fields;
-  never overwrites agency names or populated app values.
+  never overwrites agency names or populated app values. Automatic connected refresh includes
+  Customers/Agencies as well as Items and skips writes for unchanged agency records.
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert
   `save_settings_to_cloud_batch_in_background` to uploading a captured snapshot, or deletions resurrect.
 - **List action buttons use data-attributes + delegation, never inline `onclick` with interpolated

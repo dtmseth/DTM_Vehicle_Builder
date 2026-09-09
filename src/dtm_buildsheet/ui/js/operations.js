@@ -5,6 +5,8 @@ const _OPERATIONS = {
   payload: null,
   projectionPreview: null,
   filter: "active",
+  search: { started: "", active: "", completed: "" },
+  activeScheduleFilter: "all",
   loading: false,
   editVehicles: [],
   editScopeLabel: "",
@@ -166,13 +168,15 @@ async function initOperationsAccess() {
   try {
     const session = await api("/api/operations/session");
     _OPERATIONS.session = session;
-    button.hidden = !_operationsCanView(session);
+    if (typeof applyAppAccessSession === "function") applyAppAccessSession(session);
+    else button.hidden = !_operationsCanView(session);
     const addButton = $("operations-add-builder");
     if (addButton) addButton.hidden = !_operationsCanAddBuilderVehicle(session);
     return session;
   } catch (error) {
     console.warn("Operations access check failed", error);
-    button.hidden = true;
+    if (typeof applyAppAccessSession === "function") applyAppAccessSession(null);
+    else button.hidden = true;
     const addButton = $("operations-add-builder");
     if (addButton) addButton.hidden = true;
     return null;
@@ -226,16 +230,8 @@ function _operationsShowMessage(message, kind = "info") {
 }
 
 function _operationsRender() {
-  const payload = _OPERATIONS.payload || { vehicles: [], counts: {} };
-  const counts = payload.counts || {};
   $("operations-message").hidden = true;
   $("operations-content").hidden = false;
-  $("operations-metrics").innerHTML = [
-    ["Active", counts.active || 0],
-    ["Unscheduled", counts.unscheduled || 0],
-    ["Scheduled", counts.scheduled || 0],
-    ["Must deliver", (payload.vehicles || []).filter(item => item.project_state === "active" && item.must_deliver_by_date).length],
-  ].map(([label, value]) => `<div class="operations-metric"><strong>${value}</strong><span>${label}</span></div>`).join("");
   _operationsRenderProjectionPanel();
   _operationsRenderRows();
 }
@@ -290,28 +286,46 @@ function _operationsRenderProjectionPanel({ open = false } = {}) {
 }
 
 function _operationsRenderRows() {
-  const needle = String($("operations-search")?.value || "").trim().toLowerCase();
+  const statuses = ["started", "active", "completed"];
+  const mode = statuses.includes(_OPERATIONS.filter) ? _OPERATIONS.filter : "active";
+  const needle = String(_OPERATIONS.search?.[mode] || "").trim().toLowerCase();
   const openProjectIds = new Set(
     [...document.querySelectorAll(".operations-project-group[open]")]
       .map(item => item.dataset.operationsProjectId)
   );
-  const vehicles = (_OPERATIONS.payload?.vehicles || []).filter(vehicle => {
-    const filter = _OPERATIONS.filter;
-    return filter === "active"
-      ? vehicle.project_state === "active"
-      : filter === "completed"
-        ? vehicle.project_state === "completed"
-        : vehicle.project_state === "active" && vehicle.schedule_bucket === filter;
-  });
-
   const grouped = new Map();
-  vehicles.forEach(vehicle => {
+  (_OPERATIONS.payload?.vehicles || []).forEach(vehicle => {
     const key = vehicle.project_id || `vehicle:${vehicle.vehicle_id}`;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(vehicle);
   });
-  const projects = [...grouped.entries()]
-    .map(([projectId, projectVehicles]) => ({ projectId, vehicles: projectVehicles }))
+  const allProjects = [...grouped.entries()]
+    .map(([projectId, projectVehicles]) => ({ projectId, vehicles: projectVehicles }));
+  const counts = Object.fromEntries(statuses.map(status => [
+    status,
+    allProjects.filter(project => _operationsProjectMode(project) === status).length,
+  ]));
+  statuses.forEach(status => {
+    const count = $(`operations-${status}-count`);
+    if (count) count.textContent = counts[status];
+  });
+  document.querySelectorAll(".operations-filter").forEach(button => {
+    const selected = button.dataset.operationsFilter === mode;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  const search = $("operations-search");
+  if (search) {
+    search.placeholder = `Search ${mode} projects…`;
+    if (search.value !== (_OPERATIONS.search?.[mode] || "")) {
+      search.value = _OPERATIONS.search?.[mode] || "";
+    }
+  }
+
+  const projects = allProjects
+    .filter(project => _operationsProjectMode(project) === mode)
+    .filter(project => mode !== "active" || _OPERATIONS.activeScheduleFilter === "all" ||
+      _operationsProjectScheduleMode(project) === _OPERATIONS.activeScheduleFilter)
     .filter(project => !needle || project.vehicles.some(vehicle => [
       vehicle.vehicle_label,
       vehicle.title,
@@ -321,9 +335,22 @@ function _operationsRenderRows() {
       vehicle.vin,
       vehicle.qbo_estimate_number,
     ].some(value => String(value || "").toLowerCase().includes(needle))));
+  if (mode === "active") projects.sort(_operationsSortActiveProjects);
 
-  document.querySelectorAll(".operations-filter").forEach(button => {
-    button.classList.toggle("active", button.dataset.operationsFilter === _OPERATIONS.filter);
+  const activeProjects = allProjects.filter(project => _operationsProjectMode(project) === "active");
+  const scheduleCounts = {
+    all: activeProjects.length,
+    unscheduled: activeProjects.filter(project => _operationsProjectScheduleMode(project) === "unscheduled").length,
+    scheduled: activeProjects.filter(project => _operationsProjectScheduleMode(project) === "scheduled").length,
+  };
+  const scheduleFilters = $("operations-schedule-filters");
+  if (scheduleFilters) scheduleFilters.hidden = mode !== "active";
+  Object.entries(scheduleCounts).forEach(([filter, value]) => {
+    const count = $(`operations-schedule-${filter}-count`);
+    if (count) count.textContent = value;
+  });
+  document.querySelectorAll("[data-operations-schedule-filter]").forEach(button => {
+    button.classList.toggle("active", button.dataset.operationsScheduleFilter === _OPERATIONS.activeScheduleFilter);
   });
 
   const empty = $("operations-empty");
@@ -347,6 +374,53 @@ function _operationsRenderRows() {
   _operationsBindRowActions();
 }
 
+function _operationsProjectMode(project) {
+  const state = _operationsCommonValue(project.vehicles, "project_state", "active");
+  if (state === "inactive" || state === "completed") return state;
+  return _operationsProjectAcceptance(project.vehicles) === "accepted" ? "active" : "started";
+}
+
+function _operationsProjectScheduleMode(project) {
+  const vehicles = project.vehicles || [];
+  return vehicles.length > 0 && vehicles.every(vehicle =>
+    String(vehicle.schedule_bucket || "") === "scheduled"
+  ) ? "scheduled" : "unscheduled";
+}
+
+function _operationsProjectSortInfo(project) {
+  const vehicles = project.vehicles || [];
+  const arrived = vehicles.length > 0 && vehicles.every(vehicle =>
+    ["received", "parts_ready"].includes(String(vehicle.parts_status || "")) &&
+    String(vehicle.vehicle_availability_status || "") === "at_dtm"
+  );
+  const deadlines = vehicles
+    .map(vehicle => String(vehicle.must_deliver_by_date || "").trim())
+    .filter(value => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    .sort();
+  return { arrived, deadline: deadlines[0] || "9999-12-31" };
+}
+
+function _operationsSortActiveProjects(left, right) {
+  const a = _operationsProjectSortInfo(left);
+  const b = _operationsProjectSortInfo(right);
+  if (_OPERATIONS.activeScheduleFilter === "scheduled") {
+    const aWeek = (left.vehicles || []).map(vehicle =>
+      String(vehicle.scheduled_week_of || "9999-12-31")
+    ).sort()[0] || "9999-12-31";
+    const bWeek = (right.vehicles || []).map(vehicle =>
+      String(vehicle.scheduled_week_of || "9999-12-31")
+    ).sort()[0] || "9999-12-31";
+    const byWeek = aWeek.localeCompare(bWeek);
+    if (byWeek) return byWeek;
+  }
+  if (a.arrived !== b.arrived) return a.arrived ? -1 : 1;
+  const byDeadline = a.deadline.localeCompare(b.deadline);
+  if (byDeadline) return byDeadline;
+  const aName = String(left.vehicles?.[0]?.agency_name || "");
+  const bName = String(right.vehicles?.[0]?.agency_name || "");
+  return aName.localeCompare(bName, undefined, { numeric: true });
+}
+
 function _operationsCommonValue(vehicles, field, fallback = "") {
   const values = new Set(vehicles.map(vehicle => String(vehicle[field] ?? fallback)));
   return values.size === 1 ? [...values][0] : "mixed";
@@ -358,34 +432,82 @@ function _operationsProjectAcceptance(vehicles) {
   return accepted === vehicles.length ? "accepted" : "partially_accepted";
 }
 
+function _operationsProjectProgress(vehicles) {
+  if (!vehicles.length) return { key: "estimate-sent", label: "Estimate Sent" };
+  const all = (field, values) => vehicles.every(vehicle =>
+    values.includes(String(vehicle[field] || ""))
+  );
+  const any = (field, values) => vehicles.some(vehicle =>
+    values.includes(String(vehicle[field] || ""))
+  );
+  if (all("final_finish_status", ["delivered"])) return null;
+  if (all("final_finish_status", ["ready_for_delivery", "delivered"])) {
+    return { key: "ready-deliver", label: "Ready to Deliver" };
+  }
+  if (all("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"]) ||
+      all("programming_qc_status", ["complete"])) {
+    return { key: "ready-qc", label: "Programming & QC Complete" };
+  }
+  if (all("programming_qc_status", ["ready", "complete"])) {
+    return { key: "ready-qc", label: "Ready for QC" };
+  }
+  if (all("shop_status", ["complete"])) {
+    return { key: "building", label: "Build Complete" };
+  }
+  if (any("shop_status", ["in_progress", "complete"]) ||
+      any("tray_status", ["ready", "complete"]) ||
+      any("programming_qc_status", ["ready", "complete"]) ||
+      any("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"])) {
+    return { key: "building", label: "Build in Progress" };
+  }
+  if (all("parts_status", ["parts_ready"]) &&
+      all("vehicle_availability_status", ["at_dtm", "delivered"])) {
+    return { key: "ready-build", label: "Ready to Build" };
+  }
+
+  const accepted = all("acceptance_status", ["accepted"]);
+  const logisticsStarted = any("parts_status", ["ordered", "partially_received", "received", "parts_ready"]) ||
+    any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
+  if (accepted && logisticsStarted) {
+    const parts = _operationsCommonValue(vehicles, "parts_status", "not_started") || "not_started";
+    const availability = _operationsCommonValue(
+      vehicles, "vehicle_availability_status", "awaiting_details",
+    );
+    return {
+      key: "logistics",
+      label: `Parts: ${_operationsLabel(parts)} · Vehicle: ${_operationsLabel(availability)}`,
+    };
+  }
+  return accepted
+    ? { key: "estimate-accepted", label: "Estimate Accepted" }
+    : { key: "estimate-sent", label: "Estimate Sent" };
+}
+
 function _operationsProjectGroupMarkup(project, open) {
   const vehicles = project.vehicles;
   const first = vehicles[0] || {};
   const projectName = [first.build_year, first.agency_name || "Unnamed project"]
     .filter(Boolean).join(" · ");
-  const acceptance = _operationsProjectAcceptance(vehicles);
-  const acceptanceBadge = first.project_state === "active"
-    ? `<span class="operations-pill operations-pill-${esc(acceptance)}">${esc(_operationsLabel(acceptance))}</span>`
-    : "";
   const schedule = _operationsCommonValue(vehicles, "schedule_bucket", "prospective");
+  const mode = _operationsProjectMode(project);
+  const progress = ["started", "active"].includes(mode)
+    ? _operationsProjectProgress(vehicles)
+    : null;
+  const deadline = _operationsProjectSortInfo(project).deadline;
+  const meta = [
+    `${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`,
+    _operationsLabel(schedule),
+    deadline === "9999-12-31" ? "" : `Must Deliver On ${_operationsDate(deadline)}`,
+  ].filter(Boolean).join(" · ");
   const canEdit = _operationsEditableWorkstreams().length > 0;
   const canSchedule = _operationsCanSchedule() && first.project_state === "active";
-  const summaryStatuses = [
-    ["availability", "Vehicle", _operationsCommonValue(vehicles, "vehicle_availability_status", "awaiting_details")],
-    ["parts", "Parts", _operationsCommonValue(vehicles, "parts_status", "not_started") || "not_started"],
-    ["shop", "Build", _operationsCommonValue(vehicles, "shop_status", "not_started") || "not_started"],
-    ["tray", "Tray", _operationsCommonValue(vehicles, "tray_status", "not_ready")],
-    ["programming_qc", "Programming & QC", _operationsCommonValue(vehicles, "programming_qc_status", "not_ready")],
-    ["final_finish", "Final", _operationsCommonValue(vehicles, "final_finish_status", "not_ready")],
-  ].map(([key, label, value]) => `<span class="operations-status-tone-${_operationsStatusTone(key, value)}"><b>${esc(label)}</b>${esc(_operationsLabel(value))}</span>`).join("");
   return `<details class="operations-project-group" data-operations-project-id="${_operationsEscAttr(project.projectId)}"${open ? " open" : ""}>
     <summary>
       <div class="operations-project-identity">
         <strong>${esc(projectName)}</strong>
-        <span>${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"} · ${esc(_operationsLabel(schedule))}</span>
+        <span>${esc(meta)}</span>
       </div>
-      <span class="operations-project-acceptance">${acceptanceBadge}</span>
-      <div class="operations-project-statuses">${summaryStatuses}</div>
+      <span class="operations-project-progress">${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}</span>
       <span class="operations-project-chevron" aria-hidden="true">⌄</span>
     </summary>
     <div class="operations-project-body">
@@ -1349,10 +1471,19 @@ document.addEventListener("DOMContentLoaded", () => {
   $("operations-add-builder")?.addEventListener("click", () => {
     _operationsLoadProjectionPreview({ open: true });
   });
-  $("operations-search")?.addEventListener("input", () => _operationsRenderRows());
+  $("operations-search")?.addEventListener("input", event => {
+    _OPERATIONS.search[_OPERATIONS.filter] = event.target.value;
+    _operationsRenderRows();
+  });
   document.querySelectorAll(".operations-filter").forEach(button => {
     button.addEventListener("click", () => {
       _OPERATIONS.filter = button.dataset.operationsFilter || "active";
+      _operationsRenderRows();
+    });
+  });
+  document.querySelectorAll("[data-operations-schedule-filter]").forEach(button => {
+    button.addEventListener("click", () => {
+      _OPERATIONS.activeScheduleFilter = button.dataset.operationsScheduleFilter || "all";
       _operationsRenderRows();
     });
   });

@@ -29,6 +29,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 HERE = Path(__file__).resolve().parent
+FLOW_TIMEOUT_SECONDS = 90
 
 
 # ── child: run one flow hermetically ─────────────────────────────────────────
@@ -127,15 +128,27 @@ def main(argv: list[str]) -> int:
 
     failures = 0
     for name in wanted:
-        print(f"── flow: {name} " + "─" * (60 - len(name)))
-        proc = subprocess.run(
-            [sys.executable, str(HERE / "run_smoke.py"), "--child", name],
-            cwd=str(HERE.parents[1]),
-        )
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(HERE / "run_smoke.py"), "--child", name],
+                cwd=str(HERE.parents[1]),
+                capture_output=True,
+                text=True,
+                timeout=FLOW_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            failures += 1
+            print(f"FAIL: {name} exceeded {FLOW_TIMEOUT_SECONDS}s")
+            continue
         if proc.returncode != 0:
             failures += 1
+            print(f"FAIL: {name}")
+            if proc.stdout.strip():
+                print(proc.stdout.strip())
+            if proc.stderr.strip():
+                print(proc.stderr.strip(), file=sys.stderr)
 
-    print(f"\n{len(wanted) - failures}/{len(wanted)} flows passed")
+    print(f"{len(wanted) - failures}/{len(wanted)} flows passed")
     return 1 if failures else 0
 
 

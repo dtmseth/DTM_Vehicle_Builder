@@ -17,8 +17,21 @@ function _ptFillIndModal(vm, ind, title) {
   $("ind-edit-notes").value         = ind.notes                || "";
 }
 
+function _ptSetIndividualModalReadOnly(readOnly) {
+  const modal = $("ind-edit-modal");
+  if (!modal) return;
+  modal.querySelectorAll("input, textarea, select").forEach(field => {
+    field.disabled = !!readOnly;
+  });
+  const save = $("ind-edit-save");
+  if (save) save.hidden = !!readOnly;
+  const setup = $("ind-edit-setup-build");
+  if (setup) setup.hidden = !!readOnly;
+}
+
 // Opened from wizard Review tab
 window.PT_openIndModal = function (uid, indIdx) {
+  if (!_ptCanEditProjects()) return;
   _PT.indModalUid        = uid;
   _PT.indModalIdx        = indIdx;
   _PT.indModalFromDetail = false;
@@ -31,6 +44,7 @@ window.PT_openIndModal = function (uid, indIdx) {
   if (!ind) return;
   const vm = _ptVehicleConfig(u.vehicle_model);
   _ptFillIndModal(vm, ind, `Edit: ${_ptUnitLabel(u, ind, indIdx)}`);
+  _ptSetIndividualModalReadOnly(false);
   const setupSec = $("ind-modal-setup-section");
   if (setupSec) setupSec.style.display = "none";
   $("ind-edit-modal").classList.add("open");
@@ -53,8 +67,9 @@ window.PT_openDetailIndModal = function (projectId, unitId, individualId) {
   const indIdx = unit.individuals.indexOf(ind);
   const vm     = _ptVehicleConfig(unit.vehicle_model);
   _ptFillIndModal(vm, ind, `${_ptUnitLabel(unit, ind, indIdx)}`);
+  _ptSetIndividualModalReadOnly(!_ptCanEditProjects());
   const setupSec = $("ind-modal-setup-section");
-  if (setupSec) setupSec.style.display = "";
+  if (setupSec) setupSec.style.display = _ptCanEditProjects() ? "" : "none";
   $("ind-edit-modal").classList.add("open");
 };
 
@@ -66,6 +81,7 @@ window.PT_closeIndModal = function () {
 };
 
 window.PT_saveIndModal = function () {
+  if (!_ptCanEditProjects()) return;
   if (_PT.indModalFromDetail) {
     _ptSaveDetailIndModal(false);
     return;
@@ -151,6 +167,7 @@ async function _ptSaveDetailIndModal(thenBuild) {
 }
 
 window.PT_setupBuildFromModal = function () {
+  if (!_ptCanEditProjects()) return;
   if (!_PT.indModalFromDetail) return;
   _ptSaveDetailIndModal(true);
 };

@@ -175,14 +175,15 @@ writes remain feature-gated until repository and concurrency tests pass.
 2. Create/update one operations projection when a Builder individual vehicle is saved. The current
    implementation automatically upserts the narrow Builder-owned projection and preserves every
    Operations-owned field. Explicit single/sequential creation remains a legacy import fallback.
-3. Add Active, Inactive, and Completed project tabs. Inactive projects retain Operations history
-   but are hidden from the Operations workspace until reactivated.
+3. Add Started, Active, and Completed Operations tabs. Inactive projects retain Operations history
+   but remain hidden until reactivated; their archive remains available in Projects.
 4. Show Not Accepted / Partially Accepted / Accepted only on Active project cards.
 5. Add authorized project/vehicle status entry, including vehicle availability and optional
    business-effective date. This is implemented; history display remains a later slice.
 6. Show the derived Commitment Start and Must Deliver By dates.
-7. Add the small scheduling fields and filtered backlog/week views. The schedule form and local
-   Unscheduled/Scheduled filters are implemented; a dedicated week board remains optional.
+7. Add the small scheduling fields and filtered backlog/week views. The schedule form and Active
+   **All / Unscheduled / Scheduled** subfilters are implemented; Scheduled sorts by week and a
+   dedicated week board remains optional.
 8. Reject unauthorized or stale mutations.
 
 Accepted vehicles without a scheduled week automatically appear as Unscheduled; setting a week
@@ -294,6 +295,18 @@ Create illustrated, task-oriented references for:
 
 Write final guides after pilot feedback so they describe the shipped interface. Version them with
 the app and retain one master lifecycle diagram.
+
+## Phase 8 — Bay and team assignments (after the scheduling pilot)
+
+- Add an owner-reviewed bay roster using durable neutral IDs, current vehicle occupancy, and dated
+  move/reassignment events. Preserve historical labels when a bay is renamed.
+- Add an owner-reviewed team/person roster using durable neutral IDs. Start with display-name data
+  where workers do not yet have individual Microsoft accounts and allow a later optional Entra
+  object-ID link without migrating assignment history.
+- Support a project-level team assignment with a per-vehicle override and an explicit unassigned
+  state. Project-wide changes remain one revision-checked vehicle event at a time.
+- Do not create permanent SharePoint fields or lists until the real bay names and first team
+  structure are known. Do not add automatic bay optimization or labor scheduling in this phase.
 
 ## Rollout and rollback
 

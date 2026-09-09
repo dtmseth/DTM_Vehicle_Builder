@@ -44,7 +44,7 @@ dtm-buildsheet-generate = "dtm_buildsheet.generator_cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v"
+addopts = "-q --tb=short"
 
 # Coverage floor (AUDIT_REFACTOR_ROADMAP.md §8.1 Step 1d): the ratchet only
 # shrinks. Set at the measured coverage when the CI job landed (68.80%, one

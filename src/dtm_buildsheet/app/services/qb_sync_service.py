@@ -905,9 +905,40 @@ def push_vehicle_job(paths: AppPaths, project_id: str, individual_id: str) -> di
 
 _POLL_INTERVAL_SECONDS = 30 * 60
 _bg_thread = None
+_bg_wake = threading.Event()
 
 
-def start_background_sync(paths: AppPaths, *, interval_seconds: int = _POLL_INTERVAL_SECONDS) -> None:
+def run_automatic_sync(paths: AppPaths) -> dict:
+    """Refresh every safe QBO-backed cache available to a connected user.
+
+    Item/catalog reconciliation and Customer-to-Agency import deliberately
+    remain separate operations internally, but startup and periodic refreshes
+    must run both. Customer import is additive: it links matching agencies and
+    fills missing profile data without replacing Builder-authored values.
+    """
+
+    catalog = run_full_sync(paths)
+    customers = import_customers(paths)
+    ok = bool(catalog.get("ok")) and bool(customers.get("ok"))
+    result = {**catalog, "ok": ok, "customers": customers}
+    if not ok and not result.get("error"):
+        result["error"] = customers.get("error", "automatic_sync_failed")
+    return result
+
+
+def request_background_sync() -> None:
+    """Wake the existing poller after a new OAuth connection is established."""
+
+    _bg_wake.set()
+
+
+def start_background_sync(
+    paths: AppPaths,
+    *,
+    interval_seconds: int = _POLL_INTERVAL_SECONDS,
+    startup_ready: threading.Event | None = None,
+    on_data_change=None,
+) -> None:
     """Kick a daemon thread that runs a full sync now and every interval.
 
     No-ops under pytest and never starts twice. Each pass runs only when the
@@ -915,7 +946,6 @@ def start_background_sync(paths: AppPaths, *, interval_seconds: int = _POLL_INTE
     """
     import os
     import threading
-    import time
 
     global _bg_thread
     if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -924,13 +954,21 @@ def start_background_sync(paths: AppPaths, *, interval_seconds: int = _POLL_INTE
         return
 
     def _loop():
+        if startup_ready is not None:
+            startup_ready.wait(timeout=60)
         while True:
             try:
                 if quickbooks_service.get_status(paths).get("connected"):
-                    run_full_sync(paths)
+                    result = run_automatic_sync(paths)
+                    customers = result.get("customers") or {}
+                    if on_data_change is not None and (
+                        customers.get("created") or customers.get("updated")
+                    ):
+                        on_data_change()
             except Exception:  # noqa: BLE001 — poller must never die
                 logger.warning("QuickBooks background sync pass failed")
-            time.sleep(interval_seconds)
+            _bg_wake.wait(interval_seconds)
+            _bg_wake.clear()
 
     _bg_thread = threading.Thread(target=_loop, name="qb-sync-poll", daemon=True)
     _bg_thread.start()

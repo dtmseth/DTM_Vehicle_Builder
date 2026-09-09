@@ -47,8 +47,8 @@ function _ptPdfOptionsMarkup(projectId, unitId, individualId, type, holder, disa
   return `<details class="proj-build-action-menu">
     <summary class="btn btn-secondary btn-sm">PDF Options</summary>
     <div class="proj-build-action-menu-items">
-      <button type="button"${disabledAttrs}
-        onclick="PT_buildExportPdf('${projectId}','${unitId}','${individualId}','${type}')">Export / update PDF</button>
+      ${_ptCanEditProjects() ? `<button type="button"${disabledAttrs}
+        onclick="PT_buildExportPdf('${projectId}','${unitId}','${individualId}','${type}')">Export / update PDF</button>` : ""}
       ${hasPdf ? `<button type="button"
         onclick="PT_buildOpenPdf('${projectId}','${unitId}','${individualId}','${type}')">View PDF</button>` : ""}
       ${shopVehiclePath ? `<button type="button" data-library-target="shop" data-folder-path="${esc(shopVehiclePath)}"
@@ -59,7 +59,7 @@ function _ptPdfOptionsMarkup(projectId, unitId, individualId, type, holder, disa
 }
 
 function _ptQuickBooksOptionsMarkup(projectId, unitId, individualId, holder, disabledAttrs) {
-  if (!_PT_QUICKBOOKS_UI_ENABLED || !individualId) return "";
+  if (!_PT_QUICKBOOKS_UI_ENABLED || !individualId || !_ptCanManageEstimates()) return "";
   return `<details class="proj-build-action-menu">
     <summary class="btn btn-secondary btn-sm">QuickBooks</summary>
     <div class="proj-build-action-menu-items">
@@ -139,10 +139,12 @@ function _ptBuildCardsMarkup(p) {
         const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
 
         const draftIdEsc  = hasDraft  ? esc(ind.draft_id) : "";
-        return `<div class="proj-build-card proj-build-card--openable" id="build-card-${iid}" tabindex="0"
-          role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(label)}"
+        const canOpen = _ptCanEditProjects() || hasDraft || ind.status === "finalized";
+        return `<div class="proj-build-card${canOpen ? " proj-build-card--openable" : ""}" id="build-card-${iid}"
+          ${canOpen ? `tabindex="0" role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(label)}"` : ""}
           data-build-kind="ind" data-project-id="${pid}" data-unit-id="${uid}"
-          data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}" data-final-status="${esc(ind.status || "draft")}">
+          data-individual-id="${iid}" data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}"
+          data-build-label="${esc(label)}" data-final-status="${esc(ind.status || "draft")}">
           <div class="proj-build-card-top">
             <div class="proj-build-card-label">${esc(label)}</div>
             <button class="btn btn-secondary btn-sm proj-build-details-btn"
@@ -160,8 +162,8 @@ function _ptBuildCardsMarkup(p) {
             ${_ptPdfOptionsMarkup(pid, uid, iid, "ind", ind, buildDis)}
             ${_ptQuickBooksOptionsMarkup(pid, uid, iid, ind, buildDis)}
             ${_ptPhotoOptionsMarkup(p, pid, uid, iid)}
-            <button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>
+            ${_ptCanEditProjects() ? `<button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
+              onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>` : ""}
           </div>
         </div>`;
       }).join("");
@@ -170,10 +172,13 @@ function _ptBuildCardsMarkup(p) {
       const buildDis  = !hasDraft ? ` disabled title="Configure build first"` : "";
       const draftIdEsc = hasDraft  ? esc(u.draft_id) : "";
       const groupLabel = _ptUnitLabel(u, null, uIdx);
+      const canOpen = _ptCanEditProjects() || hasDraft || u.status === "finalized";
 
-      cards = `<div class="proj-build-card proj-build-card--openable" id="build-card-unit-${uid}" tabindex="0"
-        role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(groupLabel)}" data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
-        data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}" data-final-status="${esc(u.status || "draft")}">
+      cards = `<div class="proj-build-card${canOpen ? " proj-build-card--openable" : ""}" id="build-card-unit-${uid}"
+        ${canOpen ? `tabindex="0" role="button" aria-label="${hasDraft ? "Open" : "Set up"} ${esc(groupLabel)}"` : ""}
+        data-build-kind="unit" data-project-id="${pid}" data-unit-id="${uid}"
+        data-draft-id="${draftIdEsc}" data-unit-index="${uIdx}"
+        data-build-label="${esc(groupLabel)}" data-final-status="${esc(u.status || "draft")}">
         <div class="proj-build-card-label">${esc(groupLabel)} ×${u.quantity}</div>
         <div class="proj-ind-card-badges">
           ${_ptFinalizationBadge(u)}
@@ -184,8 +189,8 @@ function _ptBuildCardsMarkup(p) {
         <div class="proj-build-actions">
           ${_ptPdfOptionsMarkup(pid, uid, "", "unit", u, buildDis)}
           ${_ptPhotoOptionsMarkup(p, pid, uid, "")}
-          <button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
-            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>
+          ${_ptCanEditProjects() ? `<button class="btn btn-sm proj-final-review-btn${u.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
+            onclick="PT_reviewFinalization('${pid}','${uid}','','unit')">${u.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>` : ""}
         </div>
       </div>`;
     }
@@ -202,10 +207,10 @@ function _ptBuildCardsMarkup(p) {
 
   return `
     ${groups}
-    <div class="proj-builds-footer">
+    ${_ptCanEditProjects() ? `<div class="proj-builds-footer">
       <button class="btn btn-primary btn-sm" onclick="PT_exportAllPdf()">Export / update all PDFs</button>
       ${_PT_QUICKBOOKS_UI_ENABLED ? `<button class="btn btn-secondary btn-sm" onclick="PT_createEstimatesBatch()">QuickBooks options</button>` : ""}
-    </div>
+    </div>` : ""}
     <div id="proj-action-status" class="proj-action-status" style="display:none"></div>`;
 }
 
@@ -267,7 +272,23 @@ function _ptOpenBuildCard(card) {
   const unitId = card.dataset.unitId;
   const draftId = card.dataset.draftId || "";
   const unitIndex = Number(card.dataset.unitIndex);
-  if (card.dataset.buildKind === "historical") {
+  if (!_ptCanEditProjects()) {
+    if (draftId) {
+      PT_openReadOnlyBuild(
+        draftId,
+        card.dataset.buildLabel || "Build details",
+        card.dataset.finalStatus || "draft",
+      );
+    } else if (card.dataset.finalStatus === "finalized") {
+      PT_reviewFinalization(
+        projectId,
+        unitId,
+        card.dataset.individualId || "",
+        card.dataset.buildKind || "unit",
+        false,
+      );
+    }
+  } else if (card.dataset.buildKind === "historical") {
     PT_openDetailIndModal(projectId, unitId, card.dataset.individualId || "");
   } else if (card.dataset.finalStatus === "finalized") {
     PT_reviewFinalization(projectId, unitId, card.dataset.individualId || "", card.dataset.buildKind || "unit", true);
@@ -277,6 +298,87 @@ function _ptOpenBuildCard(card) {
     PT_setupOrEditBuildUnit(projectId, unitId, draftId, unitIndex);
   }
 }
+
+function _ptCloseReadOnlyBuildModal() {
+  const modal = $("build-readonly-modal");
+  modal?.classList.remove("open");
+  if (modal) modal.hidden = true;
+}
+
+function _ptReadOnlyBuildNotes(notes) {
+  const entries = Object.entries(notes || {}).filter(([, value]) =>
+    Array.isArray(value) ? value.length : String(value || "").trim()
+  );
+  if (!entries.length) return `<p class="build-readonly-empty">No build notes.</p>`;
+  return entries.map(([heading, value]) => {
+    const lines = Array.isArray(value) ? value : [value];
+    return `<div class="build-readonly-note"><strong>${esc(heading)}</strong>${lines.map(line =>
+      `<span>${esc(String(line || ""))}</span>`
+    ).join("")}</div>`;
+  }).join("");
+}
+
+function _ptReadOnlyPartDetails(part) {
+  const details = [];
+  const colors = [part.raw_color, part.lens, part.driver_color, part.passenger_color, part.center_color]
+    .map(value => String(value || "").trim()).filter(Boolean);
+  if (part.manufacturer) details.push(String(part.manufacturer));
+  if (colors.length) details.push(colors.join(" / "));
+  return details.join(" · ");
+}
+
+window.PT_openReadOnlyBuild = async function (draftId, label, finalStatus = "draft") {
+  const modal = $("build-readonly-modal");
+  const body = $("build-readonly-body");
+  if (!_PT._readOnlyBuildWired) {
+    _PT._readOnlyBuildWired = true;
+    $("build-readonly-close")?.addEventListener("click", _ptCloseReadOnlyBuildModal);
+    $("build-readonly-done")?.addEventListener("click", _ptCloseReadOnlyBuildModal);
+    modal?.addEventListener("click", event => {
+      if (event.target === modal) _ptCloseReadOnlyBuildModal();
+    });
+  }
+  if ($("build-readonly-title")) $("build-readonly-title").textContent = label || "Build details";
+  if (body) body.innerHTML = `<p class="build-readonly-loading">Loading build details…</p>`;
+  modal?.removeAttribute("hidden");
+  modal?.classList.add("open");
+
+  try {
+    const response = await api(`/api/draft/${encodeURIComponent(draftId)}`);
+    if (!response?.ok || !response.draft) throw new Error(response?.error || "Build details are unavailable");
+    const draft = response.draft;
+    const parts = Array.isArray(draft.parts) ? draft.parts : [];
+    const included = parts.filter(part => part.include !== false);
+    const excluded = parts.filter(part => part.include === false);
+    const rows = parts.map(part => {
+      const supply = [part.new_or_used, part.source].map(value => String(value || "").trim()).filter(Boolean).join(" · ");
+      return `<tr class="${part.include === false ? "build-readonly-part--excluded" : ""}">
+        <td>${esc(String(part.quantity ?? ""))}</td>
+        <td><strong>${esc(part.name || "Unnamed part")}</strong><small>${esc(_ptReadOnlyPartDetails(part))}</small></td>
+        <td>${esc(part.part_number || "—")}</td>
+        <td>${esc(part.location || "—")}</td>
+        <td>${esc(supply || "—")}</td>
+        <td>${esc(part.notes || "")}</td>
+      </tr>`;
+    }).join("");
+    if (body) body.innerHTML = `
+      <div class="build-readonly-summary">
+        <span>${esc(finalStatus === "finalized" ? "Finalized design" : "Draft design")}</span>
+        <strong>${included.length} included part${included.length === 1 ? "" : "s"}</strong>
+        ${excluded.length ? `<small>${excluded.length} excluded</small>` : ""}
+      </div>
+      <section class="build-readonly-section">
+        <h3>Equipment</h3>
+        ${parts.length ? `<div class="build-readonly-table-wrap"><table class="build-readonly-table">
+          <thead><tr><th>Qty</th><th>Part</th><th>Part #</th><th>Location</th><th>Supply</th><th>Notes</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>` : `<p class="build-readonly-empty">No equipment has been added.</p>`}
+      </section>
+      <section class="build-readonly-section"><h3>Build notes</h3>${_ptReadOnlyBuildNotes(draft.notes)}</section>`;
+  } catch (error) {
+    if (body) body.innerHTML = `<p class="build-readonly-error">${esc(error.message || "Build details are unavailable")}</p>`;
+  }
+};
 
 function _ptBindBuildCardOpeners(container) {
   _ptBindUnitNoteCards(container);
@@ -410,7 +512,9 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
   if (check.status === "finalized") {
     const finalizedBy = check.finalized_by ? ` by ${esc(check.finalized_by)}` : "";
     const finalizedAt = check.finalized_at ? new Date(check.finalized_at).toLocaleString() : "";
-    _ptOpenFinalizationModal("Design finalized", `<section class="build-final-summary"><div class="build-final-seal">✓</div><div><h3>Design sign-off complete</h3><p>Signed off${finalizedBy}${finalizedAt ? ` on ${esc(finalizedAt)}` : ""}. The design is locked against accidental edits.</p></div></section>${_ptFinalizationChecksHtml(check.checks)}<label class="build-reopen-reason"><span>Reason for reopening</span><textarea id="build-reopen-reason" rows="3" placeholder="What needs to change?"></textarea></label>`, "Reopen for changes", async () => {
+    const canEdit = _ptCanEditProjects();
+    const reopen = canEdit ? `<label class="build-reopen-reason"><span>Reason for reopening</span><textarea id="build-reopen-reason" rows="3" placeholder="What needs to change?"></textarea></label>` : "";
+    _ptOpenFinalizationModal("Design finalized", `<section class="build-final-summary"><div class="build-final-seal">✓</div><div><h3>Design sign-off complete</h3><p>Signed off${finalizedBy}${finalizedAt ? ` on ${esc(finalizedAt)}` : ""}. The design is locked against accidental edits.</p></div></section>${_ptFinalizationChecksHtml(check.checks)}${reopen}`, canEdit ? "Reopen for changes" : "", async () => {
       const reason = $("build-reopen-reason")?.value.trim() || "";
       if (reason.length < 3) { toast("Enter a brief reason for reopening", "error"); return; }
       const result = await api(_ptFinalizationUrl(projectId, unitId, individualId, "reopen"), { reason });
@@ -424,6 +528,11 @@ window.PT_reviewFinalization = async function (projectId, unitId, individualId, 
         if (updated) { _PT.viewProject = updated; _ptRenderOverview(updated); }
       }
     });
+    return;
+  }
+
+  if (!_ptCanEditProjects()) {
+    toast("This design has not been finalized yet", "info");
     return;
   }
 
@@ -523,6 +632,7 @@ async function _ptLoadBuildsStats(p) {
 // ── Builds tab actions ─────────────────────────────────────────────────────────
 
 window.PT_setupOrEditBuildUnit = async function (projectId, unitId, existingDraftId, unitIndex) {
+  if (!_ptCanEditProjects()) return;
   const project = _PT.projects.find(p => p.project_id === projectId);
   if (!project) return;
   const unit = project.build_units[unitIndex];
@@ -550,6 +660,7 @@ window.PT_setupOrEditBuildUnit = async function (projectId, unitId, existingDraf
 };
 
 window.PT_setupOrEditBuildInd = async function (projectId, unitId, individualId, existingDraftId, unitIndex) {
+  if (!_ptCanEditProjects()) return;
   const project = _PT.projects.find(p => p.project_id === projectId);
   if (!project) return;
   const unit = project.build_units[unitIndex];

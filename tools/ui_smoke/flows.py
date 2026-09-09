@@ -71,6 +71,7 @@ def _seed_project_with_draft(base_url: str, preferences: dict | None = None,
 def _open_build_editor(page, base_url: str) -> None:
     page.goto(base_url, wait_until="load")
     page.click(".htab[data-tab='projects']")
+    assert page.locator('[data-project-list-status="active"]').get_attribute("aria-selected") == "true"
     page.wait_for_selector(".proj-row-clickable")
     page.click(".proj-row-clickable")
     page.wait_for_selector("#proj-detail-view:not([hidden])")
@@ -111,6 +112,16 @@ def flow_tab_load(page, base_url: str) -> None:
         }],
     })
     assert projection_project["ok"] is True
+    projection_detail = _api(base_url, f"/api/project/{projection_project['project_id']}")
+    projection_unit_id = projection_detail["project"]["build_units"][0]["unit_id"]
+    projection_draft = _api(
+        base_url,
+        f"/api/project/{projection_project['project_id']}/unit/{projection_unit_id}"
+        "/individual/operations-preview-vehicle/create-draft",
+        {},
+        method="POST",
+    )
+    assert projection_draft["ok"] is True
     page.goto(base_url, wait_until="load")
     page.wait_for_selector(".htab[data-tab='projects']")
 
@@ -161,6 +172,26 @@ def flow_tab_load(page, base_url: str) -> None:
     }""")
     assert active_sort == ["arrived-soon", "arrived-late", "waiting-soon"]
 
+    scheduled_sort = page.evaluate("""() => {
+      const savedFilter = _OPERATIONS.activeScheduleFilter;
+      _OPERATIONS.activeScheduleFilter = 'scheduled';
+      const project = (id, week, parts, availability) => ({
+        project_id: id,
+        vehicles: [{
+          agency_name: id, scheduled_week_of: week,
+          parts_status: parts, vehicle_availability_status: availability,
+          must_deliver_by_date: '2031-01-01',
+        }],
+      });
+      const ids = [
+        project('later-arrived', '2031-06-02', 'parts_ready', 'at_dtm'),
+        project('earlier-waiting', '2031-05-05', 'received', 'waiting_on_dealer'),
+      ].sort(_operationsSortActiveProjects).map(item => item.project_id);
+      _OPERATIONS.activeScheduleFilter = savedFilter;
+      return ids;
+    }""")
+    assert scheduled_sort == ["earlier-waiting", "later-arrived"]
+
     # Operations is capability-gated. The hermetic cloud-off identity is a
     # synthetic AppAdmin, so synchronization and project status updates stay entirely
     # in the shared in-memory test repository and make no external request.
@@ -168,7 +199,22 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click(".htab[data-tab='operations']")
     page.wait_for_selector("#tab-operations:not([hidden])")
     page.wait_for_selector("#operations-content:not([hidden])")
-    assert page.locator(".operations-readonly-badge").inner_text().upper() == "ROLE-BASED ACCESS"
+    assert page.locator(".operations-title .operations-readonly-badge").inner_text().upper() == "ROLE-BASED ACCESS"
+    assert page.locator('[data-operations-filter="active"]').get_attribute("aria-selected") == "true"
+    operations_tabs = page.locator("[data-operations-filter]")
+    assert [text.split()[0] for text in operations_tabs.all_inner_texts()] == [
+        "Started", "Active", "Completed",
+    ]
+    for status, expected_color in {
+        "started": selected_colors["started"],
+        "active": selected_colors["active"],
+        "completed": selected_colors["completed"],
+    }.items():
+        page.locator(f'[data-operations-filter="{status}"]').click()
+        assert page.locator(f'[data-operations-filter="{status}"]').evaluate(
+            "button => getComputedStyle(button).backgroundColor"
+        ) == expected_color
+    page.locator('[data-operations-filter="started"]').click()
     page.wait_for_selector(".operations-project-group")
     page.locator(".operations-project-group > summary").click()
     page.wait_for_selector(".operations-vehicle:visible")
@@ -176,37 +222,48 @@ def flow_tab_load(page, base_url: str) -> None:
     assert page.locator("#operations-add-builder").is_visible()
     assert page.locator(".operations-project-group").count() == 1
     assert "3 VEHICLES" in page.locator(".operations-project-group > summary").inner_text().upper()
-    assert page.evaluate("""() => [...document.querySelectorAll('.operations-project-statuses > span')]
-      .find(item => item.querySelector('b')?.textContent.trim() === 'Parts')
-      ?.classList.contains('operations-status-tone-unstarted')""")
+    assert "ESTIMATE SENT" in page.locator(".operations-project-group > summary").inner_text().upper()
+    assert page.locator(".operations-status-grid .operations-status").nth(1).evaluate(
+        "item => item.classList.contains('operations-status-tone-unstarted')"
+    )
     page.locator(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="parts"]'
         '[data-operations-status-value="ordered"]'
     ).click()
-    page.wait_for_function(
-        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('ORDERED')"
+    page.wait_for_selector(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="parts"]'
+        '[data-operations-status-value="ordered"].active'
     )
-    assert page.evaluate("""() => [...document.querySelectorAll('.operations-project-statuses > span')]
-      .find(item => item.querySelector('b')?.textContent.trim() === 'Parts')
-      ?.classList.contains('operations-status-tone-intermediate')""")
+    assert page.locator(".operations-status-grid .operations-status").nth(1).evaluate(
+        "item => item.classList.contains('operations-status-tone-intermediate')"
+    )
     page.locator(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="parts"]'
         '[data-operations-status-value="received"]'
     ).click()
-    page.wait_for_function(
-        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('RECEIVED')"
+    page.wait_for_selector(
+        '[data-operations-status-scope="project"]'
+        '[data-operations-status-workstream="parts"]'
+        '[data-operations-status-value="received"].active'
     )
     page.locator(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="acceptance"]'
         '[data-operations-status-value="accepted"]'
     ).click()
-    page.wait_for_function(
-        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('ACCEPTED')"
-    )
-    assert page.locator('[data-operations-filter="inactive"]').count() == 0
+    page.wait_for_function("document.querySelectorAll('.operations-project-group').length === 0")
+    page.locator('[data-operations-filter="active"]').click()
+    page.wait_for_selector(".operations-project-group")
+    assert page.locator("#operations-schedule-filters").is_visible()
+    assert page.locator("#operations-schedule-all-count").inner_text() == "1"
+    assert page.locator("#operations-schedule-unscheduled-count").inner_text() == "1"
+    assert page.locator("#operations-schedule-scheduled-count").inner_text() == "0"
+    assert "PARTS: RECEIVED · VEHICLE: AWAITING DETAILS" in page.locator(
+        ".operations-project-group > summary"
+    ).inner_text().upper()
 
     page.click(".htab[data-tab='projects']")
     page.wait_for_selector("#tab-projects:not([hidden])")
@@ -217,6 +274,9 @@ def flow_tab_load(page, base_url: str) -> None:
     assert "PARTS: RECEIVED · VEHICLE: AWAITING DETAILS" in project_row.locator(
         ".proj-progress-badge"
     ).inner_text().upper()
+    assert project_row.locator(".proj-progress-badge").evaluate(
+        "badge => getComputedStyle(badge).backgroundColor"
+    ) == "rgb(237, 242, 250)"
     project_row.locator(".proj-row-menu > summary").click()
     assert "MARK INACTIVE" in project_row.locator(".proj-row-menu-items").inner_text().upper()
     assert "DELETE PROJECT" in project_row.locator(".proj-row-menu-items").inner_text().upper()
@@ -236,6 +296,11 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_function(
         "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('SCHEDULED')"
     )
+    page.locator('[data-operations-schedule-filter="scheduled"]').click()
+    page.wait_for_selector(".operations-project-group")
+    assert page.locator("#operations-schedule-scheduled-count").inner_text() == "1"
+    assert page.locator("#operations-schedule-unscheduled-count").inner_text() == "0"
+    page.locator('[data-operations-schedule-filter="all"]').click()
     if not page.locator(".operations-project-group").evaluate("element => element.open"):
         page.locator(".operations-project-group > summary").click()
     page.locator("[data-operations-schedule-project]").click()
@@ -276,15 +341,19 @@ def flow_tab_load(page, base_url: str) -> None:
         '[data-operations-status-workstream="parts"]'
         '[data-operations-status-value="parts_ready"]'
     ).click()
-    page.wait_for_function("""document.querySelector('.operations-project-statuses > span:nth-child(2)')
+    page.wait_for_function("""document.querySelector('.operations-status-grid .operations-status:nth-child(2)')
       ?.classList.contains('operations-status-tone-complete')""")
     page.locator(
         '[data-operations-status-scope="project"]'
         '[data-operations-status-workstream="availability"]'
         '[data-operations-status-value="at_dtm"]'
     ).click()
-    page.wait_for_function("""document.querySelector('.operations-project-statuses > span:first-child')
+    page.wait_for_function("""document.querySelector('.operations-status-grid .operations-status:first-child')
       ?.classList.contains('operations-status-tone-complete')""")
+    assert "READY TO BUILD" in page.locator(".operations-project-progress").inner_text().upper()
+    assert page.locator(".operations-project-progress .proj-progress-badge").evaluate(
+        "badge => getComputedStyle(badge).backgroundColor"
+    ) == "rgb(234, 243, 255)"
     for finish_status in (
         "ready_for_wash_clean_photos",
         "ready_for_delivery",
@@ -301,13 +370,25 @@ def flow_tab_load(page, base_url: str) -> None:
                 '[data-operations-status-workstream="final_finish"]'
                 f'[data-operations-status-value="{finish_status}"].active'
             )
+            badge = page.locator(".operations-project-progress .proj-progress-badge")
+            if finish_status == "ready_for_wash_clean_photos":
+                assert badge.evaluate(
+                    "item => getComputedStyle(item).backgroundColor"
+                ) == "rgb(233, 247, 237)"
+            if finish_status == "ready_for_delivery":
+                assert badge.evaluate(
+                    "item => getComputedStyle(item).backgroundColor"
+                ) == "rgb(25, 135, 84)"
     page.wait_for_function("document.querySelectorAll('.operations-project-group').length === 0")
     page.locator('[data-operations-filter="completed"]').click()
     page.wait_for_selector(".operations-project-group")
-    assert page.evaluate("""() => document.querySelector('.operations-project-statuses > span:first-child')
-      ?.classList.contains('operations-status-tone-complete')""")
-    assert page.evaluate("""() => document.querySelector('.operations-project-statuses > span:last-child')
-      ?.classList.contains('operations-status-tone-complete')""")
+    page.locator(".operations-project-group > summary").click()
+    assert page.locator(".operations-status-grid .operations-status").first.evaluate(
+        "item => item.classList.contains('operations-status-tone-complete')"
+    )
+    assert page.locator(".operations-status-grid .operations-status").last.evaluate(
+        "item => item.classList.contains('operations-status-tone-complete')"
+    )
 
     # Projects
     page.click(".htab[data-tab='projects']")
@@ -374,6 +455,59 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_timeout(_SETTLE_MS)
     page.click(".stab[data-stab='workbook-tools']")
     page.wait_for_timeout(_SETTLE_MS)
+
+    # Workspace gating: Shop can read Projects and edit only its Operations
+    # workstreams; Builder/Sales can edit Projects, Estimates, availability,
+    # and Parts, but cannot schedule or update downstream production.
+    page.evaluate("""() => { const session = {
+      authenticated: true, default_workspace: 'operations',
+      operations_ready: true, operations_write_ready: true,
+      roles: ['ShopEditor'], capabilities: [
+        'operations.view', 'operations.shop.update', 'operations.tray.update',
+        'operations.final_finish.update', 'projects.view'
+      ]
+    }; _OPERATIONS.session = session; applyAppAccessSession(session); }""")
+    assert page.locator("#projects-header-tab").is_visible()
+    assert page.locator("#operations-header-tab").is_visible()
+    assert page.locator("#general-settings-header-tab").is_hidden()
+    assert page.locator("#advanced-settings-header-tab").is_hidden()
+    page.click("#projects-header-tab")
+    assert page.locator("#btn-new-project").is_hidden()
+    assert page.locator("#projects-readonly-badge").is_visible()
+    assert page.get_by_role("button", name="Reopen").count() == 0
+    page.get_by_role("button", name="Open", exact=True).click()
+    page.wait_for_selector("#proj-detail-view:not([hidden])")
+    read_only_build = page.locator(".proj-build-card[data-draft-id]:visible").first
+    read_only_build.locator(".proj-build-card-label").click()
+    page.wait_for_selector("#build-readonly-modal.open")
+    page.wait_for_function("document.querySelector('#build-readonly-body')?.innerText.includes('Equipment')")
+    assert "EQUIPMENT" in page.locator("#build-readonly-body").inner_text().upper()
+    assert page.locator("#proj-build-editor").is_hidden()
+    page.click("#build-readonly-done")
+    shop_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
+    assert shop_streams == ["shop", "tray", "final_finish"]
+
+    page.evaluate("""() => { const session = {
+      authenticated: true, default_workspace: 'projects',
+      operations_ready: true, operations_write_ready: true,
+      roles: ['BuilderEditor'], capabilities: [
+        'operations.view', 'operations.availability.update', 'operations.parts.update',
+        'operations.qbo.observe', 'projects.view', 'projects.edit',
+        'projects.lifecycle.update', 'estimates.manage'
+      ]
+    }; _OPERATIONS.session = session; applyAppAccessSession(session); }""")
+    assert page.locator("#btn-new-project").get_attribute("hidden") is None
+    assert page.locator("#general-settings-header-tab").is_visible()
+    assert page.locator("#general-settings-header-tab").inner_text() == "💵 QuickBooks"
+    page.click("#general-settings-header-tab")
+    visible_general_stabs = page.locator("#stab-bar-general .stab:visible")
+    assert visible_general_stabs.count() == 1
+    assert visible_general_stabs.first.get_attribute("data-stab") == "quickbooks"
+    assert page.locator("#qb-pricing-panel").is_hidden()
+    assert page.locator("#qb-creds-card").is_hidden()
+    builder_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
+    assert builder_streams == ["acceptance", "availability", "parts"]
+    assert page.evaluate("() => _operationsCanSchedule()") is False
 
     # Let any in-flight fetches finish so their errors (if any) are captured.
     page.wait_for_load_state("networkidle")

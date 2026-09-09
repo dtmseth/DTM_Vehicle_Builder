@@ -33,6 +33,7 @@ from .routes import templates as template_routes
 from .routes import updates as update_routes
 from .routes import validation as validation_routes
 from .services.template_service import pick_folder as _pick_folder
+from .services.request_access_service import authorize_request
 
 PORT = 7655
 _UI_FILE = Path(__file__).parent.parent / "ui" / "index.html"
@@ -63,6 +64,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+
+        if not self._request_allowed("GET", path):
+            return
 
         if path in ("/", "/index.html"):
             self._serve_ui()
@@ -131,6 +135,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self._read_json()
         path = urlparse(self.path).path
+
+        if not self._request_allowed("POST", path):
+            return
 
         if path == "/parse":
             self._api(generation_routes.post_parse(body, self.paths))
@@ -201,6 +208,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = urlparse(self.path).path
+        if not self._request_allowed("DELETE", path):
+            return
         if path.startswith("/api/presets/"):
             if not preset_routes.route_presets(self, "DELETE", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
@@ -259,6 +268,17 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", len(body))
         self.end_headers()
         self.wfile.write(body)
+
+    def _request_allowed(self, method: str, path: str) -> bool:
+        decision = authorize_request(method, path)
+        if decision.allowed:
+            return True
+        self._send(
+            decision.status,
+            json.dumps({"ok": False, "error": decision.error}).encode("utf-8"),
+            "application/json",
+        )
+        return False
 
     def _api(self, data: dict):
         self._send(200, json.dumps(data).encode("utf-8"), "application/json")
@@ -325,6 +345,7 @@ _PERIODIC_SYNC_INTERVAL_SECONDS = 60
 # for any in-progress periodic sync to finish before starting its own pass.
 _sync_lock = threading.Lock()
 _sync_in_progress = False  # noqa: PLW0603 — see run_sync_now() for the contract
+_initial_cloud_sync_complete = threading.Event()
 # When True, the UI suppresses the cloud-chip spinner while a sync cycle is
 # in flight. Periodic 60s background syncs always run quiet — the user
 # doesn't see a spinner for the polling/checking phase that 99% of cycles
@@ -631,6 +652,7 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
     logger = logging.getLogger(__name__)
     first = True
     while True:
+        is_first = first
         if not first:
             time.sleep(_PERIODIC_SYNC_INTERVAL_SECONDS)
         first = False
@@ -639,6 +661,12 @@ def _periodic_sync_loop(active_paths: AppPaths) -> None:
         except Exception:
             logger.exception("Periodic sync iteration failed; will retry in %ds",
                              _PERIODIC_SYNC_INTERVAL_SECONDS)
+        finally:
+            if is_first:
+                # QBO Customer import writes the same local agency collection.
+                # Let the first SharePoint reconciliation finish before the QBO
+                # worker begins so the two startup sources cannot race.
+                _initial_cloud_sync_complete.set()
 
 
 def main(paths: AppPaths | None = None):
@@ -692,7 +720,11 @@ def main(paths: AppPaths | None = None):
     # No-op until the owner has connected a company (guarded inside).
     try:
         from .services import qb_sync_service
-        qb_sync_service.start_background_sync(active_paths)
+        qb_sync_service.start_background_sync(
+            active_paths,
+            startup_ready=_initial_cloud_sync_complete,
+            on_data_change=_bump_data_version,
+        )
     except Exception:
         logging.getLogger(__name__).warning("QuickBooks background sync did not start")
 

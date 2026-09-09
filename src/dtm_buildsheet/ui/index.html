@@ -20,10 +20,10 @@
     <div><h1>Vehicle Builder</h1><p class="header-version">{{APP_VERSION}}</p></div>
   </div>
   <div class="header-tabs">
-    <button class="htab" data-tab="projects">📋 Projects</button>
+    <button class="htab" id="projects-header-tab" data-tab="projects" hidden>📋 Projects</button>
     <button class="htab" id="operations-header-tab" data-tab="operations" hidden>🏭 Operations</button>
-    <button class="htab" data-tab="general-settings">⚙️ General Settings</button>
-    <button class="htab" data-tab="advanced-settings">🔧 Advanced Settings</button>
+    <button class="htab" id="general-settings-header-tab" data-tab="general-settings" hidden>⚙️ General Settings</button>
+    <button class="htab" id="advanced-settings-header-tab" data-tab="advanced-settings" hidden>🔧 Advanced Settings</button>
   </div>
   <!-- Cloud connection indicator — updated by refreshCloudStatus() in api.js.
        Hidden via the `cloud-status-local` class which collapses the chip
@@ -115,19 +115,21 @@
     <div id="operations-message" class="operations-message" role="status">Loading Operations…</div>
 
     <div id="operations-content" hidden>
-      <div class="operations-metrics" id="operations-metrics"></div>
       <div class="operations-toolbar">
-        <div class="operations-filters" id="operations-filters" aria-label="Filter operations vehicles">
-          <button class="operations-filter active" type="button" data-operations-filter="active">Active</button>
-          <button class="operations-filter" type="button" data-operations-filter="unscheduled">Unscheduled</button>
-          <button class="operations-filter" type="button" data-operations-filter="scheduled">Scheduled</button>
-          <button class="operations-filter" type="button" data-operations-filter="prospective">Not accepted</button>
-          <button class="operations-filter" type="button" data-operations-filter="completed">Completed</button>
+        <div class="proj-list-tabs operations-filters" id="operations-filters" role="tablist" aria-label="Operations project status">
+          <button class="proj-list-tab operations-filter" type="button" role="tab" aria-selected="false" data-operations-filter="started">Started <span id="operations-started-count">0</span></button>
+          <button class="proj-list-tab operations-filter active" type="button" role="tab" aria-selected="true" data-operations-filter="active">Active <span id="operations-active-count">0</span></button>
+          <button class="proj-list-tab operations-filter" type="button" role="tab" aria-selected="false" data-operations-filter="completed">Completed <span id="operations-completed-count">0</span></button>
         </div>
         <label class="operations-search">
-          <span>Search</span>
-          <input id="operations-search" type="search" placeholder="Agency, unit, VIN…" autocomplete="off">
+          <input id="operations-search" type="search" placeholder="Search active projects…" autocomplete="off" aria-label="Search Operations projects">
         </label>
+      </div>
+      <div class="operations-schedule-filters" id="operations-schedule-filters" role="group" aria-label="Active project scheduling" hidden>
+        <span>Schedule</span>
+        <button class="operations-schedule-filter active" type="button" data-operations-schedule-filter="all">All <b id="operations-schedule-all-count">0</b></button>
+        <button class="operations-schedule-filter" type="button" data-operations-schedule-filter="unscheduled">Unscheduled <b id="operations-schedule-unscheduled-count">0</b></button>
+        <button class="operations-schedule-filter" type="button" data-operations-schedule-filter="scheduled">Scheduled <b id="operations-schedule-scheduled-count">0</b></button>
       </div>
       <div id="operations-projection-panel" class="operations-projection-panel" hidden></div>
       <div id="operations-empty" class="operations-empty" hidden></div>
@@ -1387,12 +1389,12 @@
   <div id="proj-list-view">
     <div class="card">
       <div class="card-title">
-        Projects
+        <span>Projects <small class="operations-readonly-badge" id="projects-readonly-badge" hidden>Read only</small></span>
         <button class="btn btn-primary btn-sm" id="btn-new-project">+ New Project</button>
       </div>
       <div class="proj-list-tabs" role="tablist" aria-label="Project status">
-        <button class="proj-list-tab active" type="button" role="tab" aria-selected="true" data-project-list-status="started">Started <span id="proj-started-count">0</span></button>
-        <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="active">Active <span id="proj-active-count">0</span></button>
+        <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="started">Started <span id="proj-started-count">0</span></button>
+        <button class="proj-list-tab active" type="button" role="tab" aria-selected="true" data-project-list-status="active">Active <span id="proj-active-count">0</span></button>
         <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="inactive">Inactive <span id="proj-inactive-count">0</span></button>
         <button class="proj-list-tab" type="button" role="tab" aria-selected="false" data-project-list-status="completed">Completed <span id="proj-completed-count">0</span></button>
       </div>
@@ -1961,6 +1963,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="build-readonly-modal" role="dialog" aria-modal="true" aria-labelledby="build-readonly-title" hidden>
+  <div class="modal build-readonly-modal">
+    <div class="modal-title">
+      <span id="build-readonly-title">Build details</span>
+      <button class="modal-close" id="build-readonly-close" aria-label="Close build details">×</button>
+    </div>
+    <div id="build-readonly-body" class="build-readonly-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="build-readonly-done">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="unit-notes-modal" role="dialog" aria-modal="true" aria-labelledby="unit-notes-modal-title" hidden>
   <div class="modal proj-unit-notes-modal">
     <div class="modal-title">
@@ -2065,12 +2080,12 @@
     </div>
     <!-- Setup Build section — shown when opened from detail view -->
     <div id="ind-modal-setup-section" style="display:none;padding-top:12px;margin-top:8px;border-top:1px solid var(--border)">
-      <button class="btn btn-primary" style="width:100%" onclick="PT_setupBuildFromModal()">⚡ Setup Build for this Unit</button>
+      <button class="btn btn-primary" id="ind-edit-setup-build" style="width:100%" onclick="PT_setupBuildFromModal()">⚡ Setup Build for this Unit</button>
       <p style="font-size:11px;color:var(--muted);margin:6px 0 0">Opens the build sheet editor — saves any detail changes above first.</p>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="PT_closeIndModal()">Close</button>
-      <button class="btn btn-primary" onclick="PT_saveIndModal()">Save Details</button>
+      <button class="btn btn-primary" id="ind-edit-save" onclick="PT_saveIndModal()">Save Details</button>
     </div>
   </div>
 </div>

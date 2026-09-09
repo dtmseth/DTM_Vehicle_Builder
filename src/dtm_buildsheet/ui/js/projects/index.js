@@ -3,9 +3,9 @@
 
 // ── View switching ─────────────────────────────────────────────────────────────
 
-function _ptShowList(mode = _PT.listMode || "started") {
+function _ptShowList(mode = _PT.listMode || "active") {
   if (mode === "archive") mode = "completed";
-  _PT.listMode = ["started", "active", "inactive", "completed"].includes(mode) ? mode : "started";
+  _PT.listMode = ["started", "active", "inactive", "completed"].includes(mode) ? mode : "active";
   show("proj-list-view");
   hide("proj-detail-view");
   hide("proj-editor");
@@ -27,9 +27,10 @@ function _ptShowDetail(project) {
   const completed = project.project_status === "completed";
   const inactive = project.project_status === "inactive";
   const inactiveBtn = $("btn-proj-inactive");
-  inactiveBtn.hidden = completed;
+  inactiveBtn.hidden = completed || !_ptCanUpdateProjectLifecycle();
   inactiveBtn.textContent = inactive ? "Reactivate Project" : "Mark Project Inactive";
   const completionBtn = $("btn-proj-complete");
+  completionBtn.hidden = !_ptCanUpdateProjectLifecycle();
   completionBtn.textContent = completed ? "Reopen Project" : "Mark Project Completed";
   completionBtn.className = `btn btn-sm ${completed ? "btn-primary" : "btn-secondary"}`;
 
@@ -39,6 +40,10 @@ function _ptShowDetail(project) {
 }
 
 function _ptShowEditor(project, activeTab) {
+  if (!_ptCanEditProjects()) {
+    toast("This project is read only for your role", "error");
+    return;
+  }
   _PT.fromDetail = !!(project && _PT.viewProject);
   _PT.isWizard   = !project;
   _PT.editId     = project?.project_id || null;

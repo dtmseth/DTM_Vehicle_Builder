@@ -835,7 +835,7 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
         by_name.setdefault(_normalize(r.name), r)
 
     now = _utcnow()
-    created = updated = 0
+    created = updated = unchanged = 0
     to_mirror: list[tuple[str, str]] = []
     for cust in customers:
         name = str(cust.get("name", "")).strip()
@@ -844,8 +844,15 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
         qb_id = str(cust.get("qb_customer_id", "")).strip()
         existing = _match_existing_for_qb(cust, by_qb, by_name)
         if existing:
-            existing.qb_customer_id = qb_id or existing.qb_customer_id
-            merge_missing_customer_profile(existing, cust)
+            changed = False
+            if qb_id and existing.qb_customer_id != qb_id:
+                existing.qb_customer_id = qb_id
+                changed = True
+            if merge_missing_customer_profile(existing, cust):
+                changed = True
+            if not changed:
+                unchanged += 1
+                continue
             existing.updated_at = now
             record = existing
             updated += 1
@@ -884,7 +891,13 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
         from .shared_work_service import save_settings_to_cloud_batch_in_background
         save_settings_to_cloud_batch_in_background(to_mirror)
 
-    return {"ok": True, "created": created, "updated": updated, "total": created + updated}
+    return {
+        "ok": True,
+        "created": created,
+        "updated": updated,
+        "unchanged": unchanged,
+        "total": created + updated + unchanged,
+    }
 
 
 def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:

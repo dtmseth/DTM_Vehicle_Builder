@@ -350,7 +350,19 @@ def route_operations(
                 else "disabled"
             )
         else:
-            payload = OperationsReadService(bundle.operations).list_vehicle_summaries(actor)
+            # Builder lifecycle is authoritative for visibility. A previously
+            # projected Operations row may still say active if an older client
+            # marked its project inactive without updating that projection.
+            # Filter it at the API boundary so every Operations client agrees.
+            inactive_project_ids = frozenset(
+                project.project_id
+                for project in list_projects(paths)
+                if project.project_status == "inactive"
+            )
+            payload = OperationsReadService(bundle.operations).list_vehicle_summaries(
+                actor,
+                hidden_project_ids=inactive_project_ids,
+            )
         send_json(handler, payload)
     except OperationsAuthorizationError:
         send_json(handler, {

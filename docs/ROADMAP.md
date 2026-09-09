@@ -58,6 +58,12 @@ materially alter Builder parts, add a reviewed change queue with durable history
 catalog auto-enrichment. The approved behavior and data requirements live in
 [QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
 
+**Later Operations capacity work:** after the current scheduling flow is piloted, add dated shop-bay
+occupancy and project/vehicle team assignments. Initial workers may be represented by an
+administratively managed name roster; durable neutral IDs must allow those entries to link to Entra
+accounts later without changing history. Exact bay/team structures are deliberately not frozen into
+SharePoint until the shop process is established. See `OPERATIONS_SYSTEM.md`.
+
 ### Near-term critical path (in order, updated 2026-09-03)
 
 1. **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write

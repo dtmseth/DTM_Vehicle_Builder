@@ -394,5 +394,12 @@ def _handle_callback(handler: BaseHTTPRequestHandler, paths: AppPaths) -> bool:
     if result.get("ok") and result.get("profile") == quickbooks_service.PRODUCTION_PREVIEW_PROFILE:
         _redirect(handler, "/?qb=production-preview-connected")
     else:
+        if result.get("ok"):
+            # The periodic worker may be sleeping after a disconnected startup
+            # pass. Wake it so Items and Customers/Agencies both refresh as
+            # soon as this user finishes connecting.
+            from ..services import qb_sync_service
+
+            qb_sync_service.request_background_sync()
         _redirect(handler, "/?qb=connected" if result.get("ok") else "/?qb=error")
     return True

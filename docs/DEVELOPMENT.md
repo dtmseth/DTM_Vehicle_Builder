@@ -23,12 +23,27 @@ Port conflict on launch → old instance still running: `lsof -ti :7655 | xargs 
 ## Testing
 
 ```bash
-.venv/bin/python -m pytest                    # full suite
-.venv/bin/python -m pytest tests/test_foo.py  # single file
+.venv/bin/python tools/verify.py changed       # normal inner loop: changed areas only
+.venv/bin/python tools/verify.py changed --skip-smoke  # fastest logic-only pass
+.venv/bin/python -m pytest tests/test_foo.py   # one explicitly selected file
+.venv/bin/python tools/verify.py release       # full suite + all browser flows
 ```
 
 Tests auto-redirect workspace to temp dirs. `PYTEST_CURRENT_TEST` guards prevent real cloud
 I/O — never bypass these guards.
+
+The normal development loop is deliberately localized. `tools/verify.py changed` reads the current
+Git diff, runs syntax checks, maps changed subsystems to their focused pytest files and browser
+flows, captures all successful command output, and prints only compact summaries. A failure stops
+pytest after the first failing case and prints its useful diagnostics. Browser flows run in isolated
+subprocesses with a hard per-flow timeout, so a stuck browser cannot hold the release gate open.
+
+Do not run or stream the entire suite after every small edit. Use the `release` profile only at a
+release/merge checkpoint or after a genuinely cross-cutting core contract change. GitHub CI keeps
+the complete suite and coverage floor as the authoritative always-on safety net.
+
+This policy is mandatory for automated coding sessions. The repository-root `AGENTS.md` contains
+the canonical session instructions so a fresh agent receives them before making changes.
 
 Add tests with every new system-level behavior. Focus: domain logic, config validation,
 rule evaluation, planning, preview overrides, export services.
@@ -94,8 +109,7 @@ Semantic versioning (`bump-my-version`). See `docs/VERSIONING.md`. Current: `v3.
 
 ## Release checklist
 
-The current published release is v3.5.0. Its verification baseline is 2,244 passed, 1 skipped;
-six render goldens and 28/28 browser smoke flows pass. Treat
+The current published release baseline and test totals are recorded in `CURRENT_STATE.md`. Treat
 `CURRENT_STATE.md` as the live baseline rather than copying these totals into new planning docs.
 
 The manual release workflow creates the tagged GitHub release and uploads versioned installers plus

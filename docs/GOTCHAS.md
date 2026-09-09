@@ -293,3 +293,33 @@ you're touching. New gotchas get appended to the bottom with a date.
     every vehicle has Parts Received/Parts Ready and is At DTM come first, then each group sorts by
     its earliest effective Must Deliver On date with undated projects last. Do not infer acceptance,
     arrival, or deadlines from names or badges.
+54. **A failed Operations read must preserve the last good Projects classification snapshot.**
+    Projects derives Started versus Active from Operations acceptance, but a rejected/temporary
+    Operations request is not evidence that acceptance was cleared. Replace
+    `operationsByProject` only after an explicit successful response; before the first successful
+    snapshot, keep durable-active projects in the neutral Active view instead of inventing Started.
+55. **Automatic QBO refresh includes Customers but must remain write-idempotent.** Connected startup,
+    30-minute polling, and the post-OAuth wakeup refresh Items and Customers/Agencies. Customer
+    down-sync remains additive and must not rewrite or SharePoint-mirror hundreds of unchanged
+    agency records on each pass. The first QBO pass waits for the initial SharePoint settings sync;
+    both sources touch the local agency collection and racing them can discard a valid update.
+56. **Header visibility is not Builder authorization.** Legacy project, draft, settings, catalog,
+    and QuickBooks routes are capability-checked in `request_access_service.py` before dispatch.
+    Every new legacy route must be deliberately classified there; Shop read access uses
+    `projects.view`, while all mutations retain narrower capabilities. QuickBooks estimate users may
+    connect and refresh their own session, but catalog links, Retail-pricing defaults, and app
+    registration settings remain administrative.
+57. **The Scheduled Operations subfilter sorts by Scheduled Week before readiness.** The general
+    Active view still puts fully arrived projects first and then uses Must Deliver On. Once the user
+    explicitly chooses Scheduled, chronological week is the primary ordering so later arrived work
+    cannot jump ahead of an earlier scheduled week.
+58. **Use the compact, change-aware verification gate in automated sessions.** Routine work runs
+    `tools/verify.py changed` after a meaningful edit batch; it captures successful output and
+    prints concise summaries. Do not stream verbose pytest passes or repeatedly run the full Python
+    and browser suites. `tools/verify.py release` is a one-time release/merge gate, an explicitly
+    requested run, or a justified check for a genuinely cross-cutting core contract change. CI
+    remains the authoritative full-suite and coverage gate.
+59. **Builder lifecycle is authoritative for Operations visibility.** The Operations projection may
+    contain a stale `project_state=active` row from an older client. The Operations vehicles API
+    filters every Builder project currently marked Inactive before returning rows or counts; do not
+    rely only on the projected state or a browser-side tab to hide inactive work.

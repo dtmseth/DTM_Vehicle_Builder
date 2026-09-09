@@ -412,7 +412,33 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   The release's first large-file SharePoint upload received a transient Graph 503 and succeeded on
   retry; the workflow now automatically retries temporary 429/5xx and network failures for future
   release-note and installer uploads.
-- Cloud-off verification for this working tree passes **2,388 passed, 1 skipped**; the one skipped
+- **Post-v3.6.2 working tree — Operations clarity and connected QBO refresh:** connected QuickBooks
+  startup and 30-minute refresh now imports the full safe Customer profile into Agencies as well as
+  reconciling Items; completing OAuth wakes that worker immediately, and unchanged agencies are not
+  rewritten or re-mirrored. Operations now uses Started / Active / Completed while retaining and
+  hiding inactive history until reactivation, with one compact workflow badge in each
+  collapsed row instead of six status summaries. Project progress badges are gray before Ready to
+  Build, blue at Ready to Build, yellow through Build, light green from Ready for QC, and solid green
+  at Ready for Delivery. A failed Operations fetch now retains the last accepted project
+  classification instead of temporarily moving all durable-active work to Started. Bay tracking and
+  project/vehicle team assignments are documented as post-scheduling-pilot additions using durable
+  neutral IDs and later optional Entra linkage.
+- **Post-v3.6.2 working tree — role and scheduling gates:** every recognized operational role can
+  read Builder project context. Sales (`BuilderEditor`) can edit Projects, Estimates, Acceptance,
+  Vehicle Availability, and Parts but cannot schedule or change downstream production. Shop can
+  edit only Build / Shop, Tray, and Final Finish. The browser hides disallowed controls and the
+  local server rejects direct legacy Builder mutations that bypass the UI. Shop can inspect draft
+  equipment and build notes in a read-only view. Active Operations now has All / Unscheduled /
+  Scheduled subfilters; Scheduled is ordered by Scheduled Week.
+- **Local verification output is now compact and change-aware:** `tools/verify.py changed` is the
+  normal inner loop. It checks syntax, selects affected pytest areas and browser flows from the Git
+  diff, captures successful output, and stops at the first failure. The full suite plus all 28
+  browser flows is reserved for release/merge checkpoints through `tools/verify.py release`; CI
+  continues to run the full suite and coverage floor on every PR and main push.
+- **Post-v3.6.2 working tree — default work queue:** Projects and Operations now open on Active.
+  The Operations read boundary also excludes projects whose authoritative Builder lifecycle is
+  Inactive, even when an older Operations projection still incorrectly says Active.
+- Cloud-off verification for this working tree passes **2,396 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's
   Downloads folder also passed in its approved environment.
   Contract snapshots

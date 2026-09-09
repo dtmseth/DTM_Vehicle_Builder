@@ -2,8 +2,8 @@
 // TAB ROUTING
 // ═══════════════════════════════════════════════════════
 //
-// Four top-level header tabs (Operations is capability-gated and hidden until
-// the session endpoint confirms access):
+// Four top-level header tabs are capability-gated after the session endpoint
+// resolves the signed-in user's Entra roles:
 //   - projects           → #tab-projects (project manager)
 //   - operations         → #tab-operations (shared production backlog)
 //   - general-settings   → #tab-settings + #stab-bar-general
@@ -59,6 +59,70 @@ if (_quickBooksStabButton) _quickBooksStabButton.hidden = !QUICKBOOKS_UI_ENABLED
 
 let _activeHeaderTab = null;
 const _stabPerHeader = { "general-settings": null, "advanced-settings": null };
+
+window.DTM_ACCESS_SESSION = null;
+
+function appHasCapability(capability) {
+  return (window.DTM_ACCESS_SESSION?.capabilities || []).includes(capability);
+}
+
+function _appCanOpenHeader(tab) {
+  if (tab === "projects") return appHasCapability("projects.view");
+  if (tab === "operations") return appHasCapability("operations.view");
+  if (tab === "general-settings") {
+    return appHasCapability("settings.general.manage") ||
+      (QUICKBOOKS_UI_ENABLED && appHasCapability("estimates.manage"));
+  }
+  if (tab === "advanced-settings") return appHasCapability("settings.advanced.manage");
+  return false;
+}
+
+function _appFirstWorkspace() {
+  const preferred = window.DTM_ACCESS_SESSION?.default_workspace || "";
+  if (preferred && _appCanOpenHeader(preferred)) return preferred;
+  return ["projects", "operations", "general-settings", "advanced-settings"]
+    .find(_appCanOpenHeader) || "";
+}
+
+window.applyAppAccessSession = function (session) {
+  window.DTM_ACCESS_SESSION = session || { capabilities: [] };
+  const headerIds = {
+    projects: "projects-header-tab",
+    operations: "operations-header-tab",
+    "general-settings": "general-settings-header-tab",
+    "advanced-settings": "advanced-settings-header-tab",
+  };
+  Object.entries(headerIds).forEach(([tab, id]) => {
+    const button = $(id);
+    if (button) button.hidden = !_appCanOpenHeader(tab);
+  });
+
+  const canEditProjects = appHasCapability("projects.edit");
+  const newProject = $("btn-new-project");
+  if (newProject) newProject.hidden = !canEditProjects;
+  const readonlyBadge = $("projects-readonly-badge");
+  if (readonlyBadge) readonlyBadge.hidden = canEditProjects;
+
+  const canManageGeneral = appHasCapability("settings.general.manage");
+  const canManageEstimates = appHasCapability("estimates.manage");
+  document.querySelectorAll("#stab-bar-general .stab").forEach(button => {
+    button.hidden = canManageGeneral
+      ? (button.dataset.stab === "quickbooks" && !QUICKBOOKS_UI_ENABLED)
+      : !(canManageEstimates && QUICKBOOKS_UI_ENABLED && button.dataset.stab === "quickbooks");
+  });
+  const generalHeader = $("general-settings-header-tab");
+  if (generalHeader) {
+    generalHeader.textContent = canManageGeneral ? "⚙️ General Settings" : "💵 QuickBooks";
+  }
+  if (!canManageGeneral && canManageEstimates) {
+    _stabPerHeader["general-settings"] = "quickbooks";
+  }
+  const canManageAdvanced = appHasCapability("settings.advanced.manage");
+  const qbPricing = $("qb-pricing-panel");
+  if (qbPricing) qbPricing.hidden = !canManageAdvanced;
+  const qbCredentials = $("qb-creds-card");
+  if (qbCredentials) qbCredentials.hidden = !canManageAdvanced;
+};
 
 function _hideAllStabContents() {
   for (const id of ALL_STAB_CONTENTS) {
@@ -118,6 +182,11 @@ function _runStabSideEffects(stab) {
 }
 
 function switchTab(t) {
+  if (!_appCanOpenHeader(t)) {
+    const fallback = _appFirstWorkspace();
+    if (!fallback || fallback === t) return;
+    t = fallback;
+  }
   _activeHeaderTab = t;
   document.querySelectorAll(".htab").forEach(b => {
     b.classList.toggle("active", b.dataset.tab === t);

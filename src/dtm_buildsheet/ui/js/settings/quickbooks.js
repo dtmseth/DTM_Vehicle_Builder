@@ -17,6 +17,10 @@
   let _lastItems = [];         // last rendered item list (for the link button)
   let _pricingRule = null;
 
+  function _canManageQbCatalog() {
+    return typeof appHasCapability === "function" && appHasCapability("settings.advanced.manage");
+  }
+
   const escAttr = (value) => String(value == null ? "" : value)
     .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
     .replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -55,7 +59,10 @@
         ? "•••••••• saved — leave blank to keep"
         : "Paste client secret";
     }
-    if ($("qb-creds-card")) $("qb-creds-card").hidden = !!s.managed_connection;
+    if ($("qb-creds-card")) {
+      $("qb-creds-card").hidden = !_canManageQbCatalog() || !!s.managed_connection;
+    }
+    if ($("qb-pricing-panel")) $("qb-pricing-panel").hidden = !_canManageQbCatalog();
 
     // Connection panels.
     if ($("qb-connected-panel")) $("qb-connected-panel").hidden = !s.connected;
@@ -177,9 +184,13 @@
         const partLabel = _productLabelById[it.linked_product_id] || it.linked_product_id || "part";
         action =
           `<span style="font-size:10px;font-weight:700;color:var(--green,#166534)">● ${esc(partLabel)}</span>` +
-          `<button class="btn btn-secondary btn-sm" data-qb-unlink="${id}" style="margin-left:8px">Unlink</button>`;
+          (_canManageQbCatalog()
+            ? `<button class="btn btn-secondary btn-sm" data-qb-unlink="${id}" style="margin-left:8px">Unlink</button>`
+            : "");
       } else {
-        action = `<button class="btn btn-secondary btn-sm" data-qb-link="${id}">🔗 Link</button>`;
+        action = _canManageQbCatalog()
+          ? `<button class="btn btn-secondary btn-sm" data-qb-link="${id}">🔗 Link</button>`
+          : `<span style="font-size:10px;font-weight:700;color:var(--muted)">Not linked</span>`;
       }
       return (
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px">' +

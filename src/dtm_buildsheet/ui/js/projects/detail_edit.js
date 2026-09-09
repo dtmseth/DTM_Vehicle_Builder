@@ -53,9 +53,9 @@ function _ptRenderEditTab(project, editable) {
     ].filter(([, v]) => v);
 
     panel.innerHTML = `
-      <div class="proj-edit-toolbar">
+      ${_ptCanEditProjects() ? `<div class="proj-edit-toolbar">
         <button class="btn btn-primary btn-sm" onclick="PT_enterEditMode()">✏️ Edit</button>
-      </div>
+      </div>` : ""}
       <div class="proj-section-label">Customer Info</div>
       ${custPairs.length
         ? custPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
@@ -65,7 +65,7 @@ function _ptRenderEditTab(project, editable) {
           <h3>Project notes</h3>
           <p>Included on the build-notes page of every unit in this project.</p>
         </div>
-        <button class="btn btn-primary btn-sm" type="button" onclick="PT_editProjectNotes()">${projectNotes ? "Edit shared notes" : "+ Add shared notes"}</button>
+        ${_ptCanEditProjects() ? `<button class="btn btn-primary btn-sm" type="button" onclick="PT_editProjectNotes()">${projectNotes ? "Edit shared notes" : "+ Add shared notes"}</button>` : ""}
       </section>
       ${projectNotes
         ? _ptInfoRow("Shared across every build", projectNotes)
@@ -407,6 +407,7 @@ function _ptWireEditTabSearch() {
 // ── Public actions ─────────────────────────────────────────────────────────────
 
 window.PT_enterEditMode = function (focusProjectNotes = false) {
+  if (!_ptCanEditProjects()) return;
   if (!_PT.viewProject) return;
   _ptLoadPrefsOptions().then(() => {
     _ptRenderEditTab(_PT.viewProject, true);
@@ -415,6 +416,7 @@ window.PT_enterEditMode = function (focusProjectNotes = false) {
 };
 
 window.PT_editProjectNotes = function () {
+  if (!_ptCanEditProjects()) return;
   window.PT_enterEditMode(true);
 };
 
@@ -423,6 +425,7 @@ window.PT_cancelEditMode = function () {
 };
 
 window.PT_saveEditForm = async function () {
+  if (!_ptCanEditProjects()) return;
   const statusEl = $("proj-edit-form-status");
   const savBtn   = document.querySelector("#proj-ptab-edit .btn-gold");
   if (savBtn) savBtn.disabled = true;

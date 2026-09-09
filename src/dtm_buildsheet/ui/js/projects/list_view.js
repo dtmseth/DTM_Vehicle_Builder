@@ -55,7 +55,16 @@ function _ptProjectIsAccepted(project) {
 function _ptProjectListStatus(project) {
   const storedStatus = String(project.project_status || "active");
   if (storedStatus === "inactive" || storedStatus === "completed") return storedStatus;
-  return _ptProjectIsAccepted(project) ? "active" : "started";
+  if (!_PT.operationsSnapshotReady) {
+    // A temporary Operations/auth failure must not reclassify every accepted
+    // project as Started. Keep the last derived answer; on a first-run failure,
+    // the durable Builder state is a safer neutral fallback than inventing a
+    // missing acceptance result.
+    return _PT.projectListStatusById?.[project.project_id] || "active";
+  }
+  const derived = _ptProjectIsAccepted(project) ? "active" : "started";
+  _PT.projectListStatusById[project.project_id] = derived;
+  return derived;
 }
 
 function _ptProjectActiveSort(project) {
@@ -98,13 +107,26 @@ function _ptProjectProgress(project) {
 
   const all = (field, values) => vehicles.every(vehicle => values.includes(String(vehicle[field] || "")));
   const any = (field, values) => vehicles.some(vehicle => values.includes(String(vehicle[field] || "")));
-  if (all("final_finish_status", ["delivered"])) {
-    return { key: "delivered", label: "Delivered" };
-  }
+  if (all("final_finish_status", ["delivered"])) return null;
   if (all("final_finish_status", ["ready_for_delivery", "delivered"])) {
     return { key: "ready-deliver", label: "Ready to Deliver" };
   }
+  const finalFinishStarted = all("final_finish_status", [
+    "ready_for_wash_clean_photos", "ready_for_delivery", "delivered",
+  ]);
+  const programmingComplete = all("programming_qc_status", ["complete"]);
+  if (finalFinishStarted || programmingComplete) {
+    return { key: "ready-qc", label: "Programming & QC Complete" };
+  }
+  if (all("programming_qc_status", ["ready", "complete"])) {
+    return { key: "ready-qc", label: "Ready for QC" };
+  }
+  if (all("shop_status", ["complete"])) {
+    return { key: "building", label: "Build Complete" };
+  }
   if (any("shop_status", ["in_progress", "complete"]) ||
+      any("tray_status", ["ready", "complete"]) ||
+      any("programming_qc_status", ["ready", "complete"]) ||
       any("final_finish_status", ["ready_for_wash_clean_photos", "ready_for_delivery", "delivered"])) {
     return { key: "building", label: "Build in Progress" };
   }
@@ -149,7 +171,7 @@ function _ptProjectProgress(project) {
 
 function _ptRenderList() {
   const statuses = ["started", "active", "inactive", "completed"];
-  const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "started";
+  const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "active";
   const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
   const counts = Object.fromEntries(statuses.map(status => [
     status,
@@ -217,15 +239,15 @@ function _ptRenderList() {
       </div>
       <div class="proj-row-actions" onclick="event.stopPropagation()">
         <button class="btn btn-primary btn-sm" onclick="PT_open('${pid}')">Open</button>
-        <details class="proj-row-menu">
+        ${_ptCanEditProjects() || _ptCanUpdateProjectLifecycle() ? `<details class="proj-row-menu">
           <summary aria-label="More actions for ${name}" title="More actions">⋯</summary>
           <div class="proj-row-menu-items">
-            ${["started", "active"].includes(mode)
+            ${_ptCanUpdateProjectLifecycle() ? (["started", "active"].includes(mode)
               ? `<button type="button" onclick="PT_setProjectLifecycle('${pid}','inactive')">Mark inactive</button>`
-              : `<button type="button" onclick="PT_setProjectLifecycle('${pid}','active')">Reactivate</button>`}
-            <button type="button" class="proj-row-menu-danger" onclick="PT_del('${pid}')">Delete project</button>
+              : `<button type="button" onclick="PT_setProjectLifecycle('${pid}','active')">Reactivate</button>`) : ""}
+            ${_ptCanEditProjects() ? `<button type="button" class="proj-row-menu-danger" onclick="PT_del('${pid}')">Delete project</button>` : ""}
           </div>
-        </details>
+        </details>` : ""}
       </div>
     </div>`;
   }).join("");
@@ -278,7 +300,7 @@ function _ptRenderArchive(query = "") {
                 <button class="btn btn-secondary btn-sm" onclick="PT_openPhotoGallery('${pid}','reference')">Project photos</button>
                 ${project.shop_year_folder_path ? `<button class="btn btn-secondary btn-sm" data-library-target="shop" data-folder-path="${esc(project.shop_year_folder_path)}" onclick="PT_openCloudFolder(this)">Open Shop folder</button>` : ""}
                 <button class="btn btn-primary btn-sm" onclick="PT_openArchived('${pid}')">Open</button>
-                <button class="btn btn-secondary btn-sm" onclick="PT_setProjectCompleted('${pid}', false)">Reopen</button>
+                ${_ptCanUpdateProjectLifecycle() ? `<button class="btn btn-secondary btn-sm" onclick="PT_setProjectCompleted('${pid}', false)">Reopen</button>` : ""}
               </div>
             </div>`;
           }).join("");
@@ -381,6 +403,10 @@ async function _ptApplyProjectLifecycle(pid, status, reason = "") {
 }
 
 window.PT_setProjectLifecycle = function (pid, status) {
+  if (!_ptCanUpdateProjectLifecycle()) {
+    toast("Your role cannot change project lifecycle", "error");
+    return;
+  }
   if (status === "inactive") {
     _ptOpenInactiveProjectModal(pid);
     return;
@@ -510,6 +536,10 @@ window.PT_applyCompletionConflict = async function () {
 };
 
 window.PT_setProjectCompleted = async function (pid, completed) {
+  if (!_ptCanUpdateProjectLifecycle()) {
+    toast("Your role cannot change project lifecycle", "error");
+    return;
+  }
   if (completed) {
     const project = (_PT.projects || []).find(item => item.project_id === pid) || _PT.viewProject;
     const label = project
@@ -544,6 +574,10 @@ window.PT_setProjectCompleted = async function (pid, completed) {
   }
 
   window.PT_del = function (pid) {
+    if (!_ptCanEditProjects()) {
+      toast("Your role cannot delete projects", "error");
+      return;
+    }
     _delPid = pid;
     const p = _PT.projects.find(x => x.project_id === pid);
     const name = p ? _ptProjName(p) : pid;

@@ -10,6 +10,8 @@ window._PT = {
   projects:       [],
   agencies:       [],
   operationsByProject: {},
+  operationsSnapshotReady: false,
+  projectListStatusById: {},
   projectOptions: {
     build_types:     ["Patrol", "Admin", "Unmarked", "K-9", "Fire"],
     camera_brands:   [],
@@ -28,7 +30,7 @@ window._PT = {
   viewProject:    null,     // project open in detail view
   fromDetail:     false,    // editor opened from detail (not list)
   isWizard:       false,    // true when creating a new project
-  listMode:       "started", // started | active | inactive | completed
+  listMode:       "active", // started | active | inactive | completed
   listSearch:     { started: "", active: "", inactive: "", completed: "" },
   inactiveProjectId: null,
   completionConflict: null,
@@ -55,6 +57,22 @@ window._PT = {
   // wizard step list
   WIZARD_TABS: ["customer", "preferences", "fleet", "review"],
 };
+
+function _ptHasCapability(capability) {
+  return typeof appHasCapability === "function" && appHasCapability(capability);
+}
+
+function _ptCanEditProjects() {
+  return _ptHasCapability("projects.edit");
+}
+
+function _ptCanUpdateProjectLifecycle() {
+  return _ptHasCapability("projects.lifecycle.update");
+}
+
+function _ptCanManageEstimates() {
+  return _ptHasCapability("estimates.manage");
+}
 
 // ── Shared utilities ──────────────────────────────────────────────────────────
 
