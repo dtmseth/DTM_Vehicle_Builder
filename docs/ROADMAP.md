@@ -30,7 +30,26 @@ Around those two ideas, five thematic pillars:
 
 ---
 
-## Current Direction & Critical Path (updated 2026-09-03)
+## Current Direction & Critical Path (updated 2026-09-10)
+
+The September 10 post-meeting requests are mapped into proposed feature batches in
+[POST_MEETING_FEATURE_PLAN.md](POST_MEETING_FEATURE_PLAN.md): immediate notes/status/photo fixes,
+complete Company/Shop file access, project types integrated with Calendar, Estimate discovery/import,
+vehicle catalog selection, and the **full shared HTML Builder app** on desktop/mobile. The owner
+accepted the direction with explicit **No Estimate Connected** / **Estimate Created** states and
+full mobile feature parity. Hosting and multi-user authorization design is now a dependency to
+address before introducing more desktop-only assumptions. The next session begins the local
+runtime/export proof in [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md). Azure is preferred if affordable;
+[HOSTING_COMPARISON.md](HOSTING_COMPARISON.md) owns cost assumptions. Trial activation has not been
+reported and no production host or deployment has been selected.
+
+The existing unreleased desktop work is the separate **Calendar** workspace: team assignments, labor-based
+planning, weekly/monthly views, and reviewed publication of Operations dates while preserving the
+60-day delivery promise. This is implemented locally and unreleased; see [CALENDAR.md](CALENDAR.md).
+Team tracking has moved forward from the deferred roadmap. Bay tracking remains later. A simple
+phone Power App is now only an optional interim tool; its processor remains Off. Full hosted QBO
+requires a new authorization/storage design review; this does not resume or deploy the excluded
+centralized-QBO branch automatically.
 
 Live "what are we doing right now and why" — read it before §4's phase list. Detail lives in
 [PARTS_DB_AND_PICKER.md](PARTS_DB_AND_PICKER.md) and [QUICKBOOKS.md](QUICKBOOKS.md).
@@ -58,13 +77,12 @@ materially alter Builder parts, add a reviewed change queue with durable history
 catalog auto-enrichment. The approved behavior and data requirements live in
 [QUICKBOOKS.md](QUICKBOOKS.md#future-reviewed-qbo-catalog-change-queue-owner-decision).
 
-**Later Operations capacity work:** after the current scheduling flow is piloted, add dated shop-bay
-occupancy and project/vehicle team assignments. Initial workers may be represented by an
-administratively managed name roster; durable neutral IDs must allow those entries to link to Entra
-accounts later without changing history. Exact bay/team structures are deliberately not frozen into
-SharePoint until the shop process is established. See `OPERATIONS_SYSTEM.md`.
+**Later Operations capacity work:** dated shop-bay occupancy remains deferred until the scheduling
+flow is piloted. Project/vehicle team assignments have moved into the current unreleased Calendar;
+their durable neutral IDs preserve the possibility of later Entra linkage. Do not treat the older
+team deferral in `OPERATIONS_SYSTEM.md` as the current priority. Exact bay structures remain open.
 
-### Near-term critical path (in order, updated 2026-09-03)
+### Architectural backlog (retained order; Azure pilot is the next session)
 
 1. **Parts-DB repository seam + Phase 4 consumer inventory** — establish one safe read/write
    boundary, then identify and migrate the remaining workbook-domain consumers.
@@ -77,9 +95,11 @@ SharePoint until the shop process is established. See `OPERATIONS_SYSTEM.md`.
 4. **Finalization concurrency hardening** — reject stale concurrent finalization requests explicitly
    while preserving the shipped Shop publish/withdraw and re-export confirmation boundaries.
 
-Centralized QuickBooks is deliberately excluded from the production branch and is not part of this
-sequence. The complete experiment is preserved only on local branch
-`codex/central-qb-backend-wip` at `f5ac223` in case the owner explicitly resumes it.
+Centralized QuickBooks remains excluded from production. Its design and sandbox migration are now
+part of the [Azure pilot plan](AZURE_PILOT_PLAN.md), separately from this architectural backlog.
+The local `codex/central-qb-backend-wip` experiment (historical checkpoint `f5ac223`) contains initial
+auth/refresh/Items groundwork, not complete Customer/Estimate/attachment support. Inspect and reuse
+selectively; do not merge or deploy it wholesale.
 
 **Audit & refactor track (adopted 2026-07-06)**: a codebase-wide audit/refactor runs *interleaved*
 with the critical path above — see [AUDIT_REFACTOR_ROADMAP.md](AUDIT_REFACTOR_ROADMAP.md) §8.1 for

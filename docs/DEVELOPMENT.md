@@ -4,10 +4,14 @@
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+.venv/bin/pip install -e ".[dev,hosted]"
 ```
 
 Or double-click `Setup_DTM_VehicleBuilder.command`.
+
+The optional `hosted` extra supplies the Azure Table SDK and Waitress for synthetic Stage 2
+boundary tests; it does not activate cloud access or change desktop packaging. Existing
+environments created by the desktop setup script can install this extra with the command above.
 
 ## Running
 
@@ -23,23 +27,24 @@ Port conflict on launch → old instance still running: `lsof -ti :7655 | xargs 
 ## Testing
 
 ```bash
-.venv/bin/python tools/verify.py changed       # normal inner loop: changed areas only
-.venv/bin/python tools/verify.py changed --skip-smoke  # fastest logic-only pass
-.venv/bin/python -m pytest tests/test_foo.py   # one explicitly selected file
-.venv/bin/python tools/verify.py release       # full suite + all browser flows
+.venv/bin/python -m pytest tests/test_<target>.py --maxfail=1  # iterative work: one relevant file
+.venv/bin/python tools/verify.py changed --skip-smoke  # explicit owner pre-commit request only
+.venv/bin/python tools/verify.py release       # pre-release checks only
 ```
 
 Tests auto-redirect workspace to temp dirs. `PYTEST_CURRENT_TEST` guards prevent real cloud
 I/O — never bypass these guards.
 
-The normal development loop is deliberately localized. `tools/verify.py changed` reads the current
-Git diff, runs syntax checks, maps changed subsystems to their focused pytest files and browser
-flows, captures all successful command output, and prints only compact summaries. A failure stops
-pytest after the first failing case and prints its useful diagnostics. Browser flows run in isolated
-subprocesses with a hard per-flow timeout, so a stuck browser cannot hold the release gate open.
+During iterative work, run only the single relevant pytest file. Documentation/ignore-only edits
+need no pytest run. Never autonomously run browser smoke tests during normal editing or small
+feature additions, including through wrappers. Report compact counts and the first actionable
+failure, not individual passing tests or browser JSON.
 
-Do not run or stream the entire suite after every small edit. Use the `release` profile only at a
-release/merge checkpoint or after a genuinely cross-cutting core contract change. GitHub CI keeps
+Reserve `tools/verify.py changed` for an explicit owner request for pre-commit verification and
+pass `--skip-smoke`. It selects from all staged/unstaged changes against `HEAD` plus untracked
+files; staging alone does not narrow that selection. A baseline commit preserves current work
+while resetting the diff for subsequent edits. The bare command also runs selected browser flows.
+Full browser runs and the `release` profile are strictly pre-release checks. GitHub CI keeps
 the complete suite and coverage floor as the authoritative always-on safety net.
 
 This policy is mandatory for automated coding sessions. The repository-root `AGENTS.md` contains

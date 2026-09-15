@@ -1,0 +1,169 @@
+{
+  "status": "review-only-not-deployable",
+  "authorization": {
+    "activateTrial": false,
+    "createResources": false,
+    "deploy": false,
+    "productionAccess": false
+  },
+  "region": "centralus",
+  "regionConfirmedInAccount": false,
+  "subscriptionId": null,
+  "tenantId": null,
+  "owner": "seth@dtmfleet.com",
+  "pilotUsers": [
+    {
+      "email": "seth@dtmfleet.com",
+      "objectId": null,
+      "proposedAppRole": "BuilderEditor"
+    }
+  ],
+  "alertRecipients": [
+    "seth@dtmfleet.com"
+  ],
+  "namesAvailabilityChecked": false,
+  "resources": {
+    "resourceGroup": "rg-dtm-builder-pilot-cus",
+    "environment": {
+      "name": "cae-dtm-builder-pilot-cus",
+      "profile": "Consumption",
+      "dedicatedProfiles": [],
+      "privateEndpoint": false,
+      "plannedMaintenance": false
+    },
+    "app": {
+      "name": "ca-dtm-builder-pilot-cus",
+      "cpu": 0.5,
+      "memory": "1Gi",
+      "minReplicas": 0,
+      "maxReplicas": 1,
+      "revisionMode": "Single",
+      "httpConcurrentRequests": 10,
+      "targetPort": 8080,
+      "platform": "linux/amd64",
+      "imageManifestDigest": null,
+      "fullBuilderUiIncluded": false,
+      "providerWorkersEnabled": false
+    },
+    "registry": {
+      "name": "acrdtmpilotcus0910",
+      "sku": "Basic",
+      "adminUserEnabled": false,
+      "anonymousPullEnabled": false
+    },
+    "runtimeIdentity": "id-dtm-builder-pilot-cus",
+    "metadata": {
+      "account": "stdtmmetacus0910",
+      "sku": "Standard_LRS",
+      "table": "DtmPilotMetadata",
+      "sharedKeyAccess": false,
+      "tableEncryptionKeyType": "Service"
+    },
+    "tokenStore": {
+      "account": "stdtmtokencus0910",
+      "sku": "Standard_LRS",
+      "tier": "Hot",
+      "container": "auth-tokens",
+      "anonymousAccess": false,
+      "sasPermissions": "read,write,delete",
+      "sasSecretRef": "pilot-token-store-sas",
+      "sasExpiryDaysProposed": 30
+    },
+    "backup": {
+      "account": "stdtmbackupcus0910",
+      "sku": "Standard_LRS",
+      "tier": "Hot",
+      "container": "job-snapshots",
+      "anonymousAccess": false,
+      "sharedKeyAccess": false,
+      "retentionDays": 14,
+      "runtimeAccess": false
+    },
+    "logs": {
+      "name": "law-dtm-builder-pilot-cus",
+      "sku": "PerGB2018",
+      "retentionDays": 30,
+      "plannedMonthlyIngestionGB": 1
+    },
+    "actionGroup": "ag-dtm-builder-pilot",
+    "monthlyBudget": {
+      "name": "budget-dtm-builder-pilot",
+      "amountUsdProposed": 15,
+      "actualThresholdPercent": [
+        50,
+        80,
+        100
+      ],
+      "forecastThresholdPercent": [
+        100
+      ],
+      "hardSpendingCap": false
+    }
+  },
+  "authentication": {
+    "newAppRegistrationDisplayName": "DTM Builder Isolated Pilot",
+    "singleTenant": true,
+    "assignmentRequired": true,
+    "employeeObjectIdAllowlist": [],
+    "clientId": null,
+    "origin": null,
+    "entraSecretRef": "pilot-entra-client-secret",
+    "entraSecretExpiryDaysProposed": 90,
+    "businessGraphPermissions": [],
+    "quickBooksConnection": false,
+    "configuration": "packaging/hosted/auth-config.review.json"
+  },
+  "runtimeRoleAssignments": [
+    {
+      "role": "AcrPull",
+      "scope": "pilot registry only"
+    },
+    {
+      "role": "Storage Table Data Contributor",
+      "scope": "DtmPilotMetadata table only"
+    }
+  ],
+  "alerts": [
+    {
+      "name": "pilot-request-errors",
+      "frequencyMinutes": 5,
+      "windowMinutes": 5,
+      "condition": "at least 5 HTTP 5xx and at least 5 percent of requests",
+      "dimensions": []
+    },
+    {
+      "name": "pilot-startup-or-log-volume",
+      "frequencyMinutes": 15,
+      "condition": "startup_failed in last 15 minutes OR pilot log ingestion exceeds 0.1 GB in last 24 hours",
+      "dimensions": []
+    }
+  ],
+  "operatorReview": {
+    "proposedOperator": "seth@dtmfleet.com",
+    "credentialExpiryReviewDaysBefore": [
+      7,
+      1
+    ],
+    "trialReviewDaysBeforeExpiry": 7,
+    "backupAndMaintenanceScheduled": false,
+    "pilotReviewAfterDays": 30
+  },
+  "unresolved": [
+    "Subscription and tenant IDs after owner activation; Seth object ID for exact assignment (do not recheck offer)",
+    "Owner authorization before trial activation, resource creation or deployment",
+    "Name availability, regional quota, deployment schema and account-specific estimate",
+    "Registry manifest digest, signing identity and signature verification after approved publication",
+    "Platform auth token injection, role assignment and header/bypass denial proof",
+    "Platform equivalents for local container filesystem/capability/process limits; do not assume Docker flags transfer",
+    "Actual health/replica monitoring, budget availability and receipt of test notifications",
+    "Operator cleanup, backup and expiry-review scheduling before unattended operation"
+  ],
+  "accountStatus": {
+    "source": "owner-confirmed 2026-09-10",
+    "hasCurrentSubscription": false,
+    "trialCreditOfferUsd": 200,
+    "recheckOfferRequested": false,
+    "activationOwner": "Seth"
+  },
+  "deploymentTemplates": "packaging/hosted/azure/"
+}

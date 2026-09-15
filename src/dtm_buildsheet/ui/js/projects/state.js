@@ -389,3 +389,29 @@ function _ptUnitFleetSummaryCards(units) {
     </div>`;
   }).join("");
 }
+
+const _PT_PROJECT_TYPES = {build:'Build',service:'Service',offsite:'Off-Site Service'};
+function _ptTypeLabel(project){ return _PT_PROJECT_TYPES[project?.project_type||'build']||'Build'; }
+function _ptTypeFields(prefix,project={}){
+  const type=project.project_type||'build', details=project.service_details||{};
+  return `<section class="project-work-fields"><label>Project type<select id="${prefix}-project-type">${Object.entries(_PT_PROJECT_TYPES).map(([key,label])=>`<option value="${key}" ${type===key?'selected':''}>${label}</option>`).join('')}</select></label>
+    <div id="${prefix}-service-details" ${type==='build'?'hidden':''}>
+      <p class="proj-form-hint">Service deadlines are optional. Enter the estimated labor hours when booking in Calendar.</p>
+      <div id="${prefix}-offsite-details" ${type!=='offsite'?'hidden':''} class="form-row">
+        <label>Service location<input id="${prefix}-service-location" maxlength="500" value="${esc(details.location||'')}"></label>
+        <label>On-site contact<input id="${prefix}-service-contact" maxlength="500" value="${esc(details.contact||'')}"></label>
+        <label>Travel allowance (labor hours per vehicle)<input id="${prefix}-service-travel" type="number" min="0" max="100" step="any" value="${details.travel_hours||0}"></label>
+      </div>
+      <div class="project-service-options">${[['requires_parts','Parts needed',true],['requires_strip','Include stripping',false],['requires_tray','Tray work needed',false],['requires_programming_qc','Programming / QC needed',false],['requires_finishing','Include finishing time',false],['render_vehicle','Include vehicle rendering',false]].map(([key,label,fallback])=>`<label><input type="checkbox" id="${prefix}-service-${key}" ${(details[key]??fallback)?'checked':''}> ${label}</label>`).join('')}</div>
+    </div></section>`;
+}
+function _ptWireTypeFields(prefix){
+  const select=$(`${prefix}-project-type`);if(!select)return;
+  select.onchange=()=>{$(`${prefix}-service-details`).hidden=select.value==='build';$(`${prefix}-offsite-details`).hidden=select.value!=='offsite';};
+}
+function _ptTypePayload(prefix){
+  const details={location:$(`${prefix}-service-location`).value.trim(),contact:$(`${prefix}-service-contact`).value.trim(),travel_hours:Number($(`${prefix}-service-travel`).value)};
+  ['requires_parts','requires_strip','requires_tray','requires_programming_qc','requires_finishing','render_vehicle'].forEach(key=>details[key]=$(`${prefix}-service-${key}`).checked);
+  return {project_type:$(`${prefix}-project-type`).value,service_details:details};
+}
+function _ptMatchesType(project){return !_PT.typeFilter||_PT.typeFilter==='all'||(project.project_type||'build')===_PT.typeFilter;}

@@ -168,7 +168,8 @@ def vehicle_operations_from_fields(fields: Any) -> VehicleOperations:
     if not isinstance(fields, dict):
         raise ValueError("SharePoint operations fields must be an object")
     payload = {
-        attribute: _from_sharepoint(fields.get(field_name), _CURRENT_KINDS[field_name])
+        attribute: (str(fields.get(field_name) or '')[:10] if attribute == 'qbo_estimate_accepted_at'
+                    else _from_sharepoint(fields.get(field_name), _CURRENT_KINDS[field_name]))
         for attribute, field_name in CURRENT_FIELD_MAP
     }
     return vehicle_operations_from_dict(payload)
@@ -191,6 +192,13 @@ def record_snapshot_from_json(value: Any) -> VehicleOperations:
         payload = json.loads(str(value or ""))
     except (TypeError, ValueError) as exc:
         raise ValueError("Operations event has an invalid record snapshot") from exc
+    # Desktop-authored snapshots use the canonical domain keys. The standard-
+    # connector phone flow starts from a SharePoint Get item result, so it may
+    # persist the equivalent internal-field shape instead. Accept both, then
+    # immediately normalize to the same domain model. Extra SharePoint
+    # metadata is ignored by the explicit field map.
+    if "BuilderVehicleId" in payload:
+        return vehicle_operations_from_fields(payload)
     return vehicle_operations_from_dict(payload)
 
 

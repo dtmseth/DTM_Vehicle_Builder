@@ -51,6 +51,9 @@ def build_local_bundle() -> AdapterBundle:
     work added `build_internal_team_bundle()` alongside this one; the choice
     between them is build-time / env-driven, not runtime user config.
     """
+    from ..request_context import hosted_process
+    if hosted_process():
+        raise RuntimeError("Local identity is unavailable in hosted mode")
     operations = InMemoryOperationsRepository()
     return AdapterBundle(
         storage=LocalStorageProvider(),
@@ -112,6 +115,10 @@ def build_internal_team_bundle() -> AdapterBundle:
                 scopes=OPERATIONS_LIST_RUNTIME_SCOPES,
                 interactive_ok=True,
             ),
+            background_token_provider=lambda: msal_client.acquire_token(
+                scopes=OPERATIONS_LIST_RUNTIME_SCOPES,
+                interactive_ok=False,
+            ),
         )
     return AdapterBundle(
         storage=storage,
@@ -149,12 +156,19 @@ _active_bundle: AdapterBundle | None = None
 
 
 def get_active_bundle() -> AdapterBundle:
-    """Return the process-wide adapter bundle, constructing it on first call.
+    """Return this request's bundle, or the lazy desktop process bundle.
 
     Default selection is gated by the ``DTM_CLOUD`` env var: unset (or any
     falsy value) keeps the local bundle. Phase 2 cutover is a build-time flip
-    of this env var, not a UI toggle.
+    of this env var, not a UI toggle. Hosted/deployed processes cannot use that
+    fallback; their requests and workers must bind an explicit context.
     """
+    from ..request_context import current_request, hosted_process
+    context = current_request()
+    if context is not None:
+        return context.bundle
+    if hosted_process():
+        raise RuntimeError("Hosted adapters require an explicit request/worker context")
     global _active_bundle
     if _active_bundle is None:
         _active_bundle = _select_default_bundle()
@@ -163,6 +177,9 @@ def get_active_bundle() -> AdapterBundle:
 
 def set_active_bundle(bundle: AdapterBundle) -> None:
     """Override the active bundle. Intended for tests and the bootstrap path."""
+    from ..request_context import hosted_process
+    if hosted_process():
+        raise RuntimeError("Hosted mode has no process-wide identity")
     global _active_bundle
     _active_bundle = bundle
 

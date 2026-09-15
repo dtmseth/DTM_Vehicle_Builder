@@ -1,0 +1,14 @@
+# Context/indexing exclusions only. Preserve all local application assets on disk.
+workspace/
+dist/
+build/
+output/
+tmp/
+.venv/
+venv/
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.sqlite3
+*.db

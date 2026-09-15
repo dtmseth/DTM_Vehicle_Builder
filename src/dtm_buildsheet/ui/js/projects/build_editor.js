@@ -293,8 +293,10 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   const parts   = [agency, vmLabel, unit.build_type, unitNum ? `Unit ${unitNum}` : null].filter(Boolean).join(" · ");
   $("pbe-unit-info").textContent = parts;
 
-  show("card-preview");
-  pvLoad(draftId);
+  const renderVehicle=(project.project_type||'build')==='build'||project.service_details?.render_vehicle;
+  $('pbe-preview-section').hidden=!renderVehicle;
+  if(renderVehicle){show("card-preview");pvLoad(draftId);}
+
   loadDraftManifest(draftId);
   _pbeLoadNotes(draftId);
   _pbeCheckPresetButton(draftId, unit);  // async; updates button visibility after load

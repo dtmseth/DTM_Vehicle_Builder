@@ -1,0 +1,39 @@
+name: dtm-local-pilot
+services:
+  builder:
+    build: .
+    image: dtm-local-pilot:stage1
+    cpus: "${PILOT_CPUS:-0.5}"
+    mem_limit: "${PILOT_MEMORY:-1g}"
+    pids_limit: 128
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    volumes:
+      - pilot-data:/pilot-data
+    networks: [isolated]
+    stop_grace_period: 150s
+  relay:
+    image: dtm-local-pilot:stage1
+    entrypoint: ["python", "/opt/pilot-relay.py"]
+    command: []
+    ports:
+      - "127.0.0.1:7665:7665"
+    depends_on:
+      builder:
+        condition: service_healthy
+    cpus: "0.1"
+    mem_limit: 64m
+    pids_limit: 48
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [ingress, isolated]
+networks:
+  ingress:
+  isolated:
+    internal: true
+volumes:
+  pilot-data:

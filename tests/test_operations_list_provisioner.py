@@ -20,9 +20,12 @@ from dtm_buildsheet.app.adapters.cloud.operations_list_schema import (
     FINAL_FINISH_DELIVERED_SCHEMA_CONFIRMATION,
     OPERATIONS_LIST_NAME,
     OPERATIONS_LIST_SPECS,
+    OPERATIONS_REQUESTS_LIST,
     PARTS_ORDERED_SCHEMA_COLUMN_NAMES,
     PARTS_ORDERED_SCHEMA_CONFIRMATION,
     PROVISION_CONFIRMATION,
+    PHONE_REQUESTS_PROVISION_CONFIRMATION,
+    REQUESTS_LIST_NAME,
     RECOVERY_SCHEMA_COLUMN_NAMES,
     RECOVERY_SCHEMA_CONFIRMATION,
     VEHICLE_EVENTS_LIST,
@@ -76,6 +79,12 @@ def _existing_lists():
     }
 
 
+def _existing_lists_with_requests():
+    payload = _existing_lists()
+    payload["value"].append({"id": "requests-id", "name": REQUESTS_LIST_NAME})
+    return payload
+
+
 def test_manifest_has_exact_names_and_safe_index_budget():
     assert [spec.name for spec in OPERATIONS_LIST_SPECS] == [
         "DTMVehicleOperations",
@@ -83,9 +92,11 @@ def test_manifest_has_exact_names_and_safe_index_budget():
     ]
     assert VEHICLE_OPERATIONS_LIST.indexed_column_count == 19
     assert VEHICLE_EVENTS_LIST.indexed_column_count == 12
+    assert OPERATIONS_REQUESTS_LIST.name == "DTMOperationsRequests"
+    assert OPERATIONS_REQUESTS_LIST.indexed_column_count == 6
     assert all(
         len(column.name) <= 32
-        for spec in OPERATIONS_LIST_SPECS
+        for spec in (*OPERATIONS_LIST_SPECS, OPERATIONS_REQUESTS_LIST)
         for column in spec.columns
     )
 
@@ -116,21 +127,34 @@ def test_manifest_has_exact_names_and_safe_index_budget():
     assert "OperationsNote" not in operations
     assert "NeedByDate" not in operations
 
+    requests = {column.name: column for column in OPERATIONS_REQUESTS_LIST.columns}
+    assert requests["RequestId"].unique is True
+    assert requests["Workstream"].choices == (
+        "shop", "tray", "programming_qc", "final_finish",
+    )
+    assert "not_ready" not in requests["RequestedStatus"].choices
+
 
 def test_schema_document_and_executable_manifest_have_identical_column_names():
     document = (
         Path(__file__).resolve().parents[1] / "docs" / "OPERATIONS_SCHEMA.md"
     ).read_text(encoding="utf-8")
-    current_section, event_section = document.split("## 3. List:", maxsplit=1)
+    current_section, remainder = document.split("## 3. List:", maxsplit=1)
     current_section = current_section.split("## 2. List:", maxsplit=1)[1]
+    event_section, remainder = remainder.split("## 4. List:", maxsplit=1)
+    request_section = remainder.split("## 5.", maxsplit=1)[0]
     document_current = set(re.findall(r"^\| `([^`]+)` \|", current_section, re.MULTILINE))
     document_events = set(re.findall(r"^\| `([^`]+)` \|", event_section, re.MULTILINE))
+    document_requests = set(re.findall(r"^\| `([^`]+)` \|", request_section, re.MULTILINE))
 
     assert document_current == {
         "Title", *(column.name for column in VEHICLE_OPERATIONS_LIST.columns),
     }
     assert document_events == {
         "Title", *(column.name for column in VEHICLE_EVENTS_LIST.columns),
+    }
+    assert document_requests == {
+        "Title", *(column.name for column in OPERATIONS_REQUESTS_LIST.columns),
     }
 
 
@@ -179,6 +203,59 @@ def test_inspect_accepts_exact_existing_schema():
 
     assert report.ready is True
     assert [item.list_id for item in report.lists] == ["operations-id", "events-id"]
+
+
+def test_phone_request_inspection_accepts_exact_schema():
+    session = MagicMock()
+    session.get.side_effect = [
+        _response(_existing_lists_with_requests()),
+        _response({"value": _actual_columns(OPERATIONS_REQUESTS_LIST)}),
+    ]
+    provisioner = OperationsListProvisioner(
+        token="TOKEN", site_id="site-id", session=session,
+    )
+
+    report = provisioner.inspect_phone_requests()
+
+    assert report.ready is True
+    assert report.lists[0].list_id == "requests-id"
+
+
+def test_phone_request_provisioning_requires_exact_confirmation_without_network():
+    session = MagicMock()
+    provisioner = OperationsListProvisioner(
+        token="TOKEN", site_id="site-id", session=session,
+    )
+
+    with pytest.raises(OperationsListProvisioningError, match="exactly equal"):
+        provisioner.apply_phone_requests_list(confirmation="yes")
+
+    session.get.assert_not_called()
+    session.post.assert_not_called()
+
+
+def test_phone_request_provisioning_creates_only_request_list_after_core_validation():
+    session = MagicMock()
+    session.get.side_effect = [
+        _response(_existing_lists()),
+        _response({"value": _actual_columns(VEHICLE_OPERATIONS_LIST)}),
+        _response({"value": _actual_columns(VEHICLE_EVENTS_LIST)}),
+        _response(_existing_lists()),
+        _response(_existing_lists_with_requests()),
+        _response({"value": _actual_columns(OPERATIONS_REQUESTS_LIST)}),
+    ]
+    session.post.return_value = _response({}, status=201)
+    provisioner = OperationsListProvisioner(
+        token="TOKEN", site_id="site-id", session=session,
+    )
+
+    report = provisioner.apply_phone_requests_list(
+        confirmation=PHONE_REQUESTS_PROVISION_CONFIRMATION,
+    )
+
+    assert report.ready is True
+    assert session.post.call_count == 1
+    assert session.post.call_args.kwargs["json"]["displayName"] == REQUESTS_LIST_NAME
 
 
 def test_inspect_rejects_unexpected_editable_visible_custom_column():

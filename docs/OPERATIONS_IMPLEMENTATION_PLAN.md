@@ -1,7 +1,7 @@
 # Operations Implementation Plan
 
 **Status:** Active plan
-**Last updated:** 2026-09-08
+**Last updated:** 2026-09-09
 
 This plan delivers the production-operations system in small, independently verifiable slices.
 
@@ -63,19 +63,23 @@ record. Each expanded vehicle now has
 a complete newest-first history view showing status values, automatic entry time, optional effective
 date, actor/technician, revision, and correction note. History uses only applied events through a
 strictly read-only repository query, so opening it cannot request write consent or repair SharePoint
-state. Capability-gated project and individual schedule editors patch only the date fields the user
-actually changed through one-vehicle revision-checked commands. Every field is optional and may be
-entered before acceptance; no Monday or cross-field dependency is enforced. Acceptance plus a
-Scheduled Week still controls the derived queue. The effective **Must Deliver On** date normally uses
+state. The current desktop Calendar owns planned dates and publishes them through one-vehicle
+revision-checked commands. Operations project and individual date editors now edit only the delivery
+deadline; the separate Accepted date action edits the same acceptance date as Calendar.
+Legacy clients retain the optional schedule API. Acceptance plus a Scheduled Week still
+controls the Operations Scheduled filter. The effective **Must Deliver On** date normally uses
 the 60-day calculation, but an optional separately stored manual override supports imported or
 manually maintained vehicles. Clearing the override restores the automatic date. Status surfaces
 use white for unstarted/not-ready, light yellow for intermediate, and green for the completed state.
 At DTM completes Vehicle Availability; Delivered is the last Final Finish step and automatically
 completes the project only after every exact project vehicle reaches it. Active project rows derive
 one limited workflow badge. The schema-v4 live choice upgrade was applied and both lists revalidated
-on 2026-09-08. The next working-tree slice replaces the short-lived Invoice reference action with a
-verified, read-only existing-Estimate connection and shared status/freshness observation. The next
-gate is a production status/schedule pilot, followed by duration summaries.
+on 2026-09-08. The verified, read-only existing-Estimate connection and shared status/freshness
+observation are implemented. The production request queue for the minimal phone client is now
+provisioned and validated. Its Power Automate processor is being assembled against the frozen
+request contract; the phone app does not exist yet. The next gate is a non-mutating flow validation,
+then one controlled normal-forward phone request, followed by the production status/schedule pilot
+and duration summaries.
 
 ## Working method
 
@@ -251,6 +255,11 @@ guarded Update action are implemented. Search/selection and background refresh r
 
 ## Phase 6 — Minimal phone client
 
+Foundation status: `DTMOperationsRequests` is live with its exact v1 schema and packaged GUID. The
+`DTM Process Operations Request` flow has been created in the default tenant environment and bound
+to the request-list trigger with concurrency one. Processor actions, negative-path validation, and
+the Canvas phone UI remain.
+
 ### Scope
 
 - searchable/filterable accepted active vehicles;
@@ -270,7 +279,8 @@ guarded Update action are implemented. Search/selection and background refresh r
 - Prefer one responsive screen plus a reusable detail component, eliminating ordinary Back wiring.
 - AI/code assistance may generate Power Fx and pasteable control YAML, but Power Apps Studio remains
   the supported assembly and verification surface.
-- Prove paired current/event mutation or event-request projection before production rollout.
+- Project through the append-only request queue; direct paired phone writes are no longer an option.
+- Prove current/event mutation, idempotency, and conflict behavior before production rollout.
 
 ## Phase 7 — Reporting, pilot, and workflow guides
 
@@ -296,7 +306,11 @@ Create illustrated, task-oriented references for:
 Write final guides after pilot feedback so they describe the shipped interface. Version them with
 the app and retain one master lifecycle diagram.
 
-## Phase 8 — Bay and team assignments (after the scheduling pilot)
+## Phase 8 — Bay tracking (later) and Calendar teams (current desktop work)
+
+Team assignment and labor scheduling were promoted into the current Calendar implementation
+on 2026-09-09. See [CALENDAR.md](CALENDAR.md). The original deferred scope below is historical;
+bay occupancy remains deferred.
 
 - Add an owner-reviewed bay roster using durable neutral IDs, current vehicle occupancy, and dated
   move/reassignment events. Preserve historical labels when a bay is renamed.
@@ -321,4 +335,5 @@ the app and retain one master lifecycle diagram.
 
 ## Current open decisions
 
-1. Direct phone paired write versus append-only request + SharePoint flow projection.
+None for the v1 phone transport. Bay tracking remains deferred. Team assignments and labor planning
+are now implemented in the desktop Calendar; the phone client remains deferred and its flow stays Off.

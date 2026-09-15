@@ -146,6 +146,7 @@ def publish_vehicle_package(
     *,
     gateway: ShopPublicationGateway | None = None,
     shop_root: str | None = None,
+    reference_reviewed: bool = False,
 ) -> dict:
     """Publish one finalized PDF/photo package, replacing only owned items."""
     with _publication_lock:
@@ -153,6 +154,8 @@ def publish_vehicle_package(
         unit, individual = _find_target(project, unit_id, individual_id)
         if individual.status != "finalized":
             return {"ok": False, "error": "Only finalized vehicles can be published"}
+        if individual.shop_publication_status == "reference_review_required" and not reference_reviewed:
+            return {"ok": False, "error": "Review changed references and update the PDF before approving Shop publication."}
         pdf_path = Path(str(individual.pdf_path or ""))
         if not pdf_path.is_absolute():
             pdf_path = paths.workspace_dir / pdf_path
@@ -291,6 +294,10 @@ def handle_republish_vehicle_package(
         return {"ok": False, "error": "Project not found"}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
+    if individual.shop_publication_status == "reference_review_required":
+        return publish_vehicle_package(
+            project_id, unit_id, individual_id, paths, reference_reviewed=True,
+        )
     return publish_vehicle_package(project_id, unit_id, individual_id, paths)
 
 

@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!requirements.lock
+!debian.sources
+!pyproject.toml
+!README.md
+!src/
+!src/**
+!relay.py
+**/__pycache__
+**/*.pyc
+**/.DS_Store

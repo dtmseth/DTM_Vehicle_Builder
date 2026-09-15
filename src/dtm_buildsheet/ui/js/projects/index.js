@@ -305,6 +305,9 @@ function _ptBind() {
 
 window.initProjectsTab = async function () {
   if (!_PT.inited) { _ptBind(); _PT.inited = true; }
-  await _ptLoadAll();
+  // Select the list at navigation time. A refresh finishing later must not
+  // dismiss a detail/editor the user opened while the request was pending.
   _ptShowList(_PT.listMode);
+  await _ptLoadAll();
+  _ptRenderList();
 };

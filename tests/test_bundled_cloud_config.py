@@ -25,6 +25,7 @@ REQUIRED_KEYS = {
     "sharepoint_drive_id",
     "operations_list_id",
     "operations_events_list_id",
+    "operations_requests_list_id",
 }
 
 
@@ -58,6 +59,7 @@ def test_bundled_cloud_config_values_are_non_empty_strings():
         "sharepoint_drive_id",
         "operations_list_id",
         "operations_events_list_id",
+        "operations_requests_list_id",
     ):
         assert isinstance(data[key], str) and data[key].strip(), (
             f"bundled cloud_config.json: {key} must be a non-empty string"
@@ -92,3 +94,4 @@ def test_existing_install_forward_merges_operations_list_ids(tmp_path):
     assert merged["tenant_id"] == "keep-existing-tenant"
     assert merged["operations_list_id"] == bundled["operations_list_id"]
     assert merged["operations_events_list_id"] == bundled["operations_events_list_id"]
+    assert merged["operations_requests_list_id"] == bundled["operations_requests_list_id"]

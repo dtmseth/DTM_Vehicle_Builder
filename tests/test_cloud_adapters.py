@@ -10,6 +10,7 @@ from dtm_buildsheet.app.adapters.cloud.config import (
     CloudConfigMissing,
     load_cloud_config_from_env,
     save_operations_list_ids,
+    save_operations_request_list_id,
 )
 from dtm_buildsheet.app.adapters.cloud.sharepoint_graph_provider import (
     SMALL_UPLOAD_LIMIT_BYTES,
@@ -281,6 +282,7 @@ def test_operations_list_ids_round_trip_through_cloud_config(monkeypatch, tmp_pa
         "DTM_SHAREPOINT_DRIVE_ID",
         "DTM_OPERATIONS_LIST_ID",
         "DTM_OPERATIONS_EVENTS_LIST_ID",
+        "DTM_OPERATIONS_REQUESTS_LIST_ID",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -288,10 +290,14 @@ def test_operations_list_ids_round_trip_through_cloud_config(monkeypatch, tmp_pa
         operations_list_id="operations-guid",
         operations_events_list_id="events-guid",
     )
+    save_operations_request_list_id(
+        operations_requests_list_id="requests-guid",
+    )
     cfg = load_cloud_config_from_env()
 
     assert cfg.operations_list_id == "operations-guid"
     assert cfg.operations_events_list_id == "events-guid"
+    assert cfg.operations_requests_list_id == "requests-guid"
     assert '"existing_setting": "preserved"' in config_file.read_text()
 
 

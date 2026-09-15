@@ -9,6 +9,7 @@ Cross-file validation lives in loader.py (needs all configs at once).
 from copy import deepcopy
 
 from ..naming import canonical_name
+from ..domain.calendar_planning import validate_settings
 
 REQUIRED_CONFIG_FILES = {
     # [shared-settings] — reviewed via PR through the GitHub settings repo in
@@ -874,6 +875,7 @@ _VALIDATORS = {
     "build_rules.json": _validate_build_rules,
     "project_options.json": _validate_project_options,
     "estimate_charges.json": _validate_estimate_charges,
+    "calendar_settings.json": lambda data: data.update(validate_settings(data)),
     "parts_db.json": _validate_parts_db,
     "legacy_workbook_index.json": _validate_legacy_workbook_index,
 }

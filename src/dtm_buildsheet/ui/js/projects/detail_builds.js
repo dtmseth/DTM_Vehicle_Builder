@@ -30,6 +30,9 @@ function _ptShortAgo(iso) {
 function _ptFinalizationBadge(holder) {
   const status = holder.status || "draft";
   if (status === "finalized") {
+    if (holder.shop_publication_status === "reference_review_required") {
+      return `<span class="proj-final-badge proj-final-badge--reopened">Reference changes need review · Shop package unchanged</span>`;
+    }
     const who = _ptFirstName(holder.finalized_by);
     const when = _ptShortAgo(holder.finalized_at);
     return `<span class="proj-final-badge proj-final-badge--final">✓ Design finalized${who ? ` by ${esc(who)}` : ""}${when ? ` · ${when}` : ""}</span>`;
@@ -79,10 +82,11 @@ function _ptPhotoOptionsMarkup(project, projectId, unitId, individualId) {
     ? (unit?.individuals || []).find(item => item.individual_id === individualId)
     : unit;
   const publication = String(holder?.shop_publication_status || "not_published");
-  const companyReferencePath = String(project?.company_year_folder_path || "").trim()
-    ? `${String(project.company_year_folder_path).trim()}/Reference Photos & Videos` : "";
+  const companyVehiclePath = String(holder?.company_vehicle_folder_path || "").trim();
+  const companyReferencePath = companyVehiclePath ? `${companyVehiclePath}/Build Reference Photos` : "";
   const shopVehiclePath = String(holder?.shop_vehicle_folder_path || "").trim();
-  const publicationNote = publication === "published" ? "Final PDF and references are published to the Shop folder."
+  const publicationNote = publication === "reference_review_required" ? "Reference photos changed. Review them and export/update the PDF before approving an updated Shop package."
+    : publication === "published" ? "Final PDF and references are published to the Shop folder."
     : ["pending", "publishing"].includes(publication) ? "Shop publication is pending."
       : ["error", "withdrawal_error"].includes(publication) ? "Shop publication needs a cloud-sync retry."
         : "Completed Build Photos are kept in the unit's Shop folder.";
@@ -162,6 +166,7 @@ function _ptBuildCardsMarkup(p) {
             ${_ptPdfOptionsMarkup(pid, uid, iid, "ind", ind, buildDis)}
             ${_ptQuickBooksOptionsMarkup(pid, uid, iid, ind, buildDis)}
             ${_ptPhotoOptionsMarkup(p, pid, uid, iid)}
+            ${(p.project_type||'build')!=='build'?`${ind.previous_build?.project_id?`<button class="btn btn-secondary btn-sm" type="button" onclick="PT_previousBuild('${pid}','${uid}','${iid}')">Previous Build Design</button>`:''}${_ptCanEditProjects()?`<button class="btn btn-secondary btn-sm" type="button" onclick="PT_linkPreviousBuild('${pid}','${uid}','${iid}')">${ind.previous_build?.project_id?'Change previous build':'Link previous build'}</button>`:''}`:''}
             ${_ptCanEditProjects() ? `<button class="btn btn-sm proj-final-review-btn${ind.status === "finalized" ? " proj-final-review-btn--finalized" : ""}"${buildDis}
               onclick="PT_reviewFinalization('${pid}','${uid}','${iid}','ind')">${ind.status === "finalized" ? "✓ Design finalized" : "Finalize design"}</button>` : ""}
           </div>
@@ -344,7 +349,7 @@ window.PT_openReadOnlyBuild = async function (draftId, label, finalStatus = "dra
   modal?.classList.add("open");
 
   try {
-    const response = await api(`/api/draft/${encodeURIComponent(draftId)}`);
+    const response = draftId ? await api(`/api/draft/${encodeURIComponent(draftId)}`) : {ok:true,draft:{parts:[],notes:{}}};
     if (!response?.ok || !response.draft) throw new Error(response?.error || "Build details are unavailable");
     const draft = response.draft;
     const parts = Array.isArray(draft.parts) ? draft.parts : [];
@@ -477,13 +482,14 @@ function _ptFinalizationChecksHtml(checks) {
   const items = Array.isArray(checks) ? checks : [];
   if (!items.length) return "";
   const passed = items.filter(item => item.status === "passed").length;
-  const allPassed = passed === items.length;
+  const applicable = items.filter(item=>item.status!=="not_applicable").length;
+  const allPassed = passed === applicable;
   const rows = items.map(item => {
-    const status = ["passed", "warning", "blocked"].includes(item.status) ? item.status : "warning";
-    const mark = status === "passed" ? "✓" : "!";
+    const status = ["passed", "warning", "blocked", "not_applicable"].includes(item.status) ? item.status : "warning";
+    const mark = status === "not_applicable" ? "—" : status === "passed" ? "✓" : "!";
     return `<div class="build-final-check build-final-check--${status}"><span class="build-final-check-mark" aria-hidden="true">${mark}</span><span><strong>${esc(item.title || "Final check")}</strong><small>${esc(item.message || "")}</small></span></div>`;
   }).join("");
-  return `<details class="build-final-checks${allPassed ? " build-final-checks--clear" : ""}"><summary><span class="build-final-check-summary-mark" aria-hidden="true">${allPassed ? "✓" : "!"}</span><span><strong>${passed} of ${items.length} final checks passed</strong><small>Show checks run</small></span><span class="build-final-check-chevron" aria-hidden="true">⌄</span></summary><div class="build-final-check-list">${rows}</div></details>`;
+  return `<details class="build-final-checks${allPassed ? " build-final-checks--clear" : ""}"><summary><span class="build-final-check-summary-mark" aria-hidden="true">${allPassed ? "✓" : "!"}</span><span><strong>${passed} of ${applicable}${applicable<items.length?" applicable":""} final checks passed</strong><small>Show checks run</small></span><span class="build-final-check-chevron" aria-hidden="true">⌄</span></summary><div class="build-final-check-list">${rows}</div></details>`;
 }
 
 async function _ptOpenBuildAfterReopen(projectId, unitId, individualId, type) {
@@ -2302,4 +2308,47 @@ window.PT_createEstimatesBatch = async function () {
     return;
   }
   await _ptOpenBatchEstimateSetup(_PT.viewProject);
+};
+
+
+// Service references contain IDs only: existing equipment never enters the service manifest.
+window.PT_linkPreviousBuild = function(pid,uid,iid){
+  let selected=null;
+  const candidates=_PT.projects.filter(p=>(p.project_type||'build')==='build'&&p.project_id!==pid).flatMap(p=>(p.build_units||[]).flatMap(u=>(u.individuals||[]).map(i=>({p,u,i}))));
+  _ptOpenFinalizationModal('Link previous build', '<p>Find a previous build by VIN or unit number. This adds a reference only; service parts stay separate.</p><label>VIN or unit number<input id="previous-build-search" type="search" autocomplete="off"></label><div id="previous-build-results"></div>', 'Link selected build', async()=>{
+    if(!selected){toast('Choose a previous build first','info');return;}
+    $('build-finalization-save').disabled=true;
+    try{await _ptSavePreviousBuild(pid,uid,iid,{project_id:selected.p.project_id,unit_id:selected.u.unit_id,individual_id:selected.i.individual_id});}
+    catch(error){toast(error.message||'Could not link previous build','error');}
+    finally{$('build-finalization-save').disabled=false;}
+  });
+  const search=$('previous-build-search'),results=$('previous-build-results');
+  search.oninput=()=>{
+    selected=null;results.replaceChildren();const q=search.value.trim().toLowerCase();if(!q)return;
+    const matches=candidates.filter(({i})=>[i.vin,i.unit_number].some(v=>v&&v.toLowerCase().includes(q))).slice(0,20);
+    if(!matches.length){results.textContent='No previous build found. Continue with this service project normally.';return;}
+    matches.forEach(match=>{const label=document.createElement('label');label.className='previous-build-match';const radio=document.createElement('input');radio.type='radio';radio.name='previous-build';radio.onchange=()=>selected=match;label.append(radio,document.createTextNode(`${match.p.customer.agency} · ${match.p.customer.build_year} · Unit ${match.i.unit_number||'—'} · VIN ${match.i.vin||'—'}`));results.append(label);});
+  };search.focus();
+};
+async function _ptSavePreviousBuild(pid,uid,iid,link){
+  const loaded=await api(`/api/project/${encodeURIComponent(pid)}`);if(!loaded.ok)throw new Error(loaded.error);
+  const project=loaded.project,unit=project.build_units.find(u=>u.unit_id===uid),individual=unit?.individuals.find(i=>i.individual_id===iid);
+  if(!individual)throw new Error('Service vehicle is no longer available');
+  individual.previous_build=link;
+  const saved=await api('/api/project/save',{project_id:pid,build_units:project.build_units});if(!saved.ok)throw new Error(saved.error);
+  _ptCloseFinalizationModal();await _ptLoadAll();_ptShowDetail(_PT.projects.find(p=>p.project_id===pid));
+}
+window.PT_previousBuild = async function(pid,uid,iid){
+  const project=_PT.projects.find(p=>p.project_id===pid),link=project?.build_units.find(u=>u.unit_id===uid)?.individuals.find(i=>i.individual_id===iid)?.previous_build;
+  if(!link)return;
+  const loaded=await api(`/api/project/${encodeURIComponent(link.project_id)}`),source=loaded.project;
+  const unit=source?.build_units.find(u=>u.unit_id===link.unit_id),individual=unit?.individuals.find(i=>i.individual_id===link.individual_id);
+  if(!individual){toast('The previous build is no longer available','error');return;}
+  const title='Previous Build Design · '+(source.customer.agency||'')+' · Unit '+(individual.unit_number||'—');
+  if(individual.draft_id)await PT_openReadOnlyBuild(individual.draft_id,title,individual.status);
+  else {await PT_openReadOnlyBuild('',title);$('build-readonly-body').textContent='This previous build has no saved design.';}
+  const body=$('build-readonly-body');
+  const note=document.createElement('p');note.textContent='Reference to the saved build design. Service parts and changes belong to this service project.';body.prepend(note);
+  if(individual.pdf_path){const button=document.createElement('button');button.className='btn btn-secondary btn-sm';button.textContent='View previous design PDF';button.onclick=()=>api('/open',{path:individual.pdf_path,agency:source.customer.agency||'',year:source.customer.build_year||''});body.prepend(button);}
+  if(_ptCanEditProjects()){const unlink=document.createElement('button');unlink.className='btn btn-secondary btn-sm';unlink.textContent='Remove reference';unlink.onclick=async()=>{await _ptSavePreviousBuild(pid,uid,iid,{});_ptCloseReadOnlyBuildModal();};body.append(unlink);}
 };

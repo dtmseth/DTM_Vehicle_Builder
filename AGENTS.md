@@ -5,15 +5,16 @@ vehicles. HTTP server + web UI in a native window. GitHub: `https://github.com/d
 
 ## Package manager
 
-pip (inside `.venv`): `pip install -e ".[dev]"`
+pip (inside `.venv`): `pip install -e ".[dev,hosted]"` (hosted extra is needed for boundary tests)
 
 ## Key commands
 
 ```bash
 .venv/bin/python -m dtm_buildsheet             # GUI (port 7655)
 .venv/bin/python -m dtm_buildsheet.generator_cli book.xlsx  # CLI
-.venv/bin/python tools/verify.py changed       # focused, compact local verification
-.venv/bin/python tools/verify.py release       # full release gate only
+.venv/bin/python -m pytest tests/test_<target>.py --maxfail=1  # one relevant file
+.venv/bin/python tools/verify.py changed --skip-smoke  # only on explicit pre-commit request
+.venv/bin/python tools/verify.py release       # pre-release checks only
 bash packaging/build_macos.sh                  # package Mac app
 ```
 
@@ -21,19 +22,38 @@ bash packaging/build_macos.sh                  # package Mac app
 
 This applies to every future agent/session working in this repository:
 
-- During implementation, run `.venv/bin/python tools/verify.py changed`. It selects tests and
-  browser flows from the current Git diff and captures successful output.
-- After tiny intermediate edits, prefer syntax checks or one directly relevant test; run the
-  changed gate after a meaningful batch, not after every line-level adjustment.
-- Do not run bare full `pytest`, all 28 browser flows, or coverage during the normal inner loop.
+- During iterative work, run ONLY the single relevant test file, for example
+  `.venv/bin/python -m pytest tests/test_<target>.py --maxfail=1`. Do not broaden the run
+  because unrelated files are dirty. Documentation/ignore-only edits need no pytest run.
+- Never run browser smoke tests (`tools/ui_smoke/run_smoke.py`) autonomously during normal
+  editing or small feature additions, including indirectly through another tool or wrapper.
+- Reserve `tools/verify.py changed` for an explicit owner request for a verification pass
+  before committing. Use `--skip-smoke` for that pass; the bare command also launches browser
+  flows. A request to commit alone does not authorize this verification pass.
+- Reserve full browser runs and `tools/verify.py release` strictly for pre-release checks.
+  A merge checkpoint, meaningful edit batch, or cross-cutting change is not an exception.
+- Do not run full pytest, coverage, or multiple test files during the normal inner loop.
 - Do not stream individual passing-test names or browser-flow JSON into the conversation. Successful
   verification should be reported as compact counts/summaries; show detailed output only for the
   first actionable failure.
-- Run `.venv/bin/python tools/verify.py release` once at an actual release/merge checkpoint, when the
-  user explicitly requests it, or after a genuinely cross-cutting core contract change. State why a
-  full gate is warranted before running it. CI remains the authoritative full-suite/coverage gate.
+- CI remains the authoritative full-suite/coverage gate.
 
 These rules are a token and developer-time constraint, not merely a formatting preference.
+They supersede older testing instructions in plans, handoffs, and other repository documents.
+
+## Context footprint and local assets
+
+- Do NOT delete or modify `workspace/reference_media/` or any images under `src/` during
+  workflow cleanup. These are required application storage assets and must remain on disk.
+- Exclude `workspace/`, `dist/`, `build/`, `output/`, `tmp/`, `.venv/`, and `venv/` from broad
+  searches and context/indexing. Exclude `*.png`, `*.jpg`, `*.jpeg`, `*.mp4`, `*.sqlite3`,
+  and `*.db` as well. Search named source/docs paths and read only relevant sections.
+- `.claudeignore` records these context exclusions; tools that do not honor it must use
+  explicit path/glob exclusions. Git ignore rules do not hide already tracked media.
+- Ignore rules are not deletion instructions. Never use `git clean -fdx` for this cleanup.
+- `tools/verify.py changed` includes staged and unstaged changes against `HEAD`, plus untracked
+  files. Staging alone does not narrow it; establish a committed baseline or intentionally
+  stash unrelated work before an owner-requested verification pass.
 
 ## Project docs
 
@@ -41,6 +61,12 @@ These rules are a token and developer-time constraint, not merely a formatting p
 |-----|-------------|
 | [docs/GOTCHAS.md](docs/GOTCHAS.md) | Before any edit — footguns by module |
 | [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | **Start here** — live release, verification baseline, roadmap position, next work |
+| [docs/AZURE_PILOT_PLAN.md](docs/AZURE_PILOT_PLAN.md) | Next-session hosted Builder plan: local prototype → isolated Azure trial → mobile parity → reviewed cutover |
+| [docs/HOSTED_BOUNDARY.md](docs/HOSTED_BOUNDARY.md) | Stage 2 request/session/job/artifact contracts, route audit and disabled provider integration |
+| [docs/HOSTED_OPERATIONS.md](docs/HOSTED_OPERATIONS.md) | Separate hosted image, expiry cleanup, fenced recovery, safe logging and deployment review gates |
+| [docs/AZURE_RESOURCE_REVIEW.md](docs/AZURE_RESOURCE_REVIEW.md) | Sole-user pilot resource names, access, current retail cost worksheet and pending account/authorization gates |
+| [docs/HOSTING_COMPARISON.md](docs/HOSTING_COMPARISON.md) | Provider costs and trial assumptions; Azure preferred if affordable, OVHcloud fallback |
+| [docs/POST_MEETING_FEATURE_PLAN.md](docs/POST_MEETING_FEATURE_PLAN.md) | Accepted photos, Estimate statuses/linking/import, project types, notes and vehicle selection requirements |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, test commands, CI, packaging |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime shape, design rules, central flow |
 | [docs/REPOSITORY_PRINCIPLES.md](docs/REPOSITORY_PRINCIPLES.md) | Engineering philosophy, do/don't |
@@ -49,6 +75,7 @@ These rules are a token and developer-time constraint, not merely a formatting p
 | [docs/PRESETS.md](docs/PRESETS.md) | Preset schema, cloud mirror |
 | [docs/CONFIG_SCHEMA.md](docs/CONFIG_SCHEMA.md) | Config file schemas |
 | [docs/PROJECT_WORKFLOW.md](docs/PROJECT_WORKFLOW.md) | Project → draft → output data flow |
+| [docs/POWER_APP_PHONE_CLIENT.md](docs/POWER_APP_PHONE_CLIENT.md) | Phone UI and Power Automate request-processor contract |
 | [docs/FEATURE_INVENTORY.md](docs/FEATURE_INVENTORY.md) | Every feature and non-obvious rule |
 | [docs/PACKAGING.md](docs/PACKAGING.md) | PyInstaller builds |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, critical path, QB-as-foundation framing |
@@ -67,8 +94,9 @@ architectural backlog remains Phase 4's consumer migration, reviewed QuickBooks 
 governance, and the visible parts-curation queue. See
 `docs/CURRENT_STATE.md`. **Working norms:** run cloud-off (`DTM_CLOUD=0 python -m
 dtm_buildsheet` or preview config "DTM App") unless intentionally testing SharePoint — cloud sync
-can replace local `parts_db.json`. Safety pins are `pytest tests/golden tests/contract` plus
-`tools/ui_smoke/run_smoke.py` (currently 28 smoke flows). Golden masters must not move merely to make
+can replace local `parts_db.json`. Pre-release safety pins are `pytest tests/golden tests/contract`
+plus `tools/ui_smoke/run_smoke.py`; the testing rules above govern when they run.
+Golden masters must not move merely to make
 tests green; re-record intentional render changes only with focused behavioral coverage and a
 representative export check. Re-record contract snapshots only for intended DB/route changes after review.
 Render **size + image** data belongs in `parts_db` at the **part-type level**, not per SKU or in the

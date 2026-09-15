@@ -36,6 +36,9 @@ function _ptRenderEditTab(project, editable) {
   if (!editable) {
     // ── Read-only mode ──
     const custPairs = [
+      ["Project type", _ptTypeLabel(project)],
+      ["Service location", project.service_details?.location],
+      ["On-site contact", project.service_details?.contact],
       ["Agency",     c.agency],
       ["Build Year", c.build_year],
       ["Sales Rep",  c.sales_rep],
@@ -97,6 +100,7 @@ function _ptRenderEditTab(project, editable) {
         <button class="btn btn-secondary btn-sm" onclick="PT_cancelEditMode()">✕ Cancel</button>
       </div>
       <div id="proj-edit-form-status" class="proj-form-status" style="display:none"></div>
+      ${_ptTypeFields("et",project)}
 
       <div class="proj-section-label">Customer Info</div>
       <div class="form-row">
@@ -366,6 +370,7 @@ function _ptCollectEditForm() {
   _PT.editTabUnits.forEach(u => _ptEnsureIndividuals(u));
   return {
     project_id: _PT.viewProject?.project_id,
+    ..._ptTypePayload("et"),
     customer: {
       agency:       ($("et-agency")?.value    || "").trim(),
       agency_id:    ($("et-agency-id")?.value  || "").trim(),
@@ -389,6 +394,7 @@ function _ptCollectEditForm() {
 }
 
 function _ptWireEditTabSearch() {
+  _ptWireTypeFields("et");
   const etAgency = $("et-agency");
   if (etAgency) {
     _ptWireAgencySearch(

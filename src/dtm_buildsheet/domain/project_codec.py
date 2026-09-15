@@ -137,6 +137,7 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
     draft_id = d.get("draft_id")
     return IndividualUnit(
         individual_id=ind_id,
+        previous_build={str(k): str(v) for k, v in (d.get("previous_build") or {}).items()} if isinstance(d.get("previous_build", {}), dict) else {},
         unit_number=str(d.get("unit_number", "")),
         year=str(d.get("year", "")),
         make=str(d.get("make", "")),
@@ -243,6 +244,7 @@ def build_unit_from_dict(d: Any) -> BuildUnit:
 
 
 def project_from_dict(d: dict) -> ProjectRecord:
+    from .project_types import project_type, service_details
     customer = customer_from_dict(d.get("customer", {}))
     quote_numbers_raw = d.get("quote_numbers", [])
     quote_numbers = [
@@ -272,6 +274,8 @@ def project_from_dict(d: dict) -> ProjectRecord:
         customer=customer,
         preferences=preferences_from_dict(d.get("preferences", {})),
         build_units=[build_unit_from_dict(u) for u in d.get("build_units", [])],
+        project_type=project_type(d.get("project_type")),
+        service_details=service_details(d.get("service_details", {})) if d.get("service_details") else {},
         project_status=(
             str(d.get("project_status", "active"))
             if str(d.get("project_status", "active")) in {"active", "inactive", "completed"}

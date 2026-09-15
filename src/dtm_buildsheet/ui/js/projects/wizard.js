@@ -1,6 +1,9 @@
 // ── Projects module: wizard / editor (new project form + unit CRUD + review) ───
 
 function _ptLoadForm(project) {
+  let workFields=$('proj-work-fields');
+  if(!workFields){workFields=document.createElement('div');workFields.id='proj-work-fields';$('proj-agency').closest('.form-row').before(workFields);}
+  workFields.innerHTML=_ptTypeFields('proj',project||{});_ptWireTypeFields('proj');
   const c  = project?.customer    || {};
   const pr = project?.preferences || {};
 
@@ -336,7 +339,7 @@ function _ptRenderReview() {
 
   $("proj-review-content").innerHTML = `
     <div class="proj-review-section">
-      <div class="proj-review-label">Customer</div>
+      <div class="proj-review-label">${esc(_PT_PROJECT_TYPES[$("proj-project-type").value])} project</div>
       <div class="proj-review-detail">${esc(cLine)}</div>
     </div>
     <div class="proj-review-section">
@@ -358,6 +361,7 @@ function _ptBuildPayload() {
   _ptCollectUnits();
 
   const p = {
+    ..._ptTypePayload("proj"),
     customer: {
       agency:       $("proj-agency").value.trim(),
       agency_id:    $("proj-agency-id")?.value?.trim()    || "",
@@ -375,6 +379,7 @@ function _ptBuildPayload() {
       draft_id:      u.draft_id || null,
       individuals:   u.individuals.map(ind => ({
         individual_id:        ind.individual_id,
+        previous_build:       ind.previous_build || {},
         unit_number:          ind.unit_number          || "",
         year:                 ind.year                 || "",
         make:                 ind.make                 || "",

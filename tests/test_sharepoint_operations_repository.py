@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from copy import deepcopy
 from dataclasses import replace
@@ -16,6 +17,7 @@ from dtm_buildsheet.app.adapters import (
 from dtm_buildsheet.app.adapters.cloud.operations_list_codec import (
     operations_event_from_fields,
     operations_event_to_fields,
+    record_snapshot_from_json,
     vehicle_operations_from_fields,
     vehicle_operations_to_fields,
 )
@@ -376,6 +378,24 @@ class TestSharePointFieldCodec:
         assert operations_event_from_fields(event_fields) == event
         assert event_fields["CommitStatus"] == "pending"
         assert "1FTFW1E50NFA12345" in event_fields["RecordSnapshotJson"]
+
+    def test_phone_flow_sharepoint_field_snapshot_normalizes_to_domain_record(self):
+        record = VehicleOperations(
+            vehicle_id="vehicle-1",
+            project_id="project-1",
+            revision=4,
+            shop_status="complete",
+            updated_at="2026-09-09T15:00:00+00:00",
+            last_event_id="request-4",
+            source_client=OperationsSource.POWER_APPS_MOBILE,
+        )
+        fields = vehicle_operations_to_fields(record)
+        fields["ID"] = 42
+        fields["@odata.etag"] = '"4"'
+
+        decoded = record_snapshot_from_json(json.dumps(fields))
+
+        assert decoded == replace(record, title="vehicle-1")
 
     def test_graph_date_only_timestamps_are_normalized_for_browser_inputs(self):
         record = VehicleOperations(vehicle_id="vehicle-1", project_id="project-1")

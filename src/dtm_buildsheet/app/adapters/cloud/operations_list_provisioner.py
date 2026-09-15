@@ -17,9 +17,11 @@ from .operations_list_schema import (
     LEGACY_PARTS_STATUS_CHOICES,
     OPERATIONS_LIST_NAME,
     OPERATIONS_LIST_SPECS,
+    OPERATIONS_REQUESTS_LIST,
     PARTS_ORDERED_SCHEMA_COLUMN_NAMES,
     PARTS_ORDERED_SCHEMA_CONFIRMATION,
     PROVISION_CONFIRMATION,
+    PHONE_REQUESTS_PROVISION_CONFIRMATION,
     RECOVERY_SCHEMA_COLUMN_NAMES,
     RECOVERY_SCHEMA_CONFIRMATION,
     SharePointColumnSpec,
@@ -70,7 +72,7 @@ class ProvisioningReport:
 
 
 class OperationsListProvisioner:
-    """Inspect and create only the two reviewed operations lists.
+    """Inspect and create only the reviewed operations lists.
 
     Routine creation never patches, renames, or deletes mismatched lists.
     Narrow, confirmation-gated upgrades accept only their reviewed prior state.
@@ -97,12 +99,23 @@ class OperationsListProvisioner:
         self._timeout = max(1.0, min(float(timeout_seconds), 120.0))
 
     def inspect(self) -> ProvisioningReport:
+        return self._inspect_specs(OPERATIONS_LIST_SPECS)
+
+    def inspect_phone_requests(self) -> ProvisioningReport:
+        """Inspect only the append-only phone request queue."""
+
+        return self._inspect_specs((OPERATIONS_REQUESTS_LIST,))
+
+    def _inspect_specs(
+        self,
+        specs: tuple[SharePointListSpec, ...],
+    ) -> ProvisioningReport:
         existing = self._collection(
             self._lists_url("$select=id,name,displayName&$top=999"),
             operation="list inspection",
         )
         inspections: list[ListInspection] = []
-        for spec in OPERATIONS_LIST_SPECS:
+        for spec in specs:
             candidates = [
                 item for item in existing
                 if self._has_normalized_list_name(item, spec.name)
@@ -138,6 +151,38 @@ class OperationsListProvisioner:
                 issues=tuple(issues),
             ))
         return ProvisioningReport(lists=tuple(inspections))
+
+    def apply_phone_requests_list(
+        self,
+        *,
+        confirmation: str,
+    ) -> ProvisioningReport:
+        """Create only the reviewed phone request queue after core validation."""
+
+        if confirmation != PHONE_REQUESTS_PROVISION_CONFIRMATION:
+            raise OperationsListProvisioningError(
+                "Creation confirmation must exactly equal: "
+                f"{PHONE_REQUESTS_PROVISION_CONFIRMATION}"
+            )
+        core = self.inspect()
+        if not core.ready:
+            raise OperationsListProvisioningError(
+                "Phone request provisioning requires both core Operations lists "
+                "to match the reviewed schema"
+            )
+        before = self.inspect_phone_requests()
+        if before.has_mismatch:
+            raise OperationsListProvisioningError(
+                "Existing phone request list schema mismatch; no list was created"
+            )
+        if before.lists[0].state == "missing":
+            self._create_list(OPERATIONS_REQUESTS_LIST)
+        after = self.inspect_phone_requests()
+        if not after.ready:
+            raise OperationsListProvisioningError(
+                "Post-create phone request schema validation failed"
+            )
+        return after
 
     def apply(self, *, confirmation: str) -> ProvisioningReport:
         if confirmation != PROVISION_CONFIRMATION:

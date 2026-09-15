@@ -1,12 +1,183 @@
 # DTM Vehicle Builder — Current State
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-10
 
 **Current release:** [v3.7.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.7.0)
 
 This is the short operational handoff for the repository. It replaces dated session handoffs and
 release checklists. Long-lived design and behavior remain documented in `ROADMAP.md`,
 `FEATURE_INVENTORY.md`, `PARTS_DB_AND_PICKER.md`, and `QUICKBOOKS.md`.
+
+## Current local work — Azure Stages 1–2 (unreleased)
+
+The cloud-off headless runtime and synthetic UI/export proof are implemented. Native macOS
+verification produced byte-verified PPTX/PDF downloads for typical (8 pages) and photo-heavy
+(20 pages) builds, with no external requests. Focused gate: **517 passed, 1 skipped, 4 selected
+browser flows passed**. Colima/Docker are installed in a dedicated local profile. See
+[AZURE_PILOT_RESULTS.md](AZURE_PILOT_RESULTS.md) for commands, measurements and remaining gates.
+Stage 1 now has an ARM64 Linux run: the staged 396,900,402-byte image
+passed UI edit/save, restart persistence, typical/dense exports, cgroup limits, no-OOM, fonts,
+full 28-page Poppler review and blocked external connections. The subsequent AMD64 image
+(400,900,598 bytes) also passed through Rosetta, including all four downloads, restart persistence,
+28-page rendered review, no OOM and blocked egress. Peak combined export memory was 602.19 MiB
+by the kernel counter. Stage 1's local gate is **complete**; no Azure performance claim is made.
+The owner then explicitly advanced Stage 2 locally: the new
+request/session/job/artifact boundary uses signed tenant identities, existing capabilities,
+exact revisions and owner-bound downloads. It includes an Azure Table adapter, synthetic durable
+tests, a loopback Waitress proof and review-only auth configuration. See
+[HOSTED_BOUNDARY.md](HOSTED_BOUNDARY.md). Real provider adapters/full hosted UI remain closed;
+latest focused gate: **663 passed, 1 skipped, 4/4 browser flows**, including 53 boundary tests.
+The AMD64 run exposed and fixed a Projects refresh race that could dismiss an opened draft;
+a delayed-refresh browser regression covers it. No trial, deployment or live-data
+connection occurred. Existing uncommitted feature work and user `output/`/`tmp/` remain intact.
+
+## Next session — deployment files ready; owner handles activation
+
+Start with [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md), the results log and hosted boundary doc.
+Stage 1's local Linux gate is complete. The separate hosted AMD64 image (103,678,174 bytes),
+bounded expiry cleanup, fenced job recovery and safe telemetry are implemented and verified
+locally. The real factory passed startup/negative HTTP/restart checks with networking disabled;
+it contains no full Builder UI or provider integration. [HOSTED_OPERATIONS.md](HOSTED_OPERATIONS.md)
+records procedures, proposed retention and actual limits. The concrete
+[AZURE_RESOURCE_REVIEW.md](AZURE_RESOURCE_REVIEW.md) now records Central US candidate resources,
+sole pilot user/alert recipient **seth@dtmfleet.com**, proposed operator duties and a $15 alert
+budget. At 40 active boundary hours/month, retail assumptions total **$13.15 before grants** or
+**$10.95 with full Container Apps compute/request grants**, excluding trial credits. This is not
+a quote or spending authorization. The owner confirmed **no current Azure subscription and a
+$200 trial offer**; do not re-check that offer or repeat portal/account discovery. Reproducible
+[deployment files](../packaging/hosted/azure/README.md) now compile locally: foundation, private-by-default
+app/auth, and opt-in monitoring/budget. Seth handles trial activation. Supply the resulting
+subscription/tenant IDs when deploying; no activation or deployment has been authorized yet.
+The local Colima profile is stopped; synthetic evidence and image/volume caches are retained.
+The Stage 2 proof is a security/storage boundary, not full hosted feature parity. Provider
+integration and central Calendar/QBO polling remain disabled for the later isolated stage.
+Preserve all tracked/untracked Calendar and phone-foundation work on `main`,
+and leave user-owned `output/`
+and `tmp/` untouched. The plan includes a copyable next-session prompt.
+
+Azure Container Apps is preferred if affordable; OVHcloud remains the cost fallback. The owner
+confirmed the $200 trial offer and no current subscription. Account setup is owner-handled;
+do not re-verify the offer. No subscription purchase, hosted deployment, production
+cutover or token migration has occurred. [HOSTING_COMPARISON.md](HOSTING_COMPARISON.md) records the
+illustrative $25–35/month target, higher-cost scenarios, provider prices and unverified assumptions.
+The target is not an approved spending cap or a measured forecast.
+
+No mobile UI design or interactive mobile prototype has been created yet. Phone workflow
+requirements exist; the responsive full Builder UI remains planned work.
+The accepted full shared HTML app includes desktop/iPhone/Android feature parity with role-specific
+access, M365 login and a planned central QBO connection. Local production still uses the existing
+per-user QBO keychains/Netlify broker. The old central branch was inspected read-only and is not a
+complete hosted implementation. No Canvas app exists; the unfinished phone processor remains Off.
+
+## Accepted post-meeting feature backlog
+
+[POST_MEETING_FEATURE_PLAN.md](POST_MEETING_FEATURE_PLAN.md) owns the coordinated requirements for
+photo folders/access/HEIC/uploads, truthful **No Estimate Connected / Estimate Created / Estimate
+Sent / Accepted** states, Estimate discovery/import, project types, notes and standardized vehicle
+selection. Preserve these requirements alongside Calendar; use the hosted seams as new work lands.
+The feature plan also records the read-only Edina/photo audit. The September 14 Company per-unit
+reference-folder batch is now implemented locally, separately from Azure; see
+[PHOTO_FOLDER_IMPLEMENTATION.md](PHOTO_FOLDER_IMPLEMENTATION.md) for its backfill evidence and
+remaining photo scope. Other feature batches remain planned and unshipped; the local runtime proof
+above does not implement that backlog.
+
+## Current desktop work — Calendar (unreleased)
+
+The working tree now includes a top-level Calendar with Monday–Friday Week and Sunday–Saturday
+Month views, team assignments and labor-capacity planning, and **General Settings → Teams &
+Calendar**. Initial teams are David's Team, Josh's Team, and Michelle. Accepted Operations
+vehicles enter the acceptance queue; reviewed saves reuse the existing Operations schedule-event path.
+Operations edits the delivery deadline and shared accepted date, and links to Calendar for scheduling. The
+60-day promise is unchanged. Development previews use isolated data; the separately authorized
+live schedule reset is recorded below. Production flows are unchanged. Details and current limits
+are in [CALENDAR.md](CALENDAR.md). Team scheduling is now current work; bay tracking remains
+later roadmap work.
+
+Calendar saves now acknowledge a durable local replica/outbox before background publication. Rapid
+edits stay available during uploads; pending snapshots resume after restart with fresh authorization
+and conflict checks. Disjoint shared edits merge; material conflicts require explicit review. Accepted dates are shared between Operations and Calendar. Connected
+Builder clients poll linked active Estimates every five minutes, using QBO AcceptedDate rather
+than observation time. Manual dates remain protected. Calendar uses stable reviewed reservations
+and an independently scrolling acceptance queue.
+September 14 owner feedback simplified it to one assigned team and scheduled start/ready dates:
+no second-team, agreed-date or remaining-hours controls. Parts/vehicle badges replace noisy card
+metadata; compact modal bubbles replace the below-board editor, full day areas accept pointer
+drops, saved bookings can be moved, and Week/Month mark today. The owner also requested a backed-up
+live reset of all 13 bookings/assignments to try scheduling from scratch. See `CALENDAR.md`.
+The next owner refinement changes booking to one **Confirm booking** action with live date overview
+and inline errors. The project checkbox defaults on, current projects can be removed, and Calendar
+has no Shop actions. Month drops prefer an available team; busy dropdown options are marked red
+and allow overlapping work only after a named confirmation. Removal retains durable clearing
+markers and publishes only the three planning-date fields through Operations.
+The toolbar now replaces Find opening/Add job with a read-only next-opening summary. Title and
+navigation sit above the grid. Successful save banners are hidden; progress/failure stays inside
+Calendar. Retry date update appears only for actual pending Operations date differences.
+Toolbar verification: **771 tests passed, 1 skipped**; Calendar and six other selected browser
+flows passed. The Projects vehicle-model flow was intermittent (two timeouts, then a passing
+diagnostic rerun with unchanged assertions). The preceding 770-test gate passed all eight flows.
+See `CALENDAR.md` for details; no unrelated source was changed to investigate the timeout.
+The next Calendar correction removes hidden forecast occupancy and stops restarting full labor
+from today. Only saved work intervals mark teams busy. Confirm refreshes Operations while
+preserving form edits, requires another confirmation if the displayed dates/vehicle set changes,
+and still rejects concurrent Calendar edits. Latest changed gate: **773 passed, 1 skipped;
+8/8 selected browser flows**, including 73 Calendar tests. No live bookings were modified.
+The running desktop process needs restarting to load the Python availability change.
+The next owner pass reuses rows for non-overlapping work, allows date-only bookings to use
+remaining hours on their requested day, and displays handoff times. Stripes now mean parts or
+vehicle unavailable; active builds have a yellow bar; fixed-start/deadline symbols are removed.
+Week/Month switches sit below the title, the grid flows with the page, and only the queue scrolls
+internally. All-accepted scheduled cards are pale green and cannot be dragged from the queue.
+The 10% usable-capacity buffer and partial-day precision remain unchanged. Latest gate:
+**776 passed, 1 skipped; 8/8 browser flows**, plus isolated desktop/narrow calendar visual QA.
+No live bookings were modified. Restart the app for the date-only handoff change.
+The following refinement matches the sidebar to Calendar height, moves Confirm to the bottom
+right beside booking history, and uses an in-progress badge without forecast prose. Calendar
+and open-modal data refresh every 15 seconds and on app focus while preserving edited fields.
+Scheduling-evidence fingerprints ignore harmless polling/revision changes; material changes and
+per-vehicle date writes remain guarded. Current-project changes show saved details inline and
+allow confirmation without reopening. Verification: **784 passed, 1 skipped; 8/8 browser flows**,
+plus an isolated timed-refresh/visual proof. Restart the app once to load these local changes.
+
+The owner's requested live acceptance backfill is complete: 10 vehicles use verified QBO dates;
+Walsh's two vehicles preserve the manually supplied 2026-01-12 date. Camp Ripley is unchanged
+because its linked Estimate is Pending without AcceptedDate. Read-back verified all original
+90 vehicles' scheduling and delivery-deadline fields were unchanged. No release was published.
+
+Calendar verification after direct confirmation and project removal: `tools/verify.py changed` passed
+**768 focused tests, 1 skipped, and 8/8 selected browser flows**, including 68 Calendar tests.
+Full-cell drops, direct booking, the default project checkbox, month auto-team selection, busy-team
+warning/cancellation and removal have browser regression coverage. A separate isolated end-to-end
+check verified real project date clearing, rebooking and explicitly confirmed overlapping saves. A separate isolated
+26-vehicle check verified scrolling, badges, Week/Month today markers, month drops, modal layout,
+and no writes from dragging. The hosted HTTP test loop uses poll to avoid select's descriptor limit
+in the combined suite; its auth/HTTP assertions are unchanged. Existing golden masters were unchanged.
+
+September 15 Calendar saves now use a durable local replica and coalescing sync queue. The real
+browser regression books, removes and rebooks while date publication is deliberately stalled;
+pending edits survive restart and old uploads cannot restore newer local removals. Shared conflicts
+have an explicit review path; transient failures retry without locking Calendar. Next opening is
+above the grid on the right. Latest changed gate: **798 passed, 1 skipped; 8/8 browser flows**,
+including 14 outbox tests. The full release gate was attempted and stopped on the pre-existing
+`test_parts_db_contract[root_doc]` catalog/snapshot mismatch; no catalog or golden snapshot was
+changed. No release or live-data mutation occurred. Restart the app to load the Python changes.
+
+## Current desktop work — project types (unreleased)
+
+Build / Service / Off-Site Service are implemented in project creation/editing and the Projects type
+filter. Existing projects default to Build. Accepted service vehicles use an explicit per-vehicle labor
+estimate, optional manual deadline, and selected strip/finishing requirements. Off-site travel occupies
+team capacity, and its location/contact are required. All types remain visible in Calendar regardless
+of the Projects filter. Operations reads type/requirements from Builder metadata without a shared-list
+schema migration; non-applicable workstreams retain their statuses and show N/A.
+
+Service worksheets omit vehicle diagrams by default and show service scope instead of Build equipment
+summary tiles. Their final checks do not require warning-light coverage. Independent visits receive
+separate file names/folders. The optional Previous Build Design link searches VIN/unit number and stores
+reference IDs only; it opens a read-only parts/locations/notes view plus the prior PDF when available.
+No source parts, Estimate links, statuses or folder IDs are copied into service work. Further historical
+inventory/version tracking is deferred. Final changed gate: **914 passed, 1 skipped; 10/10 browser
+flows**, with a visually reviewed service PDF. The release gate remains blocked by the existing parts
+catalog contract mismatch. See `POST_MEETING_FEATURE_PLAN.md` for details and verification.
 
 ## What is live
 
@@ -430,14 +601,25 @@ release checklists. Long-lived design and behavior remain documented in `ROADMAP
   local server rejects direct legacy Builder mutations that bypass the UI. Shop can inspect draft
   equipment and build notes in a read-only view. Active Operations now has All / Unscheduled /
   Scheduled subfilters; Scheduled is ordered by Scheduled Week.
-- **Local verification output is now compact and change-aware:** `tools/verify.py changed` is the
-  normal inner loop. It checks syntax, selects affected pytest areas and browser flows from the Git
-  diff, captures successful output, and stops at the first failure. The full suite plus all 28
-  browser flows is reserved for release/merge checkpoints through `tools/verify.py release`; CI
-  continues to run the full suite and coverage floor on every PR and main push.
+- **Local verification policy (updated 2026-09-15):** iterative work runs only one relevant
+  pytest file with `--maxfail=1`. Never autonomously run browser smoke tests during normal editing
+  or small feature additions. `tools/verify.py changed --skip-smoke` requires an explicit owner
+  request for pre-commit verification. Full browser runs and `tools/verify.py release` are strictly
+  pre-release checks. Root `AGENTS.md` supersedes older verification guidance in plans and handoffs;
+  CI continues to run the full suite and coverage floor on every PR and main push.
 - **v3.7.0 — default work queue:** Projects and Operations now open on Active.
   The Operations read boundary also excludes projects whose authoritative Builder lifecycle is
   Inactive, even when an older Operations projection still incorrectly says Active.
+- **Phone-client foundation:** the exact `DTMOperationsRequests` append-only queue was created and
+  revalidated in the production DTM Fleet site on 2026-09-09. Its durable GUID is
+  `3a821086-93b0-45ca-97fc-4b4a4caeb940` and ships in the bundled cloud defaults. Phone users will
+  write only pending normal-forward requests; the standard SharePoint Power Automate processor owns
+  current/event projection, revision conflicts, and terminal request results. The processor flow
+  `DTM Process Operations Request` (`b882a0d9-0ad0-4d90-ac7a-b3b459954a51`) is assembled and saved
+  Off. Flow checker reports zero errors and only the expected off-state warning. It remains pre-pilot
+  pending terminal connector-failure handling, recovery confirmation, and the controlled validation
+  matrix documented in `POWER_APP_PHONE_CLIENT.md`. No Power App has been created; start that work
+  in a fresh session after the processor pilot gate.
 - Cloud-off verification for this working tree passes **2,396 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's
   Downloads folder also passed in its approved environment.

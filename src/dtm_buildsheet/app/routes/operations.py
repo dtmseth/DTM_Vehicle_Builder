@@ -71,7 +71,7 @@ def _plain_status(record, workstream: OperationsWorkstream) -> str:
     return value.value if hasattr(value, "value") else str(value or "")
 
 
-def _change_status(writer, actor, body: dict):
+def _change_status(writer, actor, body: dict, paths=None):
     try:
         workstream = OperationsWorkstream(str(body.get("workstream") or ""))
     except ValueError as exc:
@@ -79,6 +79,16 @@ def _change_status(writer, actor, body: dict):
     if workstream not in _STATUS_RESPONSE_ATTR:
         raise OperationsValidationError(f"{workstream.value} is not an editable status")
 
+    if paths is not None and workstream.value in {'parts', 'tray', 'programming_qc'}:
+        from ...domain.project_types import with_project_work, applicable_workstreams
+        record = writer.get_vehicle(str(body.get('vehicle_id') or ''))
+        if record is not None:
+            try:
+                project = load_project(record.project_id, paths)
+            except FileNotFoundError:
+                project = None
+            if workstream.value not in applicable_workstreams(with_project_work(record, project)):
+                raise OperationsValidationError('This workstream is not applicable to this service project')
     service = OperationsService(writer)
     common = {
         "vehicle_id": body.get("vehicle_id", ""),
@@ -196,12 +206,14 @@ def route_operations(
     is_pilot = method == "POST" and path == pilot_path
     is_status_update = method == "POST" and path == status_path
     is_schedule_update = method == "POST" and path == schedule_path
+    is_acceptance_date = method == "POST" and path == "/api/operations/acceptance-date"
     is_history = method == "GET" and path == "/api/operations/history"
     if not (
         (method == "GET" and path in get_paths)
         or is_pilot
         or is_status_update
         or is_schedule_update
+        or is_acceptance_date
     ):
         return False
 
@@ -250,14 +262,23 @@ def route_operations(
         }, status=401)
         return True
     try:
-        if is_pilot or is_status_update or is_schedule_update:
+        if is_pilot or is_status_update or is_schedule_update or is_acceptance_date:
             if bundle.operations_writer is None:
                 send_json(handler, {
                     "ok": False,
                     "error": "The Operations write connection is not configured",
                 }, status=503)
                 return True
-            if is_pilot:
+            if is_acceptance_date:
+                result = OperationsService(bundle.operations_writer).change_acceptance_date(
+                    vehicle_id=body.get('vehicle_id', ''), accepted_date=body.get('accepted_date', ''),
+                    acceptance_source=body.get('acceptance_source', 'manual'), actor=actor,
+                    request_id=body.get('request_id', ''), source_client='builder_desktop',
+                    expected_revision=_required_revision(body))
+                send_json(handler, {'ok': True, 'accepted_at': result.record.accepted_at,
+                                    'acceptance_source': result.record.acceptance_source,
+                                    'revision': result.record.revision})
+            elif is_pilot:
                 result = OperationsProjectionPilotService(
                     bundle.operations_writer
                 ).create_one(
@@ -281,6 +302,7 @@ def route_operations(
                     bundle.operations_writer,
                     actor,
                     body,
+                    paths,
                 )
                 payload = {
                     "ok": True,
@@ -362,6 +384,7 @@ def route_operations(
             payload = OperationsReadService(bundle.operations).list_vehicle_summaries(
                 actor,
                 hidden_project_ids=inactive_project_ids,
+                projects=list_projects(paths),
             )
         send_json(handler, payload)
     except OperationsAuthorizationError:
@@ -386,7 +409,7 @@ def route_operations(
             "ok": False,
             "error": (
                 "This vehicle changed on another device; refresh before continuing"
-                if is_status_update or is_schedule_update
+                if is_status_update or is_schedule_update or is_acceptance_date
                 else "That vehicle already has an Operations record; refresh before continuing"
             ),
         }, status=409)
@@ -401,7 +424,7 @@ def route_operations(
             "ok": False,
             "error": (
                 "The Operations update could not be saved"
-                if is_status_update or is_schedule_update
+                if is_status_update or is_schedule_update or is_acceptance_date
                 else "The Operations record could not be created"
                 if is_pilot
                 else "Operations history is temporarily unavailable"
@@ -415,12 +438,12 @@ def route_operations(
             "ok": False,
             "error": (
                 str(exc)
-                if is_pilot or is_status_update or is_schedule_update or is_history
+                if is_pilot or is_status_update or is_schedule_update or is_history or is_acceptance_date
                 else "Builder vehicles could not be safely mapped to Operations"
             ),
         }, status=(
             400
-            if is_pilot or is_status_update or is_schedule_update or is_history
+            if is_pilot or is_status_update or is_schedule_update or is_history or is_acceptance_date
             else 409
         ))
     return True

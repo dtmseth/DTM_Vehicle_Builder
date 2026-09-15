@@ -379,7 +379,7 @@ window.PT_openPhotoGallery = async function (projectId, kind, unitId = "", indiv
     for (let attempt = 0; attempt < 90; attempt += 1) {
       result = await api(`/api/project/${encodeURIComponent(projectId)}/photo-gallery`, {
         kind, unit_id: unitId || "", individual_id: individualId || "",
-        discover_folder: kind === "reference" && !unitId,
+        discover_folder: kind === "reference",
       });
       if (_PT.photoGalleryRequest !== request) return;
       if (!result?.ok) throw new Error(result?.error || "Could not load photos");

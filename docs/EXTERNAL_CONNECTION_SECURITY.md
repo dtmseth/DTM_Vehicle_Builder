@@ -1,9 +1,73 @@
 # External Connection Security Standards
 
 **Applies to**: All external API integrations in DTM Vehicle Builder  
-**Last updated**: 2026-08-26
+**Last updated**: 2026-09-10
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
+
+**Hosted migration, 2026-09-10:** [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md) defines the local
+prototype, request-scoped identity work and later sandbox/cutover stages. The contract below now
+governs the local Stage 2 boundary; no hosted OAuth store has been provisioned. Desktop keychain
+requirements remain unchanged. Do not copy desktop credentials into a container or assume its
+in-memory fallback supplies durable company authentication.
+
+### Hosted pilot contract (Stage 2, 2026-09-10; no credentials provisioned)
+
+The hosted boundary is separate from the desktop launcher. Container Apps built-in Entra auth
+owns the authorization-code flow, single-use state/nonce, sign-in cookies and provider sign-out.
+Use a single-tenant registration, assignment required, existing app-role values, HTTPS only,
+and `Return401` for unauthenticated API requests. No anonymous exclusions except `/healthz`.
+The application independently verifies the injected **signed ID token**, including issuer,
+tenant, audience, algorithm, expiry, object ID and recognized roles; the unsigned
+`X-MS-CLIENT-PRINCIPAL*` headers never authorize a request. No local identity/header bypass is
+part of the hosted application. Platform flow/nonce enforcement and header stripping still
+require negative tests on the isolated deployment before test data is introduced.
+
+The platform token store, if enabled to inject ID tokens, uses a dedicated private Blob container
+and a protected, expiring SAS secret with only the documented read/write/delete permissions.
+No OAuth token is stored by the application metadata adapter. Platform storage encryption,
+restricted secret access, a named rotation owner and expiry alert are deployment prerequisites.
+Keep token-store access separate from application metadata and disposable artifact storage.
+See [Container Apps authentication](https://learn.microsoft.com/en-us/azure/container-apps/authentication)
+and [token store](https://learn.microsoft.com/en-us/azure/container-apps/token-store).
+
+Application sessions are opaque, random, HttpOnly, Secure, SameSite=Strict cookies, bounded by
+both a 30-minute absolute lifetime and the validated ID-token expiry. Store only a digest of
+the cookie plus tenant/object binding and a digest of its CSRF token in durable metadata.
+Require the currently validated Entra identity on every request; role changes are evaluated
+from that request, never from a cached desktop bundle. Require the configured exact Origin and
+CSRF token for mutations; logout revokes the application session before platform sign-out.
+Never log headers, cookies, claims, request bodies or provider exception text. TLS terminates at
+the platform; trust no client Forwarded headers when constructing redirects or origins.
+
+Interactive SharePoint actions will use user-delegated access, constrained to explicitly
+configured pilot site/list/library IDs and existing role checks. Company and Shop destinations
+remain distinct and server-selected. Independent jobs will use a new dedicated managed identity
+with selected-site/application grants, never the CI principal. Wider provider permissions do not
+override acting-user capabilities or resource ACLs; recheck those before each write. Missing
+consent or a revoked user stops the operation. Provider adapters remain disabled in this local
+stage; no broad permission request is inferred from this contract.
+
+Azure Table Storage is the selected durable session/job/audit metadata store, accessed with a
+dedicated managed identity and conditional ETags. Business records/documents remain authoritative
+in SharePoint with their own ETags. Local SQLite is a synthetic test adapter outside the shipped
+package, not a hosted durability option. Caches are rebuildable and tenant/user keyed; generated
+files are disposable, expiring, owner-bound artifacts addressed by opaque IDs. A missing file
+after restart is reported as gone, never silently mapped to another user's output.
+
+Hosted cleanup is bounded, tenant-specific and conditional on exact ETags; it never deletes job
+retry history. Logical job snapshots exclude all sessions, tokens and business records. Restores
+target an empty isolated partition, interrupt active jobs and retain a durable fence on all job
+writes until provider reconciliation. Treat backup owner/resource references as confidential;
+store snapshots encrypted with separate restore access and an independently retained checksum.
+The hosted process emits only fixed-schema request/lifecycle events and redacted library warning
+categories; it never formats provider exception text. See [HOSTED_OPERATIONS.md](HOSTED_OPERATIONS.md).
+
+Future QBO company tokens require a separate reviewed server credential implementation: protected
+Key Vault secrets/encryption keys, least-privilege managed identity, serialized company refresh,
+immediate rotated-token persistence, audit attribution and reconnect/revocation tests. This
+contract does not authorize copying desktop tokens or connecting QBO. Desktop keychain rules
+remain mandatory. Hosted compliance remains **unverified** until isolated platform tests pass.
 
 ---
 
@@ -214,7 +278,7 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 
 Any new integration must, before merging:
 
-1. Store all credentials in the OS keychain via `msal-extensions` encrypted persistence (see `adapters/quickbooks/credential_store.py` for the pattern)
+1. For desktop, store all credentials in the OS keychain via `msal-extensions` encrypted persistence (see `adapters/quickbooks/credential_store.py`). Hosted credentials must instead satisfy the explicit hosted contract above before implementation.
 2. Log no credential values, no token strings, no raw API response bodies
 3. If OAuth: implement CSRF state validation and 302-only callback
 4. If OAuth in production: HTTPS redirect URI (relay if needed for localhost apps)

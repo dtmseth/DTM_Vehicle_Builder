@@ -35,7 +35,15 @@ def describe_access_session(
             reason="sign_in_required",
         )
 
-    trusted_provider = user.provider == "m365" if cloud_enabled else user.provider == "local"
+    from ..request_context import current_request
+    context = current_request()
+    if context is not None:
+        trusted_provider = (
+            active is context.bundle and user.provider == "m365"
+            and user.user_id == context.user_id
+        )
+    else:
+        trusted_provider = user.provider == "m365" if cloud_enabled else user.provider == "local"
     if not trusted_provider:
         return _empty_session(
             operations_ready=active.operations is not None,

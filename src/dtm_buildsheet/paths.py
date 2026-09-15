@@ -56,10 +56,16 @@ def _user_workspace_root() -> Path:
 
 
 _DEV = _is_dev_checkout()
+_WORKSPACE_OVERRIDE = os.environ.get("DTM_WORKSPACE_DIR", "")
+if _WORKSPACE_OVERRIDE and not Path(_WORKSPACE_OVERRIDE).is_absolute():
+    raise ValueError("DTM_WORKSPACE_DIR must be an absolute path")
+_SOURCE_WORKSPACE = _DEV and not _WORKSPACE_OVERRIDE
 
 # ── Workspace root ────────────────────────────────────────────────────────────
 PROJECT_ROOT = DEV_PROJECT_ROOT if _DEV else _user_workspace_root()
 WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _DEV else PROJECT_ROOT
+if _WORKSPACE_OVERRIDE:
+    WORKSPACE_DIR = Path(_WORKSPACE_OVERRIDE).resolve()
 # WORKSPACE_DIR is a mixed-scope umbrella. Phase 2 will split into a
 # settings-cache root (mirrors /Settings/) and a work root (mirrors /Projects/,
 # /Drafts/, etc.). Until then everything lives under this one directory.
@@ -69,10 +75,10 @@ WORKSPACE_DIR = (DEV_PROJECT_ROOT / "workspace") if _DEV else PROJECT_ROOT
 # asset / preset change is immediately visible to git and ships to users on
 # the next release. In the bundled app these point into the user's
 # Application Support folder.
-WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _DEV else WORKSPACE_DIR / "config"   # [shared-settings] (one file is [local-only]; see config/schemas.py)
-WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _DEV else WORKSPACE_DIR / "assets"   # [shared-settings]
+WORKSPACE_CONFIG_DIR = DEFAULT_CONFIG_DIR if _SOURCE_WORKSPACE else WORKSPACE_DIR / "config"   # [shared-settings] (one file is [local-only]; see config/schemas.py)
+WORKSPACE_ASSETS_DIR = ASSETS_DIR         if _SOURCE_WORKSPACE else WORKSPACE_DIR / "assets"   # [shared-settings]
 BUNDLED_PRESETS_DIR  = RESOURCES_DIR / "presets"                                  # [bundled]
-WORKSPACE_PRESETS_DIR = BUNDLED_PRESETS_DIR if _DEV else WORKSPACE_DIR / "presets"  # [shared-settings]
+WORKSPACE_PRESETS_DIR = BUNDLED_PRESETS_DIR if _SOURCE_WORKSPACE else WORKSPACE_DIR / "presets"  # [shared-settings]
 
 # ── Work data (last-writer-wins per record on SharePoint in Phase 2) ──────────
 WORKSPACE_INPUT_DIR    = WORKSPACE_DIR / "input"     # [local-only] uploaded workbooks, transient
@@ -174,6 +180,12 @@ def _log_westin_elitexd_probe(paths: AppPaths) -> None:
 
 def ensure_workspace() -> AppPaths:
     paths = AppPaths()
+    if os.environ.get("DTM_LOCAL_PILOT") == "1":
+        # Renderer/config convenience callers also enter here. They must never
+        # re-seed live desktop defaults or overwrite pilot edits mid-export.
+        if not _WORKSPACE_OVERRIDE or not (paths.workspace_dir / ".dtm-local-pilot").is_file():
+            raise RuntimeError("Initialize the isolated pilot workspace before rendering")
+        return paths
     for d in (paths.workspace_dir, paths.workspace_config_dir, paths.workspace_assets_dir,
               paths.workspace_input_dir, paths.workspace_output_dir, paths.workspace_drafts_dir,
               paths.workspace_presets_dir, paths.workspace_projects_dir,

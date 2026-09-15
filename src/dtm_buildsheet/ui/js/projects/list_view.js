@@ -170,12 +170,18 @@ function _ptProjectProgress(project) {
 }
 
 function _ptRenderList() {
+  if(!$('proj-type-filter')){
+    _PT.typeFilter='build';const label=document.createElement('label');label.className='project-type-filter';label.textContent='Project type ';
+    const select=document.createElement('select');select.id='proj-type-filter';select.setAttribute('aria-label','Filter project type');
+    select.innerHTML='<option value="build">Builds</option><option value="all">All projects</option><option value="service">Service</option><option value="offsite">Off-Site Service</option>';
+    label.append(select);$('proj-list-search').closest('label').before(label);select.onchange=()=>{_PT.typeFilter=select.value;_ptRenderList();};
+  }
   const statuses = ["started", "active", "inactive", "completed"];
   const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "active";
   const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
   const counts = Object.fromEntries(statuses.map(status => [
     status,
-    _PT.projects.filter(project => _ptProjectListStatus(project) === status).length,
+    _PT.projects.filter(project => _ptMatchesType(project) && _ptProjectListStatus(project) === status).length,
   ]));
   statuses.forEach(status => {
     const count = $(`proj-${status}-count`);
@@ -202,7 +208,7 @@ function _ptRenderList() {
     return;
   }
 
-  const projects = _PT.projects.filter(project =>
+  const projects = _PT.projects.filter(project => _ptMatchesType(project) &&
     _ptProjectListStatus(project) === mode && _ptProjectMatchesSearch(project, query)
   );
   if (mode === "active") projects.sort(_ptSortActiveProjects);
@@ -221,7 +227,7 @@ function _ptRenderList() {
   hide("proj-list-empty");
   show("proj-list-rows");
   $("proj-list-rows").innerHTML = projects.map(p => {
-    const name = esc(_ptProjName(p));
+    const name = esc(_ptProjName(p)) + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const pid  = esc(p.project_id);
     const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p) : null;
@@ -254,7 +260,7 @@ function _ptRenderList() {
 }
 
 function _ptRenderArchive(query = "") {
-  const projects = _PT.projects.filter(project =>
+  const projects = _PT.projects.filter(project => _ptMatchesType(project) &&
     project.project_status === "completed" && _ptProjectMatchesSearch(project, query)
   );
   $("proj-archive-empty").hidden = projects.length > 0;

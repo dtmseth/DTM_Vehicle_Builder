@@ -22,6 +22,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+hosted = [
+  "PyJWT[crypto]>=2.13,<3",
+  "azure-data-tables>=12.6,<13",
+  "azure-identity>=1.20,<2",
+  "waitress>=3.0.2,<4",
+]
 packaging = [
   "pyinstaller>=6.0,<7",
   "pyinstaller-hooks-contrib>=2024.0",
@@ -69,9 +75,11 @@ where = ["src"]
 dtm_buildsheet = [
   "ui/index.html",
   "ui/styles.css",
+  "ui/calendar.css",
   "ui/js/*.js",
   "ui/js/projects/*.js",
   "ui/js/settings/*.js",
+  "ui/images/*",
   "resources/config/*.json",
   "resources/default_data/*.json",
   "resources/presets/*.json",

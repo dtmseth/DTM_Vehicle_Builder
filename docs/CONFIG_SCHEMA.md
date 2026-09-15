@@ -729,6 +729,7 @@ current production defaults after the live folder and package verification.
   "sharepoint_drive_id": "...",
   "operations_list_id": "...",
   "operations_events_list_id": "...",
+  "operations_requests_list_id": "...",
 
   "exports_library_name": "Company Files",
   "exports_library_internal_name": "Documents",
@@ -759,16 +760,17 @@ publishes it.
 Library display and internal names are both optional candidates because a SharePoint rename may not
 change the backend drive name.
 
-`operations_list_id` and `operations_events_list_id` are non-secret SharePoint list GUIDs written
-only after the operations provisioner successfully re-reads and validates every column. Runtime
-operations code uses these GUIDs rather than list titles or URLs.
+`operations_list_id`, `operations_events_list_id`, and `operations_requests_list_id` are non-secret
+SharePoint list GUIDs written only after the operations provisioner successfully re-reads and
+validates every column. Runtime operations code and the phone setup use these GUIDs rather than list
+titles or URLs.
 
 Environment overrides use `DTM_COMPANY_FOLDER_PROVISIONING_ENABLED`,
 `DTM_COMPANY_VEHICLE_FOLDERS_ENABLED`, `DTM_COMPANY_LIBRARY_NAME`,
 `DTM_COMPANY_LIBRARY_INTERNAL_NAME`, `DTM_COMPANY_VEHICLE_ROOT`,
 `DTM_SHOP_FOLDER_PROVISIONING_ENABLED`, `DTM_SHOP_PUBLICATION_ENABLED`, `DTM_SHOP_LIBRARY_NAME`,
 `DTM_SHOP_LIBRARY_INTERNAL_NAME`, `DTM_SHOP_BUILD_PHOTOS_ROOT`, `DTM_OPERATIONS_LIST_ID`, and
-`DTM_OPERATIONS_EVENTS_LIST_ID`.
+`DTM_OPERATIONS_EVENTS_LIST_ID`, and `DTM_OPERATIONS_REQUESTS_LIST_ID`.
 
 ---
 
@@ -792,3 +794,28 @@ All asset paths in the manifest are stored relative to `workspace_assets_dir`. T
 
 ### Saving & Validation
 All saves go through `config_validation.py` before writing. Invalid data is rejected with an error response. Saves write with 2-space indentation and a trailing newline.
+
+## Calendar settings and plan (schema 1)
+
+`Settings/calendar_plan.json` is a versioned shared-work document, not a generic mirrored
+config file. Cloud-off uses `workspace/calendar/plan.json`. It contains `schema_version`,
+`settings`, `jobs` keyed by stable vehicle/custom-job IDs, `start_date`, and latest editor/time.
+The settings subdocument is validated as `calendar_settings.json` by `config/schemas.py`;
+that validation name is not a separately materialized required config. Schema 1 has no prior
+migration and rejects unsupported versions.
+
+Settings contain `hours_per_day` (1–12), `buffer_percent` (0–50), `finishing_hours` (0–40),
+`holidays` (ISO dates), and 1–50 teams. Each team has an immutable `id`, editable `name`,
+integer `people` (1–12), total `build_hours`/`strip_hours`, palette `color`, `active`, and
+`days_off`. At least one team must remain active. Team deletion is rejected; retirement keeps
+assignments readable. Jobs retain team/estimate overrides, fixed starts, custom-job
+completion/cancellation, and the last reviewed plan for historical display. `team_ids` holds
+one or two teams working on one vehicle; `team_assignment_manual` protects explicit choices.
+Top-level `project_teams` maps project IDs to one or two active team IDs for distributing vehicles.
+Saved automatic assignments may change when another team is available sooner. No QBO tokens
+or Estimate contents belong in the document.
+Legacy `actual_hours`, `accepted_date_source`, and vehicle `accepted_date` values remain readable,
+but the UI no longer edits them and vehicle queue order always uses shared Operations acceptance.
+Custom jobs still use their own date. Background upload progress is local operational state,
+outside this shared document and all settings mirrors.
+See [CALENDAR.md](CALENDAR.md) for scheduling and concurrency behavior.

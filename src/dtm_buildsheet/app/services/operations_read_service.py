@@ -1,6 +1,8 @@
 """Read-only operations queries and browser-facing summary projection."""
 from __future__ import annotations
 
+from ...domain.calendar_planning import acceptance_day
+
 from collections import Counter
 
 from ...domain.operations_models import (
@@ -31,12 +33,15 @@ class OperationsReadService:
         actor: OperationsActor,
         *,
         hidden_project_ids: frozenset[str] = frozenset(),
+        projects=(),
     ) -> dict:
         self._require_view(actor)
 
+        from ...domain.project_types import with_project_work
+        by_id = {p.project_id: p for p in projects}
         records = sorted(
             (
-                record
+                with_project_work(record, by_id.get(record.project_id))
                 for record in self._repository.list_vehicles()
                 if record.project_id not in hidden_project_ids
             ),
@@ -113,8 +118,13 @@ def _vehicle_sort_key(record: VehicleOperations) -> tuple:
 
 
 def _vehicle_summary(record: VehicleOperations) -> dict:
+    from ...domain.project_types import applicable_workstreams, physical_readiness
     commitment_start, effective_deadline = _display_commitment(record)
     return {
+        "project_type": record.project_type,
+        "service_details": record.service_details,
+        "applicable_workstreams": sorted(applicable_workstreams(record)),
+        "parts_and_vehicle_ready": all(physical_readiness(record)),
         "vehicle_id": record.vehicle_id,
         "project_id": record.project_id,
         "revision": record.revision,
@@ -126,6 +136,12 @@ def _vehicle_summary(record: VehicleOperations) -> dict:
         "vehicle_label": record.vehicle_label,
         "project_state": record.project_state.value,
         "acceptance_status": record.acceptance_status.value,
+        "accepted_at": record.accepted_at,
+        "accepted_date": acceptance_day(record),
+        "acceptance_source": record.acceptance_source,
+        "qbo_estimate_accepted_at": record.qbo_estimate_accepted_at,
+        "shop_started_at": record.shop_started_at,
+        "shop_completed_at": record.shop_completed_at,
         "schedule_bucket": schedule_bucket(record).value,
         "scheduled_week_of": record.scheduled_week_of,
         "planned_start_date": record.planned_start_date,
@@ -156,7 +172,7 @@ def _display_commitment(record: VehicleOperations) -> tuple[str, str]:
         record.vehicle_available_date,
         record.parts_received_at or record.parts_ready_at,
     )
-    return start, record.must_deliver_override_date or automatic_deadline
+    return start, record.must_deliver_override_date or (automatic_deadline if record.project_type == "build" else "")
 
 
 def _event_summary(event: OperationsEvent) -> dict:

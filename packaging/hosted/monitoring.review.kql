@@ -1,0 +1,13 @@
+// Review only. Replace app name after selecting the actual pilot resources.
+// This schema is for the Log Analytics destination; confirm it before enabling alerts.
+let requests = ContainerAppConsoleLogs_CL
+| where ContainerAppName_s == "REQUIRED_PILOT_APP"
+| extend event = parse_json(Log_s)
+| where event.event == "http_request"
+| extend status = toint(event.status), duration_ms = tolong(event.duration_ms);
+requests
+| summarize requests=count(), errors=countif(status >= 500),
+    p95_ms=percentile(duration_ms,95) by bin(TimeGenerated,5m)
+| extend error_percent=100.0 * errors / requests
+// Proposed alert: >= 5 errors and >= 5% over 5 minutes; review for pilot volume.
+// Separately alert on startup_failed and platform replica-unready conditions.

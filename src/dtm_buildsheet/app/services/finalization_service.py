@@ -365,7 +365,10 @@ def _check(project_id: str, unit_id: str, individual_id: str, paths: AppPaths) -
         draft_updated_at = _iso_moment(draft.updated_at)
         if exported_at is None or draft_updated_at is None or exported_at < draft_updated_at:
             blocking.append({"id": "pdf_stale", "message": "The build changed after its PDF export. Export a fresh PDF."})
-    equipment_checks = _equipment_checks(draft, unit)
+    equipment_checks = _equipment_checks(draft, unit) if project.project_type == 'build' else [{
+        'id': 'service_render_optional', 'title': 'Vehicle rendering and warning-light coverage',
+        'status': 'not_applicable', 'message': 'Optional for service work; the worksheet records the service parts and instructions.'
+    }]
     pdf_check = {
         "id": "current_pdf",
         "title": "Current PDF export",
@@ -401,6 +404,8 @@ def _check(project_id: str, unit_id: str, individual_id: str, paths: AppPaths) -
         pdf_check["message"] = blocking[0]["message"]
     checks = [pdf_check, *reference_checks, *equipment_checks]
     fingerprint = _draft_fingerprint(draft)
+    if project.project_type != 'build':
+        fingerprint = hashlib.sha256(json.dumps([fingerprint, project.project_type, project.service_details], sort_keys=True).encode()).hexdigest()
     return {
         "ok": True,
         "project": project,
@@ -513,7 +518,7 @@ def handle_reopen_build(project_id: str, unit_id: str, individual_id: str, body:
             holder.shop_pdf_item_id
             or holder.shop_reference_items
             or holder.shop_publication_status in {
-                "published", "pending", "publishing", "error",
+                "published", "pending", "publishing", "error", "reference_review_required",
             }
         ):
             holder.shop_publication_status = "withdrawal_pending"

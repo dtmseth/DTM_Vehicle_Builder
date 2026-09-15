@@ -1,8 +1,8 @@
 # Operations Data Schema
 
-**Status:** Exact live schema v4 validated; Operations workspace active
-**Schema version:** 4
-**Last updated:** 2026-09-08
+**Status:** Exact live core schema v4 validated; phone request schema v1 approved for provisioning
+**Schema version:** 4 (current/events), 1 (phone requests)
+**Last updated:** 2026-09-09
 
 This document freezes the machine-facing names for the DTM operations data layer. The display
 names shown to users may be friendlier, but Python, Graph, Power Apps, tests, and future migrations
@@ -251,7 +251,45 @@ remain available for administration but are not presented as accepted timeline e
 the full applied-event history indefinitely. Any future scale-driven archival must remain lossless
 and readable; it cannot silently delete vehicle history.
 
-## 4. Domain values and normal transitions
+## 4. List: `DTMOperationsRequests`
+
+**Creation/display name:** `DTMOperationsRequests` (Builder label: DTM Operations Requests)
+**Cardinality:** append-only, one item per phone status command
+**Authority:** request/result transport only; never authoritative current state or history
+
+| Internal name | Type | Required | Indexed/unique | Meaning |
+|---|---|---:|---|---|
+| `Title` | Single line text | yes | no | Display label; Power Apps sets this to the request UUID |
+| `SchemaVersion` | Number, integer | yes | no | Phone request schema version, initially `1` |
+| `RequestId` | Single line text | yes | indexed + unique | Client-generated UUID and idempotency key |
+| `BuilderVehicleId` | Single line text | yes | indexed | Durable vehicle relationship |
+| `ExpectedRevision` | Number, integer | yes | no | Revision shown to the phone when the user initiated the action |
+| `Workstream` | Choice | yes | indexed | `shop`, `tray`, `programming_qc`, or `final_finish` |
+| `RequestedStatus` | Choice | yes | no | One of the allowed forward target tokens; `not_ready` is deliberately absent |
+| `PerformedByName` | Single line text | no | no | Optional technician selected under a shared account |
+| `SourceAppVersion` | Single line text | no | no | Phone app version for support |
+| `ProcessingStatus` | Choice | yes | indexed | `pending`, `processing`, `applied`, `unchanged`, `conflict`, `rejected`, or `failed` |
+| `ProcessingStartedAtUtc` | Date/time | no | no | Time the flow claimed the request |
+| `ProcessedAtUtc` | Date/time | no | indexed | Time the processor reached a terminal result |
+| `ActorEntraId` | Single line text | no | indexed | Optional trusted object ID resolved from SharePoint's Created By identity; deferred in phone v1 |
+| `ActorDisplayName` | Single line text | no | no | Trusted SharePoint Created By display name recorded by the processor |
+| `ResultRevision` | Number, integer | no | no | Accepted current-row revision, including unchanged duplicates |
+| `ResultEventId` | Single line text | no | no | Applied event relationship; normally the same UUID as `RequestId` |
+| `ResultMessage` | Multiple lines text, plain | no | no | Short non-sensitive result suitable for phone display |
+| `ProcessorRunId` | Single line text | no | no | Flow-run identifier for support and retry diagnosis |
+
+Allowed `RequestedStatus` values are `in_progress`, `complete`, `ready`,
+`ready_for_wash_clean_photos`, `ready_for_delivery`, and `delivered`. The processor validates the
+workstream/status pair and the normal next-state table below; a choice existing in this union does
+not make it valid for every workstream.
+
+Phone users only create request rows with `ProcessingStatus=pending`. They do not edit or delete a
+request after creation and receive no direct write path to `DTMVehicleOperations` or
+`DTMVehicleEvents`. The processor owns every other processing/result field. A stale revision is a
+normal `conflict`, not an overwrite. Backward/skipped transitions and corrections are rejected on
+the phone and remain manager-only desktop actions with a required reason.
+
+## 5. Domain values and normal transitions
 
 | Workstream | Initial | Normal next values |
 |---|---|---|
@@ -264,7 +302,7 @@ and readable; it cannot silently delete vehicle history.
 Identical-state requests are no-ops. Other transitions require correction permission and a reason.
 No cross-workstream ordering is enforced.
 
-## 5. Provisioning checklist
+## 6. Provisioning checklist
 
 The owner elected not to maintain a separate SharePoint test site. The provisioner is therefore
 tested against mocked Graph responses and uses a read-only live preflight before creating the two
@@ -312,7 +350,25 @@ existing `FinalFinishStatus` choice list from the exact reviewed v3 values by ap
 place so existing records and events stay readable. The production upgrade completed on 2026-09-08,
 and its post-write inspection validated both live lists with no mismatch.
 
-## 6. Open schema decisions
+## 7. Phone request provisioning
 
-- Whether the phone client writes paired current/event mutations directly or appends a request for
-  a standard SharePoint Power Automate flow to project.
+The phone architecture is resolved: the Power App appends to `DTMOperationsRequests`, and a
+standard-connector Power Automate flow validates and projects accepted requests into the existing
+current/event pair. The request list has its own narrow provisioning command so the validated core
+lists cannot be recreated, renamed, or patched accidentally:
+
+```bash
+.venv/bin/python tools/provision_operations_lists.py --inspect-phone-requests
+.venv/bin/python tools/provision_operations_lists.py \
+  --provision-phone-requests --confirm 'CREATE DTMOperationsRequests'
+```
+
+The provisioner first revalidates both core lists, creates only the missing exact request list, then
+re-reads every request column before saving its GUID. Existing mismatches stop without mutation.
+
+### Calendar acceptance-date corrections (unreleased)
+
+Operations and Calendar share the existing AcceptedAt/source fields; there is no new column.
+Manual corrections store the selected Chicago business date as UTC and append an immutable
+acceptance-change event. The QBO date is date-only evidence even when SharePoint serializes it
+as midnight UTC. QBO observation time remains separate and never substitutes for AcceptedDate.

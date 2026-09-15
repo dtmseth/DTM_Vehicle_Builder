@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+import tempfile
 from pathlib import Path
 
 from ...paths import AppPaths
@@ -326,7 +327,8 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
         return {"ok": False, "error": "output_path must point to a .pptx file"}
 
     # Allow the actual pptx parent dir (covers project-specific export dirs)
-    err = _check_allowed(pptx_path, _allowed_roots(paths, extra_roots=[pptx_path.parent]))
+    extra_roots = [] if os.environ.get("DTM_LOCAL_PILOT") == "1" else [pptx_path.parent]
+    err = _check_allowed(pptx_path, _allowed_roots(paths, extra_roots=extra_roots))
     if err:
         return {"ok": False, "error": err}
 
@@ -337,17 +339,21 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
     _log.info("export_to_pdf path-select: soffice=%s platform=%s", bool(soffice), sys.platform)
     if soffice:
         try:
-            result = subprocess.run(
-                [
-                    soffice,
-                    "--headless",
-                    "--convert-to", "pdf",
-                    "--outdir", str(pdf_path.parent),
-                    str(pptx_path),
-                ],
-                capture_output=True,
-                timeout=120,
-            )
+            # A separate profile prevents concurrent conversions from handing
+            # work to another LibreOffice process and returning prematurely.
+            with tempfile.TemporaryDirectory(prefix="dtm-lo-") as profile:
+                result = subprocess.run(
+                    [
+                        soffice,
+                        f"-env:UserInstallation={Path(profile).as_uri()}",
+                        "--headless",
+                        "--convert-to", "pdf",
+                        "--outdir", str(pdf_path.parent),
+                        str(pptx_path),
+                    ],
+                    capture_output=True,
+                    timeout=120,
+                )
             if result.returncode == 0 and pdf_path.exists():
                 return _finish_pdf_export(
                     {"ok": True, "pdf_path": str(pdf_path), "pdf_name": pdf_path.name,
@@ -361,6 +367,9 @@ def export_to_pdf(body: dict, paths: AppPaths | None = None) -> dict:
             return {"ok": False, "error": "LibreOffice timed out during PDF conversion"}
         except Exception as exc:
             return {"ok": False, "error": f"LibreOffice error: {exc}"}
+
+    if os.environ.get("DTM_LOCAL_PILOT") == "1":
+        return {"ok": False, "error": "Local pilot PDF export requires LibreOffice; native fallback is disabled."}
 
     # 2. macOS fallback: automate Microsoft PowerPoint via AppleScript
     if sys.platform == "darwin":

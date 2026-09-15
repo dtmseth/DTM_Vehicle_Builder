@@ -63,7 +63,10 @@ def vehicle_operations_from_dict(payload: Any) -> VehicleOperations:
         if field.name in {"vehicle_id", "project_id"}:
             continue
         raw = payload.get(field.name, field.default)
-        if field.name in {"schema_version", "revision"}:
+        if field.name == "service_details":
+            from copy import deepcopy
+            values[field.name] = deepcopy(raw) if isinstance(raw, dict) else {}
+        elif field.name in {"schema_version", "revision"}:
             values[field.name] = max(0, _integer(raw, int(field.default)))
         elif field.name in {"build_finalized", "ready_to_build_override"}:
             values[field.name] = raw if isinstance(raw, bool) else str(raw).lower() == "true"

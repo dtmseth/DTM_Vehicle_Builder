@@ -42,13 +42,9 @@ def _asset_source_identity(asset) -> str:
 
 
 def _is_project_photo_folder_asset(project, asset) -> bool:
-    year_path = str(project.company_year_folder_path or "").replace("\\", "/").strip("/")
-    source_path = str(asset.source_path or "").replace("\\", "/").strip("/")
-    if not year_path or not source_path or asset.source_kind != "company_reference":
-        return False
-    folder = f"{year_path}/Reference Photos & Videos".casefold()
-    source_key = source_path.casefold()
-    return source_key == folder or source_key.startswith(f"{folder}/")
+    # Exclusions are project-scoped and keyed by the actual source identity.
+    # Keep them even if SharePoint renamed/moved the source's vehicle folder.
+    return asset.source_kind == "company_reference" and bool(_asset_source_identity(asset))
 
 
 def _exclude_removed_project_folder_asset(project, asset) -> None:

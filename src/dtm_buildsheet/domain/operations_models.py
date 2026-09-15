@@ -5,7 +5,7 @@ machine values are the durable contract; clients map them to friendly labels.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from enum import StrEnum
 from typing import Iterable
@@ -155,6 +155,9 @@ class VehicleOperations:
 
     vehicle_id: str
     project_id: str
+    # Read-time Builder metadata; not new SharePoint columns.
+    project_type: str = "build"
+    service_details: dict = field(default_factory=dict)
     schema_version: int = OPERATIONS_SCHEMA_VERSION
     revision: int = 0
 
@@ -342,6 +345,9 @@ def schedule_bucket(record: VehicleOperations) -> ScheduleBucket:
 def is_ready_to_build(record: VehicleOperations) -> bool:
     """Derive physical build readiness, honoring a reasoned manager override."""
 
+    if record.project_type != 'build':
+        from .project_types import physical_readiness
+        return all(physical_readiness(record))
     if record.ready_to_build_override:
         return True
     return (

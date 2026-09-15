@@ -108,13 +108,23 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 - UI: Parts Sync card + link-picker modal in `quickbooks.js` / `index.html`.
 - Tests: `tests/test_qb_sync_service.py` (22).
 
-### Centralization Phase 3A — deferred and excluded from production
+### Centralization Phase 3A — planned hosted migration, not in production
 
-**Owner decision, 2026-08-20:** table this phase. The production branch contains no centralized
-QuickBooks backend, desktop central-mode flag, Entra Builder API integration, or server-side token
-store. The existing per-user OS-keychain connection and stateless OAuth broker remain the only
-supported path. Do not register, deploy, authorize, or migrate tokens for a central service unless
-the owner explicitly resumes the work.
+**Current direction, 2026-09-10:** the owner wants the full hosted HTML Builder behind M365 with
+one company connection replacing individual Builder QBO authorization. The execution sequence is
+[AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md): local runtime proof, request-scoped authorization,
+isolated trial, then a reviewed credential model and QBO sandbox integration before any production
+cutover. [POST_MEETING_FEATURE_PLAN.md](POST_MEETING_FEATURE_PLAN.md) owns the Estimate feature rules.
+
+The August 20 deferral remains historical context; planning has resumed, but production still has
+no centralized Accounting API backend or server-side company token store. The existing per-user
+OS-keychain connection and stateless Netlify broker remain the supported live path. No registration,
+deployment or production token migration occurred during planning.
+
+Read-only inspection of `codex/central-qb-backend-wip` found initial Entra authentication,
+encrypted refresh coordination, audit interfaces and Items groundwork. It is not a complete
+Customer/Estimate/attachment implementation. Review it selectively against current roles and
+security standards; do not merge it wholesale or copy desktop tokens to a host.
 
 ### Production catalog preview — read-only migration gate
 
@@ -602,14 +612,24 @@ vehicle, requires confirmation before replacing a different existing connection,
 same canonical conflict baseline used after app-created Estimates. Linking does not import QBO header or line data
 into Builder-authored project/build fields. A successful read publishes only the narrow status,
 accepted/modified/check times, IDs, and diff classification to `DTMVehicleOperations` so coworkers
-without a QBO connection see a timestamped shared observation. Refresh remains explicit or
-background-on-a-connected-Builder; it never writes the Estimate. The shared UI warns when that
+without a QBO connection see a timestamped shared observation. Current routes publish observations
+when connecting, creating, or updating an Estimate. The unreleased Calendar extension also reads
+linked active Estimates every five minutes while an authorized, connected desktop is running.
+It uses silent authentication, guarded Operations writes, and no QBO writes. Unchanged shared
+observations are renewed at most every six hours; failures retry from fresh revisions next pass. Connecting never writes the Estimate. The shared UI warns when that
 observation is at least 24 hours old. If a user already marked the vehicle accepted manually,
 linking never replaces or clears that acceptance timestamp/source. An accepted Estimate records
 separate QBO confirmation evidence; a non-accepted Estimate produces a visible mismatch while the
 manual acceptance remains until an authorized user explicitly corrects it. Updating still requires the
 existing fresh-read/diff/overwrite confirmation, while Create New remains visible but discouraged.
 The prior shared observation remains in event history when a link is replaced.
+
+**Accepted date** in Operations and Calendar corrects the same shared Operations date through
+an immutable event. An authorized user can choose the linked Estimate's actual `AcceptedDate` or
+a manual date; manual dates survive subsequent polling. Missing `AcceptedDate` cannot be replaced
+by `LastUpdatedTime` or the time of the API read. QBO-owned dates follow later QBO date corrections.
+SharePoint may return the QBO date as midnight UTC: normalize it as a date, not a Chicago instant.
+Acceptance status remains latched if QBO later becomes non-accepted, with a visible mismatch.
 
 **Deferred niceties:** Estimate→Invoice conversion (explicit user step today); "create new VB part
 from this QB item" (link-to-existing is the shipped path); customer down-sync on the 30-min poll
@@ -631,9 +651,10 @@ restricted Projects API scope.
 
 The currently deployed stateless Netlify token broker is not an Accounting API backend and cannot
 solve the multi-workstation refresh race by itself. No centralized Accounting API adapter is
-included in the production branch. The target cutover sequence, role model, failure behavior, and
-acceptance tests remain future design work in `NEXT_FEATURE_PLAN.md` Phase 3A. Until that work is
-explicitly resumed, the existing per-user OS-keychain connection remains the live behavior.
+included in the production branch. [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md) now owns the migration
+sequence, role-boundary work, failure tests and production cutover gates. The older
+`NEXT_FEATURE_PLAN.md` Phase 3A is historical design context. Until the replacement is implemented
+and explicitly cut over, the existing per-user OS-keychain connection remains the live behavior.
 
 The next QuickBooks architecture improvement is the reviewed catalog-change queue described above.
 Routine reconciliation may update QB-owned fields on already-linked SKUs, but must not silently

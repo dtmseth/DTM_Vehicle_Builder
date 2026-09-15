@@ -60,7 +60,7 @@ _INDIVIDUAL_OPERATIONAL_FIELDS = (
 
 _OPTIONAL_EXISTING_VEHICLE_FIELDS = (
     "existing_year", "existing_make", "existing_model", "existing_build_type",
-    "existing_unit_number", "existing_vin",
+    "existing_unit_number", "existing_vin", "previous_build",
 )
 
 
@@ -180,6 +180,7 @@ def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -
             paths,
             exclude_project_id=project.project_id,
             statuses={"completed"},
+            work_type=project.project_type,
         )
         if conflict is not None:
             resolution = str(body.get("conflict_resolution") or "").strip().lower()
@@ -306,14 +307,19 @@ def _agency_year_conflict(
     *,
     exclude_project_id: str = "",
     statuses: set[str] | None = None,
+    work_type: str = "build",
 ):
+    # Separate service visits retain independent project and vehicle identities.
+    if work_type != "build":
+        return None
     wanted = _normalized_agency_year(customer)
     if wanted is None:
         return None
     return next(
         (
             candidate for candidate in list_projects(paths)
-            if candidate.project_id != exclude_project_id
+            if candidate.project_type == work_type
+            and candidate.project_id != exclude_project_id
             and _normalized_agency_year(candidate.customer) == wanted
             and (statuses is None or candidate.project_status in statuses)
         ),
@@ -502,6 +508,27 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         else:
             project = new_project()
 
+        from ...domain.project_types import project_type, service_details
+        old_type = project.project_type
+        old_details = project.service_details
+        previous_links = {i.individual_id: i.previous_build for u in project.build_units for i in u.individuals}
+        project.project_type = project_type(body.get('project_type', old_type))
+        if project.project_type != old_type and any(
+            holder.status == 'finalized' for unit in project.build_units
+            for holder in (unit, *unit.individuals)
+        ):
+            raise ValueError('Reopen finalized work before changing the project type')
+        if 'service_details' in body:
+            project.service_details = service_details(body['service_details'])
+            if project.service_details != old_details and any(h.status == 'finalized' for u in project.build_units for h in (u, *u.individuals)):
+                raise ValueError('Reopen finalized work before changing service requirements')
+        if project.project_type == 'offsite' and not all(project.service_details.get(k) for k in ('location', 'contact')):
+            raise ValueError('Enter the off-site service location and contact')
+        if project.project_type == 'build' and old_type != 'build':
+            conflict = _agency_year_conflict(project.customer, paths, exclude_project_id=project.project_id)
+            if conflict is not None:
+                raise ValueError('A Build project already exists for this agency and year')
+
         if "customer" in body:
             candidate_customer = customer_from_dict(body["customer"])
             # The search box permits free typing. If the user types the exact
@@ -519,6 +546,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 paths,
                 exclude_project_id=project.project_id,
                 statuses={"active"},
+                work_type=project.project_type,
             )
             if conflict is not None:
                 return {
@@ -558,6 +586,17 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 )
             project.build_units = incoming_units
 
+        for unit in project.build_units:
+            for individual in unit.individuals:
+                link = individual.previous_build
+                if not link or link == previous_links.get(individual.individual_id):
+                    continue
+                if project.project_type == 'build' or set(link) != {'project_id', 'unit_id', 'individual_id'} or link['project_id'] == project.project_id:
+                    raise ValueError('Previous build must reference a vehicle in a different Build project')
+                source = load_project(link['project_id'], paths)
+                if source.project_type != 'build' or not any(u.unit_id == link['unit_id'] and any(i.individual_id == link['individual_id'] for i in u.individuals) for u in source.build_units):
+                    raise ValueError('The selected previous build vehicle is unavailable')
+
         if "project_notes" in body:
             project.project_notes = str(body.get("project_notes") or "").strip()
 
@@ -586,6 +625,10 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             try:
                 draft = load_draft_for_request(draft_id, paths)
                 changed = False
+                work_info = {'ProjectType': project.project_type, 'ServiceDetails': project.service_details}
+                if any(draft.vehicle_info.get(k) != v for k, v in work_info.items()) and (project.project_type != 'build' or 'ProjectType' in draft.vehicle_info):
+                    draft.vehicle_info.update(work_info)
+                    changed = True
                 if draft.project_notes != project.project_notes:
                     draft.project_notes = project.project_notes
                     changed = True
@@ -700,6 +743,8 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
+        "ProjectType": project.project_type,
+        "ServiceDetails": project.service_details,
         "project_total_units": project_total_units,
         "CanonicalVehicleName": vehicle_display_name(project, unit, None),
         "NewVehicle": {
@@ -789,6 +834,8 @@ def handle_create_individual_draft(
         "SalesRep": project.customer.sales_rep,
         "ProjectID": project_id_val,
         "BuildType": unit.build_type,
+        "ProjectType": project.project_type,
+        "ServiceDetails": project.service_details,
         "project_total_units": project_total_units,
     }
     vehicle_info = refresh_individual_vehicle_info(

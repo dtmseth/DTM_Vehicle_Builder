@@ -590,6 +590,7 @@ def fill_overview(slide, project) -> None:
     new_v   = info.get("NewVehicle",      {})
     exist_v = info.get("ExistingVehicle", {})
     parts   = project.parts
+    service_sheet = info.get("ProjectType", "build") != "build"
 
     agency     = info.get("Agency",    "—")
     build_type = info.get("BuildType", "")
@@ -726,7 +727,7 @@ def fill_overview(slide, project) -> None:
     veh_bg.fill.fore_color.rgb = _PANEL_BG
     _add_border(veh_bg, TAG_NEW, 1.0)
     _textbox(slide, RIGHT_X + Inches(0.10), col_top, CARD_W - Inches(0.2), Inches(0.25),
-             "NEW VEHICLE", font_size=10, bold=True, color=TAG_NEW)
+             "SERVICE VEHICLE" if service_sheet else "NEW VEHICLE", font_size=10, bold=True, color=TAG_NEW)
     _kv_block(slide, [
         ("Year",       new_year      or "—"),
         ("Make",       new_make      or "—"),
@@ -757,6 +758,25 @@ def fill_overview(slide, project) -> None:
 
     # ── Stats / tiles row ─────────────────────────────────────────────────────
     tiles_top = col_top + card_h + Inches(0.18)
+    if service_sheet:
+        box = slide.shapes.add_textbox(L, tiles_top, SLIDE_W_EMU - L - Inches(0.45),
+            SLIDE_H_EMU - FOOTER_H - tiles_top - Inches(0.15))
+        frame = box.text_frame
+        frame.word_wrap = True
+        heading = frame.paragraphs[0]
+        heading.text = 'SERVICE SCOPE'
+        heading.font.size = Pt(12)
+        heading.font.bold = True
+        heading.font.color.rgb = DTM_NAVY
+        scope = ' '.join(getattr(project, 'notes', {}).get('INSTALLATION NOTES', [])) or 'Service instructions are recorded on the notes page.'
+        paragraph = frame.add_paragraph()
+        paragraph.text = scope[:400] + ('… See service notes.' if len(scope) > 400 else '')
+        paragraph.font.size = Pt(13)
+        if unit_notes:
+            paragraph = frame.add_paragraph()
+            paragraph.text = 'Unit notes: ' + unit_notes[:240]
+            paragraph.font.size = Pt(12)
+        return
 
     reused_count = sum(1 for p in parts if _is_reused(p))
     lights_count = (

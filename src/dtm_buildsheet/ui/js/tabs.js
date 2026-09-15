@@ -25,6 +25,7 @@
 // "outer" stabs or "inner" panes.
 const ALL_STAB_CONTENTS = [
   "stab-projects-defaults",
+  "stab-calendar-teams",
   "stab-placements",
   "stab-fixtures",
   "stab-sizes",
@@ -68,9 +69,10 @@ function appHasCapability(capability) {
 
 function _appCanOpenHeader(tab) {
   if (tab === "projects") return appHasCapability("projects.view");
+  if (tab === "calendar") return appHasCapability("operations.view");
   if (tab === "operations") return appHasCapability("operations.view");
   if (tab === "general-settings") {
-    return appHasCapability("settings.general.manage") ||
+    return appHasCapability("settings.general.manage") || appHasCapability("operations.schedule.update") ||
       (QUICKBOOKS_UI_ENABLED && appHasCapability("estimates.manage"));
   }
   if (tab === "advanced-settings") return appHasCapability("settings.advanced.manage");
@@ -89,6 +91,7 @@ window.applyAppAccessSession = function (session) {
   const headerIds = {
     projects: "projects-header-tab",
     operations: "operations-header-tab",
+    calendar: "calendar-header-tab",
     "general-settings": "general-settings-header-tab",
     "advanced-settings": "advanced-settings-header-tab",
   };
@@ -104,17 +107,20 @@ window.applyAppAccessSession = function (session) {
   if (readonlyBadge) readonlyBadge.hidden = canEditProjects;
 
   const canManageGeneral = appHasCapability("settings.general.manage");
+  const canSchedule = appHasCapability("operations.schedule.update");
   const canManageEstimates = appHasCapability("estimates.manage");
   document.querySelectorAll("#stab-bar-general .stab").forEach(button => {
+    if (button.dataset.stab === "calendar-teams") {button.hidden = !canSchedule; return;}
     button.hidden = canManageGeneral
       ? (button.dataset.stab === "quickbooks" && !QUICKBOOKS_UI_ENABLED)
       : !(canManageEstimates && QUICKBOOKS_UI_ENABLED && button.dataset.stab === "quickbooks");
   });
   const generalHeader = $("general-settings-header-tab");
   if (generalHeader) {
-    generalHeader.textContent = canManageGeneral ? "⚙️ General Settings" : "💵 QuickBooks";
+    generalHeader.textContent = (canManageGeneral || canSchedule) ? "⚙️ General Settings" : "💵 QuickBooks";
   }
-  if (!canManageGeneral && canManageEstimates) {
+  if (!canManageGeneral && canSchedule) _stabPerHeader["general-settings"] = "calendar-teams";
+  if (!canManageGeneral && !canSchedule && canManageEstimates) {
     _stabPerHeader["general-settings"] = "quickbooks";
   }
   const canManageAdvanced = appHasCapability("settings.advanced.manage");
@@ -171,6 +177,7 @@ function _showInnerStab(outerStab, innerStab) {
 function _runStabSideEffects(stab) {
   // Per-stab initialization hooks the legacy code already exposes.
   if (stab === "projects-defaults" && typeof initProjectDefaultsTab === "function") initProjectDefaultsTab();
+  if (stab === "calendar-teams" && typeof initCalendarSettings === "function") initCalendarSettings();
   if (stab === "agencies" && typeof refreshAgenciesTab === "function") refreshAgenciesTab();
   if (stab === "workbook-tools" && typeof loadTemplateInfo === "function") loadTemplateInfo();
   if (stab === "fixtures" && typeof initFixtures === "function") initFixtures();
@@ -194,10 +201,15 @@ function switchTab(t) {
 
   $("tab-projects").hidden = t !== "projects";
   $("tab-operations").hidden = t !== "operations";
+  $("tab-calendar").hidden = t !== "calendar";
   $("tab-settings").hidden = (t !== "general-settings" && t !== "advanced-settings");
 
   if (t === "projects") {
     initProjectsTab();
+    return;
+  }
+  if (t === "calendar") {
+    if (typeof initCalendarTab === "function") initCalendarTab();
     return;
   }
   if (t === "operations") {

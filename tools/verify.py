@@ -17,6 +17,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 PYTEST_RULES: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (("hosted", "request_context", "wiring.py", "operations_access_service.py"), (
+        "tests/test_hosted_boundary.py", "tests/test_request_access_service.py",
+        "tests/test_cloud_adapters.py", "tests/test_operations_read_api.py",
+    )),
+    (("headless", "pilot", "paths.py", "__init__.py"), (
+        "tests/test_local_pilot.py", "tests/test_paths.py", "tests/test_server_resilience.py",
+    )),
+    (("export_service.py",), ("tests/test_exports.py", "tests/test_local_pilot.py")),
+    (("calendar",), ("tests/test_calendar.py", "tests/test_calendar_workspace.py")),
     (("operations", "operations_policy.py"), (
         "tests/test_operations_backend.py",
         "tests/test_operations_read_api.py",
@@ -65,7 +74,8 @@ PYTEST_RULES: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
 )
 
 SMOKE_RULES: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
-    (("ui/", "app/server.py", "request_access_service.py", "operations"), ("tab_load",)),
+    (("project_types", "project_models", "project_codec", "project_service", "ui/js/projects/", "calendar", "finalization", "render_ppt"), ("service_project",)),
+    (("ui/", "app/server.py", "request_access_service.py", "operations", "calendar"), ("tab_load",)),
     (("ui/js/projects/detail_builds.js",), (
         "overview_unit_notes_and_preconfig_qb",
         "final_build_signoff",
@@ -90,7 +100,9 @@ def _git_changed_files() -> list[str]:
     for command in commands:
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=True)
         files.update(line.strip() for line in result.stdout.splitlines() if line.strip())
-    return sorted(files)
+    # User-owned artifacts are never implementation inputs (py_compile would
+    # otherwise create __pycache__ inside an untracked output/ or tmp/ tree).
+    return sorted(name for name in files if not name.startswith(("output/", "tmp/")))
 
 
 def _targets_for(files: list[str], rules, *, include_changed_tests: bool = False) -> list[str]:

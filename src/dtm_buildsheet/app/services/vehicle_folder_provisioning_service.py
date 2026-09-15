@@ -192,9 +192,9 @@ def _resolve_vehicle_item_locations(project, gateway, *, target: str) -> dict:
                     individual.individual_id,
                     exc_info=True,
                 )
-                continue
+                raise ValueError("The registered vehicle folder could not be resolved; retry before provisioning") from None
             if not isinstance(item, dict):
-                continue
+                raise ValueError("The registered vehicle folder is missing; review its identity before provisioning")
             item_path, parent_id, parent_path = _drive_item_locator(item)
             if item_path and parent_id and parent_path:
                 resolved[(unit.unit_id, individual.individual_id)] = (
@@ -202,6 +202,8 @@ def _resolve_vehicle_item_locations(project, gateway, *, target: str) -> dict:
                     parent_id,
                     parent_path,
                 )
+            else:
+                raise ValueError("The registered vehicle folder location is unavailable; retry before provisioning")
     return resolved
 
 
@@ -417,8 +419,12 @@ def _provision_project_target(
                 parent_path=year_path,
                 target_name=folder_name,
             )
-            if target == "shop":
+            ensure_child = getattr(gateway, "ensure_child_folder", None)
+            if callable(ensure_child):
+                ensure_child(str(item.get("id") or ""), "Build Reference Photos")
+            else:
                 gateway.ensure_folder(f"{vehicle_path}/Build Reference Photos")
+            if target == "shop":
                 gateway.ensure_folder(f"{vehicle_path}/Completed Build Photos")
             state = {
                 f"{target}_vehicle_folder_id": str(item.get("id") or ""),

@@ -134,6 +134,7 @@ def test_project_provisioning_builds_progressive_tree_with_stable_placeholders(t
     normal_shop = f"Shop Project Database/Lake County/LC - 2027/{normal_name}"
     assert "Vehicle Project Database/Lake County/LC - 2027/Reference Photos & Videos" in company.folders
     assert any(path.endswith(normal_name) for path in company.folders)
+    assert normal_shop.replace("Shop Project Database", "Vehicle Project Database") + "/Build Reference Photos" in company.folders
     assert normal_shop + "/Build Reference Photos" in shop.folders
     assert normal_shop + "/Completed Build Photos" in shop.folders
     assert company.uploads == shop.uploads == []
@@ -476,3 +477,40 @@ def test_retry_ignores_standalone_agency_manager_records(tmp_path, monkeypatch):
     assert agency_calls == [linked_id]
     assert standalone_id not in agency_calls
     assert project_calls == [project.project_id]
+
+
+def test_later_added_vehicle_gets_company_reference_folder(tmp_path):
+    paths = _paths(tmp_path)
+    project = new_project()
+    project.customer.agency = "Agency"
+    project.customer.build_year = "2026"
+    project.build_units = [BuildUnit(unit_id="group", individuals=[IndividualUnit(individual_id="first")])]
+    save_project(project, paths)
+    gateway = FakeGateway("company")
+    assert provision_project_folders(project.project_id, paths, company_gateway=gateway)["ok"]
+    project = load_project(project.project_id, paths)
+    project.build_units[0].individuals.append(IndividualUnit(individual_id="second"))
+    save_project(project, paths)
+    assert provision_project_folders(project.project_id, paths, company_gateway=gateway)["ok"]
+    stored = load_project(project.project_id, paths)
+    for vehicle in stored.build_units[0].individuals:
+        assert vehicle.company_vehicle_folder_path + "/Build Reference Photos" in gateway.folders
+
+
+def test_missing_registered_vehicle_does_not_recreate_its_old_path(tmp_path):
+    paths = _paths(tmp_path)
+    project = new_project()
+    project.customer.agency = "Agency"
+    project.build_units = [BuildUnit(unit_id="group", individuals=[IndividualUnit(
+        individual_id="vehicle", company_vehicle_folder_id="deleted-id",
+        company_vehicle_folder_path="Vehicle Project Database/Agency/2026/Old Unit",
+    )])]
+    save_project(project, paths)
+    gateway = ItemAwareGateway("company", {})
+    result = provision_project_folders(project.project_id, paths, company_gateway=gateway)
+    assert not result["ok"]
+    assert not any("Old Unit" in path for path in gateway.folders)
+    assert gateway.moves == []
+    stored = load_project(project.project_id, paths)
+    assert stored.company_folder_status == "error"
+    assert stored.build_units[0].individuals[0].company_vehicle_folder_id == "deleted-id"

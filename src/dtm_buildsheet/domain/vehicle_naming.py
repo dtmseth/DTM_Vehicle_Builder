@@ -241,9 +241,12 @@ def vehicle_folder_name(
     *,
     ordinal: int = 1,
 ) -> str:
-    return safe_vehicle_folder_name(
-        vehicle_display_name(project, build_unit, individual, ordinal=ordinal)
-    )
+    label = safe_vehicle_folder_name(vehicle_display_name(project, build_unit, individual, ordinal=ordinal))
+    if project.project_type != 'build':
+        # A service visit has its own files even when agency/year/unit/VIN match
+        # a prior build. Put the stable visit identity before the length limit.
+        label = safe_vehicle_folder_name(f"{project.project_type.title()} {individual.individual_id} {label}")
+    return label
 
 
 def vehicle_label_from_project_info(project: dict) -> str:

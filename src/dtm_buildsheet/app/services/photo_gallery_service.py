@@ -522,7 +522,7 @@ def handle_photo_gallery(project_id: str, body: dict, paths: AppPaths) -> dict:
         folder_sync = {
             "loading": False, "changed": 0, "warnings": [],
         }
-        if bool(body.get("discover_folder")) and not unit_id:
+        if bool(body.get("discover_folder")):
             from .project_photo_folder_service import handle_sync_project_photo_folder
 
             folder_sync = handle_sync_project_photo_folder(

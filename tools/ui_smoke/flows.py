@@ -13,6 +13,7 @@ docs/audit/UI_SMOKE_SPEC.md §5 and land in the implementation session.
 from __future__ import annotations
 
 import json
+import re
 from urllib.request import Request, urlopen
 
 # Give slow panels (SKU grid renders ~900 products) time to fetch + render
@@ -72,8 +73,8 @@ def _open_build_editor(page, base_url: str) -> None:
     page.goto(base_url, wait_until="load")
     page.click(".htab[data-tab='projects']")
     assert page.locator('[data-project-list-status="active"]').get_attribute("aria-selected") == "true"
-    page.wait_for_selector(".proj-row-clickable")
-    page.click(".proj-row-clickable")
+    page.click('[data-project-list-status="started"]')
+    page.get_by_role('button', name='Open', exact=True).first.click()
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     page.wait_for_timeout(_SETTLE_MS)
     # Builds now live on the default Overview tab.  Clicking a card is the
@@ -146,6 +147,30 @@ def flow_tab_load(page, base_url: str) -> None:
     page.locator('[data-project-list-status="started"]').click()
     page.fill("#proj-list-search", "Operations Preview PD")
     assert page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD").count() == 1
+
+    # A delayed Projects refresh must not dismiss a draft opened meanwhile.
+    page.wait_for_load_state("networkidle")
+    editor_survived_refresh = page.evaluate("""async projectId => {
+      const loadAll = _ptLoadAll;
+      let release;
+      _ptLoadAll = () => new Promise(resolve => { release = resolve; });
+      try {
+        const pending = initProjectsTab();
+        const project = _PT.projects.find(p => p.project_id === projectId);
+        const unit = project.build_units[0];
+        const individual = unit.individuals[0];
+        _ptShowDetail(project);
+        await _ptShowBuildEditor(individual.draft_id, unit, project, 'overview', individual);
+        release();
+        await pending;
+        return !document.getElementById('proj-build-editor').hidden
+          && document.getElementById('proj-list-view').hidden;
+      } finally {
+        _ptLoadAll = loadAll;
+        _ptShowList('started');
+      }
+    }""", projection_project["project_id"])
+    assert editor_survived_refresh is True
 
     active_sort = page.evaluate("""() => {
       const saved = _PT.operationsByProject;
@@ -286,16 +311,196 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector(".operations-project-group")
     if not page.locator(".operations-project-group").evaluate("element => element.open"):
         page.locator(".operations-project-group > summary").click()
-    page.locator("[data-operations-schedule-project]").click()
-    page.wait_for_selector("#operations-schedule-modal.open")
-    page.locator("#operations-scheduled-week").fill("2031-01-06")
-    assert page.locator("#operations-schedule-apply").is_enabled()
-    page.once("dialog", lambda dialog: dialog.accept())
-    page.locator("#operations-schedule-apply").click()
-    page.wait_for_selector("#operations-schedule-modal", state="hidden")
-    page.wait_for_function(
-        "document.querySelector('.operations-project-group > summary').innerText.toUpperCase().includes('SCHEDULED')"
-    )
+    # Calendar now owns start/finish dates. Operations edits only the promise.
+    page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+    page.wait_for_selector("#calendar-detail:not([hidden])")
+    assert page.locator('#calendar-job-actual').count() == 0
+    page.locator('.calendar-advanced summary').click()
+    page.click('#calendar-job-accepted-edit')
+    page.wait_for_selector('#operations-accepted-date-modal.open')
+    page.select_option('#operations-accepted-source', 'manual')
+    page.fill('#operations-accepted-date', '2026-08-10')
+    page.click('#operations-accepted-date-save')
+    page.wait_for_selector('#operations-accepted-date-modal', state='hidden')
+    page.wait_for_function("document.querySelector('#calendar-detail').innerText.includes('Aug 10')")
+    assert page.locator('.calendar-queue-vehicle').count() == 3
+    page.click('#calendar-detail-close')
+    before_placement = page.evaluate("async () => await api('/api/calendar')")
+    assert page.locator('#calendar-opening, #calendar-add').count() == 0
+    assert page.locator('#calendar-review').is_hidden()
+    assert 'Next opening' in page.locator('#calendar-next-opening').inner_text()
+    assert page.locator('.calendar-view-controls #calendar-next-opening').count() == 1
+    opening_box = page.locator('#calendar-next-opening').bounding_box()
+    controls_box = page.locator('.calendar-view-controls').bounding_box()
+    assert abs(opening_box['x'] + opening_box['width'] - controls_box['x'] - controls_box['width']) < 2
+    page.select_option('#calendar-team-filter', 'team-josh')
+    assert "Josh's Team" in page.locator('#calendar-next-opening').inner_text()
+    page.select_option('#calendar-team-filter', '')
+    assert page.locator('.calendar-main #calendar-range').is_visible()
+    assert page.locator('.calendar-navigation #calendar-today').is_visible()
+    source = page.locator('#calendar-queue [data-vehicle-id="operations-preview-vehicle"]')
+    source.scroll_into_view_if_needed()
+    source_box = source.bounding_box()
+    target_box = page.locator('.calendar-slot-target').first.bounding_box()
+    page.mouse.move(source_box['x'] + 20, source_box['y'] + 20)
+    page.mouse.down()
+    page.mouse.move(target_box['x'] + target_box['width'] / 2,
+                    target_box['y'] + target_box['height'] - 10, steps=12)
+    page.mouse.up()
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    assert page.locator('.calendar-queue-vehicle .calendar-status-badge').count() == 6
+    assert 'Unit not set' not in page.locator('#calendar-queue').inner_text()
+    assert page.locator('[aria-current="date"]').count() == 1
+    assert page.locator('#calendar-job-team').input_value() == 'team-david'
+    assert page.locator('#calendar-job-start').input_value()
+    after_placement = page.evaluate("async () => await api('/api/calendar')")
+    assert after_placement['revision'] == before_placement['revision']
+    assert after_placement['plan']['jobs'] == before_placement['plan']['jobs']
+    page.locator("#calendar-job-start").fill("2031-01-06")
+    assert page.locator('#calendar-job-pin, #calendar-promised-start, #calendar-promised-ready, #calendar-remaining-hours, #calendar-job-second-team').count() == 0
+    assert page.locator('#calendar-detail-overlay').is_visible()
+    assert page.locator('#calendar-include-project').is_checked()
+    page.uncheck('#calendar-include-project')
+    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled Jan 6')")
+    # An unrelated Operations refresh while the modal is open must not discard
+    # the typed date or require closing/reopening the booking.
+    from dtm_buildsheet.app.adapters.wiring import get_active_bundle
+    refreshed_record = get_active_bundle().operations._records['operations-preview-vehicle-2']
+    refreshed_record.qbo_checked_at = '2026-09-14T15:00:00Z'
+    refreshed_record.revision += 1
+    from dtm_buildsheet.domain.operations_models import ShopStatus
+    current_record = get_active_bundle().operations._records['operations-preview-vehicle']
+    previous_shop = current_record.shop_status
+    current_record.shop_status = ShopStatus.IN_PROGRESS
+    current_record.revision += 1
+    page.evaluate("window.dispatchEvent(new Event('focus'))")
+    page.wait_for_function("document.querySelector('#calendar-detail .calendar-status-badges').innerText.includes('Build in progress')")
+    assert page.locator('#calendar-job-start').input_value() == '2031-01-06'
+    assert not page.locator('#calendar-include-project').is_checked()
+    assert 'forecast' not in page.locator('#calendar-detail').inner_text().lower()
+    footer = page.locator('.calendar-detail-footer')
+    assert footer.locator('#calendar-confirm-booking').is_visible()
+    assert footer.locator('.calendar-history').is_visible()
+    assert footer.locator('#calendar-confirm-booking').bounding_box()['x'] > footer.locator('.calendar-history').bounding_box()['x']
+    # Hold the date publisher while the real UI books, removes, and rebooks.
+    # Every local acknowledgement must arrive before the publisher is released.
+    import threading
+    from unittest.mock import patch
+    from dtm_buildsheet.app.services.operations_service import OperationsService
+    entered, release = threading.Event(), threading.Event()
+    original_change = OperationsService.change_schedule
+
+    def stalled_change(self, *args, **kwargs):
+        entered.set()
+        assert release.wait(15), 'Calendar local edits waited for background publication'
+        return original_change(self, *args, **kwargs)
+
+    with patch.object(OperationsService, 'change_schedule', stalled_change):
+        try:
+            page.get_by_role('button', name='Confirm booking', exact=True).click()
+            page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
+            assert page.locator('#calendar-review-modal').is_hidden()
+            assert entered.wait(2), 'Date publisher did not start'
+            page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+            page.wait_for_selector('#calendar-detail-overlay.open')
+            page.click('#calendar-project-remove')
+            page.get_by_role('button', name='Remove bookings', exact=True).click()
+            page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
+            removed = page.evaluate("async () => await api('/api/calendar')")
+            assert not removed['plan']['jobs']
+            assert len(removed['plan']['queue']) == 3
+            page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+            page.wait_for_selector('#calendar-detail-overlay.open')
+            page.locator('#calendar-job-start').fill('2031-01-06')
+            page.uncheck('#calendar-include-project')
+            page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled Jan 6')")
+            page.get_by_role('button', name='Confirm booking', exact=True).click()
+            page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
+            rebooked = page.evaluate("async () => await api('/api/calendar')")
+            assert len(rebooked['plan']['jobs']) == 1
+            assert len(rebooked['plan']['queue']) == 2
+            assert rebooked['save']['pending_count'] == 3
+        finally:
+            release.set()
+        page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    get_active_bundle().operations._records['operations-preview-vehicle'].shop_status = previous_shop
+    page.click(".htab[data-tab='operations']")
+    page.wait_for_selector(".operations-project-group")
+    # Saving one vehicle must not implicitly reserve its two project siblings.
+    assert page.locator("#operations-schedule-unscheduled-count").inner_text() == "1"
+    calendar_before = page.evaluate("async () => await api('/api/calendar')")
+    assert len(calendar_before['plan']['queue']) == 2
+    protected = next(j for j in calendar_before['plan']['jobs'] if j['id'] == 'operations-preview-vehicle')
+    page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+    page.wait_for_selector("#calendar-detail:not([hidden])")
+    page.click('#calendar-detail-close')
+    page.locator('.calendar-booking').first.drag_to(page.locator('.calendar-slot-target').nth(5))
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    assert page.locator('#calendar-job-team').input_value() == 'team-josh'
+    assert page.evaluate("async () => (await api('/api/calendar')).revision") == calendar_before['revision']
+    page.keyboard.press('Escape')
+    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
+    page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    assert page.locator('#calendar-include-project').is_checked()
+    page.wait_for_function("document.querySelector('#calendar-booking-overview').innerText.includes('3 vehicles')")
+    page.get_by_role('button', name='Confirm booking', exact=True).click()
+    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
+    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    calendar_after = page.evaluate("async () => await api('/api/calendar')")
+    assert not calendar_after['plan']['queue']
+    retained = next(j for j in calendar_after['plan']['jobs'] if j['id'] == protected['id'])
+    assert (retained['start'], retained['ready']) == (protected['start'], protected['ready'])
+    # A small independent job supplies occupied capacity for the month drop test.
+    month_view = _api(base_url, '/api/calendar')
+    month_body = {'revision': month_view['revision'], 'source_revision': month_view['source_revision'],
+                  'allow_overlap': True, 'reason': 'Synthetic occupied capacity for moving the existing booking',
+                  'edit': {'id': 'job-month-fixture', 'title': 'Month availability fixture',
+                           'team_id': 'team-david', 'kind': 'service', 'hours': 14.4, 'start_date': '2031-01-07'}}
+    month_preview = _api(base_url, '/api/calendar/preview', month_body)
+    month_saved = _api(base_url, '/api/calendar/save', {**month_body, 'preview_token': month_preview['preview_token']})
+    page.click('#calendar-refresh')
+    page.wait_for_function("!document.querySelector('#calendar-message').innerText.includes('Loading')")
+    # Month drop chooses the next free team across the full proposed duration.
+    page.click('#calendar-today')
+    page.click('#calendar-month')
+    page.select_option('[aria-label="Acceptance queue filter"]', 'all')
+    scheduled_queue_card = page.locator('#calendar-queue [data-vehicle-id="operations-preview-vehicle"]')
+    assert scheduled_queue_card.evaluate("el => el.classList.contains('calendar-queue-scheduled') && !el.classList.contains('calendar-draggable')")
+    assert scheduled_queue_card.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(237, 247, 239)'
+    scheduled_queue_card.click()
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    page.click('#calendar-detail-close')
+    page.fill('#calendar-month-picker', '2031-01')
+    first_card = page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle"]').first
+    next_card = page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle-2"]').first
+    first_box, next_box = first_card.bounding_box(), next_card.bounding_box()
+    assert abs(first_box['y'] - next_box['y']) < 1
+    assert first_box['x'] + first_box['width'] <= next_box['x'] + 1
+    assert page.locator('#calendar-board').evaluate("el => getComputedStyle(el).overflowY === 'visible' && el.scrollHeight <= el.clientHeight + 2")
+    page.wait_for_function("Math.abs(document.querySelector('#calendar-queue').getBoundingClientRect().height-document.querySelector('.calendar-main').getBoundingClientRect().height)<2")
+    title_box, switch_box = page.locator('#calendar-range').bounding_box(), page.locator('#calendar-week').bounding_box()
+    assert switch_box['y'] > title_box['y'] + title_box['height']
+    page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle"]').first.drag_to(
+        page.locator('.calendar-month-days > span').filter(has_text=re.compile(r'^7$')), target_position={'x': 10, 'y': 10})
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    page.wait_for_function("document.querySelector('#calendar-job-team').value === 'team-josh'")
+    assert '🔴' in page.locator('#calendar-job-team option[value="team-david"]').inner_text()
+    page.select_option('#calendar-job-team', 'team-david')
+    page.wait_for_selector('#calendar-choice-modal.open')
+    assert 'Month availability fixture' in page.locator('#calendar-choice-message').inner_text()
+    page.click('#calendar-choice-cancel')
+    page.click('#calendar-detail-close')
+    assert page.evaluate("async () => (await api('/api/calendar')).revision") == month_saved['revision']
+    page.evaluate("openCalendarVehicle('job-month-fixture')")
+    page.click('#calendar-project-remove')
+    page.wait_for_selector('#calendar-choice-modal.open')
+    page.click('#calendar-choice-accept')
+    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
+    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    page.click('#calendar-week')
+    page.click(".htab[data-tab='operations']")
+    page.wait_for_selector(".operations-project-group")
     page.locator('[data-operations-schedule-filter="scheduled"]').click()
     page.wait_for_selector(".operations-project-group")
     assert page.locator("#operations-schedule-scheduled-count").inner_text() == "1"
@@ -305,8 +510,8 @@ def flow_tab_load(page, base_url: str) -> None:
         page.locator(".operations-project-group > summary").click()
     page.locator("[data-operations-schedule-project]").click()
     page.wait_for_selector("#operations-schedule-modal.open")
-    assert page.locator("#operations-scheduled-week").input_value() == "2031-01-06"
-    page.locator("#operations-target-finish").fill("2031-01-16")
+    assert page.locator("#operations-scheduled-week").count() == 0
+    assert "60-day promise" in page.locator("#operations-schedule-guidance").inner_text()
     page.locator("#operations-must-deliver").fill("2031-03-15")
     assert page.locator("#operations-schedule-apply").is_enabled()
     page.once("dialog", lambda dialog: dialog.accept())
@@ -323,7 +528,7 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector(".operations-project-group")
     if not page.locator(".operations-project-group").evaluate("element => element.open"):
         page.locator(".operations-project-group > summary").click()
-    page.locator("[data-operations-history-vehicle]").first.click()
+    page.locator('[data-operations-history-vehicle="operations-preview-vehicle"]').click()
     page.wait_for_selector("#operations-history-modal.open")
     page.wait_for_selector(".operations-timeline-event")
     history_text = page.locator("#operations-history-body").inner_text().upper()
@@ -456,6 +661,79 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click(".stab[data-stab='workbook-tools']")
     page.wait_for_timeout(_SETTLE_MS)
 
+    # Calendar view convention, team settings, and a standalone job round trip.
+    page.click("#calendar-header-tab")
+    page.wait_for_selector(".calendar-week-row")
+    page.click("#calendar-month")
+    assert page.locator(".calendar-month-head span").all_text_contents() == [
+        "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+    ]
+    page.click("#general-settings-header-tab")
+    page.click('[data-stab="calendar-teams"]')
+    page.wait_for_selector(".calendar-team-settings")
+    assert page.locator(".calendar-team-settings legend").all_text_contents() == [
+        "David's Team", "Josh's Team", "Michelle",
+    ]
+    page.click("#calendar-team-add")
+    new_team = page.locator(".calendar-team-settings").last
+    new_team.locator('[data-field="name"]').fill("Spare team")
+    new_team.locator('[data-field="active"]').uncheck()
+    page.click("#calendar-settings-save")
+    page.wait_for_selector("#calendar-review-modal.open")
+    page.fill("#calendar-review-reason", "Add the retired fixture team")
+    page.click("#calendar-review-save")
+    page.wait_for_selector("#calendar-review-modal", state="hidden")
+    page.wait_for_function("document.querySelector('#calendar-settings-message').innerText.includes('saved')")
+    page.click("#calendar-header-tab")
+    page.wait_for_function("!document.querySelector('#calendar-message').innerText.includes('Loading')")
+    assert page.locator('#calendar-add').count() == 0
+    # Existing standalone bookings remain editable, without a creation button.
+    fixture_view = _api(base_url, '/api/calendar')
+    fixture_body = {'revision': fixture_view['revision'], 'source_revision': fixture_view['source_revision'],
+                    'edit': {'id': 'job-service-fixture', 'title': 'Calendar service check',
+                             'kind': 'service', 'team_id': 'team-david', 'hours': 4}}
+    fixture_preview = _api(base_url, '/api/calendar/preview', fixture_body)
+    _api(base_url, '/api/calendar/save', {**fixture_body, 'preview_token': fixture_preview['preview_token']})
+    page.evaluate("openCalendarVehicle('job-service-fixture')")
+    page.fill("#calendar-job-hours", "8")
+    # A real concurrent Calendar edit still blocks the stale form, even though
+    # Confirm refreshes Operations automatically.
+    competing_view = _api(base_url, '/api/calendar')
+    competing_body = {'revision': competing_view['revision'], 'source_revision': competing_view['source_revision'],
+                      'edit': {'id': 'job-service-fixture', 'hours': 6}, 'reason': 'Another scheduler changed this booking'}
+    competing_preview = _api(base_url, '/api/calendar/preview', competing_body)
+    _api(base_url, '/api/calendar/save', {**competing_body, 'preview_token': competing_preview['preview_token']})
+    page.get_by_role('button', name='Confirm booking', exact=True).click()
+    page.wait_for_function("document.querySelector('#calendar-job-error').innerText.includes('This booking was updated')")
+    assert page.locator('#calendar-job-hours').input_value() == '8'
+    assert _api(base_url, '/api/calendar')['saved_jobs']['job-service-fixture']['hours'] == 6
+    # Current saved details are shown inline; a second confirmation applies the
+    # retained edits without forcing the scheduler to close/reopen the modal.
+    page.get_by_role('button', name='Confirm booking', exact=True).click()
+    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
+    assert page.locator('#calendar-review-modal').is_hidden()
+    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    assert page.locator('#calendar-save-status').is_hidden()
+    assert page.locator('#tab-calendar #calendar-save-status').count() == 1
+    page.wait_for_function("document.querySelector('#calendar-review').hidden")
+    page.click('#operations-header-tab')
+    assert page.locator('#calendar-save-status').is_hidden()
+    page.click('#calendar-header-tab')
+    page.wait_for_function("!document.querySelector('#calendar-message').innerText.includes('Loading')")
+    saved_calendar = page.evaluate("async () => await api('/api/calendar')")
+    custom = next(job for job in saved_calendar["plan"]["jobs"] if job["title"] == "Calendar service check")
+    assert custom["hours"] == 8
+    page.evaluate("id => openCalendarVehicle(id)", custom["id"])
+    page.wait_for_selector("#calendar-detail:not([hidden])")
+    assert page.locator('#calendar-job-shop').count() == 0
+    page.click('#calendar-project-remove')
+    page.wait_for_selector('#calendar-choice-modal.open')
+    page.click('#calendar-choice-accept')
+    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
+    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    saved_calendar = page.evaluate("async () => await api('/api/calendar')")
+    assert not any(job["id"] == custom["id"] for job in saved_calendar["plan"]["jobs"])
+
     # Workspace gating: Shop can read Projects and edit only its Operations
     # workstreams; Builder/Sales can edit Projects, Estimates, availability,
     # and Parts, but cannot schedule or update downstream production.
@@ -486,6 +764,18 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click("#build-readonly-done")
     shop_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
     assert shop_streams == ["shop", "tray", "final_finish"]
+    assert page.locator('#calendar-header-tab').is_visible()
+    page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+    page.wait_for_selector('#calendar-detail:not([hidden])')
+    assert page.locator('#calendar-job-form').is_hidden()
+    assert page.locator('#calendar-job-accepted-edit').count() == 0
+    assert page.locator('#calendar-review').is_hidden()
+    assert page.locator('#calendar-job-actual').count() == 0
+    assert page.locator('.calendar-vehicle-identity').is_visible()
+    assert page.locator('#calendar-team-filter').is_visible()
+    page.click('#calendar-detail-close')
+    page.click('#projects-header-tab')
+
 
     page.evaluate("""() => { const session = {
       authenticated: true, default_workspace: 'projects',
@@ -3925,7 +4215,96 @@ def flow_quickbooks_batch_project_checklist(page, base_url: str) -> None:
     # The smoke flow stops at preparation; it never clicks Create estimates.
 
 
+def flow_service_project(page, base_url: str) -> None:
+    """Create, reference, export and schedule service work without a lighting design."""
+    import re
+    from pptx import Presentation
+    source = _api(base_url, '/api/project/save', {
+        'customer': {'agency': 'Service QA Agency', 'build_year': '2031'},
+        'build_units': [{'unit_id': 'previous-group', 'vehicle_model': 'PIU', 'build_type': 'Patrol',
+            'individuals': [{'individual_id': 'previous-vehicle', 'unit_number': '101', 'vin': 'PREVIOUSVIN101'}]}]})
+    assert source['ok']
+    source_id = source['project_id']
+    draft = _api(base_url, f'/api/project/{source_id}/unit/previous-group/individual/previous-vehicle/create-draft', {})
+    assert draft['ok']
+    _api(base_url, '/api/draft/save', {'draft_id': draft['draft_id'], 'notes': {'INSTALLATION NOTES': ['Original radio mounted above console.']}})
+    page.goto(base_url, wait_until='load')
+    page.click('.htab[data-tab="projects"]')
+    page.click('#btn-new-project')
+    page.select_option('#proj-project-type', 'service')
+    page.uncheck('#proj-service-requires_parts')
+    page.fill('#proj-agency', 'Service QA Agency')
+    page.fill('#proj-build-year', '2031')
+    page.fill('#proj-salesrep', 'QA User')
+    page.click('#proj-btn-next')
+    page.click('#proj-btn-next')
+    page.locator('.proj-ind-toggle-btn').first.click()
+    page.locator('.ind-unit-number').first.fill('101')
+    page.click('#proj-btn-next')
+    page.click('#proj-btn-finish')
+    page.wait_for_selector('#proj-detail-view:not([hidden])')
+    project = page.evaluate('_PT.viewProject')
+    assert project['project_type'] == 'service'
+    unit = project['build_units'][0]
+    individual = unit['individuals'][0]
+    pid, uid, iid = project['project_id'], unit['unit_id'], individual['individual_id']
+    assert pid != source_id and iid != 'previous-vehicle'
+    page.get_by_role('button', name='Link previous build', exact=True).click()
+    page.fill('#previous-build-search', 'PREVIOUSVIN101')
+    page.locator('.previous-build-match input').check()
+    page.get_by_role('button', name='Link selected build', exact=True).click()
+    page.wait_for_selector('#build-finalization-modal', state='hidden')
+    page.get_by_role('button', name='Previous Build Design', exact=True).click()
+    page.wait_for_function("document.querySelector('#build-readonly-body').innerText.includes('Original radio mounted')")
+    assert page.locator('#build-readonly-title').inner_text().startswith('Previous Build Design')
+    page.click('#build-readonly-done')
+    page.locator('.proj-build-card-label').first.click()
+    page.wait_for_selector('#proj-build-editor:not([hidden])')
+    assert page.locator('#pbe-preview-section').is_hidden()
+    service_draft = page.evaluate('_PT.pbeDraftId')
+    current = _api(base_url, f'/api/draft/{service_draft}')
+    assert not current['draft']['parts']
+    assert 'Original radio mounted' not in str(current['draft']['notes'])
+    _api(base_url, '/api/draft/save', {'draft_id': service_draft, 'notes': {'INSTALLATION NOTES': ['Diagnose intermittent radio fault.']}})
+    generated = _api(base_url, '/api/draft/generate', {'draft_id': service_draft, 'project_id': pid})
+    assert generated['ok'], generated
+    deck = Presentation(generated['output_path'])
+    text = '\n'.join(shape.text for slide in deck.slides for shape in slide.shapes if shape.has_text_frame)
+    assert 'SERVICE WORK SHEET' in text and 'Diagnose intermittent radio fault' in text
+    assert len(deck.slides) < 6
+    # Explicit manual acceptance is required even when no Estimate is linked.
+    vehicles = _api(base_url, '/api/operations/vehicles')['vehicles']
+    vehicle = next(v for v in vehicles if v['vehicle_id'] == iid)
+    assert vehicle['acceptance_status'] == 'not_accepted'
+    assert vehicle['project_type'] == 'service' and not vehicle['must_deliver_by_date']
+    assert 'parts' not in vehicle['applicable_workstreams']
+    accepted = _api(base_url, '/api/operations/status', {'vehicle_id': iid, 'workstream': 'acceptance',
+        'new_status': 'accepted', 'expected_revision': vehicle['revision'], 'request_id': 'service-qa-accept'})
+    assert accepted['ok']
+    page.click('#pbe-save-return')
+    page.evaluate(f"openCalendarVehicle('{iid}')")
+    page.wait_for_selector('#calendar-detail-overlay.open')
+    assert page.locator('#calendar-job-kind').input_value() == 'service'
+    assert page.locator('#calendar-job-hours').is_visible()
+    page.fill('#calendar-job-hours', '3.6')
+    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled ')")
+    page.get_by_role('button', name='Confirm booking', exact=True).click()
+    try:
+        page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=5000)
+    except Exception:
+        raise AssertionError(page.locator('#calendar-job-error').inner_text()) from None
+    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
+    job = next(j for j in _api(base_url, '/api/calendar')['plan']['jobs'] if j['id'] == iid)
+    assert job['kind'] == 'service' and job['hours'] == 3.6 and not job['finish_segments']
+    assert job['ready'] == job['end'] and not job['deadline']
+    page.click('.htab[data-tab="projects"]')
+    page.select_option('#proj-type-filter', 'service')
+    page.click('[data-project-list-status="active"]')
+    assert page.locator('#proj-list-rows .project-type-badge').all_inner_texts() == ['Service']
+
+
 FLOWS = {
+    "service_project": flow_service_project,
     "tab_load": flow_tab_load,
     "preset_agency_list_freshness": flow_preset_agency_list_freshness,
     "load_preset_from_build_editor": flow_load_preset_from_build_editor,

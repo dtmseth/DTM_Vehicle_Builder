@@ -524,7 +524,11 @@ def build_output_filename(project: dict) -> str:
     hour       = now.hour % 12 or 12
     ampm       = "AM" if now.hour < 12 else "PM"
     ts         = now.strftime(f"%b%d_%Y_{hour}-{now.strftime('%M-%S')}{ampm}")
-    return project_info_export_stem(project) + f"_Updated_{ts}.pptx"
+    stem = project_info_export_stem(project)
+    if project.get('ProjectType', 'build') != 'build':
+        from .domain.vehicle_naming import safe_filename_part
+        stem += '_' + project['ProjectType'] + '_' + safe_filename_part(project.get('ProjectID', 'service'))
+    return stem + f"_Updated_{ts}.pptx"
 
 
 def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
@@ -532,12 +536,16 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     template     = active_paths.templates_dir / "build_sheet_template.pptx"
     out_path     = active_paths.workspace_output_dir / build_output_filename(plan.project)
 
+    service_sheet = plan.project.get('ProjectType', 'build') != 'build'
+    render_vehicle = not service_sheet or plan.project.get('ServiceDetails', {}).get('render_vehicle', False)
     from .config.loader import resolve_vehicle_type
-    layouts = load_config("vehicle_layouts.json", active_paths)
-    vehicle_type = resolve_vehicle_type(
-        plan.project.get("VehicleType", "PIU"), layouts,
-    )
-    external_views, view_map = _load_vehicle_view_config(vehicle_type, active_paths)
+    vehicle_type = plan.project.get("VehicleType", "PIU")
+    if render_vehicle:
+        layouts = load_config("vehicle_layouts.json", active_paths)
+        vehicle_type = resolve_vehicle_type(vehicle_type, layouts)
+        external_views, view_map = _load_vehicle_view_config(vehicle_type, active_paths)
+    else:
+        external_views, view_map = [], {}
 
     shutil.copyfile(template, out_path)
     prs      = Presentation(out_path)
@@ -563,6 +571,15 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     # ── Cover slide ───────────────────────────────────────────────────────────
     fill_overview(overview, project_shim)
     place_logo(overview, active_paths, cover=True)
+    if service_sheet:
+        from .domain.project_types import PROJECT_TYPES
+        for shape in overview.shapes:
+            if shape.has_text_frame:
+                for paragraph in shape.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        if 'BUILD SHEET' in run.text.upper() or 'FLEET VEHICLE SPECIFICATION PACKAGE' in run.text.upper():
+                            run.text = PROJECT_TYPES[plan.project['ProjectType']].upper() + ' WORK SHEET'
+
 
     # ── View slides ───────────────────────────────────────────────────────────
     accessory_map = _build_accessory_map(plan)
@@ -915,7 +932,7 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
     # ── Notes slide ───────────────────────────────────────────────────────────
     update_slide_header_footer(
         notes_slide,
-        title    = f"BUILD NOTES — {agency}",
+        title    = f"{'SERVICE NOTES' if service_sheet else 'BUILD NOTES'} — {agency}",
         subtitle = "  |  ".join(filter(None, [build_type, veh_line, unit_str])),
     )
     add_slide_footer_bar(notes_slide, footer)
@@ -946,5 +963,12 @@ def render_plan_to_ppt(plan, paths: AppPaths | None = None) -> Path:
             prs, start_position=_TEMPLATE_VIEW_SLOTS + 1, count=n_reference,
         )
 
+    if not render_vehicle:
+        # Keep the existing cover, service notes, manifest and reference pages.
+        # Drop only the original diagram slots, retaining all generated content.
+        for _ in range(_TEMPLATE_VIEW_SLOTS):
+            slide_id = prs.slides._sldIdLst[1]
+            prs.part.drop_rel(slide_id.rId)
+            prs.slides._sldIdLst.remove(slide_id)
     prs.save(out_path)
     return out_path

@@ -50,6 +50,7 @@ class SharePointOperationsRepository(OperationsRepository):
         events_list_id: str,
         session: requests.Session | None = None,
         timeout_seconds: float = 30.0,
+        background_token_provider: TokenProvider | None = None,
     ) -> None:
         for value, label in (
             (site_id, "site_id"),
@@ -61,11 +62,20 @@ class SharePointOperationsRepository(OperationsRepository):
         if not callable(token_provider):
             raise ValueError("token_provider is required")
         self._token_provider = token_provider
+        self._background_token_provider = background_token_provider
         self._site_id = str(site_id).strip()
         self._operations_list_id = str(operations_list_id).strip()
         self._events_list_id = str(events_list_id).strip()
         self._session = session or requests.Session()
         self._timeout = max(1.0, min(float(timeout_seconds), 120.0))
+
+    def for_background(self):
+        """Use a separate HTTP session and silent auth for a reviewed worker."""
+        if self._background_token_provider is None:
+            raise ValueError('Background Operations access is unavailable')
+        return type(self)(token_provider=self._background_token_provider,
+                          site_id=self._site_id, operations_list_id=self._operations_list_id,
+                          events_list_id=self._events_list_id, timeout_seconds=self._timeout)
 
     @classmethod
     def from_config(

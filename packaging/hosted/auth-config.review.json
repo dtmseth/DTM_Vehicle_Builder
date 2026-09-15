@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {"purpose": "Stage 2 review only. No resources have been provisioned or configured."},
+  "parameters": {
+    "appName": {"type": "string"},
+    "tenantId": {"type": "string"},
+    "clientId": {"type": "string"},
+    "assignedEmployeeObjectIds": {"type": "array", "minLength": 1},
+    "entraSecretName": {"type": "string"},
+    "tokenStoreSasSecretName": {"type": "string"}
+  },
+  "resources": [{
+    "type": "Microsoft.App/containerApps/authConfigs",
+    "apiVersion": "2026-01-01",
+    "name": "[format('{0}/current', parameters('appName'))]",
+    "properties": {
+      "platform": {"enabled": true},
+      "globalValidation": {
+        "unauthenticatedClientAction": "Return401",
+        "excludedPaths": ["/healthz"]
+      },
+      "httpSettings": {"requireHttps": true},
+      "identityProviders": {
+        "azureActiveDirectory": {
+          "enabled": true,
+          "registration": {
+            "clientId": "[parameters('clientId')]",
+            "clientSecretSettingName": "[parameters('entraSecretName')]",
+            "openIdIssuer": "[format('https://login.microsoftonline.com/{0}/v2.0', parameters('tenantId'))]"
+          },
+          "validation": {
+            "allowedAudiences": ["[parameters('clientId')]"],
+            "defaultAuthorizationPolicy": {
+              "allowedPrincipals": {"identities": "[parameters('assignedEmployeeObjectIds')]"}
+            }
+          }
+        }
+      },
+      "login": {
+        "allowedExternalRedirectUrls": [],
+        "nonce": {"validateNonce": true, "nonceExpirationInterval": "00:05:00"},
+        "cookieExpiration": {"convention": "FixedTime", "timeToExpiration": "00:30:00"},
+        "tokenStore": {
+          "enabled": true,
+          "azureBlobStorage": {"sasUrlSettingName": "[parameters('tokenStoreSasSecretName')]"}
+        }
+      }
+    }
+  }]
+}

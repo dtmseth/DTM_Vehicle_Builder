@@ -278,3 +278,15 @@ Agency search uses `difflib.get_close_matches` after normalizing common abbrevia
 The project wizard has live-search combos for agency and sales rep fields. Saves and deletes
 hit SharePoint directly via `save_setting_to_cloud_in_background` and
 `delete_setting_from_cloud`.
+
+## Project work types
+
+`ProjectRecord.project_type` is `build` (legacy default), `service`, or `offsite`; it is independent
+of `BuildUnit.build_type` and project lifecycle. `service_details` stores optional work requirements,
+off-site location/contact/travel and the optional diagram toggle. Builder metadata is authoritative;
+read-time Operations records attach these two fields for presentation and Calendar planning, while
+the SharePoint current-record field map remains unchanged.
+
+`IndividualUnit.previous_build` optionally references one Build vehicle by `project_id`, `unit_id`,
+and `individual_id`. It is a reference only; parts, overrides, acceptance, Estimate and folder IDs
+remain owned by their original records. Service visits do not participate in agency/year merging.

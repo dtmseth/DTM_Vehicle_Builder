@@ -49,6 +49,7 @@ class CloudConfig:
     sharepoint_drive_id: str
     operations_list_id: str = ""
     operations_events_list_id: str = ""
+    operations_requests_list_id: str = ""
     # Export-target library lookup. The two names are tried in order
     # against /sites/{site_id}/drives.name — give the display name first;
     # the internal-name fallback covers libraries that were renamed in the
@@ -194,6 +195,7 @@ def load_cloud_config_from_env() -> CloudConfig:
     optional = {
         "operations_list_id": "DTM_OPERATIONS_LIST_ID",
         "operations_events_list_id": "DTM_OPERATIONS_EVENTS_LIST_ID",
+        "operations_requests_list_id": "DTM_OPERATIONS_REQUESTS_LIST_ID",
         "exports_library_name": "DTM_EXPORTS_LIBRARY_NAME",
         "exports_library_internal_name": "DTM_EXPORTS_LIBRARY_INTERNAL_NAME",
         "exports_base_folder": "DTM_EXPORTS_BASE_FOLDER",
@@ -255,6 +257,22 @@ def save_operations_list_ids(
     payload = _load_cloud_config_file()
     payload["operations_list_id"] = current_id
     payload["operations_events_list_id"] = events_id
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+    return path
+
+
+def save_operations_request_list_id(*, operations_requests_list_id: str) -> Path:
+    """Persist the validated, non-secret phone request-list GUID."""
+
+    request_id = str(operations_requests_list_id or "").strip()
+    if not request_id:
+        raise ValueError("A validated operations request list ID is required")
+    path = cloud_config_path()
+    payload = _load_cloud_config_file()
+    payload["operations_requests_list_id"] = request_id
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f"{path.name}.tmp")
     temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

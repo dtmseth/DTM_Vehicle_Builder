@@ -240,6 +240,36 @@ class GraphDriveGateway:
                 item = dict(response.json())
         return item
 
+    def ensure_child_folder(self, parent_id: str, name: str) -> dict:
+        """Create one folder under an exact parent ID, never recreate ancestors."""
+        if not parent_id or not name or name in {".", ".."} or "/" in name or "\\" in name:
+            raise ValueError("An exact parent ID and one folder name are required")
+        parent = self.get_item(parent_id)
+        if not parent or not isinstance(parent.get("folder"), dict):
+            raise GraphDriveError("The registered parent folder is unavailable")
+        url = f"{_GRAPH}/drives/{quote(self._drive_id, safe='')}/items/{quote(parent_id, safe='')}/children"
+        response = self._session.post(
+            url, headers={**self._headers, "Content-Type": "application/json"},
+            json={"name": name, "folder": {}, "@microsoft.graph.conflictBehavior": "fail"},
+            timeout=30,
+        )
+        if response.status_code != 409:
+            self._raise_for_status(response, operation="child folder creation")
+            item = dict(response.json())
+        else:
+            response = self._session.get(
+                f"{_GRAPH}/drives/{quote(self._drive_id, safe='')}/items/"
+                f"{quote(parent_id, safe='')}:/{quote(name, safe='')}",
+                headers=self._headers, timeout=30,
+            )
+            self._raise_for_status(response, operation="existing child folder lookup")
+            item = dict(response.json())
+        if not isinstance(item.get("folder"), dict):
+            raise GraphDriveError("A file blocks the reference folder")
+        if str((item.get("parentReference") or {}).get("id") or "") != parent_id:
+            raise GraphDriveError("The reference folder parent changed; review again")
+        return item
+
     def upload_file(
         self,
         remote_path: str,

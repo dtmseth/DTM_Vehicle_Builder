@@ -5,9 +5,20 @@ app served as static files.
 
 ## Tab layout
 
-Three workspace families: **Projects**, **Operations**, and **Settings**. Operations is hidden until
+Four workspace families: **Projects**, **Calendar**, **Operations**, and **Settings**. Operations is hidden until
 the session API confirms `operations.view`; General and Advanced remain separate Settings header
 tabs.
+
+### Calendar tab
+
+`#tab-calendar` and `ui/js/calendar.js` own the weekly team lanes, Sunday-first month calendar,
+job detail editor, and reviewed schedule saves. Calendar uses Operations read/scheduling
+capabilities. Team setup is `#stab-calendar-teams` in General Settings; it is independently
+visible to scheduling managers without granting unrelated General Settings access. The Week
+view remains Monday–Friday. Operations retains read-only schedule summaries and a deadline-only
+editor plus a separate shared Accepted date action; start/finish planning is in Calendar.
+Shop can filter teams and inspect vehicle details; start/finish actions remain in Operations.
+Planning forms are hidden for Shop, and Sales has acceptance-date controls without scheduling access. See [CALENDAR.md](CALENDAR.md).
 
 ### Operations tab
 
@@ -68,6 +79,10 @@ the manual deadline restores the automatic 60-day date. Like project status upda
 scheduling calls the one-vehicle route sequentially and retains one immutable event per vehicle.
 
 ### Projects tab
+
+Entering Projects selects the list immediately. Its asynchronous refresh updates list content
+without changing the current view, so a project or draft opened during loading stays open.
+
 ```
 #proj-list-view        — scrollable project list
     status tabs         — Started / Active / Inactive / Completed with live project counts

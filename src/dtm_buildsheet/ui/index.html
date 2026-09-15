@@ -21,6 +21,7 @@
   </div>
   <div class="header-tabs">
     <button class="htab" id="projects-header-tab" data-tab="projects" hidden>📋 Projects</button>
+    <button class="htab" id="calendar-header-tab" data-tab="calendar" hidden>📅 Calendar</button>
     <button class="htab" id="operations-header-tab" data-tab="operations" hidden>🏭 Operations</button>
     <button class="htab" id="general-settings-header-tab" data-tab="general-settings" hidden>⚙️ General Settings</button>
     <button class="htab" id="advanced-settings-header-tab" data-tab="advanced-settings" hidden>🔧 Advanced Settings</button>
@@ -98,6 +99,7 @@
 
 
 <!-- ═══════════ OPERATIONS TAB (PROJECT-GROUPED PRODUCTION BACKLOG) ═══════════ -->
+<div id="tab-calendar" class="main-content" hidden></div>
 <div id="tab-operations" class="main-content" hidden>
   <div class="card operations-shell">
     <div class="card-title operations-title">
@@ -178,40 +180,22 @@
 <div class="modal-overlay" id="operations-schedule-modal" role="dialog" aria-modal="true" aria-labelledby="operations-schedule-title" hidden>
   <div class="modal operations-schedule-modal">
     <div class="modal-title">
-      <span id="operations-schedule-title">Edit project schedule</span>
+      <span id="operations-schedule-title">Delivery deadline</span>
       <button class="modal-close" id="operations-schedule-close" type="button" aria-label="Close schedule editor">×</button>
     </div>
     <p class="operations-status-scope" id="operations-schedule-scope"></p>
     <form id="operations-schedule-form">
       <div class="operations-schedule-current" id="operations-schedule-current"></div>
-      <div class="form-group">
-        <label for="operations-scheduled-week">Scheduled week <span>optional</span></label>
-        <input id="operations-scheduled-week" data-operations-schedule-field="scheduled_week_of" type="date">
-      </div>
-      <div class="form-row operations-schedule-dates">
-        <div class="form-group">
-          <label for="operations-planned-start">Planned start <span>optional</span></label>
-          <input id="operations-planned-start" data-operations-schedule-field="planned_start_date" type="date">
-        </div>
-        <div class="form-group">
-          <label for="operations-target-finish">Target finish <span>optional</span></label>
-          <input id="operations-target-finish" data-operations-schedule-field="target_finish_date" type="date">
-        </div>
-      </div>
       <div class="form-group operations-schedule-deadline">
         <label for="operations-must-deliver">Must Deliver On <span>optional manual date</span></label>
         <input id="operations-must-deliver" data-operations-schedule-field="must_deliver_override_date" type="date">
         <small>Leave this alone to use the automatic 60-day date when it is available. Clear it to return to automatic.</small>
       </div>
-      <label class="operations-schedule-clear">
-        <input id="operations-schedule-clear" type="checkbox">
-        <span>Clear scheduled week, planned start, and target finish</span>
-      </label>
       <div class="operations-status-guidance" id="operations-schedule-guidance" role="status"></div>
       <div class="operations-status-progress" id="operations-schedule-progress" role="status" hidden></div>
       <div class="modal-actions">
         <button class="btn btn-secondary" id="operations-schedule-cancel" type="button">Cancel</button>
-        <button class="btn btn-primary" id="operations-schedule-apply" type="submit">Save schedule</button>
+        <button class="btn btn-primary" id="operations-schedule-apply" type="submit">Save deadline</button>
       </div>
     </form>
   </div>
@@ -242,6 +226,7 @@
   <div class="stab-bar" id="stab-bar-general" hidden>
     <button class="stab" data-stab="projects-defaults" data-stab-group="general">📁 Projects</button>
     <button class="stab" data-stab="agencies" data-stab-group="general">🏛 Agencies</button>
+    <button class="stab" data-stab="calendar-teams" data-stab-group="general">Teams & Calendar</button>
     <button class="stab" data-stab="sales-reps" data-stab-group="general">👤 Sales Reps</button>
     <button class="stab" data-stab="presets" data-stab-group="general">📂 Presets</button>
     <button class="stab" data-stab="quickbooks" data-stab-group="general" hidden>💵 QuickBooks</button>
@@ -270,6 +255,7 @@
     <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library (legacy)</button>
   </div>
 
+  <div id="stab-calendar-teams" hidden></div>
   <!-- ── PROJECTS (General Settings) ── -->
   <div id="stab-projects-defaults" hidden>
     <div class="card">
@@ -2655,6 +2641,7 @@
 <script src="/ui/js/projects/wizard.js"></script>
 <script src="/ui/js/projects/index.js"></script>
 <script src="/ui/js/operations.js"></script>
+<script src="/ui/js/calendar.js"></script>
 <script src="/ui/js/update_banner.js"></script>
 <script src="/ui/js/main.js"></script>
 

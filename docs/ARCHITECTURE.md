@@ -2,6 +2,12 @@
 
 ## Runtime Shape
 
+The isolated Stage 1 entry point is `dtm_buildsheet.headless`, documented in
+`AZURE_PILOT_RESULTS.md`. It selects `DTM_WORKSPACE_DIR` before app imports and reuses
+`app.server.create_http_server()` without desktop startup workers or GUI launch. The local
+pilot handler adds bounded artifact downloads and denies provider/native actions. It is not a
+multi-user/public server. Unset workspace overrides preserve normal desktop development paths.
+
 - `dtm_buildsheet.gui_server`
   Compatibility entrypoint for the local GUI server (thin shim → `app.server.main`).
 - `dtm_buildsheet.app.server`
@@ -66,8 +72,12 @@ Input adapter -> ProjectInput -> BuildPlan -> renderer/exporter
 
 ## UI Structure
 
-The app has three workspace families: **Projects**, capability-gated **Operations**, and
-**Settings**.
+The app has four workspace families: **Projects**, capability-gated **Calendar** and
+**Operations**, and **Settings**. Calendar owns team assignments and planned dates; its reviewed
+saves persist an owner/config-bound local replica and outbox atomically, then publish dates through
+the existing Operations command boundary in the background. Provider I/O does not hold the local
+editing lock. Shared ETags, three-way merging and reviewed conflict resolution preserve other
+schedulers' work. Delivery deadlines stay independent. See [CALENDAR.md](CALENDAR.md) for planning and concurrency rules.
 
 **Operations** provides a project-grouped shared-vehicle backlog, Builder projection preview,
 explicit vehicle creation, and capability-gated status updates. Its header tab appears only
@@ -139,3 +149,18 @@ elif path == "/api/foo":
 ## Packaging Direction
 
 `PyInstaller` is the current packaging target for both Mac and Windows. CI handles parallel builds on the correct platform for each target.
+
+## Hosted request boundary (local Stage 2 proof)
+
+`app/request_context.py` binds an immutable per-request bundle. `get_active_bundle()` resolves
+it before the desktop singleton and fails closed without a context in hosted/deployed processes.
+Desktop startup still uses its existing bundle and workers. `app/hosted/` supplies a separate
+WSGI boundary with tenant-specific signed identity, durable sessions/CAS job metadata, revision
+preconditions and owner-bound artifact IDs. The production factory uses managed identity for
+Azure Tables; synthetic SQLite/resource adapters exist only under `tools/pilot/`.
+
+No legacy HTTP route or desktop background loop is exposed by this boundary. Provider-dependent
+document/job dispatch remains unavailable until the shared service integrations enforce resource
+ACLs, provider ETags and reviewed snapshots. Stage 1 continues to serve the existing UI locally.
+See [HOSTED_BOUNDARY.md](HOSTED_BOUNDARY.md) for the complete route audit and limits; the new
+boundary is not a claim of full hosted Builder parity.

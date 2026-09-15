@@ -313,13 +313,100 @@ you're touching. New gotchas get appended to the bottom with a date.
     Active view still puts fully arrived projects first and then uses Must Deliver On. Once the user
     explicitly chooses Scheduled, chronological week is the primary ordering so later arrived work
     cannot jump ahead of an earlier scheduled week.
-58. **Use the compact, change-aware verification gate in automated sessions.** Routine work runs
-    `tools/verify.py changed` after a meaningful edit batch; it captures successful output and
-    prints concise summaries. Do not stream verbose pytest passes or repeatedly run the full Python
-    and browser suites. `tools/verify.py release` is a one-time release/merge gate, an explicitly
-    requested run, or a justified check for a genuinely cross-cutting core contract change. CI
-    remains the authoritative full-suite and coverage gate.
+58. **Keep iterative verification to one relevant test file.** Follow root `AGENTS.md`:
+    `.venv/bin/python -m pytest tests/test_<target>.py --maxfail=1`. Never autonomously run
+    browser smoke tests during ordinary edits or small feature additions. Run
+    `tools/verify.py changed --skip-smoke` only when the owner explicitly requests a pre-commit
+    verification pass; staging alone does not narrow its diff against `HEAD`. Full browser
+    runs and `tools/verify.py release` are strictly pre-release checks. Report compact summaries.
+    CI remains the authoritative full-suite and coverage gate.
 59. **Builder lifecycle is authoritative for Operations visibility.** The Operations projection may
     contain a stale `project_state=active` row from an older client. The Operations vehicles API
     filters every Builder project currently marked Inactive before returning rows or counts; do not
     rely only on the projected state or a browser-side tab to hide inactive work.
+60. **The optional Power App writes requests, never authoritative Operations rows.** Power Apps may create only a
+    `pending` item in `DTMOperationsRequests` with a fresh UUID and the revision it displayed. The
+    Power Automate trigger is concurrency one. The processor accepts only normal forward Shop, Tray,
+    Programming & QC, or Final Finish transitions; corrections remain desktop-only. It must create
+    the pending immutable event before its ETag-guarded current-row PATCH and mark the event applied
+    afterward. A stale revision becomes `conflict`, never last-write-wins. The event's recovery
+    snapshot may use canonical domain keys or exact SharePoint internal field names; the desktop
+    codec normalizes both. Never grant that Power App a direct update path to either core list.
+    This contract belongs to the optional Canvas client, not the planned full HTML mobile client,
+    which will use the role-checked Builder backend. The existing processor remains Off.
+61. **Calendar dates and the 60-day commitment are separate.** Calendar publishes only planned
+    start, derived Scheduled Week, and estimated ready date through the existing one-vehicle
+    schedule service. It must never move a deadline to hide a late forecast. Operations' date
+    schedule-date editor now owns only the deadline override; its separate Accepted date action
+    edits shared acceptance. Calendar reads/replans never mutate shared state (the local replica cache is durable); its
+    shared plan uses conditional ETag saves and must never enter the ordinary settings mirror.
+    During multi-vehicle publication, previously mirrored Operations dates must not alter queue
+    ordering or become new fixed-start constraints. See `CALENDAR.md`.
+62. **Calendar acknowledges durable local saves before background publication.** The owner/config-bound
+    replica and outbox are one atomic journal; do not block editing on provider uploads or replace
+    newer local edits with an older upload result. Resume queued snapshots after restart with fresh
+    authorization, Operations checks and conditional shared ETags. Merge disjoint edits; pause real
+    conflicts for explicit review. Keep per-vehicle revisions and immutable events, and do not reload
+    the whole Operations list per vehicle. Worker auth must be silent; never reuse the foreground
+    interactive token provider. A QBO observation time is not the original Accepted Date.
+
+63. **Acceptance is a business date, and QBO observation is a timestamp.** Both Calendar and
+    Operations edit the same accepted date via immutable Operations corrections. Preserve manual
+    dates during polling. QBO AcceptedDate may round-trip through SharePoint as midnight UTC;
+    strip its time before interpreting it. Missing QBO AcceptedDate stays missing, never the
+    observation time. Shop can read acceptance and start/finish builds but cannot edit dates or
+    schedules. Michelle's small-agency preference is soft; never idle another available team
+    solely to enforce that preference.
+
+64. **A headless Builder is not yet a hosted multi-user Builder.** `wiring._active_bundle`, local
+    workspace paths and desktop credentials describe one workstation. Do not expose the desktop
+    server publicly or trust forwarded identity headers without a verified auth boundary. Start
+    with the isolated local prototype in `AZURE_PILOT_PLAN.md`; add request-scoped identities,
+    durable jobs, authorized file access and concurrency checks before an external pilot. Keep
+    local test identities unavailable in deployed mode and preserve desktop keychain rules.
+
+65. **Pilot isolation must precede every application path import, including indirect renderer calls.**
+    Launch with `python -m dtm_buildsheet.headless`; package initialization is deliberately lazy.
+    `DTM_WORKSPACE_DIR` redirects mutable module constants as well as `AppPaths`, and the pilot
+    branch of `ensure_workspace()` never copies desktop defaults. Render helpers invoke that
+    initializer even when a caller supplies paths. Do not remove this guard or seed real presets,
+    agencies, reps or cloud config into a pilot. See `AZURE_PILOT_RESULTS.md`.
+
+66. **A request context does not make desktop routes or caches multi-user safe.** Hosted requests
+    resolve their own bundle; background threads have no inherited user and may not fall back to
+    `_active_bundle`. Only the explicit hosted route allowlist is exposed. Provider/resource
+    adapters must enforce ACLs and exact ETags, and may not reuse shared desktop caches or raw path
+    arguments. `DTM_CLOUD=0` does not mean a hosted request should become local AppAdmin.
+67. **An expired worker lease is an uncertain outcome, not permission to replay.** Hosted jobs
+    retain reviewed revisions, step event IDs and immutable terminal archives. Stop on conflict,
+    revocation or interruption and reconcile before a new review. Copy archive data before removing
+    the queue entry so retries cannot recreate a completed job. Do not delete retry keys to free
+    capacity. See `HOSTED_BOUNDARY.md`; desktop Calendar semantics remain in `CALENDAR.md`.
+
+68. **Local Linux architecture and cgroup measurements need explicit provenance (2026-09-10).**
+    Build the pilot with an explicit platform and pass the same `--platform` to its proof runner;
+    an ARM64 image passing locally does not verify AMD64 compatibility. Rosetta timings include
+    emulation overhead and cannot predict Azure performance. `memory.peak` is bytes across the
+    container lifetime, not a per-export MiB value; report its scope and convert by 1024 squared.
+    Keep Builder on the internal network and expose only the fixed-destination localhost relay.
+    UI assets must be present in both the staged context and installed wheel package data.
+69. **Projects refresh completion must not navigate (2026-09-10).** `initProjectsTab()` selects
+    the list before awaiting data, then only renders refreshed list content. A user can open a
+    project or draft during that request; selecting the list again afterward silently closes
+    their editor. The delayed-refresh browser regression preserves the open build editor.
+70. **Restoring a job backup must not authorize replay (2026-09-10).** Metadata recovery is an
+    offline operation into an empty partition. Preserve terminal retry keys, interrupt active
+    jobs and retain the `recovery` fence even for request IDs absent from an old snapshot. The
+    fence has no automatic release; provider reconciliation is a later integration requirement.
+    Session/artifact cleanup never scans job history and must keep exact delete preconditions.
+71. **Hosted SDK warnings can contain credentials (2026-09-10).** The dedicated hosted logging
+    handler must not format messages, arguments or exception tracebacks. Emit fixed source/severity
+    categories and server-generated request IDs only; never attach raw URLs, claims or payloads.
+    Configure this policy only in the hosted entrypoint, leaving desktop logging unchanged.
+
+72. **Project type is independent of vehicle/build type and lifecycle.** Missing values mean Build.
+    Service visits keep distinct IDs and output names; never merge them by agency/year or copy prior
+    parts through a previous-build reference. Calendar and Operations attach authoritative Builder
+    work metadata at read time; service deadlines are optional/manual. N/A workstreams retain their
+    existing statuses and history. Service estimates, travel and requirements must be included in
+    Calendar preview/replay validation; no rendering is required to schedule service work.

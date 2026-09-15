@@ -1,4 +1,4 @@
-"""Exact SharePoint v1 schema for production operations lists.
+"""Exact SharePoint schema for production operations and phone requests.
 
 The machine-facing names in this module are creation-time contracts.  The
 provisioner sends them to Graph exactly once and all runtime adapters resolve
@@ -28,11 +28,13 @@ ColumnKind = Literal["text", "multiline", "choice", "date", "datetime", "number"
 
 OPERATIONS_LIST_NAME = "DTMVehicleOperations"
 EVENTS_LIST_NAME = "DTMVehicleEvents"
+REQUESTS_LIST_NAME = "DTMOperationsRequests"
 OPERATIONS_LIST_READ_SCOPES = ("Sites.Read.All",)
 OPERATIONS_LIST_INSPECTION_SCOPES = OPERATIONS_LIST_READ_SCOPES
 OPERATIONS_LIST_PROVISIONING_SCOPES = ("Sites.Manage.All",)
 OPERATIONS_LIST_RUNTIME_SCOPES = ("Sites.ReadWrite.All",)
 PROVISION_CONFIRMATION = f"CREATE {OPERATIONS_LIST_NAME} AND {EVENTS_LIST_NAME}"
+PHONE_REQUESTS_PROVISION_CONFIRMATION = f"CREATE {REQUESTS_LIST_NAME}"
 RECOVERY_SCHEMA_CONFIRMATION = "ADD OPERATIONS RECOVERY COLUMNS"
 DEADLINE_OVERRIDE_SCHEMA_CONFIRMATION = "ADD OPERATIONS DEADLINE OVERRIDE"
 PARTS_ORDERED_SCHEMA_CONFIRMATION = "ADD PARTS ORDERED STATUS"
@@ -294,7 +296,61 @@ VEHICLE_EVENTS_LIST = SharePointListSpec(
 )
 
 
+# The phone client can create rows here, but it never edits the authoritative
+# current or event lists. A standard-connector Power Automate flow validates a
+# normal forward transition, applies it with the expected revision, and writes
+# its result back to this request row for the phone to display.
+OPERATIONS_REQUESTS_LIST = SharePointListSpec(
+    name=REQUESTS_LIST_NAME,
+    description="Append-only DTM phone status requests and processor results.",
+    columns=(
+        _col("SchemaVersion", "number", required=True),
+        _col("RequestId", required=True, indexed=True, unique=True),
+        _col("BuilderVehicleId", required=True, indexed=True),
+        _col("ExpectedRevision", "number", required=True),
+        _col(
+            "Workstream", "choice", required=True, indexed=True,
+            choices=("shop", "tray", "programming_qc", "final_finish"),
+        ),
+        _col(
+            "RequestedStatus", "choice", required=True,
+            choices=(
+                "in_progress",
+                "complete",
+                "ready",
+                "ready_for_wash_clean_photos",
+                "ready_for_delivery",
+                "delivered",
+            ),
+        ),
+        _col("PerformedByName"),
+        _col("SourceAppVersion"),
+        _col(
+            "ProcessingStatus", "choice", required=True, indexed=True,
+            choices=(
+                "pending",
+                "processing",
+                "applied",
+                "unchanged",
+                "conflict",
+                "rejected",
+                "failed",
+            ),
+        ),
+        _col("ProcessingStartedAtUtc", "datetime"),
+        _col("ProcessedAtUtc", "datetime", indexed=True),
+        _col("ActorEntraId", indexed=True),
+        _col("ActorDisplayName"),
+        _col("ResultRevision", "number"),
+        _col("ResultEventId"),
+        _col("ResultMessage", "multiline"),
+        _col("ProcessorRunId"),
+    ),
+)
+
+
 OPERATIONS_LIST_SPECS = (VEHICLE_OPERATIONS_LIST, VEHICLE_EVENTS_LIST)
+ALL_OPERATIONS_LIST_SPECS = (*OPERATIONS_LIST_SPECS, OPERATIONS_REQUESTS_LIST)
 
 RECOVERY_SCHEMA_COLUMN_NAMES = {
     OPERATIONS_LIST_NAME: (
@@ -320,9 +376,11 @@ PARTS_ORDERED_SCHEMA_COLUMN_NAMES = {
 
 
 def _validate_manifest() -> None:
-    if len({spec.name for spec in OPERATIONS_LIST_SPECS}) != len(OPERATIONS_LIST_SPECS):
+    if len({spec.name for spec in ALL_OPERATIONS_LIST_SPECS}) != len(
+        ALL_OPERATIONS_LIST_SPECS
+    ):
         raise ValueError("Operations SharePoint list names must be unique")
-    for spec in OPERATIONS_LIST_SPECS:
+    for spec in ALL_OPERATIONS_LIST_SPECS:
         names = [column.name for column in spec.columns]
         if len(names) != len(set(names)):
             raise ValueError(f"Duplicate SharePoint column name in {spec.name}")

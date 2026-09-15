@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import threading
 from pathlib import Path
@@ -60,6 +61,8 @@ class QuickBooksCredentialStore:
         separate namespace so its production OAuth tokens can never replace
         the existing sandbox/standard connection.
         """
+        if os.environ.get("DTM_LOCAL_PILOT") == "1":
+            raise RuntimeError("QuickBooks credentials are unavailable in the local pilot")
         self._location = str(location or (_app_data_dir() / filename))
 
     def _persistence(self):

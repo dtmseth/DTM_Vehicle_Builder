@@ -1029,6 +1029,14 @@ def handle_generate_from_draft(body: dict, paths: AppPaths) -> dict:
 
         config = load_configs(paths)
         _t_step("load_configs")
+        if _proj_rec is not None and _matched_unit_id:
+            project.info['ProjectType'] = _proj_rec.project_type
+            project.info['ServiceDetails'] = _proj_rec.service_details
+            if _proj_rec.project_type != 'build':
+                details = _proj_rec.service_details
+                project.notes.setdefault('INSTALLATION NOTES', []).extend(
+                    [f'{label}: {details[key]}' for key, label in (('location', 'Service location'), ('contact', 'On-site contact')) if details.get(key)]
+                )
         plan = build_plan(project, config)
         _t_step("build_plan")
 

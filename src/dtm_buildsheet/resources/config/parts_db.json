@@ -555,7 +555,7 @@
           "part_number": "BK1001DUR21",
           "qb_item_id": "1087",
           "qb_sku": "",
-          "qb_unit_price": 1479.0,
+          "qb_unit_price": 1439.0,
           "qb_inactive": false,
           "vehicle_tags": [
             "DURANGO"
@@ -566,7 +566,7 @@
           "tertiary_color": "",
           "friendly_name": "SETINA PB450L6 LIGHTED PUSH BUMPER WITH WHELEN ION TRI-COLOR 6 TOTAL LIGHTS: 4 FORWARD FACING, 1 EACH SIDE 2021-2026 DODGE DURANGO",
           "qb_sales_description": "SETINA PB450L6 LIGHTED PUSH BUMPER\nWITH WHELEN ION TRI-COLOR\n6 TOTAL LIGHTS: 4 FORWARD FACING, 1 EACH SIDE\n\n2021-2026 DODGE DURANGO",
-          "qb_last_synced": "2026-08-11T17:04:28Z"
+          "qb_last_synced": "2026-09-09T22:40:38Z"
         },
         {
           "part_number": "BK1001ITU20",
@@ -19284,8 +19284,8 @@
           "qb_item_id": "1586",
           "qb_sku": "",
           "qb_unit_price": 946.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_inactive": true,
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 946,
           "vehicle_tags": [
             "DURANGO"
@@ -29119,9 +29119,9 @@
           "friendly_name": "TIGER TOUGH 2024 FORD F150 POLICE RESPONDER BUCKET SEAT",
           "qb_item_id": "1010000301",
           "qb_sku": "",
-          "qb_unit_price": 321.49,
+          "qb_unit_price": 367.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 321.49,
           "vehicle_tags": [
             "F-150"
@@ -29147,9 +29147,9 @@
           "friendly_name": "TIGER TOUGH FORD POLICE INTERCEPTOR DRIVERS SEAT COVER",
           "qb_item_id": "1224",
           "qb_sku": "",
-          "qb_unit_price": 218.12,
+          "qb_unit_price": 249.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 218.12,
           "vehicle_tags": [
             "PIU"
@@ -29175,9 +29175,9 @@
           "friendly_name": "TIGER TOUGH FORD F-150 RESPONDER DRIVERS SEAT COVER",
           "qb_item_id": "1010000481",
           "qb_sku": "",
-          "qb_unit_price": 218.12,
+          "qb_unit_price": 249.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 218.12,
           "vehicle_tags": [
             "F-150"
@@ -29203,9 +29203,9 @@
           "friendly_name": "TIGER TOUGH SEAT COVER SET - BLACK TACTICAL- FOR 2021+ CHEVY TAHOE PPV/SSV",
           "qb_item_id": "1012",
           "qb_sku": "",
-          "qb_unit_price": 321.49,
+          "qb_unit_price": 367.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 321.49,
           "vehicle_tags": [
             "TAHOE"
@@ -29231,9 +29231,9 @@
           "friendly_name": "TIGER TOUGH DRIVER'S SIDE SEAT COVER FOR CHEVY TAHOE PPV/SSV",
           "qb_item_id": "1024",
           "qb_sku": "",
-          "qb_unit_price": 218.12,
+          "qb_unit_price": 249.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 218.12,
           "vehicle_tags": [
             "TAHOE"
@@ -29577,9 +29577,9 @@
           "friendly_name": "TIGER TOUGH BUCKET SEAT COVERS FOR FORD TRUCK",
           "qb_item_id": "1566",
           "qb_sku": "",
-          "qb_unit_price": 278.6,
+          "qb_unit_price": 327.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 278.6,
           "vehicle_tags": [
             "F-150",
@@ -29607,9 +29607,9 @@
           "friendly_name": "TIGER TOUGH SEAT COVERS FOR FORD TRUCK, INCLUDES CENTER CONSOLE COVER",
           "qb_item_id": "1567",
           "qb_sku": "",
-          "qb_unit_price": 338.24,
+          "qb_unit_price": 397.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 338.24,
           "vehicle_tags": [
             "F-150",
@@ -29636,9 +29636,9 @@
           "friendly_name": "TIGER TOUGH REAR SEAT COVERS FOR FORD TRUCK",
           "qb_item_id": "1010000311",
           "qb_sku": "",
-          "qb_unit_price": 329.72,
+          "qb_unit_price": 387.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 329.72,
           "vehicle_tags": [
             "F-150",
@@ -29666,9 +29666,9 @@
           "friendly_name": "TIGER TOUGH BUCKET SEAT COVERS FOR RAM TRUCK",
           "qb_item_id": "1565",
           "qb_sku": "",
-          "qb_unit_price": 278.6,
+          "qb_unit_price": 327.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 278.6,
           "vehicle_tags": [
             "RAM-1500",
@@ -29779,24 +29779,24 @@
           "friendly_name": "STALKER 2 FT. ANTENNA CABLE",
           "qb_item_id": "1210",
           "qb_sku": "",
-          "qb_unit_price": 99.6,
+          "qb_unit_price": 109.5,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 99.6,
           "vehicle_tags": [
             "any"
           ],
           "options": {},
-          "qb_sales_description": "STALKER 2 FT. ANTENNA CABLE"
+          "qb_sales_description": "STALKER 2 FT ANTENNA CABLE"
         },
         {
           "part_number": "155-2591-04",
           "friendly_name": "STALKER 4 FT ANTENNA CABLE",
           "qb_item_id": "1211",
           "qb_sku": "",
-          "qb_unit_price": 124.8,
+          "qb_unit_price": 137.4,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 124.8,
           "vehicle_tags": [
             "any"
@@ -29809,9 +29809,9 @@
           "friendly_name": "STALKER 8 FT ANTENNA CABLE",
           "qb_item_id": "845",
           "qb_sku": "",
-          "qb_unit_price": 124.8,
+          "qb_unit_price": 130.54,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 124.8,
           "vehicle_tags": [
             "any"
@@ -29824,9 +29824,9 @@
           "friendly_name": "STALKER 16 FT ANTENNA CABLE",
           "qb_item_id": "1212",
           "qb_sku": "",
-          "qb_unit_price": 168.0,
+          "qb_unit_price": 184.8,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 168,
           "vehicle_tags": [
             "any"
@@ -29839,9 +29839,9 @@
           "friendly_name": "STALKER 20 FT ANTENNA CABLE",
           "qb_item_id": "846",
           "qb_sku": "",
-          "qb_unit_price": 188.4,
+          "qb_unit_price": 206.7,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 188.4,
           "vehicle_tags": [
             "any"
@@ -29854,9 +29854,9 @@
           "friendly_name": "STALKER 25 FT ANTENNA CABLE",
           "qb_item_id": "1213",
           "qb_sku": "",
-          "qb_unit_price": 188.4,
+          "qb_unit_price": 196.93,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-09T22:40:38Z",
           "price_usd": 188.4,
           "vehicle_tags": [
             "any"

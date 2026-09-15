@@ -162,6 +162,52 @@ class SharePointGraphProvider(StorageProvider):
             url = payload.get("@odata.nextLink")
         return results
 
+    def read_versioned_text(self, path: str) -> tuple[str, str]:
+        """Read a stable content/ETag pair; fail rather than pair different versions."""
+        from ..calendar_store import CalendarConflictError
+
+        before = self.read_revision(path)
+        content = self.read_text(path)
+        if before != self.read_revision(path):
+            raise CalendarConflictError("Calendar changed while loading. Refresh and try again.")
+        return content, before
+
+    def read_revision(self, path: str) -> str:
+        response = self._request("metadata", path, lambda: self._session.get(
+            self._item_url(path), headers=self._auth_headers(), timeout=self._http_timeout))
+        if response.status_code == 404:
+            raise FileNotFoundError(path)
+        self._raise_for_status(response, operation="metadata", path=path)
+        etag = response.json().get("eTag", "")
+        if not etag:
+            raise SharePointRequestError("Calendar revision is unavailable")
+        return etag
+
+    def write_versioned_text(self, path: str, content: str, expected: str) -> str:
+        """Conditional Calendar update; never retry by dropping the precondition."""
+        from ..calendar_store import CalendarConflictError
+
+        data = content.encode("utf-8")
+        if len(data) > SMALL_UPLOAD_LIMIT_BYTES:
+            raise ValueError("Calendar exceeds the supported document size")
+        headers = {**self._auth_headers(), "Content-Type": "application/json"}
+        if expected:
+            headers["If-Match"] = expected
+        else:
+            headers["If-None-Match"] = "*"
+        url = self._item_content_url(path)
+        if not expected:
+            url += "?@microsoft.graph.conflictBehavior=fail"
+        response = self._request("calendar save", path, lambda: self._session.put(
+            url, headers=headers, data=data, timeout=self._http_timeout))
+        if response.status_code in (409, 412):
+            raise CalendarConflictError("Another user changed Calendar. Refresh and review their changes.")
+        self._raise_for_status(response, operation="calendar save", path=path)
+        etag = response.json().get("eTag", "")
+        if not etag:
+            raise SharePointRequestError("Calendar save returned no revision; refresh before retrying")
+        return etag
+
     # ── Internal URL builders ─────────────────────────────────────────────
 
     def _auth_headers(self) -> dict[str, str]:

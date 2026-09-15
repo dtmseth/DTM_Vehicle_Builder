@@ -82,6 +82,7 @@ class IndividualUnit:
     existing_unit_number: str = ""
     existing_vin: str = ""
     notes: str = ""
+    previous_build: dict[str, str] = field(default_factory=dict)
     draft_id: str | None = None
     output_path: str = ""
     confirmed: bool = False
@@ -185,6 +186,8 @@ class ProjectRecord:
     # Project lifecycle controls Active / Inactive / Completed placement.
     # Lifecycle is organizational and reversible; it is deliberately separate
     # from per-vehicle customer acceptance and production operations.
+    project_type: str = "build"
+    service_details: dict[str, Any] = field(default_factory=dict)
     project_status: str = "active"
     inactive_at: str = ""
     inactive_by: str = ""

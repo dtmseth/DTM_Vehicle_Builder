@@ -23,6 +23,7 @@ from .routes import drafts as draft_routes
 from .routes import exports as export_routes
 from .routes import generation as generation_routes
 from .routes import operations as operations_routes
+from .routes import calendar as calendar_routes
 from .routes import preview as preview_routes
 from .routes import parts_db as parts_db_routes
 from .routes import photo_gallery as photo_gallery_routes
@@ -117,6 +118,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
+        elif path == "/api/calendar" or path.startswith("/api/calendar/"):
+            if not calendar_routes.route_calendar(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/operations/"):
             if not operations_routes.route_operations(self, "GET", path, {}, self.paths):
                 self._send(404, b"Not found", "text/plain")
@@ -194,6 +198,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/cloud/"):
             if not cloud_status_routes.route_cloud_status(self, "POST", path, body, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path == "/api/calendar" or path.startswith("/api/calendar/"):
+            if not calendar_routes.route_calendar(self, "POST", path, body, self.paths):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/operations/"):
             if not operations_routes.route_operations(self, "POST", path, body, self.paths):
@@ -295,6 +302,20 @@ class _ReuseHTTPServer(ThreadingHTTPServer):
 
     allow_reuse_address = True
     daemon_threads = True
+
+
+def create_http_server(paths: AppPaths, *, host: str = "127.0.0.1",
+                       port: int = PORT, handler_class=Handler) -> _ReuseHTTPServer:
+    """Construct the local HTTP surface without GUI or provider workers.
+
+    Each server owns its paths; this does not make the process-wide adapters
+    multi-user. Public hosting needs the separate Stage 2 authorization work.
+    """
+    class BoundHandler(handler_class):
+        pass
+
+    BoundHandler.paths = paths
+    return _ReuseHTTPServer((host, port), BoundHandler)
 
 
 def _port_is_busy(port: int) -> bool:
@@ -725,6 +746,11 @@ def main(paths: AppPaths | None = None):
             startup_ready=_initial_cloud_sync_complete,
             on_data_change=_bump_data_version,
         )
+        from .services import qb_acceptance_service
+        qb_acceptance_service.start_background_refresh(
+            active_paths, startup_ready=_initial_cloud_sync_complete,
+            on_data_change=_bump_data_version,
+        )
     except Exception:
         logging.getLogger(__name__).warning("QuickBooks background sync did not start")
 
@@ -733,7 +759,7 @@ def main(paths: AppPaths | None = None):
             f"Port {PORT} is already in use. Close the other app instance and try again."
         )
 
-    server = _ReuseHTTPServer(("127.0.0.1", PORT), Handler)
+    server = create_http_server(active_paths)
     url = f"http://localhost:{PORT}"
     print(f"DTM Vehicle Builder GUI -> {url}")
     print(f"Workspace -> {active_paths.workspace_dir}")

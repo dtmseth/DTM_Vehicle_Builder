@@ -1,7 +1,13 @@
 """DTM Vehicle Builder application package."""
 
 from importlib.metadata import version, PackageNotFoundError
-from .gui_server import main as run_gui
+
+
+def run_gui(*args, **kwargs):
+    # Keep package import side-effect free so headless startup can select its
+    # workspace before modules capture AppPaths defaults.
+    from .gui_server import main
+    return main(*args, **kwargs)
 
 try:
     __version__ = version("dtm-buildsheet")

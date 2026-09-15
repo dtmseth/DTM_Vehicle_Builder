@@ -21,7 +21,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install package + dev tools
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,hosted]"
 
       # Coverage floor is defined once in pyproject.toml
       # ([tool.coverage.report] fail_under) so CI and local runs agree;
@@ -42,7 +42,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install package + dev tools
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,hosted]"
 
       - name: Lint import contracts
         run: lint-imports
@@ -64,7 +64,7 @@ jobs:
         run: python -m pip install --upgrade "pip>=26.1.2"
 
       - name: Install package
-        run: pip install -e .
+        run: pip install -e ".[hosted]"
 
       - name: Install pip-audit
         run: pip install pip-audit

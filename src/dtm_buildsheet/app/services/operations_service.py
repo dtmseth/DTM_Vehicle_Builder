@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import replace
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from typing import Callable
 
 from ...domain.operations_models import (
@@ -724,6 +724,46 @@ class OperationsService:
             performed_by_name=performed_by_name,
         )
 
+    def change_acceptance_date(self, *, vehicle_id, accepted_date, acceptance_source,
+                               actor, request_id, source_client, expected_revision=None):
+        """Correct the shared acceptance date without changing acceptance status."""
+        if not (has_capability(actor.roles, Capability.ESTIMATES_MANAGE)
+                or has_capability(actor.roles, Capability.OPERATIONS_SCHEDULE_UPDATE)):
+            raise OperationsAuthorizationError("Your role cannot change acceptance dates")
+        self._required(actor.user_id, "actor")
+        request_id = self._required(request_id, "request_id")
+        duplicate = self._duplicate_result(request_id, vehicle_id)
+        if duplicate is not None:
+            return duplicate
+        current = self._get(vehicle_id)
+        self._check_expected_revision(current, expected_revision)
+        if current.acceptance_status != AcceptanceStatus.ACCEPTED:
+            raise OperationsValidationError("Mark this vehicle accepted before entering its accepted date")
+        from ...domain.calendar_planning import valid_day, ZONE
+        try:
+            accepted_date = valid_day(accepted_date, "Accepted on", optional=False)
+        except ValueError as exc:
+            raise OperationsValidationError(str(exc)) from None
+        if accepted_date > self._clock().astimezone(ZONE).date().isoformat():
+            raise OperationsValidationError("Accepted on cannot be in the future")
+        if acceptance_source not in {"manual", "qbo"}:
+            raise OperationsValidationError("Choose Manual date or QuickBooks")
+        if acceptance_source == "qbo" and (current.qbo_estimate_status.casefold() not in {"accepted", "closed"}
+                or current.qbo_estimate_accepted_at[:10] != accepted_date):
+            raise OperationsValidationError("This date does not match the linked Estimate's Accepted Date")
+        stored_date = _utc_iso(datetime.combine(date.fromisoformat(accepted_date), time.min, tzinfo=ZONE))
+        if current.accepted_at == stored_date and current.acceptance_source == acceptance_source:
+            return OperationsMutationResult(record=current, event=None, unchanged=True)
+        now = _utc_iso(self._clock())
+        updated = replace(current, accepted_at=stored_date, acceptance_source=acceptance_source,
+                          acceptance_changed_at=now)
+        return self._commit(current=current, updated=updated, request_id=request_id, actor=actor,
+            source=self._source(source_client), workstream=OperationsWorkstream.ACCEPTANCE,
+            event_type=OperationsEventType.ACCEPTANCE_CHANGED,
+            previous_value=current.accepted_at, new_value=accepted_date,
+            reason="Accepted date corrected using " + acceptance_source,
+            source_app_version="", occurred_at=now, effective_date=accepted_date)
+
     def observe_qbo_estimate(
         self,
         *,
@@ -789,9 +829,15 @@ class OperationsService:
             and current.acceptance_status == AcceptanceStatus.NOT_ACCEPTED
         ):
             updated.acceptance_status = AcceptanceStatus.ACCEPTED
-            updated.accepted_at = updated.qbo_estimate_accepted_at or now
+            updated.accepted_at = updated.qbo_estimate_accepted_at
             updated.acceptance_source = AcceptanceSource.QBO.value
             updated.acceptance_changed_at = now
+
+        if (current.acceptance_source == AcceptanceSource.QBO.value
+                and updated.qbo_estimate_status.casefold() in {"accepted", "closed"}):
+            updated.accepted_at = updated.qbo_estimate_accepted_at
+            if updated.accepted_at != current.accepted_at:
+                updated.acceptance_changed_at = now
 
         current_value = {
             "estimate_id": updated.qbo_estimate_id,
@@ -833,10 +879,13 @@ class OperationsService:
         expected_revision: int | None = None,
         source_app_version: str = "",
         performed_by_name: str = "",
+        reason: str = "",
     ) -> OperationsMutationResult:
         """Patch any supplied human-directed schedule dates for one vehicle."""
 
         self._require(actor, Capability.OPERATIONS_SCHEDULE_UPDATE)
+        if not isinstance(reason, str) or len(reason.strip()) > 1000:
+            raise OperationsValidationError("Use a schedule explanation of at most 1000 characters")
         request_id = self._required(request_id, "request_id")
         vehicle_id = self._required(vehicle_id, "vehicle_id")
         duplicate = self._duplicate_result(request_id, vehicle_id)
@@ -896,7 +945,7 @@ class OperationsService:
                 separators=(",", ":"),
                 sort_keys=True,
             ),
-            reason="",
+            reason=reason.strip(),
             source_app_version=source_app_version,
             occurred_at=now,
             performed_by_name=performed_by_name,

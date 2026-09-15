@@ -1,4 +1,5 @@
 .venv/
+venv/
 .claude/
 __pycache__/
 *.py[cod]
@@ -21,6 +22,17 @@ src/dtm_buildsheet/resources/presets/*.json
 
 dist/
 build/
+output/
+tmp/
+
+# Local media/databases: ignore new files without removing tracked assets or disk files.
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.sqlite3
+*.db
+
 *.egg-info/
 .coverage
 htmlcov/

@@ -1,0 +1,82 @@
+{
+  "status": "review-only-not-deployable",
+  "azureResourcesCreated": false,
+  "trialActivated": false,
+  "resourceReview": "docs/AZURE_RESOURCE_REVIEW.md",
+  "resourceInputs": "packaging/hosted/resources.review.json",
+  "costWorksheet": "packaging/hosted/cost-review.json",
+  "confirmedPilotUsersAndAlertRecipients": [
+    "seth@dtmfleet.com"
+  ],
+  "productionServing": {
+    "server": "waitress",
+    "factory": "dtm_buildsheet.app.hosted.bootstrap:create_app",
+    "port": 8080,
+    "threads": 4,
+    "maxRequestBodyBytes": 65536,
+    "maxRequestHeaderBytes": 32768,
+    "channelTimeoutSeconds": 30,
+    "connectionLimit": 32,
+    "trustClientForwardedHeaders": false,
+    "publicIngressEnabled": false
+  },
+  "localImage": {
+    "dockerfile": "packaging/hosted/Dockerfile",
+    "platform": "linux/amd64",
+    "networkDisabledProofPassed": true,
+    "providerIntegrationEnabled": false,
+    "fullBuilderUiIncluded": false
+  },
+  "operationsReview": {
+    "cleanupDefault": "dry-run; expired sessions/artifacts only; exact ETags",
+    "cleanupProposedIntervalMinutes": 15,
+    "jobArchives": "retain for pilot lifetime; no retry-key eviction",
+    "backupProposedRetentionDays": 14,
+    "backupMode": "quiesced logical job snapshot; private encrypted destination; no sessions/tokens",
+    "restoreMode": "empty partition; interrupted active jobs; durable recovery fence until provider reconciliation",
+    "consoleLogs": "fixed schema; no credentials, identities, paths, headers, payloads or exception text",
+    "logProposedRetentionDays": 30,
+    "schedulesAndAlertsCreated": false
+  },
+  "environment": {
+    "DTM_RUNTIME_MODE": "hosted",
+    "DTM_CLOUD": "0",
+    "DTM_HOSTED_ORIGIN": "REQUIRED_EXACT_HTTPS_ORIGIN",
+    "DTM_HOSTED_TENANT_ID": "REQUIRED_COMPANY_TENANT_UUID",
+    "DTM_HOSTED_CLIENT_ID": "REQUIRED_ASSIGNED_STAFF_APP_UUID",
+    "DTM_METADATA_ACCOUNT": "REQUIRED_PILOT_ACCOUNT",
+    "DTM_METADATA_TABLE": "REQUIRED_PILOT_TABLE",
+    "DTM_METADATA_IDENTITY_CLIENT_ID": "REQUIRED_DEDICATED_MANAGED_IDENTITY_UUID",
+    "DTM_ARTIFACT_ROOT": "/tmp/dtm-artifacts"
+  },
+  "metadata": {
+    "service": "Azure Table Storage",
+    "auth": "dedicated managed identity, Storage Table Data Contributor at table scope",
+    "writes": "create-only or exact ETag; never upsert",
+    "secretsAllowed": false
+  },
+  "replicaLimits": {
+    "min": 0,
+    "max": 1
+  },
+  "providerWorkersEnabled": false,
+  "scheduledPollingEnabled": false,
+  "requiredBeforeStage3": [
+    "Retain Stage 1 ARM64/AMD64 compatibility evidence; obtain actual Azure sizing only in the isolated pilot",
+    "Review concrete resource names, region, tenant, staff assignments and cost",
+    "Review metadata retention/cleanup and backup protection/operator ownership in HOSTED_OPERATIONS.md",
+    "Review separate hosted image and signed registry publication; never expose Stage 1 headless server",
+    "Review Entra secret and private token-store configuration and rotation owner",
+    "Review log retention/ingestion budget, alert thresholds and notification recipient"
+  ],
+  "requiredOnIsolatedDeploymentBeforeData": [
+    "Verify platform state/nonce enforcement, signed ID-token injection and unsigned header stripping",
+    "Verify unauthorized users, expired/revoked sessions and unassigned roles fail closed",
+    "Verify no direct ingress path bypasses platform authentication",
+    "Verify actual Table ETags, restart persistence and managed-identity table scope",
+    "Verify managed-identity cleanup/restore permissions, protected backup storage and recovery fence",
+    "Verify configured Host health probes and aggregate alerts without exposing sensitive logs"
+  ],
+  "deploymentTemplates": "packaging/hosted/azure/",
+  "offlineTemplateVerifier": "tools/pilot/verify_azure_templates.py"
+}
