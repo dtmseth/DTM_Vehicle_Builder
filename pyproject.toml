@@ -19,6 +19,10 @@ dependencies = [
   "msal-extensions>=1.1,<2",
   "cryptography>=50,<51",
   "requests>=2.31,<3",
+  # Windows does not ship the IANA zoneinfo database used by the calendar.
+  # Keep this a runtime dependency so frozen Windows builds have a portable
+  # source for ZoneInfo("America/Chicago").
+  "tzdata>=2025.2",
 ]
 
 [project.optional-dependencies]

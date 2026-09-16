@@ -69,6 +69,11 @@ VSVersionInfo(
 VERSION_FILE = _windows_version_file(APP_VERSION)
 
 datas = collect_data_files("dtm_buildsheet")
+# `zoneinfo` imports ``tzdata.zoneinfo`` dynamically when the OS does not
+# provide an IANA timezone database (as on Windows). PyInstaller cannot infer
+# that import, and the database itself is package data, so bundle both
+# explicitly. This is required for the calendar's America/Chicago timezone.
+datas += collect_data_files("tzdata")
 
 # Explicitly bundle resources so they're always present regardless of
 # how collect_data_files resolves the editable install in CI.
@@ -80,6 +85,7 @@ if _ui.exists():
     datas += [( str(_ui), "dtm_buildsheet/ui" )]
 
 hiddenimports = collect_submodules("dtm_buildsheet")
+hiddenimports += ["tzdata", "tzdata.zoneinfo"]
 
 # Windows PDF export uses PowerPoint COM via comtypes (runtime import — not
 # detected by static analysis). Must be explicit or the frozen app crashes.
