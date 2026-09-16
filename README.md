@@ -94,3 +94,10 @@ If the app fails to launch with "Port 7655 is already in use", a previous instan
 ```bash
 lsof -ti :7655 | xargs kill
 ```
+
+## Documentation
+
+- [Operations](docs/OPERATIONS.md): system authority, SharePoint schemas, and role capabilities.
+- [Hosted architecture](docs/HOSTED_ARCHITECTURE.md): security boundary and container operations.
+- [Calendar](docs/CALENDAR.md): team scheduling and reviewed publication.
+- [Roadmap](docs/ROADMAP.md): vision and active critical-path backlog.

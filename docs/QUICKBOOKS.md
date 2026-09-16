@@ -12,7 +12,7 @@ catalog preview is a separate, read-only owner workflow — not a switch that en
 
 > **Why QB matters strategically:** the QBO Item catalog is the *foundation* of the parts
 > system, not a side integration. `parts_db.json` now references parts at SKU granularity
-> (real vendor part numbers + QB pricing). See [ROADMAP.md](ROADMAP.md) §"QB-as-foundation".
+> (real vendor part numbers + QB pricing). See [ROADMAP.md](ROADMAP.md#current-direction-and-critical-path).
 
 ---
 
@@ -111,10 +111,11 @@ merge SKU variants, reassign the holding bucket) via the SKU grid.
 ### Centralization Phase 3A — planned hosted migration, not in production
 
 **Current direction, 2026-09-10:** the owner wants the full hosted HTML Builder behind M365 with
-one company connection replacing individual Builder QBO authorization. The execution sequence is
-[AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md): local runtime proof, request-scoped authorization,
-isolated trial, then a reviewed credential model and QBO sandbox integration before any production
-cutover. [POST_MEETING_FEATURE_PLAN.md](POST_MEETING_FEATURE_PLAN.md) owns the Estimate feature rules.
+one company connection replacing individual Builder QBO authorization. The sequence remains
+local runtime proof, request-scoped authorization, isolated trial, then a reviewed credential
+model and QBO sandbox integration before any production cutover. See
+[HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) for the active boundary and deployment gates;
+[CURRENT_STATE.md](CURRENT_STATE.md) tracks the remaining Estimate feature work.
 
 The August 20 deferral remains historical context; planning has resumed, but production still has
 no centralized Accounting API backend or server-side company token store. The existing per-user
@@ -651,9 +652,9 @@ restricted Projects API scope.
 
 The currently deployed stateless Netlify token broker is not an Accounting API backend and cannot
 solve the multi-workstation refresh race by itself. No centralized Accounting API adapter is
-included in the production branch. [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md) now owns the migration
-sequence, role-boundary work, failure tests and production cutover gates. The older
-`NEXT_FEATURE_PLAN.md` Phase 3A is historical design context. Until the replacement is implemented
+included in the production branch. [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) defines
+the active hosted boundary and deployment gates; the migration direction is tracked in
+[ROADMAP.md](ROADMAP.md#current-direction-and-critical-path). Until the replacement is implemented
 and explicitly cut over, the existing per-user OS-keychain connection remains the live behavior.
 
 The next QuickBooks architecture improvement is the reviewed catalog-change queue described above.
@@ -743,3 +744,21 @@ is roughly **"More than once a day"** (30-min background poll when connected).
 > That was replaced before implementation with the OS-native credential store via `msal-extensions`.
 > Per-user token values live ONLY in the keychain; the shared Intuit app secret lives only in the
 > protected Netlify environment; `quickbooks_config.json` is non-secret metadata.
+
+### Estimate sending evidence (September 15, local implementation)
+
+Projects and Operations share **No Estimate Connected / Estimate Created / Estimate Sent /
+Accepted** labels, with partial counts when vehicle milestones differ. `Pending`, a link, or
+creation/modification timestamps never prove sending. `EmailStatus=EmailSent` records a sent
+milestone; only a valid `DeliveryInfo.DeliveryTime` supplies its date. Unknown history is displayed
+explicitly. Sending survives sparse reads for the same Estimate; replacement/unlink clears it.
+Manual acceptance remains independent. The existing five-minute poll and connect/create/update
+paths share this evidence. No emails are sent by this feature.
+
+Operations schema v5 adds `QboEstimateSentStatus` and `QboEstimateSentAtUtc`. Upgrade existing
+lists with `tools/provision_operations_lists.py --upgrade-estimate-send-schema --confirm
+"ADD ESTIMATE SEND EVIDENCE"` before running the updated application. The upgrade only adds
+these two fields and rejects unrelated schema mismatches.
+
+Field reference: [Intuit Estimate schema](https://static.developer.intuit.com/sdkdocs/qbv3doc/ipp-v3-java-devkit-javadoc/com/intuit/ipp/data/Estimate.html)
+and [EmailStatus values](https://static.developer.intuit.com/sdkdocs/qbv3doc/ipp-v3-java-devkit-javadoc/com/intuit/ipp/data/EmailStatusEnum.html).

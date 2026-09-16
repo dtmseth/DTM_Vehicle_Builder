@@ -43,7 +43,7 @@ Last updated: 2026-09-03 (production v3.5.0)
 26. [Canonical Parts and Picker](#canonical-parts-and-picker)
 27. [SharePoint Collaboration and Export Split](#sharepoint-collaboration-and-export-split)
 28. [QuickBooks Project and Estimate Workflow](#quickbooks-project-and-estimate-workflow)
-29. [Vehicle Finalization](#vehicle-finalization)
+29. [Vehicle Design Finalization](#vehicle-design-finalization)
 30. [Canonical Supply Model](#canonical-supply-model)
 31. [v3.4.0 Build and Output Behavior](#v340-build-and-output-behavior)
 

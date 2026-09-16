@@ -318,5 +318,5 @@ calendar. Accepted service vehicles require an explicit labor estimate per vehic
 manual deadlines. Service has no implicit strip/finishing time or design-finalization warning. Selected
 service requirements add stripping/finishing when needed; off-site travel labor occupies team hours.
 Service details and type participate in the scheduling fingerprint and background conflict checks.
-The diagram-free worksheet and optional previous-build reference are documented in
-`POST_MEETING_FEATURE_PLAN.md`.
+The diagram-free worksheet and optional previous-build reference are summarized in
+[CURRENT_STATE.md](CURRENT_STATE.md).

@@ -28,6 +28,10 @@ ColumnKind = Literal["text", "multiline", "choice", "date", "datetime", "number"
 
 OPERATIONS_LIST_NAME = "DTMVehicleOperations"
 EVENTS_LIST_NAME = "DTMVehicleEvents"
+ESTIMATE_SEND_SCHEMA_CONFIRMATION = "ADD ESTIMATE SEND EVIDENCE"
+ESTIMATE_SEND_SCHEMA_COLUMN_NAMES = {
+    OPERATIONS_LIST_NAME: ("QboEstimateSentStatus", "QboEstimateSentAtUtc"),
+}
 REQUESTS_LIST_NAME = "DTMOperationsRequests"
 OPERATIONS_LIST_READ_SCOPES = ("Sites.Read.All",)
 OPERATIONS_LIST_INSPECTION_SCOPES = OPERATIONS_LIST_READ_SCOPES
@@ -237,6 +241,8 @@ VEHICLE_OPERATIONS_LIST = SharePointListSpec(
         _col("QboEstimateId"),
         _col("QboEstimateNumber"),
         _col("QboEstimateStatus"),
+        _col("QboEstimateSentStatus"),
+        _col("QboEstimateSentAtUtc", "datetime"),
         _col("QboEstimateAcceptedAtUtc", "datetime"),
         _col("QboEstimateLastModifiedAtUtc", "datetime"),
         _col("QboCheckedAtUtc", "datetime"),

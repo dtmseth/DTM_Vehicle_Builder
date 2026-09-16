@@ -9,6 +9,8 @@ import requests
 
 from .config import GRAPH_ENDPOINT
 from .operations_list_schema import (
+    ESTIMATE_SEND_SCHEMA_COLUMN_NAMES,
+    ESTIMATE_SEND_SCHEMA_CONFIRMATION,
     DEADLINE_OVERRIDE_SCHEMA_COLUMN_NAMES,
     DEADLINE_OVERRIDE_SCHEMA_CONFIRMATION,
     EVENTS_LIST_NAME,
@@ -204,6 +206,14 @@ class OperationsListProvisioner:
                 "Post-create schema validation failed; operations clients remain disabled"
             )
         return after
+
+    def apply_estimate_send_schema_upgrade(self, *, confirmation: str) -> ProvisioningReport:
+        return self._apply_additive_schema_upgrade(
+            confirmation=confirmation,
+            required_confirmation=ESTIMATE_SEND_SCHEMA_CONFIRMATION,
+            allowed_columns=ESTIMATE_SEND_SCHEMA_COLUMN_NAMES,
+            upgrade_label="Estimate send evidence",
+        )
 
     def apply_recovery_schema_upgrade(
         self,

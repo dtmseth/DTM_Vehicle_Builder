@@ -171,9 +171,10 @@ production, delivery, acceptance, or QBO-observation fields, so a Builder refres
 those independently owned values.
 Status values, automatic milestone dates, availability, the derived 60-day Must Deliver On date,
 its separate optional manual override, patch-based scheduling,
+QBO sending evidence is stored independently as `qbo_estimate_sent_status` and optional
+`qbo_estimate_sent_at`; replacing the Estimate link resets it.
 QBO observation, roles, and SharePoint field names are defined in
-[OPERATIONS_SYSTEM.md](OPERATIONS_SYSTEM.md), [OPERATIONS_SCHEMA.md](OPERATIONS_SCHEMA.md), and
-[OPERATIONS_ROLES.md](OPERATIONS_ROLES.md).
+[OPERATIONS.md](OPERATIONS.md).
 
 The SharePoint adapter uses each event as a short-lived commit journal because Graph cannot make a
 cross-list transaction. A pending event stores the complete intended `VehicleOperations` snapshot;

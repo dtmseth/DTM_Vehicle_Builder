@@ -5,8 +5,8 @@ historical-photo copy, Company per-vehicle PDF publication, and finalized Shop p
 are active after owner-approved live verification.
 
 This document owns the product contract for reusable build-reference photos, per-vehicle Shop
-folders, generated reference pages, and the related Project Overview/build-card cleanup. It refines
-`NEXT_FEATURE_PLAN.md` Phase 3C/3D. The approved Company/Shop trees and verified historical-photo
+folders, generated reference pages, and the related Project Overview/build-card cleanup.
+The approved Company/Shop trees and verified historical-photo
 copies are live; the legacy source remains untouched and the publication cutover is active behind
 its explicit configuration gates.
 
@@ -282,8 +282,8 @@ all completed photos.
 
 ## Migration and rollout
 
-The reviewed live source mapping and per-folder sparse translations are maintained in
-[`BUILD_PHOTOS_MIGRATION_PLAN.md`](BUILD_PHOTOS_MIGRATION_PLAN.md).
+The historical migration plan is archived. Preserve the approved live source mapping and
+per-folder sparse translations when maintaining the active publication workflow.
 
 1. Enforce uniqueness for new projects and report existing agency/year duplicates.
 2. Ship backward-compatible reference persistence, sparse past-project support, completion state,

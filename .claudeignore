@@ -12,3 +12,6 @@ venv/
 *.mp4
 *.sqlite3
 *.db
+docs/reference/
+docs/audit/
+docs/archive/

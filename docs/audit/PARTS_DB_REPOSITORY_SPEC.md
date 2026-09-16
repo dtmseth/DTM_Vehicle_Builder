@@ -3,9 +3,10 @@
 > **Status**: DESIGN — no production code changes in this session.
 > **Executes**: in the Step 4 extraction session, which per §8.1 ordering runs **after the
 > picker + placement cluster (Step 3) ships** and on top of the Step-1 pins.
-> **Companion docs**: [AUDIT_REFACTOR_ROADMAP.md](../AUDIT_REFACTOR_ROADMAP.md) §4/§7/§8.1,
+> **Companion docs**: [ROADMAP.md](../ROADMAP.md#architectural-backlog-priority-order),
 > [PARTS_DB_AND_PICKER.md](../PARTS_DB_AND_PICKER.md) (schema + three-axis model),
-> [DATA_MODELS.md](../DATA_MODELS.md), ROADMAP.md decision log 2026-07-06 (workbook demotion).
+> [DATA_MODELS.md](../DATA_MODELS.md), [past decisions](../archive/ROADMAP_HISTORY.md#9-decision-log)
+> (2026-07-06 workbook demotion).
 
 **The one-sentence goal**: one repository module below `app/` owns all `parts_db.json`
 read/write/query, consumable by `planning/` and `app/services` without upward imports,
@@ -51,7 +52,7 @@ HTTP. `qb_sync_service` keeps a separate QB-items file cache (not parts_db).
 | `app/services/lighthead_resolver.py` | **pure** — `resolve_tracer(doc, …)` takes the doc; routes pass `svc.raw_doc()` | Target pattern |
 | `config/schemas.py::_validate_parts_db` | validation registered in the config-store pipeline | Schema knowledge living in `config/` |
 | `config/migrations.py` | `"parts_db.json": []` (no migrations yet) | Same |
-| `tools/` (curate, qb_import_all, qb_apply_links, qb_inventory_import*, triage_products, seed_part_type_locations, populate_colors, phase5a, migrate_warning_lights, migrate_workbook_to_parts_db) | read the dev config JSON directly (`resources/config/parts_db.json` — the dev-mode config dir per GOTCHAS #6); write via `save_config_file` under `--write` / `--push-to-cloud` | Library-mode consumers that already exist — proof the seam is needed |
+| `tools/` (curate, qb_import_all, qb_apply_links, qb_inventory_import*, triage_products, seed_part_type_locations, populate_colors, phase5a, migrate_warning_lights, migrate_workbook_to_parts_db) | read the dev config JSON directly (`resources/config/parts_db.json` — the dev-mode config dir per GOTCHAS #3); write via `save_config_file` under `--write` / `--push-to-cloud` | Library-mode consumers that already exist — proof the seam is needed |
 | UI JS (`sku_grid.js`, `part_picker.js`, `manifest_editor.js`, `part_manager.js`) | HTTP only (`/api/parts-db/*`) | Correct boundary; pinned by 1b/1c |
 | Tests | `test_parts_db_service/dual_read/edit_routes/routes/schema_validation/compatibility_rules`, `test_qb_estimate_*`, `test_qb_sync_service` — all import the `app.services.parts_db_service` module path | Migrate per §2.2 test-migration discipline |
 
@@ -97,7 +98,7 @@ HTTP. `qb_sync_service` keeps a separate QB-items file cache (not parts_db).
    present but `accessory_categories` — consumed by `_resolve_accessories` — is not). Benign
    today because real docs carry it; the repository's empty-doc factory should include the
    full key set.
-4. **F-4 · Doc drift — resolved 2026-07-15**: GOTCHAS #21 used to claim "`parts_db.json` is
+4. **F-4 · Doc drift — resolved 2026-07-15**: historical GOTCHAS entry #21 used to claim "`parts_db.json` is
    populated but not wired into production reads" — false since the planner fallback, picker,
    estimates, and SKU grid shipped. It now records the current mixed-source reality: parts_db is
    live for several consumers, while legacy config files still feed the generator/template stack.
@@ -371,7 +372,7 @@ planner-signature change, not a mechanical move) · `planning.planner -> config_
 seam register; no silent local-write default inside the app — the SP-revert footgun rules it
 out; ConfigBundle move deferred to Phase E — see §4.)*
 
-### Answers (owner, 2026-07-07 — recorded in ROADMAP.md decision log)
+### Answers (owner, 2026-07-07 — preserved in the archived roadmap decision log)
 
 - **Q1 — mirror QuickBooks.** A kit bills exactly as QB bills it: one QB item → one estimate
   line; QB bundle/group of components → component lines. The app invents no kit billing
@@ -406,8 +407,8 @@ allocation says the extraction itself is Sonnet-grade mechanical work against th
    is short — B and C are separately schedulable.
 4. Update after Stage A: `pyproject.toml` layers + baseline (A1/A2), `docs/ARCHITECTURE.md`
    (new package in the layer diagram), `docs/PARTS_DB_AND_PICKER.md` §1 (service pointer →
-   `parts_db/repository.py`), GOTCHAS #21 (F-4 drift), AUDIT_REFACTOR_ROADMAP §8.1 Step 4
-   (mark shipped + absorb findings), ROADMAP decision log if any behavior allowance was used.
+   `parts_db/repository.py`), GOTCHAS #7 (consumer migration), and ROADMAP active backlog
+   (mark shipped + absorb findings); archive any new decision history.
 5. Stage B/C: schedule as interstitial work; C2 blocked on §5 Q3; C1's contract re-record is
    its own flagged commit; C4 carries a decision-log entry.
 6. Leave `raw_doc()` in place until the last Stage C consumer is migrated — it is the

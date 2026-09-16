@@ -1,6 +1,6 @@
 # Audit Findings Ledger
 
-Format per [AUDIT_REFACTOR_ROADMAP.md](../AUDIT_REFACTOR_ROADMAP.md) §1.2:
+Entry format:
 `FINDING-nnn: location · category [duplication|legacy|fragile|security|island|doc-drift|workbook-shape] · severity · disposition`.
 Dispositions: **SONNET-FIXABLE** (mechanical, land under pins) vs **NEEDS-DESIGN**
 (owner/architect call first). Verification: **CONFIRMED** (reproduced live) vs
@@ -475,8 +475,8 @@ Zero production-code changes.
   behavior improvement (§3.2 opt-in diff, own commit + ROADMAP decision-log
   entry), not bundled into the extraction's mechanical move.
 
-### FINDING-019: GOTCHAS.md #21 claims parts_db isn't wired into production reads — false, doc-drift (spec F-4)
-- **Location:** `docs/GOTCHAS.md` #21 ("`parts_db.json` is populated but not
+### FINDING-019: historical GOTCHAS.md entry #21 claims parts_db isn't wired into production reads — false, doc-drift (spec F-4)
+- **Location:** historical `docs/GOTCHAS.md` entry #21 ("`parts_db.json` is populated but not
   wired into production reads (Phase 3)... generator, planner, manifest
   editor, rule engine, and excel reader still drive off `workbook_rules.json`
   / `parts_library.json` / `vehicle_layouts.json` / `part_catalog.json`")
@@ -487,7 +487,7 @@ Zero production-code changes.
   SKU grid, and QB estimate flows all read parts_db in production today
   (PARTS_DB_AND_PICKER.md "SHIPPED" sections; Step 3 picker cluster shipped
   2026-07-01).
-- **Disposition:** doc fix, not code — correct GOTCHAS #21 when the Step 4
+- **Disposition:** doc fix, not code — correct historical GOTCHAS entry #21 when the Step 4
   parts-DB repository extraction lands (three-way reconciliation rule, roadmap
   §7); until then the entry stays as a known-stale marker rather than being
   silently deleted, since dispositioning docs outside a landing change risks

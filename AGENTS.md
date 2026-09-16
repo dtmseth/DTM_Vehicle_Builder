@@ -59,29 +59,23 @@ They supersede older testing instructions in plans, handoffs, and other reposito
 
 | Doc | When to read |
 |-----|-------------|
-| [docs/GOTCHAS.md](docs/GOTCHAS.md) | Before any edit — footguns by module |
-| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | **Start here** — live release, verification baseline, roadmap position, next work |
-| [docs/AZURE_PILOT_PLAN.md](docs/AZURE_PILOT_PLAN.md) | Next-session hosted Builder plan: local prototype → isolated Azure trial → mobile parity → reviewed cutover |
-| [docs/HOSTED_BOUNDARY.md](docs/HOSTED_BOUNDARY.md) | Stage 2 request/session/job/artifact contracts, route audit and disabled provider integration |
-| [docs/HOSTED_OPERATIONS.md](docs/HOSTED_OPERATIONS.md) | Separate hosted image, expiry cleanup, fenced recovery, safe logging and deployment review gates |
-| [docs/AZURE_RESOURCE_REVIEW.md](docs/AZURE_RESOURCE_REVIEW.md) | Sole-user pilot resource names, access, current retail cost worksheet and pending account/authorization gates |
-| [docs/HOSTING_COMPARISON.md](docs/HOSTING_COMPARISON.md) | Provider costs and trial assumptions; Azure preferred if affordable, OVHcloud fallback |
-| [docs/POST_MEETING_FEATURE_PLAN.md](docs/POST_MEETING_FEATURE_PLAN.md) | Accepted photos, Estimate statuses/linking/import, project types, notes and vehicle selection requirements |
+| [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) | Scan only the "Next Work" section if context is needed |
+| [docs/GOTCHAS.md](docs/GOTCHAS.md) | Only when debugging unexpected errors in specific modules |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Only when adding new system boundaries or services |
+| [docs/DATA_MODELS.md](docs/DATA_MODELS.md) | Only when modifying dataclasses or serialization |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | System authority, core SharePoint schemas, and role/capability matrix |
+| [docs/HOSTED_ARCHITECTURE.md](docs/HOSTED_ARCHITECTURE.md) | Hosted security boundary, container operations, cleanup, and recovery |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, test commands, CI, packaging |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime shape, design rules, central flow |
 | [docs/REPOSITORY_PRINCIPLES.md](docs/REPOSITORY_PRINCIPLES.md) | Engineering philosophy, do/don't |
-| [docs/DATA_MODELS.md](docs/DATA_MODELS.md) | Dataclasses, storage layout |
 | [docs/UI_STRUCTURE.md](docs/UI_STRUCTURE.md) | Tab layout, JS patterns, DOM singletons |
 | [docs/PRESETS.md](docs/PRESETS.md) | Preset schema, cloud mirror |
 | [docs/CONFIG_SCHEMA.md](docs/CONFIG_SCHEMA.md) | Config file schemas |
 | [docs/PROJECT_WORKFLOW.md](docs/PROJECT_WORKFLOW.md) | Project → draft → output data flow |
-| [docs/POWER_APP_PHONE_CLIENT.md](docs/POWER_APP_PHONE_CLIENT.md) | Phone UI and Power Automate request-processor contract |
 | [docs/FEATURE_INVENTORY.md](docs/FEATURE_INVENTORY.md) | Every feature and non-obvious rule |
 | [docs/PACKAGING.md](docs/PACKAGING.md) | PyInstaller builds |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phases, critical path, QB-as-foundation framing |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Vision, pillars, and active critical-path backlog |
 | [docs/PARTS_DB_AND_PICKER.md](docs/PARTS_DB_AND_PICKER.md) | parts_db schema, Part Picker, accessories, tracers/bars, pending-QB, data backlog |
 | [docs/EXTERNAL_CONNECTION_SECURITY.md](docs/EXTERNAL_CONNECTION_SECURITY.md) | Security standards for API integrations |
-| [docs/AUDIT_REFACTOR_ROADMAP.md](docs/AUDIT_REFACTOR_ROADMAP.md) | Audit/refactor meta-plan, working method, model allocation |
 | [docs/audit/LEDGER.md](docs/audit/LEDGER.md) | Findings ledger (FINDING-nnn) — check before treating a flaw as new |
 | [docs/audit/PICKER_REDESIGN.md](docs/audit/PICKER_REDESIGN.md) | Part Picker redesign spec (browse tree, options-in-box, editor) |
 

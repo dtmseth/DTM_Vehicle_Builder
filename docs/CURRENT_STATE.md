@@ -8,13 +8,26 @@ This is the short operational handoff for the repository. It replaces dated sess
 release checklists. Long-lived design and behavior remain documented in `ROADMAP.md`,
 `FEATURE_INVENTORY.md`, `PARTS_DB_AND_PICKER.md`, and `QUICKBOOKS.md`.
 
+## September 15 desktop release candidate — v3.8.0
+
+Calendar scheduling, queued local edits with background publication, project types and service
+worksheets, optional previous-build references, reference-photo improvements, truthful Estimate
+milestones, and the project Options markup fix are ready for release. The two v5 Estimate-send
+columns have been added to the shared Operations list. Local release verification: **2,596 passed,
+1 skipped; 29/29 browser flows passed** (26 initially, then the three stale expectations corrected
+and rerun). Existing contract snapshots were reviewed and refreshed for the already-committed
+QuickBooks prices, inactive flag, sync timestamps and cable-description update; no catalog or
+rendering golden files were changed. Schema-document and photo-discovery assertions now match the
+current documented behavior. GitHub checks and publication remain pending.
+
 ## Current local work — Azure Stages 1–2 (unreleased)
 
 The cloud-off headless runtime and synthetic UI/export proof are implemented. Native macOS
 verification produced byte-verified PPTX/PDF downloads for typical (8 pages) and photo-heavy
 (20 pages) builds, with no external requests. Focused gate: **517 passed, 1 skipped, 4 selected
-browser flows passed**. Colima/Docker are installed in a dedicated local profile. See
-[AZURE_PILOT_RESULTS.md](AZURE_PILOT_RESULTS.md) for commands, measurements and remaining gates.
+browser flows passed**. Colima/Docker are installed in a dedicated local profile.
+The historical proof log is archived; current hosted limits are in
+[HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md).
 Stage 1 now has an ARM64 Linux run: the staged 396,900,402-byte image
 passed UI edit/save, restart persistence, typical/dense exports, cgroup limits, no-OOM, fonts,
 full 28-page Poppler review and blocked external connections. The subsequent AMD64 image
@@ -25,7 +38,7 @@ The owner then explicitly advanced Stage 2 locally: the new
 request/session/job/artifact boundary uses signed tenant identities, existing capabilities,
 exact revisions and owner-bound downloads. It includes an Azure Table adapter, synthetic durable
 tests, a loopback Waitress proof and review-only auth configuration. See
-[HOSTED_BOUNDARY.md](HOSTED_BOUNDARY.md). Real provider adapters/full hosted UI remain closed;
+[HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md). Real provider adapters/full hosted UI remain closed;
 latest focused gate: **663 passed, 1 skipped, 4/4 browser flows**, including 53 boundary tests.
 The AMD64 run exposed and fixed a Projects refresh race that could dismiss an opened draft;
 a delayed-refresh browser regression covers it. No trial, deployment or live-data
@@ -33,13 +46,13 @@ connection occurred. Existing uncommitted feature work and user `output/`/`tmp/`
 
 ## Next session — deployment files ready; owner handles activation
 
-Start with [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md), the results log and hosted boundary doc.
+Start with [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) and the deployment files below.
 Stage 1's local Linux gate is complete. The separate hosted AMD64 image (103,678,174 bytes),
 bounded expiry cleanup, fenced job recovery and safe telemetry are implemented and verified
 locally. The real factory passed startup/negative HTTP/restart checks with networking disabled;
-it contains no full Builder UI or provider integration. [HOSTED_OPERATIONS.md](HOSTED_OPERATIONS.md)
-records procedures, proposed retention and actual limits. The concrete
-[AZURE_RESOURCE_REVIEW.md](AZURE_RESOURCE_REVIEW.md) now records Central US candidate resources,
+it contains no full Builder UI or provider integration. [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md)
+records procedures, proposed retention and actual limits. The archived resource review
+recorded Central US candidate resources,
 sole pilot user/alert recipient **seth@dtmfleet.com**, proposed operator duties and a $15 alert
 budget. At 40 active boundary hours/month, retail assumptions total **$13.15 before grants** or
 **$10.95 with full Container Apps compute/request grants**, excluding trial credits. This is not
@@ -53,13 +66,13 @@ The Stage 2 proof is a security/storage boundary, not full hosted feature parity
 integration and central Calendar/QBO polling remain disabled for the later isolated stage.
 Preserve all tracked/untracked Calendar and phone-foundation work on `main`,
 and leave user-owned `output/`
-and `tmp/` untouched. The plan includes a copyable next-session prompt.
+and `tmp/` untouched.
 
 Azure Container Apps is preferred if affordable; OVHcloud remains the cost fallback. The owner
 confirmed the $200 trial offer and no current subscription. Account setup is owner-handled;
 do not re-verify the offer. No subscription purchase, hosted deployment, production
-cutover or token migration has occurred. [HOSTING_COMPARISON.md](HOSTING_COMPARISON.md) records the
-illustrative $25–35/month target, higher-cost scenarios, provider prices and unverified assumptions.
+cutover or token migration has occurred. The archived hosting comparison recorded an
+illustrative $25–35/month target with higher-cost scenarios and unverified price assumptions.
 The target is not an approved spending cap or a measured forecast.
 
 No mobile UI design or interactive mobile prototype has been created yet. Phone workflow
@@ -71,14 +84,14 @@ complete hosted implementation. No Canvas app exists; the unfinished phone proce
 
 ## Accepted post-meeting feature backlog
 
-[POST_MEETING_FEATURE_PLAN.md](POST_MEETING_FEATURE_PLAN.md) owns the coordinated requirements for
+The accepted backlog covers
 photo folders/access/HEIC/uploads, truthful **No Estimate Connected / Estimate Created / Estimate
 Sent / Accepted** states, Estimate discovery/import, project types, notes and standardized vehicle
 selection. Preserve these requirements alongside Calendar; use the hosted seams as new work lands.
-The feature plan also records the read-only Edina/photo audit. The September 14 Company per-unit
-reference-folder batch is now implemented locally, separately from Azure; see
-[PHOTO_FOLDER_IMPLEMENTATION.md](PHOTO_FOLDER_IMPLEMENTATION.md) for its backfill evidence and
-remaining photo scope. Other feature batches remain planned and unshipped; the local runtime proof
+The read-only Edina/photo audit is archived. The September 14 Company per-unit reference-folder
+batch is implemented locally, separately from Azure. The active folder/photo contract is in
+[BUILD_REFERENCE_PHOTOS.md](BUILD_REFERENCE_PHOTOS.md). Other feature batches remain planned and
+unshipped; the local runtime proof
 above does not implement that backlog.
 
 ## Current desktop work — Calendar (unreleased)
@@ -177,7 +190,7 @@ reference IDs only; it opens a read-only parts/locations/notes view plus the pri
 No source parts, Estimate links, statuses or folder IDs are copied into service work. Further historical
 inventory/version tracking is deferred. Final changed gate: **914 passed, 1 skipped; 10/10 browser
 flows**, with a visually reviewed service PDF. The release gate remains blocked by the existing parts
-catalog contract mismatch. See `POST_MEETING_FEATURE_PLAN.md` for details and verification.
+catalog contract mismatch.
 
 ## What is live
 
@@ -618,7 +631,8 @@ catalog contract mismatch. See `POST_MEETING_FEATURE_PLAN.md` for details and ve
   `DTM Process Operations Request` (`b882a0d9-0ad0-4d90-ac7a-b3b459954a51`) is assembled and saved
   Off. Flow checker reports zero errors and only the expected off-state warning. It remains pre-pilot
   pending terminal connector-failure handling, recovery confirmation, and the controlled validation
-  matrix documented in `POWER_APP_PHONE_CLIENT.md`. No Power App has been created; start that work
+  matrix before enabling it. The shared authority/schema contract is in [OPERATIONS.md](OPERATIONS.md).
+  No Power App has been created; start that work
   in a fresh session after the processor pilot gate.
 - Cloud-off verification for this working tree passes **2,396 passed, 1 skipped**; the one skipped
   export is platform-dependent. The updater test that writes a fake installer to the user's

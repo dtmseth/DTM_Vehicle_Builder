@@ -11,7 +11,7 @@ from enum import StrEnum
 from typing import Iterable
 
 
-OPERATIONS_SCHEMA_VERSION = 4
+OPERATIONS_SCHEMA_VERSION = 5
 QBO_OBSERVATION_STALE_HOURS = 24
 
 
@@ -247,6 +247,8 @@ class VehicleOperations:
     qbo_estimate_id: str = ""
     qbo_estimate_number: str = ""
     qbo_estimate_status: str = ""
+    qbo_estimate_sent_status: str = ""
+    qbo_estimate_sent_at: str = ""
     qbo_estimate_accepted_at: str = ""
     qbo_estimate_last_modified_at: str = ""
     qbo_checked_at: str = ""

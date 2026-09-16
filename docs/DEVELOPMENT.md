@@ -56,8 +56,7 @@ rule evaluation, planning, preview overrides, export services.
 ## Guardrail checks
 
 Import boundaries are enforced by [import-linter](https://import-linter.readthedocs.io/)
-(contracts live in `pyproject.toml` under `[tool.importlinter]` — see
-`docs/AUDIT_REFACTOR_ROADMAP.md` §4 / §8.1 Step 2):
+(contracts live in `pyproject.toml` under `[tool.importlinter]`):
 
 ```bash
 .venv/bin/lint-imports                        # import-boundary contracts

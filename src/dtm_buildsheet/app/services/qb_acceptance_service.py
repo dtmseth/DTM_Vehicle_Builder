@@ -10,6 +10,7 @@ import threading
 import uuid
 
 from ...domain.operations_models import ProjectState
+from ...domain.estimate_status import estimate_send_evidence, merge_send_evidence
 from ...domain.operations_policy import Capability, has_capability
 from ..adapters import wiring
 from .operations_access_service import describe_access_session, actor_from_access_session
@@ -47,7 +48,11 @@ def refresh_linked_acceptance(reader, writer, client, actor, *, now=None, still_
                 from ...domain.calendar_planning import valid_day
                 valid_day(accepted, 'QuickBooks Accepted Date', optional=False)
             modified = str((estimate.get('MetaData') or {}).get('LastUpdatedTime') or '')
-            changes = (status != record.qbo_estimate_status or accepted != record.qbo_estimate_accepted_at
+            sending = estimate_send_evidence(estimate)
+            sent_status, sent_at = merge_send_evidence(record, record.qbo_estimate_id,
+                sending['qbo_estimate_sent_status'], sending['qbo_estimate_sent_at'])
+            changes = (sent_status != record.qbo_estimate_sent_status or sent_at != record.qbo_estimate_sent_at
+                       or status != record.qbo_estimate_status or accepted != record.qbo_estimate_accepted_at
                        or modified != record.qbo_estimate_last_modified_at)
             try:
                 last = datetime.fromisoformat(record.qbo_checked_at.replace('Z', '+00:00'))
@@ -68,7 +73,7 @@ def refresh_linked_acceptance(reader, writer, client, actor, *, now=None, still_
                 qbo_estimate_id=record.qbo_estimate_id,
                 qbo_estimate_number=str(estimate.get('DocNumber') or record.qbo_estimate_number),
                 qbo_estimate_status=status, qbo_estimate_accepted_at=accepted,
-                qbo_estimate_last_modified_at=modified,
+                qbo_estimate_last_modified_at=modified, **sending,
                 qbo_diff_status='modified' if modified != record.qbo_estimate_last_modified_at else record.qbo_diff_status)
             updated += 1
         except Exception:

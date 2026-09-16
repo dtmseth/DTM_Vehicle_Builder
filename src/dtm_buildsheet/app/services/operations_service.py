@@ -776,6 +776,8 @@ class OperationsService:
         qbo_estimate_id: str = "",
         qbo_estimate_number: str = "",
         qbo_estimate_status: str = "",
+        qbo_estimate_sent_status: str = "",
+        qbo_estimate_sent_at: str = "",
         qbo_estimate_accepted_at: str = "",
         qbo_estimate_last_modified_at: str = "",
         qbo_diff_status: str = "unchanged",
@@ -806,6 +808,8 @@ class OperationsService:
             "estimate_id": current.qbo_estimate_id,
             "estimate_number": current.qbo_estimate_number,
             "estimate_status": current.qbo_estimate_status,
+            "sent_status": current.qbo_estimate_sent_status,
+            "sent_at": current.qbo_estimate_sent_at,
             "diff_status": current.qbo_diff_status,
             "checked_at": current.qbo_checked_at,
         }
@@ -815,6 +819,12 @@ class OperationsService:
         updated.qbo_estimate_id = str(qbo_estimate_id or "").strip()
         updated.qbo_estimate_number = str(qbo_estimate_number or "").strip()
         updated.qbo_estimate_status = str(qbo_estimate_status or "").strip()
+        from ...domain.estimate_status import merge_send_evidence
+        if qbo_estimate_sent_status not in {"", "sent", "not_confirmed"}:
+            raise OperationsValidationError("Invalid Estimate sending status")
+        updated.qbo_estimate_sent_status, updated.qbo_estimate_sent_at = merge_send_evidence(
+            current, updated.qbo_estimate_id, qbo_estimate_sent_status, qbo_estimate_sent_at,
+        )
         updated.qbo_estimate_accepted_at = str(qbo_estimate_accepted_at or "").strip()
         updated.qbo_estimate_last_modified_at = str(
             qbo_estimate_last_modified_at or ""
@@ -843,6 +853,8 @@ class OperationsService:
             "estimate_id": updated.qbo_estimate_id,
             "estimate_number": updated.qbo_estimate_number,
             "estimate_status": updated.qbo_estimate_status,
+            "sent_status": updated.qbo_estimate_sent_status,
+            "sent_at": updated.qbo_estimate_sent_at,
             "diff_status": updated.qbo_diff_status,
             "checked_at": updated.qbo_checked_at,
         }

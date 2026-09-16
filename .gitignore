@@ -61,3 +61,6 @@ quickbooks_migration_snapshots/
 
 # Generated QB inventory review artifacts (contain company part data)
 tools/qb_match_proposals.md
+
+# Historical documentation
+docs/archive/

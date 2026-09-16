@@ -137,12 +137,12 @@ def test_manifest_has_exact_names_and_safe_index_budget():
 
 def test_schema_document_and_executable_manifest_have_identical_column_names():
     document = (
-        Path(__file__).resolve().parents[1] / "docs" / "OPERATIONS_SCHEMA.md"
+        Path(__file__).resolve().parents[1] / "docs" / "OPERATIONS.md"
     ).read_text(encoding="utf-8")
-    current_section, remainder = document.split("## 3. List:", maxsplit=1)
-    current_section = current_section.split("## 2. List:", maxsplit=1)[1]
-    event_section, remainder = remainder.split("## 4. List:", maxsplit=1)
-    request_section = remainder.split("## 5.", maxsplit=1)[0]
+    current_section, remainder = document.split("### List: `DTMVehicleEvents`", maxsplit=1)
+    current_section = current_section.split("### List: `DTMVehicleOperations`", maxsplit=1)[1]
+    event_section, remainder = remainder.split("### List: `DTMOperationsRequests`", maxsplit=1)
+    request_section = remainder.split("### Domain values", maxsplit=1)[0]
     document_current = set(re.findall(r"^\| `([^`]+)` \|", current_section, re.MULTILINE))
     document_events = set(re.findall(r"^\| `([^`]+)` \|", event_section, re.MULTILINE))
     document_requests = set(re.findall(r"^\| `([^`]+)` \|", request_section, re.MULTILINE))

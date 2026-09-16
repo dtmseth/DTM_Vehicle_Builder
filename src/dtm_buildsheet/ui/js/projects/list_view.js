@@ -101,9 +101,22 @@ function _ptProjectDateLabel(value) {
   );
 }
 
+function _ptProjectEstimateVehicles(project) {
+  const operations = _ptProjectOperations(project);
+  const individuals = (project.build_units || []).flatMap(unit => unit.individuals || []);
+  return individuals.length ? individuals.map(individual => {
+    const current = operations.find(vehicle => vehicle.vehicle_id === individual.individual_id) || {};
+    // Never attach a previous Estimate's observation to a newly replaced link.
+    const linkedId = String(individual.qb_estimate_id || '');
+    return current.qbo_estimate_id === linkedId ? {...individual, ...current} : {
+      ...individual, acceptance_status: current.acceptance_status,
+    };
+  }) : operations;
+}
+
 function _ptProjectProgress(project) {
   const vehicles = _ptProjectOperations(project);
-  if (!vehicles.length) return { key: "estimate-sent", label: "Estimate Sent" };
+  if (!vehicles.length) return estimateGroupStatus(_ptProjectEstimateVehicles(project));
 
   const all = (field, values) => vehicles.every(vehicle => values.includes(String(vehicle[field] || "")));
   const any = (field, values) => vehicles.some(vehicle => values.includes(String(vehicle[field] || "")));
@@ -164,9 +177,7 @@ function _ptProjectProgress(project) {
       label: `Parts: ${labels[parts] || parts} · Vehicle: ${labels[vehicle] || vehicle}`,
     };
   }
-  return accepted
-    ? { key: "estimate-accepted", label: "Estimate Accepted" }
-    : { key: "estimate-sent", label: "Estimate Sent" };
+  return estimateGroupStatus(_ptProjectEstimateVehicles(project));
 }
 
 function _ptRenderList() {
@@ -227,7 +238,8 @@ function _ptRenderList() {
   hide("proj-list-empty");
   show("proj-list-rows");
   $("proj-list-rows").innerHTML = projects.map(p => {
-    const name = esc(_ptProjName(p)) + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
+    const projectName = esc(_ptProjName(p));
+    const name = projectName + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const pid  = esc(p.project_id);
     const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p) : null;
@@ -246,7 +258,7 @@ function _ptRenderList() {
       <div class="proj-row-actions" onclick="event.stopPropagation()">
         <button class="btn btn-primary btn-sm" onclick="PT_open('${pid}')">Open</button>
         ${_ptCanEditProjects() || _ptCanUpdateProjectLifecycle() ? `<details class="proj-row-menu">
-          <summary aria-label="More actions for ${name}" title="More actions">⋯</summary>
+          <summary aria-label="More actions for ${projectName.replace(/"/g, "&quot;")}" title="More actions">⋯</summary>
           <div class="proj-row-menu-items">
             ${_ptCanUpdateProjectLifecycle() ? (["started", "active"].includes(mode)
               ? `<button type="button" onclick="PT_setProjectLifecycle('${pid}','inactive')">Mark inactive</button>`

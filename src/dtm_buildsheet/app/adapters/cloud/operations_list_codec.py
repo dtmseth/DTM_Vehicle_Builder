@@ -85,6 +85,8 @@ CURRENT_FIELD_MAP: tuple[tuple[str, str], ...] = (
     ("qbo_estimate_id", "QboEstimateId"),
     ("qbo_estimate_number", "QboEstimateNumber"),
     ("qbo_estimate_status", "QboEstimateStatus"),
+    ("qbo_estimate_sent_status", "QboEstimateSentStatus"),
+    ("qbo_estimate_sent_at", "QboEstimateSentAtUtc"),
     ("qbo_estimate_accepted_at", "QboEstimateAcceptedAtUtc"),
     ("qbo_estimate_last_modified_at", "QboEstimateLastModifiedAtUtc"),
     ("qbo_checked_at", "QboCheckedAtUtc"),

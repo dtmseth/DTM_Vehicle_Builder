@@ -32,6 +32,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from ...domain.supply import supply_state
+from ...domain.estimate_status import estimate_send_evidence
 from ...paths import AppPaths
 from ..adapters.quickbooks.api_client import QuickBooksApiError
 from . import qb_sync_service
@@ -1125,6 +1126,7 @@ def bind_estimate(
             "qbo_project_name": unit.qb_project_name,
             "qbo_estimate_id": normalized,
             "qbo_estimate_number": str(estimate.get("DocNumber") or "").strip(),
+            **estimate_send_evidence(estimate),
             "qbo_estimate_status": status,
             "qbo_estimate_accepted_at": accepted_at,
             "qbo_estimate_last_modified_at": str(
@@ -1339,7 +1341,7 @@ def create_estimate(
     unit.qb_project_name = project_name
     snapshot_source = result.get("_estimate")
     if not isinstance(snapshot_source, dict) or not snapshot_source:
-        snapshot_source = {**(current_estimate or {}), **payload}
+        snapshot_source = {**(current_estimate or {} if estimate_action == "updated" else {}), **payload}
         snapshot_source["DocNumber"] = (
             result.get("doc_number") or snapshot_source.get("DocNumber", "")
         )
@@ -1393,6 +1395,7 @@ def create_estimate(
             "qbo_project_name": unit.qb_project_name,
             "qbo_estimate_id": estimate_id,
             "qbo_estimate_number": str(result.get("doc_number") or "").strip(),
+            **estimate_send_evidence(snapshot_source),
             "qbo_estimate_status": str(
                 snapshot_source.get("TxnStatus") or ""
             ).strip(),

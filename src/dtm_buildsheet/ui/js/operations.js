@@ -433,7 +433,7 @@ function _operationsProjectAcceptance(vehicles) {
 }
 
 function _operationsProjectProgress(vehicles) {
-  if (!vehicles.length) return { key: "estimate-sent", label: "Estimate Sent" };
+  if (!vehicles.length) return estimateGroupStatus(vehicles);
   const all = (field, values) => vehicles.every(vehicle =>
     values.includes(String(vehicle[field] || ""))
   );
@@ -478,9 +478,7 @@ function _operationsProjectProgress(vehicles) {
       label: `Parts: ${_operationsLabel(parts)} · Vehicle: ${_operationsLabel(availability)}`,
     };
   }
-  return accepted
-    ? { key: "estimate-accepted", label: "Estimate Accepted" }
-    : { key: "estimate-sent", label: "Estimate Sent" };
+  return estimateGroupStatus(vehicles);
 }
 
 function _operationsProjectGroupMarkup(project, open) {
@@ -755,12 +753,13 @@ function _operationsVehicleMarkup(vehicle) {
     : vehicle.schedule_bucket === "unscheduled"
       ? "Unscheduled"
       : `Week of ${_operationsDate(vehicle.scheduled_week_of)}`;
-  const qbo = vehicle.qbo_estimate_number
-    ? `Estimate ${vehicle.qbo_estimate_number}`
+  const qbo = vehicle.qbo_estimate_id
+    ? `Estimate ${vehicle.qbo_estimate_number || vehicle.qbo_estimate_id}`
+      + ` · ${estimateSendDetail(vehicle)}`
       + (vehicle.qbo_estimate_status ? ` · ${vehicle.qbo_estimate_status}` : "")
       + (vehicle.qbo_checked_at ? ` · checked ${_operationsDateTime(vehicle.qbo_checked_at)}` : "")
       + (vehicle.qbo_observation_stale ? " · data may be stale" : "")
-    : "No linked estimate";
+    : "No Estimate Connected";
   const canEdit = _operationsEditableWorkstreams().length > 0;
   return `<article class="operations-vehicle">
     <div class="operations-vehicle-heading">

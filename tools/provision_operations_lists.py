@@ -22,6 +22,7 @@ from dtm_buildsheet.app.adapters.cloud.operations_list_provisioner import (
     OperationsListProvisioningError,
 )
 from dtm_buildsheet.app.adapters.cloud.operations_list_schema import (
+    ESTIMATE_SEND_SCHEMA_CONFIRMATION,
     DEADLINE_OVERRIDE_SCHEMA_CONFIRMATION,
     FINAL_FINISH_DELIVERED_SCHEMA_CONFIRMATION,
     OPERATIONS_LIST_INSPECTION_SCOPES,
@@ -53,6 +54,7 @@ def manifest_summary() -> dict:
             "one_time_creation": list(OPERATIONS_LIST_PROVISIONING_SCOPES),
             "normal_operations_runtime": list(OPERATIONS_LIST_RUNTIME_SCOPES),
         },
+        "estimate_send_schema_confirmation": ESTIMATE_SEND_SCHEMA_CONFIRMATION,
         "apply_confirmation": PROVISION_CONFIRMATION,
         "phone_requests_provision_confirmation": PHONE_REQUESTS_PROVISION_CONFIRMATION,
         "recovery_schema_confirmation": RECOVERY_SCHEMA_CONFIRMATION,
@@ -107,6 +109,8 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="add the reviewed Delivered choice to Final Finish",
     )
+    mode.add_argument("--upgrade-estimate-send-schema", action="store_true",
+                      help="add the two Estimate sending evidence columns")
     parser.add_argument(
         "--confirm",
         default="",
@@ -126,10 +130,12 @@ def main(argv: list[str] | None = None) -> int:
         args.inspect or args.apply or args.inspect_phone_requests
         or args.provision_phone_requests or args.upgrade_recovery_schema
         or args.upgrade_deadline_override_schema or args.upgrade_parts_ordered_schema
-        or args.upgrade_final_finish_delivered_schema
+        or args.upgrade_final_finish_delivered_schema or args.upgrade_estimate_send_schema
     ):
         print(json.dumps(manifest_summary(), indent=2))
         return 0
+    if args.upgrade_estimate_send_schema and args.confirm != ESTIMATE_SEND_SCHEMA_CONFIRMATION:
+        _parser().error(f"--upgrade-estimate-send-schema requires --confirm '{ESTIMATE_SEND_SCHEMA_CONFIRMATION}'")
     if args.apply and args.confirm != PROVISION_CONFIRMATION:
         _parser().error(
             f"--apply requires --confirm '{PROVISION_CONFIRMATION}'"
@@ -185,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
                 or args.upgrade_recovery_schema
                 or args.upgrade_deadline_override_schema
                 or args.upgrade_parts_ordered_schema
-                or args.upgrade_final_finish_delivered_schema
+                or args.upgrade_final_finish_delivered_schema or args.upgrade_estimate_send_schema
             )
             else OPERATIONS_LIST_INSPECTION_SCOPES
         )
@@ -206,6 +212,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.inspect_phone_requests:
             report = provisioner.inspect_phone_requests()
+        elif args.upgrade_estimate_send_schema:
+            report = provisioner.apply_estimate_send_schema_upgrade(confirmation=args.confirm)
         elif args.upgrade_recovery_schema:
             report = provisioner.apply_recovery_schema_upgrade(
                 confirmation=args.confirm,
@@ -239,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     if (
         args.apply or args.provision_phone_requests or args.upgrade_recovery_schema
         or args.upgrade_deadline_override_schema or args.upgrade_parts_ordered_schema
-        or args.upgrade_final_finish_delivered_schema
+        or args.upgrade_final_finish_delivered_schema or args.upgrade_estimate_send_schema
     ) and report.ready:
         try:
             ids = {item.name: item.list_id for item in report.lists}
@@ -270,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.apply or args.upgrade_recovery_schema
                 or args.upgrade_deadline_override_schema
                 or args.upgrade_parts_ordered_schema
-                or args.upgrade_final_finish_delivered_schema
+                or args.upgrade_final_finish_delivered_schema or args.upgrade_estimate_send_schema
             )
             else not report.has_mismatch
         ),
@@ -283,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             else "upgrade_parts_ordered_schema" if args.upgrade_parts_ordered_schema
             else "upgrade_final_finish_delivered_schema"
             if args.upgrade_final_finish_delivered_schema
+            else "upgrade_estimate_send_schema" if args.upgrade_estimate_send_schema
             else "inspect"
         ),
         "config_updated": config_updated,
@@ -291,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     write_mode = (
         args.apply or args.provision_phone_requests or args.upgrade_recovery_schema
         or args.upgrade_deadline_override_schema or args.upgrade_parts_ordered_schema
-        or args.upgrade_final_finish_delivered_schema
+        or args.upgrade_final_finish_delivered_schema or args.upgrade_estimate_send_schema
     )
     return 0 if (report.ready if write_mode else not report.has_mismatch) else 1
 

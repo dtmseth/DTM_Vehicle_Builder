@@ -145,6 +145,9 @@ def flow_tab_load(page, base_url: str) -> None:
             "button => getComputedStyle(button).backgroundColor"
         ) == expected_color
     page.locator('[data-project-list-status="started"]').click()
+    options = page.locator(".proj-row-menu > summary").first
+    assert options.inner_text() == "⋯"
+    assert "<" not in options.get_attribute("aria-label")
     page.fill("#proj-list-search", "Operations Preview PD")
     assert page.locator(".proj-row-clickable").filter(has_text="Operations Preview PD").count() == 1
 
@@ -247,7 +250,7 @@ def flow_tab_load(page, base_url: str) -> None:
     assert page.locator("#operations-add-builder").is_visible()
     assert page.locator(".operations-project-group").count() == 1
     assert "3 VEHICLES" in page.locator(".operations-project-group > summary").inner_text().upper()
-    assert "ESTIMATE SENT" in page.locator(".operations-project-group > summary").inner_text().upper()
+    assert "NO ESTIMATE CONNECTED" in page.locator(".operations-project-group > summary").inner_text().upper()
     assert page.locator(".operations-status-grid .operations-status").nth(1).evaluate(
         "item => item.classList.contains('operations-status-tone-unstarted')"
     )
@@ -1038,6 +1041,7 @@ def flow_project_manager_all_presets_unfiltered(page, base_url: str) -> None:
     # Existing Project Details editor has a separate picker implementation and
     # must obey the same unfiltered All contract.
     page.goto(base_url, wait_until="load")
+    page.click('[data-project-list-status="started"]')
     page.click(".proj-row-clickable")
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     page.click(".proj-dtab[data-ptab='edit']")
@@ -2947,6 +2951,7 @@ def flow_agency_default_preferences(page, base_url: str) -> None:
 
     page.goto(base_url, wait_until="load")
     page.click(".htab[data-tab='projects']")
+    page.click('[data-project-list-status="started"]')
     page.wait_for_selector(".proj-row-clickable")
     page.click(".proj-row-clickable")
     page.wait_for_selector("#proj-detail-view:not([hidden])")

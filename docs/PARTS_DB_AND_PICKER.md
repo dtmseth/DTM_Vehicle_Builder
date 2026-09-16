@@ -18,7 +18,7 @@ lessons), `PENDING_QB_PARTS.md`, `TRACER_LIGHTHEAD_SELECTION.md`, and `PHASE5_AC
 
 ## 1. The `parts_db.json` schema (as actually built)
 
-The ROADMAP §7 sketch is an early draft; this is the live shape. Authoritative copy:
+This is the live shape; the early roadmap schema sketch is archived. Authoritative copy:
 `src/dtm_buildsheet/resources/config/parts_db.json`. Service: `app/services/parts_db_service.py`
 (typed catalog queries with compatibility fallback). Routes: `app/routes/parts_db.py`
 (`/api/parts-db/*`). Models: `domain/parts_db_models.py`. Validation:

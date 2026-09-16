@@ -5,8 +5,8 @@
 
 This document defines the mandatory security standard for every external connection this application makes. Any new integration must satisfy these requirements before merging. Existing integrations are measured against this baseline.
 
-**Hosted migration, 2026-09-10:** [AZURE_PILOT_PLAN.md](AZURE_PILOT_PLAN.md) defines the local
-prototype, request-scoped identity work and later sandbox/cutover stages. The contract below now
+**Hosted migration, 2026-09-10:** [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) defines
+the request-scoped security boundary and deployment review gates. The contract below now
 governs the local Stage 2 boundary; no hosted OAuth store has been provisioned. Desktop keychain
 requirements remain unchanged. Do not copy desktop credentials into a container or assume its
 in-memory fallback supplies durable company authentication.
@@ -61,7 +61,7 @@ target an empty isolated partition, interrupt active jobs and retain a durable f
 writes until provider reconciliation. Treat backup owner/resource references as confidential;
 store snapshots encrypted with separate restore access and an independently retained checksum.
 The hosted process emits only fixed-schema request/lifecycle events and redacted library warning
-categories; it never formats provider exception text. See [HOSTED_OPERATIONS.md](HOSTED_OPERATIONS.md).
+categories; it never formats provider exception text. See [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md).
 
 Future QBO company tokens require a separate reviewed server credential implementation: protected
 Key Vault secrets/encryption keys, least-privilege managed identity, serialized company refresh,

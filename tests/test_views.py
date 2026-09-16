@@ -32,7 +32,7 @@ def test_reference_photo_ui_uses_project_photos_and_group_assignments():
     assert "View all project references" not in script
     assert ">Project photos</button>" in script
     assert "Open project photos folder" in script
-    assert "discover_folder: kind === \"reference\" && !unitId" in script
+    assert "discover_folder: kind === \"reference\"" in script
     assert 'id="photo-use-project"' in html
     assert 'id="photo-use-unit-group"' in html
     assert "data-reference-order" not in script

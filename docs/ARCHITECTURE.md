@@ -2,8 +2,8 @@
 
 ## Runtime Shape
 
-The isolated Stage 1 entry point is `dtm_buildsheet.headless`, documented in
-`AZURE_PILOT_RESULTS.md`. It selects `DTM_WORKSPACE_DIR` before app imports and reuses
+The isolated Stage 1 entry point is `dtm_buildsheet.headless`. It selects `DTM_WORKSPACE_DIR`
+before app imports and reuses
 `app.server.create_http_server()` without desktop startup workers or GUI launch. The local
 pilot handler adds bounded artifact downloads and denies provider/native actions. It is not a
 multi-user/public server. Unset workspace overrides preserve normal desktop development paths.
@@ -162,5 +162,5 @@ Azure Tables; synthetic SQLite/resource adapters exist only under `tools/pilot/`
 No legacy HTTP route or desktop background loop is exposed by this boundary. Provider-dependent
 document/job dispatch remains unavailable until the shared service integrations enforce resource
 ACLs, provider ETags and reviewed snapshots. Stage 1 continues to serve the existing UI locally.
-See [HOSTED_BOUNDARY.md](HOSTED_BOUNDARY.md) for the complete route audit and limits; the new
+See [HOSTED_ARCHITECTURE.md](HOSTED_ARCHITECTURE.md) for the complete route audit and limits; the new
 boundary is not a claim of full hosted Builder parity.
