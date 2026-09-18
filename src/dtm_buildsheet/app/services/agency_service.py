@@ -340,6 +340,79 @@ def review_agency_name_without_matches(name: str) -> str:
     return re.sub(r"^City\s+Of\b", "City of", value)
 
 
+def resolve_agency_selection(
+    agency_id: str,
+    agency_name: str,
+    paths: AppPaths,
+    *,
+    allow_missing_id: bool = False,
+) -> dict | None:
+    """Resolve a current agency, repairing only a unique canonical name match."""
+    choices = [
+        {
+            "agency_id": record.agency_id,
+            "name": record.name,
+            "abbreviation": record.abbreviation,
+            "qb_customer_id": record.qb_customer_id,
+        }
+        for record in load_agencies(paths)
+    ]
+    wanted_id = str(agency_id or "").strip()
+    if wanted_id:
+        current = next((item for item in choices if item["agency_id"] == wanted_id), None)
+        if current is not None:
+            return current
+    elif not allow_missing_id:
+        # Project form text is never accepted as identity without a selection.
+        return None
+
+    wanted_name = review_agency_name_without_matches(agency_name)
+    wanted = _normalize(wanted_name)
+    if not wanted:
+        return None
+    matches = [
+        item for item in choices
+        if _normalize(review_agency_name_without_matches(item["name"])) == wanted
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def reconcile_project_agency_links(paths: AppPaths) -> dict:
+    """Repair stale/blank historical project agency IDs without fuzzy guessing."""
+    from ...inputs.project_entry import list_projects, save_project
+
+    repaired: list[dict[str, str]] = []
+    unresolved: list[dict[str, str]] = []
+    for project in list_projects(paths):
+        old_id = str(project.customer.agency_id or "").strip()
+        old_name = str(project.customer.agency or "").strip()
+        replacement = resolve_agency_selection(
+            old_id, old_name, paths, allow_missing_id=True,
+        )
+        item = {
+            "project_id": project.project_id,
+            "build_year": project.customer.build_year,
+            "old_agency_id": old_id,
+            "old_agency_name": old_name,
+        }
+        if replacement is None:
+            unresolved.append(item)
+            continue
+        if old_id == replacement["agency_id"] and old_name == replacement["name"]:
+            continue
+        project.customer.agency_id = replacement["agency_id"]
+        project.customer.agency = replacement["name"]
+        project.customer.agency_abbreviation = replacement["abbreviation"]
+        save_project(project, paths)
+        repaired.append({
+            **item,
+            "new_agency_id": replacement["agency_id"],
+            "new_agency_name": replacement["name"],
+            "qb_customer_id": replacement["qb_customer_id"],
+        })
+    return {"ok": not unresolved, "repaired": repaired, "unresolved": unresolved}
+
+
 def _clean_agency_field(field: str, value: object) -> object:
     """Normalize a UI/API field without treating a missing value as an erase."""
     if field == "default_preferences":

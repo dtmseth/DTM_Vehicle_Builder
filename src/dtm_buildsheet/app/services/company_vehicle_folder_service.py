@@ -17,7 +17,12 @@ from ...domain.vehicle_naming import (
     safe_vehicle_folder_name,
     vehicle_folder_name,
 )
-from ...inputs.project_entry import list_projects, load_project, save_project
+from ...inputs.project_entry import (
+    list_projects,
+    load_project,
+    save_project,
+    save_project_operational_state,
+)
 from ...paths import AppPaths
 from ..adapters import wiring
 from ..adapters.cloud.graph_drive_gateway import GraphDriveGateway
@@ -203,6 +208,76 @@ def schedule_company_vehicle_pdf(
         daemon=True,
     ).start()
     return True
+
+
+def download_company_vehicle_pdf(
+    project_id: str,
+    unit_id: str,
+    individual_id: str,
+    paths: AppPaths,
+    *,
+    gateway=None,
+) -> dict:
+    """Hydrate a vehicle PDF on another workstation by durable SharePoint ID."""
+    try:
+        project = load_project(project_id, paths)
+        _, individual = _target(project, unit_id, individual_id)
+    except (FileNotFoundError, ValueError):
+        return {"ok": False, "error": "vehicle_not_found"}
+
+    item_id = str(individual.company_pdf_item_id or "").strip()
+    remote_path = str(individual.company_pdf_path or "").strip()
+    if not item_id and not remote_path:
+        return {"ok": False, "error": "company_pdf_not_available"}
+    try:
+        if gateway is None:
+            config = _config()
+            gateway = GraphDriveGateway.from_active_cloud(
+                config,
+                library_names=(
+                    config.company_library_name,
+                    config.company_library_internal_name,
+                    config.exports_library_name,
+                    config.exports_library_internal_name,
+                ),
+            )
+        if not item_id:
+            item = gateway.get_item_by_path(remote_path)
+            item_id = str((item or {}).get("id") or "").strip()
+        if not item_id:
+            return {"ok": False, "error": "company_pdf_not_found"}
+        data = gateway.download_item(item_id)
+    except FileNotFoundError:
+        return {"ok": False, "error": "company_pdf_not_found"}
+    except Exception:
+        logger.exception("Company vehicle PDF download failed for project %s", project_id)
+        return {"ok": False, "error": "company_pdf_download_failed"}
+
+    if not data or len(data) > 250 * 1024 * 1024 or not data.startswith(b"%PDF-"):
+        return {"ok": False, "error": "company_pdf_invalid"}
+    filename = (
+        str(remote_path or individual.pdf_path or "build.pdf")
+        .replace("\\", "/")
+        .rsplit("/", 1)[-1]
+    )
+    if not filename.lower().endswith(".pdf"):
+        filename = "build.pdf"
+    destination = paths.workspace_output_dir / filename
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".download")
+    try:
+        temporary.write_bytes(data)
+        temporary.replace(destination)
+    except OSError:
+        logger.exception("Could not save Company vehicle PDF locally")
+        temporary.unlink(missing_ok=True)
+        return {"ok": False, "error": "company_pdf_save_failed"}
+
+    individual.pdf_path = str(destination)
+    if not individual.company_pdf_item_id:
+        individual.company_pdf_item_id = item_id
+    save_project_operational_state(project, paths)
+    return {"ok": True, "path": str(destination), "downloaded": True, "source": "company"}
 
 
 def retry_pending_company_vehicle_pdfs(paths: AppPaths) -> dict:

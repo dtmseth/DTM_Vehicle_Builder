@@ -85,6 +85,26 @@ mirrored to shared project storage, and a second audit found no unresolved or
 stale project rep links. Project saves now make this same exact-name repair
 automatically; ambiguous or fuzzy names still require an explicit selection.
 
+## Final project-link audit
+
+All 69 existing Builder projects were compared with current per-record agencies
+and active QBO Customers. Eleven stale or blank project agency IDs were repaired
+by unique canonical-name matches. This included the standardized Waite Park,
+Granite, Kittson, Roseau County, and Rice County names as well as stale records
+for Amery, Zumbrota, Rolette, ICE, and Bayport.
+
+Roseau Police Department, Kittson County Sheriff's Office, and Roseau County
+Sheriff's Office had no active or inactive QBO Customer, so they were created as
+QBO IDs `458`, `459`, and `460`, respectively, imported into Builder, and linked
+to their projects. All eleven repaired projects and all three agency records were
+confirmed in shared storage. A final reconciliation found no stale, blank,
+ambiguous, or name-mismatched agency links.
+
+`Benton-Stearns Negotiator Van` remains the one intentional local-only custom
+identity. There is no matching QBO Customer, and the record does not establish
+whether Benton or Stearns County should be the accounting owner, so it was not
+silently reassigned.
+
 ## Applied synchronization result
 
 - QBO verification: all 39 IDs returned the approved target name.

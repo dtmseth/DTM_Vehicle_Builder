@@ -454,14 +454,11 @@ def _canonicalize_customer_identities(
     customer: CustomerInfo, paths: AppPaths, *, required: bool,
 ) -> dict | None:
     """Require stable selections; typed labels alone are never identities."""
-    from .agency_service import load_agency_choices
+    from .agency_service import resolve_agency_selection
     from .sales_rep_service import resolve_rep_selection
 
     agency_id = str(customer.agency_id or "").strip()
-    agency = next((
-        item for item in load_agency_choices(paths)
-        if item["agency_id"] == agency_id
-    ), None)
+    agency = resolve_agency_selection(agency_id, customer.agency, paths)
     if agency is None and (required or agency_id):
         return {
             "ok": False,

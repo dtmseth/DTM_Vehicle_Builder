@@ -7,6 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from dtm_buildsheet.app.services.company_vehicle_folder_service import (
+    download_company_vehicle_pdf,
+)
 from dtm_buildsheet.app.services.export_service import (
     _find_soffice,
     _stamp_export_on_project,
@@ -330,6 +333,63 @@ class TestOpenFile:
         assert result["ok"] is True
         download.assert_called_once()
         popen.assert_called_once()
+
+    def test_missing_pdf_uses_durable_company_item_before_legacy_export(self, tmp_path):
+        hydrated = tmp_path / "output" / "company.pdf"
+        hydrated.parent.mkdir()
+        hydrated.write_bytes(b"%PDF-1.7\ncompany")
+        paths = MagicMock()
+        paths.workspace_output_dir = hydrated.parent
+        with patch(
+            "dtm_buildsheet.app.services.company_vehicle_folder_service.download_company_vehicle_pdf",
+            return_value={"ok": True, "path": str(hydrated), "downloaded": True},
+        ) as company_download, patch(
+            "dtm_buildsheet.app.services.exports_upload_service.download_export",
+        ) as legacy_download, patch("subprocess.Popen") as popen, patch("sys.platform", "darwin"):
+            result = open_file({
+                "path": r"C:\other\company.pdf",
+                "agency": "Renamed Agency",
+                "year": "2027",
+                "project_id": "project-1",
+                "unit_id": "group-1",
+                "individual_id": "vehicle-1",
+            }, paths)
+        assert result["ok"] is True
+        company_download.assert_called_once()
+        legacy_download.assert_not_called()
+        popen.assert_called_once()
+
+
+def test_company_pdf_download_uses_durable_item_id_across_workstations(tmp_path):
+    paths = AppPaths(
+        workspace_dir=tmp_path,
+        workspace_projects_dir=tmp_path / "projects",
+        workspace_output_dir=tmp_path / "output",
+    )
+    paths.workspace_output_dir.mkdir()
+    project = new_project(project_id="project-1")
+    project.build_units = [BuildUnit(
+        unit_id="group-1",
+        individuals=[IndividualUnit(
+            individual_id="vehicle-1",
+            pdf_path=r"C:\old-machine\old.pdf",
+            company_pdf_item_id="durable-pdf-item",
+            company_pdf_path="Vehicle Project Database/Agency/2027/vehicle/official.pdf",
+        )],
+    )]
+    save_project(project, paths)
+    gateway = MagicMock()
+    gateway.download_item.return_value = b"%PDF-1.7\nshared"
+
+    result = download_company_vehicle_pdf(
+        "project-1", "group-1", "vehicle-1", paths, gateway=gateway,
+    )
+
+    assert result["ok"] is True
+    assert Path(result["path"]).read_bytes() == b"%PDF-1.7\nshared"
+    gateway.download_item.assert_called_once_with("durable-pdf-item")
+    stored = load_project("project-1", paths).build_units[0].individuals[0]
+    assert Path(stored.pdf_path) == paths.workspace_output_dir / "official.pdf"
 
 
 # ── route integration ─────────────────────────────────────────────────────────

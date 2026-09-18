@@ -220,6 +220,52 @@ def test_deleted_duplicate_rep_link_is_repaired_by_exact_name(paths):
     assert saved.customer.sales_rep == "Dan Orth"
 
 
+def test_stale_project_agency_link_is_repaired_by_canonical_name(paths):
+    agency = agency_service.handle_save_agency({
+        "name": "Rice County Sheriff's Office", "naming_override": True,
+    }, paths)["agency"]
+    project = project_entry.new_project(customer=CustomerInfo(
+        agency_id="deleted-duplicate-id",
+        agency="Rice County Sheriff",
+        build_year="2027",
+    ))
+    project_entry.save_project(project, paths)
+
+    result = agency_service.reconcile_project_agency_links(paths)
+
+    assert result["ok"] is True
+    assert len(result["repaired"]) == 1
+    saved = project_entry.load_project(project.project_id, paths)
+    assert saved.customer.agency_id == agency["agency_id"]
+    assert saved.customer.agency == "Rice County Sheriff's Office"
+
+
+def test_project_save_repairs_stale_agency_id_but_not_unselected_text(paths):
+    agency = agency_service.handle_save_agency({
+        "name": "Rice County Sheriff's Office", "naming_override": True,
+    }, paths)["agency"]
+    repaired = handle_save_project({
+        "require_selected_identities": False,
+        "customer": {
+            "agency_id": "deleted-duplicate-id",
+            "agency": "Rice County Sheriff",
+            "build_year": "2027",
+        },
+    }, paths)
+    assert repaired["ok"] is True
+    saved = project_entry.load_project(repaired["project_id"], paths)
+    assert saved.customer.agency_id == agency["agency_id"]
+
+    rejected = handle_save_project({
+        "require_selected_identities": True,
+        "customer": {
+            "agency": "Rice County Sheriff's Office",
+            "build_year": "2028",
+        },
+    }, paths)
+    assert rejected["error_code"] == "agency_selection_required"
+
+
 def test_project_save_repairs_deleted_duplicate_rep_link(paths):
     agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
     current = handle_save_rep({

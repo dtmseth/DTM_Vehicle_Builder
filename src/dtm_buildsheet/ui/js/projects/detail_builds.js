@@ -789,9 +789,10 @@ async function _ptDecidePlan(ctx, statusEl) {
     return "regen";
   }
   ctx._status = status;
-  // A shared project may contain a valid path from another computer. Opening
-  // it hydrates the SharePoint copy into this install; don't regenerate it.
-  if (!status?.pptx_exists) return "open";
+  // PPTX files are workstation-local conversion sources. A shared project can
+  // retain another computer's path, so regenerate locally instead of trying
+  // the retired shared-PPTX download path.
+  if (!status?.pptx_exists) return "regen";
   if (!status.is_stale && !status.manually_edited) return "open";
   if (status.is_stale && !status.manually_edited) return "regen";
   // Stale AND manually edited → ask user
@@ -981,6 +982,9 @@ window.PT_buildOpenPdf = async function (projectId, unitId, individualId, type) 
       path: ctx.pdfPath,
       agency: customer.agency || "",
       year: customer.build_year || "",
+      project_id: projectId,
+      unit_id: unitId,
+      individual_id: individualId || "",
     });
     if (!res?.ok) toast(res?.error || "Could not open PDF", "error");
   } catch (e) {

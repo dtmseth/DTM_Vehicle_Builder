@@ -91,7 +91,10 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
    photos. Reopening records actor/reason and withdraws exact app-owned Shop item IDs without touching
    Completed Build Photos.
 
-8. **View PDF / Open folder** — View PDF opens/hydrates the current PDF. Once a Shop package exists,
+8. **View PDF / Open folder** — View PDF opens/hydrates the current PDF by its durable Company-file
+   item ID, so another workstation is not dependent on the creating computer's local path or a
+   renamed agency folder. Re-export regenerates the workstation-local PowerPoint conversion source
+   before converting it; new PPTX files are not shared artifacts. Once a Shop package exists,
    the folder action uses the stored Shop PDF path to open the exact vehicle folder through a local
    OneDrive sync or its SharePoint URL; otherwise it retains the legacy agency/year fallback.
 

@@ -494,15 +494,28 @@ def open_file(body: dict, paths: AppPaths | None = None) -> dict:
     """Open a file with the OS default application."""
     path = body.get("path", "")
     if (not path or not Path(path).exists()) and paths is not None:
+        company_result = None
+        project_id = str(body.get("project_id") or "").strip()
+        unit_id = str(body.get("unit_id") or "").strip()
+        individual_id = str(body.get("individual_id") or "").strip()
+        if str(path).lower().endswith(".pdf") and project_id and unit_id and individual_id:
+            from .company_vehicle_folder_service import download_company_vehicle_pdf
+            company_result = download_company_vehicle_pdf(
+                project_id, unit_id, individual_id, paths,
+            )
+            if company_result.get("ok"):
+                path = company_result["path"]
         agency = str(body.get("agency", "") or "").strip()
         year = str(body.get("year", "") or "").strip()
-        if path and (agency or year):
+        if (not path or not Path(path).exists()) and path and (agency or year):
             from .exports_upload_service import download_export
             hydrated = download_export(
                 paths, source_path=str(path), agency=agency, year=year,
             )
             if hydrated.get("ok"):
                 path = hydrated["path"]
+            elif company_result is not None:
+                return company_result
             else:
                 return hydrated
     if not path or not Path(path).exists():
