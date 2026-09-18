@@ -109,7 +109,6 @@
       </div>
       <div class="operations-title-actions">
         <span class="operations-readonly-badge">Role-based access</span>
-        <button class="btn btn-secondary btn-sm" id="operations-add-builder" type="button" hidden>Add Builder vehicle</button>
         <button class="btn btn-secondary btn-sm" id="operations-refresh" type="button">Refresh</button>
       </div>
     </div>
@@ -2063,6 +2062,19 @@
     <div class="form-group">
       <label>Notes</label>
       <input type="text" id="ind-edit-notes" placeholder="Optional notes for this unit">
+    </div>
+    <div class="proj-unit-quotes" id="ind-edit-quotes-section">
+      <div class="proj-section-label">Quote numbers</div>
+      <p class="proj-unit-quotes-hint">Keep every quote tied to this vehicle. Mark superseded configurations obsolete instead of deleting their history.</p>
+      <div id="ind-edit-quotes-list" class="proj-unit-quotes-list"></div>
+      <div id="ind-edit-quotes-controls">
+        <div class="proj-unit-quote-search-row">
+          <input type="search" id="ind-edit-quote-search" placeholder="Type a QuickBooks quote / Estimate number" autocomplete="off">
+          <button type="button" class="btn btn-secondary btn-sm" id="ind-edit-quote-add">Add number</button>
+        </div>
+        <div id="ind-edit-quote-search-status" class="proj-unit-quote-search-status" role="status"></div>
+        <div id="ind-edit-quote-search-results" class="proj-unit-quote-search-results"></div>
+      </div>
     </div>
     <!-- Setup Build section — shown when opened from detail view -->
     <div id="ind-modal-setup-section" style="display:none;padding-top:12px;margin-top:8px;border-top:1px solid var(--border)">

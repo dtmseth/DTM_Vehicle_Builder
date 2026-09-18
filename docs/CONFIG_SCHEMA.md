@@ -805,7 +805,8 @@ that validation name is not a separately materialized required config. Schema 1 
 migration and rejects unsupported versions.
 
 Settings contain `hours_per_day` (1–12), `buffer_percent` (0–50), `finishing_hours` (0–40),
-`holidays` (ISO dates), and 1–50 teams. Each team has an immutable `id`, editable `name`,
+`us_federal_holidays` (a selectable list of observed U.S. federal holidays; all selected by
+default), manual additional `holidays` (ISO dates), and 1–50 teams. Each team has an immutable `id`, editable `name`,
 integer `people` (1–12), total `build_hours`/`strip_hours`, palette `color`, `active`, and
 `days_off`. At least one team must remain active. Team deletion is rejected; retirement keeps
 assignments readable. Jobs retain team/estimate overrides, fixed starts, custom-job

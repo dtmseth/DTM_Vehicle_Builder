@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan/apply only missing Company per-vehicle Build Reference Photos folders."""
+"""Repair Company unit reference folders and relocate loose supported photos."""
 from __future__ import annotations
 
 import argparse
@@ -51,6 +51,7 @@ def main():
         write(args.plan, result)
         print(json.dumps({"projects": len(result["projects"]), "units": len(result["targets"]),
                           "missing": sum(t["action"] == "create" for t in result["targets"]),
+                          "loose_photos": sum(len(t["loose_photos"]) for t in result["targets"]),
                           "blockers": result["blockers"], "plan": str(args.plan)}, indent=2))
         return 1 if result["blockers"] else 0
     result = apply_reference_folders(

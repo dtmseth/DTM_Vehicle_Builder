@@ -85,6 +85,7 @@ class IndividualUnit:
     reopen_reason: str = ""
     qb_project_id: str = ""
     qb_project_name: str = ""
+    quote_references: list[QuoteReference] = field(default_factory=list)
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict = field(default_factory=dict)  # Builder-owned QBO fields at last write
     qb_estimate_snapshot_at: str = ""
@@ -108,6 +109,14 @@ does not create false conflicts.
 older project file malformed. Current UI and routes neither create nor edit it. Existing Estimate
 connections use `qb_estimate_id`; verified snapshots/check times mirror with the project while the
 narrow status observation is also copied to the SharePoint Operations record.
+
+`quote_references` is the per-vehicle, multi-quote history shown in Unit Details. Each reference has
+a stable `reference_id`, human `quote_number`, user-owned `state` (`current` or `obsolete`), and
+optional QBO match metadata (`qb_estimate_id`, `match_status`, status/customer/date/check time).
+Unmatched current numbers remain readable without a QBO connection and are retried by automatic
+QuickBooks sync. Obsolete references remain visible but are not automatically matched. The singular
+`qb_estimate_id` remains the one Estimate selected for Builder-driven update/conflict tracking; it
+does not replace the broader quote history.
 
 Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
 actual vehicle being built and is the only VIN eligible for current card identity, folders,

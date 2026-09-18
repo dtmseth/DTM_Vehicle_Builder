@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from copy import deepcopy
 from datetime import date, datetime, time, timedelta
+from functools import lru_cache
 import math
 from zoneinfo import ZoneInfo
 
@@ -11,11 +12,17 @@ from .operations_models import AcceptanceStatus, ProjectState, VehicleOperations
 
 ZONE = ZoneInfo("America/Chicago")
 
+US_FEDERAL_HOLIDAY_IDS = (
+    "new_years_day", "martin_luther_king_jr_day", "washingtons_birthday", "memorial_day",
+    "juneteenth", "independence_day", "labor_day", "columbus_day", "veterans_day",
+    "thanksgiving_day", "christmas_day",
+)
+
 
 def default_calendar_settings() -> dict:
     return {
         "schema_version": 1, "buffer_percent": 10, "hours_per_day": 8,
-        "finishing_hours": 4, "holidays": [],
+        "finishing_hours": 4, "holidays": [], "us_federal_holidays": list(US_FEDERAL_HOLIDAY_IDS),
         "teams": [
             {"id": "team-david", "name": "David's Team", "people": 2,
              "build_hours": 60, "strip_hours": 6, "color": "blue", "active": True, "days_off": []},
@@ -84,6 +91,18 @@ def validate_settings(data: dict) -> dict:
     if not any(team["active"] for team in teams):
         raise ValueError("Keep at least one active team")
     result["holidays"] = _days(result.get("holidays", []), "Shop closed dates")
+    selected_holidays = data.get("us_federal_holidays")
+    if selected_holidays is None:
+        use_all = data.get("use_us_federal_holidays", True)
+        if not isinstance(use_all, bool):
+            raise ValueError("U.S. federal holiday setting must be true or false")
+        selected_holidays = list(US_FEDERAL_HOLIDAY_IDS) if use_all else []
+    if not isinstance(selected_holidays, list) or any(not isinstance(value, str) for value in selected_holidays):
+        raise ValueError("U.S. federal holidays must be a list")
+    if len(selected_holidays) != len(set(selected_holidays)) or any(value not in US_FEDERAL_HOLIDAY_IDS for value in selected_holidays):
+        raise ValueError("Choose holidays from the U.S. federal holiday list")
+    result["us_federal_holidays"] = selected_holidays
+    result.pop("use_us_federal_holidays", None)
     return result
 
 
@@ -91,6 +110,70 @@ def _days(values: object, label: str) -> list[str]:
     if not isinstance(values, list) or len(values) > 1000:
         raise ValueError(f"{label} must be a list of dates")
     return sorted(set(valid_day(d, label, optional=False) for d in values))
+
+
+def _nth_weekday(year: int, month: int, weekday: int, occurrence: int) -> date:
+    """Return an nth weekday, where Monday is 0 and occurrence starts at 1."""
+    first = date(year, month, 1)
+    return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (occurrence - 1))
+
+
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    if month == 12:
+        last = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        last = date(year, month + 1, 1) - timedelta(days=1)
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def _observed(day: date) -> date:
+    if day.weekday() == 5:
+        return day - timedelta(days=1)
+    if day.weekday() == 6:
+        return day + timedelta(days=1)
+    return day
+
+
+@lru_cache
+def _us_federal_holiday_dates(start_year: int, end_year: int, holiday_ids: tuple[str, ...]) -> frozenset[str]:
+    """Observed U.S. federal holidays used as optional shop-closure dates."""
+    if start_year > end_year:
+        return frozenset()
+    holidays = set()
+    for year in range(start_year, end_year + 2):
+        days = {
+            "new_years_day": _observed(date(year, 1, 1)),
+            "martin_luther_king_jr_day": _nth_weekday(year, 1, 0, 3),
+            "washingtons_birthday": _nth_weekday(year, 2, 0, 3),
+            "memorial_day": _last_weekday(year, 5, 0),
+            "independence_day": _observed(date(year, 7, 4)),
+            "labor_day": _nth_weekday(year, 9, 0, 1),
+            "columbus_day": _nth_weekday(year, 10, 0, 2),
+            "veterans_day": _observed(date(year, 11, 11)),
+            "thanksgiving_day": _nth_weekday(year, 11, 3, 4),
+            "christmas_day": _observed(date(year, 12, 25)),
+        }
+        if year >= 2021:
+            days["juneteenth"] = _observed(date(year, 6, 19))
+        holidays.update(days[holiday_id].isoformat() for holiday_id in holiday_ids
+                        if holiday_id in days and start_year <= days[holiday_id].year <= end_year)
+    return frozenset(holidays)
+
+
+def us_federal_holiday_dates(start_year: int = 2000, end_year: int = 2100,
+                             holiday_ids: tuple[str, ...] | list[str] | None = None) -> set[str]:
+    selected = tuple(holiday_ids) if holiday_ids is not None else US_FEDERAL_HOLIDAY_IDS
+    return set(_us_federal_holiday_dates(start_year, end_year, selected))
+
+
+def shop_closed_dates(settings: dict) -> set[str]:
+    """Manual closures plus the selected observed U.S. federal holidays."""
+    closed = set(settings["holidays"])
+    selected = settings.get("us_federal_holidays")
+    if selected is None:
+        selected = US_FEDERAL_HOLIDAY_IDS if settings.get("use_us_federal_holidays", True) else ()
+    closed.update(_us_federal_holiday_dates(2000, 2100, tuple(selected)))
+    return closed
 
 
 def acceptance_day(record: VehicleOperations) -> str:
@@ -206,7 +289,7 @@ def calculate_opening(settings, spec, jobs, *, earliest):
         raise ValueError('Choose active teams')
     hours = _hours(spec, team)
     rate = team['people'] * settings['hours_per_day'] * (1 - settings['buffer_percent'] / 100)
-    closed = set(settings['holidays']) | set(team['days_off'])
+    closed = shop_closed_dates(settings) | set(team['days_off'])
     cursor = earliest
     for _ in range(10000):
         segments, end = work_segments(cursor, hours, rate, closed, settings['hours_per_day'])
@@ -234,6 +317,16 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
     specs = saved.get('jobs', {})
     visible = [r for r in records if r.project_id not in (hidden_projects or set())
                and r.project_state != ProjectState.INACTIVE]
+    teams_by_id = {team['id']: team for team in settings['teams']}
+    completed_agency_teams: dict[str, Counter] = {}
+    for record in visible:
+        spec = specs.get(record.vehicle_id, {})
+        last = spec.get('last_plan', {})
+        if (record.project_type != 'build' or not last
+                or not (record.shop_completed_at or record.final_finish_status in ('ready_for_delivery', 'delivered'))):
+            continue
+        counts = completed_agency_teams.setdefault(record.agency_name, Counter())
+        counts.update(last.get('team_ids') or [last.get('team_id')])
     counts = Counter(r.project_id for r in visible)
     numbers = {r.vehicle_id: i + 1 for p in counts
                for i, r in enumerate(sorted((r for r in visible if r.project_id == p), key=lambda r: r.vehicle_id))}
@@ -265,10 +358,19 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
                 'acceptance_confirmed': record is None or (record.acceptance_status == AcceptanceStatus.ACCEPTED and bool(accepted)),
                 'custom': record is None, 'revision': record.revision if record else None,
                 'shop_status': str(record.shop_status) if record else '', 'kind': spec.get('kind', 'strip_build'),
+                'shop_completed_at': record.shop_completed_at if record else '',
+                'ready_for_delivery_at': record.ready_for_delivery_at if record else '',
+                'delivered_date': record.delivered_date if record else '',
                 'warnings': [], 'blocked': _blocked(record, spec.get('kind', 'strip_build')),
                 'accepted_at': record.accepted_at if record else '', 'acceptance_source': record.acceptance_source if record else '',
                 'qbo_estimate_accepted_at': record.qbo_estimate_accepted_at if record else '',
                 'qbo_estimate_status': record.qbo_estimate_status if record else ''}
+        if record:
+            base['agency_team_history'] = [
+                {'team_id': team_id, 'team_name': teams_by_id.get(team_id, {}).get('name', team_id), 'completed_builds': count}
+                for team_id, count in completed_agency_teams.get(record.agency_name, Counter()).most_common()
+                if team_id in teams_by_id
+            ]
         if record and spec.get('released'):
             released.append({**base, 'released': True, 'historical': False, 'start': '', 'ready': '',
                 'change_reason': spec.get('change_reason', 'Removed from Calendar'),
@@ -292,10 +394,10 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
                 start = max(start, _work_start(today))
             rate = team['people'] * settings['hours_per_day'] * (1 - settings['buffer_percent'] / 100)
             current, _ = _scheduled_job(forecast_job, team, hours, start, rate,
-                set(settings['holidays']) | set(team['days_off']), settings, reasons, last['start'][:10])
+                shop_closed_dates(settings) | set(team['days_off']), settings, reasons, last['start'][:10])
             out = {**last, **{k:v for k,v in base.items() if k not in ('kind',)}, **{k: current[k] for k in (
                 'team_name', 'color', 'blocked', 'warnings', 'deadline', 'operations_dates', 'actual_start', 'actual_finish',
-                'shop_status', 'acceptance_source', 'accepted_at', 'qbo_estimate_accepted_at', 'qbo_estimate_status')},
+                'shop_status', 'final_finish_status', 'acceptance_source', 'accepted_at', 'qbo_estimate_accepted_at', 'qbo_estimate_status')},
                 'saved': True, 'pinned': True, 'historical': historical,
                 'promised_start': spec.get('promised_start', ''), 'promised_ready': spec.get('promised_ready', ''),
                 'forecast_start': current['start'], 'forecast_ready': current['ready'], 'forecast_segments': current['segments'], 'conflicts': []}
@@ -308,7 +410,7 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
                     out['warnings'].append('Working forecast differs from reserved dates')
                 if any(not t['active'] for t in settings['teams'] if t['id'] in out['team_ids']):
                     out['warnings'].append('Reserved team is retired')
-                closed = set(settings['holidays']) | set(team['days_off'])
+                closed = shop_closed_dates(settings) | set(team['days_off'])
                 if any(s['date'] in closed for s in out['segments']):
                     out['warnings'].append('Reservation includes a team absence or shop closure')
             if historical or (record and record.shop_status == 'complete'):
@@ -327,16 +429,22 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
                 else:
                     missing.append({**base, 'reason': 'Acceptance date needed'})
     # A reviewed set is placed in acceptance order. All unaffected reservations stay occupied.
-    for job, base in sorted(staged, key=lambda pair: (pair[0]['accepted'], pair[0]['project'], pair[0]['id'])):
+    for job, base in sorted(staged, key=lambda pair: (pair[0]['spec'].get('_sequence', 10000), pair[0]['accepted'], pair[0]['project'], pair[0]['id'])):
         spec, record = job['spec'], job['record']
         team = _team(settings, spec.get('team_ids') or [spec.get('team_id')])
         hours = spec.get('remaining_hours') if record and record.shop_status == 'in_progress' else None
         hours = hours if hours is not None else _hours(spec, team)
         rate = team['people'] * settings['hours_per_day'] * (1 - settings['buffer_percent'] / 100)
-        closed = set(settings['holidays']) | set(team['days_off'])
+        closed = shop_closed_dates(settings) | set(team['days_off'])
         last = spec.get('last_plan', {})
         requested = spec.get('start_date')
-        if requested:
+        if spec.get('_not_before'):
+            earliest = datetime.fromisoformat(spec['_not_before'])
+            if spec.get('_after'):
+                predecessor = next(j for j in output if j['id'] == spec['_after'])
+                earliest = max(earliest, datetime.fromisoformat(predecessor['end']))
+            start = calculate_opening(settings, {**spec, 'hours': hours}, output, earliest=earliest)
+        elif requested:
             if last.get('start', '')[:10] == requested and last.get('team_ids', [last.get('team_id')]) == team['team_ids']:
                 start = _reserved_start(last)
             else:
@@ -354,7 +462,7 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
         out.update({k:v for k,v in base.items() if k not in ('warnings','blocked','kind')}, pinned=True, historical=False, staged=True, conflicts=[],
                    promised_start=spec.get('promised_start', ''), promised_ready=spec.get('promised_ready', ''))
         out['forecast_start'], out['forecast_ready'] = out['start'], out['ready']
-        if requested and out['start'][:10] != requested:
+        if requested and not spec.get('_not_before') and out['start'][:10] != requested:
             out['conflicts'].append('Requested start is not a working day for this team')
         if missing and any(m.get('legacy_booking') for m in missing):
             out['conflicts'].append('Reconcile existing bookings before reserving new capacity')
@@ -372,6 +480,16 @@ def plan_calendar(records: list[VehicleOperations], settings: dict, saved: dict,
         out['calendar_label'] = out['title'] if out['custom'] else out['agency_name']
     queue.sort(key=lambda j: (j['accepted_date'], j['project_id'], j['id']))
     output.sort(key=lambda j: (j['start'], j['id']))
+    for job in output:
+        job['recovery_candidates'] = [
+            {'id': other['id'], 'title': other['title'], 'agency_name': other['agency_name'],
+             'accepted_date': other['accepted_date'], 'start': other['start']}
+            for other in sorted(output, key=lambda row: (row['accepted_date'], row['project_id'], row['id']))
+            if not job.get('historical') and job.get('shop_status') != 'complete'
+            and other['project_id'] != job['project_id'] and other['team_ids'] == job['team_ids']
+            and other['start'] > job['start'] and not other['blocked'] and other['acceptance_confirmed']
+            and not other.get('historical') and other.get('shop_status') not in ('complete', 'in_progress')
+        ]
     accepted_ids = {r.vehicle_id for r in visible if r.acceptance_status == AcceptanceStatus.ACCEPTED}
     accepted_queue = sorted(queue + [j for j in output if j['id'] in accepted_ids and j['accepted_date'] and not j.get('historical')],
                             key=lambda j: (j['accepted_date'], j['project_id'], j['id']))
@@ -388,7 +506,7 @@ def _scheduled_job(job, team, hours, start, rate, closed, settings, reasons, ori
     else:
         segments, end = [], start
     finishing = 0 if spec.get("kind") == "strip" or (spec.get("kind") in ("service", "offsite") and not spec.get("include_finishing")) else settings["finishing_hours"]
-    finish_segments, ready = work_segments(end, finishing, settings["hours_per_day"], set(settings["holidays"]), settings["hours_per_day"])
+    finish_segments, ready = work_segments(end, finishing, settings["hours_per_day"], shop_closed_dates(settings), settings["hours_per_day"])
     automatic_deadline = calculate_commitment_dates(r.vehicle_available_date, r.parts_received_at or r.parts_ready_at)[1] if r and r.project_type == "build" else ""
     deadline = (r.must_deliver_override_date or automatic_deadline) if r else spec.get("promised_date", "")
     warnings = []
@@ -405,6 +523,7 @@ def _scheduled_job(job, team, hours, start, rate, closed, settings, reasons, ori
             "revision": r.revision if r else None, "saved": bool(spec),
             "vin": r.vin if r else '', "vehicle_label": r.vehicle_label if r else '',
             "shop_status": str(r.shop_status) if r else '',
+            "final_finish_status": str(r.final_finish_status) if r else '',
             "acceptance_source": r.acceptance_source if r else '',
             "accepted_at": r.accepted_at if r else '',
             "qbo_estimate_accepted_at": r.qbo_estimate_accepted_at if r else '',

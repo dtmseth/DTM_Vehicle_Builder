@@ -38,6 +38,64 @@ def test_missing_qbo_date_is_blank_not_observation_time():
     assert current.qbo_checked_at
 
 
+def test_builder_quote_link_backfills_operations_and_latches_accepted():
+    bundle = build_local_bundle()
+    bundle.operations._records['v'] = VehicleOperations(vehicle_id='v', project_id='p')
+    client = Mock()
+    client.read_estimate.return_value = {
+        'Id': '123', 'DocNumber': '26-123', 'TxnStatus': 'Accepted',
+        'AcceptedDate': '2026-09-16',
+    }
+    result = refresh_linked_acceptance(
+        bundle.operations,
+        bundle.operations_writer,
+        client,
+        ACTOR,
+        builder_links={'v': [{
+            'estimate_id': '123',
+            'project_id': 'project-9',
+            'project_name': 'Unit 9',
+        }]},
+    )
+    current = bundle.operations.get_vehicle('v')
+    assert result == {'checked': 1, 'updated': 1, 'failed': 0}
+    assert current.qbo_estimate_id == '123'
+    assert current.qbo_estimate_number == '26-123'
+    assert current.qbo_project_id == 'project-9'
+    assert current.acceptance_status == AcceptanceStatus.ACCEPTED
+    assert current.acceptance_source == 'qbo'
+    assert current.accepted_at == '2026-09-16'
+
+
+def test_multiple_current_quotes_prefer_accepted_evidence_over_pending_primary():
+    bundle = build_local_bundle()
+    bundle.operations._records['v'] = VehicleOperations(vehicle_id='v', project_id='p')
+    estimates = {
+        'primary': {'Id': 'primary', 'DocNumber': '26-100', 'TxnStatus': 'Pending'},
+        'alternate': {
+            'Id': 'alternate', 'DocNumber': '26-101', 'TxnStatus': 'Accepted',
+            'AcceptedDate': '2026-09-15',
+        },
+    }
+    client = Mock()
+    client.read_estimate.side_effect = estimates.get
+    result = refresh_linked_acceptance(
+        bundle.operations,
+        bundle.operations_writer,
+        client,
+        ACTOR,
+        builder_links={'v': [
+            {'estimate_id': 'primary', 'project_id': '', 'project_name': ''},
+            {'estimate_id': 'alternate', 'project_id': '', 'project_name': ''},
+        ]},
+    )
+    current = bundle.operations.get_vehicle('v')
+    assert result['updated'] == 1
+    assert current.qbo_estimate_id == 'alternate'
+    assert current.qbo_estimate_status == 'Accepted'
+    assert current.acceptance_status == AcceptanceStatus.ACCEPTED
+
+
 def test_manual_acceptance_survives_different_or_pending_qbo_status():
     r=VehicleOperations(vehicle_id='v',project_id='p',qbo_estimate_id='123',
         acceptance_status=AcceptanceStatus.ACCEPTED,accepted_at='2026-01-12',acceptance_source='manual')

@@ -404,6 +404,33 @@ class QuickBooksApiClient:
             "doc_number": str(raw.get("DocNumber", "")),
         }
 
+    def list_estimates(self, start_position: int = 1, page_size: int = 50) -> list[dict]:
+        """Read one bounded page for the existing-Estimate picker."""
+        if type(start_position) is not int or not 1 <= start_position <= 100000:
+            raise ValueError('Invalid Estimate page')
+        if type(page_size) is not int or not 1 <= page_size <= 100:
+            raise ValueError('Invalid Estimate page size')
+        return self.query(
+            'SELECT * FROM Estimate ORDERBY MetaData.LastUpdatedTime DESC '
+            f'STARTPOSITION {start_position} MAXRESULTS {page_size}'
+        ).get('Estimate', []) or []
+
+    def search_estimates_by_doc_number(self, value: str, *, exact: bool = False,
+                                       page_size: int = 20) -> list[dict]:
+        """Return a bounded Estimate-number match set for unit quote linking."""
+        term = str(value or "").strip()
+        if not term or len(term) > 80:
+            raise ValueError("Invalid Estimate number search")
+        if type(page_size) is not int or not 1 <= page_size <= 20:
+            raise ValueError("Invalid Estimate search size")
+        safe = term.replace("\\", "\\\\").replace("'", "\\'")
+        operator = "=" if exact else "LIKE"
+        query_value = safe if exact else f"{safe}%"
+        return self.query(
+            f"SELECT * FROM Estimate WHERE DocNumber {operator} '{query_value}' "
+            f"ORDERBY MetaData.LastUpdatedTime DESC MAXRESULTS {page_size}"
+        ).get("Estimate", []) or []
+
     def read_estimate(self, estimate_id: str) -> dict | None:
         """Return an existing Estimate including its current SyncToken."""
         eid = str(estimate_id or "").strip()

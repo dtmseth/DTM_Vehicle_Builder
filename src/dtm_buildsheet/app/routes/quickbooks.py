@@ -23,6 +23,8 @@ POST:
 - /api/quickbooks/projects/preview — preview a vehicle's local QBO Project link
 - /api/quickbooks/projects/bind — link a vehicle to a real QBO Project locally
 - /api/quickbooks/estimates/bind — verify and store a read-only existing Estimate link
+- /api/quickbooks/estimates/search — search Estimate numbers for unit quote references
+- /api/quickbooks/estimates/reconcile-quotes — verify and link saved current quote numbers
 - /api/quickbooks/estimates/customer-preview — read the estimate's top-level customer
 - /api/quickbooks/estimates/validate — dry-run a vehicle's estimate (no network)
 - /api/quickbooks/estimates/create — create one vehicle's estimate
@@ -47,6 +49,7 @@ from ..adapters import wiring
 from ..adapters.interfaces import OperationsRepositoryError
 from ..services import (
     customer_pricing_service,
+    qb_acceptance_service,
     qb_estimate_service,
     qb_production_preview_service,
     qb_sync_service,
@@ -293,6 +296,35 @@ def route_quickbooks(
             ),
         )
         return True
+    if method == "POST" and path == "/api/quickbooks/estimates/list":
+        _send_json(handler, _estimate_call('list', qb_estimate_service.list_available_estimates,
+            paths, project_id=body.get('project_id', ''), individual_id=body.get('individual_id', ''),
+            start_position=body.get('start_position', 1)))
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/search":
+        _send_json(handler, _estimate_call(
+            "search",
+            qb_estimate_service.search_quote_estimates,
+            paths,
+            query=body.get("query", ""),
+            project_id=body.get("project_id", ""),
+            individual_id=body.get("individual_id", ""),
+        ))
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/reconcile-quotes":
+        result = _estimate_call(
+            "reconcile quote references",
+            qb_estimate_service.reconcile_quote_references,
+            paths,
+        )
+        if result.get("ok"):
+            result["acceptance_refresh"] = _estimate_call(
+                "refresh accepted quote references",
+                qb_acceptance_service.run_connected_refresh,
+                paths,
+            )
+        _send_json(handler, result)
+        return True
     if method == "POST" and path == "/api/quickbooks/estimates/bind":
         _send_json(
             handler,
@@ -304,7 +336,7 @@ def route_quickbooks(
                     project_id=body.get("project_id", ""),
                     individual_id=body.get("individual_id", ""),
                     qb_estimate_id=body.get("qb_estimate_id", ""),
-                    replace_existing=bool(body.get("replace_existing", False)),
+                    replace_existing=body.get("replace_existing", False),
                 ),
                 individual_id=str(body.get("individual_id") or ""),
             ),

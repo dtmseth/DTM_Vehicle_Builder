@@ -10,6 +10,7 @@ const _OPERATIONS = {
   loading: false,
   editVehicles: [],
   editScopeLabel: "",
+  editAnchor: null,
   statusSaving: false,
   historyRequest: 0,
   scheduleVehicles: [],
@@ -170,23 +171,62 @@ async function initOperationsAccess() {
     _OPERATIONS.session = session;
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(session);
     else button.hidden = !_operationsCanView(session);
-    const addButton = $("operations-add-builder");
-    if (addButton) addButton.hidden = !_operationsCanAddBuilderVehicle(session);
     return session;
   } catch (error) {
     console.warn("Operations access check failed", error);
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(null);
     else button.hidden = true;
-    const addButton = $("operations-add-builder");
-    if (addButton) addButton.hidden = true;
     return null;
   }
 }
 
-async function initOperationsTab() {
+function _operationsCaptureView(anchor) {
+  const rows = $("operations-rows");
+  const node = anchor?.closest("[data-operations-view-key]") ||
+    [...rows.querySelectorAll(".operations-project-group")].find(item => item.getBoundingClientRect().bottom > 0);
+  return { key: node?.dataset.operationsViewKey, top: node?.getBoundingClientRect().top,
+    scrollY: window.scrollY, scrollX: window.scrollX };
+}
+
+function _operationsRestoreView(view) {
+  const node = [...$("operations-rows").querySelectorAll("[data-operations-view-key]")]
+    .find(item => item.dataset.operationsViewKey === view.key);
+  const top = node ? window.scrollY + node.getBoundingClientRect().top - view.top : view.scrollY;
+  window.scrollTo({ top, left: view.scrollX, behavior: "instant" });
+}
+
+function _operationsMatchesSearch(project, needle) {
+  return !needle || project.vehicles.some(vehicle => [
+    vehicle.vehicle_label, vehicle.title, vehicle.agency_name, vehicle.build_year,
+    vehicle.unit_number, vehicle.vin, vehicle.qbo_estimate_number,
+  ].some(value => String(value || "").toLowerCase().includes(needle)));
+}
+
+function _operationsFollowVehicle(vehicleId) {
+  const vehicles = _OPERATIONS.payload?.vehicles || [];
+  const vehicle = vehicles.find(item => item.vehicle_id === vehicleId);
+  if (!vehicle) return;
+  const project = { vehicles: vehicle.project_id
+    ? vehicles.filter(item => item.project_id === vehicle.project_id) : [vehicle] };
+  const mode = _operationsProjectMode(project);
+  if (!["started", "active", "completed"].includes(mode)) return;
+  _OPERATIONS.filter = mode;
+  if (!_operationsMatchesSearch(project, String(_OPERATIONS.search[mode] || "").trim().toLowerCase())) {
+    _OPERATIONS.search[mode] = "";
+  }
+  if (mode === "active" && _OPERATIONS.activeScheduleFilter !== "all" &&
+      _operationsProjectScheduleMode(project) !== _OPERATIONS.activeScheduleFilter) {
+    _OPERATIONS.activeScheduleFilter = "all";
+  }
+}
+
+async function initOperationsTab({ followVehicleId = null, anchor = null } = {}) {
   if (_OPERATIONS.loading) return;
   _OPERATIONS.loading = true;
-  _operationsShowMessage("Loading the shared production backlog…");
+  const keepView = !!_OPERATIONS.payload && !$("tab-operations").hidden && !$("operations-content").hidden;
+  const view = keepView ? _operationsCaptureView(anchor) : null;
+  const loadError = message => keepView ? toast(message, "error") : _operationsShowMessage(message, "error");
+  if (!keepView) _operationsShowMessage("Loading the shared production backlog…");
   try {
     const session = await initOperationsAccess();
     if (!_operationsCanView(session)) {
@@ -195,18 +235,20 @@ async function initOperationsTab() {
     }
     const payload = await api("/api/operations/vehicles");
     if (!payload?.ok) {
-      _operationsShowMessage(payload?.error || "Operations data is unavailable", "error");
+      loadError(payload?.error || "Operations data is unavailable");
       return;
     }
     _OPERATIONS.payload = payload;
     _OPERATIONS.projectionPreview = null;
+    if (followVehicleId) _operationsFollowVehicle(followVehicleId);
     _operationsRender();
+    if (view) _operationsRestoreView(view);
     if (!(payload.vehicles || []).length && _operationsCanAddBuilderVehicle(session)) {
       await _operationsLoadProjectionPreview({ open: true, quiet: true });
     }
   } catch (error) {
     console.error("Operations load failed", error);
-    _operationsShowMessage("Operations data is temporarily unavailable", "error");
+    loadError("Operations data is temporarily unavailable");
   } finally {
     _OPERATIONS.loading = false;
   }
@@ -237,8 +279,6 @@ function _operationsRender() {
 }
 
 async function _operationsLoadProjectionPreview({ open = false, quiet = false } = {}) {
-  const button = $("operations-add-builder");
-  if (button) button.disabled = true;
   try {
     const preview = await api("/api/operations/projection-preview");
     if (!preview?.ok) {
@@ -251,8 +291,6 @@ async function _operationsLoadProjectionPreview({ open = false, quiet = false } 
   } catch (error) {
     console.error("Operations projection preview unavailable", error);
     if (!quiet) toast("Builder vehicles could not be loaded", "error");
-  } finally {
-    if (button) button.disabled = false;
   }
 }
 
@@ -293,6 +331,10 @@ function _operationsRenderRows() {
     [...document.querySelectorAll(".operations-project-group[open]")]
       .map(item => item.dataset.operationsProjectId)
   );
+  const openVehicleIds = new Set(
+    [...document.querySelectorAll(".operations-vehicle-quick[open]")]
+      .map(item => item.dataset.operationsOverrideId)
+  );
   const grouped = new Map();
   (_OPERATIONS.payload?.vehicles || []).forEach(vehicle => {
     const key = vehicle.project_id || `vehicle:${vehicle.vehicle_id}`;
@@ -326,15 +368,7 @@ function _operationsRenderRows() {
     .filter(project => _operationsProjectMode(project) === mode)
     .filter(project => mode !== "active" || _OPERATIONS.activeScheduleFilter === "all" ||
       _operationsProjectScheduleMode(project) === _OPERATIONS.activeScheduleFilter)
-    .filter(project => !needle || project.vehicles.some(vehicle => [
-      vehicle.vehicle_label,
-      vehicle.title,
-      vehicle.agency_name,
-      vehicle.build_year,
-      vehicle.unit_number,
-      vehicle.vin,
-      vehicle.qbo_estimate_number,
-    ].some(value => String(value || "").toLowerCase().includes(needle))));
+    .filter(project => _operationsMatchesSearch(project, needle));
   if (mode === "active") projects.sort(_operationsSortActiveProjects);
 
   const activeProjects = allProjects.filter(project => _operationsProjectMode(project) === "active");
@@ -371,6 +405,9 @@ function _operationsRenderRows() {
     project,
     !!needle || openProjectIds.has(project.projectId),
   )).join("");
+  rows.querySelectorAll(".operations-vehicle-quick").forEach(item => {
+    item.open = openVehicleIds.has(item.dataset.operationsOverrideId);
+  });
   _operationsBindRowActions();
 }
 
@@ -499,10 +536,10 @@ function _operationsProjectGroupMarkup(project, open) {
   ].filter(Boolean).join(" · ");
   const canEdit = _operationsEditableWorkstreams().length > 0;
   const canSchedule = _operationsCanSchedule() && first.project_state === "active";
-  return `<details class="operations-project-group" data-operations-project-id="${_operationsEscAttr(project.projectId)}"${open ? " open" : ""}>
+  return `<details class="operations-project-group" data-operations-project-id="${_operationsEscAttr(project.projectId)}" data-operations-view-key="${_operationsEscAttr('project:' + project.projectId)}"${open ? " open" : ""}>
     <summary>
       <div class="operations-project-identity">
-        <strong>${esc(projectName)}</strong>
+        <strong>${esc(projectName)} <span class="project-type-badge">${esc(({build:"Build",service:"Service",offsite:"Off-Site Service"})[first.project_type||"build"] || "Build")}</span></strong>
         <span>${esc(meta)}</span>
       </div>
       <span class="operations-project-progress">${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}</span>
@@ -539,7 +576,7 @@ function _operationsBindRowActions() {
       const label = button.dataset.operationsStatusScope === "project"
         ? `${[first.build_year, first.agency_name || "Project"].filter(Boolean).join(" · ")} — ${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`
         : first.vehicle_label || first.title || "Vehicle";
-      _operationsOpenStatusEditor(vehicles, label, { workstream: "availability" });
+      _operationsOpenStatusEditor(vehicles, label, { workstream: "availability", anchor: button });
     });
   });
   document.querySelectorAll("[data-operations-history-vehicle]").forEach(button => {
@@ -761,7 +798,7 @@ function _operationsVehicleMarkup(vehicle) {
       + (vehicle.qbo_observation_stale ? " · data may be stale" : "")
     : "No Estimate Connected";
   const canEdit = _operationsEditableWorkstreams().length > 0;
-  return `<article class="operations-vehicle">
+  return `<article class="operations-vehicle" data-operations-view-key="${_operationsEscAttr('vehicle:' + vehicle.vehicle_id)}">
     <div class="operations-vehicle-heading">
       <div>
         <h3>${esc(label)}</h3>
@@ -774,23 +811,26 @@ function _operationsVehicleMarkup(vehicle) {
       </div>
     </div>
     <div class="operations-status-grid">
-      ${_operationsStatus("availability", "Vehicle", vehicle.vehicle_availability_status)}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("parts") ? `<div class="operations-status"><b>Parts</b><span>Not applicable</span></div>` : _operationsStatus("parts", "Parts", vehicle.parts_status || "not_started")}
-      ${_operationsStatus("shop", "Build / Shop", vehicle.shop_status || "not_started")}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("tray") ? `<div class="operations-status"><b>Tray</b><span>Not applicable</span></div>` : _operationsStatus("tray", "Tray", vehicle.tray_status)}
-      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("programming_qc") ? `<div class="operations-status"><b>Programming & QC</b><span>Not applicable</span></div>` : _operationsStatus("programming_qc", "Programming & QC", vehicle.programming_qc_status)}
-      ${_operationsStatus("final_finish", "Final Finish", vehicle.final_finish_status)}
+      ${_operationsStatus("availability", "Vehicle", vehicle.vehicle_availability_status, vehicle.vehicle_availability_status === "delivered" ? vehicle.delivered_date : "")}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("parts") ? `<div class="operations-status"><b>Parts</b><span>Not applicable</span></div>` : _operationsStatus("parts", "Parts", vehicle.parts_status || "not_started", vehicle.parts_status === "parts_ready" ? vehicle.parts_ready_at : "")}
+      ${_operationsStatus("shop", "Build / Shop", vehicle.shop_status || "not_started", vehicle.shop_status === "complete" ? vehicle.shop_completed_at : "")}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("tray") ? `<div class="operations-status"><b>Tray</b><span>Not applicable</span></div>` : _operationsStatus("tray", "Tray", vehicle.tray_status, vehicle.tray_status === "complete" ? vehicle.tray_completed_at : vehicle.tray_status === "ready" ? vehicle.tray_ready_at : "")}
+      ${vehicle.applicable_workstreams && !vehicle.applicable_workstreams.includes("programming_qc") ? `<div class="operations-status"><b>Programming & QC</b><span>Not applicable</span></div>` : _operationsStatus("programming_qc", "Programming & QC", vehicle.programming_qc_status, vehicle.programming_qc_status === "complete" ? vehicle.programming_qc_completed_at : vehicle.programming_qc_status === "ready" ? vehicle.programming_qc_ready_at : "")}
+      ${_operationsStatus("final_finish", "Final Finish", vehicle.final_finish_status, vehicle.final_finish_status === "delivered" ? vehicle.delivered_date : vehicle.final_finish_status === "ready_for_delivery" ? vehicle.ready_for_delivery_at : vehicle.final_finish_status === "ready_for_wash_clean_photos" ? vehicle.final_finish_ready_at : "")}
     </div>
     <div class="operations-dates">
       <span><b>Accepted on</b>${esc(_operationsDate(vehicle.accepted_date||vehicle.accepted_at))}</span>
       <span><b>Build started</b>${esc(_operationsDate(vehicle.shop_started_at))}</span>
-      <span><b>Build finished</b>${esc(_operationsDate(vehicle.shop_completed_at))}</span>
+      <span><b>Build completed</b>${esc(_operationsDate(vehicle.shop_completed_at))}</span>
+      <span><b>Ready for delivery</b>${esc(_operationsDate(vehicle.ready_for_delivery_at))}</span>
+      <span><b>Delivered</b>${esc(_operationsDate(vehicle.delivered_date))}</span>
+      <span><b>Build team</b>${esc((vehicle.build_team_names || []).join(" + ") || "Not recorded")}</span>
       <span><b>Planned start</b>${esc(_operationsDate(vehicle.planned_start_date))}</span>
       <span><b>Estimated ready date</b>${esc(_operationsDate(vehicle.target_finish_date))}</span>
       <span class="operations-must-deliver"><b>Must Deliver On${vehicle.must_deliver_override_date ? " · Manual" : ""}</b>${esc(_operationsDate(vehicle.must_deliver_by_date))}</span>
       <span><b>QuickBooks</b>${esc(qbo)}</span>
     </div>
-    ${canEdit ? `<details class="operations-vehicle-quick">
+    ${canEdit ? `<details class="operations-vehicle-quick" data-operations-override-id="${_operationsEscAttr(vehicle.vehicle_id)}">
       <summary>Individual status override</summary>
       ${_operationsQuickStatusMarkup([vehicle], "vehicle", vehicle.vehicle_id)}
     </details>` : ""}
@@ -806,8 +846,8 @@ function _operationsVehicleMarkup(vehicle) {
   </article>`;
 }
 
-function _operationsStatus(key, label, value) {
-  return `<div class="operations-status operations-status-tone-${_operationsStatusTone(key, value)}"><span>${esc(label)}</span><strong>${esc(_operationsLabel(value))}</strong></div>`;
+function _operationsStatus(key, label, value, completedAt = "") {
+  return `<div class="operations-status operations-status-tone-${_operationsStatusTone(key, value)}"><span>${esc(label)}</span><strong>${esc(_operationsLabel(value))}</strong>${completedAt ? `<small>${esc(_operationsDate(completedAt))}</small>` : ""}</div>`;
 }
 
 function _operationsQuickStatusMarkup(vehicles, scope, id) {
@@ -827,7 +867,7 @@ function _operationsQuickStatusMarkup(vehicles, scope, id) {
           data-operations-status-scope="${_operationsEscAttr(scope)}"
           data-operations-status-id="${_operationsEscAttr(id)}">Set date…</button>`
       : "";
-    return `<div class="operations-quick-row">
+    return `<div class="operations-quick-row" data-operations-view-key="${_operationsEscAttr(JSON.stringify([scope, id, definition.key]))}">
       <b>${esc(definition.label)}</b>
       <div role="group" aria-label="${_operationsEscAttr(definition.label)} status">${buttons}${dateEditor}</div>
     </div>`;
@@ -862,6 +902,7 @@ async function _operationsApplyQuickStatus(button) {
     _operationsOpenStatusEditor(vehicles, label, {
       workstream: definition.key,
       target,
+      anchor: button,
     });
     return;
   }
@@ -902,7 +943,7 @@ async function _operationsApplyQuickStatus(button) {
   else toast(autoCompleted
     ? "Delivered saved — project moved to Completed"
     : `${_operationsStatusValueLabel(definition, target)} saved`, "success");
-  await initOperationsTab();
+  await initOperationsTab({ followVehicleId: first.vehicle_id, anchor: button });
 }
 
 function _operationsStatusDef(key) {
@@ -1020,6 +1061,7 @@ function _operationsOpenStatusEditor(vehicles, scopeLabel, selection = null) {
   }
   _OPERATIONS.editVehicles = vehicles;
   _OPERATIONS.editScopeLabel = scopeLabel;
+  _OPERATIONS.editAnchor = selection?.anchor || null;
   $("operations-status-title").textContent = vehicles.length > 1
     ? "Update project status"
     : "Update vehicle status";
@@ -1049,6 +1091,7 @@ function _operationsCloseStatusEditor(force = false) {
   if (modal) modal.hidden = true;
   _OPERATIONS.editVehicles = [];
   _OPERATIONS.editScopeLabel = "";
+  _OPERATIONS.editAnchor = null;
 }
 
 async function _operationsApplyStatus(event) {
@@ -1066,6 +1109,8 @@ async function _operationsApplyStatus(event) {
   );
   if (!approved) return;
 
+  const followVehicleId = _OPERATIONS.editVehicles[0]?.vehicle_id;
+  const anchor = _OPERATIONS.editAnchor;
   const apply = $("operations-status-apply");
   const cancel = $("operations-status-cancel");
   const close = $("operations-status-close");
@@ -1116,7 +1161,7 @@ async function _operationsApplyStatus(event) {
       ? "Delivered saved — project moved to Completed"
       : `${changed} vehicle${changed === 1 ? "" : "s"} updated`, "success");
   }
-  await initOperationsTab();
+  await initOperationsTab({ followVehicleId, anchor });
 }
 
 function _operationsSchedulePatch() {
@@ -1444,9 +1489,6 @@ function _operationsDateTime(value) {
 
 document.addEventListener("DOMContentLoaded", () => {
   $("operations-refresh")?.addEventListener("click", () => initOperationsTab());
-  $("operations-add-builder")?.addEventListener("click", () => {
-    _operationsLoadProjectionPreview({ open: true });
-  });
   $("operations-search")?.addEventListener("input", event => {
     _OPERATIONS.search[_OPERATIONS.filter] = event.target.value;
     _operationsRenderRows();

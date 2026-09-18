@@ -17,7 +17,21 @@ and acceptance date. They omit source-system labels, missing-unit placeholders a
 Missing acceptance dates appear under review, never at a guessed date. Manual acceptance and QBO
 AcceptedDate semantics are unchanged.
 
-Select a card to open a compact modal bubble. Assigned team and scheduled start are the primary
+The sidebar starts with collapsed project cards showing agency, unit count, acceptance date,
+status tags and readiness counts. Build, Service, and Off-Site Service badges identify the project type
+on queue cards, scheduled units, and Operations project headings. Shared statuses appear once; mixed statuses show their unit counts.
+Expand a project to reveal individual unit cards; expansion persists across refreshes.
+Dragging a project card schedules its accepted unscheduled units together. Dragging an expanded unit
+schedules only that unit. **View whole project** opens a project modal with its unit list, team/date
+controls, removal, and next-ready swap. Each unit modal links back to the project. Project-level
+rescheduling includes all active accepted units; if they are scattered across teams/dates or partly
+unscheduled, a confirmation explains that they will be placed together and offers cancellation so
+the user can reschedule units individually. The server enforces that confirmation too.
+
+Clicking a scheduled build opens the whole project when its active builds are together, or the
+selected unit when the project is split. Scheduled unit cards show the last six VIN characters when
+available, with no placeholder when missing. Expanded sidebar unit cards always open the unit.
+Assigned team and scheduled start are the primary
 controls; the ready date and included vehicle dates update in the same modal as details change. Job type and labor estimate are under
 **Advanced**, alongside acceptance/deadline edit actions and a known VIN. Accepted date and delivery
 deadline are visible context outside that disclosure. There are no agreed-date inputs, remaining
@@ -28,19 +42,34 @@ uses the first full-duration opening starting on that day, including remaining h
 build ends. If no such gap starts that day, it retains the requested day and exposes conflicts
 instead of silently moving to a later date. Unchanged saved starts retain their exact time. The modal
 and card tooltip show times for partial-day handoffs. Saved reservations
-stay fixed. A **Schedule the rest of this project** checkbox is checked by default. It includes the selected
-vehicle plus accepted, unscheduled siblings, placed sequentially on the selected team. The modal
-shows every included vehicle and its dates. Unchecking books only the selected vehicle; already
-booked siblings keep their dates.
+stay fixed unless displaced by an insertion or swap. Moving a unit leaves its scheduled siblings
+fixed except for the later work displaced on the destination team. The sidebar project card defines
+the initial grouping; there is no global group-mode toggle. For unscheduled units, **Schedule the
+rest of this project** still opts into adding accepted, unscheduled siblings in the booking form.
 
 Pointer dragging supports unscheduled sidebar vehicles, project headings with unscheduled vehicles,
-and saved bookings on the grid. The entire Week
-day cell accepts drops, including the area over a booking, rather than only its plus control.
-Month drops keep the preferred team when it is available, or select the next available active
-team. Availability checks the full proposed work duration against the visible booked work intervals.
-Busy teams show a red dot and Busy label in the dropdown. Choosing a busy team opens a warning
-naming the overlapping project(s); cancellation restores the previous selection. Every drag
-opens the booking modal without saving. Click/keyboard forms
+and saved bookings on the grid. Drop on a booking's left/right edge or the narrow handoff gap to
+insert before/after it. Dragging has exactly three visual states: a red insertion line between
+bookings, a highlighted replacement target, or an open-space target for a new booking. Both sides
+of a handoff share one red line and insertion anchor, including when dragging the right-hand unit.
+Open-space drops begin after existing work on the requested day, preserving partial-day handoffs
+instead of inserting at 8 a.m. ahead of that work. Dropping
+on a scheduled booking replaces it; when the dragged unit is already scheduled, the two bookings
+swap positions. Dragging a scheduled unit defaults to the whole project and opens a move dialog
+with affected dates. Choose **Selected unit only** there to leave its siblings in place, or hold
+**Shift** while dragging to move just that unit directly. Split-project consolidation is explained
+before confirmation; whole-project swaps move both project blocks. The dialog saves the exact
+preview ticket shown, and rejects stale changes. Replacement returns the displaced booking
+to the unscheduled queue and clears its Operations planning dates. Later bookings move forward as
+needed using labor capacity, reserve, closures, team absences and partial-day handoffs. They never
+move earlier than their saved start. In-progress units can be scheduled, moved, or swapped without
+changing actual Operations milestone dates. Legacy joint-team work still requires reconciliation.
+Week cells and month cells with a selected team also accept new bookings. Month cells without
+a team selection open the booking modal to choose one. Busy teams remain identified in the dropdown.
+Sidebar and Shift-drops save directly through the server-calculated preview and revision ticket. Conflicts block
+saving and appear inline. Right-click a scheduled unit (or press Shift+F10) for **Open project**,
+**Open unit**, and **Delete from schedule**. Deletion offers project/unit scope and the existing
+fill-gap choice; it keeps the underlying project records. Click/keyboard forms
 remain available. Dialogs support Escape, outside-click dismissal and contained keyboard focus.
 Both views mark today's date. Calendar uses the available desktop width. Only the queue
 scrolls internally; its desktop height tracks the full Calendar column through a ResizeObserver.
@@ -71,13 +100,13 @@ Fixed-start symbols are removed, and deadlines use the word **Deadline**.
 
 Initial teams remain David's Team (two people, 60 build / 6 strip labor hours), Josh's Team (same),
 and Michelle (one person, 40 build / 6 strip hours). Defaults are 8 hours/person/weekday with a 10%
-buffer. The buffer reduces usable daily labor capacity: two people × eight hours × 90% gives
-14.4 schedulable labor hours per day. Partial days remain available; estimates are not rounded
+weekly capacity reserve. The reserve reduces usable availability without changing the vehicle's labor
+estimate: two people × eight hours × 90% gives 14.4 schedulable labor hours per day. Partial days remain available; estimates are not rounded
 to whole days. This setting is unchanged pending the owner’s decision about whole-day rounding.
 Labor is summed across the selected team's people. A saved manual estimate survives reassignment.
 
 The interval search fills gaps before later reservations and retains partial-day capacity. Weekends,
-shop closures and team days off consume no capacity. Four default working hours of final checks
+selected observed U.S. federal holidays, additional shop closures and team days off consume no capacity. Four default working hours of final checks
 use the existing unlimited shared finishing group, without occupying a build team. This remains a
 modeling assumption, not a new QC staffing model.
 
@@ -97,34 +126,41 @@ remaining-hour corrections remain readable for compatibility.
 
 ## Review, save and recovery
 
-**Confirm booking** validates and saves directly from the booking modal. There is no second review
-screen or required typed explanation for ordinary bookings; history records the confirmed action.
-Server-calculated availability and the included-vehicle overview are already visible. Validation
-errors remain in the modal. Confirm sits at the bottom right, with expandable booking history on
-the left. Build in progress is an amber badge, and forecast prose is omitted from Calendar dialogs.
+**Confirm booking** saves from the booking modal without opening Review Schedule. Drops and team
+settings also save directly. The client obtains the server preview ticket before every save and
+records the chosen action as its history reason. Validation errors remain inline. Confirm sits at the bottom
+right, with expandable booking history on the left. Build in progress is an amber badge.
 The visible Calendar refreshes every 15 seconds and when the app regains focus, including while
 a booking is open. Readiness, deadlines and availability update; untouched booking fields follow
 new saved values while edited fields retain user input.
-Confirm fetches current Operations data while preserving typed edits;
-unrelated status/QBO refreshes no longer require closing the modal. If refreshed data changes the
-proposed dates or included vehicles, the updated overview requires another Confirm. An unrelated Calendar edit is refreshed automatically. A change to the current project’s booking
-or team settings displays the currently saved details and keeps typed entries, requiring another
-Confirm without closing/reopening. Preview/save tickets protect scheduling evidence; per-vehicle
-publication still uses exact Operations revisions. Busy-team overlaps require a named warning confirmation; this opt-in
-is bound to the exact proposal ticket and recorded in history. It permits intentional overlapping
-work without moving existing bookings. Invalid/nonworking dates, unresolved legacy imports, stale
-revisions and permission failures still block saving. Settings and pending-publication recovery
-retain their separate impact/sync view.
+Preview/save tickets protect scheduling evidence and Calendar revisions; per-vehicle publication
+uses exact Operations revisions. Stale tickets, capacity conflicts, invalid dates, unresolved legacy
+imports and permission failures block saving. An explicit shared-sync conflict resolution remains
+available through the recovery button; ordinary changes do not open that dialog.
 
-**Remove project from schedule** confirms the number of affected current bookings, releases them,
+Blocked booking modals list later ready-to-build units in other projects on the same team, sorted
+by the authoritative acceptance date. **Swap with next ready build** is available in project and unit
+modals; the server selects the first eligible later ready build on the same team by acceptance date.
+**Swap with this build** retains individual candidate selection. Both use the validated direct-save path.
+Completed Operations cards show the saved build team and actual build-completed, ready-for-delivery
+and delivered dates. Status cards show recorded milestone dates without inventing missing ones.
+Completed reservations survive removal of the remaining project bookings; their stable team IDs
+provide agency-level recommendations. Retired teams remain visible in history but cannot be selected
+as a new recommendation.
+
+**Remove project from schedule** (or **Remove unit from schedule**) offers **Shift builds back** or
+**Leave open space** when later bookings exist on the affected teams. Filling the gap compacts later
+reservations in their existing order using working hours, closures and team absences, then publishes
+their new planning dates to Operations. Leaving the space keeps those bookings fixed. Removal releases the selected bookings
 and clears their team assignments. Accepted vehicles return to the queue. It clears only planned
 start, Scheduled Week and target finish via the existing revision-checked Operations commands;
 acceptance, deadlines and actual Shop progress remain intact. Released entries persist as markers
 so an interrupted date-clearing publication can be resumed from a fresh snapshot. Historical
-completed projects are excluded. Standalone custom jobs have the same removal action.
+completed projects and build-complete units are excluded. Standalone custom jobs have the same removal action.
 
-Team settings also use this preview/review path. Review displays affected reservations and forecast
-risks; settings changes leave held dates intact. Rename teams freely and retire them instead of
+Team settings also use the server preview/save path without an extra dialog; settings changes leave
+held dates intact. Refresh and sync recovery sit in the grid navigation row, without a separate
+empty toolbar above the Calendar. Rename teams freely and retire them instead of
 removing stable identities.
 
 Save validates the booking against the local replica, then atomically persists the visible Calendar

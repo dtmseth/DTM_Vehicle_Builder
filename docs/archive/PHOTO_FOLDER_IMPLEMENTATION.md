@@ -18,11 +18,11 @@ Discovery resolves registered folder IDs before scanning, and rejects a result i
 
 ## Existing-folder backfill
 
-`tools/backfill_company_reference_folders.py` reads the shared project JSON records directly. It does not run desktop cloud sync or write local/shared project records.
+`tools/backfill_company_reference_folders.py` reads the shared project JSON records directly. It does not run desktop cloud sync or write local/shared project records. It also identifies JPG/JPEG/PNG files loose at an exact vehicle-folder root and, only after plan review, moves them into that vehicle's exact `Build Reference Photos` folder. PDFs, videos, folders, and other files are left untouched.
 
-1. `plan --plan /absolute/path/plan.json` resolves each registered Company vehicle folder by ID and records the exact missing child folder, source project revision and current location. `--exclude-project ID` explicitly records an omitted project.
-2. Review every blocker and target. A file collision, unresolved parent, duplicate vehicle parent ID, or conflicting library blocks application.
-3. `apply --plan /absolute/path/plan.json --report /absolute/path/report.json` rechecks source revisions and parents, creates only the named child under the exact parent ID, and reads each result back. Progress checkpoints make interruption reviewable. Existing child IDs remain intact. A changed source/parent stops the run for a fresh plan.
+1. `plan --plan /absolute/path/plan.json` resolves each registered Company vehicle folder by ID and records the exact missing child folder, source project revision, current location, and eligible loose photos. `--exclude-project ID` explicitly records an omitted project.
+2. Review every blocker and target. A file collision, unresolved parent, duplicate vehicle parent ID, conflicting library, or duplicate loose-photo name blocks application.
+3. `apply --plan /absolute/path/plan.json --report /absolute/path/report.json` rechecks source revisions, parents, and each photo identity; creates only the named child under the exact parent ID; moves only planned supported image files; and reads each result back. Progress checkpoints make interruption reviewable. Existing child IDs remain intact. A changed source/parent/file stops the run for a fresh plan.
 
 Recovery is additive: retain already-created folders and regenerate/reapply the plan. No deletion rollback is needed. This tool has no file-copy, rename, ancestor-creation, project-write, schedule-write, or Shop-write operation.
 

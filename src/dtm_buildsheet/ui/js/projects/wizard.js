@@ -393,6 +393,7 @@ function _ptBuildPayload() {
         existing_unit_number: ind.existing_unit_number || "",
         existing_vin:         ind.existing_vin         || "",
         notes:                ind.notes                || "",
+        quote_references:     (ind.quote_references || []).map(ref => ({ ...ref })),
         draft_id:             ind.draft_id             || null,
       })),
     })),
@@ -417,6 +418,11 @@ async function _ptSaveProject() {
     const res = await api("/api/project/save", _ptBuildPayload());
     if (res.ok) {
       _PT.editId = res.project_id;
+      if (_PT.units.some(unit => (unit.individuals || []).some(ind =>
+        (ind.quote_references || []).some(ref => ref.state !== "obsolete")
+      ))) {
+        await window.PT_reconcileQuoteReferences?.();
+      }
       await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === _PT.editId);
       toast("Project saved", "success");

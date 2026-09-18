@@ -61,7 +61,46 @@ _INDIVIDUAL_OPERATIONAL_FIELDS = (
 _OPTIONAL_EXISTING_VEHICLE_FIELDS = (
     "existing_year", "existing_make", "existing_model", "existing_build_type",
     "existing_unit_number", "existing_vin", "previous_build",
+    "quote_references",
 )
+
+_QUOTE_REFERENCE_QB_FIELDS = (
+    "match_status", "qb_estimate_id", "estimate_status", "customer",
+    "txn_date", "checked_at",
+)
+
+
+def _clear_quote_reference_qb_fields(reference) -> None:
+    reference.match_status = "pending"
+    reference.qb_estimate_id = ""
+    reference.estimate_status = ""
+    reference.customer = ""
+    reference.txn_date = ""
+    reference.checked_at = ""
+
+
+def _align_primary_estimate_reference(individual) -> None:
+    """Keep the writable Estimate on a current, matched quote reference."""
+    refs = list(getattr(individual, "quote_references", []) or [])
+    current = [
+        ref for ref in refs
+        if ref.state == "current" and ref.match_status == "linked" and ref.qb_estimate_id
+    ]
+    primary = str(individual.qb_estimate_id or "").strip()
+    if not primary:
+        return
+    primary_reference = next((ref for ref in refs if ref.qb_estimate_id == primary), None)
+    # Legacy projects can have the singular Estimate connection without a
+    # quote-reference row. Preserve it until a verified QB read backfills the
+    # human-facing quote number.
+    if primary_reference is None:
+        return
+    if primary_reference in current:
+        return
+    individual.qb_estimate_id = current[0].qb_estimate_id if current else ""
+    if not individual.qb_estimate_id:
+        individual.qb_estimate_snapshot = {}
+        individual.qb_estimate_snapshot_at = ""
 
 
 def _preserve_server_owned_build_state(
@@ -105,6 +144,20 @@ def _preserve_server_owned_build_state(
             for field in _OPTIONAL_EXISTING_VEHICLE_FIELDS:
                 if field not in raw_individual:
                     setattr(incoming_individual, field, getattr(old_individual, field))
+            old_references = {
+                reference.reference_id: reference
+                for reference in old_individual.quote_references
+            }
+            for reference in incoming_individual.quote_references:
+                old_reference = old_references.get(reference.reference_id)
+                if (
+                    old_reference is None
+                    or old_reference.quote_number.casefold() != reference.quote_number.casefold()
+                ):
+                    _clear_quote_reference_qb_fields(reference)
+                    continue
+                for field in _QUOTE_REFERENCE_QB_FIELDS:
+                    setattr(reference, field, getattr(old_reference, field))
             for field in _INDIVIDUAL_OPERATIONAL_FIELDS:
                 setattr(incoming_individual, field, getattr(old_individual, field))
 
@@ -584,7 +637,22 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 _preserve_server_owned_build_state(
                     project.build_units, incoming_units, body["build_units"],
                 )
+            else:
+                for incoming_unit in incoming_units:
+                    for incoming_individual in incoming_unit.individuals:
+                        for reference in incoming_individual.quote_references:
+                            _clear_quote_reference_qb_fields(reference)
             project.build_units = incoming_units
+
+        for unit in project.build_units:
+            for individual in unit.individuals:
+                _align_primary_estimate_reference(individual)
+                for reference in individual.quote_references:
+                    quote = reference.quote_number.strip()
+                    if quote and quote.casefold() not in {
+                        item.casefold() for item in project.quote_numbers
+                    }:
+                        project.quote_numbers.append(quote)
 
         for unit in project.build_units:
             for individual in unit.individuals:

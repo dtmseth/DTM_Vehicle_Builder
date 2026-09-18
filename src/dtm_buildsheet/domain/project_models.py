@@ -67,6 +67,28 @@ class BuildReferenceAsset:
 
 
 @dataclass
+class QuoteReference:
+    """A human-readable quote number and its optional QBO Estimate match.
+
+    References remain on the vehicle when they become obsolete so alternate
+    configurations and split-billing history stay visible to every Builder
+    user. ``qb_estimate_id`` is a read-only link learned from QuickBooks;
+    ``IndividualUnit.qb_estimate_id`` remains the single Estimate selected for
+    Builder-driven updates.
+    """
+
+    reference_id: str
+    quote_number: str = ""
+    state: str = "current"
+    match_status: str = "pending"
+    qb_estimate_id: str = ""
+    estimate_status: str = ""
+    customer: str = ""
+    txn_date: str = ""
+    checked_at: str = ""
+
+
+@dataclass
 class IndividualUnit:
     individual_id: str
     unit_number: str = ""
@@ -111,6 +133,7 @@ class IndividualUnit:
     qb_job_id: str = ""
     qb_project_id: str = ""
     qb_project_name: str = ""
+    quote_references: list[QuoteReference] = field(default_factory=list)
     qb_estimate_id: str = ""
     qb_estimate_snapshot: dict[str, Any] = field(default_factory=dict)
     qb_estimate_snapshot_at: str = ""

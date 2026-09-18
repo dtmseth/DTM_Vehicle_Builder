@@ -8,8 +8,8 @@ from dtm_buildsheet.app.adapters.calendar_store import CalendarConflictError, Ca
 from dtm_buildsheet.app.adapters.wiring import build_local_bundle
 from dtm_buildsheet.app.services.calendar_service import CalendarService
 from dtm_buildsheet.app.services.operations_service import OperationsAuthorizationError
-from dtm_buildsheet.domain.calendar_planning import default_calendar_settings, plan_calendar, validate_settings, work_segments
-from dtm_buildsheet.domain.operations_models import AcceptanceStatus, OperationsActor, VehicleOperations, VehicleAvailabilityStatus
+from dtm_buildsheet.domain.calendar_planning import default_calendar_settings, plan_calendar, shop_closed_dates, us_federal_holiday_dates, validate_settings, work_segments
+from dtm_buildsheet.domain.operations_models import AcceptanceStatus, FinalFinishStatus, OperationsActor, VehicleOperations, VehicleAvailabilityStatus
 from dtm_buildsheet.paths import AppPaths
 
 TODAY = date(2026, 9, 14)
@@ -62,6 +62,66 @@ def test_capacity_and_finishing_are_separate():
     segments,end=work_segments(datetime(2026,9,18,15),4,8,set(),8)
     assert [s['date'] for s in segments]==['2026-09-18','2026-09-21']
     assert end==datetime(2026,9,21,11)
+
+
+def test_observed_us_federal_holiday_closures_are_enabled_by_default_and_selectable():
+    settings=default_calendar_settings()
+    holidays=us_federal_holiday_dates(2026,2026)
+    assert {'2026-01-01','2026-06-19','2026-07-03','2026-11-26','2026-12-25'} <= holidays
+    assert '2026-05-25' in holidays  # Memorial Day is the last Monday in May.
+    assert '2026-07-03' in shop_closed_dates(settings)
+    settings['us_federal_holidays']=['independence_day']
+    selected={value for value in shop_closed_dates(settings) if value.startswith('2026-')}
+    assert selected=={'2026-07-03'}
+    settings['us_federal_holidays']=[]
+    settings['holidays']=['2026-08-17']
+    assert shop_closed_dates(settings)=={'2026-08-17'}
+
+
+def test_us_federal_holiday_closure_moves_scheduled_work_to_the_next_workday():
+    settings=default_calendar_settings()
+    closed=shop_closed_dates(settings)
+    segments,end=work_segments(datetime(2026,7,3,8),14.4,14.4,closed,8)
+    assert segments==[{'date':'2026-07-06','start_hour':8.0,'end_hour':16.0}]
+    assert end==datetime(2026,7,6,16)
+
+
+@pytest.mark.parametrize('status', [FinalFinishStatus.READY_FOR_DELIVERY, FinalFinishStatus.DELIVERED])
+def test_calendar_jobs_expose_delivery_ready_status_for_the_green_card_bar(status):
+    job=staged([vehicle(final_finish_status=status)], [reservation(hours=14.4)])['jobs'][0]
+    assert job['final_finish_status']==status.value
+
+
+def test_saved_calendar_job_retains_delivery_ready_status_for_the_green_card_bar(service):
+    service.save(ADMIN,reviewed(service))
+    service.bundle.operations._records['v1'].final_finish_status=FinalFinishStatus.READY_FOR_DELIVERY
+    assert service.view(ADMIN)['plan']['jobs'][0]['final_finish_status']=='ready_for_delivery'
+
+
+def test_calendar_payload_exposes_selected_shop_closures(service):
+    view=service.view(ADMIN)
+    assert '2026-11-26' in view['closed_dates']
+
+
+def test_unscheduled_vehicle_offers_teams_from_completed_builds_for_its_agency(service):
+    service.save(ADMIN,reviewed(service,{'id':'v1','team_id':'team-david'}))
+    service.bundle.operations._records['v1'].shop_completed_at='2026-09-18T16:00:00-05:00'
+    service.bundle.operations._records['v2']=vehicle('v2','p2')
+    queue={job['id']: job for job in service.view(ADMIN)['plan']['queue']}
+    assert queue['v2']['agency_team_history']==[
+        {'team_id':'team-david','team_name':"David's Team",'completed_builds':1}
+    ]
+
+
+def test_group_move_restages_each_scheduled_active_project_vehicle(service):
+    service.bundle.operations._records['v2']=vehicle('v2')
+    service.save(ADMIN,reviewed(service,{'id':'v1','team_id':'team-david','start_date':'2026-09-14'}))
+    service.save(ADMIN,reviewed(service,{'id':'v2','team_id':'team-david','start_date':'2026-09-18'}))
+    body=reviewed(service,{'id':'v1','team_id':'team-josh','start_date':'2026-09-21'},move_project=True)
+    saved=service.save(ADMIN,body)
+    jobs={job['id']:job for job in saved['plan']['jobs']}
+    assert jobs['v1']['team_id']==jobs['v2']['team_id']=='team-josh'
+    assert jobs['v1']['start']<'2026-09-22'<=jobs['v2']['start']
 
 
 def test_fixed_overlap_stays_visible_instead_of_moving_booking():
@@ -124,7 +184,7 @@ def reviewed(service,edit=None,**extra):
     body={'revision':view['revision'],'source_revision':view['source_revision'], 'reason':'Reviewed fixture change', **extra}
     if edit is not None:
         body['edit']=edit
-    elif 'settings' not in extra:
+    elif not any(key in extra for key in ('settings', 'schedule_action', 'remove_project', 'remove_vehicle')):
         # Test convenience submits explicit vehicle choices, never a bulk auto-plan save.
         queue=view['plan']['queue']+[j for j in view['plan']['needs_review'] if j.get('legacy_booking')]
         body['edits']=[{'id':j['id'],'team_id':'team-michelle'} for j in queue]
@@ -136,11 +196,549 @@ def settings_save(service,settings):
     return service.save_settings(ADMIN,reviewed(service,settings=settings))
 
 
+def _book(service, ident, *, project=None, hours=7.2, start='2026-09-14', team='team-david'):
+    if ident not in service.bundle.operations._records:
+        service.bundle.operations._records[ident] = vehicle(ident, project or ident)
+    return service.save(ADMIN, reviewed(service, {'id': ident, 'team_id': team,
+        'hours': hours, 'hours_manual': True, 'start_date': start}))
+
+
+def test_individual_move_leaves_other_project_units_fixed(service):
+    _book(service, 'v1')
+    original = _book(service, 'v2', project='p1')['saved_jobs']['v2']['last_plan']
+    saved = _book(service, 'v1', start='2026-09-21', team='team-josh')
+    assert saved['saved_jobs']['v2']['last_plan'] == original
+
+
+def test_group_move_is_contiguous_even_when_selected_unit_is_last_by_acceptance(service):
+    _book(service, 'v1')
+    _book(service, 'v2', project='p1', start='2026-09-18')
+    _book(service, 'other', start='2026-09-21', team='team-josh')
+    body = reviewed(service, {'id':'v2','team_id':'team-josh','start_date':'2026-09-21'}, move_project=True)
+    preview = service.preview(ADMIN, body)
+    jobs = {j['id']: j for j in preview['plan']['jobs']}
+    assert jobs['v1']['start'] == '2026-09-21T08:00'
+    assert jobs['v1']['end'] == jobs['v2']['start']
+    assert jobs['v2']['end'] <= jobs['other']['start']
+    assert not preview['conflicts']
+
+
+def test_insert_between_back_to_back_builds_preserves_partial_days_closures_and_dates(service):
+    _book(service, 'v1')
+    _book(service, 'later')
+    service.bundle.operations._records['insert'] = vehicle('insert', 'new')
+    # Two-person team: this insertion takes a day and crosses the manual closure.
+    data, rev = service.store.read()
+    data['settings']['holidays'] = ['2026-09-15']
+    data['jobs']['insert'] = {'hours':14.4, 'hours_manual':True}
+    service.store.write(data, rev)
+    before = service.store.read()
+    body = reviewed(service, schedule_action={'id':'insert','target_id':'v1','mode':'after'})
+    preview = service.preview(ADMIN, body)
+    assert service.store.read() == before
+    jobs = {j['id']:j for j in preview['plan']['jobs']}
+    assert jobs['v1']['end'] == jobs['insert']['start'] == '2026-09-14T12:00'
+    assert jobs['insert']['end'] == jobs['later']['start'] == '2026-09-16T12:00'
+    assert all(s['date'] != '2026-09-15' for j in jobs.values() for s in j['segments'])
+    assert not preview['conflicts']
+    assert {c['id'] for c in preview['changes']} == {'insert','later'}
+    saved = service.save(ADMIN, body)
+    service.publish_dates(ADMIN, saved, 'insert-dates', on_progress=lambda count: None)
+    for job in saved['plan']['jobs']:
+        record = service.bundle.operations.get_vehicle(job['id'])
+        assert record.planned_start_date == job['start'][:10]
+        assert record.target_finish_date == job['ready'][:10]
+        assert not record.shop_completed_at
+    assert not any(key.startswith('_') for s in service.store.read()[0]['jobs'].values() for key in s)
+
+
+@pytest.mark.parametrize('other_team', ['team-david', 'team-josh'])
+def test_swap_unequal_durations_reflows_both_lanes(service, other_team):
+    _book(service, 'v1', hours=14.4)
+    _book(service, 'later', hours=7.2, start='2026-09-17', team=other_team)
+    _book(service, 'tail', hours=7.2, start='2026-09-17', team=other_team)
+    body = reviewed(service, schedule_action={'id':'v1','target_id':'later','mode':'swap'})
+    preview = service.preview(ADMIN, body)
+    assert not preview['conflicts']
+    jobs = {j['id']: j for j in preview['plan']['jobs']}
+    assert jobs['later']['start'] == '2026-09-14T08:00'
+    assert jobs['v1']['start'] == '2026-09-17T08:00'
+    assert jobs['tail']['start'] >= jobs['v1']['end']
+    saved = service.save(ADMIN, body)
+    service.publish_dates(ADMIN, saved, 'swap-dates', on_progress=lambda count: None)
+    for ident in ('v1', 'later', 'tail'):
+        assert service.bundle.operations.get_vehicle(ident).planned_start_date == jobs[ident]['start'][:10]
+
+
+def test_replace_returns_displaced_vehicle_to_queue_and_clears_operations_dates(service):
+    saved = _book(service, 'v1')
+    service.publish_dates(ADMIN, saved, 'initial', on_progress=lambda count: None)
+    service.bundle.operations._records['new'] = vehicle('new', 'new-project')
+    body = reviewed(service, schedule_action={'id':'new','target_id':'v1','mode':'replace'})
+    preview = service.preview(ADMIN, body)
+    assert any(p['id']=='v1' and not p['start'] and not p['ready'] for p in preview['publication'])
+    saved = service.save(ADMIN, body)
+    service.publish_dates(ADMIN, saved, 'replace-dates', on_progress=lambda count: None)
+    assert service.bundle.operations.get_vehicle('v1').planned_start_date == ''
+    assert service.bundle.operations.get_vehicle('v1').target_finish_date == ''
+    assert any(j['id']=='v1' for j in saved['plan']['queue'])
+
+
+def test_recovery_candidates_require_same_team_readiness_and_acceptance_order(service):
+    _book(service, 'v1')
+    _book(service, 'newer', start='2026-09-18')
+    _book(service, 'older', start='2026-09-21')
+    _book(service, 'wrong-team', start='2026-09-18', team='team-josh')
+    _book(service, 'not-ready', start='2026-09-22')
+    records = service.bundle.operations._records
+    records['v1'].parts_status = 'ordered'
+    records['older'].accepted_at = '2026-08-01T12:00:00Z'
+    records['not-ready'].vehicle_availability_status = 'waiting_on_agency'
+    job = next(j for j in service.view(ADMIN)['plan']['jobs'] if j['id']=='v1')
+    assert [c['id'] for c in job['recovery_candidates']] == ['older','newer']
+
+
+def test_reorder_rejects_stale_review_but_allows_in_progress_work(service):
+    _book(service, 'v1')
+    _book(service, 'later', start='2026-09-18')
+    body = reviewed(service, schedule_action={'id':'v1','target_id':'later','mode':'swap'})
+    service.bundle.operations._records['later'].parts_status = 'ordered'
+    with pytest.raises(CalendarConflictError):
+        service.save(ADMIN, body)
+    service.bundle.operations._records['later'].shop_status = 'in_progress'
+    service.bundle.operations._records['later'].shop_started_at = '2026-09-14T09:00:00-05:00'
+    saved = service.save(ADMIN, reviewed(service, schedule_action={'id':'v1','target_id':'later','mode':'swap'}))
+    assert next(j for j in saved['plan']['jobs'] if j['id']=='later')['start'] == '2026-09-14T08:00'
+    assert service.bundle.operations.get_vehicle('later').shop_started_at == '2026-09-14T09:00:00-05:00'
+
+
+def test_completed_team_survives_removing_remaining_project_bookings(service):
+    _book(service, 'v1')
+    _book(service, 'v2', project='p1')
+    record = service.bundle.operations._records['v1']
+    record.shop_status = 'complete'
+    record.shop_completed_at = '2026-09-14T12:00:00-05:00'
+    service.save(ADMIN, reviewed(service, remove_project='p1'))
+    # A fresh service still sees durable history, including retired teams.
+    settings = service.view(ADMIN)['settings']
+    settings['teams'][0]['active'] = False
+    settings_save(service, settings)
+    fresh = CalendarService(service.paths, service.bundle, clock=lambda:TODAY)
+    queue = fresh.view(ADMIN)['plan']['queue']
+    assert queue[0]['agency_team_history'][0]['team_id'] == 'team-david'
+    from dtm_buildsheet.app.routes.operations import _attach_calendar_team_history
+    payload = {'vehicles':[{'vehicle_id':'v1'}]}
+    _attach_calendar_team_history(payload, service.paths, service.bundle)
+    assert payload['vehicles'][0]['build_team_names'] == ["David's Team"]
+
+
+def test_group_swap_moves_whole_blocks_and_preserves_team_absences(service):
+    _book(service, 'v1')
+    _book(service, 'v2', project='p1')
+    _book(service, 'b1', project='p2', start='2026-09-18', team='team-josh')
+    _book(service, 'b2', project='p2', start='2026-09-18', team='team-josh')
+    settings = service.view(ADMIN)['settings']
+    settings['teams'][1]['days_off'] = ['2026-09-18']
+    settings_save(service, settings)
+    preview = service.preview(ADMIN, reviewed(service, schedule_action={'id':'v2','target_id':'b2','mode':'swap','group':True}))
+    jobs = {j['id']:j for j in preview['plan']['jobs']}
+    assert not preview['conflicts']
+    assert jobs['b1']['start'] == '2026-09-14T08:00'
+    assert jobs['b1']['end'] == jobs['b2']['start']
+    assert jobs['v1']['start'] == '2026-09-21T08:00'
+    assert jobs['v1']['end'] == jobs['v2']['start']
+
+
+def test_insert_does_not_silently_collapse_a_legacy_joint_team_reservation(service):
+    _book(service, 'v1')
+    data, revision = service.store.read()
+    data['jobs']['v1']['last_plan']['team_ids'] = ['team-david', 'team-josh']
+    service.store.write(data, revision)
+    service.bundle.operations._records['new'] = vehicle('new','p2')
+    with pytest.raises(ValueError, match='joint-team'):
+        reviewed(service, schedule_action={'id':'new','team_id':'team-david','start_date':'2026-09-14','mode':'insert'})
+    assert service.store.read()[0] == data
+
+
+@pytest.mark.parametrize('mode', ['before', 'replace', 'insert'])
+def test_sidebar_project_drop_schedules_all_unscheduled_units_only(service, mode):
+    _book(service, 'held', project='p1', start='2026-09-25', team='team-josh')
+    service.bundle.operations._records['v2'] = vehicle('v2', 'p1')
+    _book(service, 'target', project='other')
+    before = service.view(ADMIN)['saved_jobs']['held']['last_plan']
+    action = {'id':'v1', 'include_project':True, 'mode':mode}
+    if mode == 'insert':
+        action.update(team_id='team-david', start_date='2026-09-14')
+    else:
+        action['target_id'] = 'target'
+    body = reviewed(service, schedule_action=action)
+    preview = service.preview(ADMIN, body)
+    assert not preview['conflicts']
+    staged_ids = {j['id'] for j in preview['plan']['jobs'] if j.get('staged')}
+    assert {'v1','v2'} <= staged_ids
+    assert 'held' not in staged_ids
+    saved = service.save(ADMIN, body)
+    jobs = {j['id']:j for j in saved['plan']['jobs']}
+    assert jobs['v1']['end'] <= jobs['v2']['start']
+    assert saved['saved_jobs']['held']['last_plan'] == before
+    assert ('target' in jobs) == (mode != 'replace')
+
+
+def test_calendar_and_operations_expose_actual_milestones_without_inventing_dates(service):
+    from dtm_buildsheet.app.services.operations_read_service import OperationsReadService
+    _book(service, 'v1')
+    record = service.bundle.operations._records['v1']
+    record.shop_status = 'complete'
+    record.shop_completed_at = '2026-09-17T16:00:00-05:00'
+    record.final_finish_status = FinalFinishStatus.DELIVERED
+    record.ready_for_delivery_at = '2026-09-18T12:00:00-05:00'
+    record.delivered_date = '2026-09-21'
+    calendar = service.view(ADMIN)['plan']['jobs'][0]
+    operations = OperationsReadService(service.bundle.operations).list_vehicle_summaries(ADMIN)['vehicles'][0]
+    for key in ('shop_completed_at', 'ready_for_delivery_at', 'delivered_date'):
+        assert calendar[key] == operations[key] == getattr(record, key)
+    record.ready_for_delivery_at = ''
+    assert not service.view(ADMIN)['plan']['jobs'][0]['ready_for_delivery_at']
+
+
+@pytest.mark.parametrize('started', [False, True])
+def test_new_drop_butts_up_to_same_day_work_even_for_unscheduled_in_progress(service, started):
+    previous = _book(service, 'v1')['plan']['jobs'][0]
+    service.bundle.operations._records['new'] = vehicle('new','p2',shop_status='in_progress' if started else 'not_started')
+    body = reviewed(service, schedule_action={'id':'new','mode':'new','team_id':'team-david','start_date':'2026-09-14'})
+    preview = service.preview(ADMIN, body)
+    jobs = {j['id']:j for j in preview['plan']['jobs']}
+    assert not preview['conflicts']
+    assert jobs['new']['start'] == previous['end'] == '2026-09-14T12:00'
+    assert jobs['v1']['start'] == previous['start']
+    saved = service.save(ADMIN, body)
+    service.publish_dates(ADMIN, saved, 'new-drop', on_progress=lambda _:None)
+    assert not service.bundle.operations.get_vehicle('new').shop_completed_at
+
+
+@pytest.mark.parametrize('fill_gap', [True, False])
+def test_gap_choice_preserves_or_compacts_later_bookings_and_publishes(service, fill_gap):
+    _book(service, 'v1')
+    _book(service, 'removed', project='delete')
+    before = _book(service, 'later', start='2026-09-16')
+    service.publish_dates(ADMIN, before, 'before-removal', on_progress=lambda _:None)
+    body = reviewed(service, remove_project='delete', fill_gap=fill_gap)
+    saved = service.save(ADMIN, body)
+    jobs = {j['id']:j for j in saved['plan']['jobs']}
+    assert jobs['later']['start'] == ('2026-09-14T12:00' if fill_gap else '2026-09-16T08:00')
+    assert not jobs['later']['conflicts']
+    service.publish_dates(ADMIN, saved, 'after-removal', on_progress=lambda _:None)
+    assert service.bundle.operations.get_vehicle('removed').planned_start_date == ''
+    assert service.bundle.operations.get_vehicle('later').planned_start_date == jobs['later']['start'][:10]
+
+
+def test_gap_choice_unit_removal_keeps_other_project_units_and_respects_closures(service):
+    _book(service, 'v1', start='2026-09-18')
+    _book(service, 'v2', project='p1', start='2026-09-21')
+    settings = service.view(ADMIN)['settings']
+    settings['holidays'] = ['2026-09-18']
+    settings_save(service, settings)
+    saved = service.save(ADMIN, reviewed(service, remove_vehicle='v1', fill_gap=True))
+    assert [j['id'] for j in saved['plan']['jobs']] == ['v2']
+    assert saved['plan']['jobs'][0]['start'] == '2026-09-21T08:00'
+
+
+def test_project_consolidation_requires_confirmation_then_places_all_active_units_together(service):
+    _book(service, 'v1')
+    _book(service, 'v2', project='p1', start='2026-09-18', team='team-josh')
+    service.bundle.operations._records['v3'] = vehicle('v3','p1')
+    assert 'p1' in service.view(ADMIN)['split_projects']
+    action = {'id':'v1','mode':'new','whole_project':True,'team_id':'team-david','start_date':'2026-09-21'}
+    with pytest.raises(ValueError, match='split across'):
+        reviewed(service, schedule_action=action)
+    saved = service.save(ADMIN, reviewed(service, schedule_action={**action,'confirm_consolidation':True}))
+    jobs = saved['plan']['jobs']
+    assert {j['id'] for j in jobs} == {'v1','v2','v3'}
+    assert all(j['team_id']=='team-david' for j in jobs)
+    assert jobs[0]['end']==jobs[1]['start']== '2026-09-21T12:00'
+    assert 'p1' not in saved['split_projects']
+
+
+def test_next_ready_action_chooses_acceptance_order_and_publishes_both_dates(service):
+    _book(service, 'v1')
+    _book(service, 'newer', start='2026-09-16')
+    _book(service, 'older', start='2026-09-18')
+    service.bundle.operations._records['older'].accepted_at = '2026-08-01T12:00:00Z'
+    body = reviewed(service, schedule_action={'id':'v1','mode':'next_ready'})
+    saved = service.save(ADMIN, body)
+    jobs = {j['id']:j for j in saved['plan']['jobs']}
+    assert jobs['older']['start']=='2026-09-14T08:00'
+    assert jobs['v1']['start']=='2026-09-18T08:00'
+    service.publish_dates(ADMIN, saved, 'next-ready', on_progress=lambda _:None)
+    for ident in ('older','v1'):
+        assert service.bundle.operations.get_vehicle(ident).planned_start_date == jobs[ident]['start'][:10]
+
+
+def test_project_actions_warn_before_consolidating_and_offer_both_gap_choices():
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
+const state={data:{split_projects:['p'],plan:{jobs:[
+ {id:'a',project_id:'p',team_ids:['t'],start:'2026-09-14T08:00'},
+ {id:'b',project_id:'q',team_ids:['t'],start:'2026-09-15T08:00'}]}}};
+let choice=false,questions=[],saves=[];
+const askCalendar=async(...args)=>{questions.push(args);return choice;},saveSchedule=async(edit,body)=>saves.push(body);
+eval(source.slice(source.indexOf('  async function removeBooking('),source.indexOf('  function openProject(')));
+(async()=>{
+ const action={id:'a',mode:'new',team_id:'t',start_date:'2026-09-21'};
+ await saveProjectAction('p',action);assert.equal(saves.length,0);assert(questions[0][1].includes('individually'));
+ choice=true;await saveProjectAction('p',action);assert(saves.pop().schedule_action.confirm_consolidation);
+ await removeBooking('p');assert.equal(saves.pop().fill_gap,true);
+ assert.equal(questions.at(-1)[2],'Shift builds back');assert.equal(questions.at(-1)[3],'Leave open space');
+ choice='replace';await removeBooking('p','a');const kept=saves.pop();assert.equal(kept.fill_gap,false);assert.equal(kept.remove_vehicle,'a');
+ choice=false;await removeBooking('p');assert.equal(saves.length,0);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_drag_states_save_without_review_and_operations_cards_render_milestones():
+    """Execute UI functions with small host stubs; no browser or server is launched."""
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const state={view:'week',data:{plan:{jobs:[{id:'a',title:'A',project_id:'p1'},{id:'b',title:'B',project_id:'p2'}],queue:[{id:'new',project_id:'p'}]}}};
+let saves=[],dialogs=[];
+const canEdit=()=>true;
+const openDropDialog=(source,action)=>dialogs.push(action);
+const saveSchedule=async(edit,body)=>saves.push(body);
+eval(source.slice(source.indexOf('  async function stageDrop('),source.indexOf('  function visibleJobs(')));
+(async()=>{
+ await stageDrop('vehicle:a','team-david','2026-09-14','b');
+ assert.equal(dialogs.pop().mode,'swap');assert.equal(saves.length,0);
+ await stageDrop('vehicle:a','team-david','2026-09-14','b',null,true);
+ assert.equal(saves.pop().schedule_action.mode,'swap');
+ await stageDrop('vehicle:a','team-david','2026-09-14','a');assert.equal(saves.length,0);
+ await stageDrop('vehicle:new','team-david','2026-09-14','b');assert.equal(saves.pop().schedule_action.mode,'replace');
+ await stageDrop('vehicle:a','team-david','2026-09-14','b','after',true);
+ const insertion=saves.pop().schedule_action;assert.equal(insertion.mode,'after');assert.equal(insertion.include_project,false);
+ await stageDrop('vehicle:a','team-david','2026-09-21');assert.equal(dialogs.pop().mode,'new');
+ await stageDrop('vehicle:a','team-david','2026-09-21',null,null,true);assert.equal(saves.pop().schedule_action.mode,'new');
+ await stageDrop('project:p','team-david','2026-09-14','b','before');assert.equal(saves.pop().schedule_action.include_project,true);
+ eval(source.slice(source.indexOf('  function dragPlacement('),source.indexOf('  function showDragPlacement(')));
+ const card={dataset:{dropJob:'b'},getBoundingClientRect:()=>({left:100,right:300,width:200})};
+ assert.deepEqual(dragPlacement(card,101),{kind:'insert',edge:'before'});
+ assert.deepEqual(dragPlacement(card,299),{kind:'insert',edge:'after'});
+ assert.deepEqual(dragPlacement(card,200),{kind:'replace',edge:null});
+ assert.deepEqual(dragPlacement({dataset:{}},200),{kind:'new',edge:null});
+ assert.equal(dragPlacement({dataset:{},disabled:true},200),null);
+ const ops=fs.readFileSync(process.argv[2],'utf8');
+ const esc=x=>String(x||''),_operationsEscAttr=esc,_operationsLabel=esc,_operationsDate=esc;
+ const _operationsEditableWorkstreams=()=>[],_operationsCanEditAcceptanceDate=()=>false,_operationsCanSchedule=()=>false,_operationsStatusTone=()=>'';
+ eval(ops.slice(ops.indexOf('function _operationsVehicleMarkup('),ops.indexOf('function _operationsQuickStatusMarkup(')));
+ const markup=_operationsVehicleMarkup({vehicle_id:'v',project_state:'completed',shop_status:'complete',shop_completed_at:'2026-09-17',
+   final_finish_status:'delivered',ready_for_delivery_at:'2026-09-18',delivered_date:'2026-09-21',build_team_names:["David's Team"],tray_status:'complete',tray_completed_at:'2026-09-16'});
+ for(const text of ["David's Team",'2026-09-17','2026-09-18','2026-09-21','2026-09-16'])assert(markup.includes(text),text);
+ assert(markup.includes('<small>2026-09-17</small>'));assert(markup.includes('<small>2026-09-21</small>'));
+ const _operationsCommonValue=()=>'',_operationsProjectMode=()=> 'active',_operationsProjectProgress=()=>null,_operationsProjectSortInfo=()=>({deadline:'9999-12-31'});
+ eval(ops.slice(ops.indexOf('function _operationsProjectGroupMarkup('),ops.indexOf('function _operationsBindRowActions(')));
+ for(const [project_type,label] of [['build','Build'],['service','Service'],['offsite','Off-Site Service']]){
+  const group=_operationsProjectGroupMarkup({projectId:'p',vehicles:[{vehicle_id:'v',project_type}]},false);
+  assert(group.slice(0,group.indexOf('</summary>')).includes('project-type-badge">'+label+'</span>'));
+ }
+ assert(!ops.includes('operations-add-builder'));
+ assert(!fs.readFileSync(process.argv[2].replace('/js/operations.js','/index.html'),'utf8').includes('operations-add-builder'));
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    root = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js'
+    result = subprocess.run([node, '-e', script, str(root/'calendar.js'), str(root/'operations.js')], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
 def test_view_and_preview_do_not_write(service):
     service.view(SALES)
     service.preview(ADMIN,{k:v for k,v in reviewed(service).items() if k!='preview_token'})
     assert not service.store.path.exists()
     assert service.bundle.operations.get_vehicle('v1').revision==0
+
+
+def test_calendar_sidebar_expansion_drag_visuals_and_direct_save_guards():
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
+function element(){const classes=new Set();return {children:[],dataset:{},style:{},hidden:true,isConnected:true,events:{},scrollTop:0,
+ classList:{add(...names){names.forEach(n=>classes.add(n));},remove(...names){names.forEach(n=>classes.delete(n));},toggle(){},contains:n=>classes.has(n)},
+ append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,callback){this.events[name]=callback;}};}
+const nodes=new Map(),$=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);};
+const document={createElement:element},expandedProjects=new Set(),text=x=>x,label=x=>x,vehicleName=j=>j.id,canEdit=()=>true;
+eval(source.slice(source.indexOf('  function statusEntries('),source.indexOf('  const bookingWarnings=')));
+const drags=[],draggable=(node,value)=>drags.push(value),openJob=()=>{};
+const state={queueMode:'unscheduled',data:{revision:'calendar-1',source_revision:'operations-1',plan:{queue:[
+ {id:'a',project_id:'p',agency_name:'Agency',unscheduled:true,accepted_date:'2026-09-01',parts_status:'ordered',vehicle_availability_status:'at_dtm'},
+ {id:'b',project_id:'p',agency_name:'Agency',unscheduled:true,accepted_date:'2026-09-01',parts_status:'parts_ready',vehicle_availability_status:'at_dtm',shop_status:'in_progress'}]}}};
+eval(source.slice(source.indexOf('  function renderQueue('),source.indexOf('  async function stageDrop(')));
+renderQueue();let card=$('calendar-queue').children[2];assert.equal(card.open,false);assert.equal(card.dataset.projectId,'p');
+assert(card.children[0].innerHTML.includes('2 units'));assert.deepEqual(drags,['project:p','vehicle:a','vehicle:b']);
+const summary=card.children[0].innerHTML;
+assert(summary.includes('Parts ordered · 1/2'));assert(summary.includes('Parts ready · 1/2'));
+assert(summary.includes('Build in progress · 1/2'));assert(summary.includes('calendar-status-green">Vehicle at DTM</span>'));
+assert.equal((summary.match(/Vehicle at DTM/g)||[]).length,1);
+card.open=true;card.events.toggle();renderQueue();card=$('calendar-queue').children[2];assert.equal(card.open,true);
+card.open=false;card.events.toggle();renderQueue();assert.equal($('calendar-queue').children[2].open,false);
+const insertLine=element(),drag={ghost:element(),label:'Project'};
+eval(source.slice(source.indexOf('  function showDragPlacement('),source.indexOf('  function draggable(')));
+const target=element();target.closest=()=>null;target.getBoundingClientRect=()=>({left:100,right:200,top:50,height:60});
+showDragPlacement(target,{kind:'insert',edge:'after'});assert.equal(insertLine.hidden,false);assert.equal(insertLine.style.left,'203px');
+assert(!target.classList.contains('calendar-drop-replace'));assert.equal(drag.ghost.dataset.dropState,'insert');
+showDragPlacement(target,{kind:'replace',edge:null});assert.equal(insertLine.hidden,true);assert(target.classList.contains('calendar-drop-replace'));
+const empty=element();showDragPlacement(empty,{kind:'new',edge:null});assert(!target.classList.contains('calendar-drop-replace'));assert(empty.classList.contains('calendar-drop-new'));
+const right=element();right.dataset={team:'t',dropJob:'right'};target.dataset={team:'t',dropJob:'left'};
+right.getBoundingClientRect=()=>({left:206,right:306,top:50,height:60});
+const surface={querySelectorAll:()=>[target,right]};target.closest=right.closest=()=>surface;drag.value='vehicle:right';
+showDragPlacement(right,{kind:'insert',edge:'before'});assert.equal(insertLine.style.left,'203px');assert.equal(drag.target,target);assert.equal(drag.placement.edge,'after');
+showDragPlacement(target,{kind:'insert',edge:'after'});assert.equal(insertLine.style.left,'203px');assert.equal(drag.target,target);assert.equal(drag.placement.edge,'after');
+let calls=[],error='',conflict=false,stale=false;
+const bodyFor=edit=>({revision:state.data.revision,source_revision:state.data.source_revision,edit});
+const request=async(path,body)=>{calls.push({path,body});if(path.endsWith('/preview'))return {conflicts:conflict?['Capacity conflict']:[],preview_token:'verified-ticket'};
+ if(stale)throw new Error('Calendar changed since preview');return {revision:'calendar-2',source_revision:'operations-1',save:{state:'complete'}};};
+const showSave=()=>{},render=()=>{},pollSave=()=>{},closeBubble=()=>assert.fail('No booking dialog was opened'),message=value=>{error=value;};
+const crypto={randomUUID:()=> 'request-id'};
+eval(source.slice(source.indexOf('  async function saveSchedule('),source.indexOf('  async function reviewSync(')));
+(async()=>{
+ await saveSchedule(null,{schedule_action:{id:'a',mode:'insert'}});
+ assert.deepEqual(calls.map(c=>c.path),['/api/calendar/preview','/api/calendar/save-background']);
+ assert.equal(calls[1].body.preview_token,'verified-ticket');assert.equal(calls[1].body.revision,'calendar-1');assert.equal(state.busy,false);
+ assert.equal($('calendar-review-modal').hidden,true);
+ calls=[];conflict=true;await saveSchedule();assert.equal(calls.length,1);assert.equal(error,'Capacity conflict');
+ conflict=false;calls=[];await saveSchedule(null,{}, {body:{revision:'reviewed-revision'},preview:{conflicts:[],preview_token:'displayed-ticket'}});
+ assert.equal(calls.length,1);assert(calls[0].path.endsWith('/save-background'));assert.equal(calls[0].body.preview_token,'displayed-ticket');assert.equal(calls[0].body.revision,'reviewed-revision');
+ conflict=false;stale=true;await saveSchedule();assert.equal(error,'Calendar changed since preview');assert.equal(state.busy,false);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_calendar_scheduled_cards_open_project_or_split_unit_and_show_vin_ending():
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
+function element(){return {children:[],dataset:{},attributes:{},style:{setProperty(){}},
+ append(child){this.children.push(child);},setAttribute(name,value){this.attributes[name]=value;}};}
+const document={createElement:element,addEventListener(){}},window={addEventListener(){}},state={view:'week',data:{split_projects:[]}},opened=[];
+const openJob=id=>opened.push(['unit',id]),openProject=id=>opened.push(['project',id]);
+let editable=false,choice=true;const removed=[];
+const bookingSpan=()=>({start:0,end:1}),canEdit=()=>editable,label=x=>x,dateTime=x=>x,kinds={build:'Build'},text=x=>x;
+const askCalendar=async()=>choice,removeBooking=async(...args)=>removed.push(args);
+eval(source.slice(source.indexOf('  function statusEntries('),source.indexOf('  const bookingWarnings=')));
+eval(source.slice(source.indexOf('  function openScheduledBuild('),source.indexOf('  function renderWeek(')));
+const job={id:'u1',project_id:'p1',title:'Agency',team_name:'Team',kind:'build',vin:'1ABCDEFGH12345678',build_number:1,build_count:2};
+for(const view of ['week','month']){
+ state.view=view;state.data.split_projects=[];
+ const card=booking(job,[],['2026-09-17'],element());
+ assert.equal(card.children[0].children.find(c=>c.className==='calendar-vin-ending').textContent,'345678');
+ for(const [project_type,label] of [['build','Build'],['service','Service'],['offsite','Off-Site Service']]){
+  assert(statusBadges({...job,project_type}).includes('>'+label+'</span>'));
+  const typed=booking({...job,project_type},[],['2026-09-17'],element());
+  assert.equal(typed.children[0].children.find(c=>c.className==='project-type-badge').textContent,label);
+ }
+ assert(card.attributes['aria-label'].includes('VIN ending 345678'));assert(card.title.includes('VIN ending 345678'));
+ card.onclick();assert.deepEqual(opened.pop(),['project','p1']);
+ state.data.split_projects=['p1'];card.onclick();assert.deepEqual(opened.pop(),['unit','u1']);
+ for(const vin of [undefined,null,'','   ','123']){
+  const blank=booking({...job,vin},[],['2026-09-17'],element());
+  assert(!blank.children[0].children.some(c=>c.className==='calendar-vin-ending'));
+  assert(!blank.title.includes('VIN ending'));
+ }
+}
+state.data.split_projects=[];
+booking({...job,custom:true},[],['2026-09-17'],element()).onclick();assert.deepEqual(opened.pop(),['unit','u1']);
+booking({...job,project_id:null},[],['2026-09-17'],element()).onclick();assert.deepEqual(opened.pop(),['unit','u1']);
+let menu=calendarMenuActions(job);assert.equal(menu[2].enabled,false);
+editable=true;menu=calendarMenuActions(job);assert.equal(menu[2].enabled,true);
+menu[0].run();assert.deepEqual(opened.pop(),['project','p1']);menu[1].run();assert.deepEqual(opened.pop(),['unit','u1']);
+assert.equal(calendarMenuActions({...job,shop_status:'complete'})[2].enabled,false);
+assert.equal(calendarMenuActions({...job,custom:true})[0].enabled,false);
+state.data.plan={jobs:[job,{...job,id:'u2'}]};
+(async()=>{
+ await menu[2].run();assert.deepEqual(removed.pop(),['p1',null]);
+ choice='replace';await menu[2].run();assert.deepEqual(removed.pop(),['p1','u1']);
+ choice=false;await menu[2].run();assert.equal(removed.length,0);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_calendar_drop_dialog_reviews_selected_scope_and_shift_reaches_drop():
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),source=fs.readFileSync(process.argv[1],'utf8');
+function element(){return {hidden:false,isConnected:true,dataset:{},events:{},classList:{add(){},remove(){}},
+ addEventListener(name,fn){this.events[name]=fn;},querySelector(){return null;}};}
+const nodes=new Map(),$=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);};
+const job={id:'a',project_id:'p',agency_name:'Agency',title:'Unit A',start:'2026-09-17T08:00',team_id:'t',acceptance_confirmed:true};
+const state={choiceRequest:0,data:{revision:1,source_revision:2,split_projects:['p'],plan:{jobs:[job]},settings:{teams:[{id:'t',name:'Team',active:true}]}}};
+const projectRows=()=>[job,{...job,id:'b'}],text=x=>x,vehicleName=j=>j.title,dateTime=x=>x,btn=()=>'',showBubble=()=>{},closeBubble=()=>{};
+const bodyFor=()=>({revision:state.data.revision,source_revision:state.data.source_revision});
+let conflict=false,saves=[],requests=[];
+const request=async(path,body)=>{requests.push(body);return {conflicts:conflict?['Capacity conflict']:[],preview_token:'reviewed-token',changes:[{title:'Unit A',after:{start:'2026-09-18T10:00',ready:'2026-09-19T12:00'}}]};};
+const saveSchedule=async(edit,extra,reviewed)=>saves.push(reviewed);
+eval(source.slice(source.indexOf('  function openDropDialog('),source.indexOf('  function openProject(')));
+$('calendar-drop-scope').value='project';$('calendar-drop-team').value='t';$('calendar-drop-date').value='2026-09-18';
+(async()=>{
+ openDropDialog(job,{id:'a',mode:'new',team_id:'t',start_date:'2026-09-18'});
+ assert.equal($('calendar-drop-save').disabled,true);await new Promise(setImmediate);
+ assert.equal(requests.at(-1).schedule_action.whole_project,true);assert.equal(requests.at(-1).schedule_action.confirm_consolidation,true);
+ assert($('calendar-drop-note').textContent.includes('split'));assert.equal($('calendar-drop-save').disabled,false);
+ assert($('calendar-drop-impact').innerHTML.includes('2026-09-18T10:00'));
+ await $('calendar-drop-form').onsubmit({preventDefault(){}});assert.equal(saves.pop().preview.preview_token,'reviewed-token');
+ $('calendar-drop-scope').value='unit';await $('calendar-drop-scope').events.change();
+ assert.equal(requests.at(-1).schedule_action.whole_project,false);assert.equal(requests.at(-1).schedule_action.confirm_consolidation,false);
+ await $('calendar-drop-form').onsubmit({preventDefault(){}});assert.equal(saves.pop().body.schedule_action.whole_project,false);
+ conflict=true;await $('calendar-drop-refresh').onclick();assert.equal($('calendar-drop-save').disabled,true);
+ assert.equal($('calendar-job-error').textContent,'Capacity conflict');await $('calendar-drop-form').onsubmit({preventDefault(){}});assert.equal(saves.length,0);
+ // Shift is sampled at release too, so it can be pressed during a drag.
+ const document={events:{},body:{classList:{remove(){}}},addEventListener(name,fn){this.events[name]=fn;}},window={addEventListener(){}};
+ let drag=null,suppressClickUntil=0;const insertLine={},canEdit=()=>true,closeCalendarMenu=()=>{},drops=[];
+ const stageDrop=(...args)=>drops.push(args);
+ eval(source.slice(source.indexOf('  function draggable('),source.indexOf('  function dropTarget(')));
+ const card=element();draggable(card,'vehicle:a');
+ for(const shiftKey of [true,false]){
+  card.events.pointerdown({button:0,clientX:10,clientY:20,shiftKey:!shiftKey});
+  drag.active=true;drag.placement={edge:null};drag.target={dataset:{team:'t',date:'2026-09-18'},classList:{remove(){}}};
+  document.events.pointerup({shiftKey});assert.equal(drops.pop()[5],shiftKey);
+ }
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/calendar.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_settings_cannot_rename_team_identity_or_delete_history(service):

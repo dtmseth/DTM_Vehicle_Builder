@@ -919,10 +919,26 @@ def run_automatic_sync(paths: AppPaths) -> dict:
 
     catalog = run_full_sync(paths)
     customers = import_customers(paths)
-    ok = bool(catalog.get("ok")) and bool(customers.get("ok"))
-    result = {**catalog, "ok": ok, "customers": customers}
+    from . import qb_estimate_service
+    quote_references = qb_estimate_service.reconcile_quote_references(paths)
+    from . import qb_acceptance_service
+    acceptance_refresh = qb_acceptance_service.run_connected_refresh(paths)
+    ok = (
+        bool(catalog.get("ok"))
+        and bool(customers.get("ok"))
+        and bool(quote_references.get("ok"))
+    )
+    result = {
+        **catalog,
+        "ok": ok,
+        "customers": customers,
+        "quote_references": quote_references,
+        "acceptance_refresh": acceptance_refresh,
+    }
     if not ok and not result.get("error"):
-        result["error"] = customers.get("error", "automatic_sync_failed")
+        result["error"] = customers.get("error") or quote_references.get(
+            "error", "automatic_sync_failed"
+        )
     return result
 
 

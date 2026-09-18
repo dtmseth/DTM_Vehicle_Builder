@@ -366,7 +366,8 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
 `POST settings` · `POST disconnect` · `POST sync` · `POST link-item` · `POST unlink-item` ·
 `POST customer-pricing/default` · `POST customers/import` · `POST push-vehicle-job` (legacy) · `POST estimates/validate` ·
 `POST projects/preview` · `POST projects/bind` ·
-`POST estimates/customer-preview` · `POST estimates/create` · `POST estimates/create-batch`
+`POST estimates/customer-preview` · `POST estimates/list` · `POST estimates/search` · `POST estimates/reconcile-quotes` · `POST estimates/bind` ·
+`POST estimates/create` · `POST estimates/create-batch`
 
 **Release verification (v3.4.0):** full suite 2,077 passed, 1 skipped, 1 sandbox-only deselected;
 hermetic browser smoke 28/28. See `CURRENT_STATE.md` for the live baseline and coverage summary.
@@ -607,8 +608,14 @@ QBO after creation when required. Those are explicit product/API constraints, no
 connection setup.
 
 **Working-tree operations extension — link an existing Estimate:** an authorized connected Builder
-user may paste a QBO Estimate ID or Estimate page URL and explicitly attach it to one individual
-Builder vehicle. The service verifies the Estimate, refuses an Estimate already linked to another
+user may browse a read-only QBO Estimate picker or paste an Estimate ID/page URL and explicitly
+attach it to one individual Builder vehicle. The picker reads bounded pages of 50 Estimates,
+newest modified first, and filters loaded rows by customer, number, date or status. Rows already
+linked elsewhere are disabled; selection itself does not bind or write anything. The list route
+uses the existing Estimate-management capability and keychain-backed client, returns narrow
+metadata with no-store responses, and never creates or modifies QBO records. Selection uses the
+same `bind_estimate` flow, including fresh duplicate checks and explicit boolean replacement
+confirmation. The service verifies the Estimate, refuses an Estimate already linked to another
 vehicle, requires confirmation before replacing a different existing connection, and captures the
 same canonical conflict baseline used after app-created Estimates. Linking does not import QBO header or line data
 into Builder-authored project/build fields. A successful read publishes only the narrow status,
@@ -624,6 +631,22 @@ separate QBO confirmation evidence; a non-accepted Estimate produces a visible m
 manual acceptance remains until an authorized user explicitly corrects it. Updating still requires the
 existing fresh-read/diff/overwrite confirmation, while Create New remains visible but discouraged.
 The prior shared observation remains in event history when a link is replaced.
+
+**Per-vehicle quote references:** Unit Details stores multiple quote numbers per physical vehicle.
+These references mirror with the project and remain readable for users who do not have QBO access.
+Connected estimate managers get a bounded, prefix-based Estimate-number search and can select a
+match; disconnected users can save a number with `pending` status. The automatic QBO sync that runs
+at startup, every 30 minutes, and immediately after a new OAuth connection retries every current
+unmatched number using an exact `DocNumber` lookup. Zero matches, multiple matches, and an Estimate
+already linked to another vehicle remain explicit states instead of being guessed. A user can mark
+superseded configurations obsolete without deleting their history. The existing singular
+`qb_estimate_id` continues to identify the one Estimate eligible for Builder-driven updates, while
+the quote-reference list preserves alternate and split-billing Estimates. Operations acceptance
+refresh considers every current linked quote for the vehicle and prefers Accepted/Closed evidence
+over a pending primary Estimate. This also backfills the Operations Estimate link when the quote was
+matched from Unit Details instead of the older Connect Estimate flow. The guarded save-time
+reconcile runs this refresh immediately, automatic QBO sync runs it after a new connection, and the
+five-minute watcher remains the retry path.
 
 **Accepted date** in Operations and Calendar corrects the same shared Operations date through
 an immutable event. An authorized user can choose the linked Estimate's actual `AcceptedDate` or

@@ -8,6 +8,7 @@ Hermetic — no network, no cloud, no real keychain.
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 
 import pytest
 
@@ -16,7 +17,12 @@ from dtm_buildsheet.app.services import agency_service as agc
 from dtm_buildsheet.app.services import parts_db_service
 from dtm_buildsheet.app.services import qb_estimate_service as est
 from dtm_buildsheet.app.services import qb_sync_service as sync
-from dtm_buildsheet.domain.project_models import BuildUnit, CustomerInfo, IndividualUnit
+from dtm_buildsheet.domain.project_models import (
+    BuildUnit,
+    CustomerInfo,
+    IndividualUnit,
+    QuoteReference,
+)
 from dtm_buildsheet.inputs import project_entry
 from dtm_buildsheet.inputs.project_drafts import DraftPart, new_draft, save_draft
 from dtm_buildsheet.paths import AppPaths
@@ -1201,6 +1207,327 @@ def test_project_can_be_previewed_and_linked_before_unit_is_configured(paths):
     saved = project_entry.load_project(pid, paths).build_units[0].individuals[0]
     assert saved.draft_id is None
     assert saved.qb_project_id == "447322633"
+
+
+def test_estimate_picker_reads_bounded_pages_without_writes(paths, monkeypatch):
+    from dtm_buildsheet.app.adapters.quickbooks.api_client import QuickBooksApiClient
+    aid = _make_agency(paths, qb_customer_id='CUST9')
+    pid = _make_project(paths, aid, [])
+    project = project_entry.load_project(pid, paths)
+    project.build_units[0].individuals[0].qb_estimate_id = '1'
+    project_entry.save_project(project, paths)
+    other_id = _make_project(paths, aid, [], quote='26-102')
+    other = project_entry.load_project(other_id, paths)
+    other.build_units[0].individuals[0].qb_estimate_id = '2'
+    project_entry.save_project(other, paths)
+    before = {p.name:p.read_bytes() for p in paths.workspace_projects_dir.iterdir() if p.is_file()}
+    client = object.__new__(QuickBooksApiClient)
+    statements = []
+    def query(statement):
+        statements.append(statement)
+        if 'STARTPOSITION 51 ' in statement:
+            return {'Estimate': []}
+        return {'Estimate': [{'Id':str(i), 'DocNumber':f'E-{i}', 'CustomerRef':{'name':'Agency'},
+            'TxnDate':'2026-09-01', 'TxnStatus':'Accepted', 'AcceptedDate':'2026-09-02',
+            'Line':[{'Description':'Private line data'}], 'SyncToken':'not-for-picker'} for i in range(1,51)]}
+    client.query = query
+    monkeypatch.setattr(sync, '_build_client', lambda _paths:(client, None))
+    result = est.list_available_estimates(paths, project_id=pid, individual_id='ind1')
+    assert result['ok'] and result['next_position'] == 51
+    assert result['estimates'][0]['linked_here']
+    assert result['estimates'][1]['linked_elsewhere']
+    assert not result['estimates'][2]['linked_elsewhere']
+    assert result['estimates'][0]['accepted_date'] == '2026-09-02'
+    assert all('Line' not in row and 'SyncToken' not in row for row in result['estimates'])
+    assert est.list_available_estimates(paths, project_id=pid, individual_id='ind1', start_position=51)['next_position'] is None
+    assert all(s.startswith('SELECT * FROM Estimate ORDERBY ') and 'MAXRESULTS 50' in s for s in statements)
+    assert before == {p.name:p.read_bytes() for p in paths.workspace_projects_dir.iterdir() if p.is_file()}
+    # A row linked by another user after listing must still fail the fresh bind checks.
+    third = project_entry.load_project(other_id, paths)
+    third.build_units[0].individuals[0].qb_estimate_id = '3'
+    project_entry.save_project(third, paths)
+    duplicate = est.bind_estimate(paths, project_id=pid, individual_id='ind1', qb_estimate_id='3', replace_existing=True)
+    assert duplicate['error'] == 'estimate_already_linked_to_another_vehicle'
+    replacement = est.bind_estimate(paths, project_id=pid, individual_id='ind1', qb_estimate_id='4')
+    assert replacement['error'] == 'estimate_connection_replacement_confirmation_required'
+
+
+def test_quote_reference_search_is_bounded_and_marks_existing_links(paths, monkeypatch):
+    aid = _make_agency(paths, qb_customer_id="CUST9")
+    pid = _make_project(paths, aid, [])
+    other_id = _make_project(paths, aid, [], quote="26-102")
+    other = project_entry.load_project(other_id, paths)
+    other.build_units[0].individuals[0].quote_references = [QuoteReference(
+        reference_id="ref-other",
+        quote_number="26-102",
+        qb_estimate_id="202",
+        match_status="linked",
+    )]
+    project_entry.save_project(other, paths)
+
+    class SearchClient:
+        def __init__(self):
+            self.calls = []
+
+        def search_estimates_by_doc_number(self, query, *, exact, page_size):
+            self.calls.append((query, exact, page_size))
+            return [
+                {"Id": "201", "DocNumber": "26-10", "CustomerRef": {"name": "Agency"}},
+                {"Id": "202", "DocNumber": "26-102", "CustomerRef": {"name": "Agency"}},
+            ]
+
+    client = SearchClient()
+    monkeypatch.setattr(sync, "_build_client", lambda _: (client, None))
+    result = est.search_quote_estimates(
+        paths, query="26-10", project_id=pid, individual_id="ind1",
+    )
+    assert result["ok"] is True
+    assert client.calls == [("26-10", False, 20)]
+    assert result["estimates"][0]["linked_elsewhere"] is False
+    assert result["estimates"][1]["linked_elsewhere"] is True
+    assert est.search_quote_estimates(paths, query="")["error"] == "invalid_quote_number"
+
+
+def test_api_client_quote_number_search_escapes_and_bounds_query():
+    from dtm_buildsheet.app.adapters.quickbooks.api_client import QuickBooksApiClient
+
+    client = object.__new__(QuickBooksApiClient)
+    statements = []
+    client.query = lambda statement: statements.append(statement) or {"Estimate": [{"Id": "1"}]}
+    assert client.search_estimates_by_doc_number("26-O'Brien") == [{"Id": "1"}]
+    assert statements == [
+        "SELECT * FROM Estimate WHERE DocNumber LIKE '26-O\\'Brien%' "
+        "ORDERBY MetaData.LastUpdatedTime DESC MAXRESULTS 20"
+    ]
+    with pytest.raises(ValueError, match="Invalid Estimate number search"):
+        client.search_estimates_by_doc_number("")
+    with pytest.raises(ValueError, match="Invalid Estimate search size"):
+        client.search_estimates_by_doc_number("26", page_size=21)
+
+
+def test_pending_quote_references_reconcile_on_connection_and_preserve_obsolete(paths, monkeypatch):
+    pid = _make_project(paths, _make_agency(paths, qb_customer_id="CUST9"), [])
+    project = project_entry.load_project(pid, paths)
+    unit = project.build_units[0].individuals[0]
+    unit.qb_estimate_id = ""
+    unit.quote_references = [
+        QuoteReference(reference_id="current", quote_number="26-500"),
+        QuoteReference(reference_id="missing", quote_number="26-404"),
+        QuoteReference(reference_id="old", quote_number="26-OLD", state="obsolete"),
+    ]
+    project_entry.save_project(project, paths)
+
+    class SearchClient:
+        def __init__(self):
+            self.queries = []
+
+        def search_estimates_by_doc_number(self, value, *, exact, page_size):
+            self.queries.append((value, exact, page_size))
+            if value == "26-500":
+                return [{
+                    "Id": "500",
+                    "DocNumber": "26-500",
+                    "TxnDate": "2026-09-10",
+                    "TxnStatus": "Pending",
+                    "CustomerRef": {"name": "Lakeville PD"},
+                    "Line": [],
+                }]
+            return []
+
+    client = SearchClient()
+    monkeypatch.setattr(sync, "_build_client", lambda _: (client, None))
+    result = est.reconcile_quote_references(paths)
+    assert result == {
+        "ok": True,
+        "matched": 1,
+        "not_found": 1,
+        "multiple": 0,
+        "linked_elsewhere": 0,
+        "updated_projects": 1,
+    }
+    assert client.queries == [("26-500", True, 3), ("26-404", True, 3)]
+    saved = project_entry.load_project(pid, paths)
+    saved_unit = saved.build_units[0].individuals[0]
+    current, missing, obsolete = saved_unit.quote_references
+    assert (current.match_status, current.qb_estimate_id) == ("linked", "500")
+    assert (current.customer, current.txn_date) == ("Lakeville PD", "2026-09-10")
+    assert missing.match_status == "not_found" and missing.checked_at
+    assert obsolete.match_status == "pending" and not obsolete.checked_at
+    assert saved_unit.qb_estimate_id == "500"
+    assert saved_unit.qb_estimate_snapshot["doc_number"] == "26-500"
+    assert saved.quote_numbers == ["26-043", "26-500", "26-404"]
+
+
+def test_ordinary_project_save_cannot_forge_quote_estimate_links(paths):
+    from dtm_buildsheet.app.services import project_service
+
+    pid = _make_project(paths, _make_agency(paths, qb_customer_id="CUST9"), [])
+    project = project_entry.load_project(pid, paths)
+    unit = project.build_units[0].individuals[0]
+    unit.quote_references = [QuoteReference(
+        reference_id="new-ref",
+        quote_number="26-777",
+        match_status="linked",
+        qb_estimate_id="777",
+        estimate_status="Accepted",
+    )]
+    result = project_service.handle_save_project(asdict(project), paths)
+    assert result["ok"] is True
+    saved = project_entry.load_project(pid, paths)
+    reference = saved.build_units[0].individuals[0].quote_references[0]
+    assert reference.quote_number == "26-777"
+    assert reference.match_status == "pending"
+    assert reference.qb_estimate_id == ""
+
+
+def test_automatic_sync_includes_saved_quote_reconciliation(paths, monkeypatch):
+    monkeypatch.setattr(sync, "run_full_sync", lambda _: {"ok": True, "item_count": 2})
+    monkeypatch.setattr(sync, "import_customers", lambda _: {"ok": True, "created": 0})
+    monkeypatch.setattr(
+        est,
+        "reconcile_quote_references",
+        lambda _: {"ok": True, "matched": 2, "updated_projects": 1},
+    )
+    result = sync.run_automatic_sync(paths)
+    assert result["ok"] is True
+    assert result["quote_references"] == {
+        "ok": True, "matched": 2, "updated_projects": 1,
+    }
+
+
+def test_bind_estimate_adds_readable_quote_reference(paths, monkeypatch):
+    pid = _make_project(paths, _make_agency(paths, qb_customer_id="CUST9"), [])
+    client = FakeClient()
+    client.estimate_to_read = {
+        "Id": "900",
+        "DocNumber": "26-900",
+        "TxnDate": "2026-09-12",
+        "TxnStatus": "Accepted",
+        "CustomerRef": {"name": "Lakeville PD"},
+        "Line": [],
+    }
+    monkeypatch.setattr(sync, "_build_client", lambda _: (client, None))
+    result = est.bind_estimate(
+        paths, project_id=pid, individual_id="ind1", qb_estimate_id="900",
+    )
+    assert result["ok"] is True
+    saved = project_entry.load_project(pid, paths)
+    reference = saved.build_units[0].individuals[0].quote_references[0]
+    assert (reference.quote_number, reference.qb_estimate_id) == ("26-900", "900")
+    assert (reference.match_status, reference.estimate_status) == ("linked", "Accepted")
+    assert "26-900" in saved.quote_numbers
+
+
+@pytest.mark.parametrize('position', [0, -1, True, '1 OR 1=1', 100001])
+def test_estimate_picker_rejects_invalid_paging_before_client_use(paths, monkeypatch, position):
+    pid = _make_project(paths, _make_agency(paths, qb_customer_id='CUST9'), [])
+    monkeypatch.setattr(sync, '_build_client', lambda _:pytest.fail('No connection needed for invalid paging'))
+    assert est.list_available_estimates(paths, project_id=pid, individual_id='ind1', start_position=position)['error'] == 'invalid_estimate_page'
+
+
+def test_estimate_picker_route_is_read_only_and_uses_existing_access_boundary(paths, monkeypatch):
+    from dtm_buildsheet.app.routes.quickbooks import route_quickbooks
+    from dtm_buildsheet.app.services.request_access_service import _quickbooks_capabilities
+    from tests.contract.harness import call_route
+    seen = []
+    monkeypatch.setattr(est, 'list_available_estimates', lambda p, **kw: seen.append(kw) or {'ok':True,'estimates':[],'next_position':None})
+    monkeypatch.setattr(est, 'bind_estimate', lambda *a, **kw: pytest.fail('Listing must not bind'))
+    status, payload, handled = call_route(route_quickbooks, 'POST', '/api/quickbooks/estimates/list',
+        {'project_id':'p','individual_id':'v','start_position':51}, paths)
+    assert (status, handled, payload['ok']) == (200, True, True)
+    assert seen == [{'project_id':'p','individual_id':'v','start_position':51}]
+    assert _quickbooks_capabilities('POST','/api/quickbooks/estimates/list') == _quickbooks_capabilities('POST','/api/quickbooks/estimates/bind')
+
+
+def test_quote_reconcile_route_uses_estimate_access_boundary(paths, monkeypatch):
+    from dtm_buildsheet.app.routes.quickbooks import route_quickbooks
+    from dtm_buildsheet.app.services import qb_acceptance_service
+    from dtm_buildsheet.app.services.request_access_service import _quickbooks_capabilities
+    from tests.contract.harness import call_route
+
+    monkeypatch.setattr(
+        est,
+        "reconcile_quote_references",
+        lambda _: {"ok": True, "matched": 1},
+    )
+    monkeypatch.setattr(
+        qb_acceptance_service,
+        "run_connected_refresh",
+        lambda _: {"checked": 1, "updated": 1, "failed": 0},
+    )
+    status, payload, handled = call_route(
+        route_quickbooks,
+        "POST",
+        "/api/quickbooks/estimates/reconcile-quotes",
+        {},
+        paths,
+    )
+    assert (status, handled, payload) == (200, True, {
+        "ok": True,
+        "matched": 1,
+        "acceptance_refresh": {"checked": 1, "updated": 1, "failed": 0},
+    })
+    assert _quickbooks_capabilities(
+        "POST", "/api/quickbooks/estimates/reconcile-quotes"
+    ) == _quickbooks_capabilities("POST", "/api/quickbooks/estimates/bind")
+
+
+def test_estimate_picker_disconnected_and_query_failure(paths, monkeypatch):
+    pid = _make_project(paths, _make_agency(paths, qb_customer_id='CUST9'), [])
+    monkeypatch.setattr(sync, '_build_client', lambda _: (None, {'ok':False,'error':'not_connected'}))
+    assert est.list_available_estimates(paths, project_id=pid, individual_id='ind1')['error'] == 'not_connected'
+    class FailedClient:
+        def list_estimates(self, *args):
+            raise QuickBooksApiError('sensitive upstream response')
+    monkeypatch.setattr(sync, '_build_client', lambda _: (FailedClient(), None))
+    assert est.list_available_estimates(paths, project_id=pid, individual_id='ind1') == {'ok':False,'error':'estimate_lookup_failed'}
+
+
+@pytest.mark.parametrize('confirmation', ['false', 'true', 1, None])
+def test_estimate_binding_requires_boolean_replacement_confirmation(paths, confirmation):
+    from dtm_buildsheet.app.routes.quickbooks import route_quickbooks
+    from tests.contract.harness import call_route
+    _, payload, _ = call_route(route_quickbooks, 'POST', '/api/quickbooks/estimates/bind',
+        {'project_id':'p','individual_id':'v','qb_estimate_id':'123','replace_existing':confirmation}, paths)
+    assert payload['error'] == 'estimate_connection_replacement_confirmation_required'
+
+
+def test_estimate_picker_ui_selects_without_binding_and_confirms_replacement():
+    from pathlib import Path
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node is needed for isolated UI function checks')
+    script = r"""
+const fs=require('fs'),assert=require('assert'),window={};
+const element=()=>({value:'',textContent:'',disabled:false,isConnected:true,children:[],addEventListener(){},replaceChildren(){this.children=[];},append(child){this.children.push(child);}});
+const nodes=new Map(),$=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);};
+const document={createElement:element},controls={create:element(),modal:{classList:{remove(){}}}};
+const _PT={projects:[{project_id:'p',build_units:[{individuals:[{individual_id:'v',qb_estimate_id:'10'}]}]}]};
+const _ptOpenEstModal=()=>{$('qb-estimate-link-id').value='10';},_ptEstModalEls=()=>controls,_ptEscAttr=x=>x,_ptEstError=x=>x;
+const _ptQbConnected=async()=>true,toast=()=>{},_ptLoadAll=async()=>{},_ptRenderOverview=()=>{};
+let consent=false,calls=[];const confirm=()=>consent;
+const api=async(path,body)=>{calls.push({path,body});return path.endsWith('/list')?{ok:true,next_position:null,estimates:[
+ {id:'20',number:'E20',customer:'Agency',status:'Accepted',date:'2026-09-01'},
+ {id:'30',number:'E30',customer:'Other agency',linked_elsewhere:true}]}:{ok:false,error:'estimate_already_linked_to_another_vehicle'};};
+const source=fs.readFileSync(process.argv[1],'utf8');
+eval(source.slice(source.indexOf('window.PT_linkQbEstimate ='),source.indexOf('window.PT_buildCreateEstimate =')));
+(async()=>{
+ window.PT_linkQbEstimate('p','v');await $('qb-estimate-list-load').onclick();
+ assert.equal(calls.length,1);assert.equal($('qb-estimate-list').children.length,2);
+ assert.equal($('qb-estimate-list').children[1].disabled,true);
+ $('qb-estimate-list').children[0].onclick();assert.equal($('qb-estimate-link-id').value,'20');assert.equal(calls.length,1);
+ await controls.create.onclick();assert.equal(calls.length,1); // replacement rejected by user
+ consent=true;await controls.create.onclick();assert.equal(calls.length,2);
+ assert.equal(calls[1].path,'/api/quickbooks/estimates/bind');
+ assert.deepEqual(calls[1].body,{project_id:'p',individual_id:'v',qb_estimate_id:'20',replace_existing:true});
+ $('qb-estimate-list-search').value='E20';$('qb-estimate-list-search').oninput();assert.equal($('qb-estimate-list').children.length,1);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+"""
+    path = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js/projects/detail_builds.js'
+    result = subprocess.run([node, '-e', script, str(path)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def test_bind_estimate_verifies_url_saves_snapshot_and_can_unlink(paths, monkeypatch):

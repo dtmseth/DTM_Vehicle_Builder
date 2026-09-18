@@ -13,6 +13,7 @@ from .vehicle_folder_provisioning_service import _drive_item_locator
 
 
 FOLDER_NAME = "Build Reference Photos"
+_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 
 def _etag(item):
@@ -26,6 +27,31 @@ def _folder_path(item):
     if not path:
         raise ValueError("A registered parent has no portable location")
     return path
+
+
+def _loose_photo_files(company_gateway, parent_path: str, *, destination_path: str) -> list[dict]:
+    """List only the supported image files dropped at a vehicle-folder root.
+
+    Project discovery accepts JPG/JPEG/PNG source files.  Restricting this
+    migration to that same set avoids treating the vehicle PDF, notes, or
+    unrelated files as reference media.
+    """
+    files = []
+    for item in company_gateway.list_children(parent_path):
+        name = str(item.get("name") or "").strip()
+        item_id = str(item.get("id") or "").strip()
+        suffix = name.rsplit(".", 1)[-1].casefold() if "." in name else ""
+        if not isinstance(item.get("file"), dict) or f".{suffix}" not in _PHOTO_EXTENSIONS:
+            continue
+        if not item_id:
+            raise ValueError(f"Loose reference photo {name!r} has no item ID")
+        files.append({
+            "item_id": item_id,
+            "name": name,
+            "source_path": f"{parent_path}/{name}",
+            "destination_path": f"{destination_path}/{name}",
+        })
+    return files
 
 
 def plan_reference_folders(records_gateway, company_gateway, *, root: str, progress=None,
@@ -71,6 +97,24 @@ def plan_reference_folders(records_gateway, company_gateway, *, root: str, progr
                     if child and (not isinstance(child.get("folder"), dict)
                                   or str((child.get("parentReference") or {}).get("id") or "") != parent_id):
                         raise ValueError("A conflicting file/folder blocks the reference folder")
+                    loose_photos = _loose_photo_files(
+                        company_gateway, parent_path, destination_path=path,
+                    )
+                    if child:
+                        destination_names = {
+                            str(entry.get("name") or "").strip().casefold()
+                            for entry in company_gateway.list_children(path)
+                            if isinstance(entry.get("file"), dict)
+                        }
+                        collisions = [
+                            entry["name"] for entry in loose_photos
+                            if entry["name"].casefold() in destination_names
+                        ]
+                        if collisions:
+                            raise ValueError(
+                                "Loose reference photo name already exists in the reference folder: "
+                                + ", ".join(sorted(collisions, key=str.casefold))
+                            )
                     plan["targets"].append({
                         "project_id": project.project_id, "unit_id": unit.unit_id,
                         "individual_id": vehicle.individual_id,
@@ -78,6 +122,7 @@ def plan_reference_folders(records_gateway, company_gateway, *, root: str, progr
                         "folder_name": FOLDER_NAME, "path": path,
                         "existing_id": str((child or {}).get("id") or ""),
                         "action": "keep" if child else "create",
+                        "loose_photos": loose_photos,
                     })
         except Exception as exc:
             plan["blockers"].append({"project_item_id": ident, "error": str(exc)})
@@ -92,7 +137,7 @@ def apply_reference_folders(plan, records_gateway, company_gateway, *, checkpoin
             or plan.get("company_drive_id") != company_gateway.drive_id
             or plan.get("records_drive_id") != records_gateway.drive_id):
         raise ValueError("The backfill plan is blocked or belongs to different libraries")
-    report = {"created": 0, "verified": 0, "targets": [], "ok": False}
+    report = {"created": 0, "verified": 0, "moved": 0, "targets": [], "ok": False}
     projects = {p["project_id"]: p for p in plan["projects"]}
     try:
         # Check every source before the first mutation, and again per target.
@@ -127,7 +172,40 @@ def apply_reference_folders(plan, records_gateway, company_gateway, *, checkpoin
                     or verified.get("name") != FOLDER_NAME):
                 raise ValueError("Reference folder read-back did not match the registered parent")
             report["verified"] += 1
-            report["targets"].append({**target, "folder_id": child_id})
+            moved = []
+            for photo in target.get("loose_photos", []):
+                name = str(photo.get("name") or "").strip()
+                item_id = str(photo.get("item_id") or "").strip()
+                expected_source = f"{parent_path}/{name}"
+                expected_destination = f"{target['path']}/{name}"
+                if (
+                    not item_id or not name
+                    or photo.get("source_path") != expected_source
+                    or photo.get("destination_path") != expected_destination
+                ):
+                    raise ValueError("The plan contains an unexpected loose reference photo")
+                source = company_gateway.get_item(item_id)
+                if (
+                    not source or not isinstance(source.get("file"), dict)
+                    or str(source.get("name") or "") != name
+                    or str((source.get("parentReference") or {}).get("id") or "") != target["parent_id"]
+                    or f".{name.rsplit('.', 1)[-1].casefold()}" not in _PHOTO_EXTENSIONS
+                ):
+                    raise ValueError("A loose reference photo changed; generate a fresh plan")
+                if company_gateway.get_item_by_path(expected_destination):
+                    raise ValueError("A reference-folder file changed; generate a fresh plan")
+                result = company_gateway.move_item(item_id, parent_id=child_id, new_name=name)
+                result_id = str(result.get("id") or item_id)
+                read_back = company_gateway.get_item(result_id)
+                if (
+                    not read_back or not isinstance(read_back.get("file"), dict)
+                    or str(read_back.get("name") or "") != name
+                    or str((read_back.get("parentReference") or {}).get("id") or "") != child_id
+                ):
+                    raise ValueError("Loose reference photo move did not verify")
+                moved.append({"item_id": result_id, "name": name, "path": expected_destination})
+                report["moved"] += 1
+            report["targets"].append({**target, "folder_id": child_id, "moved": moved})
             if checkpoint:
                 checkpoint(report)
         report["ok"] = True

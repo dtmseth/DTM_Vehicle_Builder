@@ -286,7 +286,7 @@ function _ptEnsureIndividuals(u) {
       color: "", vin: "",
       existing_year: "", existing_make: "", existing_model: "",
       existing_build_type: "", existing_unit_number: "", existing_vin: "",
-      notes: "", draft_id: null,
+      notes: "", quote_references: [], draft_id: null,
     });
   }
 }

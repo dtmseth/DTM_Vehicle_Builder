@@ -16,12 +16,15 @@ from .project_models import (
     EquipmentPreferences,
     IndividualUnit,
     ProjectRecord,
+    QuoteReference,
 )
 
 
 _REFERENCE_SCOPES = {"project", "unit_group", "individual"}
 _REFERENCE_MEDIA_TYPES = {"photo", "video"}
 _REFERENCE_SOURCE_KINDS = {"company_reference", "shop_completed"}
+_QUOTE_REFERENCE_STATES = {"current", "obsolete"}
+_QUOTE_MATCH_STATUSES = {"pending", "linked", "not_found", "multiple", "linked_elsewhere"}
 
 
 def _utcnow() -> str:
@@ -128,6 +131,32 @@ def reference_asset_from_dict(d: Any) -> BuildReferenceAsset:
     )
 
 
+def quote_reference_from_dict(d: Any) -> QuoteReference:
+    if not isinstance(d, dict):
+        raise ValueError("QuoteReference must be a dict")
+    reference_id = str(d.get("reference_id", "") or "").strip() or str(uuid.uuid4())
+    state = str(d.get("state", "current") or "current").strip().lower()
+    if state not in _QUOTE_REFERENCE_STATES:
+        state = "current"
+    qb_estimate_id = str(d.get("qb_estimate_id", "") or "").strip()
+    match_status = str(d.get("match_status", "") or "").strip().lower()
+    if match_status not in _QUOTE_MATCH_STATUSES:
+        match_status = "linked" if qb_estimate_id else "pending"
+    if qb_estimate_id and match_status not in {"linked", "linked_elsewhere"}:
+        match_status = "linked"
+    return QuoteReference(
+        reference_id=reference_id,
+        quote_number=str(d.get("quote_number", "") or "").strip(),
+        state=state,
+        match_status=match_status,
+        qb_estimate_id=qb_estimate_id,
+        estimate_status=str(d.get("estimate_status", "") or "").strip(),
+        customer=str(d.get("customer", "") or "").strip(),
+        txn_date=str(d.get("txn_date", "") or "").strip(),
+        checked_at=str(d.get("checked_at", "") or "").strip(),
+    )
+
+
 def individual_unit_from_dict(d: Any) -> IndividualUnit:
     if not isinstance(d, dict):
         raise ValueError("IndividualUnit must be a dict")
@@ -172,6 +201,11 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         qb_job_id=str(d.get("qb_job_id", "")),
         qb_project_id=str(d.get("qb_project_id", "")),
         qb_project_name=str(d.get("qb_project_name", "")),
+        quote_references=[
+            quote_reference_from_dict(item)
+            for item in d.get("quote_references", [])
+            if isinstance(item, dict) and str(item.get("quote_number", "") or "").strip()
+        ] if isinstance(d.get("quote_references", []), list) else [],
         qb_estimate_id=str(d.get("qb_estimate_id", "")),
         qb_estimate_snapshot=dict(d.get("qb_estimate_snapshot") or {})
         if isinstance(d.get("qb_estimate_snapshot"), dict) else {},

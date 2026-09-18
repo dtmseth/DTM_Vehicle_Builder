@@ -42,6 +42,25 @@ from .http import send_json
 logger = logging.getLogger(__name__)
 
 
+def _attach_calendar_team_history(payload: dict, paths: AppPaths, bundle) -> None:
+    """Expose durable Calendar team assignments alongside Operations history."""
+    try:
+        from ..adapters.calendar_store import CalendarStore
+        document, _ = CalendarStore(
+            paths, cloud_storage=bundle.storage if wiring._cloud_flag_enabled() else None  # noqa: SLF001
+        ).read()
+        teams = {team['id']: team['name'] for team in document.get('settings', {}).get('teams', [])}
+        jobs = document.get('jobs', {})
+    except Exception:  # Calendar history should never hide Operations records.
+        logger.warning("Calendar team history was unavailable", exc_info=True)
+        return
+    for vehicle in payload.get('vehicles', []):
+        last = jobs.get(vehicle['vehicle_id'], {}).get('last_plan', {})
+        team_ids = last.get('team_ids') or ([last['team_id']] if last.get('team_id') else [])
+        vehicle['build_team_ids'] = team_ids
+        vehicle['build_team_names'] = [teams.get(team_id, team_id) for team_id in team_ids]
+
+
 _STATUS_RESPONSE_ATTR = {
     OperationsWorkstream.ACCEPTANCE: "acceptance_status",
     OperationsWorkstream.AVAILABILITY: "vehicle_availability_status",
@@ -386,6 +405,7 @@ def route_operations(
                 hidden_project_ids=inactive_project_ids,
                 projects=list_projects(paths),
             )
+            _attach_calendar_team_history(payload, paths, bundle)
         send_json(handler, payload)
     except OperationsAuthorizationError:
         send_json(handler, {

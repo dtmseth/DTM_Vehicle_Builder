@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import math
 import re
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -1021,6 +1022,224 @@ def _normalize_qb_estimate_id(value: str) -> str:
     return ""
 
 
+def _estimate_link_owners(projects) -> dict[str, tuple[str, str]]:
+    owners: dict[str, tuple[str, str]] = {}
+    for project in projects:
+        for build in project.build_units:
+            for unit in build.individuals:
+                owner = (project.project_id, unit.individual_id)
+                primary = str(unit.qb_estimate_id or "").strip()
+                if primary:
+                    owners[primary] = owner
+                for reference in unit.quote_references:
+                    estimate_id = str(reference.qb_estimate_id or "").strip()
+                    if estimate_id and reference.match_status == "linked":
+                        owners[estimate_id] = owner
+    return owners
+
+
+def _estimate_search_row(estimate: dict, owners: dict[str, tuple[str, str]],
+                         owner: tuple[str, str] | None) -> dict:
+    estimate_id = str(estimate.get("Id") or "").strip()
+    customer = estimate.get("CustomerRef") or {}
+    linked_owner = owners.get(estimate_id)
+    return {
+        "id": estimate_id,
+        "number": str(estimate.get("DocNumber") or "").strip(),
+        "customer": str(customer.get("name") or customer.get("value") or "").strip(),
+        "date": str(estimate.get("TxnDate") or "").strip(),
+        "status": str(estimate.get("TxnStatus") or "").strip(),
+        "accepted_date": str(estimate.get("AcceptedDate") or "").strip(),
+        "linked_elsewhere": bool(linked_owner and linked_owner != owner),
+        "linked_here": bool(owner and linked_owner == owner),
+    }
+
+
+def search_quote_estimates(paths: AppPaths, *, query: str, project_id: str = "",
+                           individual_id: str = "") -> dict:
+    """Search QBO Estimate numbers without changing either system."""
+    term = str(query or "").strip()
+    if not term or len(term) > 80:
+        return {"ok": False, "error": "invalid_quote_number"}
+    owner = None
+    if project_id or individual_id:
+        loaded = _load_individual(paths, project_id, individual_id)
+        if isinstance(loaded, dict):
+            return loaded
+        owner = (project_id, individual_id)
+    client, error = qb_sync_service._build_client(paths)
+    if error:
+        return error
+    from ...inputs import project_entry
+    owners = _estimate_link_owners(project_entry.list_projects(paths))
+    try:
+        rows = client.search_estimates_by_doc_number(term, exact=False, page_size=20)
+    except (QuickBooksApiError, ValueError):
+        logger.warning("QuickBooks quote-number search failed")
+        return {"ok": False, "error": "estimate_lookup_failed"}
+    estimates = [
+        _estimate_search_row(row, owners, owner)
+        for row in rows
+        if str(row.get("Id") or "").strip()
+    ]
+    return {"ok": True, "estimates": estimates}
+
+
+def _upsert_quote_reference(unit, estimate: dict, checked_at: str) -> None:
+    """Record a verified Estimate alongside the unit's human quote history."""
+    number = str(estimate.get("DocNumber") or "").strip()
+    estimate_id = str(estimate.get("Id") or "").strip()
+    if not number or not estimate_id:
+        return
+    customer = estimate.get("CustomerRef") or {}
+    reference = next((
+        item for item in unit.quote_references
+        if item.quote_number.casefold() == number.casefold()
+    ), None)
+    if reference is None:
+        from ...domain.project_models import QuoteReference
+        reference = QuoteReference(reference_id=str(uuid.uuid4()), quote_number=number)
+        unit.quote_references.append(reference)
+    reference.qb_estimate_id = estimate_id
+    reference.match_status = "linked"
+    reference.estimate_status = str(estimate.get("TxnStatus") or "").strip()
+    reference.customer = str(customer.get("name") or customer.get("value") or "").strip()
+    reference.txn_date = str(estimate.get("TxnDate") or "").strip()
+    reference.checked_at = checked_at
+
+
+def _retain_project_quote_number(project, estimate: dict) -> None:
+    number = str(estimate.get("DocNumber") or "").strip()
+    if number and number.casefold() not in {
+        item.casefold() for item in project.quote_numbers
+    }:
+        project.quote_numbers.append(number)
+
+
+def reconcile_quote_references(paths: AppPaths) -> dict:
+    """Resolve saved, current quote numbers after QBO becomes available."""
+    from ...inputs import project_entry
+
+    projects = project_entry.list_projects(paths)
+    targets: dict[str, list[tuple[object, object, object]]] = {}
+    for project in projects:
+        for build in project.build_units:
+            for unit in build.individuals:
+                for reference in unit.quote_references:
+                    if reference.state != "current" or reference.match_status == "linked":
+                        continue
+                    number = reference.quote_number.strip()
+                    if number:
+                        targets.setdefault(number.casefold(), []).append((project, unit, reference))
+    if not targets:
+        return {"ok": True, "matched": 0, "not_found": 0, "multiple": 0,
+                "linked_elsewhere": 0, "updated_projects": 0}
+
+    client, error = qb_sync_service._build_client(paths)
+    if error:
+        return error
+    matches: dict[str, list[dict]] = {}
+    try:
+        for key, references in targets.items():
+            number = references[0][2].quote_number
+            matches[key] = client.search_estimates_by_doc_number(number, exact=True, page_size=3)
+    except (QuickBooksApiError, ValueError):
+        logger.warning("QuickBooks saved quote-number reconciliation failed")
+        return {"ok": False, "error": "estimate_lookup_failed"}
+
+    owners = _estimate_link_owners(projects)
+    changed_projects: set[str] = set()
+    counts = {"matched": 0, "not_found": 0, "multiple": 0, "linked_elsewhere": 0}
+    checked_at = datetime.now(timezone.utc).isoformat()
+    for key, references in targets.items():
+        rows = matches.get(key, [])
+        for project, unit, reference in references:
+            if reference.quote_number.casefold() not in {
+                item.casefold() for item in project.quote_numbers
+            }:
+                project.quote_numbers.append(reference.quote_number)
+                changed_projects.add(project.project_id)
+            old = (
+                reference.match_status, reference.qb_estimate_id,
+                reference.estimate_status, reference.customer,
+                reference.txn_date, reference.checked_at,
+            )
+            reference.checked_at = checked_at
+            if not rows:
+                reference.match_status = "not_found"
+                reference.qb_estimate_id = ""
+                counts["not_found"] += 1
+            elif len(rows) > 1:
+                reference.match_status = "multiple"
+                reference.qb_estimate_id = ""
+                counts["multiple"] += 1
+            else:
+                row = rows[0]
+                estimate_id = str(row.get("Id") or "").strip()
+                owner = owners.get(estimate_id)
+                here = (project.project_id, unit.individual_id)
+                customer = row.get("CustomerRef") or {}
+                reference.qb_estimate_id = estimate_id
+                reference.estimate_status = str(row.get("TxnStatus") or "").strip()
+                reference.customer = str(
+                    customer.get("name") or customer.get("value") or ""
+                ).strip()
+                reference.txn_date = str(row.get("TxnDate") or "").strip()
+                if owner and owner != here:
+                    reference.match_status = "linked_elsewhere"
+                    counts["linked_elsewhere"] += 1
+                else:
+                    reference.match_status = "linked"
+                    owners[estimate_id] = here
+                    counts["matched"] += 1
+                    if not str(unit.qb_estimate_id or "").strip():
+                        unit.qb_estimate_id = estimate_id
+                        unit.qb_estimate_snapshot = _estimate_snapshot(row)
+                        unit.qb_estimate_snapshot_at = checked_at
+            new = (
+                reference.match_status, reference.qb_estimate_id,
+                reference.estimate_status, reference.customer,
+                reference.txn_date, reference.checked_at,
+            )
+            if new != old:
+                changed_projects.add(project.project_id)
+
+    for project in projects:
+        if project.project_id in changed_projects:
+            project_entry.save_project_operational_state(project, paths)
+    return {"ok": True, **counts, "updated_projects": len(changed_projects)}
+
+
+def list_available_estimates(paths: AppPaths, *, project_id: str, individual_id: str,
+                             start_position: int = 1) -> dict:
+    """Read metadata only; selection still goes through bind_estimate's fresh checks."""
+    loaded = _load_individual(paths, project_id, individual_id)
+    if isinstance(loaded, dict):
+        return loaded
+    if type(start_position) is not int or not 1 <= start_position <= 100000:
+        return {'ok': False, 'error': 'invalid_estimate_page'}
+    client, error = qb_sync_service._build_client(paths)
+    if error:
+        return error
+    from ...inputs import project_entry
+    linked = _estimate_link_owners(project_entry.list_projects(paths))
+    try:
+        rows = client.list_estimates(start_position, 50)
+    except QuickBooksApiError:
+        logger.warning('QuickBooks Estimate list lookup failed')
+        return {'ok': False, 'error': 'estimate_lookup_failed'}
+    estimates = []
+    for row in rows:
+        ident = str(row.get('Id') or '')
+        if not ident:
+            continue
+        estimates.append(_estimate_search_row(
+            row, linked, (project_id, individual_id),
+        ))
+    return {'ok': True, 'estimates': estimates,
+            'next_position': start_position + 50 if len(rows) == 50 and start_position + 50 <= 100000 else None}
+
+
 def bind_estimate(
     paths: AppPaths,
     *,
@@ -1035,7 +1254,8 @@ def bind_estimate(
     with the project so they mirror to SharePoint for users without a QBO
     connection. Updating that Estimate remains a separate guarded command.
     """
-
+    if not isinstance(replace_existing, bool):
+        return {'ok': False, 'error': 'estimate_connection_replacement_confirmation_required'}
     loaded = _load_individual(paths, project_id, individual_id)
     if isinstance(loaded, dict):
         return loaded
@@ -1074,22 +1294,14 @@ def bind_estimate(
             "error": "estimate_connection_replacement_confirmation_required",
             "existing_estimate_id": existing_id,
         }
-    for candidate_project in project_entry.list_projects(paths):
-        for candidate_unit in candidate_project.build_units:
-            for candidate in candidate_unit.individuals:
-                if (
-                    str(candidate.qb_estimate_id or "").strip() == normalized
-                    and (
-                        candidate_project.project_id != project_id
-                        or candidate.individual_id != individual_id
-                    )
-                ):
-                    return {
-                        "ok": False,
-                        "error": "estimate_already_linked_to_another_vehicle",
-                        "existing_project_id": candidate_project.project_id,
-                        "existing_individual_id": candidate.individual_id,
-                    }
+    owner = _estimate_link_owners(project_entry.list_projects(paths)).get(normalized)
+    if owner and owner != (project_id, individual_id):
+        return {
+            "ok": False,
+            "error": "estimate_already_linked_to_another_vehicle",
+            "existing_project_id": owner[0],
+            "existing_individual_id": owner[1],
+        }
 
     client, error = qb_sync_service._build_client(paths)
     if error:
@@ -1110,6 +1322,8 @@ def bind_estimate(
     unit.qb_estimate_id = normalized
     unit.qb_estimate_snapshot = snapshot
     unit.qb_estimate_snapshot_at = checked_at
+    _upsert_quote_reference(unit, estimate, checked_at)
+    _retain_project_quote_number(project, estimate)
     project_entry.save_project(project, paths)
     metadata = estimate.get("MetaData") if isinstance(estimate.get("MetaData"), dict) else {}
     status = str(estimate.get("TxnStatus") or "").strip()
@@ -1347,6 +1561,12 @@ def create_estimate(
         )
     unit.qb_estimate_snapshot = _estimate_snapshot(snapshot_source)
     unit.qb_estimate_snapshot_at = datetime.now(timezone.utc).isoformat()
+    _upsert_quote_reference(
+        unit,
+        {**snapshot_source, "Id": estimate_id},
+        unit.qb_estimate_snapshot_at,
+    )
+    _retain_project_quote_number(project, snapshot_source)
     from ...inputs import project_entry
     project_entry.save_project(project, paths)
     attachment = None

@@ -52,6 +52,13 @@ class Company:
         assert path == "Database/Agency/2026/Unit 1/Build Reference Photos"
         return self.child
 
+    def list_children(self, path):
+        assert path in {
+            "Database/Agency/2026/Unit 1",
+            "Database/Agency/2026/Unit 1/Build Reference Photos",
+        }
+        return []
+
     def ensure_child_folder(self, parent_id, name):
         self.creates.append((parent_id, name))
         self.child = {"id": "reference", "name": name, "folder": {}, "parentReference": {"id": parent_id}}
@@ -131,3 +138,75 @@ def test_child_folder_creation_uses_parent_id_and_refuses_file_collision():
     with pytest.raises(GraphDriveError, match="file blocks"):
         gateway.ensure_child_folder("parent", "Build Reference Photos")
     assert all("root:" not in url for url in session.urls)
+
+
+def test_backfill_moves_only_supported_loose_photos_after_folder_readback():
+    class LoosePhotoCompany(Company):
+        def __init__(self):
+            super().__init__()
+            self.child = {
+                "id": "reference", "name": "Build Reference Photos", "folder": {},
+                "parentReference": {"id": "parent"},
+            }
+            self.items = {
+                "front": {
+                    "id": "front", "name": "front.JPG", "file": {},
+                    "parentReference": {"id": "parent"},
+                },
+                "rear": {
+                    "id": "rear", "name": "rear.png", "file": {},
+                    "parentReference": {"id": "parent"},
+                },
+                "pdf": {
+                    "id": "pdf", "name": "Unit 1.pdf", "file": {},
+                    "parentReference": {"id": "parent"},
+                },
+                "notes": {
+                    "id": "notes", "name": "notes.docx", "file": {},
+                    "parentReference": {"id": "parent"},
+                },
+            }
+
+        def get_item(self, ident):
+            if ident == "parent":
+                return self.parent
+            if ident == "reference":
+                return self.child
+            return self.items.get(ident)
+
+        def get_item_by_path(self, path):
+            folder = "Database/Agency/2026/Unit 1/Build Reference Photos"
+            if path == folder:
+                return self.child
+            name = path.removeprefix(folder + "/")
+            return next((item for item in self.items.values()
+                         if item["name"] == name and item["parentReference"]["id"] == "reference"), None)
+
+        def list_children(self, path):
+            if path == "Database/Agency/2026/Unit 1":
+                return [item for item in self.items.values() if item["parentReference"]["id"] == "parent"]
+            assert path == "Database/Agency/2026/Unit 1/Build Reference Photos"
+            return [item for item in self.items.values() if item["parentReference"]["id"] == "reference"]
+
+        def move_item(self, item_id, *, parent_id, new_name):
+            item = self.items[item_id]
+            item["name"] = new_name
+            item["parentReference"] = {"id": parent_id}
+            return item
+
+    records, company = Records(), LoosePhotoCompany()
+    plan = plan_reference_folders(records, company, root="Database")
+
+    target = plan["targets"][0]
+    assert [photo["name"] for photo in target["loose_photos"]] == ["front.JPG", "rear.png"]
+
+    report = apply_reference_folders(plan, records, company)
+
+    assert report["ok"] is True
+    assert report["created"] == 0
+    assert report["verified"] == 1
+    assert report["moved"] == 2
+    assert company.items["front"]["parentReference"]["id"] == "reference"
+    assert company.items["rear"]["parentReference"]["id"] == "reference"
+    assert company.items["pdf"]["parentReference"]["id"] == "parent"
+    assert company.items["notes"]["parentReference"]["id"] == "parent"

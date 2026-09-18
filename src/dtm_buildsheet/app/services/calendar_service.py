@@ -8,7 +8,7 @@ import hashlib
 import json
 
 from ...config.schemas import validate_config_payload
-from ...domain.calendar_planning import ZONE, acceptance_day, calculate_opening, number, plan_calendar, valid_day, validate_settings, _scheduled_job, _team, _hours, _work_start
+from ...domain.calendar_planning import ZONE, acceptance_day, calculate_opening, number, plan_calendar, shop_closed_dates, valid_day, validate_settings, work_segments, _scheduled_job, _team, _hours, _work_start
 from ...domain.operations_policy import Capability, has_capability
 from ...domain.operations_models import AcceptanceStatus, ProjectState
 from ...inputs.project_entry import list_projects
@@ -24,7 +24,7 @@ def _fingerprint(records):
               'accepted_at', 'acceptance_source', 'qbo_estimate_accepted_at', 'qbo_estimate_status',
               'parts_status', 'parts_received_at', 'parts_ready_at', 'vehicle_availability_status',
               'vehicle_available_date', 'build_finalized', 'shop_status', 'shop_started_at',
-              'shop_completed_at', 'final_finish_status', 'must_deliver_override_date',
+              'shop_completed_at', 'ready_for_delivery_at', 'delivered_date', 'final_finish_status', 'must_deliver_override_date',
               'planned_start_date', 'scheduled_week_of', 'target_finish_date',
               'title', 'vehicle_label', 'agency_name', 'unit_number', 'vin')
     return hashlib.sha256(json.dumps(sorted(tuple(getattr(r, key) for key in fields) for r in records)).encode()).hexdigest()
@@ -78,7 +78,9 @@ class CalendarService:
                 except ValueError:
                     continue  # No usable opening in the bounded search horizon.
         return {"ok": True, "revision": revision, "source_revision": _fingerprint(records), "local_only": not self.cloud,
-                "settings": data["settings"], "plan": plan, "next_openings": openings, "opening_note": opening_note,
+                "split_projects": [pid for pid in sorted({j['project_id'] for j in plan['jobs']})
+                                   if self._project_split(plan, data['settings'], pid)],
+                "settings": data["settings"], "plan": plan, "closed_dates": sorted(shop_closed_dates(validate_settings(data["settings"]))), "next_openings": openings, "opening_note": opening_note,
                 "pending_date_count": len(self.date_changes(plan['jobs'], plan['released'])),
                 "saved_jobs": data["jobs"], "project_teams": data.get('project_teams', {}),
                 "history": data.get("history", []), "schema_version": data["schema_version"]}
@@ -120,7 +122,7 @@ class CalendarService:
         staged = [j for j in preview['plan']['jobs'] if j['id'] in selected]
         conflicts = [c for j in staged for c in j.get('conflicts', [])]
         hard_conflicts = [c for j in staged for c in j.get('hard_conflicts', [])]
-        if hard_conflicts or (conflicts and not proposed.get('_allow_overlap')):
+        if hard_conflicts or (conflicts and (proposed.get('_reordered') or not proposed.get('_allow_overlap'))):
             raise ValueError('Resolve booking conflicts before saving: ' + '; '.join(dict.fromkeys(conflicts)))
         reason = self._reason(body)
         changes = self._changes(data, proposed, preview['plan'])
@@ -139,6 +141,8 @@ class CalendarService:
             spec['last_plan']['change_reason'] = spec['change_reason']
             spec['last_plan'].pop('staged', None)
         for spec in proposed['jobs'].values():
+            for key in ('_sequence', '_not_before', '_after'):
+                spec.pop(key, None)
             if spec.pop('_release', False):
                 for key in ('last_plan', 'team_id', 'team_ids', 'start_date', 'pinned', 'team_assignment_manual'):
                     spec.pop(key, None)
@@ -148,6 +152,7 @@ class CalendarService:
             spec.pop('_forecast_edit', None)
         proposed.pop('_reason', None)
         proposed.pop('_allow_overlap', None)
+        proposed.pop('_reordered', None)
         proposed['schema_version'] = 2
         now = datetime.now(ZONE).isoformat()
         if data['settings'] != proposed['settings']:
@@ -226,7 +231,7 @@ class CalendarService:
                 earliest=_work_start(max(self.today(), date.fromisoformat(earliest))))
             job, _ = _scheduled_job({'id': f'opening-{i}', 'record': None, 'project': '', 'accepted': '', 'spec': spec},
                 team, _hours(spec, team), start, team['people'] * settings['hours_per_day'] * (1-settings['buffer_percent']/100),
-                set(settings['holidays']) | set(team['days_off']), settings, [], '')
+                shop_closed_dates(settings) | set(team['days_off']), settings, [], '')
             openings.append(job)
             occupied.append(job)
         return {'ok': True, 'reserved': False, 'opening': {**openings[0], 'ready': openings[-1]['ready']},
@@ -247,14 +252,14 @@ class CalendarService:
             if not team['active']:
                 continue
             proposal = self._edit(data, {'edit': {**edit, 'team_id': team['id'], 'team_ids': [team['id']]},
-                'include_project': body.get('include_project', False)}, records)
+                'include_project': body.get('include_project', False), 'move_project': body.get('move_project', False)}, records)
             plan = plan_calendar(records, data['settings'], proposal, today=self.today())
             jobs = [j for j in plan['jobs'] if j.get('staged')]
             selected = next(j for j in jobs if j['id'] == edit['id'])
             overlaps = list({j['id']: j for row in jobs for j in row.get('overlaps', [])}.values())
             choices.append({'team_id': team['id'], 'busy': bool(overlaps), 'overlaps': overlaps,
                 'blocking_conflicts': list(dict.fromkeys(c for j in jobs for c in j.get('hard_conflicts', []))),
-                'start': selected['start'], 'ready': selected['ready'], 'warnings': selected['warnings'],
+                'start': selected['start'], 'end': selected['end'], 'ready': selected['ready'], 'warnings': selected['warnings'],
                 'vehicles': [{'id': j['id'], 'title': j['title'], 'start': j['start'], 'ready': j['ready']} for j in jobs]})
         return {'ok': True, 'revision': revision, 'source_revision': _fingerprint(records), 'choices': choices}
 
@@ -322,22 +327,34 @@ class CalendarService:
     def _edit(self, data, body, records):
         result = deepcopy(data)
         result['_reason'] = self._reason(body)
+        if body.get('schedule_action') is not None:
+            if any(body.get(key) for key in ('edit', 'edits', 'settings', 'project_assignment', 'remove_project', 'remove_vehicle', 'fill_gap', 'include_project', 'move_project')):
+                raise ValueError('Review one scheduling action at a time')
+            return self._reorder(result, body['schedule_action'], records)
+        if not isinstance(body.get('move_project', False), bool):
+            raise ValueError('Group mode must be true or false')
         if not isinstance(body.get('allow_overlap', False), bool):
             raise ValueError('Overlap confirmation must be true or false')
         result['_allow_overlap'] = body.get('allow_overlap', False)
         if not isinstance(body.get('include_project', False), bool):
             raise ValueError('Project scheduling selection must be true or false')
-        removal = body.get('remove_project')
+        removal = body.get('remove_project') or body.get('remove_vehicle')
         if removal is not None:
-            if not isinstance(removal, str) or any(body.get(k) for k in ('edit', 'edits', 'settings', 'project_assignment')):
+            if not isinstance(removal, str) or (body.get('remove_project') and body.get('remove_vehicle')) or any(body.get(k) for k in ('edit', 'edits', 'settings', 'project_assignment')):
                 raise ValueError('Choose one project to remove')
+            if not isinstance(body.get('fill_gap', False), bool):
+                raise ValueError('Choose whether to fill the gap')
             current = plan_calendar(records, data['settings'], data, today=self.today())
-            jobs = [j for j in current['jobs'] if j['project_id'] == removal and not j.get('historical')]
+            key = 'project_id' if body.get('remove_project') else 'id'
+            jobs = [j for j in current['jobs'] if j[key] == removal and not j.get('historical') and j.get('shop_status') != 'complete']
             if not jobs:
                 raise ValueError('This project has no current bookings to remove')
             for job in jobs:
                 result['jobs'][job['id']].update(released=True, _release=True)
-            result.setdefault('project_teams', {}).pop(removal, None)
+            if body.get('remove_project'):
+                result.setdefault('project_teams', {}).pop(removal, None)
+            if body.get('fill_gap'):
+                result = self._fill_gap(result, current, jobs, records)
             return result
         if 'settings' in body:
             settings = validate_config_payload('calendar_settings.json', body['settings'])
@@ -384,6 +401,15 @@ class CalendarService:
                 raise ValueError('Each reviewed change needs a unique vehicle ID')
             ids.append(edit['id'])
             result = self._edit_one(result, {'edit': edit}, records)
+        if body.get('move_project', False):
+            if not isinstance(body['move_project'], bool) or len(edits) != 1 or assignment is not None:
+                raise ValueError('Group move requires one scheduled vehicle')
+            selected = next((record for record in records if record.vehicle_id == edits[0]['id']), None)
+            selected_spec = result['jobs'].get(edits[0]['id'], {})
+            if selected is None or not selected_spec.get('last_plan'):
+                raise ValueError('Choose an existing scheduled vehicle to move its project as a group')
+            result = self._reorder(result, {'id': selected.vehicle_id, 'mode': 'insert', 'group': True,
+                'team_id': selected_spec['team_id'], 'start_date': selected_spec.get('start_date') or self.today().isoformat()}, records)
         if body.get('include_project'):
             if len(edits) != 1 or assignment is not None:
                 raise ValueError('Select one vehicle to schedule its project')
@@ -401,6 +427,158 @@ class CalendarService:
                 service_estimate = {k: edits[0][k] for k in ('hours', 'hours_manual') if k in edits[0]} if selected.project_type != 'build' else {}
                 result = self._edit_one(result, {'edit': {'id': record.vehicle_id, 'team_id': team,
                     'start_date': '', '_earliest': earliest, **service_estimate}}, records)
+        return result
+
+    @staticmethod
+    def _project_split(plan, settings, project_id):
+        rows = sorted((j for j in plan['jobs'] if j['project_id'] == project_id
+                       and not j.get('historical') and j.get('shop_status') != 'complete'), key=lambda j: j['start'])
+        if rows and any(j['project_id'] == project_id for j in plan['queue']):
+            return True
+        for prior, row in zip(rows, rows[1:]):
+            if prior['team_ids'] != row['team_ids']:
+                return True
+            team = _team(settings, row['team_ids'])
+            segments, _ = work_segments(datetime.fromisoformat(prior['end']), .25,
+                team['people'] * settings['hours_per_day'] * (1-settings['buffer_percent']/100),
+                shop_closed_dates(settings) | set(team['days_off']), settings['hours_per_day'])
+            first = segments[0]
+            expected = _work_start(date.fromisoformat(first['date'])) + timedelta(hours=first['start_hour']-8)
+            if abs((datetime.fromisoformat(row['start'])-expected).total_seconds()) > 60:
+                return True
+        return False
+
+    def _fill_gap(self, data, current, removed, records):
+        removed_ids = {j['id'] for j in removed}
+        result = deepcopy(data)
+        result['_reordered'] = True
+        sequence = 0
+        for team_id in sorted({team for j in removed for team in j['team_ids']}):
+            start = min(j['start'] for j in removed if team_id in j['team_ids'])
+            rows = sorted((j for j in current['jobs'] if j['id'] not in removed_ids
+                and team_id in j['team_ids'] and j['start'] >= start
+                and not j.get('historical') and j.get('shop_status') != 'complete'), key=lambda j: (j['start'], j['id']))
+            previous = None
+            for row in rows:
+                if len(row['team_ids']) != 1:
+                    raise ValueError('Reconcile legacy joint-team bookings before filling the gap')
+                result = self._edit_one(result, {'edit': {'id':row['id'], 'team_id':team_id, 'start_date':''}}, records)
+                spec = result['jobs'][row['id']]
+                spec.update(_sequence=sequence, _not_before=start)
+                if previous:
+                    spec['_after'] = previous
+                previous = row['id']
+                sequence += 1
+        return result
+
+    def _reorder(self, data, action, records):
+        """Stage a server-computed queue; never accept computed dates from the UI.
+
+        Every moved reservation is reviewed and published by the usual save flow.
+        Downstream bookings keep their earliest held time and may only move forward.
+        """
+        if not isinstance(action, dict) or action.get('mode') not in ('new', 'next_ready', 'insert', 'before', 'after', 'swap', 'replace'):
+            raise ValueError('Choose insert, replace, or swap')
+        if not isinstance(action.get('group', False), bool):
+            raise ValueError('Group mode must be true or false')
+        if not isinstance(action.get('include_project', False), bool):
+            raise ValueError('Project scheduling selection must be true or false')
+        if any(not isinstance(action.get(key, False), bool) for key in ('whole_project', 'confirm_consolidation')):
+            raise ValueError('Project consolidation selections must be true or false')
+        if action.get('include_project') and (action.get('group') or action.get('whole_project')):
+            raise ValueError('Choose either unscheduled project units or a scheduled project move')
+        baseline = deepcopy(data)
+        for spec in baseline['jobs'].values():
+            spec.pop('_stage', None)
+        current = plan_calendar(records, data['settings'], baseline, today=self.today())
+        jobs = {j['id']: j for j in current['jobs'] if not j.get('historical') and j.get('shop_status') != 'complete'}
+        ident, target_id, mode = action.get('id'), action.get('target_id'), action['mode']
+        if not isinstance(ident, str) or (target_id is not None and not isinstance(target_id, str)):
+            raise ValueError('Choose vehicle IDs')
+        source = jobs.get(ident) or next((j for j in current['queue'] if j['id'] == ident), None)
+        if mode == 'next_ready':
+            candidates = (source or {}).get('recovery_candidates', [])
+            if action.get('whole_project'):
+                candidates = [candidate for candidate in candidates if all(
+                    not row['blocked'] and row['team_ids'] == source['team_ids'] and row['start'] > source['start']
+                    and row.get('shop_status') != 'in_progress'
+                    for row in jobs.values() if row['project_id'] == jobs[candidate['id']]['project_id'])]
+            if not candidates:
+                raise ValueError('No later ready build is scheduled on this team')
+            target_id, mode = candidates[0]['id'], 'swap'
+        target = jobs.get(target_id)
+        if not source or (mode not in ('insert', 'new') and not target) or ident == target_id:
+            raise ValueError('Choose current, distinct bookings')
+        if mode == 'swap' and ident not in jobs:
+            raise ValueError('Only scheduled builds can swap; insert or replace this build instead')
+        if mode == 'replace' and ident in jobs:
+            raise ValueError('Use swap for two scheduled builds')
+
+        def block(job):
+            rows = [job]
+            if (action.get('group') or action.get('whole_project')) and not job['custom']:
+                rows = sorted([j for j in jobs.values() if j['project_id'] == job['project_id']], key=lambda j: (j['start'], j['id']))
+                if action.get('whole_project') and job['id'] == ident:
+                    rows += [j for j in current['queue'] if j['project_id'] == job['project_id']]
+                elif job['id'] not in jobs:
+                    rows.append(job)
+            if any(len(j.get('team_ids', [])) > 1 for j in rows):
+                raise ValueError('Reconcile legacy joint-team bookings before inserting or swapping them')
+            return rows
+
+        sources, targets = block(source), block(target) if target else []
+        if action.get('whole_project') and not action.get('confirm_consolidation') and any(
+                self._project_split(current, data['settings'], j['project_id']) for j in (source, target) if j):
+            raise ValueError('This project is split across the schedule. Confirm placing all its units together, or reschedule units individually.')
+        if action.get('include_project'):
+            if ident in jobs or source['custom']:
+                raise ValueError('Choose an unscheduled project card')
+            sources = [row for row in current['queue'] if row['project_id'] == source['project_id']]
+        source_ids, target_ids = {j['id'] for j in sources}, {j['id'] for j in targets}
+        if source_ids & target_ids:
+            raise ValueError('Choose a build outside the moving project block')
+        team = target['team_id'] if target else action.get('team_id')
+        if target:
+            start = max(j['end'] for j in targets) if mode == 'after' else min(j['start'] for j in targets)
+        else:
+            start_day = valid_day(action.get('start_date'), 'Start date', optional=False)
+            start = _work_start(date.fromisoformat(start_day)).isoformat(timespec='minutes')
+            if mode == 'new':
+                # Open-space drops append after work already occupying that day;
+                # only an explicit insertion edge goes before existing work.
+                start = max([start] + [j['end'] for j in jobs.values() if j['id'] not in source_ids
+                    and team in j['team_ids'] and j['start'][:10] <= start_day <= j['end'][:10]])
+        lanes = [(team, start, sources)]
+        removed = set(source_ids)
+        if mode in ('swap', 'replace'):
+            removed |= target_ids
+        if mode == 'swap':
+            lanes.append((source['team_id'], min(j['start'] for j in sources), targets))
+        result = deepcopy(data)
+        result['_reordered'] = True
+        if mode == 'replace':
+            for row in targets:
+                result['jobs'][row['id']].update(released=True, _release=True)
+        # Combine insertion anchors with existing reservations in chronological order.
+        sequence = 0
+        for team_id in dict.fromkeys(lane[0] for lane in lanes):
+            anchors = [(at, 0, rows) for team, at, rows in lanes if team == team_id]
+            first = min(at for at, _, _ in anchors)
+            entries = anchors + [(j['start'], 1, [j]) for j in jobs.values()
+                if team_id in j['team_ids'] and j['id'] not in removed and j['start'] >= first]
+            previous = None
+            for at, _, rows in sorted(entries, key=lambda entry: (entry[0], entry[1])):
+                for row in rows:
+                    if len(row.get('team_ids', [])) > 1:
+                        raise ValueError('Reconcile legacy joint-team bookings before shifting later work')
+                    edit = {'id': row['id'], 'team_id': team_id, 'start_date': ''}
+                    result = self._edit_one(result, {'edit': edit}, records)
+                    spec = result['jobs'][row['id']]
+                    spec.update(_sequence=sequence, _not_before=at)
+                    if previous:
+                        spec['_after'] = previous
+                    sequence += 1
+                    previous = row['id']
         return result
 
     def _edit_one(self, data, body, records):
