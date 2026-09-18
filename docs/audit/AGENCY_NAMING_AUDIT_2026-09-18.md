@@ -27,49 +27,66 @@ agency records.
   their unique DisplayNames end in `2600`, `2400`, and `4700`. They are not
   duplicates, and IDs `38` and `88` were removed from the import-ignore list.
 
-## Standardization candidates
+## Proposed QBO renames — approval pending
 
-### Saint — 12
+This list was regenerated directly from the 239 active top-level QBO Customers.
+No QBO names were changed while producing it.
 
-- `City of St Augusta` → `City of Saint Augusta`
-- `City of St Louis Park` → `City of Saint Louis Park`
-- `City of St Michael` → `City of Saint Michael`
-- `St Cloud Refrigeration` → `Saint Cloud Refrigeration`
-- `St Cloud State Public Safety` → `Saint Cloud State Public Safety`
-- `St. Augusta Fire Department` → `Saint Augusta Fire Department`
-- `St. Cloud Auto Wrecking L.L.C.` → `Saint Cloud Auto Wrecking L.L.C.`
-- `St. Cloud Fire Department` → `Saint Cloud Fire Department`
-- `St. Cloud Police Department` → `Saint Cloud Police Department`
-- `St. Joseph Police Department` → `Saint Joseph Police Department`
-- `St. Joseph Public Works` → `Saint Joseph Public Works`
-- `St. Paul Police Department` → `Saint Paul Police Department`
+| QBO ID | Before | After |
+|---:|---|---|
+| 102 | City Of Rice | City of Rice |
+| 32 | City of St Augusta | City of Saint Augusta |
+| 319 | City of St Louis Park | City of Saint Louis Park |
+| 124 | City of St Michael | City of Saint Michael |
+| 360 | Clearwater County Sheriff | Clearwater County Sheriff's Office |
+| 408 | Columbia Heights Police Dept. | Columbia Heights Police Department |
+| 169 | Crow Wing County Sheriff | Crow Wing County Sheriff's Office |
+| 429 | Custer County Sheriff | Custer County Sheriff's Office |
+| 430 | Dundas Police Dept. | Dundas Police Department |
+| 433 | Fergus County Sheriffs Department | Fergus County Sheriff's Office |
+| 100000001 | Granite County Sheriff Office | Granite County Sheriff's Office |
+| 103 | Hector Volunteer Fire Dept. | Hector Volunteer Fire Department |
+| 404 | Hennepin County | Hennepin County Sheriff's Office |
+| 100000111 | Hubbard County Sheriff’s Office | Hubbard County Sheriff's Office |
+| 30 | Kanabec County Sheriff's Department | Kanabec County Sheriff's Office |
+| 387 | Koochiching County Sheriff | Koochiching County Sheriff's Office |
+| 392 | McCone County Sheriff | McCone County Sheriff's Office |
+| 374 | Mille Lacs County Sheriff | Mille Lacs County Sheriff's Office |
+| 100000061 | Mille Lacs Tribal Police | Mille Lacs Tribal Police Department |
+| 10 | Morrison County Sheriff | Morrison County Sheriff's Office |
+| 364 | Nelson County Sheriff Department | Nelson County Sheriff's Office |
+| 101 | Nobles County Sheriff | Nobles County Sheriff's Office |
+| 363 | Prairie County Sheriff | Prairie County Sheriff's Office |
+| 133 | Renville County Sheriff | Renville County Sheriff's Office |
+| 231 | Sibley County Sheriff | Sibley County Sheriff's Office |
+| 199 | St Cloud Refrigeration | Saint Cloud Refrigeration |
+| 90 | St Cloud State Public Safety | Saint Cloud State Public Safety |
+| 16 | St. Augusta Fire Department | Saint Augusta Fire Department |
+| 117 | St. Cloud Auto Wrecking L.L.C. | Saint Cloud Auto Wrecking L.L.C. |
+| 174 | St. Cloud Fire Department | Saint Cloud Fire Department |
+| 23 | St. Cloud Police Department | Saint Cloud Police Department |
+| 40 | St. Joseph Police Department | Saint Joseph Police Department |
+| 366 | St. Joseph Public Works | Saint Joseph Public Works |
+| 391 | St. Paul Police Department | Saint Paul Police Department |
+| 449 | Stark County Sheriffs Office | Stark County Sheriff's Office |
+| 288 | Stearns County Highway Dept | Stearns County Highway Department |
+| 2 | Stearns County Sheriff | Stearns County Sheriff's Office |
+| 247 | Swift County Sheriff | Swift County Sheriff's Office |
+| 100000041 | Three Affiliated Tribes Police | Three Affiliated Tribes Police Department |
+| 447 | Waite Park Fire Deptartment | Waite Park Fire Department |
+| 127 | Walsh County Sheriff | Walsh County Sheriff's Office |
+| 331 | Washington County Sheriff | Washington County Sheriff's Office |
+| 123 | Webster County Sheriff | Webster County Sheriff's Office |
+| 34 | Winthrop Police Deptartment | Winthrop Police Department |
 
-### Sheriff's Office — 23
+## Sales-rep link repair
 
-- Clearwater, Crow Wing, Custer, Fergus, Granite, Hubbard, Kanabec,
-  Koochiching, McCone, Mille Lacs, Morrison, Nelson, Nobles, Prairie, Renville,
-  Hennepin, Sibley, Stark, Stearns, Swift, Walsh, Washington, and Webster County records
-  use `Sheriff`, `Sheriffs`, `Sheriff Office`, or `Sheriff Department` instead
-  of `County Sheriff's Office`. A bare name ending in `County`, such as
-  `Hennepin County`, is now included in this warning.
-
-### Department names — 5
-
-- `Columbia Heights Police Dept.` → `Columbia Heights Police Department`
-- `Dundas Police Dept.` → `Dundas Police Department`
-- `Hector Volunteer Fire Dept.` → `Hector Volunteer Fire Department`
-- `Mille Lacs Tribal Police` → `Mille Lacs Tribal Police Department`
-- `Three Affiliated Tribes Police` → `Three Affiliated Tribes Police Department`
-
-### City casing — 1
-
-- `City Of Rice` → `City of Rice`
-
-### Other full-name/typo review
-
-- `Stearns County Highway Dept` → `Stearns County Highway Department`
-- `Waite Park Fire Deptartment` → `Waite Park Fire Department`
-- `Winthrop Police Deptartment` → `Winthrop Police Department`
+Fourteen projects retained deleted duplicate sales-rep IDs even though their
+stored names exactly matched a surviving rep. Eleven were rebound to the active
+Dan Orth record and three to the active Don Starry record. All repairs were
+mirrored to shared project storage, and a second audit found no unresolved or
+stale project rep links. Project saves now make this same exact-name repair
+automatically; ambiguous or fuzzy names still require an explicit selection.
 
 ## Recommended manual sequence
 

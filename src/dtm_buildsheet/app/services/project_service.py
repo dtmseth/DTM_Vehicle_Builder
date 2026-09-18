@@ -455,7 +455,7 @@ def _canonicalize_customer_identities(
 ) -> dict | None:
     """Require stable selections; typed labels alone are never identities."""
     from .agency_service import load_agency_choices
-    from .sales_rep_service import load_reps
+    from .sales_rep_service import resolve_rep_selection
 
     agency_id = str(customer.agency_id or "").strip()
     agency = next((
@@ -469,10 +469,7 @@ def _canonicalize_customer_identities(
             "error": "Select an existing agency from the results or create it in the agency form.",
         }
     rep_id = str(customer.sales_rep_id or "").strip()
-    rep = next((
-        item for item in load_reps(paths)
-        if item.rep_id == rep_id
-    ), None)
+    rep = resolve_rep_selection(rep_id, customer.sales_rep, paths)
     if rep is None and (required or rep_id):
         return {
             "ok": False,

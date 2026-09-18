@@ -19,7 +19,10 @@ from dtm_buildsheet.app.services.project_service import (
     handle_save_individual_notes,
     handle_save_project,
 )
-from dtm_buildsheet.app.services.sales_rep_service import handle_save_rep
+from dtm_buildsheet.app.services.sales_rep_service import (
+    handle_save_rep,
+    reconcile_project_rep_links,
+)
 from dtm_buildsheet.domain.operations_models import OperationsActor, VehicleOperations
 from dtm_buildsheet.domain.operations_policy import AppRole
 from dtm_buildsheet.domain.project_codec import project_from_dict
@@ -149,6 +152,14 @@ def test_project_form_requires_real_agency_and_sales_rep_selection(paths):
 
     agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
     rep = handle_save_rep({"name": "Alex Rep", "phone": "555-0100", "email": "alex@example.com"}, paths)["rep"]
+    typed_existing_rep = handle_save_project({
+        "require_selected_identities": True,
+        "customer": {
+            "agency": agency["name"], "agency_id": agency["agency_id"],
+            "sales_rep": "Alex Rep", "build_year": "2026",
+        },
+    }, paths)
+    assert typed_existing_rep["error_code"] == "sales_rep_selection_required"
     saved = handle_save_project({
         "require_selected_identities": True,
         "customer": {
@@ -165,6 +176,52 @@ def test_project_form_requires_real_agency_and_sales_rep_selection(paths):
         "name": " alex rep ", "phone": "555-0199", "email": "other@example.com",
     }, paths)
     assert duplicate["error_code"] == "sales_rep_already_exists"
+
+
+def test_deleted_duplicate_rep_link_is_repaired_by_exact_name(paths):
+    agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
+    current = handle_save_rep({
+        "name": "Dan Orth", "phone": "555-0100", "email": "dan@example.com",
+    }, paths)["rep"]
+    project = project_entry.new_project(customer=CustomerInfo(
+        agency_id=agency["agency_id"],
+        agency=agency["name"],
+        build_year="2027",
+        sales_rep_id="deleted-duplicate-id",
+        sales_rep="  DAN   ORTH ",
+    ))
+    project_entry.save_project(project, paths)
+
+    result = reconcile_project_rep_links(paths)
+
+    assert result["ok"] is True
+    assert len(result["repaired"]) == 1
+    saved = project_entry.load_project(project.project_id, paths)
+    assert saved.customer.sales_rep_id == current["rep_id"]
+    assert saved.customer.sales_rep == "Dan Orth"
+
+
+def test_project_save_repairs_deleted_duplicate_rep_link(paths):
+    agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
+    current = handle_save_rep({
+        "name": "Don Starry", "phone": "555-0101", "email": "don@example.com",
+    }, paths)["rep"]
+
+    saved = handle_save_project({
+        "require_selected_identities": True,
+        "customer": {
+            "agency_id": agency["agency_id"],
+            "agency": agency["name"],
+            "build_year": "2027",
+            "sales_rep_id": "deleted-duplicate-id",
+            "sales_rep": "Don Starry",
+        },
+    }, paths)
+
+    assert saved["ok"] is True
+    project = project_entry.load_project(saved["project_id"], paths)
+    assert project.customer.sales_rep_id == current["rep_id"]
+    assert project.customer.sales_rep == "Don Starry"
 
 
 def test_unit_notes_update_project_and_draft_without_losing_paragraphs(paths):

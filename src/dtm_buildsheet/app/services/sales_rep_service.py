@@ -148,6 +148,70 @@ def load_reps(paths: AppPaths) -> list[SalesRepRecord]:
     return sorted(_records(paths).values(), key=lambda r: r.name.lower())
 
 
+def resolve_rep_selection(
+    rep_id: str,
+    rep_name: str,
+    paths: AppPaths,
+) -> SalesRepRecord | None:
+    """Resolve a saved rep ID, repairing a deleted duplicate by exact name.
+
+    Historical projects can retain the ID of a duplicate record after that
+    duplicate is deleted.  The displayed name is safe to use only when it
+    exactly identifies one current rep; fuzzy matches must remain a user
+    decision.
+    """
+    records = load_reps(paths)
+    wanted_id = str(rep_id or "").strip()
+    if not wanted_id:
+        return None
+    current = next((record for record in records if record.rep_id == wanted_id), None)
+    if current is not None:
+        return current
+
+    wanted_name = " ".join(str(rep_name or "").split()).casefold()
+    if not wanted_name:
+        return None
+    matches = [
+        record for record in records
+        if " ".join(record.name.split()).casefold() == wanted_name
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def reconcile_project_rep_links(paths: AppPaths) -> dict:
+    """Repair project links to deleted duplicate reps when the match is exact."""
+    from ...inputs.project_entry import list_projects, save_project
+
+    current_ids = {record.rep_id for record in load_reps(paths)}
+    repaired: list[dict[str, str]] = []
+    unresolved: list[dict[str, str]] = []
+    for project in list_projects(paths):
+        old_id = str(project.customer.sales_rep_id or "").strip()
+        old_name = str(project.customer.sales_rep or "").strip()
+        if not old_id or old_id in current_ids:
+            continue
+        replacement = resolve_rep_selection(old_id, old_name, paths)
+        item = {
+            "project_id": project.project_id,
+            "agency": project.customer.agency,
+            "build_year": project.customer.build_year,
+            "old_rep_id": old_id,
+            "old_rep_name": old_name,
+        }
+        if replacement is None:
+            unresolved.append(item)
+            continue
+        project.customer.sales_rep_id = replacement.rep_id
+        project.customer.sales_rep = replacement.name
+        save_project(project, paths)
+        repaired.append({
+            **item,
+            "new_rep_id": replacement.rep_id,
+            "new_rep_name": replacement.name,
+        })
+    return {"ok": not unresolved, "repaired": repaired, "unresolved": unresolved}
+
+
 def handle_list_reps(paths: AppPaths) -> dict:
     return {"ok": True, "sales_reps": [asdict(r) for r in load_reps(paths)]}
 
