@@ -18,7 +18,12 @@ let _pbeNotesDraftId = "";
 let _pbeLoadPresetSelection = "";
 
 function _pbeLockedMessage() {
-  toast("This build is finalized. Use Reopen for changes at the top before editing it.", "info");
+  toast(
+    _PT.pbeFinalized
+      ? "This build is finalized. Use Reopen for changes at the top before editing it."
+      : "This build is view only. A user with project editing access must make changes.",
+    "info",
+  );
 }
 
 function _pbeWireReadOnlyGuard() {
@@ -60,6 +65,12 @@ function _pbeApplyReadOnlyState() {
   root.classList.toggle("pbe-readonly", readOnly);
   const banner = $("pbe-readonly-banner");
   if (banner) banner.hidden = !readOnly;
+  const title = $("pbe-readonly-title");
+  const help = $("pbe-readonly-help");
+  if (title) title.textContent = _PT.pbeFinalized ? "Finalized build — view only" : "Build — view only";
+  if (help) help.textContent = _PT.pbeFinalized
+    ? "This is the normal build screen, locked against changes."
+    : "You can review this build, but your current access does not allow changes.";
   const reopen = $("pbe-reopen-btn");
   if (reopen) reopen.hidden = !(readOnly && _PT.pbeFinalized && _ptCanEditProjects());
   root.querySelectorAll("textarea, input[type='text'], input[type='number'], input[type='search']")
