@@ -218,7 +218,8 @@ all write operations still require their backend checks and explicit confirmatio
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,
   notes, taxable flag, and billing/shipping addresses). Linking fills only EMPTY local fields;
-  it never overwrites the agency name or a populated app field. A Customer import never schedules
+  it never overwrites a populated app profile field. A durable Customer-ID match does adopt a QBO
+  display-name rename and refresh the linked Builder project name; the ID link is not lost. A Customer import never schedules
   Company/Shop vehicle folders; only a saved vehicle project enters that lifecycle. Routes
   `GET /customers/preview`, `POST /customers/import`. Connected startup/30-minute refresh now runs
   this safe Customer/Agency import along with Item reconciliation, and a newly completed OAuth
@@ -493,8 +494,9 @@ GOTCHAS):
 - **QB data is read-only for the catalog except linked parts**: `sync_items` never writes parts_db;
   only explicit `link_item`/`unlink_item`/`reconcile_linked_parts` touch it, and reconcile only
   writes QB-owned fields on already-linked products.
-- **Customer import never clobbers user data**: fills only empty local customer-profile fields;
-  never overwrites agency names or populated app values. Automatic connected refresh includes
+- **Customer import preserves profile data**: fills only empty local customer-profile fields and
+  never overwrites populated app values. A QBO rename is adopted only after an exact durable
+  Customer-ID match, then propagated to linked Builder project snapshots. Automatic connected refresh includes
   Customers/Agencies as well as Items and skips writes for unchanged agency records.
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert
   `save_settings_to_cloud_batch_in_background` to uploading a captured snapshot, or deletions resurrect.
@@ -606,6 +608,12 @@ Operationally, users still create true QBO Projects manually, paste the Project 
 the Builder, review every Estimate, and turn on **Bank transfer — 1% per transaction, max $20** in
 QBO after creation when required. Those are explicit product/API constraints, not incomplete
 connection setup.
+
+The Project Details **Advanced · Project billing** section supports a second read-only ownership
+scope: one existing Estimate can be connected to the whole Builder project. This is intended for
+service work billed as one job even when several vehicles are listed. The same duplicate-link and
+fresh-read checks apply, and an accepted project-level Estimate becomes acceptance evidence for
+each current vehicle. Connecting or removing this reference never writes to QuickBooks.
 
 **Working-tree operations extension — link an existing Estimate:** an authorized connected Builder
 user may browse a read-only QBO Estimate picker or paste an Estimate ID/page URL and explicitly

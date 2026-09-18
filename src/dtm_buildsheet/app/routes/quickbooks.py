@@ -342,6 +342,30 @@ def route_quickbooks(
             ),
         )
         return True
+    if method == "POST" and path == "/api/quickbooks/estimates/bind-project":
+        _send_json(
+            handler,
+            _estimate_call(
+                "project connection",
+                qb_estimate_service.bind_project_estimate,
+                paths,
+                project_id=body.get("project_id", ""),
+                qb_estimate_id=body.get("qb_estimate_id", ""),
+            ),
+        )
+        return True
+    if method == "POST" and path == "/api/quickbooks/estimates/unbind-project":
+        _send_json(
+            handler,
+            _estimate_call(
+                "project disconnection",
+                qb_estimate_service.unbind_project_estimate,
+                paths,
+                project_id=body.get("project_id", ""),
+                qb_estimate_id=body.get("qb_estimate_id", ""),
+            ),
+        )
+        return True
     if method == "POST" and path == "/api/quickbooks/estimates/validate":
         _send_json(
             handler,

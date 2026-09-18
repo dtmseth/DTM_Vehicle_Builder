@@ -312,8 +312,8 @@ function _ptIndRowHtml(ind) {
         <input class="ind-vin" type="text" value="${esc(ind.vin || "")}" placeholder="1FMCU0GX…">
       </div>
       <div class="form-group proj-ind-field-xl">
-        <label class="proj-ind-label">Notes</label>
-        <input class="ind-notes" type="text" value="${esc(ind.notes || "")}">
+        <label class="proj-ind-label">Unit / Build Notes</label>
+        <textarea class="ind-notes proj-unit-notes-textarea" rows="5" placeholder="Paragraphs and line breaks are preserved">${esc(ind.notes || "")}</textarea>
       </div>
     </div>
     <details class="proj-existing-vehicle-fields" ${[

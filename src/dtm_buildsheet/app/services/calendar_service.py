@@ -49,10 +49,31 @@ class CalendarService:
         projects = list_projects(self.paths)
         hidden = {p.project_id for p in projects if p.project_status == "inactive"}
         completed = {p.project_id for p in projects if p.project_status == "completed"}
-        records = [replace(r, project_state=ProjectState.COMPLETED) if r.project_id in completed else r
-                   for r in self.bundle.operations.list_vehicles() if r.project_id not in hidden]
-        from ...domain.project_types import with_project_work
         by_id = {p.project_id: p for p in projects}
+        current_vehicle_ids = {
+            project.project_id: {
+                unit.individual_id
+                for build in project.build_units
+                for unit in build.individuals
+            }
+            for project in projects
+        }
+        records = []
+        for record in self.bundle.operations.list_vehicles():
+            if record.project_id in hidden:
+                continue
+            if (
+                record.project_id in by_id
+                and record.vehicle_id not in current_vehicle_ids[record.project_id]
+            ):
+                continue
+            changes = {}
+            if record.project_id in completed:
+                changes["project_state"] = ProjectState.COMPLETED
+            if record.parts_status == "partially_received":
+                changes["parts_status"] = "ordered"
+            records.append(replace(record, **changes) if changes else record)
+        from ...domain.project_types import with_project_work
         return [with_project_work(r, by_id.get(r.project_id)) for r in records]
 
     def view(self, actor):

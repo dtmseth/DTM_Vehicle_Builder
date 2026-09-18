@@ -68,6 +68,8 @@ def preferences_from_dict(d: Any) -> EquipmentPreferences:
         push_bumper_brand=str(d.get("push_bumper_brand", "")),
         cage_brand=str(d.get("cage_brand", "")),
         console_brand=str(d.get("console_brand", "")),
+        laptop_make=str(d.get("laptop_make", "")),
+        laptop_model=str(d.get("laptop_model", "")),
         slick_top=bool(d.get("slick_top", False)),
         mixed_brands=bool(d.get("mixed_brands", False)),
         notes=str(d.get("notes", "")),
@@ -325,6 +327,11 @@ def project_from_dict(d: dict) -> ProjectRecord:
         project_lifecycle_history=lifecycle_history,
         project_notes=str(d.get("project_notes", "") or "").strip(),
         quote_numbers=quote_numbers,
+        project_quote_references=[
+            quote_reference_from_dict(item)
+            for item in d.get("project_quote_references", [])
+            if isinstance(item, dict) and str(item.get("quote_number", "") or "").strip()
+        ] if isinstance(d.get("project_quote_references", []), list) else [],
         reference_assets=[
             reference_asset_from_dict(item)
             for item in references_raw

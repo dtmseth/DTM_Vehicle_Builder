@@ -39,11 +39,23 @@ class OperationsReadService:
 
         from ...domain.project_types import with_project_work
         by_id = {p.project_id: p for p in projects}
+        current_vehicle_ids = {
+            project.project_id: {
+                unit.individual_id
+                for build in project.build_units
+                for unit in build.individuals
+            }
+            for project in projects
+        }
         records = sorted(
             (
                 with_project_work(record, by_id.get(record.project_id))
                 for record in self._repository.list_vehicles()
                 if record.project_id not in hidden_project_ids
+                and (
+                    record.project_id not in by_id
+                    or record.vehicle_id in current_vehicle_ids[record.project_id]
+                )
             ),
             key=_vehicle_sort_key,
         )
@@ -150,7 +162,9 @@ def _vehicle_summary(record: VehicleOperations) -> dict:
         "must_deliver_override_date": record.must_deliver_override_date,
         "must_deliver_by_date": effective_deadline,
         "vehicle_availability_status": record.vehicle_availability_status.value,
-        "parts_status": record.parts_status,
+        # Keep legacy history readable, but do not expose the retired
+        # partially-received workflow as a selectable/current UI state.
+        "parts_status": "ordered" if record.parts_status == "partially_received" else record.parts_status,
         "parts_ready_at": record.parts_ready_at,
         "shop_status": record.shop_status,
         "tray_status": record.tray_status.value,

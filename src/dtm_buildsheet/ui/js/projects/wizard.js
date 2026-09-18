@@ -361,6 +361,7 @@ function _ptBuildPayload() {
   _ptCollectUnits();
 
   const p = {
+    require_selected_identities: true,
     ..._ptTypePayload("proj"),
     customer: {
       agency:       $("proj-agency").value.trim(),
@@ -462,8 +463,18 @@ function _ptOkCustomer() {
     $("proj-agency").focus();
     return false;
   }
+  if (!$('proj-agency-id').value.trim()) {
+    toast("Choose an agency from the search results, or create it first", "error");
+    $("proj-agency").focus();
+    return false;
+  }
   if (!$("proj-salesrep").value.trim()) {
     toast("Sales rep is required", "error");
+    $("proj-salesrep").focus();
+    return false;
+  }
+  if (!$('proj-salesrep-id').value.trim()) {
+    toast("Choose a sales rep from the search results, or create one first", "error");
     $("proj-salesrep").focus();
     return false;
   }

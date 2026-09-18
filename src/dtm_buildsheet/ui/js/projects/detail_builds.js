@@ -236,6 +236,7 @@ function _ptCloseUnitNotesModal() {
 
 window.PT_openUnitNotes = function (individualId) {
   let selected = null;
+  let selectedUnit = null;
   let label = "Unit";
   for (const buildUnit of (_PT.viewProject?.build_units || [])) {
     const index = (buildUnit.individuals || []).findIndex(
@@ -243,6 +244,7 @@ window.PT_openUnitNotes = function (individualId) {
     );
     if (index >= 0) {
       selected = buildUnit.individuals[index];
+      selectedUnit = buildUnit;
       label = _ptUnitLabel(buildUnit, selected, index);
       break;
     }
@@ -255,12 +257,35 @@ window.PT_openUnitNotes = function (individualId) {
     _PT._unitNotesModalWired = true;
     $("unit-notes-modal-close")?.addEventListener("click", _ptCloseUnitNotesModal);
     $("unit-notes-modal-done")?.addEventListener("click", _ptCloseUnitNotesModal);
+    $("unit-notes-modal-edit")?.addEventListener("click", () => {
+      const context = _PT._unitNotesContext;
+      if (!context) return;
+      _ptCloseUnitNotesModal();
+      if (context.finalized) {
+        PT_reviewFinalization(
+          context.projectId, context.unitId, context.individualId, "ind", true,
+        );
+      } else {
+        PT_openDetailIndModal(context.projectId, context.unitId, context.individualId);
+      }
+    });
     modal?.addEventListener("click", event => {
       if (event.target === modal) _ptCloseUnitNotesModal();
     });
   }
   if ($("unit-notes-modal-title")) $("unit-notes-modal-title").textContent = `${label} — Unit notes`;
   if ($("unit-notes-modal-body")) $("unit-notes-modal-body").textContent = notes;
+  _PT._unitNotesContext = {
+    projectId: _PT.viewProject?.project_id || "",
+    unitId: selectedUnit?.unit_id || "",
+    individualId,
+    finalized: selected?.status === "finalized",
+  };
+  const editButton = $("unit-notes-modal-edit");
+  if (editButton) {
+    editButton.hidden = !_ptCanEditProjects();
+    editButton.textContent = selected?.status === "finalized" ? "Reopen to edit" : "Edit notes";
+  }
   modal?.removeAttribute("hidden");
   modal?.classList.add("open");
   $("unit-notes-modal-close")?.focus();
@@ -288,32 +313,38 @@ function _ptOpenBuildCard(card) {
   const unitId = card.dataset.unitId;
   const draftId = card.dataset.draftId || "";
   const unitIndex = Number(card.dataset.unitIndex);
-  if (!_ptCanEditProjects()) {
-    if (draftId) {
-      PT_openReadOnlyBuild(
-        draftId,
-        card.dataset.buildLabel || "Build details",
-        card.dataset.finalStatus || "draft",
-      );
-    } else if (card.dataset.finalStatus === "finalized") {
-      PT_reviewFinalization(
-        projectId,
-        unitId,
-        card.dataset.individualId || "",
-        card.dataset.buildKind || "unit",
-        false,
-      );
-    }
+  if (draftId && card.dataset.buildKind !== "historical" &&
+      (card.dataset.finalStatus === "finalized" || !_ptCanEditProjects())) {
+    const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
+    const unit = (project?.build_units || []).find(item => item.unit_id === unitId);
+    const individual = (unit?.individuals || []).find(
+      item => item.individual_id === (card.dataset.individualId || "")
+    );
+    if (project && unit) _ptShowBuildEditor(draftId, unit, project, "overview", individual);
+  } else if (card.dataset.finalStatus === "finalized") {
+    PT_reviewFinalization(
+      projectId,
+      unitId,
+      card.dataset.individualId || "",
+      card.dataset.buildKind || "unit",
+      false,
+    );
   } else if (card.dataset.buildKind === "historical") {
     PT_openDetailIndModal(projectId, unitId, card.dataset.individualId || "");
-  } else if (card.dataset.finalStatus === "finalized") {
-    PT_reviewFinalization(projectId, unitId, card.dataset.individualId || "", card.dataset.buildKind || "unit", true);
   } else if (card.dataset.buildKind === "ind") {
     PT_setupOrEditBuildInd(projectId, unitId, card.dataset.individualId, draftId, unitIndex);
   } else {
     PT_setupOrEditBuildUnit(projectId, unitId, draftId, unitIndex);
   }
 }
+
+$("pbe-reopen-btn")?.addEventListener("click", () => {
+  const projectId = _PT.pbeProject?.project_id || "";
+  const unitId = _PT.pbeUnit?.unit_id || "";
+  const individualId = _PT.pbeIndividual?.individual_id || "";
+  if (!projectId || !unitId) return;
+  PT_reviewFinalization(projectId, unitId, individualId, individualId ? "ind" : "unit", true);
+});
 
 function _ptCloseReadOnlyBuildModal() {
   const modal = $("build-readonly-modal");
@@ -1230,6 +1261,9 @@ function _ptEstError(code) {
     project_tax_sync_failed: "QuickBooks could not apply this agency's tax status to the vehicle Project",
     retail_customer_type_not_found: "QuickBooks does not have an active Retail customer type",
     duplicate_estimate_confirmation_required: "Choose whether to update the existing estimate or create a new one",
+    invalid_estimate_id: "Enter a numeric Estimate ID or paste a QuickBooks Estimate page address",
+    estimate_already_linked_elsewhere: "That Estimate is already connected to another project or vehicle",
+    estimate_not_linked: "That Estimate is not connected to this project",
     existing_estimate_modified: "QuickBooks changed this estimate after Vehicle Builder last wrote it",
     existing_estimate_change_unverified: "Vehicle Builder could not verify the saved QuickBooks estimate against a prior baseline",
     existing_estimate_not_found: "The saved QuickBooks estimate no longer exists — choose Create new estimate",

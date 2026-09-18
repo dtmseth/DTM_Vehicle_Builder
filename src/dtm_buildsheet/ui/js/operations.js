@@ -48,14 +48,12 @@ const _OPERATIONS_STATUS_DEFS = [
     values: [
       ["", "Not started"],
       ["ordered", "Ordered"],
-      ["partially_received", "Partially received"],
       ["received", "Received"],
       ["parts_ready", "Parts ready"],
     ],
     normal: {
-      "": ["ordered", "partially_received", "received"],
-      ordered: ["partially_received", "received"],
-      partially_received: ["received"],
+      "": ["ordered", "received"],
+      ordered: ["received"],
       received: ["parts_ready"],
       parts_ready: [],
     },
@@ -503,7 +501,7 @@ function _operationsProjectProgress(vehicles) {
   }
 
   const accepted = all("acceptance_status", ["accepted"]);
-  const logisticsStarted = any("parts_status", ["ordered", "partially_received", "received", "parts_ready"]) ||
+  const logisticsStarted = any("parts_status", ["ordered", "received", "parts_ready"]) ||
     any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
   if (accepted && logisticsStarted) {
     const parts = _operationsCommonValue(vehicles, "parts_status", "not_started") || "not_started";
@@ -1453,7 +1451,6 @@ function _operationsLabel(value) {
     delivered: "Delivered",
     not_started: "Not started",
     ordered: "Ordered",
-    partially_received: "Partially received",
     received: "Received",
     parts_ready: "Parts ready",
     in_progress: "In progress",

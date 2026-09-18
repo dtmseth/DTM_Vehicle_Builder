@@ -160,8 +160,9 @@ def test_import_matches_by_qb_id_over_name(paths):
     agc.upsert_agencies_from_qb([_cust(1, "Alpha PD")], paths)
     # The customer was renamed in QB but keeps the same Id → still one agency.
     res = agc.upsert_agencies_from_qb([_cust(1, "Alpha Police Department")], paths)
-    assert res["created"] == 0 and res["unchanged"] == 1
+    assert res["created"] == 0 and res["updated"] == 1
     assert len(agc.load_agencies(paths)) == 1
+    assert agc.load_agencies(paths)[0].name == "Alpha Police Department"
 
 
 def test_import_is_idempotent(paths):

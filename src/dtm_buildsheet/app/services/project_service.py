@@ -70,6 +70,29 @@ _QUOTE_REFERENCE_QB_FIELDS = (
 )
 
 
+def _unit_notes_rows(notes: str) -> list[str]:
+    """Store unit/build notes as one value so embedded line breaks survive."""
+    value = str(notes or "").strip()
+    return [value] if value else []
+
+
+def _recover_unit_note_breaks(notes: str, draft_rows: object) -> str:
+    """Recover paragraph boundaries retained by older draft note arrays."""
+    value = str(notes or "").strip()
+    rows = [str(row).strip() for row in (draft_rows or []) if str(row).strip()]
+    if "\n" in value:
+        return value
+    if not value and rows:
+        return "\n\n".join(rows)
+    if len(rows) < 2:
+        return value
+    recovered = "\n\n".join(rows)
+    if not value:
+        return recovered
+    flattened = lambda text: " ".join(str(text).split()).casefold()
+    return recovered if flattened(value) == flattened(" ".join(rows)) else value
+
+
 def _clear_quote_reference_qb_fields(reference) -> None:
     reference.match_status = "pending"
     reference.qb_estimate_id = ""
@@ -196,6 +219,28 @@ def _ensure_project_folder(paths: AppPaths, agency: str, build_year: str) -> Non
 
 def handle_list_projects(paths: AppPaths) -> dict:
     projects = list_projects(paths)
+    # Older builds stored each entered line as a separate draft row while the
+    # project-side unit note could be empty or flattened. Restore only the
+    # unambiguous cases, then persist once so subsequent reads use one value.
+    for project in projects:
+        changed = False
+        for unit in project.build_units:
+            for individual in unit.individuals:
+                if not individual.draft_id:
+                    continue
+                try:
+                    draft = load_draft_for_request(individual.draft_id, paths)
+                except FileNotFoundError:
+                    continue
+                recovered = _recover_unit_note_breaks(
+                    individual.notes,
+                    draft.notes.get("INSTALLATION NOTES", []),
+                )
+                if recovered != individual.notes:
+                    individual.notes = recovered
+                    changed = True
+        if changed:
+            save_project(project, paths)
     return {"ok": True, "projects": [asdict(p) for p in projects]}
 
 
@@ -207,6 +252,51 @@ def handle_get_project(project_id: str, paths: AppPaths) -> dict:
         return {"ok": False, "error": f"Project not found: {project_id}"}
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
+
+
+def handle_save_individual_notes(
+    project_id: str,
+    unit_id: str,
+    individual_id: str,
+    body: dict,
+    paths: AppPaths,
+) -> dict:
+    """Atomically update the one unit/build-notes value and its draft mirror."""
+    try:
+        project = load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Project not found: {project_id}"}
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    unit = next((item for item in project.build_units if item.unit_id == unit_id), None)
+    individual = next(
+        (item for item in (unit.individuals if unit else []) if item.individual_id == individual_id),
+        None,
+    )
+    if unit is None or individual is None:
+        return {"ok": False, "error": "Unit not found"}
+    if individual.status == "finalized":
+        return {"ok": False, "error": "Reopen this finalized build before editing its notes"}
+    notes = str(body.get("notes") or "").strip()
+    individual.notes = notes
+    save_project(project, paths)
+    if individual.draft_id:
+        try:
+            draft = load_draft_for_request(individual.draft_id, paths)
+            if notes:
+                draft.notes["INSTALLATION NOTES"] = _unit_notes_rows(notes)
+            else:
+                draft.notes.pop("INSTALLATION NOTES", None)
+            save_draft(draft, paths.workspace_drafts_dir)
+        except FileNotFoundError:
+            pass
+    return {
+        "ok": True,
+        "project_id": project_id,
+        "unit_id": unit_id,
+        "individual_id": individual_id,
+        "notes": notes,
+    }
 
 
 def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -> dict:
@@ -352,6 +442,45 @@ def _repair_customer_agency_id(customer: CustomerInfo, paths: AppPaths) -> None:
         customer.agency_id = match["agency_id"]
         customer.agency = match["name"]
         customer.agency_abbreviation = match["abbreviation"]
+
+
+def _canonicalize_customer_identities(
+    customer: CustomerInfo, paths: AppPaths, *, required: bool,
+) -> dict | None:
+    """Require stable selections; typed labels alone are never identities."""
+    from .agency_service import load_agency_choices
+    from .sales_rep_service import load_reps
+
+    agency_id = str(customer.agency_id or "").strip()
+    agency = next((
+        item for item in load_agency_choices(paths)
+        if item["agency_id"] == agency_id
+    ), None)
+    if agency is None and (required or agency_id):
+        return {
+            "ok": False,
+            "error_code": "agency_selection_required",
+            "error": "Select an existing agency from the results or create it in the agency form.",
+        }
+    rep_id = str(customer.sales_rep_id or "").strip()
+    rep = next((
+        item for item in load_reps(paths)
+        if item.rep_id == rep_id
+    ), None)
+    if rep is None and (required or rep_id):
+        return {
+            "ok": False,
+            "error_code": "sales_rep_selection_required",
+            "error": "Select an existing sales rep from the results or create one in the sales rep form.",
+        }
+    if agency is not None:
+        customer.agency_id = agency["agency_id"]
+        customer.agency = agency["name"]
+        customer.agency_abbreviation = agency["abbreviation"]
+    if rep is not None:
+        customer.sales_rep_id = rep.rep_id
+        customer.sales_rep = rep.name
+    return None
 
 
 def _agency_year_conflict(
@@ -501,6 +630,15 @@ def _resolve_completed_project_conflict(
             source.quote_numbers,
             [completed.customer.quote_number, source.customer.quote_number],
         )
+        existing_project_estimates = {
+            reference.qb_estimate_id or reference.quote_number.casefold()
+            for reference in completed.project_quote_references
+        }
+        completed.project_quote_references.extend(
+            reference for reference in source.project_quote_references
+            if (reference.qb_estimate_id or reference.quote_number.casefold())
+            not in existing_project_estimates
+        )
         # The active project contains the most recently entered agency/contact
         # facts and preferences. Builds retain their own drafts and stable IDs.
         completed.customer = source.customer
@@ -513,6 +651,7 @@ def _resolve_completed_project_conflict(
         completed.quote_numbers = _unique_strings(
             source.quote_numbers, [source.customer.quote_number],
         )
+        completed.project_quote_references = source.project_quote_references
         completed.reference_assets = source.reference_assets
         completed.reference_source_exclusions = source.reference_source_exclusions
 
@@ -584,10 +723,13 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
 
         if "customer" in body:
             candidate_customer = customer_from_dict(body["customer"])
-            # The search box permits free typing. If the user types the exact
-            # name of one saved agency without clicking its suggestion, repair
-            # the missing ID before enforcing agency/year uniqueness.
-            _repair_customer_agency_id(candidate_customer, paths)
+            identity_error = _canonicalize_customer_identities(
+                candidate_customer,
+                paths,
+                required=body.get("require_selected_identities") is True,
+            )
+            if identity_error is not None:
+                return identity_error
             if is_new_project and not candidate_customer.build_year.strip():
                 return {
                     "ok": False,
@@ -674,9 +816,9 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         mark_project_folder_provisioning_pending(project)
         path = save_project(project, paths)
 
-        # Existing drafts need the new shared instruction immediately too.  We
-        # keep it as a separate draft field so a project edit never overwrites
-        # build-specific installation and delivery notes.
+        # Existing drafts need project instructions and the canonical unit
+        # notes immediately. Unit notes remain one user-facing value; the
+        # draft mirror exists only for build-sheet generation.
         draft_contexts = {
             individual.draft_id: (unit, individual, ordinal)
             for unit in project.build_units
@@ -689,6 +831,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             for draft_id in [unit.draft_id, *(ind.draft_id for ind in unit.individuals)]
             if draft_id
         }
+        recovered_project_notes = False
         for draft_id in draft_ids:
             try:
                 draft = load_draft_for_request(draft_id, paths)
@@ -703,6 +846,21 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 context = draft_contexts.get(draft_id)
                 if context is not None:
                     unit, individual, ordinal = context
+                    recovered = _recover_unit_note_breaks(
+                        individual.notes,
+                        draft.notes.get("INSTALLATION NOTES", []),
+                    )
+                    if recovered != individual.notes:
+                        individual.notes = recovered
+                        recovered_project_notes = True
+                    desired_unit_notes = _unit_notes_rows(individual.notes)
+                    if desired_unit_notes:
+                        if draft.notes.get("INSTALLATION NOTES") != desired_unit_notes:
+                            draft.notes["INSTALLATION NOTES"] = desired_unit_notes
+                            changed = True
+                    elif "INSTALLATION NOTES" in draft.notes:
+                        draft.notes.pop("INSTALLATION NOTES", None)
+                        changed = True
                     vehicle_info = refresh_individual_vehicle_info(
                         draft.vehicle_info,
                         project,
@@ -725,6 +883,8 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 # A draft can be cleared/recreated while its project record is
                 # being edited. The fresh draft receives this value below.
                 continue
+        if recovered_project_notes:
+            save_project(project, paths)
 
         from .vehicle_folder_provisioning_service import schedule_project_folder_provisioning
         folder_provisioning_scheduled = schedule_project_folder_provisioning(
@@ -836,6 +996,10 @@ def handle_create_draft(project_id: str, unit_id: str, paths: AppPaths) -> dict:
         pref_notes.append(f"Cage brand: {prefs.cage_brand}")
     if prefs.console_brand:
         pref_notes.append(f"Console brand: {prefs.console_brand}")
+    if prefs.laptop_make:
+        pref_notes.append(f"Laptop make: {prefs.laptop_make}")
+    if prefs.laptop_model:
+        pref_notes.append(f"Laptop model: {prefs.laptop_model}")
     if prefs.slick_top:
         pref_notes.append("Slick top: Yes")
     if prefs.mixed_brands:
@@ -927,18 +1091,21 @@ def handle_create_individual_draft(
         pref_notes.append(f"Cage brand: {prefs.cage_brand}")
     if prefs.console_brand:
         pref_notes.append(f"Console brand: {prefs.console_brand}")
+    if prefs.laptop_make:
+        pref_notes.append(f"Laptop make: {prefs.laptop_make}")
+    if prefs.laptop_model:
+        pref_notes.append(f"Laptop model: {prefs.laptop_model}")
     if prefs.slick_top:
         pref_notes.append("Slick top: Yes")
     if prefs.mixed_brands:
         pref_notes.append("Mixed brands: Yes")
     if prefs.notes:
         pref_notes.append(prefs.notes)
-    if individual.notes:
-        pref_notes.append(f"Unit notes: {individual.notes}")
-
     notes: dict[str, list[str]] = {}
     if pref_notes:
         notes["EQUIPMENT PREFERENCES"] = pref_notes
+    if individual.notes:
+        notes["INSTALLATION NOTES"] = _unit_notes_rows(individual.notes)
 
     draft = new_draft(
         vehicle_info=vehicle_info,

@@ -564,7 +564,14 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
                 client.update_customer(existing_id, current.get("SyncToken", "0"), fields)
                 logger.info("QB agency push: updated existing customer")
                 return {"ok": True, "qb_customer_id": existing_id, "action": "updated"}
-            # Linked Id no longer exists in QBO (deleted there) → recreate.
+            # A missing durable ID commonly means the Customer was merged in
+            # QBO. Never recreate it automatically; Builder must explicitly
+            # merge/relink the local agency to the surviving Customer first.
+            return {
+                "ok": False,
+                "error": "qb_customer_missing_requires_relink",
+                "qb_customer_id": existing_id,
+            }
 
         # A newly-created app agency may already exist in QuickBooks (for
         # example after a customer spreadsheet import). Link that top-level

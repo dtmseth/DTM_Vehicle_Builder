@@ -31,6 +31,8 @@ class EquipmentPreferences:
     push_bumper_brand: str = ""
     cage_brand: str = ""
     console_brand: str = ""
+    laptop_make: str = ""
+    laptop_model: str = ""
     slick_top: bool = False
     mixed_brands: bool = False
     notes: str = ""
@@ -117,6 +119,10 @@ Unmatched current numbers remain readable without a QBO connection and are retri
 QuickBooks sync. Obsolete references remain visible but are not automatically matched. The singular
 `qb_estimate_id` remains the one Estimate selected for Builder-driven update/conflict tracking; it
 does not replace the broader quote history.
+
+`ProjectRecord.project_quote_references` uses the same `QuoteReference` shape for the advanced case
+where one existing QBO Estimate bills the whole project. Those links are read-only from Builder and
+can provide acceptance evidence to every current vehicle in the project.
 
 Past photo records use the same `IndividualUnit` fields as current work. `vin` always means the
 actual vehicle being built and is the only VIN eligible for current card identity, folders,

@@ -199,6 +199,17 @@ def handle_save_rep(body: dict, paths: AppPaths) -> dict:
         now = _utcnow()
 
         records = _records(paths)
+        duplicate = next((
+            record for record in records.values()
+            if record.rep_id != rep_id and record.name.strip().casefold() == name.casefold()
+        ), None)
+        if duplicate is not None:
+            return {
+                "ok": False,
+                "error_code": "sales_rep_already_exists",
+                "error": f"Sales rep already exists: {duplicate.name}",
+                "existing_rep_id": duplicate.rep_id,
+            }
         existing = records.get(rep_id)
         if existing:
             existing.name = name

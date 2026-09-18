@@ -230,6 +230,91 @@ def _normalize(text: str) -> str:
     return text
 
 
+def review_agency_name(name: str, paths: AppPaths, *, agency_id: str = "") -> dict:
+    """Return advisory naming-standard and likely-duplicate warnings."""
+    original = " ".join(str(name or "").split())
+    suggestion = original
+    issues: list[str] = []
+    if re.search(r"\bSt\.?\s+", suggestion, flags=re.IGNORECASE):
+        issues.append("Spell out Saint; do not use St. or St")
+        suggestion = re.sub(r"\bSt\.?\s+", "Saint ", suggestion, flags=re.IGNORECASE)
+    if re.search(r"\bDeptartment\b", suggestion, flags=re.IGNORECASE):
+        issues.append("Correct the misspelling of Department")
+        suggestion = re.sub(r"\bDeptartment\b", "Department", suggestion, flags=re.IGNORECASE)
+    if re.search(r"\bP\.?D\.?$|\bPolice\s+Dept\.?$", suggestion, flags=re.IGNORECASE):
+        issues.append("Use the full Police Department name")
+        suggestion = re.sub(r"(?:P\.?D\.?|Police\s+Dept\.?)$", "Police Department", suggestion, flags=re.IGNORECASE)
+    elif re.search(r"\bPolice$", suggestion, flags=re.IGNORECASE):
+        issues.append("End police agency names with Police Department")
+        suggestion = re.sub(r"Police$", "Police Department", suggestion, flags=re.IGNORECASE)
+    if re.search(r"\bF\.?D\.?$|\bFire\s+Dept\.?$", suggestion, flags=re.IGNORECASE):
+        issues.append("Use the full Fire Department name")
+        suggestion = re.sub(r"(?:F\.?D\.?|Fire\s+Dept\.?)$", "Fire Department", suggestion, flags=re.IGNORECASE)
+    elif re.search(r"\bFire$", suggestion, flags=re.IGNORECASE):
+        issues.append("End fire agency names with Fire Department")
+        suggestion = re.sub(r"Fire$", "Fire Department", suggestion, flags=re.IGNORECASE)
+    if re.search(r"\bDept\.?", suggestion, flags=re.IGNORECASE):
+        issues.append("Spell out Department; do not use Dept.")
+        suggestion = re.sub(r"\bDept\.?", "Department", suggestion, flags=re.IGNORECASE)
+    sheriff_pattern = re.compile(r"\bSheriff(?:s|['’]s)?(?:\s+(?:Dept\.?|Department|Office))?$", re.IGNORECASE)
+    if sheriff_pattern.search(suggestion) and not re.search(r"Sheriff's Office$", suggestion, re.IGNORECASE):
+        issues.append("Use County Sheriff's Office, including the apostrophe")
+        suggestion = sheriff_pattern.sub("Sheriff's Office", suggestion)
+    if re.search(r"\bCounty$", suggestion, flags=re.IGNORECASE):
+        issues.append("A name ending in County normally means the County Sheriff's Office")
+        suggestion = f"{suggestion} Sheriff's Office"
+    if re.match(r"^City\s+Of\b", suggestion):
+        issues.append('Use lowercase “of” in “City of …”')
+        suggestion = re.sub(r"^City\s+Of\b", "City of", suggestion)
+
+    existing = [r for r in load_agencies(paths) if r.agency_id != agency_id and r.name.strip()]
+    normalized = _normalize(original)
+    normalized_names = [_normalize(r.name) for r in existing]
+    canonical = _normalize(suggestion)
+    exact = next((
+        r for r in existing
+        if _normalize(r.name) in {normalized, canonical}
+        or _normalize(review_agency_name_without_matches(r.name)) == canonical
+    ), None)
+    close = difflib.get_close_matches(normalized, normalized_names, n=3, cutoff=0.97) if normalized else []
+    possible_matches: list[str] = []
+    for candidate in close:
+        record = next((r for r in existing if _normalize(r.name) == candidate), None)
+        if record and record.name not in possible_matches:
+            possible_matches.append(record.name)
+    if exact:
+        issues.append(f"An existing agency already matches this name: {exact.name}")
+    elif possible_matches:
+        issues.append("A similarly named agency already exists; confirm this is not a duplicate")
+    return {
+        "ok": True,
+        "name": original,
+        "suggested_name": suggestion,
+        "warnings": issues,
+        "possible_matches": possible_matches,
+        "requires_acknowledgement": bool(issues),
+    }
+
+
+def review_agency_name_without_matches(name: str) -> str:
+    """Canonicalize the common suffix rules without recursively searching."""
+    value = " ".join(str(name or "").split())
+    value = re.sub(r"\bSt\.?\s+", "Saint ", value, flags=re.IGNORECASE)
+    value = re.sub(r"\bDeptartment\b", "Department", value, flags=re.IGNORECASE)
+    value = re.sub(r"(?:P\.?D\.?|Police\s+Dept\.?)$", "Police Department", value, flags=re.IGNORECASE)
+    value = re.sub(r"\bPolice$", "Police Department", value, flags=re.IGNORECASE)
+    value = re.sub(r"(?:F\.?D\.?|Fire\s+Dept\.?)$", "Fire Department", value, flags=re.IGNORECASE)
+    value = re.sub(r"\bFire$", "Fire Department", value, flags=re.IGNORECASE)
+    value = re.sub(r"\bDept\.?", "Department", value, flags=re.IGNORECASE)
+    value = re.sub(
+        r"\bSheriff(?:s|['’]s)?(?:\s+(?:Dept\.?|Department|Office))?$",
+        "Sheriff's Office", value, flags=re.IGNORECASE,
+    )
+    if re.search(r"\bCounty$", value, flags=re.IGNORECASE):
+        value = f"{value} Sheriff's Office"
+    return re.sub(r"^City\s+Of\b", "City of", value)
+
+
 def _clean_agency_field(field: str, value: object) -> object:
     """Normalize a UI/API field without treating a missing value as an erase."""
     if field == "default_preferences":
@@ -278,7 +363,8 @@ def merge_missing_customer_profile(record: AgencyRecord, customer: dict) -> list
 
     Down-sync must be additive: an omitted value in QBO can never erase a
     locally-entered value, and a populated local value remains the user's
-    explicit choice. Agency names are likewise left alone after creation.
+    explicit choice. Name synchronization is handled separately only after a
+    durable QuickBooks Customer ID match.
     """
     changed: list[str] = []
     for field in CUSTOMER_PROFILE_FIELDS:
@@ -702,6 +788,18 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             return {"ok": False, "error": "Agency name is required"}
 
         agency_id = str(body.get("agency_id", "")).strip() or str(uuid.uuid4())
+        review = review_agency_name(name, paths, agency_id=agency_id)
+        if (
+            body.get("enforce_naming_review") is True
+            and review["requires_acknowledgement"]
+            and body.get("naming_override") is not True
+        ):
+            return {
+                "ok": False,
+                "error_code": "agency_naming_review_required",
+                "error": "Review the agency naming standard before saving.",
+                "naming_review": review,
+            }
         now = _utcnow()
 
         records = _records(paths)
@@ -780,7 +878,8 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
 # Pulls QB Customers into agencies. Match precedence: existing qb_customer_id,
 # then normalized-name. New customers create agencies; matched ones are linked
 # (qb_customer_id stamped) and have empty profile fields filled from QB —
-# existing non-empty values and the agency name are never clobbered.
+# existing non-empty profile values are never clobbered. A durable QBO-ID
+# match adopts a QBO rename and refreshes linked project display snapshots.
 
 
 def _match_existing_for_qb(
@@ -837,6 +936,7 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
     now = _utcnow()
     created = updated = unchanged = 0
     to_mirror: list[tuple[str, str]] = []
+    renamed_records: list[AgencyRecord] = []
     for cust in customers:
         name = str(cust.get("name", "")).strip()
         if not name:
@@ -845,6 +945,10 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
         existing = _match_existing_for_qb(cust, by_qb, by_name)
         if existing:
             changed = False
+            if qb_id and existing.qb_customer_id == qb_id and existing.name != name:
+                existing.name = name
+                changed = True
+                renamed_records.append(existing)
             if qb_id and existing.qb_customer_id != qb_id:
                 existing.qb_customer_id = qb_id
                 changed = True
@@ -890,6 +994,9 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
     if to_mirror:
         from .shared_work_service import save_settings_to_cloud_batch_in_background
         save_settings_to_cloud_batch_in_background(to_mirror)
+
+    for record in renamed_records:
+        _propagate_agency_identity_to_projects(record, paths)
 
     return {
         "ok": True,
@@ -950,4 +1057,92 @@ def handle_delete_agency(agency_id: str, paths: AppPaths) -> dict:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:
         _log.exception("Failed to delete agency %s", agency_id)
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_merge_agencies(body: dict, paths: AppPaths) -> dict:
+    """Merge one Builder agency into a reviewed surviving agency.
+
+    QBO is not written here. Projects are rebound by durable Builder agency ID,
+    blank target profile fields are filled from the source, and the source is
+    removed only after every local write succeeds.
+    """
+    source_id = str(body.get("source_agency_id") or "").strip()
+    target_id = str(body.get("target_agency_id") or "").strip()
+    if not source_id or not target_id or source_id == target_id:
+        return {"ok": False, "error": "Choose two different agencies to merge"}
+    try:
+        records = _records(paths)
+        source = records.get(source_id)
+        target = records.get(target_id)
+        if source is None or target is None:
+            return {"ok": False, "error": "Source or surviving agency was not found"}
+        if not target.qb_customer_id:
+            return {"ok": False, "error": "The surviving agency must be linked to QuickBooks"}
+
+        from ...inputs.project_entry import list_projects, save_project
+        projects = list_projects(paths)
+        source_projects = [p for p in projects if p.customer.agency_id == source_id]
+        target_keys = {
+            (p.project_type, p.customer.build_year.strip().casefold())
+            for p in projects if p.customer.agency_id == target_id
+        }
+        conflicts = [
+            p.project_id for p in source_projects
+            if (p.project_type, p.customer.build_year.strip().casefold()) in target_keys
+        ]
+        if conflicts:
+            return {
+                "ok": False,
+                "error": "Projects for the same agency, year, and work type must be merged first",
+                "conflicting_project_ids": conflicts,
+            }
+
+        for field in _AGENCY_EDITABLE_FIELDS:
+            source_value = getattr(source, field)
+            target_value = getattr(target, field)
+            if field == "pricing_overrides":
+                setattr(target, field, {**(source_value or {}), **(target_value or {})})
+            elif field == "default_preferences":
+                if not any(asdict(target_value).values()) and any(asdict(source_value).values()):
+                    setattr(target, field, source_value)
+            elif target_value is None or not str(target_value).strip():
+                if source_value is not None and str(source_value).strip():
+                    setattr(target, field, source_value)
+        target.updated_at = _utcnow()
+        _write_record(target, paths)
+
+        abbreviation = effective_agency_abbreviation(target.abbreviation, target.name)
+        updated_project_ids: list[str] = []
+        for project in source_projects:
+            project.customer.agency_id = target.agency_id
+            project.customer.agency = target.name
+            project.customer.agency_abbreviation = abbreviation
+            save_project(project, paths)
+            updated_project_ids.append(project.project_id)
+
+        _delete_record_file(source_id, paths)
+        records.pop(source_id, None)
+        serialized = json.dumps(asdict(target), indent=2) + "\n"
+        from .shared_work_service import (
+            delete_setting_from_cloud,
+            save_setting_to_cloud_in_background,
+        )
+        save_setting_to_cloud_in_background(
+            f"agencies/{target.agency_id}.json", serialized,
+        )
+        cloud_deleted = delete_setting_from_cloud(f"agencies/{source_id}.json")
+        result = {
+            "ok": True,
+            "source_agency_id": source_id,
+            "target_agency_id": target_id,
+            "updated_project_ids": updated_project_ids,
+        }
+        if cloud_deleted is False:
+            result["cloud_warning"] = "Merged locally, but the old cloud agency could not be removed"
+        return result
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        _log.exception("Failed to merge agency %s into %s", source_id, target_id)
         return {"ok": False, "error": str(exc)}

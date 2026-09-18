@@ -71,6 +71,8 @@ function _ptPreferenceOptions(field) {
     push_bumper_brand: ["Setina", "Westin", "Go Rhino", "Gamber Johnson", "Troy", "Pro-Gard"],
     cage_brand: ["Setina", "Pro-Gard", "Troy", "Gamber Johnson"],
     console_brand: ["Gamber Johnson", "Havis"],
+    laptop_make: ["Dell", "Panasonic", "Getac", "Durabook", "Zebra"],
+    laptop_model: [],
   };
   return fallbacks[field] || [];
 }
@@ -85,13 +87,12 @@ function _ptPrimaryLightingBrand(preferences) {
 
 function _ptPreferenceSelectOptions(field, selected) {
   const values = [..._ptPreferenceOptions(field)];
-  // Preferences are now controlled selects.  Do not recreate an obsolete
-  // free-text value just because an older project or agency still has it saved.
-  const validSelection = values.includes(selected) ? selected : "";
+  if (selected && !values.includes(selected)) values.unshift(selected);
   return [
-    `<option value=""${validSelection ? "" : " selected"}>No preference</option>`,
+    `<option value=""${selected ? "" : " selected"}>No preference</option>`,
     ...values.map(value =>
-      `<option value="${esc(value)}"${value === validSelection ? " selected" : ""}>${esc(value)}</option>`),
+      `<option value="${esc(value)}"${value === selected ? " selected" : ""}>${esc(value)}</option>`),
+    `<option value="__custom__">+ Custom…</option>`,
   ].join("");
 }
 
@@ -102,10 +103,15 @@ function _ptSetPreferenceForm(prefix, preferences = {}) {
     push_bumper_brand: preferences.push_bumper_brand || "",
     cage_brand: preferences.cage_brand || "",
     console_brand: preferences.console_brand || "",
+    laptop_make: preferences.laptop_make || "",
+    laptop_model: preferences.laptop_model || "",
   };
   Object.entries(values).forEach(([field, value]) => {
     const el = $(`${prefix}-${field === "lighting" ? "lighting" : field.replaceAll("_", "-")}`);
-    if (el) el.innerHTML = _ptPreferenceSelectOptions(field, value);
+    if (el) {
+      el.innerHTML = _ptPreferenceSelectOptions(field, value);
+      el.dataset.customValue = "";
+    }
   });
   const lightingMode = $(`${prefix}-lighting-mode`);
   if (lightingMode) lightingMode.value = preferences.lighting_mode === "trio" ? "trio" : "duo";
@@ -114,17 +120,45 @@ function _ptSetPreferenceForm(prefix, preferences = {}) {
 }
 
 function _ptPreferencePayload(prefix) {
-  const lighting = $(`${prefix}-lighting`)?.value || "";
+  const valueFor = id => {
+    const select = $(`${prefix}-${id}`);
+    return (select?.dataset.customValue || select?.value || "").trim();
+  };
+  const lighting = valueFor("lighting");
   return {
-    camera_brand: $(`${prefix}-camera-brand`)?.value || "",
-    push_bumper_brand: $(`${prefix}-push-bumper-brand`)?.value || "",
-    cage_brand: $(`${prefix}-cage-brand`)?.value || "",
-    console_brand: $(`${prefix}-console-brand`)?.value || "",
+    camera_brand: valueFor("camera-brand"),
+    push_bumper_brand: valueFor("push-bumper-brand"),
+    cage_brand: valueFor("cage-brand"),
+    console_brand: valueFor("console-brand"),
+    laptop_make: valueFor("laptop-make"),
+    laptop_model: valueFor("laptop-model"),
     lighting_brands: lighting ? [lighting] : [],
     lighting_mode: $(`${prefix}-lighting-mode`)?.value === "trio" ? "trio" : "duo",
     notes: ($(`${prefix}-pref-notes`)?.value || "").trim(),
   };
 }
+
+document.addEventListener("change", event => {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) return;
+  if (!/(?:camera-brand|push-bumper-brand|cage-brand|console-brand|lighting|laptop-make|laptop-model)$/.test(select.id)) return;
+  if (select.value !== "__custom__") {
+    select.dataset.customValue = "";
+    return;
+  }
+  const value = (prompt("Enter the custom preference:") || "").trim();
+  if (!value) {
+    select.dataset.customValue = "";
+    select.value = "";
+    return;
+  }
+  // WebKit can reset dynamically-added select options before a form payload
+  // is read. Keep the actual custom value on the control and leave the stable
+  // Custom option selected.
+  const option = select.querySelector('option[value="__custom__"]');
+  if (option) option.textContent = `${value} (custom)`;
+  select.dataset.customValue = value;
+});
 
 // Promote the choices currently selected on a project form to the agency's
 // defaults for future projects. This intentionally calls the narrowly scoped

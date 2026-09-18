@@ -17,13 +17,71 @@ let _pbeNotesSaveTimer = null;
 let _pbeNotesDraftId = "";
 let _pbeLoadPresetSelection = "";
 
-function _pbeNotesMarkup(notes, projectNotes) {
+function _pbeLockedMessage() {
+  toast("This build is finalized. Use Reopen for changes at the top before editing it.", "info");
+}
+
+function _pbeWireReadOnlyGuard() {
+  const root = $("proj-build-editor");
+  if (!root || root.dataset.readonlyGuardWired === "true") return;
+  root.dataset.readonlyGuardWired = "true";
+  const allowed = target => target.closest("#pbe-back-btn, #pbe-save-return, #pbe-reopen-btn, #pv-view-tabs");
+  root.addEventListener("click", event => {
+    if (!_PT.pbeReadOnly || allowed(event.target)) return;
+    if (!event.target.closest("button, input, select, #pv-canvas-wrap, #me-tbody-container")) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    _pbeLockedMessage();
+  }, true);
+  root.addEventListener("beforeinput", event => {
+    if (!_PT.pbeReadOnly || !event.target.closest("input, textarea, select")) return;
+    event.preventDefault();
+    _pbeLockedMessage();
+  }, true);
+  root.addEventListener("change", event => {
+    if (!_PT.pbeReadOnly || allowed(event.target)) return;
+    if (!event.target.closest("input, textarea, select")) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    _pbeLockedMessage();
+  }, true);
+  root.addEventListener("pointerdown", event => {
+    if (!_PT.pbeReadOnly || !event.target.closest("#pv-canvas-wrap")) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    _pbeLockedMessage();
+  }, true);
+}
+
+function _pbeApplyReadOnlyState() {
+  const root = $("proj-build-editor");
+  if (!root) return;
+  const readOnly = Boolean(_PT.pbeReadOnly);
+  root.classList.toggle("pbe-readonly", readOnly);
+  const banner = $("pbe-readonly-banner");
+  if (banner) banner.hidden = !readOnly;
+  const reopen = $("pbe-reopen-btn");
+  if (reopen) reopen.hidden = !(readOnly && _PT.pbeFinalized && _ptCanEditProjects());
+  root.querySelectorAll("textarea, input[type='text'], input[type='number'], input[type='search']")
+    .forEach(field => { field.readOnly = readOnly; });
+  root.querySelectorAll("button").forEach(button => {
+    const isAllowed = button.closest("#pbe-back-btn, #pbe-save-return, #pbe-reopen-btn, #pv-view-tabs");
+    if (readOnly && !isAllowed) button.setAttribute("aria-disabled", "true");
+    else button.removeAttribute("aria-disabled");
+  });
+}
+
+function _pbeNotesMarkup(notes, projectNotes, unitNotes = null) {
   const shared = (projectNotes || "").trim();
   const fields = _PBE_NOTE_CATEGORIES.map(category => {
-    const value = Array.isArray(notes?.[category]) ? notes[category].join("\n") : "";
+    const draftRows = Array.isArray(notes?.[category]) ? notes[category] : [];
+    const value = category === "INSTALLATION NOTES" && unitNotes !== null
+      ? (String(unitNotes || "").trim() || draftRows.join("\n\n"))
+      : draftRows.join("\n\n");
+    const label = category === "INSTALLATION NOTES" ? "Unit / Build Notes" : "Delivery Requirements";
     return `<div class="form-group" style="margin:0 0 10px">
-      <label for="pbe-note-${category}">${esc(category.replace(/\b\w/g, c => c.toUpperCase()).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))}</label>
-      <textarea id="pbe-note-${category}" data-pbe-note-category="${esc(category)}" rows="2" class="proj-textarea-full" placeholder="One note per line">${esc(value)}</textarea>
+      <label for="pbe-note-${category}">${label}</label>
+      <textarea id="pbe-note-${category}" data-pbe-note-category="${esc(category)}" rows="${category === "INSTALLATION NOTES" ? "7" : "4"}" class="proj-textarea-full proj-unit-notes-textarea" placeholder="Enter notes; paragraphs and line breaks are preserved">${esc(value)}</textarea>
     </div>`;
   }).join("");
   return `${shared ? `<div class="proj-form-hint" style="margin:0 0 12px"><strong>Project-wide note:</strong> ${esc(shared)}</div>` : ""}${fields}`;
@@ -32,8 +90,8 @@ function _pbeNotesMarkup(notes, projectNotes) {
 function _pbeNotesPayload() {
   const notes = {};
   document.querySelectorAll("[data-pbe-note-category]").forEach(field => {
-    const rows = field.value.split("\n").map(value => value.trim()).filter(Boolean);
-    if (rows.length) notes[field.dataset.pbeNoteCategory] = rows;
+    const value = field.value.trim();
+    if (value) notes[field.dataset.pbeNoteCategory] = [value];
   });
   return notes;
 }
@@ -54,9 +112,20 @@ async function _pbeSaveNotes(flush = false) {
   }
   const draftId = _pbeNotesDraftId;
   if (!draftId) return true;
+  if (_PT.pbeReadOnly) return true;
   _pbeSetNotesStatus("Saving notes…");
   try {
-    const result = await api("/api/draft/save", { draft_id: draftId, notes: _pbeNotesPayload() });
+    const notes = _pbeNotesPayload();
+    if (_PT.pbeIndividual && _PT.pbeProject && _PT.pbeUnit) {
+      const unitNotes = notes["INSTALLATION NOTES"]?.[0] || "";
+      const notesResult = await api(
+        `/api/project/${encodeURIComponent(_PT.pbeProject.project_id)}/unit/${encodeURIComponent(_PT.pbeUnit.unit_id)}/individual/${encodeURIComponent(_PT.pbeIndividual.individual_id)}/notes`,
+        { notes: unitNotes },
+      );
+      if (!notesResult?.ok) throw new Error(notesResult?.error || "Could not save unit notes");
+      _PT.pbeIndividual.notes = unitNotes;
+    }
+    const result = await api("/api/draft/save", { draft_id: draftId, notes });
     if (!result?.ok) throw new Error(result?.error || "Could not save notes");
     _pbeSetNotesStatus("Notes saved");
     if (!flush) setTimeout(() => _pbeSetNotesStatus(""), 1600);
@@ -78,9 +147,15 @@ async function _pbeLoadNotes(draftId) {
     const result = await api(`/api/draft/${encodeURIComponent(draftId)}`);
     if (!result?.ok) throw new Error(result?.error || "Could not load notes");
     if (_pbeNotesDraftId !== draftId) return;
-    content.innerHTML = _pbeNotesMarkup(result.draft?.notes || {}, result.draft?.project_notes || "");
+    content.innerHTML = _pbeNotesMarkup(
+      result.draft?.notes || {},
+      result.draft?.project_notes || "",
+      _PT.pbeIndividual ? (_PT.pbeIndividual.notes || "") : null,
+    );
+    _pbeApplyReadOnlyState();
     if (typeof _pbeRenderReferenceSummary === "function") _pbeRenderReferenceSummary();
     content.querySelectorAll("[data-pbe-note-category]").forEach(field => field.addEventListener("input", () => {
+      if (_PT.pbeReadOnly) return;
       if (_pbeNotesSaveTimer) clearTimeout(_pbeNotesSaveTimer);
       _pbeSetNotesStatus("Saving notes…");
       _pbeNotesSaveTimer = setTimeout(() => _pbeSaveNotes(), 450);
@@ -279,11 +354,16 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
   _PT.pbeProject       = project;
   _PT.pbeDraftId       = draftId;
   _PT.pbeIndividual    = individual || null;
+  const holder = individual || unit;
+  _PT.pbeFinalized     = holder?.status === "finalized";
+  _PT.pbeReadOnly      = _PT.pbeFinalized || !_ptCanEditProjects();
 
   hide("proj-list-view");
   hide("proj-detail-view");
   hide("proj-editor");
   show("proj-build-editor");
+  _pbeWireReadOnlyGuard();
+  _pbeApplyReadOnlyState();
   _pbeSetActionRowVisible(false);
 
   const vm      = _ptVehicleConfig(unit.vehicle_model);
@@ -295,11 +375,14 @@ async function _ptShowBuildEditor(draftId, unit, project, returnTab, individual)
 
   const renderVehicle=(project.project_type||'build')==='build'||project.service_details?.render_vehicle;
   $('pbe-preview-section').hidden=!renderVehicle;
-  if(renderVehicle){show("card-preview");pvLoad(draftId);}
-
-  loadDraftManifest(draftId);
-  _pbeLoadNotes(draftId);
-  _pbeCheckPresetButton(draftId, unit);  // async; updates button visibility after load
+  const loads = [
+    Promise.resolve(loadDraftManifest(draftId)),
+    Promise.resolve(_pbeLoadNotes(draftId)),
+    Promise.resolve(_pbeCheckPresetButton(draftId, unit)),
+  ];
+  if(renderVehicle){show("card-preview");loads.push(Promise.resolve(pvLoad(draftId)));}
+  await Promise.allSettled(loads);
+  _pbeApplyReadOnlyState();
 }
 
 async function _ptApplyToUnitGroup() {
@@ -425,7 +508,9 @@ function _ptBindBuildEditor() {
     try {
       const notesSaved = await _pbeSaveNotes(true);
       if (!notesSaved) return;
-      if (typeof pvApplyChanges === "function") placementSaveSucceeded = await pvApplyChanges() !== false;
+      if (!_PT.pbeReadOnly && typeof pvApplyChanges === "function") {
+        placementSaveSucceeded = await pvApplyChanges() !== false;
+      }
     } catch (e) {
       console.warn("pbe return: pvApplyChanges failed", e);
       placementSaveSucceeded = false;

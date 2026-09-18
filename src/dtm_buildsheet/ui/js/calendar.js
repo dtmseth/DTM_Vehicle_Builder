@@ -20,7 +20,7 @@
     !/^(VIN\b|No VIN\b|Pending ID\b|Unit (not set|unknown)\b)/i.test(part) && (!j.vin||!part.includes(j.vin))).join(' · ') || `Vehicle ${j.build_number||1}`;
   function statusEntries(j){
     if(!j||j.custom)return [];
-    const parts={ordered:['Parts ordered','blue'],partially_received:['Parts partial','amber'],received:['Parts received','green'],parts_ready:['Parts ready','green']};
+    const parts={ordered:['Parts ordered','blue'],received:['Parts received','green'],parts_ready:['Parts ready','green']};
     const vehicles={awaiting_details:['Awaiting vehicle details','slate'],waiting_on_dealer:['Waiting on dealer','amber'],waiting_on_agency:['Waiting on agency','amber'],ready_for_pickup:['Ready for pickup','blue'],at_dtm:['Vehicle at DTM','green'],delivered:['Vehicle delivered','green']};
     const badges=[j.project_type&&j.project_type!=='build'&&j.service_details?.requires_parts===false?['Parts not needed','slate']:parts[j.parts_status]||['Parts not ordered','slate'],j.project_type==='offsite'&&j.vehicle_availability_status==='ready_for_pickup'?['Available on site','green']:vehicles[j.vehicle_availability_status]||['Vehicle status unknown','slate']];
     badges.unshift([projectTypeLabel(j),'slate']);

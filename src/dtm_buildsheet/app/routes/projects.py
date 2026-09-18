@@ -14,6 +14,7 @@ from ..services.project_service import (
     handle_delete_project_with_options,
     handle_get_project,
     handle_list_projects,
+    handle_save_individual_notes,
     handle_save_project,
     handle_set_project_completion,
     handle_set_project_lifecycle,
@@ -290,6 +291,18 @@ def route_projects(
     if method == "POST" and path == "/api/project/save":
         send_json(handler, _sync_saved_project(handle_save_project(body, paths), paths))
         return True
+
+    # POST /api/project/{project_id}/unit/{unit_id}/individual/{individual_id}/notes
+    if method == "POST" and path.startswith("/api/project/") and path.endswith("/notes"):
+        inner = path[len("/api/project/"):-len("/notes")]
+        if "/individual/" in inner and "/unit/" in inner:
+            unit_part, individual_id = inner.rsplit("/individual/", 1)
+            project_id, unit_id = unit_part.split("/unit/", 1)
+            if all(value and "/" not in value for value in (project_id, unit_id, individual_id)):
+                send_json(handler, _sync_saved_project(handle_save_individual_notes(
+                    project_id, unit_id, individual_id, body, paths,
+                ), paths))
+                return True
 
     # POST /api/project/{project_id}/completion
     if method == "POST" and path.startswith("/api/project/") and path.endswith("/completion"):

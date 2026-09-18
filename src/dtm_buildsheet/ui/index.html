@@ -1498,6 +1498,14 @@
             <label>Default Lightheads</label>
             <select id="proj-lighting-mode"><option value="duo">DUO</option><option value="trio">TRIO</option></select>
           </div>
+          <div class="form-group">
+            <label>Laptop Make</label>
+            <select id="proj-laptop-make"></select>
+          </div>
+          <div class="form-group">
+            <label>Laptop Model</label>
+            <select id="proj-laptop-model"></select>
+          </div>
         </div>
         <div class="form-group">
           <label>Project-specific preference notes</label>
@@ -1541,6 +1549,10 @@
     <div id="pbe-header">
       <div id="pbe-unit-info"></div>
       <button class="btn btn-secondary btn-sm" id="pbe-back-btn">← Return to Project</button>
+    </div>
+    <div id="pbe-readonly-banner" class="pbe-readonly-banner" hidden>
+      <div><strong>Finalized build — view only</strong><span>This is the normal build screen, locked against changes.</span></div>
+      <button class="btn btn-gold btn-sm" id="pbe-reopen-btn" type="button">Reopen for changes</button>
     </div>
 
     <!-- Preview card (used by preview_canvas.js) -->
@@ -1883,6 +1895,10 @@
         <div class="form-group"><label>Cage / Partition Brand</label><select id="ac-cage-brand"></select></div>
         <div class="form-group"><label>Console Brand</label><select id="ac-console-brand"></select></div>
       </div>
+      <div class="form-row">
+        <div class="form-group"><label>Laptop Make</label><select id="ac-laptop-make"></select></div>
+        <div class="form-group"><label>Laptop Model</label><select id="ac-laptop-model"></select></div>
+      </div>
       <div class="form-group"><label>Default preference notes</label><textarea id="ac-pref-notes" rows="2" placeholder="Optional guidance for the agency's normal build"></textarea></div>
     </div>
     <div class="modal-section">
@@ -1969,6 +1985,7 @@
     </div>
     <div id="unit-notes-modal-body" class="proj-unit-notes-modal-body"></div>
     <div class="modal-actions">
+      <button class="btn btn-secondary" id="unit-notes-modal-edit" type="button">Edit notes</button>
       <button class="btn btn-primary" id="unit-notes-modal-done">Done</button>
     </div>
   </div>
@@ -2060,8 +2077,8 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Notes</label>
-      <input type="text" id="ind-edit-notes" placeholder="Optional notes for this unit">
+      <label>Unit / Build Notes</label>
+      <textarea id="ind-edit-notes" class="proj-unit-notes-textarea" rows="7" placeholder="Optional notes for this unit; paragraphs and line breaks are preserved"></textarea>
     </div>
     <div class="proj-unit-quotes" id="ind-edit-quotes-section">
       <div class="proj-section-label">Quote numbers</div>

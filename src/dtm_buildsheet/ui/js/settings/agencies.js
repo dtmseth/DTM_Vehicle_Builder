@@ -252,6 +252,7 @@
     if ($("ac-ship-same")?.checked) _copyBillingToShipping();
     const payload = {
       name,
+      enforce_naming_review: true,
       abbreviation: $("ac-abbreviation").value.trim(),
       contact_name:  contactName,
       contact_phone: $("ac-contact-phone").value.trim(),
@@ -283,7 +284,19 @@
     const wasEditing = !!_editingId;
 
     // apiSave so the Phase 2-β proposal toast fires when cloud mode is on.
-    const res = await apiSave("/api/agency/save", payload);
+    let res = await apiSave("/api/agency/save", payload);
+    if (!res?.ok && res?.error_code === "agency_naming_review_required") {
+      const review = res.naming_review || {};
+      const warnings = (review.warnings || []).map(item => `• ${item}`).join("\n");
+      const suggested = review.suggested_name || name;
+      if (suggested !== name && confirm(`${warnings}\n\nUse the suggested name?\n${suggested}`)) {
+        payload.name = suggested;
+        res = await apiSave("/api/agency/save", payload);
+      } else if (confirm(`${warnings}\n\nThis name is outside the standard. Save it anyway?`)) {
+        payload.naming_override = true;
+        res = await apiSave("/api/agency/save", payload);
+      }
+    }
     if (res?.ok) {
       _closeModal();
       const qbSync = res.qb_sync || {};

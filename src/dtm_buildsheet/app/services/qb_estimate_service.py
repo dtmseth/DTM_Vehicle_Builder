@@ -28,6 +28,7 @@ import logging
 import math
 import re
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -1025,6 +1026,11 @@ def _normalize_qb_estimate_id(value: str) -> str:
 def _estimate_link_owners(projects) -> dict[str, tuple[str, str]]:
     owners: dict[str, tuple[str, str]] = {}
     for project in projects:
+        project_owner = (project.project_id, "")
+        for reference in project.project_quote_references:
+            estimate_id = str(reference.qb_estimate_id or "").strip()
+            if estimate_id and reference.match_status == "linked":
+                owners[estimate_id] = project_owner
         for build in project.build_units:
             for unit in build.individuals:
                 owner = (project.project_id, unit.individual_id)
@@ -1063,9 +1069,16 @@ def search_quote_estimates(paths: AppPaths, *, query: str, project_id: str = "",
         return {"ok": False, "error": "invalid_quote_number"}
     owner = None
     if project_id or individual_id:
-        loaded = _load_individual(paths, project_id, individual_id)
-        if isinstance(loaded, dict):
-            return loaded
+        if individual_id:
+            loaded = _load_individual(paths, project_id, individual_id)
+            if isinstance(loaded, dict):
+                return loaded
+        else:
+            from ...inputs import project_entry
+            try:
+                project_entry.load_project(project_id, paths)
+            except FileNotFoundError:
+                return {"ok": False, "error": "unknown_project"}
         owner = (project_id, individual_id)
     client, error = qb_sync_service._build_client(paths)
     if error:
@@ -1108,6 +1121,31 @@ def _upsert_quote_reference(unit, estimate: dict, checked_at: str) -> None:
     reference.checked_at = checked_at
 
 
+def _upsert_project_quote_reference(project, estimate: dict, checked_at: str) -> None:
+    """Record one QBO-verified Estimate that applies to the whole project."""
+    number = str(estimate.get("DocNumber") or "").strip()
+    estimate_id = str(estimate.get("Id") or "").strip()
+    if not number or not estimate_id:
+        return
+    customer = estimate.get("CustomerRef") or {}
+    reference = next((
+        item for item in project.project_quote_references
+        if item.qb_estimate_id == estimate_id
+        or item.quote_number.casefold() == number.casefold()
+    ), None)
+    if reference is None:
+        from ...domain.project_models import QuoteReference
+        reference = QuoteReference(reference_id=str(uuid.uuid4()), quote_number=number)
+        project.project_quote_references.append(reference)
+    reference.quote_number = number
+    reference.qb_estimate_id = estimate_id
+    reference.match_status = "linked"
+    reference.estimate_status = str(estimate.get("TxnStatus") or "").strip()
+    reference.customer = str(customer.get("name") or customer.get("value") or "").strip()
+    reference.txn_date = str(estimate.get("TxnDate") or "").strip()
+    reference.checked_at = checked_at
+
+
 def _retain_project_quote_number(project, estimate: dict) -> None:
     number = str(estimate.get("DocNumber") or "").strip()
     if number and number.casefold() not in {
@@ -1123,6 +1161,12 @@ def reconcile_quote_references(paths: AppPaths) -> dict:
     projects = project_entry.list_projects(paths)
     targets: dict[str, list[tuple[object, object, object]]] = {}
     for project in projects:
+        for reference in project.project_quote_references:
+            if reference.state != "current" or reference.match_status == "linked":
+                continue
+            number = reference.quote_number.strip()
+            if number:
+                targets.setdefault(number.casefold(), []).append((project, None, reference))
         for build in project.build_units:
             for unit in build.individuals:
                 for reference in unit.quote_references:
@@ -1177,7 +1221,7 @@ def reconcile_quote_references(paths: AppPaths) -> dict:
                 row = rows[0]
                 estimate_id = str(row.get("Id") or "").strip()
                 owner = owners.get(estimate_id)
-                here = (project.project_id, unit.individual_id)
+                here = (project.project_id, unit.individual_id if unit is not None else "")
                 customer = row.get("CustomerRef") or {}
                 reference.qb_estimate_id = estimate_id
                 reference.estimate_status = str(row.get("TxnStatus") or "").strip()
@@ -1192,7 +1236,7 @@ def reconcile_quote_references(paths: AppPaths) -> dict:
                     reference.match_status = "linked"
                     owners[estimate_id] = here
                     counts["matched"] += 1
-                    if not str(unit.qb_estimate_id or "").strip():
+                    if unit is not None and not str(unit.qb_estimate_id or "").strip():
                         unit.qb_estimate_id = estimate_id
                         unit.qb_estimate_snapshot = _estimate_snapshot(row)
                         unit.qb_estimate_snapshot_at = checked_at
@@ -1213,9 +1257,16 @@ def reconcile_quote_references(paths: AppPaths) -> dict:
 def list_available_estimates(paths: AppPaths, *, project_id: str, individual_id: str,
                              start_position: int = 1) -> dict:
     """Read metadata only; selection still goes through bind_estimate's fresh checks."""
-    loaded = _load_individual(paths, project_id, individual_id)
-    if isinstance(loaded, dict):
-        return loaded
+    if individual_id:
+        loaded = _load_individual(paths, project_id, individual_id)
+        if isinstance(loaded, dict):
+            return loaded
+    else:
+        from ...inputs import project_entry
+        try:
+            project_entry.load_project(project_id, paths)
+        except FileNotFoundError:
+            return {"ok": False, "error": "unknown_project"}
     if type(start_position) is not int or not 1 <= start_position <= 100000:
         return {'ok': False, 'error': 'invalid_estimate_page'}
     client, error = qb_sync_service._build_client(paths)
@@ -1238,6 +1289,72 @@ def list_available_estimates(paths: AppPaths, *, project_id: str, individual_id:
         ))
     return {'ok': True, 'estimates': estimates,
             'next_position': start_position + 50 if len(rows) == 50 and start_position + 50 <= 100000 else None}
+
+
+def bind_project_estimate(paths: AppPaths, *, project_id: str, qb_estimate_id: str) -> dict:
+    """Verify and attach an existing QBO Estimate to the whole project.
+
+    This advanced connection is read-only in QuickBooks. It is intentionally
+    separate from per-vehicle Estimate creation and update workflows.
+    """
+    from ...inputs import project_entry
+
+    try:
+        project = project_entry.load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": "unknown_project"}
+    normalized = _normalize_qb_estimate_id(qb_estimate_id)
+    if not normalized:
+        return {"ok": False, "error": "invalid_estimate_id"}
+    owner = _estimate_link_owners(project_entry.list_projects(paths)).get(normalized)
+    if owner and owner != (project_id, ""):
+        return {
+            "ok": False,
+            "error": "estimate_already_linked_elsewhere",
+            "existing_project_id": owner[0],
+            "existing_individual_id": owner[1],
+        }
+    client, error = qb_sync_service._build_client(paths)
+    if error:
+        return error
+    try:
+        estimate = client.read_estimate(normalized)
+    except QuickBooksApiError:
+        logger.warning("QuickBooks project Estimate lookup failed")
+        return {"ok": False, "error": "estimate_lookup_failed"}
+    if not estimate:
+        return {"ok": False, "error": "existing_estimate_not_found"}
+    checked_at = datetime.now(timezone.utc).isoformat()
+    _upsert_project_quote_reference(project, estimate, checked_at)
+    _retain_project_quote_number(project, estimate)
+    project_entry.save_project(project, paths)
+    reference = next(
+        item for item in project.project_quote_references
+        if item.qb_estimate_id == normalized
+    )
+    return {"ok": True, "linked": True, "reference": asdict(reference)}
+
+
+def unbind_project_estimate(paths: AppPaths, *, project_id: str, qb_estimate_id: str) -> dict:
+    """Remove a Builder project-level link without changing QuickBooks."""
+    from ...inputs import project_entry
+
+    try:
+        project = project_entry.load_project(project_id, paths)
+    except FileNotFoundError:
+        return {"ok": False, "error": "unknown_project"}
+    normalized = _normalize_qb_estimate_id(qb_estimate_id)
+    if not normalized:
+        return {"ok": False, "error": "invalid_estimate_id"}
+    before = len(project.project_quote_references)
+    project.project_quote_references = [
+        reference for reference in project.project_quote_references
+        if reference.qb_estimate_id != normalized
+    ]
+    if len(project.project_quote_references) == before:
+        return {"ok": False, "error": "estimate_not_linked"}
+    project_entry.save_project(project, paths)
+    return {"ok": True, "linked": False, "qb_estimate_id": normalized}
 
 
 def bind_estimate(

@@ -149,7 +149,7 @@ function _ptProjectProgress(project) {
   }
 
   const accepted = all("acceptance_status", ["accepted"]);
-  const logisticsStarted = any("parts_status", ["ordered", "partially_received", "received", "parts_ready"]) ||
+  const logisticsStarted = any("parts_status", ["ordered", "received", "parts_ready"]) ||
     any("vehicle_availability_status", ["waiting_on_dealer", "waiting_on_agency", "ready_for_pickup", "at_dtm", "delivered"]);
   if (accepted && logisticsStarted) {
     const common = (field, fallback) => {
@@ -160,7 +160,6 @@ function _ptProjectProgress(project) {
       mixed: "Mixed",
       not_started: "Not started",
       ordered: "Ordered",
-      partially_received: "Partially received",
       received: "Received",
       parts_ready: "Parts ready",
       awaiting_details: "Awaiting details",

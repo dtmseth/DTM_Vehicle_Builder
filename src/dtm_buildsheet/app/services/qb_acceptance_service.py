@@ -28,10 +28,24 @@ def builder_estimate_links(paths):
 
     links = {}
     for project in project_entry.list_projects(paths):
+        project_candidates = [
+            {
+                'estimate_id': str(reference.qb_estimate_id or '').strip(),
+                'project_id': '',
+                'project_name': '',
+            }
+            for reference in project.project_quote_references
+            if reference.state == 'current'
+            and reference.match_status == 'linked'
+            and str(reference.qb_estimate_id or '').strip()
+        ]
         for build in project.build_units:
             for unit in build.individuals:
-                candidates = []
+                candidates = list(project_candidates)
                 seen = set()
+
+                for candidate in candidates:
+                    seen.add(candidate['estimate_id'])
 
                 def add(estimate_id):
                     estimate_id = str(estimate_id or '').strip()

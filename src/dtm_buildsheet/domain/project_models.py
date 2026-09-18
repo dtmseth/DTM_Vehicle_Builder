@@ -27,6 +27,8 @@ class EquipmentPreferences:
     push_bumper_brand: str = ""
     cage_brand: str = ""
     console_brand: str = ""
+    laptop_make: str = ""
+    laptop_model: str = ""
     slick_top: bool = False
     mixed_brands: bool = False
     notes: str = ""
@@ -228,6 +230,9 @@ class ProjectRecord:
     # not project identity; retain the legacy singular CustomerInfo field while
     # allowing every related quote to remain discoverable on the merged record.
     quote_numbers: list[str] = field(default_factory=list)
+    # Optional Estimate links that bill the whole project rather than one
+    # vehicle. This is most useful for service work with several vehicles.
+    project_quote_references: list[QuoteReference] = field(default_factory=list)
     # Source assets live in SharePoint and are referenced here by portable item
     # identity. Assignment scope determines which vehicle PDFs receive a photo.
     reference_assets: list[BuildReferenceAsset] = field(default_factory=list)

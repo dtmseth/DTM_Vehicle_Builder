@@ -24,6 +24,21 @@ function _ptProjectBuildSummary(project) {
   </table>`;
 }
 
+function _ptProjectEstimateLinks(project) {
+  if (!_PT_QUICKBOOKS_UI_ENABLED || !_ptCanManageEstimates()) return "";
+  const refs = (project.project_quote_references || []).filter(ref => ref.state !== "obsolete");
+  const rows = refs.length ? refs.map(ref => `
+    <div class="proj-info-row"><span>Estimate ${esc(ref.quote_number || ref.qb_estimate_id)}</span>
+      <strong>${esc(ref.estimate_status || "Connected")}</strong></div>`).join("")
+    : `<p class="proj-empty-msg">No whole-project Estimate connected.</p>`;
+  return `<details class="proj-advanced-details">
+    <summary>Advanced · Project billing</summary>
+    <p class="proj-form-hint">Use when one QuickBooks Estimate covers the whole project instead of one vehicle.</p>
+    ${rows}
+    <button class="btn btn-secondary btn-sm" type="button" onclick="PT_manageProjectEstimate('${esc(project.project_id)}')">Manage project Estimate</button>
+  </details>`;
+}
+
 function _ptRenderEditTab(project, editable) {
   _PT.editTabEditable = editable;
   const panel = $("proj-ptab-edit");
@@ -51,6 +66,8 @@ function _ptRenderEditTab(project, editable) {
       ["Push Bumper", pr.push_bumper_brand],
       ["Cage",        pr.cage_brand],
       ["Console",     pr.console_brand],
+      ["Laptop Make", pr.laptop_make],
+      ["Laptop Model", pr.laptop_model],
       ["Slick Top",   pr.slick_top ? "Yes" : null],
       ["Notes",       pr.notes],
     ].filter(([, v]) => v);
@@ -78,7 +95,8 @@ function _ptRenderEditTab(project, editable) {
         ? prefPairs.map(([l, v]) => _ptInfoRow(l, v)).join("")
         : `<p class="proj-empty-msg">No preferences saved.</p>`}
       <div class="proj-section-label">Build Summary</div>
-      ${_ptProjectBuildSummary(project)}`;
+      ${_ptProjectBuildSummary(project)}
+      ${_ptProjectEstimateLinks(project)}`;
   } else {
     // ── Edit mode ──
     _PT.editTabUnits = (project.build_units || []).map(u => ({
@@ -152,6 +170,14 @@ function _ptRenderEditTab(project, editable) {
         <div class="form-group">
           <label>Default Lightheads</label>
           <select id="et-lighting-mode"><option value="duo"${pr.lighting_mode === "trio" ? "" : " selected"}>DUO</option><option value="trio"${pr.lighting_mode === "trio" ? " selected" : ""}>TRIO</option></select>
+        </div>
+        <div class="form-group">
+          <label>Laptop Make</label>
+          <select id="et-laptop-make">${_ptPreferenceSelectOptions("laptop_make", pr.laptop_make || "")}</select>
+        </div>
+        <div class="form-group">
+          <label>Laptop Model</label>
+          <select id="et-laptop-model">${_ptPreferenceSelectOptions("laptop_model", pr.laptop_model || "")}</select>
         </div>
       </div>
       <div class="form-group">
@@ -370,6 +396,7 @@ function _ptCollectEditForm() {
   _PT.editTabUnits.forEach(u => _ptEnsureIndividuals(u));
   return {
     project_id: _PT.viewProject?.project_id,
+    require_selected_identities: true,
     ..._ptTypePayload("et"),
     customer: {
       agency:       ($("et-agency")?.value    || "").trim(),
@@ -421,6 +448,76 @@ window.PT_enterEditMode = function (focusProjectNotes = false) {
   });
 };
 
+window.PT_manageProjectEstimate = async function(projectId) {
+  const project = _PT.projects.find(item => item.project_id === projectId) || _PT.viewProject;
+  if (!project) return;
+  const refs = (project.project_quote_references || []).filter(ref => ref.state !== "obsolete");
+  const current = refs[0] || null;
+  _ptOpenEstModal(
+    "Project Estimate connection",
+    `<div class="qb-est-change-alert"><strong>Read-only connection</strong><p>The Estimate remains controlled in QuickBooks. Connecting it here lets one accepted Estimate apply to every vehicle in this project.</p></div>
+     <button type="button" id="qb-project-est-load" class="btn btn-secondary btn-sm">Browse QBO Estimates</button>
+     <label>Filter loaded Estimates<input id="qb-project-est-filter" class="qb-setup-input" type="search" placeholder="Customer, number, date or status"></label>
+     <div id="qb-project-est-message" role="status"></div><div id="qb-project-est-list" class="qb-estimate-list"></div>
+     <label for="qb-project-est-id" style="font-size:12px;font-weight:600;color:var(--navy)">Estimate ID or Estimate page URL</label>
+     <input id="qb-project-est-id" class="qb-setup-input" autocomplete="off" value="${_ptEscAttr(current?.qb_estimate_id || "")}" />`,
+    current ? "Update connection" : "Connect estimate",
+  );
+  const controls = _ptEstModalEls();
+  const input = $("qb-project-est-id");
+  let rows = [];
+  const draw = () => {
+    const term = ($("qb-project-est-filter")?.value || "").trim().toLowerCase();
+    const host = $("qb-project-est-list");
+    host.replaceChildren();
+    rows.filter(row => !term || [row.number,row.customer,row.date,row.status].some(value => String(value || "").toLowerCase().includes(term))).forEach(row => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-secondary btn-sm";
+      button.disabled = row.linked_elsewhere;
+      button.textContent = `${row.number || row.id} · ${row.customer || "Unknown customer"} · ${row.status || "No status"}`;
+      button.onclick = () => { input.value = row.id; $("qb-project-est-message").textContent = `Selected Estimate ${row.number || row.id}.`; };
+      host.appendChild(button);
+    });
+    if (!host.children.length) host.textContent = "No matching Estimates in the loaded page.";
+  };
+  $("qb-project-est-filter").oninput = draw;
+  $("qb-project-est-load").onclick = async () => {
+    $("qb-project-est-message").textContent = "Reading Estimates from QuickBooks…";
+    const res = await api("/api/quickbooks/estimates/list", {project_id: projectId, individual_id: "", start_position: 1});
+    if (!res?.ok) { $("qb-project-est-message").textContent = _ptEstError(res?.error); return; }
+    rows = res.estimates || [];
+    $("qb-project-est-message").textContent = `Loaded ${rows.length} Estimates.`;
+    draw();
+  };
+  controls.create.onclick = async () => {
+    const estimateId = input.value.trim();
+    if (!estimateId) { toast("Choose or enter an Estimate", "error"); return; }
+    controls.create.disabled = true;
+    const res = await api("/api/quickbooks/estimates/bind-project", {project_id: projectId, qb_estimate_id: estimateId});
+    controls.create.disabled = false;
+    if (!res?.ok) { toast(_ptEstError(res?.error), "error"); return; }
+    controls.modal.classList.remove("open");
+    toast("Project Estimate connected", "success");
+    await _ptLoadAll();
+    const updated = _PT.projects.find(item => item.project_id === projectId);
+    if (updated) { _PT.viewProject = updated; _ptRenderEditTab(updated, false); }
+  };
+  if (current) {
+    controls.back.style.display = "";
+    controls.back.textContent = "Remove connection";
+    controls.back.onclick = async () => {
+      if (!confirm("Remove this Builder connection? The Estimate will not be changed in QuickBooks.")) return;
+      const res = await api("/api/quickbooks/estimates/unbind-project", {project_id: projectId, qb_estimate_id: current.qb_estimate_id});
+      if (!res?.ok) { toast(_ptEstError(res?.error), "error"); return; }
+      controls.modal.classList.remove("open");
+      await _ptLoadAll();
+      const updated = _PT.projects.find(item => item.project_id === projectId);
+      if (updated) { _PT.viewProject = updated; _ptRenderEditTab(updated, false); }
+    };
+  }
+};
+
 window.PT_editProjectNotes = function () {
   if (!_ptCanEditProjects()) return;
   window.PT_enterEditMode(true);
@@ -445,6 +542,20 @@ window.PT_saveEditForm = async function () {
     const payload = _ptCollectEditForm();
     if (!payload.customer.agency.trim()) {
       toast("Agency name is required", "error");
+      if (statusEl) statusEl.style.display = "none";
+      if (savBtn) savBtn.disabled = false;
+      return;
+    }
+    if (!payload.customer.agency_id) {
+      toast("Choose an agency from the search results, or create it first", "error");
+      $("et-agency")?.focus();
+      if (statusEl) statusEl.style.display = "none";
+      if (savBtn) savBtn.disabled = false;
+      return;
+    }
+    if (!payload.customer.sales_rep_id) {
+      toast("Choose a sales rep from the search results, or create one first", "error");
+      $("et-salesrep")?.focus();
       if (statusEl) statusEl.style.display = "none";
       if (savBtn) savBtn.disabled = false;
       return;
