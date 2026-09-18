@@ -230,14 +230,39 @@ def _normalize(text: str) -> str:
     return text
 
 
+_OFFICIAL_ST_ABBREVIATIONS = ("Augusta", "Cloud", "Joseph", "Louis Park", "Michael")
+
+
+def _official_styling(name: str) -> tuple[str, str]:
+    """Return official regional St./Saint styling and an advisory, if changed."""
+    value = name
+    paul_pattern = re.compile(r"\bSt\.?\s+Paul\b", re.IGNORECASE)
+    if paul_pattern.search(value):
+        return paul_pattern.sub("Saint Paul", value), "Use the official Saint Paul spelling"
+
+    place_names = "|".join(re.escape(item) for item in _OFFICIAL_ST_ABBREVIATIONS)
+    expanded_pattern = re.compile(rf"\bSaint\s+({place_names})\b", re.IGNORECASE)
+    if expanded_pattern.search(value):
+        return expanded_pattern.sub(lambda match: f"St. {match.group(1)}", value), (
+            "Use the entity's official St. spelling"
+        )
+
+    missing_period = re.compile(r"\bSt\s+", re.IGNORECASE)
+    if missing_period.search(value):
+        return missing_period.sub("St. ", value), "Use St. with a period in official names"
+    if re.search(r"\bSaint\s+", value, re.IGNORECASE):
+        return value, "Confirm an official source uses Saint rather than St. for this legal name"
+    return value, ""
+
+
 def review_agency_name(name: str, paths: AppPaths, *, agency_id: str = "") -> dict:
     """Return advisory naming-standard and likely-duplicate warnings."""
     original = " ".join(str(name or "").split())
     suggestion = original
     issues: list[str] = []
-    if re.search(r"\bSt\.?\s+", suggestion, flags=re.IGNORECASE):
-        issues.append("Spell out Saint; do not use St. or St")
-        suggestion = re.sub(r"\bSt\.?\s+", "Saint ", suggestion, flags=re.IGNORECASE)
+    suggestion, styling_issue = _official_styling(suggestion)
+    if styling_issue:
+        issues.append(styling_issue)
     if re.search(r"\bDeptartment\b", suggestion, flags=re.IGNORECASE):
         issues.append("Correct the misspelling of Department")
         suggestion = re.sub(r"\bDeptartment\b", "Department", suggestion, flags=re.IGNORECASE)
@@ -299,7 +324,7 @@ def review_agency_name(name: str, paths: AppPaths, *, agency_id: str = "") -> di
 def review_agency_name_without_matches(name: str) -> str:
     """Canonicalize the common suffix rules without recursively searching."""
     value = " ".join(str(name or "").split())
-    value = re.sub(r"\bSt\.?\s+", "Saint ", value, flags=re.IGNORECASE)
+    value, _ = _official_styling(value)
     value = re.sub(r"\bDeptartment\b", "Department", value, flags=re.IGNORECASE)
     value = re.sub(r"(?:P\.?D\.?|Police\s+Dept\.?)$", "Police Department", value, flags=re.IGNORECASE)
     value = re.sub(r"\bPolice$", "Police Department", value, flags=re.IGNORECASE)

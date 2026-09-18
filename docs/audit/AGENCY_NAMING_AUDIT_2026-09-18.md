@@ -2,9 +2,9 @@
 
 ## Scope and safety
 
-This is a read-only re-audit after the owner merged the reviewed QBO duplicates.
+This began as a read-only re-audit after the owner merged the reviewed QBO duplicates.
 Builder had 243 agency records at audit time; QBO now has 239 active top-level
-Customers, down from 242. The live QBO read found 44 naming candidates. Two
+Customers, down from 242. The live QBO read found 44 initial naming candidates. Two
 Minnesota State Patrol Customers previously on the duplicate-ignore list were
 later confirmed to be separate posts with unique DisplayNames.
 
@@ -27,17 +27,19 @@ agency records.
   their unique DisplayNames end in `2600`, `2400`, and `4700`. They are not
   duplicates, and IDs `38` and `88` were removed from the import-ignore list.
 
-## Proposed QBO renames — approval pending
+## Applied QBO renames — 39
 
-This list was regenerated directly from the 239 active top-level QBO Customers.
-No QBO names were changed while producing it.
+The initial proposal was revised against official entity names. Official `St.`
+styling was retained, except for `Saint Paul`; Hennepin County was owner-confirmed
+as sheriff-only. All 39 changes below were applied in QBO, read back for verification,
+and imported into Builder by durable QBO Customer ID.
 
 | QBO ID | Before | After |
 |---:|---|---|
 | 102 | City Of Rice | City of Rice |
-| 32 | City of St Augusta | City of Saint Augusta |
-| 319 | City of St Louis Park | City of Saint Louis Park |
-| 124 | City of St Michael | City of Saint Michael |
+| 32 | City of St Augusta | City of St. Augusta |
+| 319 | City of St Louis Park | City of St. Louis Park |
+| 124 | City of St Michael | City of St. Michael |
 | 360 | Clearwater County Sheriff | Clearwater County Sheriff's Office |
 | 408 | Columbia Heights Police Dept. | Columbia Heights Police Department |
 | 169 | Crow Wing County Sheriff | Crow Wing County Sheriff's Office |
@@ -59,14 +61,9 @@ No QBO names were changed while producing it.
 | 363 | Prairie County Sheriff | Prairie County Sheriff's Office |
 | 133 | Renville County Sheriff | Renville County Sheriff's Office |
 | 231 | Sibley County Sheriff | Sibley County Sheriff's Office |
-| 199 | St Cloud Refrigeration | Saint Cloud Refrigeration |
-| 90 | St Cloud State Public Safety | Saint Cloud State Public Safety |
-| 16 | St. Augusta Fire Department | Saint Augusta Fire Department |
-| 117 | St. Cloud Auto Wrecking L.L.C. | Saint Cloud Auto Wrecking L.L.C. |
-| 174 | St. Cloud Fire Department | Saint Cloud Fire Department |
-| 23 | St. Cloud Police Department | Saint Cloud Police Department |
-| 40 | St. Joseph Police Department | Saint Joseph Police Department |
-| 366 | St. Joseph Public Works | Saint Joseph Public Works |
+| 199 | St Cloud Refrigeration | St. Cloud Refrigeration, Inc. |
+| 90 | St Cloud State Public Safety | St. Cloud State University Department of Public Safety |
+| 117 | St. Cloud Auto Wrecking L.L.C. | St. Cloud Auto Wrecking, LLC |
 | 391 | St. Paul Police Department | Saint Paul Police Department |
 | 449 | Stark County Sheriffs Office | Stark County Sheriff's Office |
 | 288 | Stearns County Highway Dept | Stearns County Highway Department |
@@ -88,12 +85,10 @@ mirrored to shared project storage, and a second audit found no unresolved or
 stale project rep links. Project saves now make this same exact-name repair
 automatically; ambiguous or fuzzy names still require an explicit selection.
 
-## Recommended manual sequence
+## Applied synchronization result
 
-1. Rename the remaining linked Customers in small reviewed batches. This can
-   be done through Builder's agency save path; it performs a sparse update of
-   the linked QBO Customer.
-2. Run the normal customer import. Builder matches by durable QBO Customer ID,
-   updates its agency name, and refreshes linked project display names; a rename
-   does not unlink the Builder customer.
-3. Re-run this audit and review any remaining custom/federal names individually.
+- QBO verification: all 39 IDs returned the approved target name.
+- Builder import: 39 updated, 200 unchanged, 0 created, 239 total.
+- Existing official names `St. Augusta Fire Department`, `St. Cloud Fire
+  Department`, `St. Cloud Police Department`, `St. Joseph Police Department`,
+  and `St. Joseph Public Works` were deliberately left unchanged.

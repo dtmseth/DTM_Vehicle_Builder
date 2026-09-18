@@ -94,6 +94,25 @@ def test_agency_review_treats_bare_county_as_sheriffs_office(paths):
     assert any("normally means" in warning for warning in review["warnings"])
 
 
+def test_agency_review_uses_official_styling_with_saint_paul_exception(paths):
+    assert agency_service.review_agency_name_without_matches(
+        "City of St Cloud",
+    ) == "City of St. Cloud"
+    assert agency_service.review_agency_name_without_matches(
+        "Saint Joseph Police Department",
+    ) == "St. Joseph Police Department"
+    assert agency_service.review_agency_name_without_matches(
+        "St. Paul Police Department",
+    ) == "Saint Paul Police Department"
+    official = agency_service.review_agency_name("St. Cloud Police Department", paths)
+    assert official["suggested_name"] == "St. Cloud Police Department"
+    assert not any("St." in warning or "Saint" in warning for warning in official["warnings"])
+    uncommon_saint = agency_service.review_agency_name("Saint Example Police Department", paths)
+    assert uncommon_saint["suggested_name"] == "Saint Example Police Department"
+    assert uncommon_saint["requires_acknowledgement"] is True
+    assert any("official source" in warning for warning in uncommon_saint["warnings"])
+
+
 def test_qbo_customers_with_same_company_use_unique_display_names():
     customers = [
         {"qb_customer_id": "38", "name": "Minnesota State Patrol", "display_name": "Minnesota State Patrol 2600"},

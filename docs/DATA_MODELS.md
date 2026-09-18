@@ -289,7 +289,10 @@ as a one-shot migration source for older installs; on first read, services rewri
 into the per-record dir and forget the flat file.
 
 Agency search uses `difflib.get_close_matches` after normalizing common abbreviations
-(PD→police department, SO→sheriff's office, St.→saint, etc.).
+(PD→police department, SO→sheriff's office, punctuation, etc.). Agency-name review
+accepts official `St.` styling, corrects bare `St` to `St.`, recognizes `Saint Paul`
+as the regional exception, and asks the user to verify an official source before
+using another `Saint …` legal name.
 
 The project wizard has live-search combos for agency and sales rep fields. Saves and deletes
 hit SharePoint directly via `save_setting_to_cloud_in_background` and
