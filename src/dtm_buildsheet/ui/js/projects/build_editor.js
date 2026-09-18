@@ -129,15 +129,17 @@ async function _pbeSaveNotes(flush = false) {
     const notes = _pbeNotesPayload();
     if (_PT.pbeIndividual && _PT.pbeProject && _PT.pbeUnit) {
       const unitNotes = notes["INSTALLATION NOTES"]?.[0] || "";
+      const deliveryRequirements = notes["DELIVERY REQUIREMENTS"]?.[0] || "";
       const notesResult = await api(
         `/api/project/${encodeURIComponent(_PT.pbeProject.project_id)}/unit/${encodeURIComponent(_PT.pbeUnit.unit_id)}/individual/${encodeURIComponent(_PT.pbeIndividual.individual_id)}/notes`,
-        { notes: unitNotes },
+        { notes: unitNotes, delivery_requirements: deliveryRequirements },
       );
       if (!notesResult?.ok) throw new Error(notesResult?.error || "Could not save unit notes");
       _PT.pbeIndividual.notes = unitNotes;
+    } else {
+      const result = await api("/api/draft/save", { draft_id: draftId, notes });
+      if (!result?.ok) throw new Error(result?.error || "Could not save notes");
     }
-    const result = await api("/api/draft/save", { draft_id: draftId, notes });
-    if (!result?.ok) throw new Error(result?.error || "Could not save notes");
     _pbeSetNotesStatus("Notes saved");
     if (!flush) setTimeout(() => _pbeSetNotesStatus(""), 1600);
     return true;

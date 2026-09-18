@@ -299,9 +299,12 @@ def route_projects(
             unit_part, individual_id = inner.rsplit("/individual/", 1)
             project_id, unit_id = unit_part.split("/unit/", 1)
             if all(value and "/" not in value for value in (project_id, unit_id, individual_id)):
-                send_json(handler, _sync_saved_project(handle_save_individual_notes(
+                # Notes autosave is intentionally local/draft scoped. Running
+                # the full Operations projection here produced a failure toast
+                # even though the notes were already saved successfully.
+                send_json(handler, handle_save_individual_notes(
                     project_id, unit_id, individual_id, body, paths,
-                ), paths))
+                ))
                 return True
 
     # POST /api/project/{project_id}/completion

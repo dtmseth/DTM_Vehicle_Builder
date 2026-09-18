@@ -210,10 +210,10 @@ all write operations still require their backend checks and explicit confirmatio
   local set has 218 saved agencies and all 218 retain production Customer IDs, including Fergus
   `433`, HSI `444`, and ICE `446`. Those three enriched recovery records were explicitly approved
   and mirrored to SharePoint; no QBO write was made.
-- Production Customer IDs 38, 88, and 407 are reviewed duplicate records. Future customer import
-  previews and imports exclude them so they cannot replace the selected State Patrol/Cold Spring
-  links. The local migration plan and immutable agency snapshot remain in the ignored `workspace/`
-  recovery area; credentials are never included.
+- Production Customer `407` is the retired Cold Spring duplicate and remains excluded. Minnesota
+  State Patrol IDs `38`, `39`, and `88` are distinct posts: their unique QBO DisplayNames end in
+  `2600`, `2400`, and `4700`. They are imported as separate Builder agencies rather than collapsed
+  by their shared CompanyName.
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,
@@ -224,7 +224,9 @@ all write operations still require their backend checks and explicit confirmatio
   `GET /customers/preview`, `POST /customers/import`. Connected startup/30-minute refresh now runs
   this safe Customer/Agency import along with Item reconciliation, and a newly completed OAuth
   connection wakes the worker immediately. Unchanged agencies are neither rewritten nor mirrored
-  to SharePoint. The reviewed manual pull remains available for diagnostics.
+  to SharePoint. The pull also reads explicit `Active=false` Customers. An inactive agency with no
+  project history is removed from Builder; a project-backed agency is retained so historical work
+  is never orphaned. The reviewed manual pull remains available for diagnostics.
 - **Slice 2 (up-sync):** `api_client.create_customer()` / `update_customer()` (sparse) /
   `read_customer()` / `find_customer_by_display_name()`. `agency_service.set_qb_customer_id()`
   writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push). A new app agency
@@ -497,7 +499,8 @@ GOTCHAS):
 - **Customer import preserves profile data**: fills only empty local customer-profile fields and
   never overwrites populated app values. A QBO rename is adopted only after an exact durable
   Customer-ID match, then propagated to linked Builder project snapshots. Automatic connected refresh includes
-  Customers/Agencies as well as Items and skips writes for unchanged agency records.
+  Customers/Agencies as well as Items, removes explicitly inactive unreferenced Customers, and skips
+  writes for unchanged agency records.
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert
   `save_settings_to_cloud_batch_in_background` to uploading a captured snapshot, or deletions resurrect.
 - **List action buttons use data-attributes + delegation, never inline `onclick` with interpolated

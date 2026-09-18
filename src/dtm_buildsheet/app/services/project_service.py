@@ -287,6 +287,12 @@ def handle_save_individual_notes(
                 draft.notes["INSTALLATION NOTES"] = _unit_notes_rows(notes)
             else:
                 draft.notes.pop("INSTALLATION NOTES", None)
+            if "delivery_requirements" in body:
+                delivery = str(body.get("delivery_requirements") or "").strip()
+                if delivery:
+                    draft.notes["DELIVERY REQUIREMENTS"] = [delivery]
+                else:
+                    draft.notes.pop("DELIVERY REQUIREMENTS", None)
             save_draft(draft, paths.workspace_drafts_dir)
         except FileNotFoundError:
             pass

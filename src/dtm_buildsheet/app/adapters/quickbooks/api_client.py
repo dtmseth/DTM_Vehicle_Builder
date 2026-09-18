@@ -218,7 +218,33 @@ class QuickBooksApiClient:
             if len(batch) < page_size:
                 break
             start += page_size
-        return customers
+        return _disambiguate_customer_names(customers)
+
+    def fetch_inactive_customers(self, *, page_size: int = 1000, top_level_only: bool = True) -> list[dict]:
+        """Return inactive Customers so QBO removals can be mirrored safely.
+
+        QBO represents a deleted Customer as ``Active=false``. Only explicit
+        inactive results are acted on; absence from an active query alone is
+        not enough evidence to delete Builder data.
+        """
+        customers: list[dict] = []
+        start = 1
+        while True:
+            stmt = (
+                "SELECT * FROM Customer WHERE Active = false "
+                f"STARTPOSITION {start} MAXRESULTS {page_size}"
+            )
+            qr = self.query(stmt)
+            batch = qr.get("Customer", []) or []
+            for raw in batch:
+                norm = _normalize_customer(raw)
+                if top_level_only and norm["is_sub"]:
+                    continue
+                customers.append(norm)
+            if len(batch) < page_size:
+                break
+            start += page_size
+        return _disambiguate_customer_names(customers)
 
     def fetch_preferences(self) -> dict:
         """Return non-sensitive sales-form settings used by the estimate flow."""
@@ -695,11 +721,13 @@ def _normalize_customer(raw: dict) -> dict:
         p for p in [(raw.get("GivenName") or "").strip(), (raw.get("FamilyName") or "").strip()] if p
     )
     # Prefer the company name; fall back to the display name.
-    name = (raw.get("CompanyName") or raw.get("DisplayName") or "").strip()
+    display_name = (raw.get("DisplayName") or "").strip()
+    name = (raw.get("CompanyName") or display_name).strip()
     customer = {
         "qb_customer_id": str(raw.get("Id", "")),
         "sync_token": str(raw.get("SyncToken", "")),
         "name": name,
+        "display_name": display_name,
         "contact_name": contact,
         "contact_title": (raw.get("Title") or "").strip(),
         "contact_email": email,
@@ -714,6 +742,21 @@ def _normalize_customer(raw: dict) -> dict:
     customer.update(_normalize_address(raw.get("BillAddr"), "bill"))
     customer.update(_normalize_address(raw.get("ShipAddr"), "ship"))
     return customer
+
+
+def _disambiguate_customer_names(customers: list[dict]) -> list[dict]:
+    """Use QBO's unique DisplayName when several Customers share a company name."""
+    counts: dict[str, int] = {}
+    for customer in customers:
+        key = str(customer.get("name") or "").strip().casefold()
+        if key:
+            counts[key] = counts.get(key, 0) + 1
+    for customer in customers:
+        key = str(customer.get("name") or "").strip().casefold()
+        display_name = str(customer.get("display_name") or "").strip()
+        if counts.get(key, 0) > 1 and display_name:
+            customer["name"] = display_name
+    return customers
 
 
 def _normalize_address(raw: object, kind: str) -> dict:

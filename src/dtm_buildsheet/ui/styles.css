@@ -1361,6 +1361,7 @@
     .proj-unit-notes-modal-body{max-height:min(55vh,440px);overflow:auto;padding:15px;border:1px solid #e1c46b;border-left:5px solid #c69218;border-radius:8px;background:#fff9e7;color:#3e351f;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text;cursor:text}
     .proj-unit-notes-textarea{width:100%;min-height:110px;resize:vertical;white-space:pre-wrap;line-height:1.45}
     .proj-ind-row .proj-ind-field-xl{flex:1 1 100%;max-width:none}
+    .proj-preference-custom-input{display:block;width:100%;margin-top:7px;border-color:#b98700;background:#fffdf4}
     .pbe-readonly-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 14px;padding:12px 14px;border:1px solid #d9b64c;border-left:5px solid #b98700;border-radius:8px;background:#fff8dc;color:#493b12}
     .pbe-readonly-banner[hidden]{display:none}
     .pbe-readonly-banner div{display:flex;flex-direction:column;gap:2px}

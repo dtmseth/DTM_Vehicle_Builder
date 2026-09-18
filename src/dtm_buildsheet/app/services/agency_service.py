@@ -918,6 +918,67 @@ def preview_qb_customer_import(customers: list[dict], paths: AppPaths) -> dict:
     }
 
 
+def preview_inactive_qb_agencies(customers: list[dict], paths: AppPaths) -> dict:
+    inactive_ids = {
+        str(customer.get("qb_customer_id") or "").strip()
+        for customer in customers
+        if str(customer.get("qb_customer_id") or "").strip()
+    }
+    referenced_ids = set(_project_agency_snapshots(paths))
+    matches = [
+        record for record in _records(paths).values()
+        if record.qb_customer_id in inactive_ids
+    ]
+    return {
+        "would_remove": sum(record.agency_id not in referenced_ids for record in matches),
+        "would_retain_for_projects": sum(record.agency_id in referenced_ids for record in matches),
+    }
+
+
+def reconcile_inactive_qb_agencies(customers: list[dict], paths: AppPaths) -> dict:
+    """Remove explicitly inactive QBO agencies when no project retains them.
+
+    Project-backed agencies are deliberately retained for historical integrity;
+    their missing/inactive durable QBO ID is already blocked from automatic
+    recreation by the up-sync path.
+    """
+    inactive_ids = {
+        str(customer.get("qb_customer_id") or "").strip()
+        for customer in customers
+        if str(customer.get("qb_customer_id") or "").strip()
+    }
+    if not inactive_ids:
+        return {"removed": [], "retained_for_projects": []}
+    referenced_ids = set(_project_agency_snapshots(paths))
+    removed: list[dict] = []
+    retained: list[dict] = []
+    warnings: list[str] = []
+    for record in list(_records(paths).values()):
+        if record.qb_customer_id not in inactive_ids:
+            continue
+        summary = {
+            "agency_id": record.agency_id,
+            "name": record.name,
+            "qb_customer_id": record.qb_customer_id,
+        }
+        if record.agency_id in referenced_ids:
+            retained.append(summary)
+            continue
+        result = handle_delete_agency(record.agency_id, paths)
+        if result.get("ok"):
+            if result.get("cloud_warning"):
+                summary["cloud_warning"] = result["cloud_warning"]
+                warnings.append(f"{record.name}: {result['cloud_warning']}")
+            removed.append(summary)
+        else:
+            retained.append({**summary, "error": result.get("error", "delete_failed")})
+    return {
+        "removed": removed,
+        "retained_for_projects": retained,
+        "warnings": warnings,
+    }
+
+
 def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
     """Create/link agency records from QB customers. Returns {created, updated}.
 

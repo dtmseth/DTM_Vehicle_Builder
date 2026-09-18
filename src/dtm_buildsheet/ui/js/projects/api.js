@@ -110,7 +110,7 @@ function _ptSetPreferenceForm(prefix, preferences = {}) {
     const el = $(`${prefix}-${field === "lighting" ? "lighting" : field.replaceAll("_", "-")}`);
     if (el) {
       el.innerHTML = _ptPreferenceSelectOptions(field, value);
-      el.dataset.customValue = "";
+      el.parentElement?.querySelectorAll(".proj-preference-custom-input").forEach(input => input.remove());
     }
   });
   const lightingMode = $(`${prefix}-lighting-mode`);
@@ -122,7 +122,10 @@ function _ptSetPreferenceForm(prefix, preferences = {}) {
 function _ptPreferencePayload(prefix) {
   const valueFor = id => {
     const select = $(`${prefix}-${id}`);
-    return (select?.dataset.customValue || select?.value || "").trim();
+    if (select?.value === "__custom__") {
+      return (select.parentElement?.querySelector(".proj-preference-custom-input")?.value || "").trim();
+    }
+    return (select?.value || "").trim();
   };
   const lighting = valueFor("lighting");
   return {
@@ -143,21 +146,19 @@ document.addEventListener("change", event => {
   if (!(select instanceof HTMLSelectElement)) return;
   if (!/(?:camera-brand|push-bumper-brand|cage-brand|console-brand|lighting|laptop-make|laptop-model)$/.test(select.id)) return;
   if (select.value !== "__custom__") {
-    select.dataset.customValue = "";
+    select.parentElement?.querySelectorAll(".proj-preference-custom-input").forEach(input => input.remove());
     return;
   }
-  const value = (prompt("Enter the custom preference:") || "").trim();
-  if (!value) {
-    select.dataset.customValue = "";
-    select.value = "";
-    return;
+  let input = select.parentElement?.querySelector(".proj-preference-custom-input");
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "text";
+    input.className = "proj-preference-custom-input";
+    input.placeholder = "Enter custom make, model, or brand";
+    input.autocomplete = "off";
+    select.insertAdjacentElement("afterend", input);
   }
-  // WebKit can reset dynamically-added select options before a form payload
-  // is read. Keep the actual custom value on the control and leave the stable
-  // Custom option selected.
-  const option = select.querySelector('option[value="__custom__"]');
-  if (option) option.textContent = `${value} (custom)`;
-  select.dataset.customValue = value;
+  input.focus();
 });
 
 // Promote the choices currently selected on a project form to the agency's

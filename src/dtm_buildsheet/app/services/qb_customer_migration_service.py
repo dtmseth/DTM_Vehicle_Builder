@@ -68,10 +68,13 @@ def ignored_production_customer_ids(paths: AppPaths) -> set[str]:
     state = _read_json(_state_path(paths))
     if state.get("status") != "complete":
         return set()
-    return {
+    ignored = {
         str(customer_id) for customer_id in (state.get("ignored_duplicate_customer_ids") or [])
         if str(customer_id).strip()
     }
+    # Reviewed 2026-09-18: these are distinct Minnesota State Patrol posts
+    # (DisplayName suffixes 2600 and 4700), not duplicates of post 2400.
+    return ignored - {"38", "88"}
 
 
 def _build_name_plan(agencies: list, customers: list[dict]) -> dict:

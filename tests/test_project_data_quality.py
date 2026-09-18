@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
 
 from dtm_buildsheet.app.adapters.memory_operations_repository import InMemoryOperationsRepository
-from dtm_buildsheet.app.services import agency_service, qb_estimate_service, qb_sync_service
+from dtm_buildsheet.app.adapters.quickbooks.api_client import _disambiguate_customer_names
+from dtm_buildsheet.app.services import (
+    agency_service,
+    qb_customer_migration_service,
+    qb_estimate_service,
+    qb_sync_service,
+)
 from dtm_buildsheet.app.services.operations_read_service import OperationsReadService
 from dtm_buildsheet.app.services.project_service import (
     handle_list_projects,
@@ -84,6 +91,29 @@ def test_agency_review_treats_bare_county_as_sheriffs_office(paths):
     assert any("normally means" in warning for warning in review["warnings"])
 
 
+def test_qbo_customers_with_same_company_use_unique_display_names():
+    customers = [
+        {"qb_customer_id": "38", "name": "Minnesota State Patrol", "display_name": "Minnesota State Patrol 2600"},
+        {"qb_customer_id": "39", "name": "Minnesota State Patrol", "display_name": "Minnesota State Patrol 2400"},
+        {"qb_customer_id": "88", "name": "Minnesota State Patrol", "display_name": "Minnesota State Patrol 4700"},
+    ]
+
+    assert [item["name"] for item in _disambiguate_customer_names(customers)] == [
+        "Minnesota State Patrol 2600",
+        "Minnesota State Patrol 2400",
+        "Minnesota State Patrol 4700",
+    ]
+
+
+def test_reviewed_state_patrol_posts_are_not_filtered_as_duplicates(paths):
+    (paths.workspace_dir / "quickbooks_customer_migration_state.json").write_text(json.dumps({
+        "status": "complete",
+        "ignored_duplicate_customer_ids": ["38", "88", "407"],
+    }))
+
+    assert qb_customer_migration_service.ignored_production_customer_ids(paths) == {"407"}
+
+
 def test_builder_agency_merge_rebinds_projects_without_losing_them(paths):
     source = agency_service.handle_save_agency({"name": "Hubbard County Sheriff"}, paths)["agency"]
     target = agency_service.handle_save_agency({
@@ -147,12 +177,19 @@ def test_unit_notes_update_project_and_draft_without_losing_paragraphs(paths):
 
     notes = "First paragraph\n\nSecond paragraph\nwith another line"
     result = handle_save_individual_notes(
-        project.project_id, "g1", "v1", {"notes": notes}, paths,
+        project.project_id, "g1", "v1", {
+            "notes": notes,
+            "delivery_requirements": "Call before delivery\nBring both keys",
+        }, paths,
     )
 
     assert result["ok"]
     assert project_entry.load_project(project.project_id, paths).build_units[0].individuals[0].notes == notes
-    assert load_draft(draft.draft_id, paths.workspace_drafts_dir).notes["INSTALLATION NOTES"] == [notes]
+    saved_draft = load_draft(draft.draft_id, paths.workspace_drafts_dir)
+    assert saved_draft.notes["INSTALLATION NOTES"] == [notes]
+    assert saved_draft.notes["DELIVERY REQUIREMENTS"] == [
+        "Call before delivery\nBring both keys",
+    ]
 
 
 def test_project_list_recovers_paragraphs_from_legacy_draft_rows(paths):
@@ -168,6 +205,27 @@ def test_project_list_recovers_paragraphs_from_legacy_draft_rows(paths):
     assert listed["projects"][0]["build_units"][0]["individuals"][0]["notes"] == (
         "First paragraph\n\nSecond paragraph"
     )
+
+
+def test_inactive_qb_agency_is_removed_unless_a_project_uses_it(paths):
+    unused = agency_service.handle_save_agency({"name": "Unused Test Agency"}, paths)["agency"]
+    used = agency_service.handle_save_agency({"name": "Historical Test Agency"}, paths)["agency"]
+    agency_service.set_qb_customer_id(paths, unused["agency_id"], "inactive-unused")
+    agency_service.set_qb_customer_id(paths, used["agency_id"], "inactive-used")
+    project = project_entry.new_project(customer=CustomerInfo(
+        agency_id=used["agency_id"], agency=used["name"], build_year="2025",
+    ))
+    project_entry.save_project(project, paths)
+
+    result = agency_service.reconcile_inactive_qb_agencies([
+        {"qb_customer_id": "inactive-unused"},
+        {"qb_customer_id": "inactive-used"},
+    ], paths)
+
+    assert [item["agency_id"] for item in result["removed"]] == [unused["agency_id"]]
+    assert [item["agency_id"] for item in result["retained_for_projects"]] == [used["agency_id"]]
+    assert agency_service.get_agency(paths, unused["agency_id"]) is None
+    assert agency_service.get_agency(paths, used["agency_id"]) is not None
 
 
 def test_project_estimate_binding_is_verified_and_propagates_to_all_units(paths, monkeypatch):

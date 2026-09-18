@@ -5,13 +5,15 @@
 This is a read-only re-audit after the owner merged the reviewed QBO duplicates.
 Builder had 243 agency records at audit time; QBO now has 239 active top-level
 Customers, down from 242. The live QBO read found 44 naming candidates. Two
-remaining active QBO Customers are on the existing reviewed ignore list.
+Minnesota State Patrol Customers previously on the duplicate-ignore list were
+later confirmed to be separate posts with unique DisplayNames.
 
 The follow-up remediation merged the stale Hubbard and ICE Builder agencies into
 their active survivors and rebound both projects without deleting project data.
-Builder now has 241 agencies. Three Builder records still point at QBO IDs that
-do not resolve: Saint Lewis records `455`, `456`, and `457`. They have no linked
-projects, but need manual identity review before deletion or relinking.
+Inactive-customer reconciliation removed the three unreferenced Saint Lewis test
+agencies (`455`, `456`, and `457`). The three distinct Minnesota State Patrol
+Customers were imported as `2400`, `2600`, and `4700`. Builder now has 240
+agency records.
 
 ## Duplicate review
 
@@ -21,8 +23,9 @@ projects, but need manual identity review before deletion or relinking.
   merged-away QB `446` to the agency linked to surviving QB `443`.
 - QBO `407` (Cold Spring) is gone from the active result, consistent with the
   completed merge.
-- QBO IDs `38` and `88` remain active ignored Minnesota State Patrol duplicates;
-  verify whether those still need to be merged into surviving Customer `39`.
+- Minnesota State Patrol QBO IDs `38`, `39`, and `88` are distinct Customers:
+  their unique DisplayNames end in `2600`, `2400`, and `4700`. They are not
+  duplicates, and IDs `38` and `88` were removed from the import-ignore list.
 
 ## Standardization candidates
 
@@ -70,11 +73,10 @@ projects, but need manual identity review before deletion or relinking.
 
 ## Recommended manual sequence
 
-1. Review the three stale Saint Lewis records before changing them.
-2. Rename the remaining linked Customers in small reviewed batches. This can
+1. Rename the remaining linked Customers in small reviewed batches. This can
    be done through Builder's agency save path; it performs a sparse update of
    the linked QBO Customer.
-3. Run the normal customer import. Builder matches by durable QBO Customer ID,
+2. Run the normal customer import. Builder matches by durable QBO Customer ID,
    updates its agency name, and refreshes linked project display names; a rename
    does not unlink the Builder customer.
-4. Re-run this audit and review any remaining custom/federal names individually.
+3. Re-run this audit and review any remaining custom/federal names individually.

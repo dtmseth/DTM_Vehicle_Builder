@@ -367,6 +367,7 @@ def preview_customer_import(paths: AppPaths) -> dict:
         return err
     try:
         customers = client.fetch_active_customers()
+        inactive_customers = getattr(client, "fetch_inactive_customers", lambda: [])()
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
@@ -377,7 +378,13 @@ def preview_customer_import(paths: AppPaths) -> dict:
         customer for customer in customers
         if str(customer.get("qb_customer_id") or "") not in ignored_ids
     ]
-    return agency_service.preview_qb_customer_import(customers, paths)
+    result = agency_service.preview_qb_customer_import(customers, paths)
+    inactive_preview = agency_service.preview_inactive_qb_agencies(
+        inactive_customers, paths,
+    )
+    if inactive_preview["would_remove"] or inactive_preview["would_retain_for_projects"]:
+        result["inactive_customers"] = inactive_preview
+    return result
 
 
 def import_customers(paths: AppPaths) -> dict:
@@ -390,6 +397,7 @@ def import_customers(paths: AppPaths) -> dict:
         return err
     try:
         customers = client.fetch_active_customers()
+        inactive_customers = getattr(client, "fetch_inactive_customers", lambda: [])()
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
@@ -401,6 +409,11 @@ def import_customers(paths: AppPaths) -> dict:
         if str(customer.get("qb_customer_id") or "") not in ignored_ids
     ]
     result = agency_service.upsert_agencies_from_qb(customers, paths)
+    inactive_result = agency_service.reconcile_inactive_qb_agencies(
+        inactive_customers, paths,
+    )
+    if inactive_result["removed"] or inactive_result["retained_for_projects"]:
+        result["inactive_customers"] = inactive_result
     logger.info(
         "QB customer import: %d created, %d updated",
         result.get("created", 0), result.get("updated", 0),

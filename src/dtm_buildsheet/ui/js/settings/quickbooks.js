@@ -352,18 +352,24 @@
     try {
       const pre = await api("/api/quickbooks/customers/preview");
       if (!pre?.ok) { toast(_syncError(pre?.error), "error"); return; }
-      if (!pre.total) { toast("No customers found in QuickBooks", "success"); return; }
+      const inactiveRemove = Number(pre.inactive_customers?.would_remove || 0);
+      const inactiveRetain = Number(pre.inactive_customers?.would_retain_for_projects || 0);
+      if (!pre.total && !inactiveRemove && !inactiveRetain) { toast("No customers found in QuickBooks", "success"); return; }
+      const inactiveSummary = inactiveRemove || inactiveRetain
+        ? `\n\n${inactiveRemove} inactive QBO customer${inactiveRemove === 1 ? "" : "s"} will be removed from Builder. ${inactiveRetain} with project history will be retained.`
+        : "";
       const ok = confirm(
         `QuickBooks has ${pre.total} customer${pre.total === 1 ? "" : "s"}.\n\n` +
         `${pre.would_create} new agenc${pre.would_create === 1 ? "y" : "ies"} will be created, ` +
-        `${pre.would_update} will be updated/linked.\n\n` +
+        `${pre.would_update} will be updated/linked.${inactiveSummary}\n\n` +
         `This only pulls customer profiles into the app; it does not create estimates, invoices, or customer messages.\n\nImport now?`
       );
       if (!ok) return;
       if (label) label.textContent = "Importing…";
       const res = await api("/api/quickbooks/customers/import", {});
       if (res?.ok) {
-        toast(`Imported: ${res.created} created, ${res.updated} updated`, "success");
+        const removed = res.inactive_customers?.removed?.length || 0;
+        toast(`Imported: ${res.created} created, ${res.updated} updated${removed ? `, ${removed} inactive removed` : ""}`, "success");
         // Refresh every agency consumer, including an already-open Preset
         // creator. Re-running initAgenciesTab() used to refresh only that tab
         // and could also attach duplicate handlers.
