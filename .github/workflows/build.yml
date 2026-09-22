@@ -69,9 +69,8 @@ jobs:
 
   build-mac:
     needs: version
-    # macOS 26 ARM64 currently imports the PKCS#12 identity but codesign then
-    # reports "no identity found". Pin the supported macOS 15 ARM64 image
-    # until that runner-image regression is resolved.
+    # Keep the release build image stable. Certificate policy failures must
+    # be fixed in the signing identity, not by changing runner versions.
     runs-on: macos-15
     permissions:
       contents: write
@@ -111,18 +110,29 @@ jobs:
           MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
           MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
         run: |
+          set -euo pipefail
+          umask 077
           CERTIFICATE_PATH="$RUNNER_TEMP/dtm-signing.p12"
+          CERTIFICATE_PEM="$RUNNER_TEMP/dtm-signing.pem"
           KEYCHAIN_PATH="$RUNNER_TEMP/dtm-signing.keychain-db"
           echo -n "$MACOS_CERTIFICATE" | base64 -D > "$CERTIFICATE_PATH"
           security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          # Follow GitHub's supported certificate-install sequence. Trust is
-          # supplied by the certificate chain; mutating trust settings on a
-          # hosted runner is interactive and can fail after a valid import.
           security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" > /dev/null
           security list-keychains -d user -s "$KEYCHAIN_PATH"
+          # Import success does not establish code-signing policy validity.
+          # The original internal certificate lacked Digital Signature Key
+          # Usage: even a trusted identity could then fail codesign lookup.
+          security find-certificate -c "$MACOS_CODESIGN_IDENTITY" -p "$KEYCHAIN_PATH" > "$CERTIFICATE_PEM"
+          security verify-cert -c "$CERTIFICATE_PEM" -r "$CERTIFICATE_PEM" -p codeSign -L
+          # This is a self-signed internal identity, not an Apple-issued
+          # certificate. Trust its public certificate in the disposable VM's
+          # admin domain; keep its private key in the temporary user keychain.
+          sudo -n security add-trusted-cert -d -r trustRoot -p codeSign \
+            -k /Library/Keychains/System.keychain "$CERTIFICATE_PEM"
+          security verify-cert -c "$CERTIFICATE_PEM" -p codeSign -L
           # Resolve the configured display name to the exact identity hash.
           # codesign can reject a quoted or otherwise ambiguous display name
           # even when security find-identity lists the expected certificate.
@@ -131,6 +141,7 @@ jobs:
               awk -v name="$MACOS_CODESIGN_IDENTITY" 'index($0, name) { print $2; exit }'
           )"
           if ! [[ "$IDENTITY_HASH" =~ ^[[:xdigit:]]{40}$ ]]; then
+            security find-identity -p codesigning "$KEYCHAIN_PATH"
             echo "::error::The configured macOS signing identity was not found in the imported keychain."
             exit 1
           fi

@@ -63,6 +63,8 @@ Create the identity once in Keychain Access with Certificate Assistant > Create 
 - Identity Type: `Self Signed Root`
 - Certificate Type: `Code Signing`
 - Enable `Let me override defaults` and choose a long validity period
+- Include **Key Usage: Digital Signature** and **Extended Key Usage: Code Signing**.
+  Extended Key Usage alone is insufficient for the macOS signing policy.
 
 Keep the certificate and private key permanently. Export the complete identity from My Certificates
 as a password-protected `.p12`; losing or replacing it changes the app's identity and causes macOS
@@ -75,11 +77,22 @@ Manual release runs require these GitHub Actions secrets:
 - `MACOS_KEYCHAIN_PASSWORD`: random password used only for the ephemeral CI keychain
 - `MACOS_CODESIGN_IDENTITY`: exact certificate name, normally `DTM Vehicle Builder Internal Signing`
 
-The release job imports and temporarily trusts the certificate in an isolated CI keychain, builds
+The release job imports the identity into an isolated CI keychain, validates the certificate's
+code-signing policy, and trusts its public certificate in the disposable runner's admin trust
+domain. It builds
 the app ad-hoc, then re-signs the complete app and DMG with the internal identity. It deliberately
 does not use Apple notarization or timestamp services. The temporary keychain is deleted after the
 job. Push builds remain ad-hoc development artifacts; do not distribute them as production updates
 because doing so would change the app's designated requirement and restart Keychain prompts.
+
+An imported private key or an entry in `security find-identity -v` is not sufficient proof that
+`codesign` can use the identity. Validate the public self-signed certificate explicitly with
+`security verify-cert -c certificate.pem -r certificate.pem -p codeSign -L`, then require a real
+sign-and-verify probe. `Invalid Key Usage for policy` means the certificate must be reissued with
+Digital Signature Key Usage; changing the import flags, keychain search list, or runner image
+does not repair it. Reissuing changes the certificate fingerprint even when retaining the private
+key, so keep the original export and update the CI `.p12` only after the new identity passes the
+signing probe.
 
 For a local internal-signed build, import the same identity into the login keychain and run:
 
