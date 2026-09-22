@@ -115,7 +115,7 @@ jobs:
           security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          openssl pkcs12 -in "$CERTIFICATE_PATH" -nokeys -passin env:MACOS_CERTIFICATE_PASSWORD | openssl x509 -out "$CERTIFICATE_PEM"
+          openssl pkcs12 -legacy -in "$CERTIFICATE_PATH" -nokeys -passin env:MACOS_CERTIFICATE_PASSWORD | openssl x509 -out "$CERTIFICATE_PEM"
           security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN_PATH" "$CERTIFICATE_PEM"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$MACOS_CODESIGN_IDENTITY"
           echo "DTM_INTERNAL_CODESIGN_IDENTITY=$MACOS_CODESIGN_IDENTITY" >> "$GITHUB_ENV"
