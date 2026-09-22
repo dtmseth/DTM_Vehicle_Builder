@@ -123,8 +123,18 @@ jobs:
           # runners. Install the public certificate in the noninteractive
           # admin trust domain; the private key remains in our temp keychain.
           sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$KEYCHAIN_PATH" "$CERTIFICATE_PEM"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$MACOS_CODESIGN_IDENTITY"
-          echo "DTM_INTERNAL_CODESIGN_IDENTITY=$MACOS_CODESIGN_IDENTITY" >> "$GITHUB_ENV"
+          # Resolve the configured display name to the exact identity hash.
+          # codesign can reject a quoted or otherwise ambiguous display name
+          # even when security find-identity lists the expected certificate.
+          IDENTITY_HASH="$(
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" |
+              awk -v name="$MACOS_CODESIGN_IDENTITY" 'index($0, name) { print $2; exit }'
+          )"
+          if ! [[ "$IDENTITY_HASH" =~ ^[[:xdigit:]]{40}$ ]]; then
+            echo "::error::The configured macOS signing identity was not found in the imported keychain."
+            exit 1
+          fi
+          echo "DTM_INTERNAL_CODESIGN_IDENTITY=$IDENTITY_HASH" >> "$GITHUB_ENV"
           echo "DTM_INTERNAL_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
       - name: Build app
