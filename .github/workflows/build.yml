@@ -69,7 +69,10 @@ jobs:
 
   build-mac:
     needs: version
-    runs-on: macos-latest
+    # macOS 26 ARM64 currently imports the PKCS#12 identity but codesign then
+    # reports "no identity found". Pin the supported macOS 15 ARM64 image
+    # until that runner-image regression is resolved.
+    runs-on: macos-15
     permissions:
       contents: write
     steps:
