@@ -577,6 +577,22 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             agency_service.warmup_cache(active_paths, force=True)
             sales_rep_service.warmup_cache(active_paths, force=True)
 
+            # Agency files can be authored by a teammate whose desktop has no
+            # QBO connection. Wake this connected process immediately for new
+            # records and for later contact edits instead of waiting for the
+            # general 30-minute QBO poll.
+            if settings_report:
+                changed_agency_ids = {
+                    entry.removeprefix("agencies/").removesuffix(".json")
+                    for entry in settings_report.updated
+                    if entry.startswith("agencies/")
+                    and entry.endswith(".json")
+                    and not entry.startswith("agencies/(deleted) ")
+                }
+                if changed_agency_ids:
+                    from .services import qb_sync_service
+                    qb_sync_service.request_agency_sync(changed_agency_ids)
+
             from .services.shared_work_service import sync_work_data
             # Project records make the overview usable immediately.  Drafts
             # are hydrated only when their build is opened; downloading every

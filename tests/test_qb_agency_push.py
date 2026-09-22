@@ -8,6 +8,8 @@ real keychain.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from dtm_buildsheet.app.adapters.quickbooks.api_client import (
@@ -30,6 +32,13 @@ def _no_cloud(monkeypatch):
     import dtm_buildsheet.app.services.shared_work_service as sw
     monkeypatch.setattr(sw, "save_setting_to_cloud_in_background", lambda *a, **k: None)
     monkeypatch.setattr(sw, "save_settings_to_cloud_batch_in_background", lambda items: None)
+    with sync._pending_agency_ids_lock:
+        sync._pending_agency_ids.clear()
+    sync._bg_wake.clear()
+    yield
+    with sync._pending_agency_ids_lock:
+        sync._pending_agency_ids.clear()
+    sync._bg_wake.clear()
 
 
 class _FakeClient:
@@ -116,7 +125,23 @@ def test_customer_result_extracts_id_and_token():
 
 
 def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
-    agc.handle_save_agency({"name": "Alpha PD", "contact_email": "a@pd.gov"}, paths)
+    agc.handle_save_agency({
+        "name": "Alpha PD",
+        "contact_name": "Jane Doe",
+        "contact_title": "Fleet Manager",
+        "contact_phone": "555-0100",
+        "contact_email": "a@pd.gov",
+        "mobile_phone": "555-0101",
+        "fax": "555-0102",
+        "website": "https://alpha.example",
+        "bill_address_line1": "1 Main St",
+        "bill_city": "Alpha",
+        "bill_state": "MN",
+        "bill_postal_code": "55001",
+        "ship_address_line1": "2 Depot St",
+        "notes": "Send estimates by email",
+        "taxable": False,
+    }, paths)
     aid = agc.load_agencies(paths)[0].agency_id
 
     fake = _FakeClient(new_id="900")
@@ -126,6 +151,17 @@ def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
     assert res == {"ok": True, "qb_customer_id": "900", "action": "created"}
     assert len(fake.created) == 1 and fake.created[0]["name"] == "Alpha PD"
     assert fake.created[0]["customer_type_id"] == "retail-type-id"
+    assert fake.created[0]["contact_name"] == "Jane Doe"
+    assert fake.created[0]["contact_title"] == "Fleet Manager"
+    assert fake.created[0]["contact_phone"] == "555-0100"
+    assert fake.created[0]["contact_email"] == "a@pd.gov"
+    assert fake.created[0]["mobile_phone"] == "555-0101"
+    assert fake.created[0]["fax"] == "555-0102"
+    assert fake.created[0]["website"] == "https://alpha.example"
+    assert fake.created[0]["bill_address_line1"] == "1 Main St"
+    assert fake.created[0]["ship_address_line1"] == "2 Depot St"
+    assert fake.created[0]["notes"] == "Send estimates by email"
+    assert fake.created[0]["taxable"] is False
     # Id written back onto the agency record.
     assert agc.get_agency(paths, aid).qb_customer_id == "900"
 
@@ -145,7 +181,7 @@ def test_push_updates_when_already_linked(paths, monkeypatch):
     assert fake.created == []
 
 
-def test_push_recreates_when_linked_customer_gone(paths, monkeypatch):
+def test_push_requires_relink_when_linked_customer_gone(paths, monkeypatch):
     agc.handle_save_agency({"name": "Gamma PD"}, paths)
     aid = agc.load_agencies(paths)[0].agency_id
     agc.set_qb_customer_id(paths, aid, "88")
@@ -154,9 +190,13 @@ def test_push_recreates_when_linked_customer_gone(paths, monkeypatch):
     monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
 
     res = sync.push_agency(paths, aid)
-    assert res["action"] == "created" and res["qb_customer_id"] == "123"
-    assert fake.created and not fake.updated
-    assert agc.get_agency(paths, aid).qb_customer_id == "123"
+    assert res == {
+        "ok": False,
+        "error": "qb_customer_missing_requires_relink",
+        "qb_customer_id": "88",
+    }
+    assert not fake.created and not fake.updated
+    assert agc.get_agency(paths, aid).qb_customer_id == "88"
 
 
 def test_push_unknown_agency(paths, monkeypatch):
@@ -218,6 +258,35 @@ def test_save_agency_reports_synchronous_qb_push(paths, monkeypatch):
     assert result["qb_sync"]["action"] == "created"
 
 
+def test_save_publishes_final_snapshot_after_qb_id_writeback(paths, monkeypatch):
+    import dtm_buildsheet.app.services.shared_work_service as sw
+
+    mirrored = []
+    proposed = []
+    monkeypatch.setattr(
+        sw, "save_setting_to_cloud_in_background",
+        lambda _name, payload: mirrored.append(json.loads(payload)),
+    )
+    monkeypatch.setattr(
+        agc, "save_via_proposal",
+        lambda **kwargs: proposed.append(json.loads(kwargs["serialized_content"]))
+        or {"proposed": True},
+    )
+
+    def _push_with_writeback(push_paths, agency_id):
+        agc.set_qb_customer_id(push_paths, agency_id, "55")
+        return {"ok": True, "action": "created", "qb_customer_id": "55"}
+
+    monkeypatch.setattr(sync, "push_agency_after_save", _push_with_writeback)
+
+    result = agc.handle_save_agency({"name": "Snapshot PD"}, paths)
+
+    assert result["agency"]["qb_customer_id"] == "55"
+    assert proposed[0]["qb_customer_id"] == "55"
+    assert mirrored
+    assert all(snapshot["qb_customer_id"] == "55" for snapshot in mirrored)
+
+
 def test_background_push_noops_under_pytest(paths, monkeypatch):
     # PYTEST_CURRENT_TEST is set, so the background entry must not build a client.
     called = []
@@ -235,3 +304,59 @@ def test_set_qb_customer_id_does_not_loop(paths, monkeypatch):
     agc.set_qb_customer_id(paths, aid, "55")
     assert calls == []  # set_qb_customer_id bypasses handle_save_agency
     assert agc.get_agency(paths, aid).qb_customer_id == "55"
+
+
+def test_pending_and_unlinked_agencies_push_immediately(paths, monkeypatch):
+    agc.handle_save_agency({"name": "Existing PD", "contact_phone": "555-1000"}, paths)
+    existing_id = agc.load_agencies(paths)[0].agency_id
+    agc.set_qb_customer_id(paths, existing_id, "77")
+    agc.handle_save_agency({"name": "New SO", "contact_email": "new@example.gov"}, paths)
+    unlinked_id = next(
+        record.agency_id for record in agc.load_agencies(paths)
+        if record.name == "New SO"
+    )
+
+    fake = _FakeClient(existing={"Id": "77", "SyncToken": "5"}, new_id="901")
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+
+    sync.request_agency_sync({existing_id, existing_id})
+    assert sync._bg_wake.is_set()
+    report = sync.push_pending_and_unlinked_agencies(paths)
+
+    assert report["ok"] is True
+    assert report["attempted"] == 2
+    assert report["succeeded"] == 2
+    assert fake.updated[0][0] == "77"
+    assert fake.updated[0][2]["contact_phone"] == "555-1000"
+    assert fake.created[0]["name"] == "New SO"
+    assert fake.created[0]["contact_email"] == "new@example.gov"
+    assert agc.get_agency(paths, unlinked_id).qb_customer_id == "901"
+
+
+def test_automatic_sync_pushes_agencies_before_catalog_refresh(paths, monkeypatch):
+    events = []
+    monkeypatch.setattr(
+        sync, "push_pending_and_unlinked_agencies",
+        lambda _paths: events.append("agency_push") or {
+            "ok": True, "attempted": 1, "succeeded": 1, "failed": 0, "results": [],
+        },
+    )
+    monkeypatch.setattr(
+        sync, "run_full_sync",
+        lambda _paths: events.append("catalog") or {"ok": True},
+    )
+    monkeypatch.setattr(sync, "import_customers", lambda _paths: {"ok": True})
+
+    from dtm_buildsheet.app.services import qb_acceptance_service, qb_estimate_service
+    monkeypatch.setattr(
+        qb_estimate_service, "reconcile_quote_references", lambda _paths: {"ok": True},
+    )
+    monkeypatch.setattr(
+        qb_acceptance_service, "run_connected_refresh", lambda _paths: {"ok": True},
+    )
+
+    result = sync.run_automatic_sync(paths)
+
+    assert result["ok"] is True
+    assert result["agency_pushes"]["succeeded"] == 1
+    assert events == ["agency_push", "catalog"]

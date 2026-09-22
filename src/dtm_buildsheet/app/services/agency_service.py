@@ -928,24 +928,12 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             records[agency_id] = record
 
         _write_record(record, paths)
-        serialized = json.dumps(asdict(record), indent=2) + "\n"
-        proposal_result = save_via_proposal(
-            target_file=f"agencies/{record.agency_id}.json",
-            serialized_content=serialized,
-            summary=f"{'Update' if existing else 'Add'} agency: {record.name}",
-            category="general",
-        )
-        # Direct SP mirror so other devices see the new/updated record
-        # within their next 60s sync, not whenever the dtm-shared-settings
-        # publish workflow happens to wake up.
-        from .shared_work_service import save_setting_to_cloud_in_background
-        save_setting_to_cloud_in_background(
-            f"agencies/{record.agency_id}.json", serialized,
-        )
         affected_projects = _propagate_agency_identity_to_projects(record, paths)
         # Mirror the agency to QuickBooks before returning so a rejected
         # Customer create/update is visible to the user instead of disappearing
-        # inside a daemon thread. The local agency remains saved either way.
+        # inside a daemon thread. Do this before publishing the shared snapshot
+        # so a successful create carries its Customer ID to teammates atomically
+        # with the profile instead of exposing a temporary unlinked record.
         from . import qb_sync_service
         qb_sync = qb_sync_service.push_agency_after_save(paths, record.agency_id)
         # Folder trees are project-scoped. Agency Manager also contains every
@@ -956,6 +944,19 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
         folder_provisioning_scheduled = bool(affected_projects)
         # A successful create stamps qb_customer_id back onto the cached record.
         saved_record = _records(paths).get(record.agency_id) or record
+        serialized = json.dumps(asdict(saved_record), indent=2) + "\n"
+        proposal_result = save_via_proposal(
+            target_file=f"agencies/{saved_record.agency_id}.json",
+            serialized_content=serialized,
+            summary=f"{'Update' if existing else 'Add'} agency: {saved_record.name}",
+            category="general",
+        )
+        # Direct SP mirror so other devices see the new/updated record within
+        # their next 60s sync, not whenever the proposal workflow wakes up.
+        from .shared_work_service import save_setting_to_cloud_in_background
+        save_setting_to_cloud_in_background(
+            f"agencies/{saved_record.agency_id}.json", serialized,
+        )
         return {
             "ok": True,
             "agency": asdict(saved_record),

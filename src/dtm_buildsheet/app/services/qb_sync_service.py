@@ -926,6 +926,77 @@ def push_vehicle_job(paths: AppPaths, project_id: str, individual_id: str) -> di
 _POLL_INTERVAL_SECONDS = 30 * 60
 _bg_thread = None
 _bg_wake = threading.Event()
+_pending_agency_ids: set[str] = set()
+_pending_agency_ids_lock = threading.Lock()
+
+
+def request_agency_sync(agency_ids: list[str] | tuple[str, ...] | set[str]) -> None:
+    """Queue cloud-arrived agencies for the connected QBO worker.
+
+    The SharePoint settings poll runs every minute, while the general QBO
+    refresh normally sleeps for 30 minutes.  Remembering the exact agency IDs
+    lets the worker mirror new agencies and contact edits before doing the
+    slower catalog/customer pull.  The set also coalesces repeated cloud
+    observations of the same record.
+    """
+
+    normalized = {str(agency_id or "").strip() for agency_id in agency_ids}
+    normalized.discard("")
+    if not normalized:
+        return
+    with _pending_agency_ids_lock:
+        _pending_agency_ids.update(normalized)
+    _bg_wake.set()
+
+
+def _take_pending_agency_ids() -> list[str]:
+    with _pending_agency_ids_lock:
+        agency_ids = sorted(_pending_agency_ids)
+        _pending_agency_ids.clear()
+    return agency_ids
+
+
+def _requeue_failed_agency_ids(agency_ids: list[str]) -> None:
+    """Retain transient failures for the next normal poll without busy-looping."""
+
+    if not agency_ids:
+        return
+    with _pending_agency_ids_lock:
+        _pending_agency_ids.update(agency_ids)
+
+
+def push_pending_and_unlinked_agencies(paths: AppPaths) -> dict:
+    """Push requested agency changes plus any unlinked startup discoveries.
+
+    Requested IDs include edits to already-linked Customers.  The unlinked
+    scan closes the gap for agencies created while no Builder client had a QBO
+    connection, including records already present when this process starts.
+    """
+    from . import agency_service
+
+    requested_ids = _take_pending_agency_ids()
+    unlinked_ids = [
+        record.agency_id
+        for record in agency_service.load_agencies(paths)
+        if not (record.qb_customer_id or "").strip()
+        and record.agency_id not in requested_ids
+    ]
+    attempted_ids = requested_ids + unlinked_ids
+    results: list[dict] = []
+    retry_ids: list[str] = []
+    for agency_id in attempted_ids:
+        result = push_agency(paths, agency_id)
+        results.append({"agency_id": agency_id, **result})
+        if not result.get("ok") and result.get("error") != "unknown_agency":
+            retry_ids.append(agency_id)
+    _requeue_failed_agency_ids(retry_ids)
+    return {
+        "ok": not retry_ids,
+        "attempted": len(attempted_ids),
+        "succeeded": len(attempted_ids) - len(retry_ids),
+        "failed": len(retry_ids),
+        "results": results,
+    }
 
 
 def run_automatic_sync(paths: AppPaths) -> dict:
@@ -937,6 +1008,10 @@ def run_automatic_sync(paths: AppPaths) -> dict:
     fills missing profile data without replacing Builder-authored values.
     """
 
+    # Do Customer writes first. A full Item pull can take long enough that a
+    # newly created shared agency otherwise remains invisible in QBO while the
+    # user is actively looking for it.
+    agency_pushes = push_pending_and_unlinked_agencies(paths)
     catalog = run_full_sync(paths)
     customers = import_customers(paths)
     from . import qb_estimate_service
@@ -944,21 +1019,23 @@ def run_automatic_sync(paths: AppPaths) -> dict:
     from . import qb_acceptance_service
     acceptance_refresh = qb_acceptance_service.run_connected_refresh(paths)
     ok = (
-        bool(catalog.get("ok"))
+        bool(agency_pushes.get("ok"))
+        and bool(catalog.get("ok"))
         and bool(customers.get("ok"))
         and bool(quote_references.get("ok"))
     )
     result = {
         **catalog,
         "ok": ok,
+        "agency_pushes": agency_pushes,
         "customers": customers,
         "quote_references": quote_references,
         "acceptance_refresh": acceptance_refresh,
     }
     if not ok and not result.get("error"):
-        result["error"] = customers.get("error") or quote_references.get(
-            "error", "automatic_sync_failed"
-        )
+        result["error"] = (
+            "agency_customer_sync_failed" if not agency_pushes.get("ok") else None
+        ) or customers.get("error") or quote_references.get("error", "automatic_sync_failed")
     return result
 
 
@@ -997,8 +1074,10 @@ def start_background_sync(
                 if quickbooks_service.get_status(paths).get("connected"):
                     result = run_automatic_sync(paths)
                     customers = result.get("customers") or {}
+                    agency_pushes = result.get("agency_pushes") or {}
                     if on_data_change is not None and (
-                        customers.get("created") or customers.get("updated")
+                        agency_pushes.get("succeeded")
+                        or customers.get("created") or customers.get("updated")
                     ):
                         on_data_change()
             except Exception:  # noqa: BLE001 — poller must never die

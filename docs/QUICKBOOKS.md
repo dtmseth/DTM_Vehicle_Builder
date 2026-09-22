@@ -52,6 +52,12 @@ Every agency Customer written by the app is also assigned the active QBO **Retai
 The integration resolves that type's company-local ID by its exact name at write time; it never
 persists or hard-codes the production ID. In this company, Retail activates the shared QBO price
 rules when a user adds an Item in the QBO form.
+The QBO write now completes before the final agency snapshot is mirrored to SharePoint, so the
+shared record carries its Customer ID without exposing a temporary unlinked version. If the
+authoring desktop is not connected to QBO, the next connected desktop queues that agency as soon as
+its 60-second SharePoint poll receives it. New agencies and contact edits are pushed before the
+slower catalog refresh instead of waiting for the general 30-minute QBO interval. Startup also
+repairs any locally visible agency that is still unlinked.
 Before estimate creation, the linked QBO Project's taxable flag is aligned with the agency Customer;
 QBO Projects otherwise retain their own taxable default and can add tax even when the parent agency
 is exempt.
@@ -232,7 +238,10 @@ all write operations still require their backend checks and explicit confirmatio
   writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push). A new app agency
   first reuses an exact top-level QB Customer name match to avoid a duplicate; otherwise it creates
   only a Customer record. No Customer save can create a financial transaction.
-  `qb_sync_service.push_agency()` + `push_agency_in_background()`. Tests: `tests/test_qb_agency_push.py` (13).
+  `qb_sync_service.push_agency()` + `push_agency_in_background()`. Tests: `tests/test_qb_agency_push.py` (17).
+  Cloud-arrived agency files queue their exact IDs through `request_agency_sync()`; the connected
+  QBO worker pushes those records (including contact edits) and any unlinked startup discoveries
+  before catalog reconciliation.
 - **Legacy Slice 3 (per-vehicle job bridge):** `IndividualUnit.qb_job_id` and
   `push_vehicle_job()` remain only so older records can be read and older estimates are not
   orphaned. New estimate creation does not call this path.
