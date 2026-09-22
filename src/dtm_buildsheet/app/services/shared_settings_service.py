@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 # match the rest of the codebase.
 SETTINGS_REMOTE_FOLDER = "Settings"
 
+# Calendar is shared work with its own optimistic-concurrency store. Mirroring
+# it into the ordinary config cache creates a large, unused package-data file
+# and bypasses the versioned read path used by CalendarStore.
+_NON_MIRRORED_SETTINGS = frozenset({"calendar_plan.json"})
+
 
 @dataclass
 class SyncReport:
@@ -97,6 +102,8 @@ class SharedSettingsService:
         current_etags: dict[str, str] = {}
         for entry in remote_entries:
             name = entry.path.rsplit("/", 1)[-1]
+            if name in _NON_MIRRORED_SETTINGS:
+                continue
             # The publish workflow uploads a {filename}.meta.json sidecar
             # alongside each settings file for Power Automate Flow A to read.
             # Those sidecars aren't actual config; pulling them into the

@@ -70,6 +70,7 @@ ROLE_CAPABILITIES: dict[AppRole, frozenset[Capability]] = {
         Capability.OPERATIONS_VIEW,
         Capability.OPERATIONS_PARTS_UPDATE,
         Capability.PROJECTS_VIEW,
+        Capability.ESTIMATES_MANAGE,
     }),
     AppRole.SHOP_EDITOR: frozenset({
         Capability.OPERATIONS_VIEW,

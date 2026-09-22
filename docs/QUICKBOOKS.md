@@ -371,7 +371,9 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   `tests/test_estimate_charges_service.py` (4), and `tests/test_customer_pricing_service.py`.
 - The header **Connections** modal shows Microsoft 365 and QuickBooks Online together. QuickBooks
   status is checked when the modal opens; disconnected users can start OAuth there, while connected
-  users can open the full QuickBooks settings panel. Credentials remain in the isolated OS keychain.
+  users can open the full QuickBooks settings panel. `BuilderEditor` and `PartsEditor` users receive
+  the Estimate-management capability that authorizes these per-user connections and the guarded
+  Estimate/quote connection workflows. Credentials remain in the isolated OS keychain.
 
 ### Full route list (`/api/quickbooks/*`)
 `GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
@@ -628,7 +630,7 @@ fresh-read checks apply, and an accepted project-level Estimate becomes acceptan
 each current vehicle. Connecting or removing this reference never writes to QuickBooks.
 
 **Working-tree operations extension — link an existing Estimate:** an authorized connected Builder
-user may browse a read-only QBO Estimate picker or paste an Estimate ID/page URL and explicitly
+or Parts Editor user may browse a read-only QBO Estimate picker or paste an Estimate ID/page URL and explicitly
 attach it to one individual Builder vehicle. The picker reads bounded pages of 50 Estimates,
 newest modified first, and filters loaded rows by customer, number, date or status. Rows already
 linked elsewhere are disabled; selection itself does not bind or write anything. The list route

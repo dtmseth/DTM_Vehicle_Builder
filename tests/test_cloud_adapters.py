@@ -587,6 +587,19 @@ def test_shared_settings_sync_writes_files(tmp_path: Path):
     assert (tmp_path / "config" / "build_rules.json").read_bytes() == b'{"rules": []}'
 
 
+def test_shared_settings_sync_excludes_versioned_calendar_document(tmp_path: Path):
+    remote = _FakeRemote({
+        "Settings/parts_library.json": b'{"manufacturers": []}',
+        "Settings/calendar_plan.json": b'{"schema_version": 2, "jobs": {}}',
+    })
+    service = SharedSettingsService(remote, cache_dir=tmp_path / "config")
+
+    report = service.sync_all()
+
+    assert report.updated == ["parts_library.json"]
+    assert not (tmp_path / "config" / "calendar_plan.json").exists()
+
+
 def test_shared_settings_sync_skips_unchanged(tmp_path: Path):
     remote = _FakeRemote({"Settings/foo.json": b"v1"})
     service = SharedSettingsService(remote, cache_dir=tmp_path / "config")

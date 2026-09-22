@@ -371,7 +371,7 @@ time never substitutes for acceptance. Business-date fields use ISO `YYYY-MM-DD`
 | `AppAdmin` | Application owner/administrator | All workspaces |
 | `BuilderEditor` | Sales/build designer/estimator | Projects / Builder |
 | `OperationsManager` | Production coordinator or trusted workflow corrector | Operations overview |
-| `PartsEditor` | Parts staff | Parts queue |
+| `PartsEditor` | Parts staff and QuickBooks estimate-connection users | Parts queue |
 | `ShopEditor` | Shop technicians/build staff | Shop queue |
 | `ProgrammingQcEditor` | Programming and QC staff | Programming & QC queue |
 | `OperationsViewer` | Read-only management/office user | Operations overview |
@@ -410,7 +410,7 @@ assigned to app roles. Otherwise the small user population can receive direct us
 | `AppAdmin` | all capabilities |
 | `BuilderEditor` | `projects.view`, `projects.edit`, `projects.lifecycle.update`, `estimates.manage`, `operations.view`, `operations.availability.update`, `operations.parts.update`, `operations.qbo.observe` |
 | `OperationsManager` | `projects.view`; all `operations.*`, including scheduling, delivery, and correction; `projects.lifecycle.update` |
-| `PartsEditor` | `projects.view`, `operations.view`, `operations.parts.update` |
+| `PartsEditor` | `projects.view`, `estimates.manage`, `operations.view`, `operations.parts.update` |
 | `ShopEditor` | `projects.view`, `operations.view`, `operations.shop.update`, `operations.tray.update`, `operations.final_finish.update` |
 | `ProgrammingQcEditor` | `projects.view`, `operations.view`, `operations.programming_qc.update`, `operations.final_finish.update` |
 | `OperationsViewer` | `projects.view`, `operations.view` |

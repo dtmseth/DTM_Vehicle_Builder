@@ -79,6 +79,16 @@ def test_builder_can_edit_projects_estimates_vehicle_availability_and_parts(monk
     assert authorize_request("POST", "/api/catalog/save").allowed is False
 
 
+def test_parts_editor_can_connect_quickbooks_and_manage_estimate_connections(monkeypatch):
+    _set_role(monkeypatch, "PartsEditor")
+
+    assert authorize_request("GET", "/api/quickbooks/auth-url").allowed is True
+    assert authorize_request("POST", "/api/quickbooks/estimates/search").allowed is True
+    assert authorize_request("POST", "/api/quickbooks/estimates/bind").allowed is True
+    assert authorize_request("POST", "/api/project/save").allowed is False
+    assert authorize_request("POST", "/api/quickbooks/link-item").allowed is False
+
+
 def test_app_admin_retains_advanced_mutation_access(monkeypatch):
     _set_role(monkeypatch, "AppAdmin")
 
