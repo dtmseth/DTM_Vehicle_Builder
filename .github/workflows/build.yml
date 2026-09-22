@@ -125,14 +125,21 @@ jobs:
           sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$KEYCHAIN_PATH" "$CERTIFICATE_PEM"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$MACOS_CODESIGN_IDENTITY"
           echo "DTM_INTERNAL_CODESIGN_IDENTITY=$MACOS_CODESIGN_IDENTITY" >> "$GITHUB_ENV"
+          echo "DTM_INTERNAL_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
       - name: Build app
         run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
 
       - name: Sign app for internal distribution
         if: github.event_name == 'workflow_dispatch'
+        env:
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
         run: |
-          codesign --force --deep --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" "dist/DTM Vehicle Builder.app"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$DTM_INTERNAL_KEYCHAIN_PATH"
+          codesign --force --deep \
+            --keychain "$DTM_INTERNAL_KEYCHAIN_PATH" \
+            --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" \
+            "dist/DTM Vehicle Builder.app"
           codesign --verify --deep --strict --verbose=2 "dist/DTM Vehicle Builder.app"
           codesign --display --requirements - "dist/DTM Vehicle Builder.app"
 
@@ -149,15 +156,23 @@ jobs:
 
       - name: Sign internal release DMG
         if: github.event_name == 'workflow_dispatch'
+        env:
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
         run: |
-          codesign --force --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" "dist/DTM_Vehicle_Builder.dmg"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$DTM_INTERNAL_KEYCHAIN_PATH"
+          codesign --force \
+            --keychain "$DTM_INTERNAL_KEYCHAIN_PATH" \
+            --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" \
+            "dist/DTM_Vehicle_Builder.dmg"
           codesign --verify --strict --verbose=2 "dist/DTM_Vehicle_Builder.dmg"
 
       - name: Remove temporary signing keychain
         if: always() && github.event_name == 'workflow_dispatch'
-        run: |
-          sudo security remove-trusted-cert -d "$RUNNER_TEMP/dtm-signing.pem" || true
-          security delete-keychain "$RUNNER_TEMP/dtm-signing.keychain-db" || true
+        timeout-minutes: 1
+        # The hosted VM is discarded after the job, including the temporary
+        # admin trust entry. Removing it can invoke trust UI, so only delete
+        # the temporary keychain here.
+        run: security delete-keychain "$RUNNER_TEMP/dtm-signing.keychain-db" || true
 
       - uses: actions/upload-artifact@v7
         with:
