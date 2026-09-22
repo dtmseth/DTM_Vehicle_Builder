@@ -115,7 +115,10 @@ jobs:
           security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          # A PKCS#12 contains the certificate and its private key, so import
+          # it as an aggregate. Declaring it as `cert` can leave an identity
+          # that find-identity lists but codesign cannot use.
+          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t agg -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           openssl pkcs12 -legacy -in "$CERTIFICATE_PATH" -nokeys -passin env:MACOS_CERTIFICATE_PASSWORD | openssl x509 -out "$CERTIFICATE_PEM"
