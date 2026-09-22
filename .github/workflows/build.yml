@@ -112,30 +112,17 @@ jobs:
           MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/dtm-signing.p12"
-          CERTIFICATE_PEM="$RUNNER_TEMP/dtm-signing.pem"
           KEYCHAIN_PATH="$RUNNER_TEMP/dtm-signing.keychain-db"
           echo -n "$MACOS_CERTIFICATE" | base64 -D > "$CERTIFICATE_PATH"
           security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          # A PKCS#12 contains the certificate and its private key, so import
-          # it as an aggregate. Declaring it as `cert` can leave an identity
-          # that find-identity lists but codesign cannot use.
-          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t agg -f pkcs12 -k "$KEYCHAIN_PATH"
-          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
-          security default-keychain -d user -s "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          PKCS12_ARGS=()
-          if openssl pkcs12 -help 2>&1 | grep -q -- "-legacy"; then
-            PKCS12_ARGS=(-legacy)
-          fi
-          openssl pkcs12 "${PKCS12_ARGS[@]}" -in "$CERTIFICATE_PATH" -nokeys -passin env:MACOS_CERTIFICATE_PASSWORD | openssl x509 -out "$CERTIFICATE_PEM"
-          # User trust opens an authentication dialog and hangs headless macOS
-          # runners. Add trust directly to the temporary default keychain; the
-          # hosted VM and keychain are discarded after the job.
-          sudo security add-trusted-cert -d -r trustRoot -p codeSign \
-            -k "$KEYCHAIN_PATH" \
-            "$CERTIFICATE_PEM"
+          # Follow GitHub's supported certificate-install sequence. Trust is
+          # supplied by the certificate chain; mutating trust settings on a
+          # hosted runner is interactive and can fail after a valid import.
+          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
           # Resolve the configured display name to the exact identity hash.
           # codesign can reject a quoted or otherwise ambiguous display name
           # even when security find-identity lists the expected certificate.
