@@ -163,17 +163,20 @@ function _operationsCanAddBuilderVehicle(session) {
 
 async function initOperationsAccess() {
   const button = $("operations-header-tab");
+  const addBuilderButton = $("operations-add-builder");
   if (!button) return null;
   try {
     const session = await api("/api/operations/session");
     _OPERATIONS.session = session;
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(session);
     else button.hidden = !_operationsCanView(session);
+    if (addBuilderButton) addBuilderButton.hidden = !_operationsCanAddBuilderVehicle(session);
     return session;
   } catch (error) {
     console.warn("Operations access check failed", error);
     if (typeof applyAppAccessSession === "function") applyAppAccessSession(null);
     else button.hidden = true;
+    if (addBuilderButton) addBuilderButton.hidden = true;
     return null;
   }
 }
@@ -1486,6 +1489,9 @@ function _operationsDateTime(value) {
 
 document.addEventListener("DOMContentLoaded", () => {
   $("operations-refresh")?.addEventListener("click", () => initOperationsTab());
+  $("operations-add-builder")?.addEventListener("click", () =>
+    _operationsLoadProjectionPreview({ open: true })
+  );
   $("operations-search")?.addEventListener("input", event => {
     _OPERATIONS.search[_OPERATIONS.filter] = event.target.value;
     _operationsRenderRows();

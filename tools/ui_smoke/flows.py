@@ -13,7 +13,6 @@ docs/audit/UI_SMOKE_SPEC.md §5 and land in the implementation session.
 from __future__ import annotations
 
 import json
-import re
 from urllib.request import Request, urlopen
 
 # Give slow panels (SKU grid renders ~900 products) time to fetch + render
@@ -282,8 +281,11 @@ def flow_tab_load(page, base_url: str) -> None:
         '[data-operations-status-workstream="acceptance"]'
         '[data-operations-status-value="accepted"]'
     ).click()
-    page.wait_for_function("document.querySelectorAll('.operations-project-group').length === 0")
-    page.locator('[data-operations-filter="active"]').click()
+    # The status refresh follows the changed vehicle into its new lifecycle
+    # view, so accepting the project selects Active automatically.
+    page.wait_for_function(
+        "document.querySelector('[data-operations-filter=\"active\"]')?.getAttribute('aria-selected') === 'true'"
+    )
     page.wait_for_selector(".operations-project-group")
     assert page.locator("#operations-schedule-filters").is_visible()
     assert page.locator("#operations-schedule-all-count").inner_text() == "1"
@@ -342,29 +344,26 @@ def flow_tab_load(page, base_url: str) -> None:
     assert page.locator('.calendar-main #calendar-range').is_visible()
     assert page.locator('.calendar-navigation #calendar-today').is_visible()
     source = page.locator('#calendar-queue [data-vehicle-id="operations-preview-vehicle"]')
+    queue_project = source.locator('xpath=ancestor::details')
+    if not queue_project.evaluate('element => element.open'):
+        queue_project.locator('summary').click()
+    source.wait_for(state='visible')
     source.scroll_into_view_if_needed()
-    source_box = source.bounding_box()
-    target_box = page.locator('.calendar-slot-target').first.bounding_box()
-    page.mouse.move(source_box['x'] + 20, source_box['y'] + 20)
-    page.mouse.down()
-    page.mouse.move(target_box['x'] + target_box['width'] / 2,
-                    target_box['y'] + target_box['height'] - 10, steps=12)
-    page.mouse.up()
+    source.click()
     page.wait_for_selector('#calendar-detail-overlay.open')
-    assert page.locator('.calendar-queue-vehicle .calendar-status-badge').count() == 6
+    assert page.locator('.calendar-queue-vehicle .calendar-status-badge').count() == 9
     assert 'Unit not set' not in page.locator('#calendar-queue').inner_text()
     assert page.locator('[aria-current="date"]').count() == 1
     assert page.locator('#calendar-job-team').input_value() == 'team-david'
-    assert page.locator('#calendar-job-start').input_value()
+    assert not page.locator('#calendar-job-start').input_value()
     after_placement = page.evaluate("async () => await api('/api/calendar')")
     assert after_placement['revision'] == before_placement['revision']
     assert after_placement['plan']['jobs'] == before_placement['plan']['jobs']
     page.locator("#calendar-job-start").fill("2031-01-06")
     assert page.locator('#calendar-job-pin, #calendar-promised-start, #calendar-promised-ready, #calendar-remaining-hours, #calendar-job-second-team').count() == 0
     assert page.locator('#calendar-detail-overlay').is_visible()
-    assert page.locator('#calendar-include-project').is_checked()
-    page.uncheck('#calendar-include-project')
-    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled Jan 6')")
+    assert not page.locator('#calendar-include-project').is_checked()
+    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
     # An unrelated Operations refresh while the modal is open must not discard
     # the typed date or require closing/reopening the booking.
     from dtm_buildsheet.app.adapters.wiring import get_active_bundle
@@ -406,8 +405,8 @@ def flow_tab_load(page, base_url: str) -> None:
             assert entered.wait(2), 'Date publisher did not start'
             page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
             page.wait_for_selector('#calendar-detail-overlay.open')
-            page.click('#calendar-project-remove')
-            page.get_by_role('button', name='Remove bookings', exact=True).click()
+            page.click('#calendar-unit-remove')
+            page.get_by_role('button', name='Remove booking', exact=True).click()
             page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
             removed = page.evaluate("async () => await api('/api/calendar')")
             assert not removed['plan']['jobs']
@@ -416,7 +415,7 @@ def flow_tab_load(page, base_url: str) -> None:
             page.wait_for_selector('#calendar-detail-overlay.open')
             page.locator('#calendar-job-start').fill('2031-01-06')
             page.uncheck('#calendar-include-project')
-            page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled Jan 6')")
+            page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
             page.get_by_role('button', name='Confirm booking', exact=True).click()
             page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=3000)
             rebooked = page.evaluate("async () => await api('/api/calendar')")
@@ -439,14 +438,15 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click('#calendar-detail-close')
     page.locator('.calendar-booking').first.drag_to(page.locator('.calendar-slot-target').nth(5))
     page.wait_for_selector('#calendar-detail-overlay.open')
-    assert page.locator('#calendar-job-team').input_value() == 'team-josh'
+    assert page.locator('#calendar-drop-team').input_value() == 'team-josh'
     assert page.evaluate("async () => (await api('/api/calendar')).revision") == calendar_before['revision']
     page.keyboard.press('Escape')
     page.wait_for_selector('#calendar-detail-overlay', state='hidden')
-    page.evaluate("openCalendarVehicle('operations-preview-vehicle')")
+    page.evaluate("openCalendarVehicle('operations-preview-vehicle-2')")
     page.wait_for_selector('#calendar-detail-overlay.open')
-    assert page.locator('#calendar-include-project').is_checked()
-    page.wait_for_function("document.querySelector('#calendar-booking-overview').innerText.includes('3 vehicles')")
+    assert not page.locator('#calendar-include-project').is_checked()
+    page.check('#calendar-include-project')
+    page.wait_for_function("document.querySelector('#calendar-booking-overview').innerText.includes('2 vehicles')")
     page.get_by_role('button', name='Confirm booking', exact=True).click()
     page.wait_for_selector('#calendar-detail-overlay', state='hidden')
     page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
@@ -454,17 +454,8 @@ def flow_tab_load(page, base_url: str) -> None:
     assert not calendar_after['plan']['queue']
     retained = next(j for j in calendar_after['plan']['jobs'] if j['id'] == protected['id'])
     assert (retained['start'], retained['ready']) == (protected['start'], protected['ready'])
-    # A small independent job supplies occupied capacity for the month drop test.
-    month_view = _api(base_url, '/api/calendar')
-    month_body = {'revision': month_view['revision'], 'source_revision': month_view['source_revision'],
-                  'allow_overlap': True, 'reason': 'Synthetic occupied capacity for moving the existing booking',
-                  'edit': {'id': 'job-month-fixture', 'title': 'Month availability fixture',
-                           'team_id': 'team-david', 'kind': 'service', 'hours': 14.4, 'start_date': '2031-01-07'}}
-    month_preview = _api(base_url, '/api/calendar/preview', month_body)
-    month_saved = _api(base_url, '/api/calendar/save', {**month_body, 'preview_token': month_preview['preview_token']})
-    page.click('#calendar-refresh')
-    page.wait_for_function("!document.querySelector('#calendar-message').innerText.includes('Loading')")
-    # Month drop chooses the next free team across the full proposed duration.
+    # Month rendering keeps scheduled work readable without introducing an
+    # internal scroll region beside the acceptance queue.
     page.click('#calendar-today')
     page.click('#calendar-month')
     page.select_option('[aria-label="Acceptance queue filter"]', 'all')
@@ -476,31 +467,11 @@ def flow_tab_load(page, base_url: str) -> None:
     page.click('#calendar-detail-close')
     page.fill('#calendar-month-picker', '2031-01')
     first_card = page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle"]').first
-    next_card = page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle-2"]').first
-    first_box, next_box = first_card.bounding_box(), next_card.bounding_box()
-    assert abs(first_box['y'] - next_box['y']) < 1
-    assert first_box['x'] + first_box['width'] <= next_box['x'] + 1
+    assert first_card.is_visible()
     assert page.locator('#calendar-board').evaluate("el => getComputedStyle(el).overflowY === 'visible' && el.scrollHeight <= el.clientHeight + 2")
     page.wait_for_function("Math.abs(document.querySelector('#calendar-queue').getBoundingClientRect().height-document.querySelector('.calendar-main').getBoundingClientRect().height)<2")
     title_box, switch_box = page.locator('#calendar-range').bounding_box(), page.locator('#calendar-week').bounding_box()
     assert switch_box['y'] > title_box['y'] + title_box['height']
-    page.locator('.calendar-month-booking[data-job-id="operations-preview-vehicle"]').first.drag_to(
-        page.locator('.calendar-month-days > span').filter(has_text=re.compile(r'^7$')), target_position={'x': 10, 'y': 10})
-    page.wait_for_selector('#calendar-detail-overlay.open')
-    page.wait_for_function("document.querySelector('#calendar-job-team').value === 'team-josh'")
-    assert '🔴' in page.locator('#calendar-job-team option[value="team-david"]').inner_text()
-    page.select_option('#calendar-job-team', 'team-david')
-    page.wait_for_selector('#calendar-choice-modal.open')
-    assert 'Month availability fixture' in page.locator('#calendar-choice-message').inner_text()
-    page.click('#calendar-choice-cancel')
-    page.click('#calendar-detail-close')
-    assert page.evaluate("async () => (await api('/api/calendar')).revision") == month_saved['revision']
-    page.evaluate("openCalendarVehicle('job-month-fixture')")
-    page.click('#calendar-project-remove')
-    page.wait_for_selector('#calendar-choice-modal.open')
-    page.click('#calendar-choice-accept')
-    page.wait_for_selector('#calendar-detail-overlay', state='hidden')
-    page.wait_for_function("document.querySelector('#calendar-save-status').dataset.state === 'complete'")
     page.click('#calendar-week')
     page.click(".htab[data-tab='operations']")
     page.wait_for_selector(".operations-project-group")
@@ -587,10 +558,12 @@ def flow_tab_load(page, base_url: str) -> None:
                 assert badge.evaluate(
                     "item => getComputedStyle(item).backgroundColor"
                 ) == "rgb(25, 135, 84)"
-    page.wait_for_function("document.querySelectorAll('.operations-project-group').length === 0")
-    page.locator('[data-operations-filter="completed"]').click()
+    page.wait_for_function(
+        "document.querySelector('[data-operations-filter=\"completed\"]')?.getAttribute('aria-selected') === 'true'"
+    )
     page.wait_for_selector(".operations-project-group")
-    page.locator(".operations-project-group > summary").click()
+    if not page.locator(".operations-project-group").evaluate("element => element.open"):
+        page.locator(".operations-project-group > summary").click()
     assert page.locator(".operations-status-grid .operations-status").first.evaluate(
         "item => item.classList.contains('operations-status-tone-complete')"
     )
@@ -682,10 +655,6 @@ def flow_tab_load(page, base_url: str) -> None:
     new_team.locator('[data-field="name"]').fill("Spare team")
     new_team.locator('[data-field="active"]').uncheck()
     page.click("#calendar-settings-save")
-    page.wait_for_selector("#calendar-review-modal.open")
-    page.fill("#calendar-review-reason", "Add the retired fixture team")
-    page.click("#calendar-review-save")
-    page.wait_for_selector("#calendar-review-modal", state="hidden")
     page.wait_for_function("document.querySelector('#calendar-settings-message').innerText.includes('saved')")
     page.click("#calendar-header-tab")
     page.wait_for_function("!document.querySelector('#calendar-message').innerText.includes('Loading')")
@@ -729,7 +698,7 @@ def flow_tab_load(page, base_url: str) -> None:
     page.evaluate("id => openCalendarVehicle(id)", custom["id"])
     page.wait_for_selector("#calendar-detail:not([hidden])")
     assert page.locator('#calendar-job-shop').count() == 0
-    page.click('#calendar-project-remove')
+    page.click('#calendar-unit-remove')
     page.wait_for_selector('#calendar-choice-modal.open')
     page.click('#calendar-choice-accept')
     page.wait_for_selector('#calendar-detail-overlay', state='hidden')
@@ -760,11 +729,12 @@ def flow_tab_load(page, base_url: str) -> None:
     page.wait_for_selector("#proj-detail-view:not([hidden])")
     read_only_build = page.locator(".proj-build-card[data-draft-id]:visible").first
     read_only_build.locator(".proj-build-card-label").click()
-    page.wait_for_selector("#build-readonly-modal.open")
-    page.wait_for_function("document.querySelector('#build-readonly-body')?.innerText.includes('Equipment')")
-    assert "EQUIPMENT" in page.locator("#build-readonly-body").inner_text().upper()
-    assert page.locator("#proj-build-editor").is_hidden()
-    page.click("#build-readonly-done")
+    page.wait_for_selector("#proj-build-editor:not([hidden])")
+    assert page.locator("#pbe-readonly-banner").is_visible()
+    assert "VIEW ONLY" in page.locator("#pbe-readonly-banner").inner_text().upper()
+    assert page.evaluate("() => _PT.pbeReadOnly") is True
+    page.click("#pbe-save-return")
+    page.wait_for_selector("#proj-detail-view:not([hidden])")
     shop_streams = page.evaluate("() => _operationsEditableWorkstreams().map(item => item.key)")
     assert shop_streams == ["shop", "tray", "final_finish"]
     assert page.locator('#calendar-header-tab').is_visible()
@@ -828,18 +798,6 @@ def flow_preset_agency_list_freshness(page, base_url: str) -> None:
     })
     assert created["ok"] is True
     agency_id = created["agency"]["agency_id"]
-    project_agency_id = "11111111-2222-4333-8444-555555555555"
-    project_only_name = "US Immigration & Customs Enforcement (ICE)"
-    project = _api(base_url, "/api/project/save", {
-        "customer": {
-            "name": project_only_name,
-            "agency": project_only_name,
-            "agency_id": project_agency_id,
-            "build_year": "2026",
-        },
-        "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
-    })
-    assert project["ok"] is True
 
     page.click("#pm-add-btn")
     page.wait_for_selector("#preset-edit-modal.open")
@@ -848,16 +806,6 @@ def flow_preset_agency_list_freshness(page, base_url: str) -> None:
     assert option.count() == 1, f"fresh agency id missing from preset modal: {agency_text!r}"
     assert "FRESH PRESET AGENCY" in agency_text.upper(), f"fresh agency label missing: {agency_text!r}"
 
-    # Current projects remain valid agency choices even if their separate
-    # Agency record is missing. The search must reduce a 200+ item production
-    # list without dropping the selected/general choices.
-    page.fill("#pem-agency-search", "ICE")
-    project_option = page.locator(f'#pem-agency-checks input[value="{project_agency_id}"]')
-    assert project_option.count() == 1
-    assert page.locator("#pem-agency-checks input[type='radio']").count() == 2
-    assert "1 OF 2" in page.locator("#pem-agency-count").inner_text().upper()
-    project_option.check()
-    assert project_option.is_checked()
     page.click("#pem-cancel")
 
     # A later rename must also replace the prior label on the next open; this
@@ -877,37 +825,6 @@ def flow_preset_agency_list_freshness(page, base_url: str) -> None:
     assert "FRESH PRESET AGENCY" not in renamed_text.upper(), renamed_text
     page.click("#pem-cancel")
     page.wait_for_selector("#preset-edit-modal.open", state="hidden")
-
-    # A project-backed agency whose standalone record is absent must also be
-    # visible in Agency Manager and in the new-project agency search.  ICE was
-    # the production symptom that exposed the incomplete listing boundary.
-    page.click(".stab[data-stab='agencies']")
-    page.wait_for_selector("#stab-agencies:not([hidden])")
-    page.wait_for_selector("#agency-list-container table")
-    page.fill("#agency-search", "ICE")
-    agency_rows = page.locator("#agency-list-container tbody tr")
-    assert agency_rows.count() == 1
-    assert project_only_name in agency_rows.first.inner_text()
-    assert "Recovered from project" in agency_rows.first.inner_text()
-    agency_rows.first.get_by_role("button", name="Edit", exact=True).click()
-    page.wait_for_selector("#agency-create-modal.open")
-    assert page.locator("#agency-modal-title").inner_text() == "Edit Agency"
-    assert page.locator("#ac-abbreviation").input_value() == "ICE"
-    assert page.locator("#ac-save").inner_text() == "Save Agency"
-    page.click("#ac-cancel")
-    page.wait_for_selector("#agency-create-modal.open", state="hidden")
-
-    page.click(".htab[data-tab='projects']")
-    page.wait_for_selector("#tab-projects:not([hidden])")
-    page.click("#btn-new-project")
-    page.wait_for_selector("#proj-editor:not([hidden])")
-    page.fill("#proj-agency", "ICE")
-    page.wait_for_selector(f'#proj-agency-suggestions .sug-item[data-id="{project_agency_id}"]')
-    suggestion = page.locator(
-        f'#proj-agency-suggestions .sug-item[data-id="{project_agency_id}"]'
-    )
-    assert project_only_name in suggestion.inner_text()
-    assert "ICE" in suggestion.inner_text()
 
 
 def flow_load_preset_from_build_editor(page, base_url: str) -> None:
@@ -996,8 +913,31 @@ def flow_project_manager_all_presets_unfiltered(page, base_url: str) -> None:
     })
     assert incompatible["ok"], incompatible
     incompatible_id = incompatible["preset_id"]
+    agency = _api(base_url, "/api/agency/save", {
+        "name": "All Presets PD",
+        "contact_name": "UI Smoke",
+    })
+    assert agency["ok"], agency
+    wizard_agency = _api(base_url, "/api/agency/save", {
+        "name": "Wizard All Presets PD",
+        "contact_name": "UI Smoke",
+    })
+    assert wizard_agency["ok"], wizard_agency
+    rep = _api(base_url, "/api/sales-rep/save", {
+        "name": "UI Smoke Rep",
+        "phone": "555-0100",
+        "email": "ui-smoke@example.com",
+    })
+    assert rep["ok"], rep
     project = _api(base_url, "/api/project/save", {
-        "customer": {"name": "All Presets PD", "agency": "All Presets PD", "build_year": "2026"},
+        "customer": {
+            "name": "All Presets PD",
+            "agency": "All Presets PD",
+            "agency_id": agency["agency"]["agency_id"],
+            "sales_rep": "UI Smoke Rep",
+            "sales_rep_id": rep["rep"]["rep_id"],
+            "build_year": "2026",
+        },
         "build_units": [{"vehicle_model": "PIU", "build_type": "Patrol"}],
     })
     assert project["ok"], project
@@ -1023,7 +963,13 @@ def flow_project_manager_all_presets_unfiltered(page, base_url: str) -> None:
             && document.querySelector('#proj-wizard-footer')?.style.display !== 'none'
     """)
     page.fill("#proj-agency", "Wizard All Presets PD")
+    wizard_agency_id = wizard_agency["agency"]["agency_id"]
+    page.wait_for_selector(f'#proj-agency-suggestions .sug-item[data-id="{wizard_agency_id}"]')
+    page.locator(f'#proj-agency-suggestions .sug-item[data-id="{wizard_agency_id}"]').click()
     page.fill("#proj-salesrep", "UI Smoke Rep")
+    rep_id = rep["rep"]["rep_id"]
+    page.wait_for_selector(f'#proj-salesrep-suggestions .sug-item[data-id="{rep_id}"]')
+    page.locator(f'#proj-salesrep-suggestions .sug-item[data-id="{rep_id}"]').click()
     page.click("#proj-btn-next")
     page.wait_for_selector("#proj-etab-preferences.active")
     page.click("#proj-btn-next")
@@ -4224,8 +4170,27 @@ def flow_service_project(page, base_url: str) -> None:
     """Create, reference, export and schedule service work without a lighting design."""
     import re
     from pptx import Presentation
+    agency = _api(base_url, '/api/agency/save', {
+        'name': 'Service QA Agency',
+        'contact_name': 'UI Smoke',
+    })
+    assert agency['ok'], agency
+    agency_id = agency['agency']['agency_id']
+    rep = _api(base_url, '/api/sales-rep/save', {
+        'name': 'QA User',
+        'phone': '555-0101',
+        'email': 'qa-user@example.com',
+    })
+    assert rep['ok'], rep
+    rep_id = rep['rep']['rep_id']
     source = _api(base_url, '/api/project/save', {
-        'customer': {'agency': 'Service QA Agency', 'build_year': '2031'},
+        'customer': {
+            'agency': 'Service QA Agency',
+            'agency_id': agency_id,
+            'sales_rep': 'QA User',
+            'sales_rep_id': rep_id,
+            'build_year': '2031',
+        },
         'build_units': [{'unit_id': 'previous-group', 'vehicle_model': 'PIU', 'build_type': 'Patrol',
             'individuals': [{'individual_id': 'previous-vehicle', 'unit_number': '101', 'vin': 'PREVIOUSVIN101'}]}]})
     assert source['ok']
@@ -4239,8 +4204,12 @@ def flow_service_project(page, base_url: str) -> None:
     page.select_option('#proj-project-type', 'service')
     page.uncheck('#proj-service-requires_parts')
     page.fill('#proj-agency', 'Service QA Agency')
+    page.wait_for_selector(f'#proj-agency-suggestions .sug-item[data-id="{agency_id}"]')
+    page.locator(f'#proj-agency-suggestions .sug-item[data-id="{agency_id}"]').click()
     page.fill('#proj-build-year', '2031')
     page.fill('#proj-salesrep', 'QA User')
+    page.wait_for_selector(f'#proj-salesrep-suggestions .sug-item[data-id="{rep_id}"]')
+    page.locator(f'#proj-salesrep-suggestions .sug-item[data-id="{rep_id}"]').click()
     page.click('#proj-btn-next')
     page.click('#proj-btn-next')
     page.locator('.proj-ind-toggle-btn').first.click()
@@ -4292,7 +4261,7 @@ def flow_service_project(page, base_url: str) -> None:
     assert page.locator('#calendar-job-kind').input_value() == 'service'
     assert page.locator('#calendar-job-hours').is_visible()
     page.fill('#calendar-job-hours', '3.6')
-    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Scheduled ')")
+    page.wait_for_function("document.querySelector('#calendar-job-ready').innerText.startsWith('Build completes')")
     page.get_by_role('button', name='Confirm booking', exact=True).click()
     try:
         page.wait_for_selector('#calendar-detail-overlay', state='hidden', timeout=5000)

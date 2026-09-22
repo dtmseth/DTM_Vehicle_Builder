@@ -98,10 +98,12 @@ def _inner_edge_lamp_count(housing_sku: dict) -> int:
 
     FST/RST models are deliberately generic (``Inner Edge FST`` / ``RST``),
     while the exact QB SKU tells us whether this is a 4-, 5-, 8-, 10-, or
-    12-light assembly.  QB's imported descriptions use both ``10-LT`` and
-    ``10 LAMP``, so inspect every user-facing source in priority order.
+    12-light assembly. QB's imported descriptions use both ``10-LT`` and
+    ``10 LAMP`` and can contain stale copy from a neighboring SKU. Prefer the
+    curated SKU label, which describes the selected physical assembly, before
+    falling back to QBO-owned sales prose.
     """
-    for field in ("qb_sales_description", "friendly_name", "description", "part_number"):
+    for field in ("friendly_name", "qb_sales_description", "description", "part_number"):
         match = _INNER_EDGE_LAMP_RE.search(str(housing_sku.get(field, "")))
         if match:
             return int(match.group(1))

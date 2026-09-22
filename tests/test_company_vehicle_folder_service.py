@@ -72,6 +72,7 @@ def test_company_vehicle_pdf_uses_canonical_tree_and_replaces_exact_old_item(tmp
         year_root,
         year_root + "/Reference Photos & Videos",
         vehicle,
+        vehicle + "/Completed Build Photos",
     ]
     assert gateway.uploads[0][0] == vehicle + "/2027 LC PIU - Patrol - Unit 12 - VIN 234567.pdf"
     assert gateway.deleted == ["old-company-pdf"]

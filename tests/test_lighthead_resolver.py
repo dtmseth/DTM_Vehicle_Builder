@@ -93,6 +93,13 @@ def test_fst_uses_its_selected_qb_sku_count_for_duo_heads(db):
 
 
 def test_rst_uses_selected_sku_count_for_trio_heads(db):
+    selected = next(
+        pn for pn in db["products"]["whelen_rst"]["part_numbers"]
+        if pn["part_number"] == "BSRW12"
+    )
+    assert "12-LT" in selected["friendly_name"]
+    assert "10 LAMP" in selected["qb_sales_description"]
+
     res = resolve_inner_edge(
         db, "whelen_rst", housing_part_number="BSRW12", mode="trio", secondary_color="amber",
     )

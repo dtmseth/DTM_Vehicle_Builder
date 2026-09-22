@@ -7,6 +7,7 @@ import pytest
 from pptx import Presentation
 
 from dtm_buildsheet.app.adapters.wiring import build_local_bundle
+from dtm_buildsheet.app.services import agency_service
 from dtm_buildsheet.app.services.calendar_service import CalendarService
 from dtm_buildsheet.app.services.finalization_service import handle_finalization_check
 from dtm_buildsheet.app.services.operations_read_service import OperationsReadService
@@ -24,11 +25,14 @@ ACTOR = OperationsActor('owner', 'Owner', frozenset({'AppAdmin'}))
 
 @pytest.fixture
 def paths(tmp_path):
-    for name in ('projects', 'drafts', 'config', 'output'):
+    for name in ('projects', 'drafts', 'config', 'output', 'agencies'):
         (tmp_path / name).mkdir()
-    return replace(AppPaths(), workspace_dir=tmp_path, workspace_projects_dir=tmp_path/'projects',
-                   workspace_drafts_dir=tmp_path/'drafts', workspace_config_dir=tmp_path/'config',
-                   workspace_output_dir=tmp_path/'output')
+    result = replace(AppPaths(), workspace_dir=tmp_path, workspace_projects_dir=tmp_path/'projects',
+                     workspace_drafts_dir=tmp_path/'drafts', workspace_config_dir=tmp_path/'config',
+                     workspace_output_dir=tmp_path/'output')
+    saved = agency_service.handle_save_agency({"agency_id": "agency", "name": "Agency"}, result)
+    assert saved["ok"]
+    return result
 
 
 def create(paths, kind='service', ident='service', **extra):
@@ -38,6 +42,13 @@ def create(paths, kind='service', ident='service', **extra):
     result=handle_save_project(body, paths)
     assert result['ok'], result
     return load_project(result['project_id'], paths)
+
+
+def revision(project):
+    return {
+        'expected_updated_at': project.updated_at,
+        'expected_record_revision': project.record_revision,
+    }
 
 
 def scheduler(paths, project):
@@ -78,15 +89,24 @@ def test_partial_edit_preserves_type_and_references_without_copying_parts(paths)
     service=create(paths)
     link={'project_id':source.project_id,'unit_id':'u-original','individual_id':'original'}
     units=asdict(service)['build_units'];units[0]['individuals'][0]['previous_build']=link
-    assert handle_save_project({'project_id':service.project_id,'build_units':units},paths)['ok']
-    assert handle_save_project({'project_id':service.project_id,'project_notes':'Replace one radio'},paths)['ok']
+    assert handle_save_project({
+        'project_id': service.project_id, 'build_units': units, **revision(service),
+    }, paths)['ok']
+    service = load_project(service.project_id, paths)
+    assert handle_save_project({
+        'project_id': service.project_id,
+        'project_notes': 'Replace one radio',
+        **revision(service),
+    }, paths)['ok']
     saved=load_project(service.project_id,paths)
     assert saved.project_type=='service' and saved.build_units[0].individuals[0].previous_build==link
     assert not saved.build_units[0].individuals[0].draft_id
     assert not saved.build_units[0].individuals[0].qb_estimate_id
     assert saved.build_units[0].individuals[0].individual_id=='service'
     units[0]['individuals'][0]['previous_build']['individual_id']='missing'
-    assert not handle_save_project({'project_id':service.project_id,'build_units':units},paths)['ok']
+    assert not handle_save_project({
+        'project_id': service.project_id, 'build_units': units, **revision(saved),
+    }, paths)['ok']
 
 
 def test_service_requires_acceptance_and_explicit_hours_but_no_design(paths):

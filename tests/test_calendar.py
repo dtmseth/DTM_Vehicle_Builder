@@ -554,8 +554,9 @@ eval(source.slice(source.indexOf('  async function stageDrop('),source.indexOf('
   const group=_operationsProjectGroupMarkup({projectId:'p',vehicles:[{vehicle_id:'v',project_type}]},false);
   assert(group.slice(0,group.indexOf('</summary>')).includes('project-type-badge">'+label+'</span>'));
  }
- assert(!ops.includes('operations-add-builder'));
- assert(!fs.readFileSync(process.argv[2].replace('/js/operations.js','/index.html'),'utf8').includes('operations-add-builder'));
+	 assert(ops.includes('$("operations-add-builder")?.addEventListener("click"'));
+	 assert(ops.includes('_operationsLoadProjectionPreview({ open: true })'));
+	 assert(fs.readFileSync(process.argv[2].replace('/js/operations.js','/index.html'),'utf8').includes('id="operations-add-builder"'));
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """
     root = Path(__file__).parents[1] / 'src/dtm_buildsheet/ui/js'

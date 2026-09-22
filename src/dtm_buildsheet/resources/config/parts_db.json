@@ -23043,8 +23043,8 @@
           "qb_item_id": "452",
           "qb_sku": "",
           "qb_unit_price": 339.0,
-          "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_inactive": true,
+          "qb_last_synced": "2026-09-22T15:17:35Z",
           "price_usd": 339,
           "vehicle_tags": [
             "any"
@@ -24053,9 +24053,9 @@
           "friendly_name": "INSTALLATION SUPPLIES TO INCLUDE CUSTOM MADE WIRING HARNESS, 100 AMP BREAKER, FUSE BLOCKS, RELAYS, AND OTHER MISC SHOP ITEMS",
           "qb_item_id": "6",
           "qb_sku": "",
-          "qb_unit_price": 450.0,
+          "qb_unit_price": 500.0,
           "qb_inactive": false,
-          "qb_last_synced": "2026-08-11T17:04:28Z",
+          "qb_last_synced": "2026-09-22T15:17:35Z",
           "price_usd": 450,
           "vehicle_tags": [
             "any"

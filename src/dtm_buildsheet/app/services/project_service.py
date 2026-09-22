@@ -727,7 +727,14 @@ def _canonicalize_customer_identities(
     from .sales_rep_service import resolve_rep_selection
 
     agency_id = str(customer.agency_id or "").strip()
-    agency = resolve_agency_selection(agency_id, customer.agency, paths)
+    agency = resolve_agency_selection(
+        agency_id,
+        customer.agency,
+        paths,
+        # UI saves explicitly require selected IDs. Legacy/API callers that do
+        # not set that guard may still repair one exact, unique agency name.
+        allow_missing_id=not required,
+    )
     if agency is None and (required or agency_id):
         return {
             "ok": False,
