@@ -122,7 +122,9 @@ jobs:
           # User trust opens an authentication dialog and hangs headless macOS
           # runners. Install the public certificate in the noninteractive
           # admin trust domain; the private key remains in our temp keychain.
-          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$KEYCHAIN_PATH" "$CERTIFICATE_PEM"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign \
+            -k /Library/Keychains/System.keychain \
+            "$CERTIFICATE_PEM"
           # Resolve the configured display name to the exact identity hash.
           # codesign can reject a quoted or otherwise ambiguous display name
           # even when security find-identity lists the expected certificate.
@@ -134,6 +136,15 @@ jobs:
             echo "::error::The configured macOS signing identity was not found in the imported keychain."
             exit 1
           fi
+          # Prove that codesign can access the private key before spending time
+          # building either installer.
+          SIGNING_PROBE="$RUNNER_TEMP/dtm-signing-probe"
+          cp /usr/bin/true "$SIGNING_PROBE"
+          codesign --force \
+            --keychain "$KEYCHAIN_PATH" \
+            --sign "$IDENTITY_HASH" \
+            "$SIGNING_PROBE"
+          codesign --verify --strict "$SIGNING_PROBE"
           echo "DTM_INTERNAL_CODESIGN_IDENTITY=$IDENTITY_HASH" >> "$GITHUB_ENV"
           echo "DTM_INTERNAL_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
