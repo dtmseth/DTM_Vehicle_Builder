@@ -182,6 +182,16 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
         existing_unit_number=str(d.get("existing_unit_number", "")),
         existing_vin=str(d.get("existing_vin", "")),
         notes=str(d.get("notes", "")),
+        notes_updated_at=str(d.get("notes_updated_at", "") or "").strip(),
+        notes_history=[
+            {
+                "notes": str(item.get("notes", "") or ""),
+                "saved_at": str(item.get("saved_at", "") or "").strip(),
+                "superseded_at": str(item.get("superseded_at", "") or "").strip(),
+            }
+            for item in d.get("notes_history", [])
+            if isinstance(item, dict) and str(item.get("notes", "") or "")
+        ] if isinstance(d.get("notes_history", []), list) else [],
         draft_id=str(draft_id) if draft_id is not None else None,
         output_path=str(d.get("output_path", "")),
         confirmed=bool(d.get("confirmed", False)),
@@ -307,6 +317,13 @@ def project_from_dict(d: dict) -> ProjectRecord:
         project_id=str(d["project_id"]),
         created_at=str(d.get("created_at", _utcnow())),
         updated_at=str(d.get("updated_at", _utcnow())),
+        record_revision=str(d.get("record_revision", "") or "").strip(),
+        record_parent_revision=str(d.get("record_parent_revision", "") or "").strip(),
+        record_ancestor_revisions=[
+            str(value).strip()
+            for value in d.get("record_ancestor_revisions", [])
+            if str(value or "").strip()
+        ] if isinstance(d.get("record_ancestor_revisions", []), list) else [],
         customer=customer,
         preferences=preferences_from_dict(d.get("preferences", {})),
         build_units=[build_unit_from_dict(u) for u in d.get("build_units", [])],
@@ -326,6 +343,16 @@ def project_from_dict(d: dict) -> ProjectRecord:
         reactivated_by=str(d.get("reactivated_by", "")),
         project_lifecycle_history=lifecycle_history,
         project_notes=str(d.get("project_notes", "") or "").strip(),
+        project_notes_updated_at=str(d.get("project_notes_updated_at", "") or "").strip(),
+        project_notes_history=[
+            {
+                "notes": str(item.get("notes", "") or ""),
+                "saved_at": str(item.get("saved_at", "") or "").strip(),
+                "superseded_at": str(item.get("superseded_at", "") or "").strip(),
+            }
+            for item in d.get("project_notes_history", [])
+            if isinstance(item, dict) and str(item.get("notes", "") or "")
+        ] if isinstance(d.get("project_notes_history", []), list) else [],
         quote_numbers=quote_numbers,
         project_quote_references=[
             quote_reference_from_dict(item)

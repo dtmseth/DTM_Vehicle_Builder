@@ -99,6 +99,9 @@ function _ptRenderEditTab(project, editable) {
       ${_ptProjectEstimateLinks(project)}`;
   } else {
     // ── Edit mode ──
+    _PT.editTabProjectNotesExpected = String(projectNotes);
+    _PT.editTabExpectedUpdatedAt = String(project.updated_at || "");
+    _PT.editTabExpectedRecordRevision = String(project.record_revision || "");
     _PT.editTabUnits = (project.build_units || []).map(u => ({
       uid:           u.unit_id,
       vehicle_model: u.vehicle_model || "",
@@ -107,7 +110,10 @@ function _ptRenderEditTab(project, editable) {
       preset_id:     u.preset_id     || "",
       draft_id:      u.draft_id      || null,
       output_path:   u.output_path   || "",
-      individuals:   (u.individuals  || []).map(ind => ({ ...ind })),
+      individuals:   (u.individuals  || []).map(ind => ({
+        ...ind,
+        _notesExpected: String(ind.notes || ""),
+      })),
       _indOpen:      false,
       _customBuildTypeOpen: _ptIsCustomBuildType(u.build_type || ""),
     }));
@@ -396,6 +402,8 @@ function _ptCollectEditForm() {
   _PT.editTabUnits.forEach(u => _ptEnsureIndividuals(u));
   return {
     project_id: _PT.viewProject?.project_id,
+    expected_updated_at: _PT.editTabExpectedUpdatedAt,
+    expected_record_revision: _PT.editTabExpectedRecordRevision,
     require_selected_identities: true,
     ..._ptTypePayload("et"),
     customer: {
@@ -407,6 +415,7 @@ function _ptCollectEditForm() {
     },
     preferences: _ptPreferencePayload("et"),
     project_notes: ($("et-project-notes")?.value || "").trim(),
+    project_notes_expected: _PT.editTabProjectNotesExpected,
     build_units: _PT.editTabUnits.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,
@@ -415,7 +424,10 @@ function _ptCollectEditForm() {
       preset_id:     u.preset_id,
       draft_id:      u.draft_id     || null,
       output_path:   u.output_path  || "",
-      individuals:   u.individuals.map(ind => ({ ...ind })),
+      individuals:   u.individuals.map(ind => ({
+        ...ind,
+        notes_expected: ind._notesExpected ?? String(ind.notes || ""),
+      })),
     })),
   };
 }

@@ -628,6 +628,16 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             report["company_vehicle_pdfs"] = company_vehicle_report
             company_vehicle_changed = bool(company_vehicle_report.get("succeeded"))
 
+            # Completed-build media is captured in Shop Documents and mirrored
+            # additively into the matching Company vehicle folder. Automatic
+            # sweeps are internally throttled; a foreground Force Sync runs one
+            # immediately.
+            from .services.completed_photo_mirror_service import schedule_completed_photo_mirror
+            completed_photo_report = schedule_completed_photo_mirror(
+                active_paths, force=not quiet,
+            )
+            report["completed_photo_mirror"] = completed_photo_report
+
             # Sweep processed entries out of /PendingChanges/ so it doesn't
             # accumulate forever. The pickup workflow reads from there but
             # doesn't delete; everything older than 12h is either applied

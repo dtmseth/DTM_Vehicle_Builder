@@ -13,6 +13,7 @@ from ...domain.operations_policy import Capability, has_capability
 from ...domain.operations_models import AcceptanceStatus, ProjectState
 from ...inputs.project_entry import list_projects
 from ..adapters.calendar_store import CalendarConflictError, CalendarStore
+from .operations_projection_service import current_operations_records
 from .operations_service import OperationsAuthorizationError, OperationsService
 
 
@@ -47,34 +48,20 @@ class CalendarService:
         if self.bundle.operations is None:
             raise ValueError("Operations connection is not configured")
         projects = list_projects(self.paths)
-        hidden = {p.project_id for p in projects if p.project_status == "inactive"}
-        completed = {p.project_id for p in projects if p.project_status == "completed"}
-        by_id = {p.project_id: p for p in projects}
-        current_vehicle_ids = {
-            project.project_id: {
-                unit.individual_id
-                for build in project.build_units
-                for unit in build.individuals
-            }
-            for project in projects
-        }
-        records = []
-        for record in self.bundle.operations.list_vehicles():
-            if record.project_id in hidden:
-                continue
-            if (
-                record.project_id in by_id
-                and record.vehicle_id not in current_vehicle_ids[record.project_id]
-            ):
-                continue
-            changes = {}
-            if record.project_id in completed:
-                changes["project_state"] = ProjectState.COMPLETED
-            if record.parts_status == "partially_received":
-                changes["parts_status"] = "ordered"
-            records.append(replace(record, **changes) if changes else record)
-        from ...domain.project_types import with_project_work
-        return [with_project_work(r, by_id.get(r.project_id)) for r in records]
+        records = current_operations_records(
+            self.bundle.operations.list_vehicles(), projects,
+        )
+        return [
+            replace(record, parts_status="ordered")
+            if record.parts_status == "partially_received"
+            else record
+            for record in records
+        ]
+
+    def with_current_builder_data(self, records):
+        """Refresh cached Calendar rows from the same projects the viewer uses."""
+
+        return current_operations_records(records, list_projects(self.paths))
 
     def view(self, actor):
         self._require(actor, Capability.OPERATIONS_VIEW)

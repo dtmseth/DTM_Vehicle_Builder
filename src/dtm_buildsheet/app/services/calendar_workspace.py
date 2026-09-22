@@ -144,6 +144,11 @@ class CalendarWorkspace:
             if spec.get('last_plan') or spec.get('released'):
                 for key, value in _dates(None if spec.get('released') else spec['last_plan']).items():
                     setattr(record, key, value)
+        # Calendar's durable outbox intentionally caches Operations rows, but
+        # Builder-owned names and vehicle facts must always come from the live
+        # project files.  This prevents the cache from resurrecting an old
+        # agency name while an upload or Operations projection is pending.
+        records = self.remote.with_current_builder_data(records)
         service._read = lambda: deepcopy(records)
         return service
 
@@ -201,6 +206,10 @@ class CalendarWorkspace:
             document, revision = service.store.read()
             state = deepcopy(self.state)
             state['document'], state['revision'] = document, revision
+            # Persist the read-time Builder join into this pending snapshot so
+            # a stale cache value cannot create a false provider conflict or
+            # be republished while the Calendar change is in flight.
+            state['records'] = [asdict(record) for record in service._read()]
             state['sequence'] += 1
             affected = {key for key in set(document.get('jobs', {})) | set(self.state['document'].get('jobs', {}))
                         if document.get('jobs', {}).get(key) != self.state['document'].get('jobs', {}).get(key)}

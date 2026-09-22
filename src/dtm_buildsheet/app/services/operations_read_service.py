@@ -37,25 +37,12 @@ class OperationsReadService:
     ) -> dict:
         self._require_view(actor)
 
-        from ...domain.project_types import with_project_work
-        by_id = {p.project_id: p for p in projects}
-        current_vehicle_ids = {
-            project.project_id: {
-                unit.individual_id
-                for build in project.build_units
-                for unit in build.individuals
-            }
-            for project in projects
-        }
+        from .operations_projection_service import current_operations_records
         records = sorted(
-            (
-                with_project_work(record, by_id.get(record.project_id))
-                for record in self._repository.list_vehicles()
-                if record.project_id not in hidden_project_ids
-                and (
-                    record.project_id not in by_id
-                    or record.vehicle_id in current_vehicle_ids[record.project_id]
-                )
+            current_operations_records(
+                self._repository.list_vehicles(),
+                projects,
+                hidden_project_ids=hidden_project_ids,
             ),
             key=_vehicle_sort_key,
         )

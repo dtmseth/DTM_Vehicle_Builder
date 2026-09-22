@@ -1,8 +1,9 @@
 """SharePoint mirror for project records and build drafts.
 
 Settings (Phase 2-β) flow through a PR-based review pipeline. Work data
-(projects + drafts) is per-user state with last-writer-wins semantics —
-no review, no PRs, just direct SharePoint reads and writes.
+(projects + drafts) uses direct SharePoint reads and writes. Project uploads
+are compare-and-set by record revision; a cross-device conflict preserves both
+copies locally instead of silently applying last-writer-wins.
 
 Two operations:
 - ``mirror_*_to_cloud``: called from save_project / save_draft right after
@@ -33,10 +34,12 @@ import logging
 import os
 import shutil
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 from ...paths import AppPaths
+from ...storage.local import LocalStorageProvider
 from ...storage.safety import validate_safe_id
 from ..adapters import wiring
 
@@ -65,6 +68,7 @@ _STATE_SCHEMA_VERSION = 3
 # replacement eTag. This must be distinct from an empty eTag, which some
 # StorageProvider implementations legitimately use for every remote record.
 _PENDING_UPLOAD_ETAG = "__dtm_pending_upload_confirmation__"
+_PROJECT_CONFLICT_FILENAME = ".sync_conflict.json"
 
 # A console setup (and a few other guided flows) can change a draft several
 # times in quick succession.  Serialize and coalesce background mirrors so an
@@ -226,11 +230,148 @@ def _mirror_to_cloud_unlocked(*, kind: str, record_id: str, local_path: Path, re
         return False
     try:
         content = local_path.read_text(encoding="utf-8")
-        storage.write_text(f"{remote_folder}/{record_id}.json", content)
+        remote_path = f"{remote_folder}/{record_id}.json"
+        if kind == "project" and _write_project_to_cloud_losslessly(
+            storage, remote_path, content, local_path
+        ):
+            return True
+        if kind == "project" and callable(getattr(storage, "write_versioned_text", None)):
+            return False
+        storage.write_text(remote_path, content)
         return True
     except Exception:
         logger.warning("Failed to mirror %s %s to cloud", kind, record_id)
         return False
+
+
+def _project_conflict_path(local_path: Path) -> Path:
+    return local_path.parent / _PROJECT_CONFLICT_FILENAME
+
+
+def _clear_project_conflict(local_path: Path) -> None:
+    try:
+        _project_conflict_path(local_path).unlink(missing_ok=True)
+    except OSError:
+        logger.warning("Could not clear resolved project sync-conflict marker for %s", local_path)
+
+
+def _preserve_project_sync_conflict(
+    local_path: Path,
+    *,
+    local_payload: bytes,
+    remote_payload: bytes,
+    local_revision: str,
+    local_parent_revision: str,
+    remote_revision: str,
+) -> None:
+    """Retain both sides and a durable marker; never silently pick a winner."""
+    _archive_local_project_payload(local_path, local_payload)
+    if remote_payload:
+        _archive_local_project_payload(local_path, remote_payload)
+    marker = {
+        "detected_at": datetime.now(timezone.utc).isoformat(),
+        "local_record_revision": local_revision,
+        "local_parent_revision": local_parent_revision,
+        "remote_record_revision": remote_revision,
+        "message": "Cloud project changed on another device; both versions were preserved.",
+    }
+    LocalStorageProvider().write_text(
+        str(_project_conflict_path(local_path)), json.dumps(marker, indent=2) + "\n"
+    )
+
+
+def _write_project_to_cloud_losslessly(
+    storage, remote_path: str, content: str, local_path: Path
+) -> bool:
+    """Conditionally upload a project, preserving both concurrent descendants."""
+    read_versioned = getattr(storage, "read_versioned_text", None)
+    write_versioned = getattr(storage, "write_versioned_text", None)
+    if not callable(read_versioned) or not callable(write_versioned):
+        return False
+    try:
+        local = json.loads(content)
+    except (json.JSONDecodeError, TypeError):
+        logger.error("Refusing to mirror malformed project JSON: %s", local_path)
+        return False
+    if not isinstance(local, dict):
+        logger.error("Refusing to mirror non-object project JSON: %s", local_path)
+        return False
+    local_revision = str(local.get("record_revision") or "")
+    local_parent_revision = str(local.get("record_parent_revision") or "")
+    local_ancestors = {
+        str(value).strip()
+        for value in local.get("record_ancestor_revisions", [])
+        if str(value or "").strip()
+    } if isinstance(local.get("record_ancestor_revisions", []), list) else set()
+    try:
+        remote_content, remote_etag = read_versioned(remote_path)
+    except FileNotFoundError:
+        remote_content, remote_etag = "", ""
+    except Exception:
+        logger.warning("Could not read a stable cloud revision for project %s", local_path.parent.name)
+        return False
+
+    remote: dict = {}
+    if remote_content:
+        try:
+            parsed = json.loads(remote_content)
+            remote = parsed if isinstance(parsed, dict) else {}
+        except (json.JSONDecodeError, TypeError):
+            logger.error("Cloud project is unreadable; refusing to replace %s", remote_path)
+            return False
+    remote_revision = str(remote.get("record_revision") or "")
+    if remote_content.encode("utf-8") == content.encode("utf-8"):
+        _clear_project_conflict(local_path)
+        return True
+    if (
+        remote_content
+        and remote_revision != local_parent_revision
+        and remote_revision not in local_ancestors
+    ):
+        _preserve_project_sync_conflict(
+            local_path,
+            local_payload=content.encode("utf-8"),
+            remote_payload=remote_content.encode("utf-8"),
+            local_revision=local_revision,
+            local_parent_revision=local_parent_revision,
+            remote_revision=remote_revision,
+        )
+        logger.error(
+            "Project %s changed on another device; upload blocked and both versions preserved",
+            local_path.parent.name,
+        )
+        return False
+    if remote_content and not local_revision:
+        logger.error("Project %s has no record revision; refusing unsafe cloud replacement", local_path.parent.name)
+        return False
+    try:
+        write_versioned(remote_path, content, remote_etag)
+    except Exception:
+        # Includes an ETag race between stable read and conditional write.
+        # Mark it durably before the inbound sync can replace the local copy.
+        # A retry re-reads the remote and either confirms this payload landed
+        # or preserves both concurrent descendants.
+        latest_content = ""
+        latest_revision = "unavailable"
+        try:
+            latest_content, _latest_etag = read_versioned(remote_path)
+            latest = json.loads(latest_content)
+            if isinstance(latest, dict):
+                latest_revision = str(latest.get("record_revision") or "")
+        except Exception:
+            pass
+        _preserve_project_sync_conflict(
+            local_path,
+            local_payload=content.encode("utf-8"),
+            remote_payload=latest_content.encode("utf-8"),
+            local_revision=local_revision,
+            local_parent_revision=local_parent_revision,
+            remote_revision=latest_revision,
+        )
+        logger.warning("Conditional cloud write failed for project %s", local_path.parent.name)
+        return False
+    _clear_project_conflict(local_path)
+    return True
 
 
 def delete_project_from_cloud(project_id: str) -> bool:
@@ -655,6 +796,186 @@ def _content_hash(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _parsed_record_time(value: object) -> datetime | None:
+    try:
+        if not isinstance(value, str) or not value.strip():
+            return None
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _merge_note_history(*values: object) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for value in values:
+        if not isinstance(value, list):
+            continue
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            notes = str(item.get("notes") or "")
+            if not notes:
+                continue
+            entry = {
+                "notes": notes,
+                "saved_at": str(item.get("saved_at") or ""),
+                "superseded_at": str(item.get("superseded_at") or ""),
+            }
+            key = (entry["notes"], entry["saved_at"], entry["superseded_at"])
+            if key not in seen:
+                result.append(entry)
+                seen.add(key)
+    return result
+
+
+def _merge_one_protected_note(
+    local: dict,
+    remote: dict,
+    *,
+    field: str,
+    updated_field: str,
+    history_field: str,
+    local_record_updated: str,
+    remote_record_updated: str,
+) -> None:
+    """Merge one note by field revision and retain whichever value loses."""
+    local_note = str(local.get(field) or "")
+    remote_note = str(remote.get(field) or "")
+    local_updated = str(local.get(updated_field) or "")
+    remote_updated = str(remote.get(updated_field) or "")
+    local_time = _parsed_record_time(local_updated)
+    remote_time = _parsed_record_time(remote_updated)
+
+    choose_local = False
+    if local_time and remote_time:
+        choose_local = local_time > remote_time
+        if local_time == remote_time and local_note != remote_note:
+            choose_local = bool(local_note and not remote_note)
+    elif local_time:
+        choose_local = True
+    elif remote_time:
+        choose_local = False
+    elif local_note and not remote_note:
+        # Legacy records had no per-note revision.  A non-empty value is the
+        # only conservative choice: a stale browser commonly sends blank,
+        # while an intentional clear in the new format has a revision marker.
+        choose_local = True
+    elif local_note and remote_note and local_note != remote_note:
+        local_record_time = _parsed_record_time(local_record_updated)
+        remote_record_time = _parsed_record_time(remote_record_updated)
+        choose_local = bool(
+            local_record_time and remote_record_time and local_record_time > remote_record_time
+        )
+
+    chosen_note = local_note if choose_local else remote_note
+    chosen_updated = local_updated if choose_local else remote_updated
+    chosen_record_updated = local_record_updated if choose_local else remote_record_updated
+    losing_note = remote_note if choose_local else local_note
+    losing_updated = remote_updated if choose_local else local_updated
+    losing_record_updated = remote_record_updated if choose_local else local_record_updated
+    history = _merge_note_history(local.get(history_field), remote.get(history_field))
+    if losing_note and losing_note != chosen_note:
+        history = _merge_note_history(history, [{
+            "notes": losing_note,
+            "saved_at": losing_updated or losing_record_updated,
+            "superseded_at": chosen_updated or chosen_record_updated,
+        }])
+
+    remote[field] = chosen_note
+    if chosen_updated or chosen_note:
+        remote[updated_field] = chosen_updated or chosen_record_updated
+    if history:
+        remote[history_field] = history
+
+
+def _merge_project_note_data(local_payload: bytes, remote_payload: bytes) -> bytes:
+    """Return remote project data with lossless note-field reconciliation.
+
+    Other project fields keep the existing cloud-authoritative behavior.  Unit
+    and project notes instead use their own revisions, with a conservative
+    non-empty preference for legacy records and append-only loser history.
+    """
+    try:
+        local = json.loads(local_payload.decode("utf-8"))
+        remote = json.loads(remote_payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
+        return remote_payload
+    if not isinstance(local, dict) or not isinstance(remote, dict):
+        return remote_payload
+    if str(local.get("project_id") or "") != str(remote.get("project_id") or ""):
+        return remote_payload
+    remote_before_merge = json.dumps(remote, sort_keys=True, separators=(",", ":"))
+    remote_revision = str(remote.get("record_revision") or "")
+    remote_ancestors = remote.get("record_ancestor_revisions", [])
+    if not isinstance(remote_ancestors, list):
+        remote_ancestors = []
+    local_record_updated = str(local.get("updated_at") or "")
+    remote_record_updated = str(remote.get("updated_at") or "")
+    _merge_one_protected_note(
+        local,
+        remote,
+        field="project_notes",
+        updated_field="project_notes_updated_at",
+        history_field="project_notes_history",
+        local_record_updated=local_record_updated,
+        remote_record_updated=remote_record_updated,
+    )
+    local_individuals = {
+        str(individual.get("individual_id") or ""): individual
+        for unit in local.get("build_units", [])
+        if isinstance(unit, dict)
+        for individual in unit.get("individuals", [])
+        if isinstance(individual, dict) and individual.get("individual_id")
+    }
+    for unit in remote.get("build_units", []):
+        if not isinstance(unit, dict):
+            continue
+        for individual in unit.get("individuals", []):
+            if not isinstance(individual, dict):
+                continue
+            local_individual = local_individuals.get(str(individual.get("individual_id") or ""))
+            if local_individual is None:
+                continue
+            _merge_one_protected_note(
+                local_individual,
+                individual,
+                field="notes",
+                updated_field="notes_updated_at",
+                history_field="notes_history",
+                local_record_updated=local_record_updated,
+                remote_record_updated=remote_record_updated,
+            )
+    if json.dumps(remote, sort_keys=True, separators=(",", ":")) != remote_before_merge:
+        remote["record_parent_revision"] = remote_revision
+        remote["record_ancestor_revisions"] = list(dict.fromkeys([
+            value
+            for value in [
+                remote_revision,
+                *remote_ancestors,
+            ]
+            if str(value or "").strip()
+        ]))[:64]
+        remote["record_revision"] = str(uuid.uuid4())
+    return (json.dumps(remote, indent=2) + "\n").encode("utf-8")
+
+
+def _archive_local_project_payload(local_path: Path, payload: bytes) -> None:
+    """Snapshot a local project before cloud reconciliation replaces it."""
+    try:
+        data = json.loads(payload.decode("utf-8"))
+        timestamp = str(data.get("updated_at") or "unknown").replace(":", "-")
+    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+        timestamp = "unknown"
+    digest = hashlib.sha256(payload).hexdigest()[:16]
+    archive = local_path.parent / ".history" / f"{timestamp}-{digest}.json"
+    if not archive.exists():
+        LocalStorageProvider().write_bytes(str(archive), payload)
+
+
 def _record_updated_at(payload: bytes) -> datetime | None:
     """Read a record's UTC update marker without trusting filesystem clocks.
 
@@ -823,7 +1144,21 @@ def _reconcile_records(
             local_payload = local_path.read_bytes()
             local_hash = _content_hash(local_payload)
             if local_payload == payload:
+                if remote_folder == PROJECTS_REMOTE_FOLDER:
+                    _clear_project_conflict(local_path)
                 current_hashes[record_id] = local_hash
+                continue
+            if (
+                remote_folder == PROJECTS_REMOTE_FOLDER
+                and _project_conflict_path(local_path).exists()
+            ):
+                # A conditional upload already proved these are concurrent
+                # descendants. Keep the local copy visible and retain the
+                # remote copy in history until the conflict is resolved.
+                _archive_local_project_payload(local_path, payload)
+                if record_id in last_hashes:
+                    current_hashes[record_id] = last_hashes[record_id]
+                logger.error("Preserving unresolved project sync conflict for %s", record_id)
                 continue
             if prior_etag == _PENDING_UPLOAD_ETAG and record_id in last_hashes:
                 # We successfully wrote this record on the previous pass, but
@@ -863,8 +1198,33 @@ def _reconcile_records(
                     # of assuming this copy already reached SharePoint.
                     remote_etags[record_id] = entry.etag
                 continue
+            if remote_folder == PROJECTS_REMOTE_FOLDER:
+                merged_payload = _merge_project_note_data(local_payload, payload)
+                if merged_payload != payload:
+                    # Keep cloud's current project structure and merge only the
+                    # protected note fields/history onto it.  Persist locally
+                    # first so a failed upload is retried through the ordinary
+                    # local-hash path instead of losing the merged copy.
+                    _archive_local_project_payload(local_path, local_payload)
+                    LocalStorageProvider().write_bytes(str(local_path), merged_payload)
+                    merged_hash = _content_hash(merged_payload)
+                    if mirror_to_cloud(record_id, local_path):
+                        remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                        current_hashes[record_id] = merged_hash
+                        uploaded += 1
+                    else:
+                        remote_etags[record_id] = prior_etag or entry.etag
+                        if record_id in last_hashes:
+                            current_hashes[record_id] = last_hashes[record_id]
+                    logger.warning(
+                        "Reconciled protected project notes for %s instead of replacing them",
+                        record_id,
+                    )
+                    continue
         try:
-            local_path.write_bytes(payload)
+            if remote_folder == PROJECTS_REMOTE_FOLDER and local_path.exists():
+                _archive_local_project_payload(local_path, local_path.read_bytes())
+            LocalStorageProvider().write_bytes(str(local_path), payload)
             current_hashes[record_id] = _content_hash(payload)
             updated += 1
         except OSError:

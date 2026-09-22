@@ -17,6 +17,7 @@ from ...domain.vehicle_naming import (
 )
 from ...inputs.project_drafts import DraftPart, draft_part_from_payload, new_draft, save_draft
 from ...inputs.project_entry import (
+    ProjectWriteConflict,
     delete_project,
     list_projects,
     load_project,
@@ -69,6 +70,8 @@ _QUOTE_REFERENCE_QB_FIELDS = (
     "txn_date", "checked_at",
 )
 
+_NOTE_EXPECTED_MISSING = object()
+
 
 def _unit_notes_rows(notes: str) -> list[str]:
     """Store unit/build notes as one value so embedded line breaks survive."""
@@ -91,6 +94,162 @@ def _recover_unit_note_breaks(notes: str, draft_rows: object) -> str:
         return recovered
     flattened = lambda text: " ".join(str(text).split()).casefold()
     return recovered if flattened(value) == flattened(" ".join(rows)) else value
+
+
+def _append_note_history(
+    history: list[dict[str, str]],
+    notes: str,
+    *,
+    saved_at: str,
+    superseded_at: str,
+) -> list[dict[str, str]]:
+    """Retain a prior non-empty note once, without discarding older values."""
+    if not notes:
+        return list(history)
+    entry = {
+        "notes": notes,
+        "saved_at": str(saved_at or ""),
+        "superseded_at": superseded_at,
+    }
+    result = [dict(item) for item in history]
+    if not any(
+        item.get("notes") == notes and item.get("saved_at", "") == entry["saved_at"]
+        for item in result
+    ):
+        result.append(entry)
+    return result
+
+
+def _note_conflict(
+    *,
+    error_code: str,
+    error: str,
+    current_notes: str,
+    unit_id: str = "",
+    individual_id: str = "",
+) -> dict:
+    result = {
+        "ok": False,
+        "error_code": error_code,
+        "error": error,
+        "current_notes": current_notes,
+    }
+    if unit_id:
+        result["unit_id"] = unit_id
+    if individual_id:
+        result["individual_id"] = individual_id
+    return result
+
+
+def _prepare_individual_note_updates(
+    existing_units,
+    incoming_units,
+    raw_units,
+    *,
+    changed_at: str,
+) -> dict | None:
+    """Apply only explicit, compare-and-set note edits to incoming units.
+
+    Full project payloads are commonly held in the browser for several
+    minutes.  Without the expected value, an old blank can erase a note that
+    was saved through the focused notes endpoint in the meantime.
+    """
+    existing = {
+        individual.individual_id: (unit.unit_id, individual)
+        for unit in existing_units
+        for individual in unit.individuals
+    }
+    raw = {
+        str(individual.get("individual_id") or ""): individual
+        for unit in (raw_units or [])
+        if isinstance(unit, dict)
+        for individual in (unit.get("individuals") or [])
+        if isinstance(individual, dict) and individual.get("individual_id")
+    }
+    for incoming_unit in incoming_units:
+        for incoming in incoming_unit.individuals:
+            matched = existing.get(incoming.individual_id)
+            if matched is None:
+                if incoming.notes and not incoming.notes_updated_at:
+                    incoming.notes_updated_at = changed_at
+                continue
+            existing_unit_id, old = matched
+            incoming.notes_updated_at = old.notes_updated_at
+            incoming.notes_history = [dict(item) for item in old.notes_history]
+            if incoming.notes == old.notes:
+                continue
+            raw_individual = raw.get(incoming.individual_id, {})
+            expected = raw_individual.get("notes_expected", _NOTE_EXPECTED_MISSING)
+            if expected is _NOTE_EXPECTED_MISSING:
+                if old.notes:
+                    return _note_conflict(
+                        error_code="unit_notes_precondition_required",
+                        error=(
+                            "Build notes changed since this screen was loaded. "
+                            "Refresh the project before editing them."
+                        ),
+                        current_notes=old.notes,
+                        unit_id=existing_unit_id,
+                        individual_id=incoming.individual_id,
+                    )
+                # Adding the first note cannot erase another saved value.
+            elif str(expected) != old.notes:
+                return _note_conflict(
+                    error_code="stale_unit_notes",
+                    error=(
+                        "Build notes were updated elsewhere. Your other project changes were not "
+                        "saved; refresh and review the current note first."
+                    ),
+                    current_notes=old.notes,
+                    unit_id=existing_unit_id,
+                    individual_id=incoming.individual_id,
+                )
+            incoming.notes_history = _append_note_history(
+                old.notes_history,
+                old.notes,
+                saved_at=old.notes_updated_at or "",
+                superseded_at=changed_at,
+            )
+            incoming.notes_updated_at = changed_at
+    return None
+
+
+def _prepare_project_note_update(project, body: dict, *, changed_at: str) -> dict | None:
+    if "project_notes" not in body:
+        return None
+    incoming = str(body.get("project_notes") or "").strip()
+    current = project.project_notes
+    if incoming == current:
+        return None
+    expected = body.get("project_notes_expected", _NOTE_EXPECTED_MISSING)
+    if expected is _NOTE_EXPECTED_MISSING:
+        if current:
+            return _note_conflict(
+                error_code="project_notes_precondition_required",
+                error=(
+                    "Project notes changed since this screen was loaded. "
+                    "Refresh the project before editing them."
+                ),
+                current_notes=current,
+            )
+    elif str(expected) != current:
+        return _note_conflict(
+            error_code="stale_project_notes",
+            error=(
+                "Project notes were updated elsewhere. Your other project changes were not saved; "
+                "refresh and review the current note first."
+            ),
+            current_notes=current,
+        )
+    project.project_notes_history = _append_note_history(
+        project.project_notes_history,
+        current,
+        saved_at=project.project_notes_updated_at or "",
+        superseded_at=changed_at,
+    )
+    project.project_notes = incoming
+    project.project_notes_updated_at = changed_at
+    return None
 
 
 def _clear_quote_reference_qb_fields(reference) -> None:
@@ -124,6 +283,56 @@ def _align_primary_estimate_reference(individual) -> None:
     if not individual.qb_estimate_id:
         individual.qb_estimate_snapshot = {}
         individual.qb_estimate_snapshot_at = ""
+
+
+def _canonical_actual_vin(value: str) -> str:
+    """Return a comparable full VIN, ignoring display separators.
+
+    Short free-text placeholders remain allowed on multiple vehicles.  A full
+    17-character identifier is the point where the value is specific enough
+    to protect as one physical vehicle within the project.
+    """
+    normalized = "".join(
+        character for character in str(value or "").upper()
+        if character.isalnum()
+    )
+    return normalized if len(normalized) == 17 else ""
+
+
+def _duplicate_project_vin(units) -> str:
+    seen: set[str] = set()
+    for unit in units:
+        for individual in unit.individuals:
+            vin = _canonical_actual_vin(individual.vin)
+            if not vin:
+                continue
+            if vin in seen:
+                return vin
+            seen.add(vin)
+    return ""
+
+
+def _reassigned_project_vin(existing_units, incoming_units) -> str:
+    """Detect a physical vehicle replaced with a newly generated identity.
+
+    Folder ownership follows ``individual_id``.  Removing a vehicle and adding
+    the same VIN back with a fresh ID would therefore orphan its old folders
+    and provision a second pair.  Require callers to edit/move the existing
+    vehicle so its durable folder IDs move with it.
+    """
+    existing_ids_by_vin: dict[str, set[str]] = {}
+    for unit in existing_units:
+        for individual in unit.individuals:
+            vin = _canonical_actual_vin(individual.vin)
+            if vin:
+                existing_ids_by_vin.setdefault(vin, set()).add(individual.individual_id)
+    for unit in incoming_units:
+        for individual in unit.individuals:
+            vin = _canonical_actual_vin(individual.vin)
+            existing_ids = existing_ids_by_vin.get(vin, set())
+            if existing_ids and individual.individual_id not in existing_ids:
+                return vin
+    return ""
 
 
 def _preserve_server_owned_build_state(
@@ -278,8 +487,67 @@ def handle_save_individual_notes(
     if individual.status == "finalized":
         return {"ok": False, "error": "Reopen this finalized build before editing its notes"}
     notes = str(body.get("notes") or "").strip()
-    individual.notes = notes
-    save_project(project, paths)
+    expected = body.get("expected_notes", _NOTE_EXPECTED_MISSING)
+    if notes != individual.notes:
+        if expected is _NOTE_EXPECTED_MISSING and individual.notes:
+            return _note_conflict(
+                error_code="unit_notes_precondition_required",
+                error=(
+                    "Build notes changed since this screen was loaded. "
+                    "Refresh the build before editing them."
+                ),
+                current_notes=individual.notes,
+                unit_id=unit_id,
+                individual_id=individual_id,
+            )
+        if expected is not _NOTE_EXPECTED_MISSING and str(expected) != individual.notes:
+            return _note_conflict(
+                error_code="stale_unit_notes",
+                error=(
+                    "Build notes were updated elsewhere. Refresh and review the current note "
+                    "before saving again."
+                ),
+                current_notes=individual.notes,
+                unit_id=unit_id,
+                individual_id=individual_id,
+            )
+        changed_at = datetime.now(timezone.utc).isoformat()
+        individual.notes_history = _append_note_history(
+            individual.notes_history,
+            individual.notes,
+            saved_at=individual.notes_updated_at or "",
+            superseded_at=changed_at,
+        )
+        individual.notes = notes
+        individual.notes_updated_at = changed_at
+    try:
+        save_project(project, paths)
+    except ProjectWriteConflict:
+        try:
+            current = load_project(project_id, paths)
+            current_unit = next(
+                (item for item in current.build_units if item.unit_id == unit_id), None,
+            )
+            current_individual = next(
+                (
+                    item for item in (current_unit.individuals if current_unit else [])
+                    if item.individual_id == individual_id
+                ),
+                None,
+            )
+            current_notes = current_individual.notes if current_individual else ""
+        except (FileNotFoundError, ValueError):
+            current_notes = ""
+        return _note_conflict(
+            error_code="stale_unit_notes",
+            error=(
+                "This project changed while the note was being saved. No newer data was "
+                "overwritten; refresh and review the current note."
+            ),
+            current_notes=current_notes,
+            unit_id=unit_id,
+            individual_id=individual_id,
+        )
     if individual.draft_id:
         try:
             draft = load_draft_for_request(individual.draft_id, paths)
@@ -302,6 +570,7 @@ def handle_save_individual_notes(
         "unit_id": unit_id,
         "individual_id": individual_id,
         "notes": notes,
+        "notes_updated_at": individual.notes_updated_at,
     }
 
 
@@ -689,6 +958,7 @@ def _resolve_completed_project_conflict(
 
 def handle_save_project(body: dict, paths: AppPaths) -> dict:
     try:
+        note_changed_at = datetime.now(timezone.utc).isoformat()
         project_id = body.get("project_id") or None
         is_new_project = not project_id
         if project_id:
@@ -699,6 +969,56 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 is_new_project = True
         else:
             project = new_project()
+
+        if not is_new_project:
+            expected_record_revision = str(
+                body.get("expected_record_revision") or body.get("record_revision") or ""
+            ).strip()
+            if project.record_revision:
+                if not expected_record_revision:
+                    return {
+                        "ok": False,
+                        "error_code": "project_revision_required",
+                        "error": (
+                            "This project must be refreshed before it can be saved. "
+                            "No changes were written."
+                        ),
+                        "current_record_revision": project.record_revision,
+                    }
+                if expected_record_revision != project.record_revision:
+                    return {
+                        "ok": False,
+                        "error_code": "stale_project_revision",
+                        "error": (
+                            "This project was updated elsewhere after this screen was loaded. "
+                            "No changes were written; refresh and review the latest version."
+                        ),
+                        "current_record_revision": project.record_revision,
+                        "current_updated_at": project.updated_at,
+                    }
+            expected_updated_at = str(
+                body.get("expected_updated_at") or body.get("updated_at") or ""
+            ).strip()
+            if not expected_updated_at:
+                return {
+                    "ok": False,
+                    "error_code": "project_revision_required",
+                    "error": (
+                        "This project must be refreshed before it can be saved. "
+                        "No changes were written."
+                    ),
+                    "current_updated_at": project.updated_at,
+                }
+            if expected_updated_at != project.updated_at:
+                return {
+                    "ok": False,
+                    "error_code": "stale_project_revision",
+                    "error": (
+                        "This project was updated elsewhere after this screen was loaded. "
+                        "No changes were written; refresh and review the latest version."
+                    ),
+                    "current_updated_at": project.updated_at,
+                }
 
         from ...domain.project_types import project_type, service_details
         old_type = project.project_type
@@ -776,15 +1096,51 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         if "build_units" in body:
             incoming_units = [build_unit_from_dict(u) for u in body["build_units"]]
             if not is_new_project:
+                reassigned_vin = _reassigned_project_vin(
+                    project.build_units, incoming_units,
+                )
+                if reassigned_vin:
+                    return {
+                        "ok": False,
+                        "error_code": "vehicle_vin_identity_conflict",
+                        "error": (
+                            f"VIN {reassigned_vin} already belongs to an existing vehicle in "
+                            "this project. Edit or move that vehicle instead of deleting and "
+                            "adding it again."
+                        ),
+                        "vin": reassigned_vin,
+                    }
+                note_error = _prepare_individual_note_updates(
+                    project.build_units,
+                    incoming_units,
+                    body["build_units"],
+                    changed_at=note_changed_at,
+                )
+                if note_error is not None:
+                    return note_error
                 _preserve_server_owned_build_state(
                     project.build_units, incoming_units, body["build_units"],
                 )
             else:
                 for incoming_unit in incoming_units:
                     for incoming_individual in incoming_unit.individuals:
+                        if incoming_individual.notes and not incoming_individual.notes_updated_at:
+                            incoming_individual.notes_updated_at = note_changed_at
                         for reference in incoming_individual.quote_references:
                             _clear_quote_reference_qb_fields(reference)
             project.build_units = incoming_units
+
+        duplicate_vin = _duplicate_project_vin(project.build_units)
+        if duplicate_vin:
+            return {
+                "ok": False,
+                "error_code": "duplicate_vehicle_vin",
+                "error": (
+                    f"VIN {duplicate_vin} is already assigned to another vehicle in this "
+                    "project. Edit or move the existing vehicle instead of adding it again."
+                ),
+                "vin": duplicate_vin,
+            }
 
         for unit in project.build_units:
             for individual in unit.individuals:
@@ -807,8 +1163,13 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 if source.project_type != 'build' or not any(u.unit_id == link['unit_id'] and any(i.individual_id == link['individual_id'] for i in u.individuals) for u in source.build_units):
                     raise ValueError('The selected previous build vehicle is unavailable')
 
-        if "project_notes" in body:
-            project.project_notes = str(body.get("project_notes") or "").strip()
+        project_note_error = _prepare_project_note_update(
+            project,
+            body,
+            changed_at=note_changed_at,
+        )
+        if project_note_error is not None:
+            return project_note_error
 
         from .vehicle_folder_provisioning_service import (
             mark_project_folder_provisioning_pending,
@@ -906,7 +1267,18 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             "ok": True,
             "project_id": project.project_id,
             "path": str(path),
+            "updated_at": project.updated_at,
+            "record_revision": project.record_revision,
             "folder_provisioning_scheduled": folder_provisioning_scheduled,
+        }
+    except ProjectWriteConflict:
+        return {
+            "ok": False,
+            "error_code": "stale_project_revision",
+            "error": (
+                "This project changed while it was being saved. No newer data was overwritten; "
+                "refresh and try again."
+            ),
         }
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}

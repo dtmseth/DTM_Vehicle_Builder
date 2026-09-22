@@ -8,9 +8,11 @@ polluting the flat projects list.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import shutil
+import threading
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -23,6 +25,11 @@ from ..storage.local import LocalStorageProvider
 from ..storage.safety import assert_within_root, validate_safe_id
 
 _log = logging.getLogger(__name__)
+_project_save_lock = threading.RLock()
+
+
+class ProjectWriteConflict(RuntimeError):
+    """The caller loaded an older project revision than the one on disk."""
 
 
 def _utcnow() -> str:
@@ -57,6 +64,9 @@ def new_project(
         project_id=pid,
         created_at=now,
         updated_at=now,
+        record_revision=str(uuid.uuid4()),
+        record_parent_revision="",
+        record_ancestor_revisions=[],
         customer=customer or CustomerInfo(),
         preferences=preferences or EquipmentPreferences(),
         build_units=build_units or [],
@@ -87,6 +97,41 @@ def _project_from_dict_resolved(data: dict, paths: AppPaths) -> ProjectRecord:
     return project
 
 
+def _archive_current_project(path: Path, payload: bytes) -> None:
+    """Keep a deduplicated local copy before replacing a project record."""
+    try:
+        data = json.loads(payload.decode("utf-8"))
+        timestamp = str(data.get("updated_at") or "unknown").replace(":", "-")
+    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+        timestamp = "unknown"
+    digest = hashlib.sha256(payload).hexdigest()[:16]
+    archive = path.parent / ".history" / f"{timestamp}-{digest}.json"
+    if not archive.exists():
+        LocalStorageProvider().write_bytes(str(archive), payload)
+
+
+def _assert_current_revision(project: ProjectRecord, path: Path) -> bytes | None:
+    if not path.exists():
+        return None
+    current_payload = path.read_bytes()
+    try:
+        current = json.loads(current_payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ProjectWriteConflict("Current project record is unreadable; refusing to replace it") from exc
+    current_revision = str(current.get("record_revision") or "")
+    if current_revision and project.record_revision != current_revision:
+        raise ProjectWriteConflict(
+            "Project changed after it was loaded; refusing to overwrite the newer record"
+        )
+    if not current_revision:
+        current_updated = str(current.get("updated_at") or "")
+        if current_updated and project.updated_at != current_updated:
+            raise ProjectWriteConflict(
+                "Project changed after it was loaded; refusing to overwrite the newer record"
+            )
+    return current_payload
+
+
 def save_project(project: ProjectRecord, paths: AppPaths) -> Path:
     """Persist *project* to disk and update its updated_at timestamp.
 
@@ -95,10 +140,20 @@ def save_project(project: ProjectRecord, paths: AppPaths) -> Path:
     is logged but doesn't fail the save — the periodic sync loop retries.
     """
     validate_safe_id(project.project_id, label="project_id")
-    project.updated_at = _utcnow()
     path = _project_path(project.project_id, paths)
-    data = _project_to_dict_portable(project, paths)
-    LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
+    with _project_save_lock:
+        current_payload = _assert_current_revision(project, path)
+        if current_payload is not None:
+            _archive_current_project(path, current_payload)
+        prior_revision = project.record_revision
+        project.record_parent_revision = prior_revision
+        project.record_ancestor_revisions = list(dict.fromkeys(
+            [value for value in [prior_revision, *project.record_ancestor_revisions] if value]
+        ))[:64]
+        project.updated_at = _utcnow()
+        project.record_revision = str(uuid.uuid4())
+        data = _project_to_dict_portable(project, paths)
+        LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
     # Deferred import to avoid a circular dependency at module import time
     # (services → inputs is the established direction; this module is in
     # inputs and shared_work_service is in services).
@@ -119,8 +174,18 @@ def save_project_operational_state(project: ProjectRecord, paths: AppPaths) -> P
     """
     validate_safe_id(project.project_id, label="project_id")
     path = _project_path(project.project_id, paths)
-    data = _project_to_dict_portable(project, paths)
-    LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
+    with _project_save_lock:
+        current_payload = _assert_current_revision(project, path)
+        if current_payload is not None:
+            _archive_current_project(path, current_payload)
+        prior_revision = project.record_revision
+        project.record_parent_revision = prior_revision
+        project.record_ancestor_revisions = list(dict.fromkeys(
+            [value for value in [prior_revision, *project.record_ancestor_revisions] if value]
+        ))[:64]
+        project.record_revision = str(uuid.uuid4())
+        data = _project_to_dict_portable(project, paths)
+        LocalStorageProvider().write_text(str(path), json.dumps(data, indent=2) + "\n")
     from ..app.services.shared_work_service import mirror_project_to_cloud_in_background
     mirror_project_to_cloud_in_background(project.project_id, path)
     return path

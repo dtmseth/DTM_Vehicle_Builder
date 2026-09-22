@@ -106,6 +106,11 @@ class IndividualUnit:
     existing_unit_number: str = ""
     existing_vin: str = ""
     notes: str = ""
+    # Build notes are high-value user data.  Keep their own revision marker
+    # and append-only prior-value history so stale whole-project writes can be
+    # distinguished from an intentional edit or clear.
+    notes_updated_at: str = ""
+    notes_history: list[dict[str, str]] = field(default_factory=list)
     previous_build: dict[str, str] = field(default_factory=dict)
     draft_id: str | None = None
     output_path: str = ""
@@ -205,6 +210,15 @@ class ProjectRecord:
     project_id: str
     created_at: str
     updated_at: str
+    # Changes on every persisted write, including operational metadata writes
+    # that deliberately do not advance ``updated_at``.
+    record_revision: str = ""
+    # Revision this payload was derived from. Cloud mirrors compare it with
+    # SharePoint before replacing a record, preventing cross-device overwrite.
+    record_parent_revision: str = ""
+    # Bounded ancestry lets a coalesced background upload safely skip several
+    # local saves while still proving the cloud revision is its ancestor.
+    record_ancestor_revisions: list[str] = field(default_factory=list)
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
@@ -226,6 +240,8 @@ class ProjectRecord:
     # project (and therefore this project build year).  Unit-specific final
     # page notes remain on the BuildDraft instead of being duplicated here.
     project_notes: str = ""
+    project_notes_updated_at: str = ""
+    project_notes_history: list[dict[str, str]] = field(default_factory=list)
     # A project is one agency build year. Quote/reference numbers are metadata,
     # not project identity; retain the legacy singular CustomerInfo field while
     # allowing every related quote to remain discoverable on the merged record.

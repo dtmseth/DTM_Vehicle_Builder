@@ -848,6 +848,39 @@ def test_four_custom_heads_keep_duo_sides_and_head_order(config):
     assert all(instance.asset_path for instance in instances)
 
 
+def test_custom_vxe_pair_at_tail_lights_keeps_per_head_assets(config):
+    """Fergus A14640 regression: named locations retain custom head palettes."""
+    part = PartInput(
+        name="Rear Warning 3", part_type="warning_light",
+        part_number="VXE Warning Light", location="TAIL LIGHTS", quantity=2,
+        raw_color="Red/White, Blue/White", line_id="fergus-tail-vxe",
+        components=[
+            {"part_number": "VXTD", "color": "Red/White", "quantity": 1},
+            {"part_number": "VXTE", "color": "Blue/White", "quantity": 1},
+        ],
+        picker_config={
+            "mode": "custom", "colorsPerHead": "duo",
+            "custom": [["red", "white"], ["blue", "white"]],
+            "count": 2,
+            "skuChoices": {"head_0": "VXTD", "head_1": "VXTE"},
+        },
+    )
+    plan = build_plan(ProjectInput(
+        info={"VehicleType": "PIU", "ProjectID": "FERGUS-A14640"},
+        parts=[part], notes={},
+    ), config)
+
+    placement = plan.planned_parts[0].placements[0]
+    assert placement.view == "rear"
+    assert placement.location_key == "TAIL LIGHTS"
+    assert [instance.color_token for instance in placement.instances] == [
+        "red-white", "blue-white",
+    ]
+    assert [instance.asset_path for instance in placement.instances] == [
+        "lights/sm_red-white_h.png", "lights/sm_blue-white_h.png",
+    ]
+
+
 def test_siren_behind_grille_has_concealed_mount_callout(config):
     part = PartInput(
         name="Siren Speaker", part_type="siren_speaker", part_number="SA315P",

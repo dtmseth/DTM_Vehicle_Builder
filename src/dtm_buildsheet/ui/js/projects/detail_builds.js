@@ -84,22 +84,25 @@ function _ptPhotoOptionsMarkup(project, projectId, unitId, individualId) {
   const publication = String(holder?.shop_publication_status || "not_published");
   const companyVehiclePath = String(holder?.company_vehicle_folder_path || "").trim();
   const companyReferencePath = companyVehiclePath ? `${companyVehiclePath}/Build Reference Photos` : "";
+  const companyCompletedPath = companyVehiclePath ? `${companyVehiclePath}/Completed Build Photos` : "";
   const shopVehiclePath = String(holder?.shop_vehicle_folder_path || "").trim();
   const publicationNote = publication === "reference_review_required" ? "Reference photos changed. Review them and export/update the PDF before approving an updated Shop package."
     : publication === "published" ? "Final PDF and references are published to the Shop folder."
     : ["pending", "publishing"].includes(publication) ? "Shop publication is pending."
       : ["error", "withdrawal_error"].includes(publication) ? "Shop publication needs a cloud-sync retry."
-        : "Completed Build Photos are kept in the unit's Shop folder.";
+        : "Completed Build Photos are mirrored from Shop Documents to Company Files.";
   return `${_ptCompletedPhotoButtonMarkup(projectId, unitId, individualId)}
     <details class="proj-build-action-menu proj-build-folder-menu">
     <summary class="btn btn-secondary btn-sm">Folder options</summary>
     <div class="proj-build-action-menu-items">
       ${companyReferencePath ? `<button type="button" data-library-target="company" data-folder-path="${esc(companyReferencePath)}"
-        onclick="PT_openCloudFolder(this)">Open Company reference folder</button>` : ""}
+        onclick="PT_openCloudFolder(this)">Open Company reference folder</button>
+      <button type="button" data-library-target="company" data-folder-path="${esc(companyCompletedPath)}"
+        onclick="PT_openCloudFolder(this)">Open Company completed photos</button>` : ""}
       ${shopVehiclePath ? `<button type="button" data-library-target="shop" data-folder-path="${esc(`${shopVehiclePath}/Build Reference Photos`)}"
         onclick="PT_openCloudFolder(this)">Open reference photos folder</button>
       <button type="button" data-library-target="shop" data-folder-path="${esc(`${shopVehiclePath}/Completed Build Photos`)}"
-        onclick="PT_openCloudFolder(this)">Open completed photos folder</button>` :
+        onclick="PT_openCloudFolder(this)">Open Shop completed photos</button>` :
         `<span class="proj-build-action-menu-note">Photo-folder locations will appear after folder provisioning.</span>`}
       <span class="proj-build-action-menu-note">${esc(publicationNote)}</span>
     </div>
@@ -1075,8 +1078,9 @@ window.PT_generateAll = async function () {
       if (res.ok) {
         generated++;
         // Persist output_path back to project
+        const currentProject = _PT.projects.find(p => p.project_id === project.project_id) || project;
         const outputPath   = res.output_path || "";
-        const updatedUnits = project.build_units.map(u => {
+        const updatedUnits = currentProject.build_units.map(u => {
           if (u.unit_id !== item.unit.unit_id) return { ...u };
           if (item.type === "unit") return { ...u, output_path: outputPath };
           return {
@@ -1088,7 +1092,13 @@ window.PT_generateAll = async function () {
             ),
           };
         });
-        await api("/api/project/save", { project_id: project.project_id, build_units: updatedUnits });
+        const saveResult = await api("/api/project/save", {
+          project_id: project.project_id,
+          expected_updated_at: currentProject.updated_at,
+          expected_record_revision: currentProject.record_revision,
+          build_units: updatedUnits,
+        });
+        if (!saveResult?.ok) throw new Error(saveResult?.error || "Project changed before output could be recorded");
         // Update local project copy for next iteration
         await _ptLoadAll();
         const reloaded = _PT.projects.find(p => p.project_id === project.project_id);
@@ -2416,7 +2426,7 @@ async function _ptSavePreviousBuild(pid,uid,iid,link){
   const project=loaded.project,unit=project.build_units.find(u=>u.unit_id===uid),individual=unit?.individuals.find(i=>i.individual_id===iid);
   if(!individual)throw new Error('Service vehicle is no longer available');
   individual.previous_build=link;
-  const saved=await api('/api/project/save',{project_id:pid,build_units:project.build_units});if(!saved.ok)throw new Error(saved.error);
+  const saved=await api('/api/project/save',{project_id:pid,expected_updated_at:project.updated_at,expected_record_revision:project.record_revision,build_units:project.build_units});if(!saved.ok)throw new Error(saved.error);
   _ptCloseFinalizationModal();await _ptLoadAll();_ptShowDetail(_PT.projects.find(p=>p.project_id===pid));
 }
 window.PT_previousBuild = async function(pid,uid,iid){

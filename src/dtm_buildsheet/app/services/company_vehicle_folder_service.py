@@ -163,6 +163,7 @@ def publish_company_vehicle_pdf(
                 )
             else:
                 folder = gateway.ensure_folder(remote["vehicle"])
+            gateway.ensure_folder(f"{remote['vehicle']}/Completed Build Photos")
             pdf_item = gateway.upload_file(remote["pdf"], pdf_bytes)
             old_id = str(individual.company_pdf_item_id or "")
             new_id = str(pdf_item.get("id") or "")

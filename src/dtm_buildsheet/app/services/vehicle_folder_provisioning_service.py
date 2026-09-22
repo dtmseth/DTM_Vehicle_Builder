@@ -424,8 +424,7 @@ def _provision_project_target(
                 ensure_child(str(item.get("id") or ""), "Build Reference Photos")
             else:
                 gateway.ensure_folder(f"{vehicle_path}/Build Reference Photos")
-            if target == "shop":
-                gateway.ensure_folder(f"{vehicle_path}/Completed Build Photos")
+            gateway.ensure_folder(f"{vehicle_path}/Completed Build Photos")
             state = {
                 f"{target}_vehicle_folder_id": str(item.get("id") or ""),
                 f"{target}_vehicle_folder_name": folder_name,

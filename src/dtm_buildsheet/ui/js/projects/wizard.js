@@ -1,6 +1,8 @@
 // ── Projects module: wizard / editor (new project form + unit CRUD + review) ───
 
 function _ptLoadForm(project) {
+  _PT.editExpectedUpdatedAt = String(project?.updated_at || "");
+  _PT.editExpectedRecordRevision = String(project?.record_revision || "");
   let workFields=$('proj-work-fields');
   if(!workFields){workFields=document.createElement('div');workFields.id='proj-work-fields';$('proj-agency').closest('.form-row').before(workFields);}
   workFields.innerHTML=_ptTypeFields('proj',project||{});_ptWireTypeFields('proj');
@@ -23,7 +25,10 @@ function _ptLoadForm(project) {
     quantity:      u.quantity      || 1,
     preset_id:     u.preset_id     || "",
     draft_id:      u.draft_id      || null,
-    individuals:   (u.individuals  || []).map(ind => ({ ...ind })),
+    individuals:   (u.individuals  || []).map(ind => ({
+      ...ind,
+      _notesExpected: String(ind.notes || ""),
+    })),
     _indOpen:      false,
     _customBuildTypeOpen: _ptIsCustomBuildType(u.build_type || ""),
   }));
@@ -394,12 +399,17 @@ function _ptBuildPayload() {
         existing_unit_number: ind.existing_unit_number || "",
         existing_vin:         ind.existing_vin         || "",
         notes:                ind.notes                || "",
+        notes_expected:       ind._notesExpected       ?? "",
         quote_references:     (ind.quote_references || []).map(ref => ({ ...ref })),
         draft_id:             ind.draft_id             || null,
       })),
     })),
   };
-  if (_PT.editId) p.project_id = _PT.editId;
+  if (_PT.editId) {
+    p.project_id = _PT.editId;
+    p.expected_updated_at = _PT.editExpectedUpdatedAt;
+    p.expected_record_revision = _PT.editExpectedRecordRevision;
+  }
   return p;
 }
 

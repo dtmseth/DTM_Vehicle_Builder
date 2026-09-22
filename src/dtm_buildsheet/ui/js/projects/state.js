@@ -25,6 +25,8 @@ window._PT = {
   // view / wizard state
   saving:         false,
   editId:         null,
+  editExpectedUpdatedAt: "",
+  editExpectedRecordRevision: "",
   units:          [],       // fleet units being edited in the wizard
   inited:         false,
   viewProject:    null,     // project open in detail view
@@ -42,10 +44,14 @@ window._PT = {
   indModalUnitId:     null,
   indModalIndId:      null,
   indModalFromDetail: false,
+  indModalOriginalNotes: "",
 
   // edit tab
   editTabEditable: false,
   editTabUnits:    [],
+  editTabProjectNotesExpected: "",
+  editTabExpectedUpdatedAt: "",
+  editTabExpectedRecordRevision: "",
 
   // build editor return target + current context
   pbeReturnProject: null,

@@ -395,15 +395,16 @@ def route_operations(
             # projected Operations row may still say active if an older client
             # marked its project inactive without updating that projection.
             # Filter it at the API boundary so every Operations client agrees.
+            projects = list_projects(paths)
             inactive_project_ids = frozenset(
                 project.project_id
-                for project in list_projects(paths)
+                for project in projects
                 if project.project_status == "inactive"
             )
             payload = OperationsReadService(bundle.operations).list_vehicle_summaries(
                 actor,
                 hidden_project_ids=inactive_project_ids,
-                projects=list_projects(paths),
+                projects=projects,
             )
             _attach_calendar_team_history(payload, paths, bundle)
         send_json(handler, payload)

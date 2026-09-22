@@ -75,6 +75,8 @@ class IndividualUnit:
     draft_id: str = ""
     output_path: str = ""     # set when build sheet is generated
     notes: str = ""           # prominent shop note on Overview; long notes open in a modal
+    notes_updated_at: str = "" # per-note optimistic-concurrency timestamp
+    notes_history: list[dict[str, str]] = field(default_factory=list)  # prior non-empty values
     pdf_path: str = ""
     status: str = "draft"     # draft | finalized | reopened
     finalized_at: str = ""
@@ -142,6 +144,9 @@ class ProjectRecord:
     project_id: str
     created_at: str
     updated_at: str
+    record_revision: str = ""  # changes on every write, including operational-only writes
+    record_parent_revision: str = ""  # revision this payload was derived from
+    record_ancestor_revisions: list[str] = field(default_factory=list)
     customer: CustomerInfo = field(default_factory=CustomerInfo)
     preferences: EquipmentPreferences = field(default_factory=EquipmentPreferences)
     build_units: list[BuildUnit] = field(default_factory=list)
@@ -157,6 +162,8 @@ class ProjectRecord:
     reactivated_by: str = ""
     project_lifecycle_history: list[dict[str, str]] = field(default_factory=list)
     project_notes: str = ""   # shown on every build's final PowerPoint page
+    project_notes_updated_at: str = ""
+    project_notes_history: list[dict[str, str]] = field(default_factory=list)
     company_year_folder_id: str = ""
     company_year_folder_path: str = ""
     company_folder_status: str = "not_provisioned"
@@ -169,6 +176,18 @@ Projects are stored in `workspace/projects/{project_id}/project.json` (one subdi
 project) and mirrored to SharePoint. Drafts remain durable records keyed by `draft_id`. Generated
 customer PDFs and internal PPTX sources use the configured output trees; record-side output paths
 are compatibility locators, not a per-project `export_dir` setting.
+
+Every project write is compare-and-set against `record_revision`; a stale foreground or background
+writer fails instead of replacing a newer record. Before a local project is replaced, its prior JSON
+is deduplicated into the project's `.history/` directory. Cloud writes also compare
+`record_parent_revision` with SharePoint and use its ETag atomically; cross-device conflicts retain
+both payloads in `.history/` and create `.sync_conflict.json` instead of overwriting either copy.
+The bounded `record_ancestor_revisions` chain permits the background uploader to coalesce several
+rapid local saves without mistaking its own skipped intermediate revisions for a device conflict.
+Build and project notes add their own
+revision/history fields because shared-work reconciliation may compare copies from different
+devices: a revisioned explicit clear wins, a legacy blank never erases a non-empty note, and a
+superseded non-empty value remains recoverable in append-only note history.
 
 Legacy projects default to `active`. Inactive and completed projects use the same data model and
 remain fully browseable; `project_status` controls Active / Inactive / Completed placement and can

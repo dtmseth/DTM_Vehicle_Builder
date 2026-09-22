@@ -82,8 +82,53 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[packaging]"
 
+      - name: Require macOS internal-signing credentials
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+        run: |
+          for name in MACOS_CERTIFICATE MACOS_CERTIFICATE_PASSWORD MACOS_KEYCHAIN_PASSWORD MACOS_CODESIGN_IDENTITY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required macOS internal-signing secret: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Import macOS internal-signing certificate
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/dtm-signing.p12"
+          CERTIFICATE_PEM="$RUNNER_TEMP/dtm-signing.pem"
+          KEYCHAIN_PATH="$RUNNER_TEMP/dtm-signing.keychain-db"
+          echo -n "$MACOS_CERTIFICATE" | base64 -D > "$CERTIFICATE_PATH"
+          security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          openssl pkcs12 -in "$CERTIFICATE_PATH" -nokeys -passin env:MACOS_CERTIFICATE_PASSWORD | openssl x509 -out "$CERTIFICATE_PEM"
+          security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN_PATH" "$CERTIFICATE_PEM"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -F "$MACOS_CODESIGN_IDENTITY"
+          echo "DTM_INTERNAL_CODESIGN_IDENTITY=$MACOS_CODESIGN_IDENTITY" >> "$GITHUB_ENV"
+
       - name: Build app
         run: python -m PyInstaller --clean -y packaging/pyinstaller/DTM_VehicleBuilder.spec
+
+      - name: Sign app for internal distribution
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          codesign --force --deep --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" "dist/DTM Vehicle Builder.app"
+          codesign --verify --deep --strict --verbose=2 "dist/DTM Vehicle Builder.app"
+          codesign --display --requirements - "dist/DTM Vehicle Builder.app"
 
       - name: Create DMG
         run: |
@@ -95,6 +140,16 @@ jobs:
             -srcfolder /tmp/dmg_staging \
             -ov -format UDZO \
             "dist/DTM_Vehicle_Builder.dmg"
+
+      - name: Sign internal release DMG
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          codesign --force --sign "$DTM_INTERNAL_CODESIGN_IDENTITY" "dist/DTM_Vehicle_Builder.dmg"
+          codesign --verify --strict --verbose=2 "dist/DTM_Vehicle_Builder.dmg"
+
+      - name: Remove temporary signing keychain
+        if: always() && github.event_name == 'workflow_dispatch'
+        run: security delete-keychain "$RUNNER_TEMP/dtm-signing.keychain-db" || true
 
       - uses: actions/upload-artifact@v7
         with:

@@ -135,6 +135,7 @@ def test_project_provisioning_builds_progressive_tree_with_stable_placeholders(t
     assert "Vehicle Project Database/Lake County/LC - 2027/Reference Photos & Videos" in company.folders
     assert any(path.endswith(normal_name) for path in company.folders)
     assert normal_shop.replace("Shop Project Database", "Vehicle Project Database") + "/Build Reference Photos" in company.folders
+    assert normal_shop.replace("Shop Project Database", "Vehicle Project Database") + "/Completed Build Photos" in company.folders
     assert normal_shop + "/Build Reference Photos" in shop.folders
     assert normal_shop + "/Completed Build Photos" in shop.folders
     assert company.uploads == shop.uploads == []

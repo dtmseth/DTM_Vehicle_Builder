@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import re
-from types import SimpleNamespace
+from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 import requests
 
-from dtm_buildsheet.app.adapters.cloud.msal_client import MsalClient
+from dtm_buildsheet.app.adapters.cloud.msal_client import (
+    MsalClient,
+    _SessionPersistedTokenCache,
+)
 from dtm_buildsheet.app.adapters.cloud.operations_list_provisioner import (
     OperationsListProvisioner,
     OperationsListProvisioningError,
@@ -649,6 +653,61 @@ def test_msal_client_accepts_one_time_scope_without_changing_defaults():
         interactive_ok=False,
     ) == "TOKEN"
     assert app.acquire_token_silent.call_args.kwargs["scopes"] == ["Sites.Manage.All"]
+
+
+def test_macos_msal_cache_coalesces_mutations_into_one_keychain_save(tmp_path):
+    class _Persistence:
+        is_encrypted = True
+
+        def __init__(self):
+            self.loads = 0
+            self.saved: list[str] = []
+
+        def get_location(self):
+            return str(tmp_path / "msal_token_cache.bin")
+
+        def load(self):
+            self.loads += 1
+            return "{}"
+
+        def save(self, content):
+            self.saved.append(content)
+
+    persistence = _Persistence()
+    cache = _SessionPersistedTokenCache(persistence)
+
+    with cache.batch():
+        cache.has_state_changed = True
+        with cache.batch():
+            cache.has_state_changed = True
+
+    with cache.batch():
+        pass
+
+    assert persistence.loads == 1
+    assert len(persistence.saved) == 1
+    assert cache.is_encrypted is True
+
+
+def test_msal_client_batches_one_complete_token_operation():
+    class _Cache:
+        batches = 0
+
+        @contextmanager
+        def batch(self):
+            self.batches += 1
+            yield
+
+    client = object.__new__(MsalClient)
+    client._last_id_token_claims = {}
+    client._cache = _Cache()
+    app = MagicMock()
+    app.get_accounts.return_value = [{"home_account_id": "account-1"}]
+    app.acquire_token_silent.return_value = {"access_token": "TOKEN"}
+    client._app = app
+
+    assert client.acquire_token(interactive_ok=False) == "TOKEN"
+    assert client._cache.batches == 1
 
 
 def test_msal_client_retains_validated_app_role_claims_in_memory():

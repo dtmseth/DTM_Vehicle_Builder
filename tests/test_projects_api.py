@@ -72,6 +72,13 @@ def _project_body(**overrides) -> dict:
     return body
 
 
+def _revision_fields(project) -> dict[str, str]:
+    return {
+        "expected_updated_at": project.updated_at,
+        "expected_record_revision": project.record_revision,
+    }
+
+
 # ── handle_save_project ────────────────────────────────────────────────────────
 
 class TestHandleSaveProject:
@@ -133,6 +140,96 @@ class TestHandleSaveProject:
 
         project = load_project(result["project_id"], paths)
         assert project.build_units[0].build_type == "Drone Squad"
+
+    def test_rejects_duplicate_full_vin_across_build_types(self, tmp_path):
+        paths = _paths(tmp_path)
+        body = _project_body(build_units=[
+            {
+                "unit_id": "patrol",
+                "vehicle_model": "PIU",
+                "build_type": "Patrol",
+                "quantity": 1,
+                "individuals": [{
+                    "individual_id": "patrol-vehicle",
+                    "vin": "1FM5K8AB1TGA62240",
+                }],
+            },
+            {
+                "unit_id": "unmarked",
+                "vehicle_model": "PIU",
+                "build_type": "Unmarked",
+                "quantity": 1,
+                "individuals": [{
+                    "individual_id": "unmarked-vehicle",
+                    "vin": "1fm5-k8ab-1tga-62240",
+                }],
+            },
+        ])
+
+        result = handle_save_project(body, paths)
+
+        assert result == {
+            "ok": False,
+            "error_code": "duplicate_vehicle_vin",
+            "error": (
+                "VIN 1FM5K8AB1TGA62240 is already assigned to another vehicle in this "
+                "project. Edit or move the existing vehicle instead of adding it again."
+            ),
+            "vin": "1FM5K8AB1TGA62240",
+        }
+        assert list(paths.workspace_projects_dir.iterdir()) == []
+
+    def test_allows_repeated_non_vin_placeholders(self, tmp_path):
+        paths = _paths(tmp_path)
+        body = _project_body(build_units=[{
+            "unit_id": "fire",
+            "vehicle_model": "F-150",
+            "build_type": "Fire",
+            "quantity": 2,
+            "individuals": [
+                {"individual_id": "fire-1", "vin": "NOT AVAILABLE YET"},
+                {"individual_id": "fire-2", "vin": "NOT AVAILABLE YET"},
+            ],
+        }])
+
+        result = handle_save_project(body, paths)
+
+        assert result["ok"] is True
+
+    def test_rejects_readding_saved_vin_with_new_vehicle_identity(self, tmp_path):
+        paths = _paths(tmp_path)
+        created = handle_save_project(_project_body(build_units=[{
+            "unit_id": "patrol",
+            "vehicle_model": "PIU",
+            "build_type": "Patrol",
+            "quantity": 1,
+            "individuals": [{
+                "individual_id": "original-vehicle",
+                "vin": "1FM5K8AB1TGA62240",
+            }],
+        }]), paths)
+        current = load_project(created["project_id"], paths)
+
+        result = handle_save_project({
+            "project_id": created["project_id"],
+            **_revision_fields(current),
+            "build_units": [{
+                "unit_id": "unmarked",
+                "vehicle_model": "PIU",
+                "build_type": "Unmarked",
+                "quantity": 1,
+                "individuals": [{
+                    "individual_id": "replacement-vehicle",
+                    "vin": "1FM5K8AB1TGA62240",
+                }],
+            }],
+        }, paths)
+
+        assert result["ok"] is False
+        assert result["error_code"] == "vehicle_vin_identity_conflict"
+        saved = load_project(created["project_id"], paths)
+        assert saved.build_units[0].individuals[0].individual_id == "original-vehicle"
+        assert saved.build_units[0].build_type == "Patrol"
 
     def test_preserves_preferences(self, tmp_path):
         paths = _paths(tmp_path)
@@ -226,7 +323,11 @@ class TestHandleSaveProject:
         paths = _paths(tmp_path)
         create = handle_save_project(_project_body(), paths)
         pid = create["project_id"]
-        update_body = {"project_id": pid, "customer": {"agency": "Updated PD"}}
+        update_body = {
+            "project_id": pid,
+            **_revision_fields(load_project(pid, paths)),
+            "customer": {"agency": "Updated PD"},
+        }
         handle_save_project(update_body, paths)
         project = load_project(pid, paths)
         assert project.customer.agency == "Updated PD"
@@ -261,6 +362,7 @@ class TestHandleSaveProject:
 
         result = handle_save_project({
             "project_id": project.project_id,
+            **_revision_fields(project),
             "build_units": [{
                 "unit_id": group.unit_id,
                 "vehicle_model": "PIU",
@@ -320,6 +422,7 @@ class TestHandleSaveProject:
         }
         result = handle_save_project({
             "project_id": project.project_id,
+            **_revision_fields(project),
             "build_units": [{
                 "unit_id": unit.unit_id,
                 "vehicle_model": unit.vehicle_model,

@@ -129,6 +129,9 @@ class BuilderVehicleProjection:
 
     Keeping this as a narrow value object prevents a project save from
     replacing scheduling, production, delivery, or QBO-observation state.
+    Builder's Operations and Calendar views overlay these fields from the
+    current project record at read time; the stored copy is only for external
+    Operations clients and must never become Builder's display authority.
     ``vehicle_id`` is the opaque IndividualUnit ID and remains authoritative
     when any human-readable name, unit number, or VIN changes.
     """

@@ -130,9 +130,14 @@ async function _pbeSaveNotes(flush = false) {
     if (_PT.pbeIndividual && _PT.pbeProject && _PT.pbeUnit) {
       const unitNotes = notes["INSTALLATION NOTES"]?.[0] || "";
       const deliveryRequirements = notes["DELIVERY REQUIREMENTS"]?.[0] || "";
+      const expectedNotes = String(_PT.pbeIndividual.notes || "");
       const notesResult = await api(
         `/api/project/${encodeURIComponent(_PT.pbeProject.project_id)}/unit/${encodeURIComponent(_PT.pbeUnit.unit_id)}/individual/${encodeURIComponent(_PT.pbeIndividual.individual_id)}/notes`,
-        { notes: unitNotes, delivery_requirements: deliveryRequirements },
+        {
+          notes: unitNotes,
+          expected_notes: expectedNotes,
+          delivery_requirements: deliveryRequirements,
+        },
       );
       if (!notesResult?.ok) throw new Error(notesResult?.error || "Could not save unit notes");
       _PT.pbeIndividual.notes = unitNotes;

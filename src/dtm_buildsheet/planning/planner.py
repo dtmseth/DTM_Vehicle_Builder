@@ -1069,7 +1069,13 @@ def build_plan(project, config: ConfigBundle) -> BuildPlan:
                 )
                 if custom_head_index is not None:
                     color_token = resolve_custom_head_color_token(part, custom_head_index) or color_token
-                elif compound_group_style:
+                else:
+                    # Custom picker palettes apply to authored layout slots as
+                    # well as free-point and compound placements.  Without
+                    # this, a mixed pair saved at a named location (for
+                    # example red/white + blue/white VXEs at TAIL LIGHTS)
+                    # collapses to an unrecognized combined raw_color label
+                    # and resolves no lamp asset at all.
                     color_token = resolve_custom_head_color_token(part, index - 1) or color_token
                 asset_path = resolve_asset_path(
                     render_kind=spec["render_kind"],

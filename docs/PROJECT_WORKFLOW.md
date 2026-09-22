@@ -135,6 +135,10 @@ Shop Documents/Shop Project Database/{agency}/{agency abbreviation} - {year}/{ca
   Completed Build Photos/
 ```
 
+`Completed Build Photos` is captured in the Shop vehicle folder and mirrored additively to a
+same-named folder under the matching Company vehicle folder during cloud sync. New and changed
+files are copied with the same relative paths; Company-only copies are never deleted by the mirror.
+
 The canonical vehicle label is `{year} {agency abbreviation} {short model} - {build type} - Unit {number} - VIN {last
 six}` with unavailable identifier segments omitted. The make is not included; Police Interceptor
 Utility is `PIU`, while other vehicles use recognizable model names such as `Durango`, `F-150`, and

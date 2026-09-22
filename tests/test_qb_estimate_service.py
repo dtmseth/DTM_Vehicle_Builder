@@ -504,6 +504,51 @@ def test_resolve_skips_both_customer_supplied_conditions(paths):
     assert [line["name"] for line in lines] == ["dtm"]
 
 
+def test_custom_camera_reference_system_is_never_billed(paths):
+    _write_parts_db(paths, {
+        "camera": _linked_product("Off-brand camera", "Example Camera", "42", 999.0),
+    })
+    draft = new_draft(parts=[DraftPart(
+        name="Camera DVR",
+        part_number="Example Camera",
+        supply_type="new",
+        picker_config={
+            "system_type": "camera",
+            "reference_only": True,
+            "choices": {
+                "referenceOnly": True,
+                "systemProduct": {
+                    "product_id": "custom_camera",
+                    "model": "Example Camera",
+                },
+            },
+        },
+    )])
+
+    lines, problems = est.resolve_build_lines(paths, draft)
+
+    assert lines == []
+    assert problems == []
+
+
+def test_part_picker_offers_reference_only_custom_camera_workflow():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).parents[1]
+        / "src/dtm_buildsheet/ui/js/part_picker.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'data-system-custom-camera' in source
+    assert 'Camera type name' in source
+    assert 'referenceOnly: true' in source
+    assert 'reference_only: referenceOnly' in source
+    assert 'do not bill in QuickBooks' in source
+    assert 'if (choices.referenceOnly || choices.supplyType' in source
+    assert 'do not create QuickBooks lines' in source
+    assert '"watchguard_m500", _CUSTOM_CAMERA_PRODUCT_ID' in source
+
+
 def test_resolve_skips_console_parts_included_with_kit(paths):
     _write_parts_db(paths, {
         "kit": _linked_product("Console kit", "KIT", "1", 500.0),

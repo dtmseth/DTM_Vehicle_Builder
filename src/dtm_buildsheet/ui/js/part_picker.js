@@ -5465,6 +5465,24 @@ function _systemKeepAvailableCableRefreshSelections(choices, cableRefreshes) {
 
 function _systemSupplySteps(kind, noun, choices) {
   const label = { radio: "radio", radar: "radar", camera: "camera" }[kind] || "system";
+  if (kind === "camera" && choices.referenceOnly) {
+    return [
+      _systemStep(
+        "customerCondition", "choice", "What condition is this reference-only camera system in?",
+        "The camera is recorded for the shop but is never added to the QuickBooks Estimate.",
+        [["new", "New", "New off-brand hardware supplied outside the Estimate"], ["used", "Used", "Used or transferred off-brand hardware"]],
+      ),
+      ...(choices.customerCondition === "used" ? [
+        _systemStep("customerSource", "textarea", "Where will the used system come from?", "Required for shop handoff—for example, the agency, an old vehicle, or customer stock.", []),
+        _systemStep("refresh", "choice", `Will the ${label} cables be refreshed?`, "Choose No when the current cable set can stay.", [["no", "No cable refresh", "Keep the existing cable set"], ["yes", "Yes, refresh cables", "Record the affected cable runs for shop reference"]]),
+        ...(choices.refresh === "yes" ? [_systemStep(
+          "refreshCables", "multi", "Which camera cables should be refreshed?",
+          "Select every cable run the shop should replace. These choices remain reference-only and do not create QuickBooks lines.",
+          _systemCableRefreshes(kind).map(cable => [cable.id, cable.label, cable.help || ""]),
+        )] : []),
+      ] : []),
+    ];
+  }
   return [
     _systemStep(
       "supplyType", "choice", `Who is supplying this ${noun}?`,
@@ -5567,6 +5585,7 @@ const _SYSTEM_DEFS = {
     intro: "Record the kit ownership and the camera/DVR locations the shop needs. Only DTM purchases need ordering text.",
     defaults: {
       systemProduct: null, supplyType: "", customerCondition: "", customerSource: "", componentSupply: {}, condition: "", componentConditions: {}, provider: "customer", refresh: "", refreshCables: [], purchaseDetails: "", cameraBrand: "", dvrLoc: "",
+      referenceOnly: false,
       cameraAntennaStyle: "", cameraAntennaStyleCustom: "", cameraAntennaLoc: "rear_right_roof", cameraAntennaLocPlacement: null,
       cameraParts: [], rearSeatLoc: "",
       bodyDockLoc: "", wirelessMicLoc: "",
@@ -5728,8 +5747,10 @@ function _systemStepApplies(step, choices = _pickerState.radio?.choices || {}) {
   return true;
 }
 
-const _CAMERA_EXTENDED_BRANDS = new Set(["watchguard_4re", "watchguard_m500"]);
+const _CUSTOM_CAMERA_PRODUCT_ID = "custom_camera";
+const _CAMERA_EXTENDED_BRANDS = new Set(["watchguard_4re", "watchguard_m500", _CUSTOM_CAMERA_PRODUCT_ID]);
 function _cameraSupportsExtendedComponents(brand) { return _CAMERA_EXTENDED_BRANDS.has(brand); }
+function _isCustomCameraProduct(product) { return product?.product_id === _CUSTOM_CAMERA_PRODUCT_ID; }
 
 function _systemProductLabel(choices) {
   const product = choices?.systemProduct || {};
@@ -5738,7 +5759,7 @@ function _systemProductLabel(choices) {
 
 function _systemCameraPlatform(choices) {
   const productId = choices?.systemProduct?.product_id || "";
-  if (["axon_fleet_3", "axon_fleet_2", "watchguard_4re", "watchguard_m500"].includes(productId)) return productId;
+  if (["axon_fleet_3", "axon_fleet_2", "watchguard_4re", "watchguard_m500", _CUSTOM_CAMERA_PRODUCT_ID].includes(productId)) return productId;
   return choices?.cameraBrand || "other"; // preserves existing saved camera kits
 }
 
@@ -5968,6 +5989,26 @@ function _pickerSystemProductRecord(product, sku = null) {
   } : null;
 }
 
+function _pickerCustomCameraRecord(name = "") {
+  const cameraName = String(name || "").trim();
+  return {
+    product_id: _CUSTOM_CAMERA_PRODUCT_ID,
+    manufacturer_label: "",
+    model: cameraName,
+    part_number: "",
+    friendly_name: cameraName,
+    reference_only: true,
+  };
+}
+
+function _pickerSystemSetupReady(setup = _pickerState.systemSetup || {}) {
+  if (!setup.product) return false;
+  if (setup.kind === "camera" && _isCustomCameraProduct(setup.product)) {
+    return Boolean(String(setup.product.model || "").trim());
+  }
+  return true;
+}
+
 function _pickerRadioFormatForSelectedProduct(product) {
   const identity = [
     product?.product_id, product?.model, product?.friendly_name, product?.part_number,
@@ -5992,6 +6033,8 @@ function _pickerRenderSystemSelectionIn(el) {
   const choices = _pickerSystemProducts(setup.kind);
   const selectedId = setup.product?.product_id || "";
   const selectedSku = setup.product?.part_number || "";
+  const customCamera = setup.kind === "camera";
+  const customCameraSelected = customCamera && _isCustomCameraProduct(setup.product);
   const radioSkuChoices = setup.kind === "radio"
     ? choices.flatMap(product => (product.skus || []).map(sku => ({ product, sku })))
     : [];
@@ -6006,11 +6049,18 @@ function _pickerRenderSystemSelectionIn(el) {
       return `<button type="button" class="system-product-choice${selected ? " is-selected" : ""}" data-system-product-id="${esc(product.product_id)}" aria-pressed="${selected ? "true" : "false"}">`
         + `<span class="system-product-choice-check">${selected ? "✓" : ""}</span><span class="system-product-choice-copy"><small>${esc(product.manufacturer_label || "System")}</small><strong>${esc(product.model || product.product_id)}</strong></span></button>`;
     }).join("");
+  const customCameraCard = customCamera
+    ? `<button type="button" class="system-product-choice${customCameraSelected ? " is-selected" : ""}" data-system-custom-camera aria-pressed="${customCameraSelected ? "true" : "false"}">`
+      + `<span class="system-product-choice-check">${customCameraSelected ? "✓" : ""}</span><span class="system-product-choice-copy"><small>Reference only · not billed</small><strong>Other / off-brand camera</strong></span></button>`
+    : "";
+  const customCameraField = customCameraSelected
+    ? `<label class="system-product-custom"><span>Camera type name</span><input class="guided-text-input" data-system-custom-camera-name value="${esc(setup.product?.model || "")}" placeholder="Example: Digital Ally EVO-HD"><small>This name is saved for build and shop reference only. The camera system will not be sent to QuickBooks.</small></label>`
+    : "";
   const radioSelection = setup.kind === "radio";
   el.innerHTML = `<section class="system-product-picker system-product-picker--${esc(setup.kind)}" data-system-select-kind="${esc(setup.kind)}">`
     + `<div class="system-product-picker-kicker">${esc(def.chip)} · system identification</div><h2>${radioSelection ? "Which radio unit is being installed?" : `Which ${esc(def.label)} is this?`}</h2>`
     + `<p>${radioSelection ? "Select the radio SKU. Setup details open immediately after selection." : "Select the brand and platform first. The next tab will collect the install and shop details."}</p>`
-    + `<div class="system-product-choice-grid">${cards || `<div class="system-product-empty">No system platforms are available for this selection yet.</div>`}</div>`
+    + `<div class="system-product-choice-grid">${cards}${customCameraCard}${(!cards && !customCameraCard) ? `<div class="system-product-empty">No system platforms are available for this selection yet.</div>` : ""}</div>${customCameraField}`
     + `<div class="system-review-actions"><button type="button" class="btn btn-secondary" data-system-manual-skus>Choose SKUs manually</button></div></section>`;
   el.querySelectorAll("[data-system-product-id]").forEach(button => button.addEventListener("click", async () => {
     const product = choices.find(item => item.product_id === button.dataset.systemProductId);
@@ -6023,13 +6073,32 @@ function _pickerRenderSystemSelectionIn(el) {
     _pickerRenderProducts();
     _pickerUpdateFooter();
   }));
+  el.querySelector("[data-system-custom-camera]")?.addEventListener("click", () => {
+    const currentName = customCameraSelected ? setup.product?.model : "";
+    _pickerState.systemSetup.product = _pickerCustomCameraRecord(currentName);
+    _pickerRenderProducts();
+    _pickerUpdateFooter();
+    requestAnimationFrame(() => document.querySelector("[data-system-custom-camera-name]")?.focus());
+  });
+  el.querySelector("[data-system-custom-camera-name]")?.addEventListener("input", input => {
+    _pickerState.systemSetup.product = _pickerCustomCameraRecord(input.target.value);
+    _pickerUpdateFooter();
+  });
   el.querySelector("[data-system-manual-skus]")?.addEventListener("click", () => _pickerChooseSystemSkusManually(setup.kind));
 }
 
 async function _pickerBeginSystemSetup() {
   const setup = _pickerState.systemSetup || {}, def = _SYSTEM_DEFS[setup.kind];
-  if (!def || !setup.product) return;
-  const choices = { systemProduct: { ...setup.product } };
+  if (!def || !_pickerSystemSetupReady(setup)) return;
+  const customCamera = setup.kind === "camera" && _isCustomCameraProduct(setup.product);
+  const choices = {
+    systemProduct: { ...setup.product },
+    ...(customCamera ? {
+      referenceOnly: true,
+      supplyType: "customer_supplied",
+      provider: "customer",
+    } : {}),
+  };
   if (setup.kind === "camera") choices.cameraBrand = _systemCameraPlatform(choices);
   if (setup.kind === "radio") choices.format = _pickerRadioFormatForSelectedProduct(setup.product);
   await _pickerLoadSystemWorkflow(setup.kind, choices, 0);
@@ -6074,9 +6143,9 @@ function _systemComponentConditionsHtml() {
   return `<div class="guided-component-conditions">${rows.map(row => {
     const current = row.supply_type === "new" ? "new" : `customer_${row.customer_condition || "used"}`;
     const sourceNeeded = current === "customer_used";
-    const options = [
-      ["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"],
-    ];
+    const options = choices.referenceOnly
+      ? [["customer_new", "Reference only / New"], ["customer_used", "Reference only / Used"]]
+      : [["new", "New"], ["customer_new", "Customer supplied / New"], ["customer_used", "Customer supplied / Used"]];
     return `<section class="guided-component-condition"><div><strong>${esc(row.label)}</strong><small>${esc(row.location || row.detail || "System component")}</small></div><div class="guided-component-supply">${options.map(([value, label]) =>
       `<button type="button" class="console-location-choice${current === value ? " is-selected" : ""}" data-system-component-supply="${esc(row.key)}" data-system-supply-value="${value}">${label}</button>`
     ).join("")}</div>${sourceNeeded ? `<label class="guided-component-source"><span>Used-part source <b>*</b></span><input type="text" data-system-component-source="${esc(row.key)}" value="${esc(row.customer_source || "")}" placeholder="Agency, old vehicle, customer stock…"></label>` : ""}</section>`;
@@ -6105,8 +6174,8 @@ function _systemComponentRows(kind, c) {
   if (!c.componentSupply || typeof c.componentSupply !== "object" || Array.isArray(c.componentSupply)) c.componentSupply = {};
   if (!c.componentConditions || typeof c.componentConditions !== "object" || Array.isArray(c.componentConditions)) c.componentConditions = {};
   const defaultSupply = _pickerSupplyPayload({
-    supplyType: c.supplyType || "new",
-    customerCondition: c.customerCondition || "",
+    supplyType: c.referenceOnly ? "customer_supplied" : (c.supplyType || "new"),
+    customerCondition: c.referenceOnly ? (c.customerCondition || "new") : (c.customerCondition || ""),
     customerSource: c.customerSource || "",
   });
   const rows = [], add = (key, label, partType, location, detail, pickerConfig = null) => rows.push({
@@ -6117,9 +6186,16 @@ function _systemComponentRows(kind, c) {
         ? { new_or_used: c.componentConditions[key] } : null;
       const existing = c.componentSupply[key] || explicitLegacy;
       const inheritsParent = !existing || existing.inherits_parent_supply === true;
-      const payload = inheritsParent
+      let payload = inheritsParent
         ? { ...defaultSupply }
         : _pickerSupplyPayload(_pickerSupplyFromRecord(existing));
+      if (c.referenceOnly && payload.supply_type !== "customer_supplied") {
+        payload = _pickerSupplyPayload({
+          supplyType: "customer_supplied",
+          customerCondition: payload.new_or_used === "Used" ? "used" : "new",
+          customerSource: payload.customer_source || c.customerSource || "",
+        });
+      }
       c.componentSupply[key] = { ...payload, ...(inheritsParent ? { inherits_parent_supply: true } : {}) };
       c.componentConditions[key] = payload.new_or_used;
       return payload;
@@ -6192,7 +6268,7 @@ function _systemComponentRows(kind, c) {
 // sell.  Keep them as nested draft children so the manifest shows the precise
 // billable SKU and QuickBooks sees a normal, linked part line.
 function _pickerSystemCableRefreshRows(parentLineId, parentName, kind, choices) {
-  if (choices.supplyType !== "customer_supplied" || choices.customerCondition !== "used" || choices.refresh !== "yes" || !parentLineId) return [];
+  if (choices.referenceOnly || choices.supplyType !== "customer_supplied" || choices.customerCondition !== "used" || choices.refresh !== "yes" || !parentLineId) return [];
   const byId = new Map(_systemCableRefreshes(kind).map(cable => [cable.id, cable]));
   const grouped = new Map();
   for (const cableId of (choices.refreshCables || [])) {
@@ -6425,20 +6501,22 @@ async function _pickerAddSystem(addAndContinue) {
   // appear only on the concrete component rows in the expandable manifest.
   const systemNotes = String(c.purchaseDetails || "").trim();
   const editing = !!_pickerState.editLineId, existing = _pickerState.editPart;
+  const referenceOnly = state.kind === "camera" && c.referenceOnly === true;
   const parentSupply = _pickerSupplyPayload({
-    supplyType: c.supplyType,
+    supplyType: referenceOnly ? "customer_supplied" : c.supplyType,
     customerCondition: c.customerCondition,
     customerSource: c.customerSource,
   });
+  const referenceCameraName = String(c.systemProduct?.model || "").trim();
   const row = {
     name: editing ? (existing?.name || def.primaryName) : def.primaryName,
     location: _pickerSystemPrimaryLocation(state.kind, c), manufacturer: c.systemProduct?.manufacturer_label || "",
-    part_number: c.supplyType === "new" ? "DTM PURCHASE — SEE DETAILS" : "CUSTOMER SUPPLIED KIT",
+    part_number: referenceOnly ? referenceCameraName : (c.supplyType === "new" ? "DTM PURCHASE — SEE DETAILS" : "CUSTOMER SUPPLIED KIT"),
     quantity: 1, ...parentSupply,
     part_type: def.primaryPartType,
-    notes: systemNotes || `${def.label} — guided system details`, components,
+    notes: systemNotes || (referenceOnly ? `${referenceCameraName} — reference only; do not bill in QuickBooks` : `${def.label} — guided system details`), components,
     comment: _pickerState.comment || "",
-    picker_config: { system_type: state.kind, system_label: def.label, choices: c, details, step: state.step || 0 },
+    picker_config: { system_type: state.kind, system_label: def.label, reference_only: referenceOnly, choices: c, details, step: state.step || 0 },
   };
   const btn = $("picker-add-btn"); if (btn) btn.disabled = true;
   try {
@@ -6682,11 +6760,12 @@ function _pickerUpdateFooter() {
   const setup = _pickerState.systemSetup || {};
   if (setup.active) {
     const def = _SYSTEM_DEFS[setup.kind];
+    const setupReady = _pickerSystemSetupReady(setup);
     const selected = _systemProductLabel({ systemProduct: setup.product });
-    text.innerHTML = `<span class="picker-foot-label">${selected ? esc(selected) : `Choose a ${esc(def?.label || "system")}`}</span>`;
+    text.innerHTML = `<span class="picker-foot-label">${selected ? esc(selected) : (setup.kind === "camera" && _isCustomCameraProduct(setup.product) ? "Enter the custom camera type" : `Choose a ${esc(def?.label || "system")}`)}</span>`;
     btn.textContent = `Set up ${def?.label || "system"} →`;
-    btn.disabled = !setup.product;
-    _pickerState.footerHandler = setup.product ? _pickerBeginSystemSetup : null;
+    btn.disabled = !setupReady;
+    _pickerState.footerHandler = setupReady ? _pickerBeginSystemSetup : null;
     _showTwoButtons(false, null);
     return;
   }

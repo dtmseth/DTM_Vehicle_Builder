@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterable
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from ...domain.operations_models import (
@@ -129,6 +130,86 @@ def project_vehicle_projections(
                 seen.add(projection.vehicle_id)
                 projections.append(projection)
     return sorted(projections, key=_projection_sort_key)
+
+
+_BUILDER_READ_FIELDS = (
+    "project_id",
+    "title",
+    "agency_id",
+    "agency_name",
+    "build_year",
+    "unit_number",
+    "vin",
+    "vehicle_label",
+    "assigned_salesperson_id",
+    "assigned_salesperson_name",
+    "build_finalized",
+    "build_finalized_at",
+    "project_state",
+)
+
+
+def current_operations_records(
+    records: Iterable[VehicleOperations],
+    projects: Iterable[ProjectRecord],
+    *,
+    hidden_project_ids: frozenset[str] = frozenset(),
+) -> list[VehicleOperations]:
+    """Join Operations state to current Builder-owned vehicle facts.
+
+    SharePoint keeps a denormalized projection so Operations can function as a
+    standalone shared system.  Inside Builder, however, project identity must
+    never depend on that projection being refreshed successfully.  Every read
+    therefore overlays the current project record by opaque vehicle ID.  Rows
+    removed from a still-present Builder project are omitted as well.
+    """
+
+    from ...domain.project_types import with_project_work
+
+    project_list = list(projects)
+    projects_by_id = {project.project_id: project for project in project_list}
+    vehicle_ids_by_project = {
+        project.project_id: {
+            individual.individual_id
+            for build_unit in project.build_units
+            for individual in build_unit.individuals
+        }
+        for project in project_list
+    }
+    # A few narrow domain tests use a project-shaped object that carries only
+    # work-type metadata. Real persisted projects always have ``customer``.
+    complete_projects = [
+        project for project in project_list if hasattr(project, "customer")
+    ]
+    projections_by_vehicle = {
+        projection.vehicle_id: projection
+        for projection in project_vehicle_projections(complete_projects)
+    }
+
+    joined: list[VehicleOperations] = []
+    for record in records:
+        projection = projections_by_vehicle.get(record.vehicle_id)
+        if projection is not None:
+            if (
+                projection.project_id in hidden_project_ids
+                or projection.project_state == ProjectState.INACTIVE
+            ):
+                continue
+            record = replace(
+                record,
+                **{
+                    field: getattr(projection, field)
+                    for field in _BUILDER_READ_FIELDS
+                },
+            )
+        else:
+            current_ids = vehicle_ids_by_project.get(record.project_id)
+            if current_ids is not None and record.vehicle_id not in current_ids:
+                continue
+            if record.project_id in hidden_project_ids:
+                continue
+        joined.append(with_project_work(record, projects_by_id.get(record.project_id)))
+    return joined
 
 
 class OperationsProjectionPreviewService:

@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import sys
 from collections.abc import Sequence
+from contextlib import contextmanager
 from pathlib import Path
+from threading import RLock
 from typing import Any, Callable
 
 import msal
@@ -17,6 +19,106 @@ logger = logging.getLogger(__name__)
 class CloudAuthError(RuntimeError):
     """Raised when the user cannot complete sign-in or the cached token expired
     and no interactive flow is available (e.g. headless run)."""
+
+
+class _SessionPersistedTokenCache(msal.SerializableTokenCache):
+    """Keep one encrypted persistence snapshot open for the app session.
+
+    ``msal_extensions.PersistedTokenCache`` saves after every individual
+    credential mutation. One successful login or refresh updates several
+    records, so macOS can present several Keychain authorization dialogs in a
+    row when the app's code identity is not yet trusted. The desktop app has
+    one long-lived MSAL client, so load the encrypted blob once and flush it
+    once after the surrounding token operation instead.
+
+    The cache remains encrypted in the OS-native persistence. Only its normal
+    process-memory working copy is unencrypted, exactly as it is with MSAL's
+    standard cache. The short file lock covers the actual load/save rather
+    than a potentially long browser sign-in.
+    """
+
+    def __init__(self, persistence) -> None:
+        super().__init__()
+        from msal_extensions import CrossPlatLock  # type: ignore[import-not-found]
+
+        self._persistence = persistence
+        self._lock_type = CrossPlatLock
+        self._lock_location = f"{persistence.get_location()}.lockfile"
+        self._session_lock = RLock()
+        self._loaded = False
+        self._batch_depth = 0
+        self.is_encrypted = persistence.is_encrypted
+
+    def _load_once(self) -> None:
+        if self._loaded:
+            return
+        from msal_extensions.persistence import (  # type: ignore[import-not-found]
+            PersistenceNotFound,
+        )
+
+        try:
+            with self._lock_type(self._lock_location):
+                self.deserialize(self._persistence.load())
+        except PersistenceNotFound:
+            # First sign-in: there is no Keychain item yet.
+            pass
+        self._loaded = True
+
+    def _flush_if_changed(self) -> None:
+        if not self.has_state_changed:
+            return
+        serialized = self.serialize()
+        try:
+            with self._lock_type(self._lock_location):
+                self._persistence.save(serialized)
+        except Exception:
+            # ``serialize`` clears this flag. Restore it so a caller that
+            # recovers from a transient Keychain failure can retry the flush.
+            self.has_state_changed = True
+            raise
+
+    @contextmanager
+    def batch(self):
+        """Coalesce all cache mutations in this operation into one save."""
+        with self._session_lock:
+            self._load_once()
+            self._batch_depth += 1
+            try:
+                yield self
+            finally:
+                self._batch_depth -= 1
+                if self._batch_depth == 0:
+                    self._flush_if_changed()
+
+    def search(self, credential_type, target=None, query=None, *, now=None):
+        if self._batch_depth:
+            return super().search(
+                credential_type,
+                target=target,
+                query=query,
+                now=now,
+            )
+        with self.batch():
+            return super().search(
+                credential_type,
+                target=target,
+                query=query,
+                now=now,
+            )
+
+    def modify(self, credential_type, old_entry, new_key_value_pairs=None):
+        if self._batch_depth:
+            return super().modify(
+                credential_type,
+                old_entry,
+                new_key_value_pairs=new_key_value_pairs,
+            )
+        with self.batch():
+            return super().modify(
+                credential_type,
+                old_entry,
+                new_key_value_pairs=new_key_value_pairs,
+            )
 
 
 def _default_cache_path() -> Path:
@@ -50,6 +152,8 @@ def _build_token_cache(cache_path: Path):
         )
 
         persistence = build_encrypted_persistence(str(cache_path))
+        if sys.platform.startswith("darwin"):
+            return _SessionPersistedTokenCache(persistence)
         return PersistedTokenCache(persistence)
     except Exception:  # noqa: BLE001 — msal_extensions surfaces many platform errors
         logger.exception(
@@ -119,21 +223,22 @@ class MsalClient:
         one-time operations-list provisioner. Omitting it preserves the
         ordinary least-privilege file/read scopes used by app startup.
         """
-        requested_scopes = tuple(scopes) if scopes is not None else GRAPH_SCOPES
-        if not requested_scopes or any(
-            not str(scope or "").strip() for scope in requested_scopes
-        ):
-            raise ValueError("At least one non-empty Microsoft Graph scope is required")
-        if not force_account_picker:
-            token = self._acquire_silent(requested_scopes)
-            if token:
-                return token
-        if not interactive_ok:
-            raise CloudAuthError("No cached account and interactive sign-in disabled")
-        return self._acquire_interactive_or_devicecode(
-            force_account_picker=force_account_picker,
-            scopes=requested_scopes,
-        )
+        with self._cache_batch():
+            requested_scopes = tuple(scopes) if scopes is not None else GRAPH_SCOPES
+            if not requested_scopes or any(
+                not str(scope or "").strip() for scope in requested_scopes
+            ):
+                raise ValueError("At least one non-empty Microsoft Graph scope is required")
+            if not force_account_picker:
+                token = self._acquire_silent(requested_scopes)
+                if token:
+                    return token
+            if not interactive_ok:
+                raise CloudAuthError("No cached account and interactive sign-in disabled")
+            return self._acquire_interactive_or_devicecode(
+                force_account_picker=force_account_picker,
+                scopes=requested_scopes,
+            )
 
     def has_cached_account(self) -> bool:
         return bool(self._app.get_accounts())
@@ -143,8 +248,9 @@ class MsalClient:
 
         Does not revoke the token server-side — only this machine forgets it.
         """
-        for account in list(self._app.get_accounts()):
-            self._app.remove_account(account)
+        with self._cache_batch():
+            for account in list(self._app.get_accounts()):
+                self._app.remove_account(account)
         self._last_id_token_claims = {}
 
     def get_active_account(self) -> dict | None:
@@ -170,6 +276,16 @@ class MsalClient:
         )
 
     # ── Internal ──────────────────────────────────────────────────────────
+
+    @contextmanager
+    def _cache_batch(self):
+        cache = getattr(self, "_cache", None)
+        batch = getattr(cache, "batch", None)
+        if callable(batch):
+            with batch():
+                yield
+            return
+        yield
 
     def _acquire_silent(self, scopes: Sequence[str]) -> str | None:
         accounts = self._app.get_accounts()

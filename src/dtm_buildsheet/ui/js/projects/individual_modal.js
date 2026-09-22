@@ -233,6 +233,7 @@ window.PT_openDetailIndModal = function (projectId, unitId, individualId) {
   _PT.indModalFromDetail = true;
   _PT.indModalUnitId     = unitId;
   _PT.indModalIndId      = individualId;
+  _PT.indModalOriginalNotes = String(ind.notes || "");
   _PT.indModalUid        = null;
   _PT.indModalIdx        = null;
   _PT.viewProject        = project;
@@ -307,12 +308,17 @@ async function _ptSaveDetailIndModal(thenBuild) {
   ind.existing_unit_number = $("ind-edit-existing-unit-number").value.trim();
   ind.existing_vin         = $("ind-edit-existing-vin").value.trim();
   ind.notes                = $("ind-edit-notes").value.trim();
+  ind.notes_expected       = _PT.indModalOriginalNotes;
   ind.quote_references     = _ptQuoteEditorRefs.map(ref => ({...ref}));
 
   PT_closeIndModal();
 
   try {
-    const res = await api("/api/project/save", { ...project });
+    const res = await api("/api/project/save", {
+      ...project,
+      expected_updated_at: project.updated_at,
+      expected_record_revision: project.record_revision,
+    });
     if (res.ok) {
       toast("Unit details saved", "success");
       if (_ptQuoteEditorNeedsReconcile) await window.PT_reconcileQuoteReferences();
@@ -370,7 +376,11 @@ window.PT_confirmIndividual = async function (projectId, unitId, individualId) {
   ind.confirmed    = true;
   ind.confirmed_at = new Date().toISOString();
   try {
-    const res = await api("/api/project/save", project);
+    const res = await api("/api/project/save", {
+      ...project,
+      expected_updated_at: project.updated_at,
+      expected_record_revision: project.record_revision,
+    });
     if (res.ok) {
       toast("Unit confirmed ✓", "success");
       await _ptLoadAll();

@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
 import re
 import sys as _sys
 from pathlib import Path
@@ -17,6 +18,11 @@ WIN_ICON = ICON_DIR / "app.ico"
 _pyproject = ROOT / "pyproject.toml"
 _version_match = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject.read_text(), re.MULTILINE)
 APP_VERSION = _version_match.group(1) if _version_match else "0.0.0"
+
+# A stable Developer ID signature gives every released version the same macOS
+# designated requirement. That lets Keychain remember the user's MSAL access
+# decision across updates. Local builds remain ad-hoc signed when unset.
+MAC_CODESIGN_IDENTITY = os.environ.get("DTM_MAC_CODESIGN_IDENTITY") or None
 
 
 def _windows_version_file(version: str) -> str | None:
@@ -133,7 +139,7 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
+    codesign_identity=MAC_CODESIGN_IDENTITY,
     entitlements_file=None,
     icon=icon_path,
     manifest=manifest_path,
