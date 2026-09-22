@@ -54,7 +54,9 @@ jobs:
           VERSION="${{ steps.current.outputs.version }}"
           TAG="v${VERSION}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            TAG_SHA="$(git rev-parse "$TAG")"
+            # bump-my-version creates annotated tags. Compare the commit the
+            # tag resolves to, not the annotated tag object's own SHA.
+            TAG_SHA="$(git rev-parse "${TAG}^{}")"
             HEAD_SHA="$(git rev-parse HEAD)"
             if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
               echo "::error::${TAG} already exists at ${TAG_SHA}, but this release would use ${HEAD_SHA}. Delete or move the incorrect tag before publishing."
