@@ -223,9 +223,11 @@ all write operations still require their backend checks and explicit confirmatio
 - **Slice 1 (down-sync):** `AgencyRecord.qb_customer_id`; `agency_service.preview_qb_customer_import()`
   + `upsert_agencies_from_qb()`. Match precedence: `qb_customer_id` → normalized name → create.
   The pull stores the full operational customer profile (contact/title, phones, email, website,
-  notes, taxable flag, and billing/shipping addresses). Linking fills only EMPTY local fields;
-  it never overwrites a populated app profile field. A durable Customer-ID match does adopt a QBO
-  display-name rename and refresh the linked Builder project name; the ID link is not lost. A Customer import never schedules
+  notes, taxable flag, and billing/shipping addresses). QBO is authoritative for
+  linked agency customer-profile fields: supplied QBO values, including blanks,
+  replace Builder values. Builder-only abbreviation, preferences, pricing, and
+  folder metadata remain local. A QBO display-name rename refreshes the linked
+  Builder project name; the ID link is not lost. A Customer import never schedules
   Company/Shop vehicle folders; only a saved vehicle project enters that lifecycle. Routes
   `GET /customers/preview`, `POST /customers/import`. Connected startup/30-minute refresh now runs
   this safe Customer/Agency import along with Item reconciliation, and a newly completed OAuth
@@ -238,10 +240,11 @@ all write operations still require their backend checks and explicit confirmatio
   writes the link back WITHOUT `handle_save_agency` (can't re-trigger a push). A new app agency
   first reuses an exact top-level QB Customer name match to avoid a duplicate; otherwise it creates
   only a Customer record. No Customer save can create a financial transaction.
-  `qb_sync_service.push_agency()` + `push_agency_in_background()`. Tests: `tests/test_qb_agency_push.py` (17).
-  Cloud-arrived agency files queue their exact IDs through `request_agency_sync()`; the connected
-  QBO worker pushes those records (including contact edits) and any unlinked startup discoveries
-  before catalog reconciliation.
+  `qb_sync_service.push_agency()` creates or links only unlinked agencies. Linked
+  Builder profile edits compare against the live QBO Customer and require an
+  exact field-by-field confirmation before a sparse QBO update. Cloud-arrived
+  linked edits never trigger QBO writes; unlinked new agencies are queued for
+  creation/linking before catalog reconciliation.
 - **Legacy Slice 3 (per-vehicle job bridge):** `IndividualUnit.qb_job_id` and
   `push_vehicle_job()` remain only so older records can be read and older estimates are not
   orphaned. New estimate creation does not call this path.
@@ -261,7 +264,8 @@ the current Accounting API scope cannot rename them.
 The app requires agency name, contact name/email/phone, and billing street/city/state/postal code
 before it can create an estimate. If the agency is not linked, it first reuses an exact top-level
 Customer name match; otherwise it asks the user to confirm the complete customer profile before
-creating one. A confirmed profile update is a sparse Customer-only write. The vehicle's
+creating one. A linked Customer with missing fields must be corrected in QuickBooks or through the
+reviewed Agencies editor before estimate creation. The vehicle's
 stable project name is written into `CustomerMemo` and `PrivateNote`, and persisted with
 `IndividualUnit.qb_project_id`; no new sub-customer is created.
 
@@ -374,6 +378,10 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   users can open the full QuickBooks settings panel. `BuilderEditor` and `PartsEditor` users receive
   the Estimate-management capability that authorizes these per-user connections and the guarded
   Estimate/quote connection workflows. Credentials remain in the isolated OS keychain.
+  The modal also shows the last successful production catalog check shared through SharePoint
+  `/Settings/quickbooks_catalog_check.json`. A connected desktop publishes this timestamp after
+  its Item pull and catalog reconciliation succeed, even when no prices changed. The shared record
+  contains only the check time; local QBO connection metadata and credentials stay on that desktop.
 
 ### Full route list (`/api/quickbooks/*`)
 `GET status` · `GET auth-url` · `GET callback` (302) · `GET items` · `GET pricing-status` · `GET customer-pricing` · `GET customers/preview` ·
@@ -507,9 +515,9 @@ GOTCHAS):
 - **QB data is read-only for the catalog except linked parts**: `sync_items` never writes parts_db;
   only explicit `link_item`/`unlink_item`/`reconcile_linked_parts` touch it, and reconcile only
   writes QB-owned fields on already-linked products.
-- **Customer import preserves profile data**: fills only empty local customer-profile fields and
-  never overwrites populated app values. A QBO rename is adopted only after an exact durable
-  Customer-ID match, then propagated to linked Builder project snapshots. Automatic connected refresh includes
+- **QBO owns linked Customer profiles**: automatic import replaces supplied
+  Builder customer-profile fields, including cleared values. A QBO rename is
+  propagated to linked Builder project snapshots. Automatic connected refresh includes
   Customers/Agencies as well as Items, removes explicitly inactive unreferenced Customers, and skips
   writes for unchanged agency records.
 - **Bulk settings mirror re-reads from disk + skips deleted files**: do NOT revert

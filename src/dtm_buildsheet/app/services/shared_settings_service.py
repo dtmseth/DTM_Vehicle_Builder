@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -21,6 +22,7 @@ SETTINGS_REMOTE_FOLDER = "Settings"
 # it into the ordinary config cache creates a large, unused package-data file
 # and bypasses the versioned read path used by CalendarStore.
 _NON_MIRRORED_SETTINGS = frozenset({"calendar_plan.json"})
+_SHARED_QBO_CHECK_FILE = "quickbooks_catalog_check.json"
 
 
 @dataclass
@@ -214,8 +216,10 @@ def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
     # made by the offline tools aren't clobbered mid-development. Outbound
     # mirror still fires on save, so changes continue to propagate up.
     if os.environ.get("DTM_DEV_NO_SETTINGS_PULL"):
-        logger.info("DTM_DEV_NO_SETTINGS_PULL set — skipping inbound shared-settings pull")
-        return None
+        logger.info("DTM_DEV_NO_SETTINGS_PULL set — skipping inbound editable shared settings")
+        # This tiny status marker is read-only on non-QBO devices and cannot
+        # replace local catalog/config edits protected by the dev flag.
+        return _sync_dev_shared_catalog_check(paths)
 
     # Deferred import — wiring imports nothing from app.services and we want
     # to keep the dependency direction services → adapters.
@@ -291,6 +295,31 @@ def sync_shared_settings_at_startup(paths: AppPaths) -> SyncReport | None:
             aggregate_report.failed,
         )
     return aggregate_report
+
+
+def _sync_dev_shared_catalog_check(paths: AppPaths) -> SyncReport | None:
+    from ..adapters import wiring
+
+    if not wiring._cloud_flag_enabled():  # noqa: SLF001
+        return None
+    try:
+        bundle = wiring.get_active_bundle()
+        if not hasattr(bundle.storage, "_token_provider") or not bundle.identity.is_signed_in():
+            return None
+        payload = bundle.storage.read_bytes(f"{SETTINGS_REMOTE_FOLDER}/{_SHARED_QBO_CHECK_FILE}")
+        marker = json.loads(payload)
+        if not isinstance(marker, dict) or not isinstance(marker.get("last_checked_utc"), str):
+            raise ValueError("invalid shared catalog check marker")
+        local_path = paths.workspace_config_dir / _SHARED_QBO_CHECK_FILE
+        if local_path.exists() and local_path.read_bytes() == payload:
+            return SyncReport(unchanged=[_SHARED_QBO_CHECK_FILE])
+        LocalStorageProvider().write_bytes(str(local_path), payload)
+        return SyncReport(updated=[_SHARED_QBO_CHECK_FILE])
+    except FileNotFoundError:
+        return None
+    except Exception:
+        logger.warning("Could not refresh the shared QuickBooks catalog check")
+        return None
 
 
 def _SUBDIR_TARGETS(paths: AppPaths) -> list[tuple[str, Path]]:

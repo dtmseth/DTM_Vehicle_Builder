@@ -244,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
             else f"<h1>UI file not found: {_UI_FILE}</h1>"
         )
         html = html.replace("{{APP_VERSION}}", _APP_VERSION)
-        self._send(200, html.encode("utf-8"), "text/html; charset=utf-8")
+        self._send(200, html.encode("utf-8"), "text/html; charset=utf-8", cache_control="no-store")
 
     def _serve_static(self, rel_path: str):
         file_path = (_UI_DIR / rel_path).resolve()
@@ -259,7 +259,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         suffix = file_path.suffix.lower()
         ctype = _MIME_TYPES.get(suffix, "application/octet-stream")
-        self._send(200, file_path.read_bytes(), ctype)
+        self._send(
+            200, file_path.read_bytes(), ctype,
+            cache_control="no-store" if suffix in {".js", ".css", ".html"} else None,
+        )
 
     def _read_json(self) -> dict:
         length = int(self.headers.get("Content-Length", 0))
@@ -269,10 +272,12 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
-    def _send(self, code: int, body: bytes, ctype: str):
+    def _send(self, code: int, body: bytes, ctype: str, *, cache_control: str | None = None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", len(body))
+        if cache_control:
+            self.send_header("Cache-Control", cache_control)
         self.end_headers()
         self.wfile.write(body)
 
@@ -356,6 +361,11 @@ def _setup_logging(workspace_dir: Path) -> None:
 # bandwidth that even a busy team-of-10 only generates ~10 list_files
 # calls per minute against SharePoint.
 _PERIODIC_SYNC_INTERVAL_SECONDS = 60
+# Folder identity failures need review and will not clear by retrying every
+# minute. Keep the ordinary settings/project eTag check fast while still
+# retrying lifecycle provisioning periodically and on every manual sync.
+_FOLDER_RETRY_INTERVAL_SECONDS = 15 * 60
+_last_folder_retry_at = 0.0
 
 
 # Serialize concurrent sync invocations. Without this, the periodic loop
@@ -406,6 +416,45 @@ def is_sync_in_progress() -> bool:
 def get_data_version() -> int:
     """Return the current data-version counter for the cloud status payload."""
     return _data_version
+
+
+def _qb_agency_profile_fingerprints(paths: AppPaths) -> dict[str, str]:
+    """Snapshot only agency fields that are eligible for QuickBooks writes."""
+    agency_service.warmup_cache(paths, force=True)
+    return {
+        record.agency_id: json.dumps(
+            agency_service.customer_profile_fields(record),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        for record in agency_service.load_agencies(paths)
+        if not record.qb_customer_id
+    }
+
+
+def _changed_qb_agency_ids(
+    updated_files: list[str],
+    before: dict[str, str],
+    after: dict[str, str],
+) -> set[str]:
+    """Return downloaded agencies whose QBO-facing profile really changed.
+
+    SharePoint can report every agency as downloaded when its local eTag cache
+    is rebuilt. Comparing the actual outbound profile prevents that hydration
+    event from flooding QBO with updates to every existing Customer.
+    """
+    downloaded_ids = {
+        entry.removeprefix("agencies/").removesuffix(".json")
+        for entry in updated_files
+        if entry.startswith("agencies/")
+        and entry.endswith(".json")
+        and not entry.startswith("agencies/(deleted) ")
+    }
+    return {
+        agency_id
+        for agency_id in downloaded_ids
+        if agency_id in after and before.get(agency_id) != after[agency_id]
+    }
 
 
 def is_sync_in_progress_visible() -> bool:
@@ -524,7 +573,7 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
     when a quiet sync surfaces a change list (rendered briefly in the
     modal so they can see what landed).
     """
-    global _sync_in_progress, _sync_quiet
+    global _sync_in_progress, _sync_quiet, _last_folder_retry_at
     logger = logging.getLogger(__name__)
     report: dict = {"ok": True}
     with _sync_lock:
@@ -562,6 +611,7 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             except Exception:
                 logger.exception("Sync: background update check failed")
 
+            agency_profiles_before = _qb_agency_profile_fingerprints(active_paths)
             settings_report = sync_shared_settings_at_startup(active_paths)
             settings_changed = bool(settings_report and settings_report.updated)
             report["settings"] = (
@@ -574,21 +624,17 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
                 else None
             )
 
-            agency_service.warmup_cache(active_paths, force=True)
+            agency_profiles_after = _qb_agency_profile_fingerprints(active_paths)
             sales_rep_service.warmup_cache(active_paths, force=True)
 
-            # Agency files can be authored by a teammate whose desktop has no
-            # QBO connection. Wake this connected process immediately for new
-            # records and for later contact edits instead of waiting for the
-            # general 30-minute QBO poll.
+            # Only unlinked new agencies may create/link QBO Customers without
+            # review. Linked profile edits must never be replayed from cloud.
             if settings_report:
-                changed_agency_ids = {
-                    entry.removeprefix("agencies/").removesuffix(".json")
-                    for entry in settings_report.updated
-                    if entry.startswith("agencies/")
-                    and entry.endswith(".json")
-                    and not entry.startswith("agencies/(deleted) ")
-                }
+                changed_agency_ids = _changed_qb_agency_ids(
+                    settings_report.updated,
+                    agency_profiles_before,
+                    agency_profiles_after,
+                )
                 if changed_agency_ids:
                     from .services import qb_sync_service
                     qb_sync_service.request_agency_sync(changed_agency_ids)
@@ -626,9 +672,16 @@ def run_sync_now(active_paths: AppPaths, *, quiet: bool = False) -> dict:
             # build/photo folders and remains inert until its explicit flags
             # are enabled.
             from .services.vehicle_folder_provisioning_service import retry_folder_provisioning
-            folder_report = retry_folder_provisioning(active_paths)
+            folder_retry_at = time.monotonic()
+            if (not quiet or not _last_folder_retry_at
+                    or folder_retry_at - _last_folder_retry_at >= _FOLDER_RETRY_INTERVAL_SECONDS):
+                folder_report = retry_folder_provisioning(active_paths)
+                _last_folder_retry_at = time.monotonic()
+            else:
+                folder_report = {"skipped": "periodic_retry_interval"}
             report["vehicle_folder_provisioning"] = folder_report
-            folder_changed = bool(folder_report.get("agencies") or folder_report.get("projects"))
+            folder_attempted = int(folder_report.get("agencies", 0)) + int(folder_report.get("projects", 0))
+            folder_changed = folder_attempted > int(folder_report.get("failed", 0))
 
             # Finalized Shop packages have their own durable state because
             # their PDF/reference item IDs must be replaced or withdrawn

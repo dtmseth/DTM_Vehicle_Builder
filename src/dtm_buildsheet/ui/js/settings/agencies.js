@@ -128,14 +128,16 @@
           ${list.map(a => `
             <tr style="border-bottom:1px solid var(--border)">
               <td style="padding:7px 8px;font-weight:600">${esc(a.name)}</td>
-              <td style="padding:7px 8px;font-weight:600">${esc(a.effective_abbreviation || a.abbreviation || "")}${a.record_source === "project" ? ` <span class="field-hint">Recovered from project</span>` : ""}</td>
+              <td style="padding:7px 8px;font-weight:600">${esc(a.effective_abbreviation || a.abbreviation || "")}${a.record_source === "project" ? ` <span class="field-hint">Waiting for agency sync</span>` : ""}</td>
               <td style="padding:7px 8px">${esc(a.contact_name)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_phone)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.contact_email)}</td>
               <td style="padding:7px 8px;color:var(--muted)">${esc(a.customer_since)}</td>
               <td style="padding:7px 8px;white-space:nowrap;text-align:right">
-                <button class="btn btn-secondary btn-sm" data-act="edit" data-id="${escAttr(a.agency_id)}">Edit</button>
-                ${a.record_source === "project" ? "" : `<button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>`}
+                ${a.record_source === "project"
+                  ? `<span class="field-hint" title="The project contains only a partial agency snapshot. Editing is available after the shared agency record finishes syncing.">Details loading</span>`
+                  : `<button class="btn btn-secondary btn-sm" data-act="edit" data-id="${escAttr(a.agency_id)}">Edit</button>
+                     <button class="btn btn-secondary btn-sm" style="margin-left:4px;color:var(--red)" data-act="del" data-id="${escAttr(a.agency_id)}">Delete</button>`}
               </td>
             </tr>`).join("")}
         </tbody>
@@ -295,6 +297,20 @@
       } else if (confirm(`${warnings}\n\nThis name is outside the standard. Save it anyway?`)) {
         payload.naming_override = true;
         res = await apiSave("/api/agency/save", payload);
+      }
+    }
+    if (!res?.ok && res?.error_code === "qb_review_required") {
+      const formatValue = value => value === true ? "Yes" : value === false ? "No" : (value == null || value === "" ? "(blank)" : String(value));
+      const label = field => field.replace(/^bill_/, "Billing ").replace(/^ship_/, "Shipping ")
+        .replaceAll("_", " ").replace(/^./, char => char.toUpperCase());
+      const changes = (res.changes || []).map(change =>
+        `${label(change.field)}: [QB ${formatValue(change.before)}] → [${formatValue(change.after)}]`
+      ).join("\n");
+      if (confirm(`WARNING: This will change the QuickBooks customer:\n\n${changes}\n\nMake these changes here only if you are sure. Otherwise, make them in QuickBooks and they will flow into Builder.\n\nUpdate QuickBooks now?`)) {
+        payload.qb_confirmation_token = res.confirmation_token;
+        res = await apiSave("/api/agency/save", payload);
+      } else {
+        return;
       }
     }
     if (res?.ok) {

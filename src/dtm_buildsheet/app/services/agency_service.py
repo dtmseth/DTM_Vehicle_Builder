@@ -456,23 +456,34 @@ def missing_estimate_customer_fields(record_or_fields: AgencyRecord | dict) -> l
     return missing
 
 
-def merge_missing_customer_profile(record: AgencyRecord, customer: dict) -> list[str]:
-    """Fill only blank local profile fields from a QBO customer.
+def apply_qb_customer_profile(record: AgencyRecord, customer: dict) -> list[str]:
+    """Apply supplied QBO profile fields to a linked Builder agency.
 
-    Down-sync must be additive: an omitted value in QBO can never erase a
-    locally-entered value, and a populated local value remains the user's
-    explicit choice. Name synchronization is handled separately only after a
-    durable QuickBooks Customer ID match.
+    QBO owns the shared customer profile. A missing key means the API did not
+    supply that field; an explicitly empty value clears the Builder field.
     """
+    changed: list[str] = []
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if field == "name":
+            continue
+        if field not in customer or customer[field] is None:
+            continue
+        incoming = _clean_agency_field(field, customer[field])
+        if getattr(record, field) != incoming:
+            setattr(record, field, incoming)
+            changed.append(field)
+    return changed
+
+
+def merge_missing_customer_profile(record: AgencyRecord, customer: dict) -> list[str]:
+    """Fill blanks only for the historical, reviewed customer migration."""
     changed: list[str] = []
     for field in CUSTOMER_PROFILE_FIELDS:
         if field == "name":
             continue
         current = getattr(record, field)
         incoming = customer.get(field)
-        current_missing = current is None or not str(current).strip()
-        incoming_present = incoming is not None and bool(str(incoming).strip())
-        if current_missing and incoming_present:
+        if (current is None or not str(current).strip()) and incoming is not None and str(incoming).strip():
             setattr(record, field, _clean_agency_field(field, incoming))
             changed.append(field)
     return changed
@@ -552,7 +563,7 @@ def _agency_response_row(record: AgencyRecord, *, source: str = "agency") -> dic
 
 
 def load_agency_rows(paths: AppPaths) -> list[dict]:
-    """List persisted agencies plus editable recovery rows from projects."""
+    """List persisted agencies plus read-only recovery rows from projects."""
     rows = {
         record.agency_id: _agency_response_row(record)
         for record in load_agencies(paths)
@@ -730,9 +741,15 @@ def save_agency_folder_state(paths: AppPaths, agency_id: str, values: dict) -> A
     record = _records(paths).get(agency_id)
     if record is None:
         return None
+    changed = False
     for field, value in values.items():
         if field in _AGENCY_FOLDER_STATE_FIELDS:
-            setattr(record, field, str(value or ""))
+            value = str(value or "")
+            if getattr(record, field) != value:
+                setattr(record, field, value)
+                changed = True
+    if not changed:
+        return record
     _write_record(record, paths)
     serialized = json.dumps(asdict(record), indent=2) + "\n"
     from .shared_work_service import save_setting_to_cloud_in_background
@@ -902,13 +919,22 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
 
         records = _records(paths)
         existing = records.get(agency_id)
+        from . import qb_sync_service
+        reviewed_qb = None
+        if existing and existing.qb_customer_id:
+            reviewed_qb = qb_sync_service.review_linked_agency_edit(paths, existing, body)
+            if not reviewed_qb.get("ok"):
+                return reviewed_qb
         if existing:
-            existing.name = name
+            qb_profile = (reviewed_qb or {}).get("qb_profile") or {}
+            existing.name = str(qb_profile.get("name", name))
             # Only fields explicitly present in the request are changed. This
             # keeps older callers from accidentally blanking the expanded
             # customer profile when they edit just one field.
             for field in _AGENCY_EDITABLE_FIELDS:
-                if field in body:
+                if field in qb_profile:
+                    setattr(existing, field, _clean_agency_field(field, qb_profile[field]))
+                elif field in body and (not existing.qb_customer_id or field not in CUSTOMER_PROFILE_FIELDS):
                     setattr(existing, field, _clean_agency_field(field, body[field]))
             existing.updated_at = now
             record = existing
@@ -934,8 +960,10 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
         # inside a daemon thread. Do this before publishing the shared snapshot
         # so a successful create carries its Customer ID to teammates atomically
         # with the profile instead of exposing a temporary unlinked record.
-        from . import qb_sync_service
-        qb_sync = qb_sync_service.push_agency_after_save(paths, record.agency_id)
+        qb_sync = (
+            reviewed_qb["qb_sync"] if reviewed_qb is not None
+            else qb_sync_service.push_agency_after_save(paths, record.agency_id)
+        )
         # Folder trees are project-scoped. Agency Manager also contains every
         # imported QBO Customer, many of which are vendors or non-build
         # customers. Linked project identity changes were already scheduled by
@@ -976,9 +1004,8 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
 #
 # Pulls QB Customers into agencies. Match precedence: existing qb_customer_id,
 # then normalized-name. New customers create agencies; matched ones are linked
-# (qb_customer_id stamped) and have empty profile fields filled from QB —
-# existing non-empty profile values are never clobbered. A durable QBO-ID
-# match adopts a QBO rename and refreshes linked project display snapshots.
+# (qb_customer_id stamped) and replace their shared customer profile from QBO.
+# A QBO rename also refreshes linked project display snapshots.
 
 
 def _match_existing_for_qb(
@@ -989,7 +1016,8 @@ def _match_existing_for_qb(
     hit = by_qb.get(cust.get("qb_customer_id", ""))
     if hit:
         return hit
-    return by_name.get(_normalize(cust.get("name", "")))
+    name_hit = by_name.get(_normalize(cust.get("name", "")))
+    return name_hit if name_hit and not name_hit.qb_customer_id else None
 
 
 def preview_qb_customer_import(customers: list[dict], paths: AppPaths) -> dict:
@@ -1089,6 +1117,12 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
     """
     records = _records(paths)
     by_qb = {r.qb_customer_id: r for r in records.values() if r.qb_customer_id}
+    # Multiple historical agency identities may point to one QBO Customer.
+    # Each can own projects and folders, so refresh all of them on a QBO pull.
+    by_qb_all: dict[str, list[AgencyRecord]] = {}
+    for record in records.values():
+        if record.qb_customer_id:
+            by_qb_all.setdefault(record.qb_customer_id, []).append(record)
     by_name: dict[str, AgencyRecord] = {}
     for r in records.values():
         by_name.setdefault(_normalize(r.name), r)
@@ -1103,23 +1137,28 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
             continue
         qb_id = str(cust.get("qb_customer_id", "")).strip()
         existing = _match_existing_for_qb(cust, by_qb, by_name)
-        if existing:
-            changed = False
-            if qb_id and existing.qb_customer_id == qb_id and existing.name != name:
-                existing.name = name
-                changed = True
-                renamed_records.append(existing)
-            if qb_id and existing.qb_customer_id != qb_id:
-                existing.qb_customer_id = qb_id
-                changed = True
-            if merge_missing_customer_profile(existing, cust):
-                changed = True
-            if not changed:
-                unchanged += 1
-                continue
-            existing.updated_at = now
-            record = existing
-            updated += 1
+        matches = list(by_qb_all.get(qb_id, [])) if qb_id else []
+        if not matches and existing:
+            matches = [existing]
+        if matches:
+            records_to_save: list[AgencyRecord] = []
+            for matched in matches:
+                changed = False
+                if qb_id and matched.name != name:
+                    matched.name = name
+                    changed = True
+                    renamed_records.append(matched)
+                if qb_id and matched.qb_customer_id != qb_id:
+                    matched.qb_customer_id = qb_id
+                    changed = True
+                if apply_qb_customer_profile(matched, cust):
+                    changed = True
+                if changed:
+                    matched.updated_at = now
+                    records_to_save.append(matched)
+                    updated += 1
+                else:
+                    unchanged += 1
         else:
             imported_fields = {
                 field: _clean_agency_field(field, cust.get(field))
@@ -1136,20 +1175,22 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
             )
             records[record.agency_id] = record
             created += 1
+            records_to_save = [record]
         if qb_id:
-            by_qb[qb_id] = record
-        by_name.setdefault(_normalize(record.name), record)
+            by_qb[qb_id] = matches[0] if matches else record
+            by_qb_all[qb_id] = matches if matches else [record]
+        for record in (matches if matches else [record]):
+            by_name.setdefault(_normalize(record.name), record)
 
-        try:
-            _write_record(record, paths)
-            # Pass the local path (not the serialized content) so the batch
-            # mirror re-reads at upload time and skips any record deleted in
-            # the meantime — prevents an import from resurrecting a deletion.
-            to_mirror.append(
-                (f"agencies/{record.agency_id}.json", str(_record_path(record.agency_id, paths)))
-            )
-        except Exception:
-            _log.exception("Failed to write imported agency %s", record.agency_id)
+        for record in records_to_save:
+            try:
+                _write_record(record, paths)
+                # Re-read at upload time so a deleted record is not revived.
+                to_mirror.append(
+                    (f"agencies/{record.agency_id}.json", str(_record_path(record.agency_id, paths)))
+                )
+            except Exception:
+                _log.exception("Failed to write imported agency %s", record.agency_id)
 
     if to_mirror:
         from .shared_work_service import save_settings_to_cloud_batch_in_background

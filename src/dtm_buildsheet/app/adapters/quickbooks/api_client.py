@@ -327,13 +327,13 @@ class QuickBooksApiClient:
         envelope = self._post("customer", _build_customer_payload(fields))
         return _customer_result(envelope)
 
-    def update_customer(self, customer_id: str, sync_token: str, fields: dict) -> dict:
+    def update_customer(self, customer_id: str, sync_token: str, fields: dict, *, include_empty: bool = False) -> dict:
         """Sparse-update an existing Customer's contact fields. Returns id + token."""
         payload = {
             "Id": str(customer_id),
             "SyncToken": str(sync_token),
             "sparse": True,
-            **_build_customer_payload(fields),
+            **_build_customer_payload(fields, include_empty=include_empty),
         }
         envelope = self._post("customer", payload)
         return _customer_result(envelope)
@@ -603,7 +603,7 @@ def _sales_form_custom_fields(sales_preferences: object) -> list[dict]:
     ]
 
 
-def _build_customer_payload(fields: dict) -> dict:
+def _build_customer_payload(fields: dict, *, include_empty: bool = False) -> dict:
     """Map VB agency fields to a QBO Customer payload (only supplied fields).
 
     ``contact_name`` is split on the first space into Given/Family so it
@@ -616,31 +616,31 @@ def _build_customer_payload(fields: dict) -> dict:
         payload["DisplayName"] = name
         payload["CompanyName"] = name
     email = (fields.get("contact_email") or "").strip()
-    if email:
+    if email or (include_empty and "contact_email" in fields):
         payload["PrimaryEmailAddr"] = {"Address": email}
     phone = (fields.get("contact_phone") or "").strip()
-    if phone:
+    if phone or (include_empty and "contact_phone" in fields):
         payload["PrimaryPhone"] = {"FreeFormNumber": phone}
     contact = (fields.get("contact_name") or "").strip()
-    if contact:
+    if contact or (include_empty and "contact_name" in fields):
         first, _, last = contact.partition(" ")
         payload["GivenName"] = first
-        if last:
+        if last or include_empty:
             payload["FamilyName"] = last
     title = (fields.get("contact_title") or "").strip()
-    if title:
+    if title or (include_empty and "contact_title" in fields):
         payload["Title"] = title
     mobile = (fields.get("mobile_phone") or "").strip()
-    if mobile:
+    if mobile or (include_empty and "mobile_phone" in fields):
         payload["Mobile"] = {"FreeFormNumber": mobile}
     fax = (fields.get("fax") or "").strip()
-    if fax:
+    if fax or (include_empty and "fax" in fields):
         payload["Fax"] = {"FreeFormNumber": fax}
     website = (fields.get("website") or "").strip()
-    if website:
+    if website or (include_empty and "website" in fields):
         payload["WebAddr"] = {"URI": website}
     notes = (fields.get("notes") or "").strip()
-    if notes:
+    if notes or (include_empty and "notes" in fields):
         payload["Notes"] = notes
     if fields.get("taxable") is not None:
         payload["Taxable"] = bool(fields["taxable"])
@@ -655,16 +655,16 @@ def _build_customer_payload(fields: dict) -> dict:
     if customer_type_id:
         payload["CustomerTypeRef"] = {"value": customer_type_id}
 
-    bill_addr = _build_address_payload(fields, "bill")
+    bill_addr = _build_address_payload(fields, "bill", include_empty=include_empty)
     if bill_addr:
         payload["BillAddr"] = bill_addr
-    ship_addr = _build_address_payload(fields, "ship")
+    ship_addr = _build_address_payload(fields, "ship", include_empty=include_empty)
     if ship_addr:
         payload["ShipAddr"] = ship_addr
     return payload
 
 
-def _build_address_payload(fields: dict, kind: str) -> dict:
+def _build_address_payload(fields: dict, kind: str, *, include_empty: bool = False) -> dict:
     """Convert flattened app address fields into QBO's address object."""
     mapping = {
         "line1": "Line1",
@@ -679,7 +679,7 @@ def _build_address_payload(fields: dict, kind: str) -> dict:
     for suffix, qbo_field in mapping.items():
         field = f"{kind}_address_{suffix}" if suffix.startswith("line") else f"{kind}_{suffix}"
         value = (fields.get(field) or "").strip()
-        if value:
+        if value or (include_empty and field in fields):
             payload[qbo_field] = value
     return payload
 

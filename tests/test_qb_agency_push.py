@@ -62,7 +62,7 @@ class _FakeClient:
         self.created.append(fields)
         return {"qb_customer_id": self.new_id, "sync_token": "0"}
 
-    def update_customer(self, customer_id, sync_token, fields):
+    def update_customer(self, customer_id, sync_token, fields, **kwargs):
         self.updated.append((customer_id, sync_token, fields))
         return {"qb_customer_id": customer_id, "sync_token": "1"}
 
@@ -85,6 +85,14 @@ def test_build_customer_payload_maps_only_present_fields():
 def test_build_customer_payload_omits_empty_and_single_name():
     p = _build_customer_payload({"name": "Solo", "contact_name": "Cher"})
     assert p == {"DisplayName": "Solo", "CompanyName": "Solo", "GivenName": "Cher"}
+
+
+def test_reviewed_customer_payload_can_clear_supplied_fields():
+    p = _build_customer_payload({"contact_email": "", "contact_name": "",
+                                 "bill_postal_code": ""}, include_empty=True)
+    assert p["PrimaryEmailAddr"] == {"Address": ""}
+    assert p["GivenName"] == "" and p["FamilyName"] == ""
+    assert p["BillAddr"] == {"PostalCode": ""}
 
 
 def test_build_customer_payload_maps_full_customer_profile():
@@ -166,7 +174,7 @@ def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
     assert agc.get_agency(paths, aid).qb_customer_id == "900"
 
 
-def test_push_updates_when_already_linked(paths, monkeypatch):
+def test_background_push_never_updates_when_already_linked(paths, monkeypatch):
     agc.handle_save_agency({"name": "Beta SO"}, paths)
     aid = agc.load_agencies(paths)[0].agency_id
     agc.set_qb_customer_id(paths, aid, "77")
@@ -175,10 +183,71 @@ def test_push_updates_when_already_linked(paths, monkeypatch):
     monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
 
     res = sync.push_agency(paths, aid)
-    assert res == {"ok": True, "qb_customer_id": "77", "action": "updated"}
+    assert res == {"ok": True, "qb_customer_id": "77", "action": "already_linked"}
     assert fake.reads == ["77"]
-    assert fake.updated and fake.updated[0][0] == "77" and fake.updated[0][1] == "5"
+    assert fake.updated == []
     assert fake.created == []
+
+
+def test_new_agency_reuses_matching_qb_customer_without_editing_it(paths, monkeypatch):
+    saved = agc.handle_save_agency({"name": "Existing PD", "contact_phone": "local"}, paths)["agency"]
+    fake = _FakeClient()
+    fake.find_top_level_customer_by_display_name = lambda name: {
+        "qb_customer_id": "77", "name": name, "contact_phone": "qb-phone",
+    }
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+
+    result = sync.push_agency(paths, saved["agency_id"])
+    assert result["action"] == "linked"
+    assert fake.updated == [] and fake.created == []
+    record = agc.get_agency(paths, saved["agency_id"])
+    assert record.qb_customer_id == "77"
+    assert record.contact_phone == "qb-phone"
+
+
+def test_linked_edit_requires_exact_qb_review_before_any_write(paths, monkeypatch):
+    saved = agc.handle_save_agency({"name": "Dundas Police Department", "contact_name": "Holt Goodwin",
+                                     "bill_postal_code": "55019"}, paths)["agency"]
+    aid = saved["agency_id"]
+    agc.set_qb_customer_id(paths, aid, "430")
+    fake = _FakeClient(existing={"Id": "430", "SyncToken": "3", "DisplayName": "Dundas Police Department",
+                                 "CompanyName": "Dundas Police Department", "GivenName": "Todd", "FamilyName": "Hanson",
+                                 "BillAddr": {"PostalCode": "55019-0228"}})
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+
+    body = {"agency_id": aid, "name": "Dundas Police Department", "contact_name": "New Contact",
+            "bill_postal_code": "55020"}
+    preview = agc.handle_save_agency(body, paths)
+    assert preview["error_code"] == "qb_review_required"
+    assert preview["changes"] == [
+        {"field": "contact_name", "before": "Todd Hanson", "after": "New Contact"},
+        {"field": "bill_postal_code", "before": "55019-0228", "after": "55020"},
+    ]
+    assert fake.updated == []
+    assert agc.get_agency(paths, aid).contact_name == "Holt Goodwin"
+
+    result = agc.handle_save_agency({**body, "qb_confirmation_token": preview["confirmation_token"]}, paths)
+    assert result["ok"] is True
+    assert fake.updated[0][0] == "430"
+    assert fake.updated[0][2]["bill_postal_code"] == "55020"
+    assert agc.get_agency(paths, aid).contact_name == "New Contact"
+
+
+def test_qb_pull_overwrites_dundas_contact_and_postal_code(paths):
+    saved = agc.handle_save_agency({"name": "Dundas Police Department", "contact_name": "Holt Goodwin",
+                                     "bill_postal_code": "55019", "ship_postal_code": "55019"}, paths)["agency"]
+    agc.set_qb_customer_id(paths, saved["agency_id"], "430")
+    result = agc.upsert_agencies_from_qb([{
+        "qb_customer_id": "430", "name": "Dundas Police Department", "contact_name": "Todd Hanson",
+        "contact_email": "thanson@dundas.us", "bill_postal_code": "55019-0228",
+        "ship_postal_code": "55019-0228",
+    }], paths)
+    assert result["updated"] == 1
+    record = agc.get_agency(paths, saved["agency_id"])
+    assert record.contact_name == "Todd Hanson"
+    assert record.contact_email == "thanson@dundas.us"
+    assert record.bill_postal_code == "55019-0228"
+    assert record.ship_postal_code == "55019-0228"
 
 
 def test_push_requires_relink_when_linked_customer_gone(paths, monkeypatch):
@@ -324,13 +393,53 @@ def test_pending_and_unlinked_agencies_push_immediately(paths, monkeypatch):
     report = sync.push_pending_and_unlinked_agencies(paths)
 
     assert report["ok"] is True
-    assert report["attempted"] == 2
-    assert report["succeeded"] == 2
-    assert fake.updated[0][0] == "77"
-    assert fake.updated[0][2]["contact_phone"] == "555-1000"
+    assert report["attempted"] == 1
+    assert report["succeeded"] == 1
+    assert report["results"][0]["agency_id"] == unlinked_id
+    assert fake.updated == []
     assert fake.created[0]["name"] == "New SO"
     assert fake.created[0]["contact_email"] == "new@example.gov"
     assert agc.get_agency(paths, unlinked_id).qb_customer_id == "901"
+
+
+def test_cloud_hydration_queues_only_real_qb_profile_changes():
+    from dtm_buildsheet.app import server
+
+    before = {
+        "unchanged": '{"name":"Existing PD"}',
+        "edited": '{"name":"Old Name"}',
+    }
+    after = {
+        "unchanged": '{"name":"Existing PD"}',
+        "edited": '{"name":"New Name"}',
+        "new": '{"name":"New Agency"}',
+    }
+
+    changed = server._changed_qb_agency_ids(
+        [
+            "agencies/unchanged.json",
+            "agencies/edited.json",
+            "agencies/new.json",
+            "agencies/(deleted) removed.json",
+            "parts_db.json",
+        ],
+        before,
+        after,
+    )
+
+    assert changed == {"edited", "new"}
+
+
+def test_cloud_snapshot_excludes_linked_agencies(paths):
+    from dtm_buildsheet.app import server
+
+    linked = agc.handle_save_agency({"name": "Linked PD"}, paths)["agency"]["agency_id"]
+    unlinked = agc.handle_save_agency({"name": "New PD"}, paths)["agency"]["agency_id"]
+    agc.set_qb_customer_id(paths, linked, "77")
+
+    profiles = server._qb_agency_profile_fingerprints(paths)
+    assert linked not in profiles
+    assert unlinked in profiles
 
 
 def test_automatic_sync_pushes_agencies_before_catalog_refresh(paths, monkeypatch):

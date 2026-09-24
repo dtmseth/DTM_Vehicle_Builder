@@ -51,6 +51,7 @@ _ACCESS_TOKEN_SKEW_SECONDS = 300        # refresh 5 minutes before expiry
 _DEFAULT_ACCESS_TTL = 3600              # 1 hour, per Intuit
 _DEFAULT_REFRESH_TTL = 8726400         # ~101 days, per Intuit
 _HARD_EXPIRY_DAYS = 5 * 365             # Intuit's 5-year hard cap
+_SHARED_CATALOG_CHECK_FILE = "quickbooks_catalog_check.json"
 
 # In-process CSRF state for the one-time OAuth handshake. Set when the auth
 # URL is generated, consumed once on callback. A module global is sufficient
@@ -417,6 +418,35 @@ def get_status(paths: AppPaths, *, profile: str = _DEFAULT_PROFILE) -> dict:
         "refresh_expiry_utc": config.get("refresh_expiry_utc", ""),
         "hard_expiry_utc": config.get("hard_expiry_utc", ""),
         "last_sync_utc": config.get("last_sync_utc"),
+        "last_shared_catalog_check_utc": get_shared_catalog_check(paths),
         "profile": profile,
         "preview_only": profile == PRODUCTION_PREVIEW_PROFILE,
     }
+
+
+def get_shared_catalog_check(paths: AppPaths) -> str | None:
+    """Read the team-visible QBO catalog check mirrored from SharePoint."""
+    path = paths.workspace_config_dir / _SHARED_CATALOG_CHECK_FILE
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    value = data.get("last_checked_utc") if isinstance(data, dict) else None
+    return value if isinstance(value, str) and value else None
+
+
+def publish_shared_catalog_check(paths: AppPaths, when_iso: str) -> bool:
+    """Publish a successful catalog check, without sharing local QBO credentials."""
+    from ...storage.local import LocalStorageProvider
+    from .shared_work_service import save_setting_to_cloud
+
+    payload = json.dumps({"last_checked_utc": when_iso}, indent=2) + "\n"
+    if not save_setting_to_cloud(_SHARED_CATALOG_CHECK_FILE, payload):
+        return False
+    try:
+        LocalStorageProvider().write_text(
+            str(paths.workspace_config_dir / _SHARED_CATALOG_CHECK_FILE), payload
+        )
+    except OSError:
+        logger.warning("Shared QuickBooks catalog check could not be cached locally")
+    return True

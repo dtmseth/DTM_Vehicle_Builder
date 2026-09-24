@@ -18,6 +18,7 @@ or other company data.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import threading
@@ -340,6 +341,9 @@ def run_full_sync(paths: AppPaths) -> dict:
         if not pull.get("ok"):
             return pull
         recon = reconcile_linked_parts(paths)
+        if recon.get("ok") and quickbooks_service.get_status(paths).get("environment") == "production":
+            if not quickbooks_service.publish_shared_catalog_check(paths, pull["last_sync_utc"]):
+                logger.warning("QuickBooks catalog check could not be shared")
         return {**pull, "reconciled": recon}
 
 
@@ -542,9 +546,9 @@ def preview_estimate_customer(paths: AppPaths, project_id: str) -> dict:
 
 
 def push_agency(paths: AppPaths, agency_id: str) -> dict:
-    """Create or update the QB Customer that mirrors a VB agency.
+    """Create or link a new Builder agency in QBO; never update a linked one.
 
-    Returns ``{"ok": True, "qb_customer_id": id, "action": "created"|"updated"}``
+    Returns ``{"ok": True, "qb_customer_id": id, "action": "created"|"linked"|"already_linked"}``
     or ``{"ok": False, "error": ...}``. Safe to call directly (tests) or via
     ``push_agency_in_background``.
     """
@@ -564,19 +568,11 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     fields = agency_service.customer_profile_fields(record)
 
     try:
-        # CustomerType IDs are company-local, so resolve Retail by name instead
-        # of persisting or hard-coding the production company's current ID.
-        retail_type_id = client.find_customer_type_by_name("Retail")
-        if not retail_type_id:
-            return {"ok": False, "error": "retail_customer_type_not_found"}
-        fields["customer_type_id"] = retail_type_id
         existing_id = (record.qb_customer_id or "").strip()
         if existing_id:
             current = client.read_customer(existing_id)
             if current is not None:
-                client.update_customer(existing_id, current.get("SyncToken", "0"), fields)
-                logger.info("QB agency push: updated existing customer")
-                return {"ok": True, "qb_customer_id": existing_id, "action": "updated"}
+                return {"ok": True, "qb_customer_id": existing_id, "action": "already_linked"}
             # A missing durable ID commonly means the Customer was merged in
             # QBO. Never recreate it automatically; Builder must explicitly
             # merge/relink the local agency to the surviving Customer first.
@@ -595,18 +591,20 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
         if matched:
             matched_id = str(matched.get("qb_customer_id", "")).strip()
             if matched_id:
-                current = client.read_customer(matched_id)
-                if current is not None:
-                    client.update_customer(
-                        matched_id,
-                        current.get("SyncToken", "0"),
-                        {"customer_type_id": retail_type_id},
-                    )
-                agency_service.merge_missing_customer_profile(record, matched)
+                agency_service.apply_qb_customer_profile(record, matched)
                 agency_service.set_qb_customer_id(paths, agency_id, matched_id)
-                logger.info("QB agency push: linked existing customer")
+                logger.info(
+                    "QB agency push: linked existing customer agency_id=%s qb_customer_id=%s",
+                    agency_id,
+                    matched_id,
+                )
                 return {"ok": True, "qb_customer_id": matched_id, "action": "linked"}
 
+        # CustomerType IDs are company-local; only a new Customer needs Retail.
+        retail_type_id = client.find_customer_type_by_name("Retail")
+        if not retail_type_id:
+            return {"ok": False, "error": "retail_customer_type_not_found"}
+        fields["customer_type_id"] = retail_type_id
         result = client.create_customer(fields)
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks agency push failed: %s", exc)
@@ -615,8 +613,69 @@ def push_agency(paths: AppPaths, agency_id: str) -> dict:
     new_id = result.get("qb_customer_id", "")
     if new_id:
         agency_service.set_qb_customer_id(paths, agency_id, new_id)
-    logger.info("QB agency push: created customer")
+    logger.info(
+        "QB agency push: created customer agency_id=%s qb_customer_id=%s",
+        agency_id,
+        new_id,
+    )
     return {"ok": True, "qb_customer_id": new_id, "action": "created"}
+
+
+def review_linked_agency_edit(paths: AppPaths, record, body: dict) -> dict:
+    """Compare only fields edited in Builder with live QBO, then require review."""
+    from ...domain.agency_models import CUSTOMER_PROFILE_FIELDS
+    from . import agency_service
+
+    edits = {}
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if field in body and agency_service._clean_agency_field(field, body[field]) != getattr(record, field):
+            edits[field] = agency_service._clean_agency_field(field, body[field])
+    if not edits:
+        return {"ok": True, "qb_sync": {"ok": True, "skipped": "no_profile_edits"}}
+
+    client, err = _build_client(paths)
+    if err:
+        return {"ok": False, "error": "QuickBooks must be connected to edit a linked agency profile. Edit it in QuickBooks instead."}
+    try:
+        raw = client.read_customer(record.qb_customer_id)
+        if raw is None:
+            return {"ok": False, "error": "QuickBooks customer is missing; relink the agency before editing."}
+        remote = _normalized_customer_from_raw(raw)
+        changes = [
+            {"field": field, "before": remote.get(field), "after": value}
+            for field, value in edits.items() if remote.get(field) != value
+        ]
+        if "name" in edits and str(raw.get("DisplayName") or "").strip() != edits["name"]:
+            changes.append({"field": "display_name", "before": raw.get("DisplayName") or "",
+                            "after": edits["name"]})
+        if edits.get("taxable") is False and remote.get("taxable") is not False:
+            current_reason = str(raw.get("TaxExemptionReasonId") or "")
+            if current_reason != "3":
+                changes.append({"field": "tax_exemption_reason_id", "before": current_reason,
+                                "after": "3"})
+        if not changes:
+            return {"ok": True, "qb_sync": {"ok": True, "skipped": "already_matches_qb"}, "qb_profile": remote}
+        token = hashlib.sha256(json.dumps({
+            "agency_id": record.agency_id,
+            "qb_customer_id": record.qb_customer_id,
+            "sync_token": raw.get("SyncToken"),
+            "changes": changes,
+        }, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        if body.get("qb_confirmation_token") != token:
+            return {"ok": False, "error_code": "qb_review_required", "changes": changes,
+                    "confirmation_token": token}
+        fields = dict(edits)
+        for prefix in ("bill", "ship"):
+            if any(field.startswith(prefix + "_") for field in edits):
+                for field in CUSTOMER_PROFILE_FIELDS:
+                    if field.startswith(prefix + "_") and field not in fields:
+                        fields[field] = remote.get(field, "")
+        client.update_customer(record.qb_customer_id, raw.get("SyncToken", "0"), fields, include_empty=True)
+        remote.update(edits)
+        return {"ok": True, "qb_sync": {"ok": True, "action": "updated"}, "qb_profile": remote}
+    except QuickBooksApiError as exc:
+        logger.warning("Reviewed QuickBooks agency update failed: %s", exc)
+        return {"ok": False, "error": str(exc)}
 
 
 def push_agency_in_background(paths: AppPaths, agency_id: str) -> None:
@@ -672,20 +731,16 @@ def _has_customer_value(value: object) -> bool:
 
 
 def _merge_customer_profile(local: dict, remote: dict, supplied: dict | None = None) -> dict:
-    """Combine app, explicit confirmation, and QB values without data loss.
-
-    Explicit non-empty confirmation values win. Existing app values win over
-    QBO values (the same additive policy as the pull). QBO fills only gaps.
-    """
+    """Use QBO's profile for linked customers; explicit editor values win."""
     from ...domain.agency_models import CUSTOMER_PROFILE_FIELDS
 
     merged = {field: local.get(field) for field in CUSTOMER_PROFILE_FIELDS}
+    for field in CUSTOMER_PROFILE_FIELDS:
+        if field in remote and remote[field] is not None:
+            merged[field] = remote[field]
     for field, value in (supplied or {}).items():
         if field in merged and _has_customer_value(value):
             merged[field] = value
-    for field in CUSTOMER_PROFILE_FIELDS:
-        if not _has_customer_value(merged.get(field)) and _has_customer_value(remote.get(field)):
-            merged[field] = remote[field]
     return merged
 
 
@@ -740,7 +795,9 @@ def ensure_top_level_customer(
             if customer_id:
                 agency_service.set_qb_customer_id(paths, agency.agency_id, customer_id)
 
-    effective_fields = _merge_customer_profile(local_fields, customer or {}, supplied)
+    effective_fields = _merge_customer_profile(
+        local_fields, customer or {}, supplied if not customer_id else None,
+    )
 
     if not customer_id:
         if not confirmed:
@@ -780,31 +837,11 @@ def ensure_top_level_customer(
                 "error": "customer_incomplete",
                 "customer": effective_fields,
                 "missing_fields": missing,
+                "customer_linked": True,
             }
-        if confirmed:
-            # This is an explicit user confirmation in the estimate dialog.
-            # Only a sparse Customer update is made; no financial document is
-            # created unless the profile is complete and this function returns
-            # successfully to the estimate service. Updating even when the
-            # merged app profile is already complete ensures newly entered
-            # addresses/contact fields reach the linked QB Customer too.
-            try:
-                current = client.read_customer(customer_id)
-                sync_token = (current or {}).get("SyncToken", (customer or {}).get("sync_token", "0"))
-                retail_type_id = client.find_customer_type_by_name("Retail")
-                if not retail_type_id:
-                    return {"ok": False, "error": "retail_customer_type_not_found"}
-                client.update_customer(customer_id, sync_token, {
-                    **effective_fields, "customer_type_id": retail_type_id,
-                })
-            except QuickBooksApiError as exc:
-                logger.warning("QuickBooks customer profile update failed: %s", exc)
-                return {"ok": False, "error": str(exc)}
-            customer = {**(customer or {}), **effective_fields, "qb_customer_id": customer_id}
 
-    # Persist the profile confirmed above, or the additional fields retrieved
-    # from an already-complete QB Customer. This never schedules another QB
-    # write; it only makes future pulls/estimates use the same local profile.
+    # Persist the created profile or the live QBO profile. This never schedules
+    # another QBO write; future pulls and estimates use the same local values.
     agency_service.update_agency_customer_profile(paths, agency.agency_id, effective_fields)
 
     customer_name = str((customer or {}).get("name", "") or effective_fields["name"]).strip()
@@ -931,11 +968,11 @@ _pending_agency_ids_lock = threading.Lock()
 
 
 def request_agency_sync(agency_ids: list[str] | tuple[str, ...] | set[str]) -> None:
-    """Queue cloud-arrived agencies for the connected QBO worker.
+    """Queue cloud-arrived new agencies for the connected QBO worker.
 
     The SharePoint settings poll runs every minute, while the general QBO
     refresh normally sleeps for 30 minutes.  Remembering the exact agency IDs
-    lets the worker mirror new agencies and contact edits before doing the
+    lets the worker create/link new agencies before doing the
     slower catalog/customer pull.  The set also coalesces repeated cloud
     observations of the same record.
     """
@@ -966,22 +1003,33 @@ def _requeue_failed_agency_ids(agency_ids: list[str]) -> None:
 
 
 def push_pending_and_unlinked_agencies(paths: AppPaths) -> dict:
-    """Push requested agency changes plus any unlinked startup discoveries.
+    """Create/link unlinked agency discoveries only.
 
-    Requested IDs include edits to already-linked Customers.  The unlinked
-    scan closes the gap for agencies created while no Builder client had a QBO
+    The unlinked scan closes the gap for agencies created while no Builder client had a QBO
     connection, including records already present when this process starts.
     """
     from . import agency_service
 
     requested_ids = _take_pending_agency_ids()
+    records = agency_service.load_agencies(paths)
     unlinked_ids = [
         record.agency_id
-        for record in agency_service.load_agencies(paths)
+        for record in records
         if not (record.qb_customer_id or "").strip()
-        and record.agency_id not in requested_ids
     ]
-    attempted_ids = requested_ids + unlinked_ids
+    unlinked_set = set(unlinked_ids)
+
+    # A newly downloaded agency goes first; already linked Customer edits
+    # never enter this automatic write queue.
+    requested_unlinked = [
+        agency_id for agency_id in requested_ids if agency_id in unlinked_set
+    ]
+    requested_unlinked_set = set(requested_unlinked)
+    discovered_unlinked = [
+        agency_id for agency_id in unlinked_ids
+        if agency_id not in requested_unlinked_set
+    ]
+    attempted_ids = requested_unlinked + discovered_unlinked
     results: list[dict] = []
     retry_ids: list[str] = []
     for agency_id in attempted_ids:
@@ -1004,11 +1052,10 @@ def run_automatic_sync(paths: AppPaths) -> dict:
 
     Item/catalog reconciliation and Customer-to-Agency import deliberately
     remain separate operations internally, but startup and periodic refreshes
-    must run both. Customer import is additive: it links matching agencies and
-    fills missing profile data without replacing Builder-authored values.
+    must run both. QBO owns linked customer profiles.
     """
 
-    # Do Customer writes first. A full Item pull can take long enough that a
+    # Create/link new Customers first. A full Item pull can take long enough that a
     # newly created shared agency otherwise remains invisible in QBO while the
     # user is actively looking for it.
     agency_pushes = push_pending_and_unlinked_agencies(paths)

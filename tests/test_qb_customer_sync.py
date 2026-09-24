@@ -112,7 +112,7 @@ def test_import_does_not_schedule_vehicle_folders(paths, monkeypatch):
     assert stored.shop_folder_status == "not_provisioned"
 
 
-def test_import_links_existing_by_name_without_clobbering(paths):
+def test_import_links_existing_by_name_and_applies_qb_profile(paths):
     # Pre-existing agency entered by the user, no QB link, with a phone already.
     agc.handle_save_agency({"name": "Alpha PD", "contact_phone": "111"}, paths)
     res = agc.upsert_agencies_from_qb(
@@ -121,8 +121,8 @@ def test_import_links_existing_by_name_without_clobbering(paths):
     assert res["created"] == 0 and res["updated"] == 1
     a = agc.load_agencies(paths)[0]
     assert a.qb_customer_id == "1"          # linked
-    assert a.contact_phone == "111"          # user's value preserved
-    assert a.contact_email == "a@pd.gov"     # empty field filled from QB
+    assert a.contact_phone == "999"
+    assert a.contact_email == "a@pd.gov"
 
 
 def test_new_local_agency_defaults_to_not_taxable(paths):
@@ -131,7 +131,7 @@ def test_new_local_agency_defaults_to_not_taxable(paths):
     assert agency.taxable is False
 
 
-def test_import_fills_missing_extended_profile_without_erasing_existing(paths):
+def test_import_replaces_extended_profile_from_qb(paths):
     saved = agc.handle_save_agency({
         "name": "Alpha PD",
         "mobile_phone": "local-mobile",
@@ -149,8 +149,8 @@ def test_import_fills_missing_extended_profile_without_erasing_existing(paths):
     }], paths)
     assert res["updated"] == 1
     a = agc.get_agency(paths, saved["agency"]["agency_id"])
-    assert a.mobile_phone == "local-mobile"
-    assert a.bill_address_line1 == "Local Street"
+    assert a.mobile_phone == "qb-mobile"
+    assert a.bill_address_line1 == "QB Street"
     assert a.website == "https://alpha.example"
     assert a.bill_city == "Alpha"
     assert a.taxable is False
@@ -163,6 +163,20 @@ def test_import_matches_by_qb_id_over_name(paths):
     assert res["created"] == 0 and res["updated"] == 1
     assert len(agc.load_agencies(paths)) == 1
     assert agc.load_agencies(paths)[0].name == "Alpha Police Department"
+
+
+def test_import_updates_every_agency_linked_to_same_qb_customer(paths):
+    first = agc.upsert_agencies_from_qb([_cust(1, "Old Name")], paths)
+    first_id = agc.load_agencies(paths)[0].agency_id
+    duplicate = agc.handle_save_agency({"name": "Old Name Copy"}, paths)["agency"]["agency_id"]
+    agc.set_qb_customer_id(paths, duplicate, "1")
+
+    result = agc.upsert_agencies_from_qb([_cust(1, "Correct Name")], paths)
+
+    assert first["created"] == 1
+    assert result["updated"] == 2
+    assert {record.agency_id for record in agc.load_agencies(paths)} == {first_id, duplicate}
+    assert {record.name for record in agc.load_agencies(paths)} == {"Correct Name"}
 
 
 def test_import_is_idempotent(paths):
@@ -207,14 +221,14 @@ def test_qb_customer_id_survives_reload(paths):
     assert a.qb_customer_id == "7"
 
 
-def test_qb_customer_id_preserved_through_user_edit(paths):
+def test_qb_customer_id_preserved_through_local_only_edit(paths):
     agc.upsert_agencies_from_qb([_cust(7, "Gamma PD")], paths)
     aid = agc.load_agencies(paths)[0].agency_id
     # User edits the agency through the normal save path (no qb field in body).
-    agc.handle_save_agency({"agency_id": aid, "name": "Gamma PD", "contact_name": "Sam"}, paths)
+    agc.handle_save_agency({"agency_id": aid, "name": "Gamma PD", "abbreviation": "GPD"}, paths)
     a = agc.load_agencies(paths)[0]
     assert a.qb_customer_id == "7"
-    assert a.contact_name == "Sam"
+    assert a.abbreviation == "GPD"
 
 
 # ── preview (dry run) ────────────────────────────────────────────────────────

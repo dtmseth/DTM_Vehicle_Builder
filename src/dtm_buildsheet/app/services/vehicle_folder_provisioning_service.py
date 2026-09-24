@@ -143,9 +143,32 @@ def _ensure_or_move(
     parent_path: str,
     target_name: str,
 ) -> dict:
-    if item_id and current_path == target_path:
-        return {"id": item_id, "name": target_name}
     if item_id:
+        lookup = getattr(gateway, "get_item_by_path", None)
+        if callable(lookup):
+            destination = lookup(target_path)
+            if isinstance(destination, dict):
+                if "folder" not in destination:
+                    raise ValueError("The target SharePoint path is not a folder")
+                if str(destination.get("id") or "") == item_id:
+                    return destination
+                raise ValueError(
+                    "The target SharePoint folder belongs to a different item ID; "
+                    "review the duplicate folders before moving"
+                )
+            # A saved path is only a hint, even when it matches the target.
+            # Never recreate a deleted registered folder or silently adopt a
+            # different same-name folder: its contents need explicit review.
+            get_item = getattr(gateway, "get_item", None)
+            source = get_item(item_id) if callable(get_item) else None
+            if not isinstance(source, dict) or "folder" not in source:
+                raise ValueError(
+                    "The registered SharePoint folder is missing; "
+                    "review its identity before provisioning"
+                )
+        elif current_path == target_path:
+            # Compatibility for injected gateways without Graph lookup APIs.
+            return {"id": item_id, "name": target_name}
         parent = gateway.ensure_folder(parent_path)
         return gateway.move_item(
             item_id,
@@ -558,17 +581,25 @@ def provision_project_folders(
                 latest = load_project(project_id, paths)
             except FileNotFoundError:
                 return {"ok": False, "error": "Project was removed during folder provisioning"}
+            changed = False
             for field, value in project_state.items():
-                setattr(latest, field, value)
+                if getattr(latest, field) != value:
+                    setattr(latest, field, value)
+                    changed = True
             for unit in latest.build_units:
                 for field, value in group_state.get(unit.unit_id, {}).items():
-                    setattr(unit, field, value)
+                    if getattr(unit, field) != value:
+                        setattr(unit, field, value)
+                        changed = True
                 for individual in unit.individuals:
                     for field, value in vehicle_state.get(
                         (unit.unit_id, individual.individual_id), {},
                     ).items():
-                        setattr(individual, field, value)
-            save_project_operational_state(latest, paths)
+                        if getattr(individual, field) != value:
+                            setattr(individual, field, value)
+                            changed = True
+            if changed:
+                save_project_operational_state(latest, paths)
 
         return {
             "ok": attempted == succeeded,

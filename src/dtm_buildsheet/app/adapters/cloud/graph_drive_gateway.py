@@ -1,6 +1,7 @@
 """Narrow Microsoft Graph drive-item adapter for vehicle/reference services."""
 from __future__ import annotations
 
+import re
 import time
 from urllib.parse import quote
 
@@ -149,6 +150,12 @@ class GraphDriveGateway:
         except requests.RequestException:
             status = getattr(response, "status_code", None)
             detail = f"HTTP {status}" if status else "request failed"
+            try:
+                code = response.json().get("error", {}).get("code", "")
+                if isinstance(code, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", code):
+                    detail += f", {code}"
+            except (AttributeError, TypeError, ValueError):
+                pass
             raise GraphDriveError(f"Graph {operation} failed ({detail})") from None
 
     def _get_path(self, remote_path: str, *, timeout_seconds: float = 30) -> dict | None:

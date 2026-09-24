@@ -1576,6 +1576,12 @@ function _ptLabelForInd(project, individualId) {
 
 function _ptCustomerEditor(customer, linked, missingFields = []) {
   const c = customer || {};
+  if (linked && missingFields.length) {
+    return `<div style="padding:10px 12px;background:var(--surface-2);border-radius:6px;margin-top:8px;font-size:12px">
+      <strong>QuickBooks customer needs: ${esc(missingFields.join(", "))}</strong><br>
+      Update the customer in QuickBooks or use Settings → Agencies to review exact changes, then refresh this estimate.
+    </div>`;
+  }
   if (linked && !missingFields.length) {
     return `<div style="padding:10px 12px;background:var(--surface-2);border-radius:6px;margin-top:8px;font-size:12px">
       <strong>${esc(c.name || "Customer")}</strong><br>
@@ -2155,9 +2161,9 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
         const missing = res?.missing_fields || [];
         const detail = missing.length ? `: ${missing.join(", ")}` : "";
         toast(`${_ptEstError(res.error)}${detail}`, "error");
-        e.body.innerHTML = `<p style="font-size:13px;margin:0 0 10px">Before this estimate is created, confirm the customer information below. The app will reuse an exact top-level QB customer when one exists, or create a new top-level customer.</p>
+        e.body.innerHTML = `<p style="font-size:13px;margin:0 0 10px">${res.customer_linked ? "This QuickBooks customer needs an update before the estimate can be created." : "Before this estimate is created, confirm the customer information below. The app will reuse an exact top-level QB customer when one exists, or create a new top-level customer."}</p>
           <label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks customer</label>
-          ${_ptCustomerEditor(res.customer, false, missing)}
+          ${_ptCustomerEditor(res.customer, !!res.customer_linked, missing)}
           <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
           <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`;
         e.create.disabled = false;

@@ -280,6 +280,60 @@ def _preserve_project_sync_conflict(
     )
 
 
+def _is_legacy_project_metadata_only(local: dict, remote: dict) -> bool:
+    """Recognize an unchanged legacy record that lacks revision/note metadata.
+
+    A revisionless writer may still edit a project. Only the exact same
+    project content and update time can be adopted; note text and every
+    publication/folder field must match before filling in missing metadata.
+    """
+    if remote.get("record_revision") or not local.get("record_revision"):
+        return False
+    local_copy = json.loads(json.dumps(local))
+    remote_copy = json.loads(json.dumps(remote))
+    for key in ("record_revision", "record_parent_revision", "record_ancestor_revisions"):
+        if remote_copy.get(key) not in (None, "", []):
+            return False
+        local_copy.pop(key, None)
+        remote_copy.pop(key, None)
+
+    def strip_missing_note_metadata(local_note: dict, remote_note: dict) -> bool:
+        for key in ("notes_updated_at", "notes_history"):
+            if key in remote_note:
+                continue
+            if key == "notes_history" and local_note.get(key):
+                return False
+            local_note.pop(key, None)
+        return True
+
+    if "project_notes_history" not in remote_copy and local_copy.get("project_notes_history"):
+        return False
+    for key in ("project_notes_updated_at", "project_notes_history"):
+        if key not in remote_copy:
+            local_copy.pop(key, None)
+    local_units = local_copy.get("build_units", [])
+    remote_units = remote_copy.get("build_units", [])
+    if not isinstance(local_units, list) or not isinstance(remote_units, list):
+        return False
+    if len(local_units) != len(remote_units):
+        return False
+    for local_unit, remote_unit in zip(local_units, remote_units):
+        if not isinstance(local_unit, dict) or not isinstance(remote_unit, dict):
+            return False
+        local_individuals = local_unit.get("individuals", [])
+        remote_individuals = remote_unit.get("individuals", [])
+        if not isinstance(local_individuals, list) or not isinstance(remote_individuals, list):
+            return False
+        if len(local_individuals) != len(remote_individuals):
+            return False
+        for local_individual, remote_individual in zip(local_individuals, remote_individuals):
+            if not isinstance(local_individual, dict) or not isinstance(remote_individual, dict):
+                return False
+            if not strip_missing_note_metadata(local_individual, remote_individual):
+                return False
+    return local_copy == remote_copy
+
+
 def _write_project_to_cloud_losslessly(
     storage, remote_path: str, content: str, local_path: Path
 ) -> bool:
@@ -325,8 +379,11 @@ def _write_project_to_cloud_losslessly(
         return True
     if (
         remote_content
-        and remote_revision != local_parent_revision
-        and remote_revision not in local_ancestors
+        and not _is_legacy_project_metadata_only(local, remote)
+        and (
+            not remote_revision
+            or (remote_revision != local_parent_revision and remote_revision not in local_ancestors)
+        )
     ):
         _preserve_project_sync_conflict(
             local_path,
@@ -1148,10 +1205,61 @@ def _reconcile_records(
                     _clear_project_conflict(local_path)
                 current_hashes[record_id] = local_hash
                 continue
+            if remote_folder == PROJECTS_REMOTE_FOLDER:
+                try:
+                    local_record = json.loads(local_payload)
+                    remote_record = json.loads(payload)
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    local_record = remote_record = None
+                revisionless_rewrite = (
+                    isinstance(local_record, dict)
+                    and isinstance(remote_record, dict)
+                    and bool(local_record.get("record_revision"))
+                    and not remote_record.get("record_revision")
+                )
+                if revisionless_rewrite:
+                    # Older clients can rewrite an already-synced record. The
+                    # outbound CAS guard alone cannot protect this download.
+                    # Only missing metadata is safe to restore automatically.
+                    if _is_legacy_project_metadata_only(local_record, remote_record):
+                        if mirror_to_cloud(record_id, local_path):
+                            remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                            uploaded += 1
+                        else:
+                            remote_etags[record_id] = prior_etag or _PENDING_UPLOAD_ETAG
+                        current_hashes[record_id] = local_hash
+                    else:
+                        _preserve_project_sync_conflict(
+                            local_path,
+                            local_payload=local_payload,
+                            remote_payload=payload,
+                            local_revision=str(local_record.get("record_revision") or ""),
+                            local_parent_revision=str(local_record.get("record_parent_revision") or ""),
+                            remote_revision="",
+                        )
+                        current_hashes[record_id] = local_hash
+                        logger.error("Preserving revisionless project rewrite for %s", record_id)
+                    continue
             if (
                 remote_folder == PROJECTS_REMOTE_FOLDER
                 and _project_conflict_path(local_path).exists()
             ):
+                try:
+                    local_record = json.loads(local_payload)
+                    remote_record = json.loads(payload)
+                    metadata_only = (
+                        isinstance(local_record, dict)
+                        and isinstance(remote_record, dict)
+                        and _is_legacy_project_metadata_only(local_record, remote_record)
+                    )
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    metadata_only = False
+                if metadata_only and mirror_to_cloud(record_id, local_path):
+                    remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                    current_hashes[record_id] = local_hash
+                    uploaded += 1
+                    logger.info("Restored revision metadata for unchanged legacy project %s", record_id)
+                    continue
                 # A conditional upload already proved these are concurrent
                 # descendants. Keep the local copy visible and retain the
                 # remote copy in history until the conflict is resolved.

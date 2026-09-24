@@ -14,9 +14,15 @@ from dtm_buildsheet.app.services.shared_work_service import (
     _merge_project_note_data,
     _write_project_to_cloud_losslessly,
 )
+from dtm_buildsheet.app.services.shop_publication_service import publish_vehicle_package
+from dtm_buildsheet.app.services.vehicle_folder_provisioning_service import (
+    _ensure_or_move,
+    provision_project_folders,
+)
 from dtm_buildsheet.inputs.project_entry import (
     ProjectWriteConflict,
     load_project,
+    new_project,
     save_project,
 )
 from dtm_buildsheet.paths import AppPaths, BUNDLED_PRESETS_DIR
@@ -190,6 +196,66 @@ def test_storage_rejects_stale_background_writer_and_archives_prior_version(tmp_
     assert list((paths.workspace_projects_dir / created["project_id"] / ".history").glob("*.json"))
 
 
+def test_missing_local_pdf_does_not_unpublish_shared_shop_package(tmp_path):
+    paths = _paths(tmp_path)
+    created = handle_save_project(_body(), paths)
+    project = load_project(created["project_id"], paths)
+    individual = project.build_units[0].individuals[0]
+    individual.status = "finalized"
+    individual.pdf_path = "output/missing.pdf"
+    individual.shop_publication_status = "published"
+    individual.shop_pdf_item_id = "existing-pdf"
+    individual.shop_reference_items = [{"item_id": "existing-reference"}]
+    save_project(project, paths)
+    before = (paths.workspace_projects_dir / created["project_id"] / "project.json").read_bytes()
+
+    result = publish_vehicle_package(
+        created["project_id"], project.build_units[0].unit_id,
+        individual.individual_id, paths,
+    )
+
+    assert result["ok"] is False
+    assert "not available" in result["error"]
+    assert (paths.workspace_projects_dir / created["project_id"] / "project.json").read_bytes() == before
+
+
+def test_repeated_folder_failure_does_not_create_new_project_revisions(tmp_path):
+    paths = _paths(tmp_path)
+    project = new_project()
+    save_project(project, paths)
+
+    class FailingGateway:
+        def ensure_folder(self, _path):
+            raise RuntimeError("folder collision")
+
+    gateway = FailingGateway()
+    first = provision_project_folders(
+        project.project_id, paths, company_gateway=gateway, shop_gateway=gateway,
+    )
+    first_payload = (paths.workspace_projects_dir / project.project_id / "project.json").read_bytes()
+    second = provision_project_folders(
+        project.project_id, paths, company_gateway=gateway, shop_gateway=gateway,
+    )
+
+    assert first["ok"] is second["ok"] is False
+    assert (paths.workspace_projects_dir / project.project_id / "project.json").read_bytes() == first_payload
+
+
+def test_folder_move_refuses_destination_with_different_identity():
+    class Gateway:
+        def get_item_by_path(self, _path):
+            return {"id": "other-folder", "folder": {}}
+
+        def ensure_folder(self, _path):
+            raise AssertionError("must not provision over a duplicate")
+
+    with pytest.raises(ValueError, match="different item ID"):
+        _ensure_or_move(
+            Gateway(), item_id="saved-folder", current_path="old/name",
+            target_path="new/name", parent_path="new", target_name="name",
+        )
+
+
 class _VersionedCloud:
     def __init__(self, content: str, revision: str = "etag-1") -> None:
         self.content = content
@@ -291,6 +357,64 @@ def test_cloud_compare_and_set_accepts_coalesced_descendant(tmp_path):
 
     assert saved is True
     assert json.loads(cloud.content)["record_revision"] == "local-third-save"
+
+
+def test_legacy_project_metadata_only_conflict_restores_revision(tmp_path):
+    local_path = tmp_path / "projects" / "project-1" / "project.json"
+    local_path.parent.mkdir(parents=True)
+    remote = {
+        "project_id": "project-1",
+        "updated_at": "2026-09-21T02:00:00+00:00",
+        "project_notes": "Keep this note",
+        "build_units": [{"individuals": [{"notes": "Keep this build note"}]}],
+    }
+    local = {
+        **remote,
+        "record_revision": "local-new",
+        "record_parent_revision": "local-old",
+        "record_ancestor_revisions": ["local-old"],
+        "project_notes_updated_at": "2026-09-21T02:00:00+00:00",
+        "project_notes_history": [],
+        "build_units": [{"individuals": [{
+            "notes": "Keep this build note",
+            "notes_updated_at": "2026-09-21T02:00:00+00:00",
+            "notes_history": [],
+        }]}],
+    }
+    local_text = json.dumps(local, indent=2) + "\n"
+    local_path.write_text(local_text)
+    (local_path.parent / ".sync_conflict.json").write_text("{}")
+    cloud = _VersionedCloud(json.dumps(remote, indent=2) + "\n")
+
+    assert _write_project_to_cloud_losslessly(
+        cloud, "Projects/project-1.json", local_text, local_path
+    ) is True
+    assert json.loads(cloud.content) == local
+    assert not (local_path.parent / ".sync_conflict.json").exists()
+
+
+def test_legacy_project_with_publication_change_remains_conflicted(tmp_path):
+    local_path = tmp_path / "projects" / "project-1" / "project.json"
+    local_path.parent.mkdir(parents=True)
+    remote = {
+        "project_id": "project-1",
+        "updated_at": "2026-09-21T02:00:00+00:00",
+        "build_units": [{"individuals": [{"notes": "same", "shop_publication_status": "error"}]}],
+    }
+    local = {
+        **remote,
+        "record_revision": "local-new",
+        "build_units": [{"individuals": [{"notes": "same", "shop_publication_status": "published"}]}],
+    }
+    local_text = json.dumps(local, indent=2) + "\n"
+    local_path.write_text(local_text)
+    cloud = _VersionedCloud(json.dumps(remote, indent=2) + "\n")
+
+    assert _write_project_to_cloud_losslessly(
+        cloud, "Projects/project-1.json", local_text, local_path
+    ) is False
+    assert json.loads(cloud.content) == remote
+    assert (local_path.parent / ".sync_conflict.json").exists()
 
 
 def test_cloud_etag_race_preserves_local_and_winning_remote_versions(tmp_path):
@@ -406,3 +530,64 @@ def test_cloud_merge_honors_newer_explicit_clear_and_keeps_prior_text():
     assert individual["notes"] == ""
     assert individual["notes_updated_at"] == "2026-09-21T19:08:59+00:00"
     assert [entry["notes"] for entry in individual["notes_history"]] == ["Prior build note"]
+
+
+@pytest.mark.parametrize("remote_change", ["publication", "note", "metadata_only"])
+def test_inbound_revisionless_rewrite_preserves_synced_project(tmp_path, remote_change):
+    from dtm_buildsheet.app.services.shared_work_service import (
+        _content_hash, _reconcile_projects, _PENDING_UPLOAD_ETAG,
+    )
+    from dtm_buildsheet.storage.base import FileMetadata
+    from unittest.mock import patch
+
+    paths = _paths(tmp_path)
+    project_id = "project-1"
+    local_path = paths.workspace_projects_dir / project_id / "project.json"
+    local_path.parent.mkdir()
+    local = {
+        "project_id": project_id,
+        "record_revision": "repaired",
+        "updated_at": "2026-09-23T12:00:00+00:00",
+        "build_units": [{"individuals": [{
+            "notes": "Keep the approved note",
+            "shop_publication_status": "published",
+            "shop_pdf_item_id": "verified-pdf-id",
+        }]}],
+    }
+    remote = json.loads(json.dumps(local))
+    remote.pop("record_revision")
+    if remote_change == "publication":
+        remote["build_units"][0]["individuals"][0].update(
+            shop_publication_status="error", shop_pdf_item_id="",
+        )
+    elif remote_change == "note":
+        remote["build_units"][0]["individuals"][0]["notes"] = "Real teammate edit"
+    local_payload = json.dumps(local).encode()
+    remote_payload = json.dumps(remote).encode()
+    local_path.write_bytes(local_payload)
+
+    class Remote:
+        def list_files_with_metadata(self, _folder):
+            return [FileMetadata(path=f"Projects/{project_id}.json", etag="new-etag")]
+
+        def read_bytes(self, _path):
+            return remote_payload
+
+    with patch("dtm_buildsheet.app.services.shared_work_service.mirror_project_to_cloud", return_value=True) as mirror:
+        result = _reconcile_projects(
+            Remote(), paths, {project_id: "old-etag"},
+            {project_id: _content_hash(local_payload)},
+        )
+    assert local_path.read_bytes() == local_payload
+    assert result["updated"] == result["deleted"] == 0
+    if remote_change == "metadata_only":
+        mirror.assert_called_once_with(project_id, local_path)
+        assert result["uploaded"] == 1
+        assert result["current_etags"][project_id] == _PENDING_UPLOAD_ETAG
+        assert not (local_path.parent / ".sync_conflict.json").exists()
+    else:
+        mirror.assert_not_called()
+        assert result["uploaded"] == 0
+        assert (local_path.parent / ".sync_conflict.json").exists()
+        archived = [json.loads(p.read_text()) for p in (local_path.parent / ".history").glob("*.json")]
+        assert local in archived and remote in archived
