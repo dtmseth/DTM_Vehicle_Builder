@@ -515,3 +515,72 @@ def test_missing_registered_vehicle_does_not_recreate_its_old_path(tmp_path):
     stored = load_project(project.project_id, paths)
     assert stored.company_folder_status == "error"
     assert stored.build_units[0].individuals[0].company_vehicle_folder_id == "deleted-id"
+
+
+class PathAwareGateway(FakeGateway):
+    def __init__(self, destination=None, source=None):
+        super().__init__('company')
+        self.destination = destination
+        self.source = source
+
+    def get_item_by_path(self, path):
+        return self.destination
+
+    def get_item(self, item_id):
+        return self.source
+
+
+def _ensure_registered_folder(gateway, current_path='root/Vehicle'):
+    from dtm_buildsheet.app.services.vehicle_folder_provisioning_service import _ensure_or_move
+    return _ensure_or_move(
+        gateway, item_id='registered', current_path=current_path,
+        target_path='root/Vehicle', parent_path='root', target_name='Vehicle',
+    )
+
+
+def test_same_path_registered_id_is_verified_against_live_destination():
+    destination = {'id': 'registered', 'name': 'Vehicle', 'folder': {}}
+    gateway = PathAwareGateway(destination=destination)
+    assert _ensure_registered_folder(gateway) == destination
+    assert gateway.moves == gateway.folders == []
+
+
+def test_same_path_missing_registered_folder_is_not_recreated():
+    import pytest
+    gateway = PathAwareGateway()
+    with pytest.raises(ValueError, match='registered SharePoint folder is missing'):
+        _ensure_registered_folder(gateway)
+    assert gateway.moves == gateway.folders == gateway.deleted == []
+
+
+def test_same_path_different_destination_id_requires_review():
+    import pytest
+    gateway = PathAwareGateway(destination={'id': 'other', 'folder': {}})
+    with pytest.raises(ValueError, match='different item ID'):
+        _ensure_registered_folder(gateway)
+    assert gateway.moves == gateway.folders == gateway.deleted == []
+
+
+def test_rename_collision_preserves_both_folders():
+    import pytest
+    gateway = PathAwareGateway(
+        destination={'id': 'other', 'folder': {}},
+        source={'id': 'registered', 'folder': {}},
+    )
+    with pytest.raises(ValueError, match='different item ID'):
+        _ensure_registered_folder(gateway, current_path='root/Old Name')
+    assert gateway.moves == gateway.folders == gateway.deleted == []
+
+
+def test_same_path_hint_does_not_hide_out_of_band_move():
+    gateway = PathAwareGateway(source={'id': 'registered', 'folder': {}})
+    assert _ensure_registered_folder(gateway)['id'] == 'registered'
+    assert gateway.moves == [('registered', 'company:root', 'Vehicle')]
+
+
+def test_file_at_folder_destination_is_never_adopted():
+    import pytest
+    gateway = PathAwareGateway(destination={'id': 'registered', 'file': {}})
+    with pytest.raises(ValueError, match='not a folder'):
+        _ensure_registered_folder(gateway)
+    assert gateway.moves == gateway.folders == gateway.deleted == []

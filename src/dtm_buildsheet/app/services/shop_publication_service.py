@@ -23,7 +23,9 @@ from ...domain.vehicle_naming import (
     safe_vehicle_folder_name,
     vehicle_folder_name,
 )
-from ...inputs.project_entry import list_projects, load_project, save_project
+from ...inputs.project_entry import (
+    list_projects, load_project, save_project, save_project_operational_state,
+)
 from ...paths import AppPaths
 from ..adapters import wiring
 from ..adapters.cloud.graph_drive_gateway import GraphDriveGateway
@@ -161,9 +163,15 @@ def publish_vehicle_package(
             pdf_path = paths.workspace_dir / pdf_path
         if not pdf_path.is_file():
             error = "The finalized PDF is not available on this workstation."
-            individual.shop_publication_status = "error"
-            individual.shop_publication_error = error
-            save_project(project, paths)
+            # A published SharePoint package remains valid when this device
+            # lacks its local PDF. Do not replace shared publication metadata
+            # with a workstation-specific retry failure.
+            if individual.shop_publication_status == "published":
+                return {"ok": False, "error": error}
+            if (individual.shop_publication_status, individual.shop_publication_error) != ("error", error):
+                individual.shop_publication_status = "error"
+                individual.shop_publication_error = error
+                save_project_operational_state(project, paths)
             return {"ok": False, "error": error}
 
         try:

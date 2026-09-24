@@ -5,7 +5,7 @@ GET endpoints:
 - /api/cloud/photo  — bytes of the cached profile photo (404 if absent)
 
 POST endpoints (modal actions):
-- /api/cloud/sync     — synchronous full sync; returns when done
+- /api/cloud/sync     — synchronous SharePoint sync plus authorized QBO catalog refresh
 - /api/cloud/signout  — wipe the cached MSAL account
 - /api/cloud/signin   — trigger the interactive OAuth flow
 
@@ -68,7 +68,7 @@ def route_cloud_status(
 
 
 def _force_sync(paths: AppPaths) -> dict:
-    """Trigger an immediate sync cycle from the modal's 'Force sync' button."""
+    """Refresh SharePoint and the connected user's QBO catalog."""
     try:
         # Late import to avoid pulling server.py at module load time.
         from .. import server as _server
@@ -76,6 +76,37 @@ def _force_sync(paths: AppPaths) -> dict:
     except Exception as exc:
         logger.exception("Force-sync raised")
         return {"ok": False, "error": str(exc)}
+
+    report["sharepoint_ok"] = bool(report.get("ok"))
+    try:
+        from ..services import qb_sync_service, quickbooks_service
+        from ..services.request_access_service import authorize_request
+
+        if not quickbooks_service.get_status(paths).get("connected"):
+            report["quickbooks"] = {"ok": True, "skipped": "not_connected"}
+        elif not authorize_request("POST", "/api/quickbooks/sync").allowed:
+            report["quickbooks"] = {"ok": True, "skipped": "not_authorized"}
+        else:
+            qb_result = qb_sync_service.run_full_sync(paths)
+            reconciled = qb_result.get("reconciled") if isinstance(qb_result, dict) else None
+            qb_ok = (
+                isinstance(qb_result, dict)
+                and bool(qb_result.get("ok"))
+                and isinstance(reconciled, dict)
+                and bool(reconciled.get("ok"))
+            )
+            report["quickbooks"] = {
+                "ok": qb_ok,
+                "item_count": qb_result.get("item_count") if qb_ok else None,
+                "error": None if qb_ok else "QuickBooks catalog refresh failed",
+            }
+    except Exception:
+        logger.warning("Force-sync QuickBooks catalog refresh failed")
+        report["quickbooks"] = {"ok": False, "error": "QuickBooks catalog refresh failed"}
+
+    if not report["quickbooks"]["ok"]:
+        report["ok"] = False
+        report["error"] = report.get("error") or report["quickbooks"]["error"]
     return report
 
 

@@ -1771,8 +1771,12 @@ def test_create_estimate_blocks_incomplete_confirmed_customer(paths, monkeypatch
     assert fake.created_customers == [] and fake.created_estimates == []
 
 
-def test_confirmed_profile_updates_linked_customer_before_estimate(paths, monkeypatch):
+def test_estimate_does_not_update_incomplete_linked_customer(paths, monkeypatch):
     fake = _use_fake(monkeypatch)
+    fake.read_customer = lambda customer_id: {
+        "Id": customer_id, "SyncToken": "1", "DisplayName": "Lakeville PD",
+        "Taxable": False,
+    }
     _write_parts_db(paths, {"p1": _linked_product("A", "AA", "1", 10.0)})
     agc.handle_save_agency({"name": "Lakeville PD"}, paths)
     aid = agc.load_agencies(paths)[0].agency_id
@@ -1796,11 +1800,11 @@ def test_confirmed_profile_updates_linked_customer_before_estimate(paths, monkey
         },
     )
 
-    assert result["ok"] is True
-    assert fake.updated_customers[0][0] == "CUST9"
-    assert fake.updated_customers[0][2]["bill_address_line1"] == "123 Main Street"
-    assert fake.updated_customers[0][2]["customer_type_id"] == "retail-type-id"
-    assert fake.created_estimates
+    assert result["ok"] is False
+    assert result["error"] == "customer_incomplete"
+    assert result["customer_linked"] is True
+    assert fake.updated_customers == []
+    assert fake.created_estimates == []
 
 
 def test_create_estimates_batch_mixed(paths, monkeypatch):

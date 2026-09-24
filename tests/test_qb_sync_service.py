@@ -404,3 +404,64 @@ def test_run_full_sync_pulls_then_reconciles(paths, _link_fakes):
     assert res["item_count"] == 3
     assert "reconciled" in res
     assert res["reconciled"]["ok"] is True
+
+
+def test_full_production_sync_shares_check_time_without_qbo_credentials(paths, monkeypatch):
+    from dtm_buildsheet.app.services import shared_work_service
+
+    uploaded = {}
+    monkeypatch.setattr(sync.quickbooks_service, "get_status", lambda paths: {"environment": "production"})
+    monkeypatch.setattr(
+        shared_work_service,
+        "save_setting_to_cloud",
+        lambda filename, content: uploaded.update({filename: content}) or True,
+    )
+
+    result = sync.run_full_sync(paths)
+
+    assert result["reconciled"]["ok"] is True
+    filename, content = next(iter(uploaded.items()))
+    assert filename == "quickbooks_catalog_check.json"
+    assert json.loads(content) == {"last_checked_utc": result["last_sync_utc"]}
+    assert sync.quickbooks_service.get_shared_catalog_check(paths) == result["last_sync_utc"]
+    assert "refresh_token" not in content
+
+
+def test_failed_reconciliation_does_not_share_catalog_check(paths, monkeypatch):
+    from dtm_buildsheet.app.services import shared_work_service
+
+    uploaded = []
+    monkeypatch.setattr(sync.quickbooks_service, "get_status", lambda paths: {"environment": "production"})
+    monkeypatch.setattr(sync, "reconcile_linked_parts", lambda paths: {"ok": False, "error": "save_failed"})
+    monkeypatch.setattr(shared_work_service, "save_setting_to_cloud", lambda *args: uploaded.append(args))
+
+    result = sync.run_full_sync(paths)
+
+    assert result["reconciled"]["ok"] is False
+    assert uploaded == []
+    assert sync.quickbooks_service.get_shared_catalog_check(paths) is None
+
+
+def test_failed_share_keeps_previous_catalog_check(paths, monkeypatch):
+    from dtm_buildsheet.app.services import shared_work_service
+
+    marker = paths.workspace_config_dir / "quickbooks_catalog_check.json"
+    marker.write_text(json.dumps({"last_checked_utc": "2026-09-01T12:00:00Z"}))
+    monkeypatch.setattr(sync.quickbooks_service, "get_status", lambda paths: {"environment": "production"})
+    monkeypatch.setattr(shared_work_service, "save_setting_to_cloud", lambda *args: False)
+
+    result = sync.run_full_sync(paths)
+
+    assert result["reconciled"]["ok"] is True
+    assert sync.quickbooks_service.get_shared_catalog_check(paths) == "2026-09-01T12:00:00Z"
+
+
+def test_sandbox_check_does_not_replace_shared_production_time(paths, monkeypatch):
+    from dtm_buildsheet.app.services import shared_work_service
+
+    uploaded = []
+    monkeypatch.setattr(shared_work_service, "save_setting_to_cloud", lambda *args: uploaded.append(args))
+
+    sync.run_full_sync(paths)
+
+    assert uploaded == []

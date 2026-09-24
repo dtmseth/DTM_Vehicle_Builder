@@ -533,9 +533,19 @@ function _refreshQbConnectionBody(){
   const dot = $("cloud-modal-qb-dot");
   const label = $("cloud-modal-qb-status");
   const detail = $("cloud-modal-qb-detail");
+  const lastCheck = $("cloud-modal-qb-last-check");
   const action = $("cloud-modal-qb-action");
   dot?.classList.toggle("connected", !!status?.connected);
   dot?.classList.toggle("disconnected", status != null && !status?.connected);
+  if (lastCheck) {
+    const checked = status?.last_shared_catalog_check_utc;
+    const date = checked ? new Date(checked) : null;
+    lastCheck.textContent = !status
+      ? "Could not load shared catalog status"
+      : `Last shared catalog check: ${date && !isNaN(date.getTime())
+        ? date.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+        : "unavailable"}`;
+  }
   if (!status) {
     if (label) label.textContent = "Could not check QuickBooks";
     if (detail) detail.textContent = "Open QuickBooks settings for details.";
@@ -546,7 +556,7 @@ function _refreshQbConnectionBody(){
   if (detail) {
     const environment = status.environment === "sandbox" ? "Sandbox company" : "Production company";
     detail.textContent = status.connected
-      ? `${environment}${status.last_sync_utc ? " · Catalog synced" : ""}`
+      ? environment
       : "Connect to create estimates and refresh catalog pricing.";
   }
   if (action) action.textContent = status.connected ? "Manage" : "Connect";
@@ -577,9 +587,15 @@ async function _doForceSync(){
     // returns (the next refresh will see syncing=true while the call is alive).
     refreshCloudStatus();
     const res = await api("/api/cloud/sync", {});
+    if(res?.sharepoint_ok) _lastSyncAt = Date.now();
     if(res?.ok){
-      _lastSyncAt = Date.now();
-      toast("Sync complete", "success");
+      const qb = res.quickbooks || {};
+      const message = qb.skipped === "not_connected"
+        ? "SharePoint synced · QuickBooks skipped (no connection on this device)"
+        : qb.skipped === "not_authorized"
+          ? "SharePoint synced · QuickBooks skipped (access required)"
+          : "SharePoint and QuickBooks catalog synced";
+      toast(message, "success");
     } else {
       toast("Sync failed: " + (res?.error || "unknown error"), "error");
     }
@@ -589,6 +605,7 @@ async function _doForceSync(){
     btn.disabled = false;
     await refreshCloudStatus();
     _refreshCloudModalBody();
+    await _refreshQbConnectionStatus();
   }
 }
 

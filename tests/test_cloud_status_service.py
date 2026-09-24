@@ -9,6 +9,7 @@ important as the happy path.
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -20,6 +21,7 @@ from dtm_buildsheet.app.adapters.noop import (
 )
 from dtm_buildsheet.app.adapters.wiring import AdapterBundle, set_active_bundle
 from dtm_buildsheet.app.services import cloud_status_service
+from dtm_buildsheet.app.routes import cloud_status as cloud_status_routes
 from dtm_buildsheet.paths import AppPaths
 from dtm_buildsheet.storage.local import LocalStorageProvider
 
@@ -88,6 +90,73 @@ def cloud_on(monkeypatch):
 @pytest.fixture
 def paths(tmp_path: Path) -> AppPaths:
     return AppPaths(workspace_dir=tmp_path)
+
+
+def test_force_sync_refreshes_connected_qbo_catalog_after_sharepoint(paths, monkeypatch):
+    from dtm_buildsheet.app import server
+    from dtm_buildsheet.app.services import qb_sync_service, quickbooks_service, request_access_service
+
+    calls = []
+    monkeypatch.setattr(server, "run_sync_now", lambda paths: calls.append("sharepoint") or {"ok": True})
+    monkeypatch.setattr(quickbooks_service, "get_status", lambda paths: {"connected": True})
+    monkeypatch.setattr(request_access_service, "authorize_request", lambda *args: SimpleNamespace(allowed=True))
+    monkeypatch.setattr(qb_sync_service, "run_full_sync", lambda paths: calls.append("quickbooks") or {
+        "ok": True, "item_count": 12, "reconciled": {"ok": True},
+    })
+
+    result = cloud_status_routes._force_sync(paths)
+
+    assert calls == ["sharepoint", "quickbooks"]
+    assert result["ok"] is True
+    assert result["sharepoint_ok"] is True
+    assert result["quickbooks"] == {"ok": True, "item_count": 12, "error": None}
+
+
+def test_force_sync_skips_qbo_without_local_connection(paths, monkeypatch):
+    from dtm_buildsheet.app import server
+    from dtm_buildsheet.app.services import qb_sync_service, quickbooks_service
+
+    monkeypatch.setattr(server, "run_sync_now", lambda paths: {"ok": True})
+    monkeypatch.setattr(quickbooks_service, "get_status", lambda paths: {"connected": False})
+    monkeypatch.setattr(qb_sync_service, "run_full_sync", lambda paths: pytest.fail("QBO was called"))
+
+    result = cloud_status_routes._force_sync(paths)
+
+    assert result["ok"] is True
+    assert result["quickbooks"]["skipped"] == "not_connected"
+
+
+def test_force_sync_respects_qbo_route_permission(paths, monkeypatch):
+    from dtm_buildsheet.app import server
+    from dtm_buildsheet.app.services import qb_sync_service, quickbooks_service, request_access_service
+
+    monkeypatch.setattr(server, "run_sync_now", lambda paths: {"ok": True})
+    monkeypatch.setattr(quickbooks_service, "get_status", lambda paths: {"connected": True})
+    monkeypatch.setattr(request_access_service, "authorize_request", lambda *args: SimpleNamespace(allowed=False))
+    monkeypatch.setattr(qb_sync_service, "run_full_sync", lambda paths: pytest.fail("QBO was called"))
+
+    result = cloud_status_routes._force_sync(paths)
+
+    assert result["ok"] is True
+    assert result["quickbooks"]["skipped"] == "not_authorized"
+
+
+def test_force_sync_reports_qbo_reconciliation_failure(paths, monkeypatch):
+    from dtm_buildsheet.app import server
+    from dtm_buildsheet.app.services import qb_sync_service, quickbooks_service, request_access_service
+
+    monkeypatch.setattr(server, "run_sync_now", lambda paths: {"ok": True})
+    monkeypatch.setattr(quickbooks_service, "get_status", lambda paths: {"connected": True})
+    monkeypatch.setattr(request_access_service, "authorize_request", lambda *args: SimpleNamespace(allowed=True))
+    monkeypatch.setattr(qb_sync_service, "run_full_sync", lambda paths: {
+        "ok": True, "reconciled": {"ok": False},
+    })
+
+    result = cloud_status_routes._force_sync(paths)
+
+    assert result["ok"] is False
+    assert result["sharepoint_ok"] is True
+    assert result["quickbooks"]["ok"] is False
 
 
 # ── get_status ──────────────────────────────────────────────────────────────
