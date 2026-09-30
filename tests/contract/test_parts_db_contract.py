@@ -41,6 +41,7 @@ EXPECTED_DIR = Path(__file__).resolve().parent / "expected" / "parts_db"
 # (case_name, method, full_path, body)
 CASES: list[tuple[str, str, str, dict]] = [
     ("root_doc", "GET", "/api/parts-db", {}),
+    ("qb_inbox", "GET", "/api/parts-db/qb-inbox", {}),
     ("types", "GET", "/api/parts-db/types", {}),
     ("browse_tree", "GET", "/api/parts-db/browse-tree", {}),
     ("manifest_groups", "GET", "/api/parts-db/manifest-groups", {}),

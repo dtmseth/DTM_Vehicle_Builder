@@ -415,7 +415,72 @@ function _ptBuildPayload() {
 
 // ── Save ───────────────────────────────────────────────────────────────────────
 
-async function _ptSaveProject() {
+function _ptCloseCreationConflictModal() {
+  const modal = $("project-creation-conflict-modal");
+  modal?.classList.remove("open");
+  if (modal) modal.hidden = true;
+  _PT.creationConflict = null;
+}
+
+function _ptRefreshCreationConflictChoice() {
+  const choice = document.querySelector('input[name="project-creation-resolution"]:checked')?.value || "";
+  const apply = $("project-creation-conflict-apply");
+  if (!apply) return;
+  apply.disabled = !choice;
+  apply.textContent = choice === "merge" ? "Merge into Existing Project" :
+    choice === "separate" ?
+      (_PT.creationConflict?.merge_allowed === false ? "Save Separate Project" : "Create Separate Project") :
+      "Continue";
+}
+
+function _ptOpenCreationConflictModal(result) {
+  _PT.creationConflict = result;
+  $("project-creation-conflict-comparison").innerHTML =
+    _ptCompletionSideHtml("Existing project", result.existing_project) +
+    _ptCompletionSideHtml(result.merge_allowed === false ? "Edited project" : "New project", result.proposed_project);
+  const title = $("project-creation-conflict-title");
+  const intro = $("project-creation-conflict-intro");
+  const mergeOption = $("project-creation-conflict-merge-option");
+  if (title) title.textContent = result.merge_allowed === false
+    ? "Another Project Uses This Agency and Year"
+    : "Project Already Exists for This Agency and Year";
+  if (intro) intro.textContent = result.merge_allowed === false
+    ? "Compare both saved projects. You can keep this project separate with its updated agency and year."
+    : "Compare the saved project with the project you are creating. Nothing has been merged or saved yet.";
+  if (mergeOption) mergeOption.hidden = result.merge_allowed === false;
+  const duplicateVins = (result.duplicate_vins || []).filter(Boolean);
+  const warning = $("project-creation-conflict-warning");
+  warning.hidden = !duplicateVins.length;
+  warning.textContent = duplicateVins.length
+    ? `Possible duplicate vehicle${duplicateVins.length === 1 ? "" : "s"}: VIN ${duplicateVins.join(", ")}. These projects cannot be merged until the duplicate is reviewed.`
+    : "";
+  document.querySelectorAll('input[name="project-creation-resolution"]').forEach(input => {
+    input.checked = false;
+  });
+  $("project-creation-conflict-status").hidden = true;
+  _ptRefreshCreationConflictChoice();
+  const modal = $("project-creation-conflict-modal");
+  modal.hidden = false;
+  modal.classList.add("open");
+}
+
+window.PT_applyCreationConflict = async function () {
+  if (!_PT.creationConflict) return;
+  const resolution = document.querySelector('input[name="project-creation-resolution"]:checked')?.value || "";
+  if (!resolution) return;
+  const status = $("project-creation-conflict-status");
+  const apply = $("project-creation-conflict-apply");
+  status.hidden = false;
+  status.textContent = resolution === "merge"
+    ? "Merging the distinct vehicles into the existing project…"
+    : (_PT.creationConflict?.merge_allowed === false
+      ? "Saving this project separately…"
+      : "Creating a separate project…");
+  apply.disabled = true;
+  await _ptSaveProject(resolution);
+};
+
+async function _ptSaveProject(conflictResolution = "") {
   if (_PT.saving) return;
   _PT.saving = true;
   const statusEl = $("proj-op-status");
@@ -426,8 +491,11 @@ async function _ptSaveProject() {
   if (statusEl) _ptSetStatus(statusEl, "Saving…", "ok");
 
   try {
-    const res = await api("/api/project/save", _ptBuildPayload());
+    const payload = _ptBuildPayload();
+    if (conflictResolution) payload.conflict_resolution = conflictResolution;
+    const res = await api("/api/project/save", payload);
     if (res.ok) {
+      _ptCloseCreationConflictModal();
       _PT.editId = res.project_id;
       if (_PT.units.some(unit => (unit.individuals || []).some(ind =>
         (ind.quote_references || []).some(ref => ref.state !== "obsolete")
@@ -436,22 +504,30 @@ async function _ptSaveProject() {
       }
       await _ptLoadAll();
       const updated = _PT.projects.find(p => p.project_id === _PT.editId);
-      toast("Project saved", "success");
+      toast(
+        res.resolution === "merge" ? "New vehicles merged into the existing project" :
+          res.resolution === "separate" ? "Separate project saved" : "Project saved",
+        "success",
+      );
       if (statusEl) statusEl.style.display = "none";
       setTimeout(() => {
         if (updated) _ptShowDetail(updated);
         else _ptShowList();
       }, 300);
     } else {
+      if (res.error_code === "project_exists_for_agency_year" && res.existing_project) {
+        _ptOpenCreationConflictModal(res);
+        if (statusEl) statusEl.style.display = "none";
+        return;
+      }
       const msg = res.error || "Save failed";
       toast(msg, "error");
       if (statusEl) _ptSetStatus(statusEl, "❌ " + msg, "err");
-      if (res.error_code === "project_exists_for_agency_year" && res.existing_project_id) {
-        await _ptLoadAll();
-        const existing = _PT.projects.find(p => p.project_id === res.existing_project_id);
-        if (existing) {
-          setTimeout(() => _ptShowDetail(existing), 650);
-        }
+      if (_PT.creationConflict) {
+        const conflictStatus = $("project-creation-conflict-status");
+        conflictStatus.hidden = false;
+        conflictStatus.textContent = msg;
+        _ptRefreshCreationConflictChoice();
       }
     }
   } catch (e) {

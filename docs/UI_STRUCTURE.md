@@ -87,8 +87,10 @@ without changing the current view, so a project or draft opened during loading s
 #proj-list-view        — scrollable project list
     status tabs         — Started / Active / Inactive / Completed with live project counts
     status search       — searches only the selected tab and remembers one query per tab
+    list controls       — all project types by default; creation date, A–Z, Z–A, last-opened,
+                          or earliest scheduled-week sorting; cards show their creation date
     Started             — durable-active projects whose current Operations vehicles are not all accepted
-    Active              — all current vehicles accepted; arrived projects first, then Must Deliver On
+    Active              — all current vehicles accepted
     Inactive            — optional note plus a three-dot Reactivate/Delete menu
     Completed           — Agency → Build Year tree, galleries/folders, Open/Reopen
 #proj-detail-view      — detail view with two sub-tabs:
@@ -107,10 +109,11 @@ without changing the current view, so a project or draft opened during loading s
 
 The durable project lifecycle remains `active`, `inactive`, or `completed`; `started` is a derived
 list view, not a fourth stored state. A durable-active project stays in Started until every current
-vehicle's Operations row is accepted, then appears in Active. Active projects whose every vehicle
-has Parts Received/Parts Ready and is At DTM sort first; each group then sorts by its earliest
-effective Must Deliver On date, with undated projects last. The selected list tab is preserved when
-opening and returning from a project. Marking a project inactive accepts an optional note in an app
+vehicle's Operations row is accepted, then appears in Active. Lists default to newest creation date;
+scheduled-date sorting uses the earliest Operations Scheduled Week and places unscheduled projects
+last. Last-opened sorting is remembered locally on the workstation and does not mutate project
+records. The selected list tab is preserved when opening and returning from a project. Marking a
+project inactive accepts an optional note in an app
 modal; it never deletes the project, builds, files, or lifecycle history. Each tab's search text is
 independent, and a Completed search expands matching agency/year groups. Completed projects retain
 the existing grouped archive presentation inside the Completed tab rather than navigating to a
@@ -140,9 +143,11 @@ Two header tabs: **General** and **Advanced**, each with their own outer stabs.
 
 Two Advanced stabs group inner stabs (rendered as a thin inner-stab-bar above content):
 - `placements` → inner stabs: `placements | fixtures`
-- `part-manager` → inner stabs: `catalog (Part Types) | parts (Parts Library) | parts-db (Database v2)`
+- `part-manager` → inner stabs: `sku-grid (Review) | qb-inbox | parts-db (Hierarchy) | catalog (legacy) | parts (legacy)`
 
-The **Database (v2)** inner stab is the visual editor for `parts_db.json` (Phase 3).
+The **Review (SKUs)** and **Hierarchy** inner stabs are the primary visual editors for
+`parts_db.json`. **QBO Inbox** stages active, unlinked QuickBooks Items for reviewed creation,
+merge, or intentional exclusion before they enter the vehicle picker.
 
 The **Workbook Tools** stab contains the standalone build-sheet generator (upload workbook → `.pptx`),
 formerly the main "Generate" tab.

@@ -5,6 +5,37 @@ from dataclasses import dataclass, field
 from .project_models import EquipmentPreferences
 
 
+TAX_EXEMPTION_REASONS = (
+    ("1", "Federal government"),
+    ("2", "State government"),
+    ("3", "Local government"),
+    ("4", "Tribal government"),
+    ("5", "Charitable organization"),
+    ("6", "Religious organization"),
+    ("7", "Educational organization"),
+    ("8", "Hospital"),
+    ("9", "Resale"),
+    ("10", "Direct pay permit"),
+    ("11", "Multiple points of use"),
+    ("12", "Direct mail"),
+    ("13", "Agricultural production"),
+    ("14", "Industrial production / manufacturing"),
+    ("15", "Foreign diplomat"),
+)
+DEFAULT_TAX_EXEMPTION_REASON_ID = "3"
+_TAX_EXEMPTION_REASON_IDS = frozenset(reason_id for reason_id, _ in TAX_EXEMPTION_REASONS)
+
+
+def normalize_tax_exemption_reason_id(value: object) -> str:
+    """Return a QBO-supported reason id, defaulting to Local government."""
+    reason_id = str(value or "").strip()
+    return (
+        reason_id
+        if reason_id in _TAX_EXEMPTION_REASON_IDS
+        else DEFAULT_TAX_EXEMPTION_REASON_ID
+    )
+
+
 CUSTOMER_PROFILE_FIELDS = (
     "name",
     "contact_name",
@@ -30,6 +61,7 @@ CUSTOMER_PROFILE_FIELDS = (
     "ship_country",
     "notes",
     "taxable",
+    "tax_exemption_reason_id",
 )
 
 # This is deliberately the practical information DTM needs before it can
@@ -89,6 +121,7 @@ class AgencyRecord:
     ship_country: str = ""
     notes: str = ""
     taxable: bool = False
+    tax_exemption_reason_id: str = DEFAULT_TAX_EXEMPTION_REASON_ID
     customer_since: str = ""
     # These are the agency's normal equipment choices.  New projects copy
     # them once; a project can then keep a different choice for an exception.

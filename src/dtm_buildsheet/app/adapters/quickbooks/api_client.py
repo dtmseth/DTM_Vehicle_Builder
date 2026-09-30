@@ -642,15 +642,17 @@ def _build_customer_payload(fields: dict, *, include_empty: bool = False) -> dic
     notes = (fields.get("notes") or "").strip()
     if notes or (include_empty and "notes" in fields):
         payload["Notes"] = notes
-    if fields.get("taxable") is not None:
-        payload["Taxable"] = bool(fields["taxable"])
-        # This production company uses Automated Sales Tax. Its established
-        # government/public-safety customers overwhelmingly use exemption
-        # reason 3; QBO rejects a new non-taxable Customer without a reason.
-        if not payload["Taxable"]:
-            payload["TaxExemptionReasonId"] = str(
-                fields.get("tax_exemption_reason_id") or "3"
-            )
+    taxable = fields.get("taxable")
+    if taxable is not None:
+        payload["Taxable"] = bool(taxable)
+    if taxable is False or (
+        "tax_exemption_reason_id" in fields and taxable is not True
+    ):
+        from ....domain.agency_models import normalize_tax_exemption_reason_id
+
+        payload["TaxExemptionReasonId"] = normalize_tax_exemption_reason_id(
+            fields.get("tax_exemption_reason_id")
+        )
     customer_type_id = str(fields.get("customer_type_id") or "").strip()
     if customer_type_id:
         payload["CustomerTypeRef"] = {"value": customer_type_id}
@@ -737,6 +739,7 @@ def _normalize_customer(raw: dict) -> dict:
         "website": website,
         "notes": (raw.get("Notes") or "").strip(),
         "taxable": raw.get("Taxable") if isinstance(raw.get("Taxable"), bool) else None,
+        "tax_exemption_reason_id": str(raw.get("TaxExemptionReasonId") or "").strip(),
         "is_sub": bool(raw.get("Job")) or ("ParentRef" in raw),
     }
     customer.update(_normalize_address(raw.get("BillAddr"), "bill"))

@@ -28,14 +28,14 @@
         "label": "Front Partition",
         "name_pattern": "Front Partition",
         "part_type_id": "front_partition",
-        "product_count": 5
+        "product_count": 3
       },
       {
         "base_label": "Front Partition Transfer Kit",
         "label": "Front Partition Transfer Kit",
         "name_pattern": "Front Partition Transfer Kit",
         "part_type_id": "front_partition_transfer_kit",
-        "product_count": 7
+        "product_count": 6
       },
       {
         "base_label": "Pit Bar",
@@ -63,7 +63,7 @@
         "label": "Rear Partition",
         "name_pattern": "Rear Partition",
         "part_type_id": "rear_partition",
-        "product_count": 4
+        "product_count": 5
       },
       {
         "base_label": "Rear Seat Divider",
@@ -84,7 +84,7 @@
         "label": "Replacement Seat",
         "name_pattern": "Replacement Rear Seat",
         "part_type_id": "replacement_rear_seat",
-        "product_count": 6
+        "product_count": 7
       },
       {
         "base_label": "Running Boards / Nerf Bars",

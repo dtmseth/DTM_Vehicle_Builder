@@ -16,7 +16,9 @@ from dtm_buildsheet.app.adapters.quickbooks.api_client import (
     QuickBooksApiError,
     _build_customer_payload,
     _customer_result,
+    _normalize_customer,
 )
+from dtm_buildsheet.domain.agency_models import TAX_EXEMPTION_REASONS
 from dtm_buildsheet.app.services import agency_service as agc
 from dtm_buildsheet.app.services import qb_sync_service as sync
 from dtm_buildsheet.paths import AppPaths
@@ -103,6 +105,7 @@ def test_build_customer_payload_maps_full_customer_profile():
         "website": "https://alpha.example",
         "notes": "Use PO number",
         "taxable": False,
+        "tax_exemption_reason_id": "5",
         "bill_address_line1": "1 Main",
         "bill_city": "Alpha",
         "bill_state": "MN",
@@ -116,12 +119,45 @@ def test_build_customer_payload_maps_full_customer_profile():
     assert p["WebAddr"] == {"URI": "https://alpha.example"}
     assert p["Notes"] == "Use PO number"
     assert p["Taxable"] is False
-    assert p["TaxExemptionReasonId"] == "3"
+    assert p["TaxExemptionReasonId"] == "5"
     assert p["BillAddr"] == {
         "Line1": "1 Main", "City": "Alpha", "CountrySubDivisionCode": "MN", "PostalCode": "55001",
     }
     assert p["ShipAddr"] == {"Line1": "2 Depot"}
     assert p["CustomerTypeRef"] == {"value": "retail-type-id"}
+
+
+def test_qbo_tax_exemption_reason_set_and_invalid_value_fallback():
+    assert TAX_EXEMPTION_REASONS == (
+        ("1", "Federal government"),
+        ("2", "State government"),
+        ("3", "Local government"),
+        ("4", "Tribal government"),
+        ("5", "Charitable organization"),
+        ("6", "Religious organization"),
+        ("7", "Educational organization"),
+        ("8", "Hospital"),
+        ("9", "Resale"),
+        ("10", "Direct pay permit"),
+        ("11", "Multiple points of use"),
+        ("12", "Direct mail"),
+        ("13", "Agricultural production"),
+        ("14", "Industrial production / manufacturing"),
+        ("15", "Foreign diplomat"),
+    )
+    assert _build_customer_payload({
+        "taxable": False,
+        "tax_exemption_reason_id": "not-a-qbo-reason",
+    })["TaxExemptionReasonId"] == "3"
+
+
+def test_normalize_customer_keeps_tax_exemption_reason():
+    normalized = _normalize_customer({
+        "Id": "77", "DisplayName": "Alpha PD", "Taxable": False,
+        "TaxExemptionReasonId": 2,
+    })
+    assert normalized["taxable"] is False
+    assert normalized["tax_exemption_reason_id"] == "2"
 
 
 def test_customer_result_extracts_id_and_token():
@@ -149,6 +185,7 @@ def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
         "ship_address_line1": "2 Depot St",
         "notes": "Send estimates by email",
         "taxable": False,
+        "tax_exemption_reason_id": "2",
     }, paths)
     aid = agc.load_agencies(paths)[0].agency_id
 
@@ -170,6 +207,7 @@ def test_push_creates_customer_and_writes_back_id(paths, monkeypatch):
     assert fake.created[0]["ship_address_line1"] == "2 Depot St"
     assert fake.created[0]["notes"] == "Send estimates by email"
     assert fake.created[0]["taxable"] is False
+    assert fake.created[0]["tax_exemption_reason_id"] == "2"
     # Id written back onto the agency record.
     assert agc.get_agency(paths, aid).qb_customer_id == "900"
 
@@ -231,6 +269,76 @@ def test_linked_edit_requires_exact_qb_review_before_any_write(paths, monkeypatc
     assert fake.updated[0][0] == "430"
     assert fake.updated[0][2]["bill_postal_code"] == "55020"
     assert agc.get_agency(paths, aid).contact_name == "New Contact"
+
+
+def test_linked_tax_exemption_reason_edit_is_reviewed_and_written(paths, monkeypatch):
+    saved = agc.handle_save_agency({
+        "name": "Dundas Police Department",
+        "taxable": False,
+        "tax_exemption_reason_id": "3",
+    }, paths)["agency"]
+    aid = saved["agency_id"]
+    agc.set_qb_customer_id(paths, aid, "430")
+    fake = _FakeClient(existing={
+        "Id": "430",
+        "SyncToken": "3",
+        "DisplayName": "Dundas Police Department",
+        "CompanyName": "Dundas Police Department",
+        "Taxable": False,
+        "TaxExemptionReasonId": "3",
+    })
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+
+    body = {
+        "agency_id": aid,
+        "name": "Dundas Police Department",
+        "taxable": False,
+        "tax_exemption_reason_id": "2",
+    }
+    preview = agc.handle_save_agency(body, paths)
+    assert preview["error_code"] == "qb_review_required"
+    assert preview["changes"] == [{
+        "field": "tax_exemption_reason_id", "before": "3", "after": "2",
+    }]
+
+    result = agc.handle_save_agency({
+        **body, "qb_confirmation_token": preview["confirmation_token"],
+    }, paths)
+    assert result["ok"] is True
+    assert fake.updated[0][2]["tax_exemption_reason_id"] == "2"
+    payload = _build_customer_payload(fake.updated[0][2], include_empty=True)
+    assert payload["TaxExemptionReasonId"] == "2"
+
+
+def test_making_linked_customer_exempt_also_writes_saved_reason(paths, monkeypatch):
+    saved = agc.handle_save_agency({
+        "name": "State Patrol",
+        "taxable": True,
+        "tax_exemption_reason_id": "2",
+    }, paths)["agency"]
+    aid = saved["agency_id"]
+    agc.set_qb_customer_id(paths, aid, "431")
+    fake = _FakeClient(existing={
+        "Id": "431", "SyncToken": "1", "DisplayName": "State Patrol",
+        "CompanyName": "State Patrol", "Taxable": True,
+    })
+    monkeypatch.setattr(sync, "_build_client", lambda p: (fake, None))
+    body = {
+        "agency_id": aid,
+        "name": "State Patrol",
+        "taxable": False,
+        "tax_exemption_reason_id": "2",
+    }
+
+    preview = agc.handle_save_agency(body, paths)
+    result = agc.handle_save_agency({
+        **body, "qb_confirmation_token": preview["confirmation_token"],
+    }, paths)
+
+    assert result["ok"] is True
+    assert fake.updated[0][2]["taxable"] is False
+    assert fake.updated[0][2]["tax_exemption_reason_id"] == "2"
+    assert agc.get_agency(paths, aid).tax_exemption_reason_id == "2"
 
 
 def test_qb_pull_overwrites_dundas_contact_and_postal_code(paths):

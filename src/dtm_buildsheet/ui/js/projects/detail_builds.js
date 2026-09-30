@@ -1641,7 +1641,24 @@ function _ptCustomerEditor(customer, linked, missingFields = []) {
       <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Country</label><input type="text" id="qb-est-customer-ship-country" value="${esc(c.ship_country || "")}" autocomplete="shipping country-name" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks taxable</label><select id="qb-est-customer-taxable" style="width:100%;box-sizing:border-box;margin-top:4px"><option value="false" ${c.taxable !== true ? "selected" : ""}>Not taxable</option><option value="true" ${c.taxable === true ? "selected" : ""}>Taxable</option></select></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">QuickBooks tax status</label><select id="qb-est-customer-taxable" style="width:100%;box-sizing:border-box;margin-top:4px"><option value="false" ${c.taxable !== true ? "selected" : ""}>Tax exempt</option><option value="true" ${c.taxable === true ? "selected" : ""}>Taxable</option></select></div>
+      <div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy)">Exemption reason</label><select id="qb-est-customer-tax-exemption-reason" style="width:100%;box-sizing:border-box;margin-top:4px" ${c.taxable === true ? "disabled" : ""}>
+        <option value="1" ${c.tax_exemption_reason_id === "1" ? "selected" : ""}>Federal government</option>
+        <option value="2" ${c.tax_exemption_reason_id === "2" ? "selected" : ""}>State government</option>
+        <option value="3" ${!c.tax_exemption_reason_id || c.tax_exemption_reason_id === "3" ? "selected" : ""}>Local government</option>
+        <option value="4" ${c.tax_exemption_reason_id === "4" ? "selected" : ""}>Tribal government</option>
+        <option value="5" ${c.tax_exemption_reason_id === "5" ? "selected" : ""}>Charitable organization</option>
+        <option value="6" ${c.tax_exemption_reason_id === "6" ? "selected" : ""}>Religious organization</option>
+        <option value="7" ${c.tax_exemption_reason_id === "7" ? "selected" : ""}>Educational organization</option>
+        <option value="8" ${c.tax_exemption_reason_id === "8" ? "selected" : ""}>Hospital</option>
+        <option value="9" ${c.tax_exemption_reason_id === "9" ? "selected" : ""}>Resale</option>
+        <option value="10" ${c.tax_exemption_reason_id === "10" ? "selected" : ""}>Direct pay permit</option>
+        <option value="11" ${c.tax_exemption_reason_id === "11" ? "selected" : ""}>Multiple points of use</option>
+        <option value="12" ${c.tax_exemption_reason_id === "12" ? "selected" : ""}>Direct mail</option>
+        <option value="13" ${c.tax_exemption_reason_id === "13" ? "selected" : ""}>Agricultural production</option>
+        <option value="14" ${c.tax_exemption_reason_id === "14" ? "selected" : ""}>Industrial production / manufacturing</option>
+        <option value="15" ${c.tax_exemption_reason_id === "15" ? "selected" : ""}>Foreign diplomat</option>
+      </select></div>
       <div style="flex:2"><label style="font-size:12px;font-weight:600;color:var(--navy)">Customer notes</label><input type="text" id="qb-est-customer-notes" value="${esc(c.notes || "")}" style="width:100%;box-sizing:border-box;margin-top:4px" /></div>
     </div>
     <label style="display:flex;gap:7px;align-items:center;margin-top:10px;font-size:12px;color:var(--navy)"><input type="checkbox" id="qb-est-customer-confirm" /> Confirm customer details and allow customer creation or profile update</label>
@@ -1686,7 +1703,17 @@ function _ptCustomerFieldsFromEditor() {
   }
   const taxable = value("qb-est-customer-taxable");
   fields.taxable = taxable === "true";
+  fields.tax_exemption_reason_id = value("qb-est-customer-tax-exemption-reason") || "3";
   return fields;
+}
+
+function _ptWireCustomerTaxStatus() {
+  const status = $("qb-est-customer-taxable");
+  const reason = $("qb-est-customer-tax-exemption-reason");
+  if (!status || !reason) return;
+  const sync = () => { reason.disabled = status.value === "true"; };
+  status.addEventListener("change", sync);
+  sync();
 }
 
 async function _ptCopyProjectName(text) {
@@ -2067,6 +2094,7 @@ window.PT_buildCreateEstimate = async function (projectId, unitId, individualId)
         ? (v.existing_estimate_id ? "Continue" : "Create estimate")
         : v.pdf_available ? (customerLinked ? "Update customer & estimate" : "Create customer & estimate") : "");
     const e = _ptEstModalEls();
+    _ptWireCustomerTaxStatus();
     _ptWireEstimatePricing(v.pricing, v.additional_charges, v.material_line_count);
     _ptWireEstimateChangeChoice(e.create);
     if (e.create) e.create.onclick = () => _ptDoCreateEstimate(projectId, individualId);
@@ -2166,6 +2194,7 @@ async function _ptDoCreateEstimate(projectId, individualId, chosenAction = null,
           ${_ptCustomerEditor(res.customer, !!res.customer_linked, missing)}
           <label style="font-size:12px;font-weight:600;color:var(--navy)">Memo (optional)</label>
           <input type="text" id="qb-est-memo" placeholder="Appears on the estimate" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:5px" />`;
+        _ptWireCustomerTaxStatus();
         e.create.disabled = false;
         e.create.textContent = "Create customer & estimate";
         e.create.onclick = () => _ptDoCreateEstimate(

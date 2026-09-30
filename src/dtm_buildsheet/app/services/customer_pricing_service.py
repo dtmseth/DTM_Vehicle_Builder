@@ -110,32 +110,35 @@ def get_default_rule(paths: AppPaths) -> dict:
 
 def save_default_rule(paths: AppPaths, body: dict) -> dict:
     """Persist a reviewed shared default through the normal config mirror path."""
-    doc, _current = _pricing_doc(paths)
-    incoming = body.get("manufacturer_discounts")
-    if not isinstance(incoming, dict) or not incoming:
-        return {"ok": False, "error": "At least one manufacturer discount is required"}
-    known_manufacturers = doc.get("manufacturers") or {}
-    try:
-        discounts = {}
-        for manufacturer_id, value in incoming.items():
-            mid = str(manufacturer_id).strip()
-            if mid not in known_manufacturers:
-                raise ValueError(f"Unknown manufacturer: {mid}")
-            discounts[mid] = _discount(value)
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
+    from .parts_db_service import parts_db_mutation_lock
 
-    name = RETAIL_RULE_NAME
-    doc["customer_pricing"] = {
-        "default_rule": {
-            "name": name or DEFAULT_RULE_NAME,
-            "manufacturer_discounts": discounts,
+    with parts_db_mutation_lock():
+        doc, _current = _pricing_doc(paths)
+        incoming = body.get("manufacturer_discounts")
+        if not isinstance(incoming, dict) or not incoming:
+            return {"ok": False, "error": "At least one manufacturer discount is required"}
+        known_manufacturers = doc.get("manufacturers") or {}
+        try:
+            discounts = {}
+            for manufacturer_id, value in incoming.items():
+                mid = str(manufacturer_id).strip()
+                if mid not in known_manufacturers:
+                    raise ValueError(f"Unknown manufacturer: {mid}")
+                discounts[mid] = _discount(value)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
+
+        name = RETAIL_RULE_NAME
+        doc["customer_pricing"] = {
+            "default_rule": {
+                "name": name or DEFAULT_RULE_NAME,
+                "manufacturer_discounts": discounts,
+            }
         }
-    }
-    result = save_config_file("parts_db.json", doc, paths)
-    if not result.get("ok"):
-        return result
-    get_parts_db_service(paths).invalidate()
+        result = save_config_file("parts_db.json", doc, paths)
+        if not result.get("ok"):
+            return result
+        get_parts_db_service(paths).invalidate()
     return {**get_default_rule(paths), **{k: v for k, v in result.items() if k != "ok"}}
 
 

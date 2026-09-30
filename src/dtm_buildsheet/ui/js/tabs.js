@@ -30,6 +30,7 @@ const ALL_STAB_CONTENTS = [
   "stab-fixtures",
   "stab-sizes",
   "stab-sku-grid",
+  "stab-qb-inbox",
   "stab-catalog",
   "stab-parts",
   "stab-parts-db",
@@ -46,7 +47,7 @@ const ALL_STAB_CONTENTS = [
 // First entry in `stabs` is the default pane when the outer stab activates.
 const INNER_STAB_GROUPS = {
   "placements":   { bar: "inner-stab-bar-placements",    stabs: ["placements", "fixtures"] },
-  "part-manager": { bar: "inner-stab-bar-part-manager",  stabs: ["sku-grid", "parts-db", "catalog", "parts"] },
+  "part-manager": { bar: "inner-stab-bar-part-manager",  stabs: ["sku-grid", "qb-inbox", "parts-db", "catalog", "parts"] },
 };
 
 // Default stab selected when each header tab activates for the first time.
@@ -182,7 +183,11 @@ function _runStabSideEffects(stab) {
   if (stab === "workbook-tools" && typeof loadTemplateInfo === "function") loadTemplateInfo();
   if (stab === "fixtures" && typeof initFixtures === "function") initFixtures();
   if (stab === "sales-reps" && typeof initSalesRepsTab === "function") initSalesRepsTab();
-  if (stab === "sku-grid" && typeof initSkuGridTab === "function") initSkuGridTab();
+  if (stab === "sku-grid" && typeof initSkuGridTab === "function") {
+    initSkuGridTab();
+    if (typeof refreshQbInboxCount === "function") refreshQbInboxCount();
+  }
+  if (stab === "qb-inbox" && typeof initQbInboxTab === "function") initQbInboxTab();
   if (stab === "parts-db" && typeof initPartsDbTab === "function") initPartsDbTab();
   if (stab === "quickbooks" && QUICKBOOKS_UI_ENABLED && typeof initQuickBooksTab === "function") initQuickBooksTab();
   if (stab === "quickbooks-production-preview" && typeof initQuickBooksProductionPreview === "function") initQuickBooksProductionPreview();

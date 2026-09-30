@@ -982,7 +982,8 @@
     .proj-row:last-child{border-bottom:none}
     .proj-row-agency{font-weight:700;font-size:14px;color:var(--navy)}
     .proj-row-meta{font-size:12px;color:var(--muted);margin-top:2px}
-    .proj-row-actions{display:flex;gap:6px;flex-shrink:0;margin-left:12px}
+    .proj-row-actions{align-items:center;display:flex;gap:6px;flex-shrink:0;margin-left:12px}
+    .proj-created-tag{background:#f5f6fa;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:10px;font-weight:650;padding:4px 8px;white-space:nowrap}
     .proj-row-heading{align-items:center;display:flex;flex-wrap:wrap;gap:7px}
     .proj-progress-badge{background:#edf2fa;border:1px solid #ced8e8;border-radius:999px;color:#37506f;font-size:9px;font-weight:750;line-height:1.2;padding:3px 7px;white-space:nowrap}
     .proj-progress-badge-logistics{background:#edf2fa;border-color:#ced8e8;color:#37506f}
@@ -1010,6 +1011,9 @@
     .proj-list-tab.active[data-project-list-status="completed"] span{background:rgba(255,255,255,.2);color:#fff}
     .proj-list-search{display:block;margin:0 0 12px}
     .proj-list-search input{box-sizing:border-box;width:100%}
+    .proj-list-controls{align-items:center;display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px}
+    .proj-list-controls label{align-items:center;color:var(--muted);display:flex;font-size:11px;font-weight:650;gap:7px;margin:0}
+    .proj-list-controls select{min-width:145px}
     #proj-standard-panel>.proj-empty-msg{padding:24px;text-align:center}
     #proj-completed-panel>.proj-archive-intro{margin-bottom:10px}
     .proj-list-footer{display:flex;align-items:center;justify-content:center;gap:9px;padding-top:14px;margin-top:8px;border-top:1px solid var(--border)}
@@ -1327,6 +1331,7 @@
     .project-completion-options input{margin-top:3px}
     .project-completion-options span{display:grid;gap:3px}
     .project-completion-options small{color:var(--muted);line-height:1.35}
+    .project-creation-conflict-warning{margin:0 0 12px;padding:10px 12px;border:1px solid #d39b38;border-radius:8px;background:#fff7df;color:#72500d;font-size:12px;line-height:1.4}
     .project-completion-overwrite-option{border-color:#d37a74!important;background:#fff5f4!important}
     .project-completion-overwrite-confirm{padding:11px;border:2px solid #c8443d;border-radius:8px;background:#fff0ef;margin-bottom:12px}
     .project-completion-overwrite-confirm label{display:block;color:#8c2d28;font-size:12px;margin-bottom:7px}
@@ -1530,6 +1535,30 @@
     .skg-unbilled{background:#e2e8f0;color:#334155}
     .skg-pill-unbilled{background:#64748b;color:#fff}
     .skg-acc-row{display:flex;gap:8px;align-items:center}
+    .qbi-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;margin-left:4px;padding:0 5px;border-radius:9px;background:#d97706;color:#fff;font-size:10px;font-weight:700}
+    .qbi-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .qbi-title-actions,.qbi-toolbar,.qbi-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .qbi-meta{font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+    .qbi-intro{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 12px}
+    .qbi-toolbar{margin-bottom:10px}
+    .qbi-list{display:flex;flex-direction:column;gap:7px}
+    .qbi-empty{padding:24px;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;text-align:center}
+    .qbi-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 12px;border:1px solid var(--border);border-radius:8px;background:#fff}
+    .qbi-item-ignored{background:#f6f7f9;opacity:.78}
+    .qbi-item-main{min-width:0;flex:1}
+    .qbi-item-description{font-size:13px;font-weight:600;color:var(--navy);white-space:pre-line}
+    .qbi-item-detail{margin-top:3px;font-size:11px;color:var(--muted)}
+    .qbi-match{margin-top:7px;padding:5px 8px;border-radius:5px;background:#eef6ff;color:#315b7d;font-size:11px}
+    .qbi-actions{flex:none;justify-content:flex-end}
+    .qbi-ignore{color:var(--red)}
+    .qbi-modal{width:560px}
+    .qbi-modal-item{margin-bottom:14px;padding:9px 10px;border-radius:6px;background:#f4f6f8;color:var(--navy);font-size:12px;line-height:1.45;white-space:pre-line}
+    .qbi-form{display:flex;gap:10px;flex-wrap:wrap}
+    .qbi-form>.skg-fl{flex:1;min-width:200px}
+    .qbi-form>.qbi-form-wide{flex-basis:100%}
+    .qbi-form small{margin-top:2px;color:var(--muted);font-size:10px;font-weight:400}
+    .qbi-product-select{min-height:190px}
+    @media (max-width:760px){.qbi-item{align-items:flex-start;flex-direction:column}.qbi-actions{justify-content:flex-start}}
 /* Project defaults → estimate Additional charges */
 .estimate-defaults-card { margin-top: 14px; }
 .estimate-defaults-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -1893,7 +1922,7 @@
 .project-service-options { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 14px; }
 .project-service-options label { display: flex; align-items: center; gap: 5px; font-weight: 400; }
 .project-type-badge { display: inline-block; font-size: 11px; font-weight: 600; color: #334155; background: #edf1f5; border-radius: 5px; padding: 3px 7px; }
-.project-type-filter { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.project-type-filter { display: flex; align-items: center; gap: 8px; }
 
 .previous-build-match { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--border); }
 

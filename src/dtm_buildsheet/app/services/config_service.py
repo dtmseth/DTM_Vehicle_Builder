@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import threading
+from copy import deepcopy
+from uuid import uuid4
 
 from ...config.store import get_config_path, load_config, save_config
 from ...paths import AppPaths
@@ -62,13 +64,30 @@ def load_config_file(filename: str, paths: AppPaths) -> dict:
 
 def save_config_file(filename: str, data: object, paths: AppPaths) -> dict:
     try:
-        normalized = save_config(filename, data, paths)
+        payload = deepcopy(data)
+        if filename == "parts_db.json" and isinstance(payload, dict):
+            # Every writer, including background QB reconciliation, advances
+            # the catalog revision.  Whole-document UI saves use it for
+            # optimistic concurrency so an old tab cannot replace newer edits.
+            payload.setdefault("metadata", {})["edit_revision"] = uuid4().hex
+
+        # Some callers already hold this re-entrant lock around their complete
+        # read-modify-write cycle.  Taking it here also serializes one-shot
+        # writers that only call save_config_file directly.
+        if filename == "parts_db.json":
+            from .parts_db_service import parts_db_mutation_lock
+            with parts_db_mutation_lock():
+                normalized = save_config(filename, payload, paths)
+        else:
+            normalized = save_config(filename, payload, paths)
         serialized = json.dumps(normalized, indent=2) + "\n"
         result: dict = {
             "ok": True,
             "path": str(get_config_path(filename, paths)),
             "schema_version": normalized.get("schema_version", 1),
         }
+        if filename == "parts_db.json":
+            result["edit_revision"] = (normalized.get("metadata") or {}).get("edit_revision", "")
         if filename in TEMPLATE_REGEN_FILES:
             # Trigger template regeneration as a background side-effect so the
             # save response returns immediately and the template stays in sync.

@@ -223,18 +223,28 @@ def reconcile_linked_parts(paths: AppPaths) -> dict:
     and applies QBO's sku/price/active status to linked products. Returns a
     stats dict. A no-op (no linked parts, or nothing changed) writes nothing.
     """
-    import copy
-    from datetime import datetime, timezone
-
-    from .config_service import save_config_file
-    from .parts_db_service import get_parts_db_service
-
     cache = _read_cache(paths)
     if not cache.get("last_sync_utc"):
         # Never reconcile against an empty/never-synced cache — that would flag
         # every linked part inactive.
         return {"ok": True, "updated": 0, "flagged_inactive": 0, "reactivated": 0,
                 "reconciled_pending": 0, "skipped": "no_sync"}
+
+    from .parts_db_service import parts_db_mutation_lock
+
+    # Reconciliation is a whole-document read/modify/write. Hold the same
+    # lock used by Part Manager edits from the initial snapshot through cache
+    # invalidation so a background pull cannot restore an older catalog.
+    with parts_db_mutation_lock():
+        return _reconcile_linked_parts_locked(paths, cache)
+
+
+def _reconcile_linked_parts_locked(paths: AppPaths, cache: dict) -> dict:
+    import copy
+    from datetime import datetime, timezone
+
+    from .config_service import save_config_file
+    from .parts_db_service import get_parts_db_service
 
     active_by_id = {i["qb_item_id"]: i for i in cache.get("items", [])}
     # name/sku → item, for matching pending parts that have now appeared in QBO.
@@ -364,6 +374,40 @@ def refresh_estimate_catalog(paths: AppPaths) -> dict:
 # service owns the matching/upsert; this layer just fetches and delegates.
 
 
+def _refresh_shared_agencies_before_customer_import(paths: AppPaths) -> dict | None:
+    """Make the cloud agency set current before deciding a QBO Customer is new."""
+    from ..adapters import wiring
+
+    if not wiring._cloud_flag_enabled():  # noqa: SLF001 - shared desktop boundary
+        return None
+    try:
+        bundle = wiring.get_active_bundle()
+        if not bundle.identity.is_signed_in():
+            return {
+                "ok": False,
+                "error": "shared_agency_refresh_requires_sign_in",
+            }
+        from . import agency_service
+        from .shared_settings_service import SharedSettingsService
+
+        report = SharedSettingsService(
+            remote=bundle.storage,
+            cache_dir=paths.workspace_dir / "agencies",
+            remote_folder="Settings/agencies",
+            propagate_deletions=True,
+        ).sync_all()
+        if report.failed:
+            return {
+                "ok": False,
+                "error": "shared_agency_refresh_failed",
+            }
+        agency_service.warmup_cache(paths, force=True)
+    except Exception:
+        logger.exception("Could not refresh shared agencies before QBO customer import")
+        return {"ok": False, "error": "shared_agency_refresh_failed"}
+    return None
+
+
 def preview_customer_import(paths: AppPaths) -> dict:
     """Fetch QB customers and report would-create / would-update. Writes nothing."""
     client, err = _build_client(paths)
@@ -375,6 +419,10 @@ def preview_customer_import(paths: AppPaths) -> dict:
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
+
+    refresh_error = _refresh_shared_agencies_before_customer_import(paths)
+    if refresh_error is not None:
+        return refresh_error
 
     from . import agency_service, qb_customer_migration_service
     ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
@@ -405,6 +453,10 @@ def import_customers(paths: AppPaths) -> dict:
     except QuickBooksApiError as exc:
         logger.warning("QuickBooks customer fetch failed: %s", exc)
         return {"ok": False, "error": str(exc)}
+
+    refresh_error = _refresh_shared_agencies_before_customer_import(paths)
+    if refresh_error is not None:
+        return refresh_error
 
     from . import agency_service, qb_customer_migration_service
     ignored_ids = qb_customer_migration_service.ignored_production_customer_ids(paths)
@@ -648,11 +700,22 @@ def review_linked_agency_edit(paths: AppPaths, record, body: dict) -> dict:
         if "name" in edits and str(raw.get("DisplayName") or "").strip() != edits["name"]:
             changes.append({"field": "display_name", "before": raw.get("DisplayName") or "",
                             "after": edits["name"]})
-        if edits.get("taxable") is False and remote.get("taxable") is not False:
+        if edits.get("taxable") is False:
+            from ...domain.agency_models import normalize_tax_exemption_reason_id
+
             current_reason = str(raw.get("TaxExemptionReasonId") or "")
-            if current_reason != "3":
+            desired_reason = normalize_tax_exemption_reason_id(
+                edits.get("tax_exemption_reason_id", record.tax_exemption_reason_id)
+            )
+            if (
+                current_reason != desired_reason
+                and not any(
+                    change["field"] == "tax_exemption_reason_id"
+                    for change in changes
+                )
+            ):
                 changes.append({"field": "tax_exemption_reason_id", "before": current_reason,
-                                "after": "3"})
+                                "after": desired_reason})
         if not changes:
             return {"ok": True, "qb_sync": {"ok": True, "skipped": "already_matches_qb"}, "qb_profile": remote}
         token = hashlib.sha256(json.dumps({
@@ -665,13 +728,17 @@ def review_linked_agency_edit(paths: AppPaths, record, body: dict) -> dict:
             return {"ok": False, "error_code": "qb_review_required", "changes": changes,
                     "confirmation_token": token}
         fields = dict(edits)
+        if fields.get("taxable") is False:
+            fields.setdefault(
+                "tax_exemption_reason_id", record.tax_exemption_reason_id
+            )
         for prefix in ("bill", "ship"):
             if any(field.startswith(prefix + "_") for field in edits):
                 for field in CUSTOMER_PROFILE_FIELDS:
                     if field.startswith(prefix + "_") and field not in fields:
                         fields[field] = remote.get(field, "")
         client.update_customer(record.qb_customer_id, raw.get("SyncToken", "0"), fields, include_empty=True)
-        remote.update(edits)
+        remote.update(fields)
         return {"ok": True, "qb_sync": {"ok": True, "action": "updated"}, "qb_profile": remote}
     except QuickBooksApiError as exc:
         logger.warning("Reviewed QuickBooks agency update failed: %s", exc)
@@ -1173,7 +1240,7 @@ def link_item(paths: AppPaths, *, qb_item_id: str, product_id: str) -> dict:
     from datetime import datetime, timezone
 
     from .config_service import save_config_file
-    from .parts_db_service import get_parts_db_service
+    from .parts_db_service import get_parts_db_service, parts_db_mutation_lock
 
     if not qb_item_id or not product_id:
         return {"ok": False, "error": "missing_argument"}
@@ -1182,31 +1249,32 @@ def link_item(paths: AppPaths, *, qb_item_id: str, product_id: str) -> dict:
     if item is None:
         return {"ok": False, "error": "unknown_item"}
 
-    svc = get_parts_db_service(paths)
-    doc = copy.deepcopy(svc.raw_doc())
-    products = doc.get("products") or {}
-    product = products.get(product_id)
-    if product is None:
-        return {"ok": False, "error": "unknown_product"}
+    with parts_db_mutation_lock():
+        svc = get_parts_db_service(paths)
+        doc = copy.deepcopy(svc.raw_doc())
+        products = doc.get("products") or {}
+        product = products.get(product_id)
+        if product is None:
+            return {"ok": False, "error": "unknown_product"}
 
-    # Enforce a one-to-one mapping.
-    for pid, other in products.items():
-        if pid != product_id and str(other.get("qb_item_id", "")).strip() == qb_item_id:
-            return {"ok": False, "error": "item_already_linked", "linked_product_id": pid}
-    existing = str(product.get("qb_item_id", "")).strip()
-    if existing and existing != qb_item_id:
-        return {"ok": False, "error": "product_already_linked", "existing_qb_item_id": existing}
+        # Enforce a one-to-one mapping.
+        for pid, other in products.items():
+            if pid != product_id and str(other.get("qb_item_id", "")).strip() == qb_item_id:
+                return {"ok": False, "error": "item_already_linked", "linked_product_id": pid}
+        existing = str(product.get("qb_item_id", "")).strip()
+        if existing and existing != qb_item_id:
+            return {"ok": False, "error": "product_already_linked", "existing_qb_item_id": existing}
 
-    product["qb_item_id"] = qb_item_id
-    product["qb_sku"] = item.get("sku", "")
-    product["qb_unit_price"] = item.get("unit_price")
-    product["qb_sales_description"] = item.get("description", "")
-    product["qb_last_synced"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        product["qb_item_id"] = qb_item_id
+        product["qb_sku"] = item.get("sku", "")
+        product["qb_unit_price"] = item.get("unit_price")
+        product["qb_sales_description"] = item.get("description", "")
+        product["qb_last_synced"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    result = save_config_file("parts_db.json", doc, paths)
-    if not result.get("ok"):
-        return {"ok": False, "error": result.get("error", "save_failed")}
-    svc.invalidate()
+        result = save_config_file("parts_db.json", doc, paths)
+        if not result.get("ok"):
+            return {"ok": False, "error": result.get("error", "save_failed")}
+        svc.invalidate()
     _update_cache_link(paths, qb_item_id, product_id)
     logger.info("QB item linked to product")
     return {"ok": True, "product_id": product_id}
@@ -1220,34 +1288,35 @@ def unlink_item(paths: AppPaths, *, qb_item_id: str) -> dict:
     import copy
 
     from .config_service import save_config_file
-    from .parts_db_service import get_parts_db_service
+    from .parts_db_service import get_parts_db_service, parts_db_mutation_lock
 
     if not qb_item_id:
         return {"ok": False, "error": "missing_argument"}
 
-    svc = get_parts_db_service(paths)
-    doc = copy.deepcopy(svc.raw_doc())
-    products = doc.get("products") or {}
+    with parts_db_mutation_lock():
+        svc = get_parts_db_service(paths)
+        doc = copy.deepcopy(svc.raw_doc())
+        products = doc.get("products") or {}
 
-    target_id = None
-    for pid, product in products.items():
-        if str(product.get("qb_item_id", "")).strip() == qb_item_id:
-            target_id = pid
-            for field in (
-                "qb_item_id", "qb_sku", "qb_unit_price", "qb_sales_description", "qb_last_synced"
-            ):
-                product.pop(field, None)
-            break
+        target_id = None
+        for pid, product in products.items():
+            if str(product.get("qb_item_id", "")).strip() == qb_item_id:
+                target_id = pid
+                for field in (
+                    "qb_item_id", "qb_sku", "qb_unit_price", "qb_sales_description", "qb_last_synced"
+                ):
+                    product.pop(field, None)
+                break
 
-    if target_id is None:
-        # Nothing in parts_db carries it; just clear the cache flag.
-        _update_cache_link(paths, qb_item_id, "")
-        return {"ok": True, "product_id": ""}
+        if target_id is None:
+            # Nothing in parts_db carries it; just clear the cache flag.
+            _update_cache_link(paths, qb_item_id, "")
+            return {"ok": True, "product_id": ""}
 
-    result = save_config_file("parts_db.json", doc, paths)
-    if not result.get("ok"):
-        return {"ok": False, "error": result.get("error", "save_failed")}
-    svc.invalidate()
+        result = save_config_file("parts_db.json", doc, paths)
+        if not result.get("ok"):
+            return {"ok": False, "error": result.get("error", "save_failed")}
+        svc.invalidate()
     _update_cache_link(paths, qb_item_id, "")
     logger.info("QB item unlinked from product")
     return {"ok": True, "product_id": target_id}

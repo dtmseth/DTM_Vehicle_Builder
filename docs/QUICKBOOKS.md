@@ -45,9 +45,9 @@ hard-gated to `environment == "sandbox"`.)
 
 Agency saves synchronously create/update their top-level QBO Customer and return the result to the
 UI, so a rejected Customer write cannot disappear in a background thread. New agencies default to
-non-taxable. Because this production company has Automated Sales Tax enabled, non-taxable Customer
-writes include its established government/public-safety exemption reason ID `3`; the production
-customer population uses that reason for 134 existing exempt agencies.
+tax exempt with QBO reason `3` (Local government). The Agency editor exposes all 15 QBO-supported
+exemption reasons, validates the selected ID, and sends it with every non-taxable Customer create;
+the chosen reason also round-trips through Customer imports and reviewed profile edits.
 Every agency Customer written by the app is also assigned the active QBO **Retail** Customer Type.
 The integration resolves that type's company-local ID by its exact name at write time; it never
 persists or hard-codes the production ID. In this company, Retail activates the shared QBO price
@@ -308,7 +308,11 @@ and [Project API use cases](https://developer.intuit.com/app/developer/qbo/docs/
   Fields API to resolve the company-specific field IDs. This keeps a custom
   form mismatch from blocking the non-posting estimate create. The optional
   phone, vehicle, sales-ID, and unit header fields therefore remain managed in
-  QuickBooks unless that paid scope is enabled later.
+  QuickBooks unless that paid scope is enabled later. Customer-profile custom
+  fields have the same boundary: a field such as **Sales ID** can be written on
+  a Customer only after the production-only Custom Fields GraphQL scopes resolve
+  its company-specific definition ID. The standard Accounting-only connection
+  must not guess or hard-code that ID.
   Production QBO `Item.UnitPrice` is treated as list price. Before validation or creation, the app
   applies the shared **Retail** manufacturer rule: Gamber-Johnson 40%, Havis 20%, PAC Tool 5%,
   Santa Cruz 25%, Setina 20%, Westin 15%, and Whelen 38% off list. An Agency stores only sparse

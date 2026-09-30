@@ -15,6 +15,7 @@ from ...domain.agency_models import (
     CUSTOMER_PROFILE_FIELDS,
     REQUIRED_ESTIMATE_CUSTOMER_FIELDS,
     AgencyRecord,
+    normalize_tax_exemption_reason_id,
 )
 from ...domain.agency_naming import (
     clean_agency_abbreviation,
@@ -27,6 +28,9 @@ from ...storage.safety import validate_safe_id
 from ..adapters.wiring import delete_via_proposal, save_via_proposal
 
 _log = logging.getLogger(__name__)
+
+
+_QBO_AGENCY_ID_NAMESPACE = uuid.UUID("ff62c318-5964-4ad1-bd3e-e8c9d1e63d31")
 
 _ABBREV: list[tuple[str, str]] = [
     (r"\bst\.?\s", "saint "),
@@ -61,6 +65,11 @@ def _legacy_agencies_file(paths: AppPaths) -> Path:
 
 def _record_path(agency_id: str, paths: AppPaths) -> Path:
     return _agencies_dir(paths) / f"{agency_id}.json"
+
+
+def _new_qbo_import_agency_id(qb_customer_id: str) -> str:
+    """Use one agency ID per QBO Customer across independently syncing devices."""
+    return str(uuid.uuid5(_QBO_AGENCY_ID_NAMESPACE, str(qb_customer_id).strip()))
 
 
 # ── in-memory cache ────────────────────────────────────────────────────────────
@@ -124,6 +133,9 @@ def _record_from_dict(rec: dict) -> AgencyRecord:
         ship_country=str(rec.get("ship_country", "")),
         notes=str(rec.get("notes", "")),
         taxable=taxable,
+        tax_exemption_reason_id=normalize_tax_exemption_reason_id(
+            rec.get("tax_exemption_reason_id")
+        ),
         customer_since=str(rec.get("customer_since", "")),
         default_preferences=preferences_from_dict(rec.get("default_preferences", {})),
         pricing_overrides=_clean_pricing_overrides(rec.get("pricing_overrides", {})),
@@ -429,6 +441,8 @@ def _clean_agency_field(field: str, value: object) -> object:
         if isinstance(value, str):
             return value.strip().lower() in {"true", "yes", "1"}
         return bool(value)
+    if field == "tax_exemption_reason_id":
+        return normalize_tax_exemption_reason_id(value)
     return str(value or "").strip()
 
 
@@ -979,13 +993,29 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             summary=f"{'Update' if existing else 'Add'} agency: {saved_record.name}",
             category="general",
         )
-        # Direct SP mirror so other devices see the new/updated record within
-        # their next 60s sync, not whenever the proposal workflow wakes up.
-        from .shared_work_service import save_setting_to_cloud_in_background
-        save_setting_to_cloud_in_background(
-            f"agencies/{saved_record.agency_id}.json", serialized,
+        # Publish the QBO-linked identity before returning. A fire-and-forget
+        # write left a window where another device could import the same QBO
+        # Customer, see no shared agency yet, and create a second record.
+        from ..adapters import wiring
+        from .shared_work_service import (
+            save_setting_to_cloud,
+            save_setting_to_cloud_in_background,
         )
-        return {
+
+        cloud_warning = ""
+        if wiring._cloud_flag_enabled():
+            if not save_setting_to_cloud(
+                f"agencies/{saved_record.agency_id}.json", serialized,
+            ):
+                cloud_warning = (
+                    "The agency was saved locally and in QuickBooks, but its shared copy could "
+                    "not be confirmed. Customer import is blocked until shared agencies refresh."
+                )
+        else:
+            save_setting_to_cloud_in_background(
+                f"agencies/{saved_record.agency_id}.json", serialized,
+            )
+        result = {
             "ok": True,
             "agency": asdict(saved_record),
             "qb_sync": qb_sync,
@@ -993,6 +1023,9 @@ def handle_save_agency(body: dict, paths: AppPaths) -> dict:
             "updated_project_ids": affected_projects,
             **proposal_result,
         }
+        if cloud_warning:
+            result["cloud_warning"] = cloud_warning
+        return result
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:
@@ -1166,7 +1199,11 @@ def upsert_agencies_from_qb(customers: list[dict], paths: AppPaths) -> dict:
                 if field != "name" and field in cust
             }
             record = AgencyRecord(
-                agency_id=str(uuid.uuid4()),
+                agency_id=(
+                    _new_qbo_import_agency_id(qb_id)
+                    if qb_id
+                    else str(uuid.uuid4())
+                ),
                 name=name,
                 qb_customer_id=qb_id,
                 created_at=now,
@@ -1266,10 +1303,12 @@ def handle_merge_agencies(body: dict, paths: AppPaths) -> dict:
 
     QBO is not written here. Projects are rebound by durable Builder agency ID,
     blank target profile fields are filled from the source, and the source is
-    removed only after every local write succeeds.
+    removed only after every local write succeeds. Same-year projects remain
+    independent only when the caller explicitly confirms that choice.
     """
     source_id = str(body.get("source_agency_id") or "").strip()
     target_id = str(body.get("target_agency_id") or "").strip()
+    keep_projects_separate = body.get("keep_projects_separate") is True
     if not source_id or not target_id or source_id == target_id:
         return {"ok": False, "error": "Choose two different agencies to merge"}
     try:
@@ -1292,10 +1331,13 @@ def handle_merge_agencies(body: dict, paths: AppPaths) -> dict:
             p.project_id for p in source_projects
             if (p.project_type, p.customer.build_year.strip().casefold()) in target_keys
         ]
-        if conflicts:
+        if conflicts and not keep_projects_separate:
             return {
                 "ok": False,
-                "error": "Projects for the same agency, year, and work type must be merged first",
+                "error": (
+                    "Projects for the same agency, year, and work type already exist. "
+                    "Confirm that they should remain separate before merging the agency records."
+                ),
                 "conflicting_project_ids": conflicts,
             }
 
@@ -1338,6 +1380,7 @@ def handle_merge_agencies(body: dict, paths: AppPaths) -> dict:
             "source_agency_id": source_id,
             "target_agency_id": target_id,
             "updated_project_ids": updated_project_ids,
+            "kept_project_ids_separate": conflicts if keep_projects_separate else [],
         }
         if cloud_deleted is False:
             result["cloud_warning"] = "Merged locally, but the old cloud agency could not be removed"

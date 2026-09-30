@@ -844,7 +844,8 @@
       }
     },
     "metadata": {
-      "last_updated": "2026-08-25T18:46:04.641407+00:00",
+      "edit_revision": "d4eeef20d5cf424fa92678e8ef141d10",
+      "last_updated": "2026-09-30T14:59:33.392247+00:00",
       "updated_by": "part-manager-ui"
     },
     "naming_rules": {
@@ -16261,35 +16262,6 @@
         "reviewed": false,
         "tag_ids": []
       },
-      "setina_board": {
-        "description": "",
-        "fits_part_types": [
-          "equipment_tray"
-        ],
-        "images": {},
-        "manufacturer_id": "setina",
-        "model": "BOARD",
-        "part_numbers": [
-          {
-            "color": "",
-            "friendly_name": "SETINA CARGO REAR DECK 2024-2026 CHEVROLET BLAZER EV",
-            "lens_type": "",
-            "part_number": "TK0661BLE24",
-            "qb_inactive": false,
-            "qb_item_id": "1273",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA CARGO REAR DECK\n\n2024-2026 CHEVROLET BLAZER EV",
-            "qb_sku": "",
-            "qb_unit_price": 449.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "BLAZER"
-            ]
-          }
-        ],
-        "tag_ids": []
-      },
       "setina_c": {
         "description": "",
         "fits_part_types": [
@@ -16393,33 +16365,18 @@
         ],
         "tag_ids": []
       },
-      "setina_cargo_maxx": {
+      "setina_dual_prisoner": {
         "description": "",
         "fits_part_types": [
           "rear_seat_divider"
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "CARGO MAXX",
-        "part_numbers": [
-          {
-            "part_number": "CARGO MAXX"
-          }
-        ],
-        "tag_ids": []
-      },
-      "setina_dual_prisoner": {
-        "description": "",
-        "fits_part_types": [
-          "front_partition"
-        ],
-        "images": {},
-        "manufacturer_id": "setina",
-        "model": "DUAL PRISONER PARTITION",
+        "model": "DUAL PRISONER DIVIDER",
         "part_numbers": [
           {
             "color": "",
-            "friendly_name": "SETNA DUAL PRISONER TRANSPORT PARTITION *FOR USE WITH: - CREW CAB - RECESSED OR XL PANEL PARTITION - FULL STOCK SEAT -REAR WINDOW BARRIER 2019-2026 CHEVROLET TRUCK 1500",
+            "friendly_name": "SETNA DUAL PRISONER TRANSPORT DIVIDER *FOR USE WITH: - CREW CAB - RECESSED OR XL PANEL PARTITION - FULL STOCK SEAT -REAR WINDOW BARRIER 2019-2026 CHEVROLET TRUCK 1500",
             "lens_type": "",
             "part_number": "2K0035CHT191500RPWDRW",
             "qb_inactive": false,
@@ -16436,7 +16393,7 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA DUAL PRISONER TRANSPORT PARTITION *FOR USE WITH: -RECESSED OR XL PANEL Partition -Full REPLACEMENT TRANSPORT PARTITION SEAT 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "friendly_name": "SETINA DUAL PRISONER TRANSPORT DIVIDER *FOR USE WITH: -RECESSED OR XL PANEL Partition -Full REPLACEMENT TRANSPORT PARTITION SEAT 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
             "lens_type": "",
             "part_number": "2K0035ITU20RPFRTM",
             "qb_inactive": false,
@@ -16453,7 +16410,7 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA DPT DUAL PRISONER TRANSPORT PARTITION *FOR USE WITH: -FLAT PANEL PARTITION -FULL STOCK SEAT 2021-2026 CHEROLET TAHOE",
+            "friendly_name": "SETINA DPT DUAL PRISONER TRANSPORT DIVIDER *FOR USE WITH: -FLAT PANEL PARTITION -FULL STOCK SEAT 2021-2026 CHEROLET TAHOE",
             "lens_type": "",
             "part_number": "2K0035TAH21FPWD",
             "qb_inactive": false,
@@ -16470,7 +16427,7 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA DPT DUAL PRISONER TRANSPORT PARTITION FOR USE WITH: 2021-2026 CHEVY TAHOE -RECESSED OR XL PANEL PARTITION -FULL COVER TRANSPORT PARTITION SEAT 2021-2026 CHEVROLET TAHOE",
+            "friendly_name": "SETINA DPT DUAL PRISONER TRANSPORT DIVIDER FOR USE WITH: 2021-2026 CHEVY TAHOE -RECESSED OR XL PANEL PARTITION -FULL COVER TRANSPORT PARTITION SEAT 2021-2026 CHEVROLET TAHOE",
             "lens_type": "",
             "part_number": "2K0035TAH21RPFC",
             "qb_inactive": false,
@@ -16486,6 +16443,7 @@
             ]
           }
         ],
+        "reviewed": true,
         "tag_ids": []
       },
       "setina_dual_weapon_lock": {
@@ -16758,6 +16716,23 @@
             "vehicle_tags": [
               "TAHOE"
             ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA CARGO REAR DECK 2024-2026 CHEVROLET BLAZER EV",
+            "lens_type": "",
+            "part_number": "TK0661BLE24",
+            "qb_inactive": false,
+            "qb_item_id": "1273",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA CARGO REAR DECK\n\n2024-2026 CHEVROLET BLAZER EV",
+            "qb_sku": "",
+            "qb_unit_price": 449.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "BLAZER"
+            ]
           }
         ],
         "tag_ids": []
@@ -16844,7 +16819,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "FULL COVER SEAT",
+        "model": "FULL COVER SEAT w/ Rear Partition",
         "part_numbers": [
           {
             "color": "",
@@ -17182,6 +17157,7 @@
             ]
           }
         ],
+        "reviewed": true,
         "tag_ids": []
       },
       "setina_full_replacement_seat": {
@@ -17193,57 +17169,6 @@
         "manufacturer_id": "setina",
         "model": "FULL REPLACEMENT SEAT",
         "part_numbers": [
-          {
-            "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "QK0566DUR11",
-            "qb_inactive": false,
-            "qb_item_id": "375",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2011-2026 DODGE DURANGO",
-            "qb_sku": "",
-            "qb_unit_price": 1809.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2020-2024 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "QK0566ITU20",
-            "qb_inactive": true,
-            "qb_item_id": "38",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2020-2024 FORD POLICE INTERCEPTOR UTILITY",
-            "qb_sku": "",
-            "qb_unit_price": 1809.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT SEAT,2-CPSB,#12VS P CENTER PULL SEAT BELTS 25-25 INTERCEPTOR UTILITY NOT COMPATIBLE WITH RETAIL EXPLORER INCLUDES: REPLACEMENT SEAT 2 - CENTER PULL SEAT BELTS #12VS 2ND COATED POLY PARTITION INCLUDES: REPLACEMENT SEAT 2 - CENTER PULL SEAT BELTS #12VS 2ND COATED POLY PARTITION 202-2027 Ford Police Interceptor Utility",
-            "lens_type": "",
-            "part_number": "QK0566ITU25",
-            "qb_inactive": false,
-            "qb_item_id": "1010000291",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2025-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "qb_sku": "",
-            "qb_unit_price": 1809.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
           {
             "color": "",
             "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS 2011-2023 DODGE CHARGER",
@@ -17280,49 +17205,15 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS 2024-2026 CHEVROLET BLAZER EV",
             "lens_type": "",
-            "part_number": "QK0634ITU20",
+            "part_number": "QK1576BLE24",
             "qb_inactive": false,
-            "qb_item_id": "678",
+            "qb_item_id": "1275",
             "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n\n2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n\n2024-2026 CHEVROLET BLAZER EV",
             "qb_sku": "",
-            "qb_unit_price": 1129.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW VINYL COATED EXPANDED METAL CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "QK0635DUR11",
-            "qb_inactive": false,
-            "qb_item_id": "1091",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW VINYL COATED EXPANDED METAL CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2011-2026 DODGE DURANGO",
-            "qb_sku": "",
-            "qb_unit_price": 1799.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH SETINA SMARTBELT SYSTEM 2024-2026 CHERVOLET BLAZER EV",
-            "lens_type": "",
-            "part_number": "QK1224BLE24",
-            "qb_inactive": false,
-            "qb_item_id": "1271",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH SETINA SMARTBELT SYSTEM\n\n*REQUIRED #12VS CARGO AREA REAR PARTITION NOT INCLUDED\n\n2024-2026 CHERVOLET BLAZER EV",
-            "qb_sku": "",
-            "qb_unit_price": 2479.0,
+            "qb_unit_price": 1429.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
@@ -17348,36 +17239,65 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS 2024-2026 CHEVROLET BLAZER EV",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
             "lens_type": "",
-            "part_number": "QK1576BLE24",
+            "part_number": "QK0634ITU20",
             "qb_inactive": false,
-            "qb_item_id": "1275",
+            "qb_item_id": "678",
             "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n\n2024-2026 CHEVROLET BLAZER EV",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n\n2020-2027 FORD POLICE INTERCEPTOR UTILITY",
             "qb_sku": "",
-            "qb_unit_price": 1429.0,
+            "qb_unit_price": 1129.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH SETINA SMARTBELT SYSTEM 2024-2026 CHERVOLET BLAZER EV",
+            "lens_type": "",
+            "part_number": "QK1224BLE24",
+            "qb_inactive": false,
+            "qb_item_id": "1271",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH SETINA SMARTBELT SYSTEM\n\n*REQUIRED #12VS CARGO AREA REAR PARTITION NOT INCLUDED\n\n2024-2026 CHERVOLET BLAZER EV",
+            "qb_sku": "",
+            "qb_unit_price": 2479.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
               "BLAZER"
             ]
-          },
+          }
+        ],
+        "tag_ids": []
+      },
+      "setina_full_replacement_seat_w_rear_partition": {
+        "description": "",
+        "fits_part_types": [
+          "rear_partition",
+          "replacement_rear_seat"
+        ],
+        "manufacturer_id": "setina",
+        "model": "FULL REPLACEMENT SEAT W/ REAR PARTITION",
+        "part_numbers": [
           {
             "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2024-2026 CHEVROLET BLAZER EV",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2021-2026 CHEVROLET TAHOE",
             "lens_type": "",
-            "part_number": "QK1684BLE24",
+            "part_number": "QK2024TAH21",
             "qb_inactive": false,
-            "qb_item_id": "1282",
+            "qb_item_id": "597",
             "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2024-2026 CHEVROLET BLAZER EV",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2021-2026 CHEVROLET TAHOE",
             "qb_sku": "",
-            "qb_unit_price": 1929.0,
+            "qb_unit_price": 1979.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "BLAZER"
+              "TAHOE"
             ]
           },
           {
@@ -17399,19 +17319,87 @@
           },
           {
             "color": "",
-            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2021-2026 CHEVROLET TAHOE",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2024-2026 CHEVROLET BLAZER EV",
             "lens_type": "",
-            "part_number": "QK2024TAH21",
+            "part_number": "QK1684BLE24",
             "qb_inactive": false,
-            "qb_item_id": "597",
+            "qb_item_id": "1282",
             "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2021-2026 CHEVROLET TAHOE",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2024-2026 CHEVROLET BLAZER EV",
             "qb_sku": "",
-            "qb_unit_price": 1979.0,
+            "qb_unit_price": 1929.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
-              "TAHOE"
+              "BLAZER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW VINYL COATED EXPANDED METAL CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "QK0635DUR11",
+            "qb_inactive": false,
+            "qb_item_id": "1091",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW VINYL COATED EXPANDED METAL CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2011-2026 DODGE DURANGO",
+            "qb_sku": "",
+            "qb_unit_price": 1799.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA FULL REPLACEMENT SEAT,2-CPSB,#12VS P CENTER PULL SEAT BELTS 25-25 INTERCEPTOR UTILITY NOT COMPATIBLE WITH RETAIL EXPLORER INCLUDES: REPLACEMENT SEAT 2 - CENTER PULL SEAT BELTS #12VS 2ND COATED POLY PARTITION INCLUDES: REPLACEMENT SEAT 2 - CENTER PULL SEAT BELTS #12VS 2ND COATED POLY PARTITION 202-2027 Ford Police Interceptor Utility",
+            "lens_type": "",
+            "part_number": "QK0566ITU25",
+            "qb_inactive": false,
+            "qb_item_id": "1010000291",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2025-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "qb_sku": "",
+            "qb_unit_price": 1809.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "QK0566DUR11",
+            "qb_inactive": false,
+            "qb_item_id": "375",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2011-2026 DODGE DURANGO",
+            "qb_sku": "",
+            "qb_unit_price": 1809.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA FULL REPLACEMENT TRANSPORT SEAT TPO PLASTIC WITH CENTER PULL SEAT BELTS *INCLUDES REQUIRED: -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION *SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME 2020-2024 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "QK0566ITU20",
+            "qb_inactive": true,
+            "qb_item_id": "38",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA FULL REPLACEMENT TRANSPORT SEAT\nTPO PLASTIC\nWITH CENTER PULL SEAT BELTS\n*INCLUDES REQUIRED:\n   -#12VS STATIONARY WINDOW COATED POLYCARBONATE CARGO AREA REAR PARTITION\n*SEAT BELT RETRACTORS PRE-INSTALLED TO SAVE 30 MINUTES OF INSTALL TIME\n\n2020-2024 FORD POLICE INTERCEPTOR UTILITY",
+            "qb_sku": "",
+            "qb_unit_price": 1809.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
             ]
           }
         ],
@@ -17478,6 +17466,7 @@
             ]
           }
         ],
+        "reviewed": true,
         "tag_ids": []
       },
       "setina_k9_dog_bowl": {
@@ -17635,10 +17624,9 @@
         "tag_ids": []
       },
       "setina_module_relocation_plate": {
+        "accessory_category": "bracket_mount",
         "description": "",
-        "fits_part_types": [
-          "front_partition_transfer_kit"
-        ],
+        "fits_part_types": [],
         "images": {},
         "manufacturer_id": "setina",
         "model": "MODULE RELOCATION PLATE",
@@ -17661,6 +17649,7 @@
             ]
           }
         ],
+        "reviewed": true,
         "tag_ids": []
       },
       "setina_partition_transfer_kit": {
@@ -17739,21 +17728,6 @@
             "vehicle_tags": [
               "TAHOE"
             ]
-          }
-        ],
-        "tag_ids": []
-      },
-      "setina_passenger_side_xl_partition": {
-        "description": "",
-        "fits_part_types": [
-          "front_partition"
-        ],
-        "images": {},
-        "manufacturer_id": "setina",
-        "model": "PASSENGER SIDE XL PARTITION",
-        "part_numbers": [
-          {
-            "part_number": "PASSENGER SIDE XL PARTITION"
           }
         ],
         "tag_ids": []
@@ -18533,23 +18507,6 @@
         "part_numbers": [
           {
             "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER",
-            "lens_type": "",
-            "part_number": "WK0594CGR11",
-            "qb_inactive": false,
-            "qb_item_id": "593",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER\nPOLYCARBONATE \n\n2011-2023 DODGE CHARGER",
-            "qb_sku": "",
-            "qb_unit_price": 309.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "CHARGER"
-            ]
-          },
-          {
-            "color": "",
             "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
             "lens_type": "",
             "part_number": "WK0595DUR11",
@@ -18615,6 +18572,57 @@
             "vehicle_tags": [
               "TAHOE"
             ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER",
+            "lens_type": "",
+            "part_number": "WK0594CGR11",
+            "qb_inactive": false,
+            "qb_item_id": "593",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA WINDOW BARRIER\nPOLYCARBONATE \n\n2011-2023 DODGE CHARGER",
+            "qb_sku": "",
+            "qb_unit_price": 309.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "CHARGER"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
+            "lens_type": "",
+            "part_number": "WK1491DUR11T",
+            "qb_inactive": false,
+            "qb_item_id": "1064",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE TINTED\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n\n2011-2026 DODGE DURANGO",
+            "qb_sku": "",
+            "qb_unit_price": 419.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "DURANGO"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
+            "lens_type": "",
+            "part_number": "WK1491FDT15F150T",
+            "qb_inactive": false,
+            "qb_item_id": "1056",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA WINDOW BARRIER\nPOLYCARBONATE TINTED\n\n2015-2026 FORD TRUCK F150",
+            "qb_sku": "",
+            "qb_unit_price": 419.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "F-150"
+            ]
           }
         ],
         "tag_ids": []
@@ -18626,7 +18634,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "POLY WINDOW",
+        "model": "REAR PARTITION W/ POLY WINDOW",
         "part_numbers": [
           {
             "color": "",
@@ -18690,6 +18698,61 @@
             "qb_sales_description": "SETINA CARGO AREA REAR PARTITION\nFOR 2ND ROW SEAT\n#12VS STATIONARY WINDOW\nCOATED POLYCARBONATE PARTITION\n\n2021-2026 CHEVROLET TAHOE",
             "qb_sku": "",
             "qb_unit_price": 709.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "TAHOE"
+            ]
+          },
+          {
+            "friendly_name": "SETINA Cargo Area Rear Partition\n#12VS Stationary Window\nCoated Polycarbonate\n*FOR USE WITH:\n   -2nd Row Seat\n\n2025-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "part_number": "PK0316ITU252ND",
+            "qb_item_id": "1661",
+            "qb_last_synced": "2026-09-24T18:51:29.430406+00:00",
+            "qb_sales_description": "SETINA Cargo Area Rear Partition\n#12VS Stationary Window\nCoated Polycarbonate\n*FOR USE WITH:\n   -2nd Row Seat\n\n2025-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "qb_sku": "",
+            "qb_unit_price": 709.0,
+            "vehicle_tags": [
+              "PIU"
+            ]
+          }
+        ],
+        "tag_ids": []
+      },
+      "setina_poly_window_barrier_tinted": {
+        "description": "",
+        "fits_part_types": [],
+        "manufacturer_id": "setina",
+        "model": "Poly Window Barrier - Tinted",
+        "part_numbers": [
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "lens_type": "",
+            "part_number": "WK1491ITU20T",
+            "qb_inactive": false,
+            "qb_item_id": "528",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA WINDOW BARRIER VS\nPOLYCARBONATE TINTED\n\n2020-2027 FORD POLICE INTERCEPTOR UTILITY",
+            "qb_sku": "",
+            "qb_unit_price": 419.0,
+            "secondary_color": "",
+            "tertiary_color": "",
+            "vehicle_tags": [
+              "PIU"
+            ]
+          },
+          {
+            "color": "",
+            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
+            "lens_type": "",
+            "part_number": "WK1491TAH21T",
+            "qb_inactive": false,
+            "qb_item_id": "861",
+            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE TINTED\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n-ALUMINUM DOOR PANELS\n\n2021-2026 CHEVROLET TAHOE",
+            "qb_sku": "",
+            "qb_unit_price": 419.0,
             "secondary_color": "",
             "tertiary_color": "",
             "vehicle_tags": [
@@ -18761,8 +18824,8 @@
             "part_number": "SP13656",
             "qb_inactive": false,
             "qb_item_id": "1010000093",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA CENTER PULL SEAT BELT RETRACTOR\n11-24 DURANGO/20-25 UTILITY/21-25\nTAHOE/15-25 FORD TRUCK F150",
+            "qb_last_synced": "2026-09-24T18:50:58Z",
+            "qb_sales_description": "SETINA CENTER PULL SEAT BELT RETRACTOR\n11-27 DURANGO/20-27 UTILITY/21-26\nTAHOE/15-27 FORD TRUCK F150/24-26 BLE",
             "qb_sku": "",
             "qb_unit_price": 199.99,
             "secondary_color": "",
@@ -18770,7 +18833,8 @@
             "vehicle_tags": [
               "TAHOE",
               "DURANGO",
-              "F-150"
+              "F-150",
+              "PIU"
             ]
           }
         ],
@@ -18956,6 +19020,7 @@
             ]
           }
         ],
+        "reviewed": true,
         "tag_ids": []
       },
       "setina_single_replacement_seat": {
@@ -19058,7 +19123,7 @@
         "fixed_location": "REAR WINDOWS",
         "images": {},
         "manufacturer_id": "setina",
-        "model": "Window Barrier",
+        "model": "Steel Window Barrier",
         "part_numbers": [
           {
             "color": "",
@@ -19212,159 +19277,6 @@
             "vehicle_tags": [
               "TAHOE"
             ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE 2011-2023 DODGE CHARGER",
-            "lens_type": "",
-            "part_number": "WK0594CGR11",
-            "qb_inactive": false,
-            "qb_item_id": "593",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER\nPOLYCARBONATE \n\n2011-2023 DODGE CHARGER",
-            "qb_sku": "",
-            "qb_unit_price": 309.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "CHARGER"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "WK0595DUR11",
-            "qb_inactive": false,
-            "qb_item_id": "376",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n\n2011-2026 DODGE DURANGO",
-            "qb_sku": "",
-            "qb_unit_price": 369.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER REAR WINDOW POLYCARBONATE 2015-2026 FORD TRUCK F150",
-            "lens_type": "",
-            "part_number": "WK0595FDT15F150P",
-            "qb_inactive": false,
-            "qb_item_id": "923",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER REAR WINDOW\nPOLYCARBONATE\n\n2015-2026 FORD TRUCK F150",
-            "qb_sku": "",
-            "qb_unit_price": 369.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "F-150"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK0595ITU20",
-            "qb_inactive": false,
-            "qb_item_id": "124",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER VS\nPOLYCARBONATE\n\n2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "qb_sku": "",
-            "qb_unit_price": 369.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK0595TAH21",
-            "qb_inactive": false,
-            "qb_item_id": "460",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n-ALUMINUM DOOR PANELS\n\n2021-2026 CHEVROLET TAHOE",
-            "qb_sku": "",
-            "qb_unit_price": 369.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS 2011-2026 DODGE DURANGO",
-            "lens_type": "",
-            "part_number": "WK1491DUR11T",
-            "qb_inactive": false,
-            "qb_item_id": "1064",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE TINTED\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n\n2011-2026 DODGE DURANGO",
-            "qb_sku": "",
-            "qb_unit_price": 419.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "DURANGO"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED 2015-2026 FORD TRUCK F150",
-            "lens_type": "",
-            "part_number": "WK1491FDT15F150T",
-            "qb_inactive": false,
-            "qb_item_id": "1056",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER\nPOLYCARBONATE TINTED\n\n2015-2026 FORD TRUCK F150",
-            "qb_sku": "",
-            "qb_unit_price": 419.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "F-150"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER VS POLYCARBONATE TINTED 2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "lens_type": "",
-            "part_number": "WK1491ITU20T",
-            "qb_inactive": false,
-            "qb_item_id": "528",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER VS\nPOLYCARBONATE TINTED\n\n2020-2027 FORD POLICE INTERCEPTOR UTILITY",
-            "qb_sku": "",
-            "qb_unit_price": 419.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "PIU"
-            ]
-          },
-          {
-            "color": "",
-            "friendly_name": "SETINA WINDOW BARRIER POLYCARBONATE TINTED *FOR USE WITH: -STOCK DOOR PANELS -SETINA TPO DOOR PANELS -ALUMINUM DOOR PANELS 2021-2026 CHEVROLET TAHOE",
-            "lens_type": "",
-            "part_number": "WK1491TAH21T",
-            "qb_inactive": false,
-            "qb_item_id": "861",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "SETINA WINDOW BARRIER \nPOLYCARBONATE TINTED\n*FOR USE WITH:\n   -STOCK DOOR PANELS\n   -SETINA TPO DOOR PANELS\n-ALUMINUM DOOR PANELS\n\n2021-2026 CHEVROLET TAHOE",
-            "qb_sku": "",
-            "qb_unit_price": 419.0,
-            "secondary_color": "",
-            "tertiary_color": "",
-            "vehicle_tags": [
-              "TAHOE"
-            ]
           }
         ],
         "reviewed": true,
@@ -19377,7 +19289,7 @@
         ],
         "images": {},
         "manufacturer_id": "setina",
-        "model": "STEEL WINDOW",
+        "model": "REAR PARTITION W/ STEEL WINDOW",
         "part_numbers": [
           {
             "color": "",
@@ -20832,6 +20744,11 @@
             "color": "white",
             "friendly_name": "SOUNDOFF DOME LIGHT - 6\" ROUND, WHITE AND RED NIGHT LIGHT LEDS, WHITE LENS",
             "part_number": "ECVDMLTAL00",
+            "qb_item_id": "121",
+            "qb_last_synced": "2026-09-30T14:59:33.392217+00:00",
+            "qb_sales_description": "SOUNDOFF DOME LIGHT - 6\" ROUND, WHITE AND RED NIGHT LIGHT LEDS, WHITE LENS",
+            "qb_sku": "",
+            "qb_unit_price": 79.46,
             "secondary_color": "red"
           }
         ],
@@ -22504,10 +22421,10 @@
             "price_usd": 704,
             "qb_inactive": false,
             "qb_item_id": "706",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN R5 NERF STEP BARS  - SILVERADO/SIERRA 1500 CREW CAB 2019-2026; SILVERADO/SIERRA 2500/3500 CREW CAB 2020-2025",
             "qb_sku": "",
-            "qb_unit_price": 704.0,
+            "qb_unit_price": 434.81,
             "vehicle_tags": [
               "any"
             ]
@@ -22532,10 +22449,10 @@
             "price_usd": 598,
             "qb_inactive": false,
             "qb_item_id": "350",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE \n2020-2026 FORD POLCE INTERCEPTOR UTILITY",
             "qb_sku": "",
-            "qb_unit_price": 598.0,
+            "qb_unit_price": 369.36,
             "vehicle_tags": [
               "PIU"
             ]
@@ -22562,10 +22479,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "621",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN ELITE UPRIGHT WIRE COVER \n2020-2026 FORD POLICE INTERCEPTOR UTILITY",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU"
             ]
@@ -22590,10 +22507,10 @@
             "price_usd": 834,
             "qb_inactive": false,
             "qb_item_id": "781",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE\n2021-2026 CHEVROLET TAHOE PPV",
             "qb_sku": "",
-            "qb_unit_price": 834.0,
+            "qb_unit_price": 515.11,
             "vehicle_tags": [
               "TAHOE"
             ]
@@ -22620,10 +22537,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "784",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE WIRE COVER\n2021-2026 CHEVROLET TAHOE PPV",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "TAHOE"
             ]
@@ -22648,10 +22565,10 @@
             "price_usd": 598,
             "qb_inactive": false,
             "qb_item_id": "942",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE\n2021-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 598.0,
+            "qb_unit_price": 369.36,
             "vehicle_tags": [
               "DURANGO"
             ]
@@ -22678,10 +22595,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "945",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE WIRE COVER\n2021-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 36.98,
             "vehicle_tags": [
               "DURANGO"
             ]
@@ -22708,10 +22625,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "675",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITEXD WIRE COVER \n2015-2026 F-150/F150 Police Responder/F-150 XL SSV",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 31.22,
             "vehicle_tags": [
               "F-150"
             ]
@@ -22736,10 +22653,10 @@
             "price_usd": 834,
             "qb_inactive": false,
             "qb_item_id": "1010000351",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITEXD\n2023-2026 CHEVROLET SILVERADO 1500 PPV",
             "qb_sku": "",
-            "qb_unit_price": 834.0,
+            "qb_unit_price": 515.11,
             "vehicle_tags": [
               "CHEVY-1500"
             ]
@@ -22766,10 +22683,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "1562",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITEXD WIRE COVER CHEVY SILVERADO PPV",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.65,
             "vehicle_tags": [
               "CHEVY-1500"
             ]
@@ -22794,10 +22711,10 @@
             "price_usd": 834,
             "qb_inactive": false,
             "qb_item_id": "823",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITEXD \n2021-2025 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
             "qb_sku": "",
-            "qb_unit_price": 834.0,
+            "qb_unit_price": 515.11,
             "vehicle_tags": [
               "F-150"
             ]
@@ -22825,10 +22742,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "353",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 23.5 IN. SOLID CHANNEL  \n2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU",
               "DURANGO"
@@ -22857,10 +22774,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "354",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - SOUNDOFF NFORCE, 4 HOLE\n2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU",
               "DURANGO"
@@ -22889,10 +22806,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "407",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE LIGHT CHANNEL 23.5 IN. - CODE MR6 & SOUNDOFF MPOWERHD, 2 HOLE\n2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU",
               "DURANGO"
@@ -22921,10 +22838,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "946",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE\n2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU",
               "DURANGO"
@@ -22953,10 +22870,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "620",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 23.5 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE\n2013-2026 FORD POLICE INTERCEPTOR UTILITY/2020-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "PIU",
               "DURANGO"
@@ -22985,10 +22902,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "1512",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 33.1 IN. SOLID CHANNEL\n2014-2026 CHEVROLET SILVERADO 1500/2015-2026 FORD F-150",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "F-150",
               "CHEVY-1500"
@@ -23018,10 +22935,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "676",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER ELITE 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 2 HOLE \n2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "TAHOE",
               "F-150",
@@ -23052,10 +22969,10 @@
             "price_usd": 56,
             "qb_inactive": false,
             "qb_item_id": "859",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PUSH BUMPER 33.1 IN. LIGHT CHANNEL - WHELEN ION SERIES, 4 HOLE\n2015-2026 FORD F-150/2015-2026 CHEVROLET TAHOE PPV/2014-2026 CHEVROLET SILVERADO 1500",
             "qb_sku": "",
-            "qb_unit_price": 56.0,
+            "qb_unit_price": 34.34,
             "vehicle_tags": [
               "TAHOE",
               "F-150",
@@ -23082,10 +22999,10 @@
             "price_usd": 366,
             "qb_inactive": false,
             "qb_item_id": "1611",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN UNDER LAPTOP PRINTER TRAY",
             "qb_sku": "",
-            "qb_unit_price": 366.0,
+            "qb_unit_price": 266.28,
             "vehicle_tags": [
               "any"
             ]
@@ -23110,10 +23027,10 @@
             "price_usd": 545,
             "qb_inactive": false,
             "qb_item_id": "351",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PIT BAR ELITE\n2020-2026 FORD POLICE INTERCEPTOR UTILITY",
             "qb_sku": "",
-            "qb_unit_price": 545.0,
+            "qb_unit_price": 336.23,
             "vehicle_tags": [
               "PIU"
             ]
@@ -23125,10 +23042,10 @@
             "price_usd": 545,
             "qb_inactive": false,
             "qb_item_id": "782",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PIT BAR ELITE\n 2021-2025 CHEVROLET TAHOE PPV",
             "qb_sku": "",
-            "qb_unit_price": 545.0,
+            "qb_unit_price": 336.23,
             "vehicle_tags": [
               "TAHOE"
             ]
@@ -23140,10 +23057,10 @@
             "price_usd": 545,
             "qb_inactive": false,
             "qb_item_id": "943",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PIT BAR ELITE\n2021-2026 DODGE DURANOG",
             "qb_sku": "",
-            "qb_unit_price": 545.0,
+            "qb_unit_price": 336.23,
             "vehicle_tags": [
               "DURANGO"
             ]
@@ -23155,10 +23072,10 @@
             "price_usd": 545,
             "qb_inactive": false,
             "qb_item_id": "1010000361",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PIT BAR ElLITEXD - \n2023-2026 CHEVROLET SILVERADO 1500 PPV",
             "qb_sku": "",
-            "qb_unit_price": 545.0,
+            "qb_unit_price": 336.23,
             "vehicle_tags": [
               "CHEVY-1500"
             ]
@@ -23170,10 +23087,10 @@
             "price_usd": 545,
             "qb_inactive": false,
             "qb_item_id": "824",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN PIT BAR ELITEXD\n2015-2026 FORD F-150/F-150 POLICE RESPONDER/F-150 XL SSV",
             "qb_sku": "",
-            "qb_unit_price": 545.0,
+            "qb_unit_price": 336.23,
             "vehicle_tags": [
               "F-150"
             ]
@@ -23198,10 +23115,10 @@
             "price_usd": 380,
             "qb_inactive": false,
             "qb_item_id": "352",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN WING WRAP ELITE PUSH BUMPER \n2020-2026 FORD POLICE INTERCEPTOR UTILITY",
             "qb_sku": "",
-            "qb_unit_price": 380.0,
+            "qb_unit_price": 234.35,
             "vehicle_tags": [
               "PIU"
             ]
@@ -23213,10 +23130,10 @@
             "price_usd": 380,
             "qb_inactive": false,
             "qb_item_id": "1223",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN WING WRAP ELITE\n2021-2026 DODGE DURANGO",
             "qb_sku": "",
-            "qb_unit_price": 380.0,
+            "qb_unit_price": 234.35,
             "vehicle_tags": [
               "DURANGO"
             ]
@@ -23228,10 +23145,10 @@
             "price_usd": 380,
             "qb_inactive": false,
             "qb_item_id": "674",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN WING WRAP ELITEXD \n2015-2026 FORD F-150",
             "qb_sku": "",
-            "qb_unit_price": 380.0,
+            "qb_unit_price": 234.35,
             "vehicle_tags": [
               "F-150"
             ]
@@ -23243,10 +23160,10 @@
             "price_usd": 380,
             "qb_inactive": false,
             "qb_item_id": "1010000371",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
+            "qb_last_synced": "2026-09-24T20:45:30Z",
             "qb_sales_description": "WESTIN WING WRAP ELITEXD\n2023-2026 CHEVROLET SILVERADO 1500 PPV/2025-2026 CHEVROLET TAHOE PPV",
             "qb_sku": "",
-            "qb_unit_price": 380.0,
+            "qb_unit_price": 234.35,
             "vehicle_tags": [
               "TAHOE",
               "CHEVY-1500"
@@ -31272,8 +31189,8 @@
             "part_number": "SAK61AD",
             "qb_inactive": false,
             "qb_item_id": "1010000851",
-            "qb_last_synced": "2026-08-11T17:04:28Z",
-            "qb_sales_description": "WHELEN SA-315 SIREN MOUNT KIT, 2017-2026 FORD F-250/F-350/F-450/F-550, 2018-2026 F-600, DRIVER SIDE, NOT FOR USE WITH FACTORY FOG LIGHTS",
+            "qb_last_synced": "2026-09-24T18:50:58Z",
+            "qb_sales_description": "WHELEN SA-315 SIREN MOUNT KIT, 2017-2026 FORD F-250/F-350/F-450/F-550, 2018-2026 F-600, DRIVER SIDE",
             "qb_sku": "",
             "qb_unit_price": 53.0,
             "secondary_color": "",
@@ -34916,6 +34833,11 @@
           "light"
         ]
       }
+    },
+    "qb_inbox": {
+      "ignored_item_ids": [
+        "15"
+      ]
     },
     "schema_version": 2,
     "sections": {

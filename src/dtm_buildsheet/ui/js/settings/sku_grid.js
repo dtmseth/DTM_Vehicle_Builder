@@ -25,7 +25,9 @@ const _SKG_DEFAULT_COLORS = ["red", "blue", "white", "amber", "green", "purple"]
 const _SKG_LIGHT_CATS = new Set(["warning", "scene", "interior", "interior_bar", "roof_bar", "spotlight"]);
 
 async function initSkuGridTab() {
-  if (!_skg) await _skgLoad();
+  // The Hierarchy editor and background QB reconciliation share this file.
+  // Refresh on every tab entry so relation chips are never based on old arrays.
+  await _skgLoad();
   await _skgLoadQb();
   _skgWireOnce();
   _skgPopulateBrandFilter();

@@ -246,6 +246,9 @@ The abbreviation defaults to name initials, a county-only sheriff label, or a sh
 acronym, but the stored override wins. Project snapshots retain the effective value for backward
 compatibility and offline naming.
 Contact info comes from the agency record — no separate contact field on the project.
+`taxable` and `tax_exemption_reason_id` round-trip the QBO Customer's sales-tax status. New agencies
+default to tax exempt with QBO reason `3` (Local government); the reason is constrained to QBO's
+documented IDs 1–15.
 `default_preferences` stores the agency's normal equipment choices. They are copied to a new
 project once; editing a project never changes the agency defaults or another project's choices.
 `pricing_overrides` is a sparse `manufacturer_id → percent off list` map. An empty map inherits

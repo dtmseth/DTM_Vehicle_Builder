@@ -334,6 +334,46 @@ def _is_legacy_project_metadata_only(local: dict, remote: dict) -> bool:
     return local_copy == remote_copy
 
 
+def _project_revision_relation(local: dict, remote: dict) -> str:
+    """Describe the lineage between two revisioned project records.
+
+    Returns ``local_descendant`` when the cloud record is an ancestor of the
+    local copy, ``remote_descendant`` for the inverse, ``same`` when both
+    payloads claim the same revision, ``concurrent`` for unrelated revision
+    branches, and ``unknown`` while either side is still revisionless.
+
+    Inbound sync needs this check just as much as outbound compare-and-set.
+    An older client can publish a stale project under a new eTag; treating
+    every changed eTag as authoritative would otherwise roll back draft links,
+    finalization state, and publication metadata on upgraded clients.
+    """
+    local_revision = str(local.get("record_revision") or "")
+    remote_revision = str(remote.get("record_revision") or "")
+    if not local_revision or not remote_revision:
+        return "unknown"
+    if local_revision == remote_revision:
+        return "same"
+
+    local_ancestors = {
+        str(value).strip()
+        for value in local.get("record_ancestor_revisions", [])
+        if str(value or "").strip()
+    } if isinstance(local.get("record_ancestor_revisions", []), list) else set()
+    remote_ancestors = {
+        str(value).strip()
+        for value in remote.get("record_ancestor_revisions", [])
+        if str(value or "").strip()
+    } if isinstance(remote.get("record_ancestor_revisions", []), list) else set()
+    local_parent = str(local.get("record_parent_revision") or "")
+    remote_parent = str(remote.get("record_parent_revision") or "")
+
+    if remote_revision == local_parent or remote_revision in local_ancestors:
+        return "local_descendant"
+    if local_revision == remote_parent or local_revision in remote_ancestors:
+        return "remote_descendant"
+    return "concurrent"
+
+
 def _write_project_to_cloud_losslessly(
     storage, remote_path: str, content: str, local_path: Path
 ) -> bool:
@@ -1240,6 +1280,55 @@ def _reconcile_records(
                         current_hashes[record_id] = local_hash
                         logger.error("Preserving revisionless project rewrite for %s", record_id)
                     continue
+                if isinstance(local_record, dict) and isinstance(remote_record, dict):
+                    revision_relation = _project_revision_relation(local_record, remote_record)
+                    if revision_relation == "local_descendant":
+                        # A changed cloud eTag does not necessarily mean newer
+                        # project content. Restore the known descendant instead
+                        # of accepting a stale ancestor as authoritative.
+                        _archive_local_project_payload(local_path, payload)
+                        if mirror_to_cloud(record_id, local_path):
+                            remote_etags[record_id] = _PENDING_UPLOAD_ETAG
+                            current_hashes[record_id] = local_hash
+                            uploaded += 1
+                        else:
+                            remote_etags[record_id] = prior_etag or entry.etag
+                            if record_id in last_hashes:
+                                current_hashes[record_id] = last_hashes[record_id]
+                        logger.warning(
+                            "Restored local descendant project %s over stale cloud ancestor",
+                            record_id,
+                        )
+                        continue
+                    if revision_relation in {"same", "concurrent"}:
+                        # The same revision with different bytes is an invalid
+                        # in-place rewrite. Unrelated revision roots/branches
+                        # are a real edit conflict. Preserve both in either
+                        # case and require an explicit resolution.
+                        if not _project_conflict_path(local_path).exists():
+                            _preserve_project_sync_conflict(
+                                local_path,
+                                local_payload=local_payload,
+                                remote_payload=payload,
+                                local_revision=str(local_record.get("record_revision") or ""),
+                                local_parent_revision=str(
+                                    local_record.get("record_parent_revision") or ""
+                                ),
+                                remote_revision=str(remote_record.get("record_revision") or ""),
+                            )
+                        if record_id in last_hashes:
+                            current_hashes[record_id] = last_hashes[record_id]
+                        logger.error(
+                            "Preserving %s project sync conflict for %s",
+                            revision_relation,
+                            record_id,
+                        )
+                        continue
+                    if revision_relation == "remote_descendant":
+                        # A collaborator explicitly based this cloud revision
+                        # on our local revision, so it also resolves any older
+                        # conflict marker involving this local branch.
+                        _clear_project_conflict(local_path)
             if (
                 remote_folder == PROJECTS_REMOTE_FOLDER
                 and _project_conflict_path(local_path).exists()

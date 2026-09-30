@@ -251,6 +251,7 @@
   </div>
   <div class="inner-stab-bar" id="inner-stab-bar-part-manager" hidden>
     <button class="inner-stab active" data-inner-stab="sku-grid" data-inner-group="part-manager">Review (SKUs)</button>
+    <button class="inner-stab" data-inner-stab="qb-inbox" data-inner-group="part-manager">QBO Inbox <span id="qbi-tab-count" class="qbi-tab-count" hidden></span></button>
     <button class="inner-stab" data-inner-stab="parts-db" data-inner-group="part-manager">Hierarchy</button>
     <button class="inner-stab" data-inner-stab="catalog" data-inner-group="part-manager">Part Types (legacy)</button>
     <button class="inner-stab" data-inner-stab="parts" data-inner-group="part-manager">Parts Library (legacy)</button>
@@ -873,6 +874,70 @@
     </div>
   </div>
 
+  <!-- ── QUICKBOOKS CATALOG INBOX ── -->
+  <div id="stab-qb-inbox" hidden>
+    <div class="card">
+      <div class="card-title qbi-title">
+        <span>QuickBooks Catalog Inbox</span>
+        <div class="qbi-title-actions">
+          <span id="qbi-meta" class="qbi-meta"></span>
+          <button class="btn btn-secondary btn-sm" id="qbi-sync">↻ Pull from QuickBooks</button>
+          <button class="btn btn-secondary btn-sm" id="qbi-reload">↺ Reload</button>
+        </div>
+      </div>
+      <p class="qbi-intro">
+        New active QBO Items wait here until you create a catalog product, add the SKU to an
+        existing product, or intentionally ignore it. Creating without a Part Type sends the item
+        to the Review tab's <strong>— No part-type —</strong> holding queue.
+      </p>
+      <div class="qbi-toolbar">
+        <input id="qbi-search" class="skg-tb-input" type="text" placeholder="Search item, description, or SKU…">
+        <select id="qbi-status" class="skg-tb-sel" title="Filter inbox status">
+          <option value="open">Needs review</option>
+          <option value="ignored">Ignored</option>
+          <option value="all">All unlinked</option>
+        </select>
+        <span id="qbi-count" class="qbi-meta"></span>
+      </div>
+      <div id="qbi-empty" class="qbi-empty" hidden>No QuickBooks items match this view.</div>
+      <div id="qbi-list" class="qbi-list"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="qbi-modal" role="dialog" aria-modal="true" aria-labelledby="qbi-modal-title">
+    <div class="modal qbi-modal">
+      <div class="modal-title">
+        <span id="qbi-modal-title">Import QuickBooks item</span>
+        <button class="modal-close" id="qbi-modal-close" type="button">×</button>
+      </div>
+      <div id="qbi-modal-item" class="qbi-modal-item"></div>
+      <div id="qbi-new-fields" class="qbi-form" hidden>
+        <label class="skg-fl">Product model
+          <input id="qbi-model" class="skg-in" type="text">
+        </label>
+        <label class="skg-fl">Manufacturer
+          <select id="qbi-manufacturer" class="skg-in"></select>
+        </label>
+        <label class="skg-fl qbi-form-wide">Part Type
+          <select id="qbi-part-type" class="skg-in"></select>
+          <small>Optional. Leave blank to hold it in “No part-type” for later.</small>
+        </label>
+      </div>
+      <div id="qbi-existing-fields" class="qbi-form" hidden>
+        <label class="skg-fl qbi-form-wide">Find product
+          <input id="qbi-product-search" class="skg-in" type="text" placeholder="Search manufacturer or model…">
+        </label>
+        <label class="skg-fl qbi-form-wide">Existing product
+          <select id="qbi-product" class="skg-in qbi-product-select" size="9"></select>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="qbi-modal-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="qbi-modal-save" type="button">Import</button>
+      </div>
+    </div>
+  </div>
+
   <div id="stab-parts-db" hidden>
     <div class="card">
       <div class="card-title">Parts Database
@@ -1388,6 +1453,25 @@
       <label class="proj-list-search">
         <input id="proj-list-search" type="search" aria-label="Search projects in the selected status" placeholder="Search active projects…" autocomplete="off">
       </label>
+      <div class="proj-list-controls">
+        <label class="project-type-filter">Project type
+          <select id="proj-type-filter" aria-label="Filter project type">
+            <option value="all">All projects</option>
+            <option value="build">Builds</option>
+            <option value="service">Service</option>
+            <option value="offsite">Off-Site Service</option>
+          </select>
+        </label>
+        <label class="project-sort-control">Sort by
+          <select id="proj-sort" aria-label="Sort projects">
+            <option value="created">Creation date (newest)</option>
+            <option value="az">A–Z</option>
+            <option value="za">Z–A</option>
+            <option value="last-opened">Last opened</option>
+            <option value="scheduled">Scheduled date</option>
+          </select>
+        </label>
+      </div>
       <div id="proj-standard-panel">
         <div id="proj-list-empty" class="proj-empty-msg" hidden></div>
         <div id="proj-list-rows" hidden></div>
@@ -1712,6 +1796,10 @@
         <input type="radio" name="project-completion-resolution" value="merge">
         <span><strong>Merge vehicles</strong><small>Keep the completed vehicles and add the active project's distinct vehicles alongside them.</small></span>
       </label>
+      <label>
+        <input type="radio" name="project-completion-resolution" value="separate">
+        <span><strong>Keep separate</strong><small>Complete this project without combining it with the other project.</small></span>
+      </label>
       <label class="project-completion-overwrite-option">
         <input type="radio" name="project-completion-resolution" value="overwrite">
         <span><strong>Overwrite completed project</strong><small>Permanently remove the completed project's vehicles and their Operations history, then replace them with the active project's vehicles.</small></span>
@@ -1725,6 +1813,33 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="project-completion-conflict-cancel" type="button">Cancel</button>
       <button class="btn btn-primary" id="project-completion-conflict-apply" type="button" disabled>Complete Project</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="project-creation-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="project-creation-conflict-title" hidden>
+  <div class="modal project-completion-conflict-modal">
+    <div class="modal-title">
+      <span id="project-creation-conflict-title">Project Already Exists for This Agency and Year</span>
+      <button class="modal-close" id="project-creation-conflict-close" type="button" aria-label="Close project comparison">×</button>
+    </div>
+    <p id="project-creation-conflict-intro" class="project-modal-intro">Compare the saved project with the project you are creating. Nothing has been merged or saved yet.</p>
+    <div id="project-creation-conflict-warning" class="project-creation-conflict-warning" hidden></div>
+    <div id="project-creation-conflict-comparison" class="project-completion-comparison"></div>
+    <div class="project-completion-options">
+      <label id="project-creation-conflict-merge-option">
+        <input type="radio" name="project-creation-resolution" value="merge">
+        <span><strong>Merge new vehicles into the existing project</strong><small>Keep the existing project and append the distinct build groups and vehicles shown on the right.</small></span>
+      </label>
+      <label>
+        <input type="radio" name="project-creation-resolution" value="separate">
+        <span><strong>Create a separate project</strong><small>Keep both projects independent even though the agency and build year match.</small></span>
+      </label>
+    </div>
+    <div id="project-creation-conflict-status" class="proj-form-status" role="status" hidden></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="project-creation-conflict-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" id="project-creation-conflict-apply" type="button" disabled>Continue</button>
     </div>
   </div>
 </div>
@@ -1879,7 +1994,24 @@
     </div>
     <div class="modal-section">
       <div class="form-row">
-        <div class="form-group"><label>Taxable</label><select id="ac-taxable"><option value="false">Not taxable</option><option value="true">Taxable</option></select></div>
+        <div class="form-group"><label>QuickBooks tax status</label><select id="ac-taxable"><option value="false">Tax exempt</option><option value="true">Taxable</option></select></div>
+        <div class="form-group" id="ac-tax-exemption-reason-group"><label>Tax exemption reason</label><select id="ac-tax-exemption-reason">
+          <option value="1">Federal government</option>
+          <option value="2">State government</option>
+          <option value="3">Local government</option>
+          <option value="4">Tribal government</option>
+          <option value="5">Charitable organization</option>
+          <option value="6">Religious organization</option>
+          <option value="7">Educational organization</option>
+          <option value="8">Hospital</option>
+          <option value="9">Resale</option>
+          <option value="10">Direct pay permit</option>
+          <option value="11">Multiple points of use</option>
+          <option value="12">Direct mail</option>
+          <option value="13">Agricultural production</option>
+          <option value="14">Industrial production / manufacturing</option>
+          <option value="15">Foreign diplomat</option>
+        </select></div>
         <div class="form-group"><label>Customer Since</label><input id="ac-since" type="text" placeholder="e.g. 2019" /></div>
       </div>
       <div class="form-group"><label>Customer Notes</label><textarea id="ac-notes" rows="2" placeholder="Internal customer notes"></textarea></div>
@@ -2647,6 +2779,7 @@
 <script src="/ui/js/settings/parts_library.js"></script>
 <script src="/ui/js/settings/part_manager.js"></script>
 <script src="/ui/js/settings/sku_grid.js"></script>
+<script src="/ui/js/settings/qb_inbox.js"></script>
 <script src="/ui/js/settings/vehicles.js"></script>
 <script src="/ui/js/settings/tools.js"></script>
 <script src="/ui/js/settings/agencies.js"></script>

@@ -84,6 +84,36 @@ def _post(paths, sub, body):
     return h
 
 
+def _post_full(paths, body):
+    h = FakeHandler("/api/parts-db")
+    route_parts_db(h, "POST", "/api/parts-db", body, paths)
+    return h
+
+
+def _get(paths, path):
+    h = FakeHandler(path)
+    route_parts_db(h, "GET", path, {}, paths)
+    return h
+
+
+def _paths_with_qb(tmp_path: Path) -> AppPaths:
+    (tmp_path / "parts_db.json").write_text(json.dumps(_DB), "utf-8")
+    (tmp_path / "quickbooks_items_cache.json").write_text(json.dumps({
+        "last_sync_utc": "2026-09-24T12:00:00Z",
+        "item_count": 3,
+        "items": [
+            {"qb_item_id": "847", "name": "IONLINK", "sku": "", "description": "WHELEN linked",
+             "unit_price": 199.0, "type": "Inventory", "active": True},
+            {"qb_item_id": "900", "name": "PK0316ITU252ND", "sku": "",
+             "description": "SETINA Cargo Area Rear Partition", "unit_price": 709.0,
+             "type": "NonInventory", "active": True},
+            {"qb_item_id": "901", "name": "IOND", "sku": "", "description": "WHELEN ION red",
+             "unit_price": 95.0, "type": "Inventory", "active": True},
+        ],
+    }), "utf-8")
+    return AppPaths(workspace_config_dir=tmp_path, workspace_dir=tmp_path)
+
+
 def _doc(paths) -> dict:
     h = FakeHandler("/api/parts-db")
     route_parts_db(h, "GET", "/api/parts-db", {}, paths)
@@ -97,6 +127,28 @@ class TestProductEdits:
         assert h.body()["ok"]
         prod = _doc(p)["products"]["whelen_ion"]
         assert prod["model"] == "ION T-Series" and prod["description"] == "warning"
+
+    def test_stale_whole_document_save_cannot_replace_newer_granular_edit(self, tmp_path):
+        p = _paths(tmp_path)
+        stale = _doc(p)
+
+        update = _post(p, "product-update", {
+            "product_id": "setina_pb400",
+            "fields": {"fits_part_types": ["forward_warning"]},
+        }).body()
+        assert update["ok"] and update["edit_revision"]
+
+        stale["products"]["whelen_ion"]["model"] = "Hierarchy edit"
+        stale["_expected_revision"] = (
+            stale.get("metadata", {}).get("edit_revision")
+            or stale.get("metadata", {}).get("last_updated", "")
+        )
+        result = _post_full(p, stale).body()
+
+        assert result["ok"] is False and result["conflict"] is True
+        current = _doc(p)
+        assert current["products"]["setina_pb400"]["fits_part_types"] == ["forward_warning"]
+        assert current["products"]["whelen_ion"]["model"] == "ION"
 
     def test_product_create_and_delete(self, tmp_path):
         p = _paths(tmp_path)
@@ -211,6 +263,59 @@ class TestReviewAndBackfill:
         pns = _doc(p)["products"]["whelen_ion"]["part_numbers"]
         assert pns[1]["friendly_name"] == "ION RED/WHITE"        # linked + was empty → filled
         assert not pns[0].get("friendly_name")                   # unlinked (no qb_item_id) → untouched
+
+
+class TestQbCatalogInbox:
+    def test_lists_only_unlinked_items_with_catalog_hints(self, tmp_path):
+        p = _paths_with_qb(tmp_path)
+        result = _get(p, "/api/parts-db/qb-inbox").body()
+        assert result["ok"] and result["open_count"] == 2
+        by_id = {item["qb_item_id"]: item for item in result["items"]}
+        assert "847" not in by_id
+        assert by_id["900"]["suggested_manufacturer_id"] == "setina"
+        assert by_id["901"]["catalog_matches"][0]["product_id"] == "whelen_ion"
+
+    def test_import_new_creates_linked_holding_product(self, tmp_path):
+        p = _paths_with_qb(tmp_path)
+        result = _post(p, "qb-inbox-import-new", {
+            "qb_item_id": "900", "model": "PK0316ITU252ND", "manufacturer_id": "setina",
+        }).body()
+        assert result["ok"] and result["created_product"] is True
+        product = _doc(p)["products"][result["product_id"]]
+        assert product["fits_part_types"] == []
+        assert product["reviewed"] is False
+        assert product["part_numbers"][0]["qb_item_id"] == "900"
+        assert product["part_numbers"][0]["qb_unit_price"] == 709.0
+        assert _get(p, "/api/parts-db/qb-inbox").body()["open_count"] == 1
+
+    def test_add_to_product_links_exact_existing_sku_without_duplicate(self, tmp_path):
+        p = _paths_with_qb(tmp_path)
+        result = _post(p, "qb-inbox-add-to-product", {
+            "qb_item_id": "901", "product_id": "whelen_ion",
+        }).body()
+        assert result["ok"] and result["created_product"] is False
+        skus = _doc(p)["products"]["whelen_ion"]["part_numbers"]
+        assert [sku["part_number"] for sku in skus].count("IOND") == 1
+        iond = next(sku for sku in skus if sku["part_number"] == "IOND")
+        assert iond["qb_item_id"] == "901" and iond["qb_unit_price"] == 95.0
+
+    def test_import_new_rejects_an_exact_existing_sku(self, tmp_path):
+        p = _paths_with_qb(tmp_path)
+        result = _post(p, "qb-inbox-import-new", {
+            "qb_item_id": "901", "model": "IOND", "manufacturer_id": "whelen",
+        })
+        assert result.status == 400
+        assert "use Add to product" in result.body()["error"]
+        assert len(_doc(p)["products"]["whelen_ion"]["part_numbers"]) == 2
+
+    def test_ignore_and_restore_are_shared_in_parts_db(self, tmp_path):
+        p = _paths_with_qb(tmp_path)
+        assert _post(p, "qb-inbox-ignore", {"qb_item_id": "900"}).body()["ignored"] is True
+        inbox = _get(p, "/api/parts-db/qb-inbox").body()
+        assert inbox["open_count"] == 1 and inbox["ignored_count"] == 1
+        assert "900" in _doc(p)["qb_inbox"]["ignored_item_ids"]
+        assert _post(p, "qb-inbox-restore", {"qb_item_id": "900"}).body()["ignored"] is False
+        assert _get(p, "/api/parts-db/qb-inbox").body()["open_count"] == 2
 
 
 class TestLightSeedAndAccessory:

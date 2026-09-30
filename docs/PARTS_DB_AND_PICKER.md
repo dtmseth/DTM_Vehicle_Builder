@@ -145,9 +145,14 @@ SKUs hold at most `color` + `secondary_color`, with `tertiary_color` for trio *s
 ## 2.5 Part Manager — SKU Review grid + Hierarchy (data-curation UI, shipped 2026-06-29/30)
 
 The self-service tool for curating `parts_db.json` — built to let the owner rip through the ~1,200-item
-QB import without prompting Claude per item. Lives at **Settings → Advanced → Part Manager**, with four
-inner tabs:
+QB import without prompting Claude per item. Lives at **Settings → Advanced → Part Manager**, with
+primary and legacy inner tabs:
 - **Review (SKUs)** — the new primary surface (`ui/js/settings/sku_grid.js`).
+- **QBO Inbox** — every active, unlinked Item from the latest QBO cache, with reviewed actions to
+  create a product, add/link the SKU under an existing product, or ignore an accounting-only Item.
+  Creating without a part-type intentionally sends the new product to the existing
+  **— No part-type —** curation queue. Exact catalog SKU matches are surfaced and linked in place
+  rather than duplicated. Ignore decisions live in `parts_db.json` so all Builder machines share them.
 - **Hierarchy** — the editable tree (`ui/js/settings/part_manager.js`, the old "Database v2"); edits a
   part_type's `tree_positions` + a product's `fits_part_types`, which is what drives picker sorting/placement.
 - **Part Types (legacy)** / **Parts Library (legacy)** — kept until the Phase 4 consumer cutover.
@@ -209,7 +214,8 @@ Tests: `tests/test_parts_db_edit_routes.py`, `tests/test_qb_estimate_unbilled.py
 Small patch in, server applies to the full doc + persists via `save_config_file` (validation + SharePoint
 mirror). Actions: `product-update` / `product-create` / `product-delete` · `sku-update` / `sku-add` /
 `sku-delete` / `sku-move` / `sku-bulk` · `manufacturer-create` / `tag-create` / `part-type-create` /
-`part-type-update` · `backfill-descriptions` · `seed-light-tags`. (Whitelisted product fields include
+`part-type-update` · `backfill-descriptions` · `seed-light-tags` · `qb-inbox-import-new` /
+`qb-inbox-add-to-product` / `qb-inbox-ignore` / `qb-inbox-restore`. (Whitelisted product fields include
 `reviewed`, `accessory_category`, `accessory_of_products`, `accessory_required`; QB-owned price is protected
 on linked SKUs.)
 
@@ -534,7 +540,14 @@ catalog product or change its draft-local pricing snapshot.
 - **Q7 — Category placement pool per vehicle:** confirm pool = all located placements (in the
   category's relevant views) for the draft's vehicle, minus exceptions.
 
-### Whelen catalog decisions still open (the ~47 remaining unlinked + flagged items)
+### Whelen catalog decisions still open (decision checklist, not a live queue count)
+
+The older “~47” figure mixed unlinked QBO Items with catalog-curation decisions and is no longer a
+reliable live count. After the 2026-09-29 working-tree catalog review, `parts_db.json` contains 45
+products without a part-type assignment; one is intentionally reviewed, leaving 44 unresolved by
+that measure, and 8 of the 45 are Whelen. The 2026-09-25 QBO cache separately contains 192 open
+unlinked Items, 36 of which the inbox's conservative brand hint recognizes as Whelen. Use the inbox
+and the counts above for live workload; retain the list below as the owner-decision checklist.
 - **New primary products to create:** V2V sync modules (`CV2V`, `CLBV2V`); headlight/LED flashers
   (`SSFPOS`, `SSFPOSI6`, `ULF44`, `PLF46`, `M62T`, `70RC6FCR`); Field Series power supply (`FSBPS`);
   misc switch/control (`PCC6W`, `LCPHOTO`, `LINZ6R`, `H35SN12`, `SYS109` $3460, `PFP2AP1`).

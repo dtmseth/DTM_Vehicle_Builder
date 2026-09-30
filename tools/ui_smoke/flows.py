@@ -132,6 +132,11 @@ def flow_tab_load(page, base_url: str) -> None:
     assert [text.split()[0] for text in project_tabs.all_inner_texts()] == [
         "Started", "Active", "Inactive", "Completed",
     ]
+    assert page.input_value("#proj-type-filter") == "all"
+    assert page.input_value("#proj-sort") == "created"
+    assert page.locator("#proj-sort option").evaluate_all(
+        "options => options.map(option => option.value)"
+    ) == ["created", "az", "za", "last-opened", "scheduled"]
     selected_colors = {
         "started": "rgb(255, 243, 205)",
         "active": "rgb(223, 243, 228)",
@@ -174,30 +179,55 @@ def flow_tab_load(page, base_url: str) -> None:
     }""", projection_project["project_id"])
     assert editor_survived_refresh is True
 
-    active_sort = page.evaluate("""() => {
-      const saved = _PT.operationsByProject;
-      const project = id => ({
+    project_sorts = page.evaluate("""() => {
+      const savedOperations = _PT.operationsByProject;
+      const savedSort = _PT.sortMode;
+      const savedLastOpened = _PT.lastOpenedByProject;
+      const project = (id, agency, createdAt) => ({
         project_id: id,
+        created_at: createdAt,
         project_status: 'active',
-        customer: {agency: id, build_year: '2031'},
+        customer: {agency, build_year: '2031'},
         build_units: [{individuals: [{individual_id: `${id}-vehicle`}]}],
       });
-      const operation = (id, parts, availability, date) => ({
+      const operation = (id, scheduledWeek) => ({
         vehicle_id: `${id}-vehicle`, project_id: id, acceptance_status: 'accepted',
-        parts_status: parts, vehicle_availability_status: availability,
-        must_deliver_by_date: date,
+        scheduled_week_of: scheduledWeek,
       });
+      const projects = [
+        project('a', 'Zulu', '2031-01-01T00:00:00Z'),
+        project('b', 'Alpha', '2031-03-01T00:00:00Z'),
+        project('c', 'Bravo', '2031-02-01T00:00:00Z'),
+      ];
       _PT.operationsByProject = {
-        'arrived-late': [operation('arrived-late', 'parts_ready', 'at_dtm', '2031-06-01')],
-        'arrived-soon': [operation('arrived-soon', 'received', 'at_dtm', '2031-04-01')],
-        'waiting-soon': [operation('waiting-soon', 'received', 'waiting_on_dealer', '2031-01-01')],
+        a: [operation('a', '2031-06-02')],
+        b: [operation('b', '2031-04-07')],
+        c: [operation('c', '')],
       };
-      const ids = ['waiting-soon', 'arrived-late', 'arrived-soon']
-        .map(project).sort(_ptSortActiveProjects).map(item => item.project_id);
-      _PT.operationsByProject = saved;
-      return ids;
+      _PT.lastOpenedByProject = {a: 3, b: 1, c: 2};
+      const sorted = mode => {
+        _PT.sortMode = mode;
+        return [...projects].sort(_ptCompareProjects).map(item => item.project_id);
+      };
+      const result = {
+        created: sorted('created'),
+        az: sorted('az'),
+        za: sorted('za'),
+        lastOpened: sorted('last-opened'),
+        scheduled: sorted('scheduled'),
+      };
+      _PT.operationsByProject = savedOperations;
+      _PT.sortMode = savedSort;
+      _PT.lastOpenedByProject = savedLastOpened;
+      return result;
     }""")
-    assert active_sort == ["arrived-soon", "arrived-late", "waiting-soon"]
+    assert project_sorts == {
+        "created": ["b", "c", "a"],
+        "az": ["b", "c", "a"],
+        "za": ["a", "c", "b"],
+        "lastOpened": ["a", "c", "b"],
+        "scheduled": ["b", "a", "c"],
+    }
 
     scheduled_sort = page.evaluate("""() => {
       const savedFilter = _OPERATIONS.activeScheduleFilter;

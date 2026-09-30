@@ -562,8 +562,8 @@ def test_inbound_revisionless_rewrite_preserves_synced_project(tmp_path, remote_
         )
     elif remote_change == "note":
         remote["build_units"][0]["individuals"][0]["notes"] = "Real teammate edit"
-    local_payload = json.dumps(local).encode()
-    remote_payload = json.dumps(remote).encode()
+    local_payload = (json.dumps(local, indent=2) + "\n").encode()
+    remote_payload = (json.dumps(remote, indent=2) + "\n").encode()
     local_path.write_bytes(local_payload)
 
     class Remote:
@@ -591,3 +591,157 @@ def test_inbound_revisionless_rewrite_preserves_synced_project(tmp_path, remote_
         assert (local_path.parent / ".sync_conflict.json").exists()
         archived = [json.loads(p.read_text()) for p in (local_path.parent / ".history").glob("*.json")]
         assert local in archived and remote in archived
+
+
+def test_inbound_stale_cloud_ancestor_restores_local_descendant(tmp_path):
+    from dtm_buildsheet.app.services.shared_work_service import (
+        _content_hash, _reconcile_projects, _PENDING_UPLOAD_ETAG,
+    )
+    from dtm_buildsheet.storage.base import FileMetadata
+    from unittest.mock import patch
+
+    paths = _paths(tmp_path)
+    project_id = "project-1"
+    local_path = paths.workspace_projects_dir / project_id / "project.json"
+    local_path.parent.mkdir()
+    remote = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T01:00:00+00:00",
+        "record_revision": "cloud-base",
+        "build_units": [{"individuals": [{"draft_id": "empty-draft"}]}],
+    }
+    local = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T02:00:00+00:00",
+        "record_revision": "local-new",
+        "record_parent_revision": "cloud-base",
+        "record_ancestor_revisions": ["cloud-base"],
+        "build_units": [{"individuals": [{"draft_id": "configured-draft"}]}],
+    }
+    local_payload = json.dumps(local).encode()
+    remote_payload = json.dumps(remote).encode()
+    local_path.write_bytes(local_payload)
+
+    class Remote:
+        def list_files_with_metadata(self, _folder):
+            return [FileMetadata(path=f"Projects/{project_id}.json", etag="new-etag")]
+
+        def read_bytes(self, _path):
+            return remote_payload
+
+    with patch(
+        "dtm_buildsheet.app.services.shared_work_service.mirror_project_to_cloud",
+        return_value=True,
+    ) as mirror:
+        result = _reconcile_projects(
+            Remote(), paths, {project_id: "old-etag"},
+            {project_id: _content_hash(local_payload)},
+        )
+
+    assert local_path.read_bytes() == local_payload
+    mirror.assert_called_once_with(project_id, local_path)
+    assert result["uploaded"] == 1
+    assert result["current_etags"][project_id] == _PENDING_UPLOAD_ETAG
+    archived = [json.loads(p.read_text()) for p in (local_path.parent / ".history").glob("*.json")]
+    assert remote in archived
+    assert not (local_path.parent / ".sync_conflict.json").exists()
+
+
+def test_inbound_unrelated_revision_roots_preserve_both_projects(tmp_path):
+    from dtm_buildsheet.app.services.shared_work_service import (
+        _content_hash, _reconcile_projects,
+    )
+    from dtm_buildsheet.storage.base import FileMetadata
+    from unittest.mock import patch
+
+    paths = _paths(tmp_path)
+    project_id = "project-1"
+    local_path = paths.workspace_projects_dir / project_id / "project.json"
+    local_path.parent.mkdir()
+    local = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T02:00:00+00:00",
+        "record_revision": "local-root",
+        "build_units": [{"individuals": [{"draft_id": "configured-draft"}]}],
+    }
+    remote = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T03:00:00+00:00",
+        "record_revision": "remote-root",
+        "build_units": [{"individuals": [{"draft_id": "empty-draft"}]}],
+    }
+    local_payload = json.dumps(local).encode()
+    remote_payload = json.dumps(remote).encode()
+    local_path.write_bytes(local_payload)
+
+    class Remote:
+        def list_files_with_metadata(self, _folder):
+            return [FileMetadata(path=f"Projects/{project_id}.json", etag="new-etag")]
+
+        def read_bytes(self, _path):
+            return remote_payload
+
+    with patch(
+        "dtm_buildsheet.app.services.shared_work_service.mirror_project_to_cloud",
+        return_value=True,
+    ) as mirror:
+        result = _reconcile_projects(
+            Remote(), paths, {project_id: "old-etag"},
+            {project_id: _content_hash(local_payload)},
+        )
+
+    assert local_path.read_bytes() == local_payload
+    mirror.assert_not_called()
+    assert result["uploaded"] == 0
+    assert (local_path.parent / ".sync_conflict.json").exists()
+    archived = [json.loads(p.read_text()) for p in (local_path.parent / ".history").glob("*.json")]
+    assert local in archived and remote in archived
+
+
+def test_inbound_remote_descendant_remains_authoritative(tmp_path):
+    from dtm_buildsheet.app.services.shared_work_service import (
+        _content_hash, _reconcile_projects,
+    )
+    from dtm_buildsheet.storage.base import FileMetadata
+
+    paths = _paths(tmp_path)
+    project_id = "project-1"
+    local_path = paths.workspace_projects_dir / project_id / "project.json"
+    local_path.parent.mkdir()
+    local = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T01:00:00+00:00",
+        "record_revision": "cloud-base",
+        "project_notes": "",
+        "build_units": [{"individuals": [{"draft_id": "old-draft", "notes": ""}]}],
+    }
+    remote = {
+        "project_id": project_id,
+        "updated_at": "2026-09-21T02:00:00+00:00",
+        "record_revision": "remote-new",
+        "record_parent_revision": "cloud-base",
+        "record_ancestor_revisions": ["cloud-base"],
+        "project_notes": "",
+        "build_units": [{"individuals": [{"draft_id": "configured-draft", "notes": ""}]}],
+    }
+    local_payload = (json.dumps(local, indent=2) + "\n").encode()
+    remote_payload = (json.dumps(remote, indent=2) + "\n").encode()
+    local_path.write_bytes(local_payload)
+    (local_path.parent / ".sync_conflict.json").write_text("{}")
+
+    class Remote:
+        def list_files_with_metadata(self, _folder):
+            return [FileMetadata(path=f"Projects/{project_id}.json", etag="new-etag")]
+
+        def read_bytes(self, _path):
+            return remote_payload
+
+    result = _reconcile_projects(
+        Remote(), paths, {project_id: "old-etag"},
+        {project_id: _content_hash(local_payload)},
+    )
+
+    assert local_path.read_bytes() == remote_payload
+    assert result["updated"] == 1
+    assert result["uploaded"] == 0
+    assert not (local_path.parent / ".sync_conflict.json").exists()

@@ -10,11 +10,12 @@ from urllib.parse import parse_qs, urlparse
 from ...paths import AppPaths
 from ..services.config_service import save_config_file
 from ..services.customer_pricing_service import retail_catalog_unit_price
-from ..services.parts_db_service import get_parts_db_service
+from ..services.parts_db_service import get_parts_db_service, parts_db_mutation_lock
 from .http import send_json
 
 
 _PREFIX = "/api/parts-db"
+_QB_INBOX_PATH = f"{_PREFIX}/qb-inbox"
 _TYPES_PATH = f"{_PREFIX}/types"
 _SECTIONS_PATH = f"{_PREFIX}/sections"
 _ZONES_PATH = f"{_PREFIX}/zones"
@@ -998,22 +999,263 @@ def _apply_sku_fields(pn: dict, fields: dict) -> None:
 def _mutate_parts_db(svc, paths, mutate):
     """Deep-copy the doc, run mutate(doc) -> payload, then persist + invalidate.
     `mutate` may raise ValueError(message) to signal a 400."""
-    doc = copy.deepcopy(svc.raw_doc())
-    payload = mutate(doc) or {}
-    meta = doc.setdefault("metadata", {})
-    meta["last_updated"] = datetime.now(timezone.utc).isoformat()
-    meta["updated_by"] = "part-manager-ui"
-    result = save_config_file("parts_db.json", doc, paths)
-    if not result.get("ok"):
-        raise ValueError(result.get("error") or "save failed")
-    svc.invalidate()
-    payload["ok"] = True
-    return payload
+    with parts_db_mutation_lock():
+        doc = copy.deepcopy(svc.raw_doc())
+        payload = mutate(doc) or {}
+        meta = doc.setdefault("metadata", {})
+        meta["last_updated"] = datetime.now(timezone.utc).isoformat()
+        meta["updated_by"] = "part-manager-ui"
+        result = save_config_file("parts_db.json", doc, paths)
+        if not result.get("ok"):
+            raise ValueError(result.get("error") or "save failed")
+        svc.invalidate()
+        payload["ok"] = True
+        payload["edit_revision"] = result.get("edit_revision", "")
+        return payload
+
+
+def _qb_inbox_ignored_ids(doc: dict) -> set[str]:
+    """Return the shared set of QBO Items intentionally excluded from the catalog."""
+    inbox = doc.get("qb_inbox") or {}
+    if not isinstance(inbox, dict):
+        return set()
+    values = inbox.get("ignored_item_ids") or []
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def _set_qb_inbox_ignored_ids(doc: dict, values: set[str]) -> None:
+    doc["qb_inbox"] = {"ignored_item_ids": sorted(values)}
+
+
+def _qb_linked_item_ids(doc: dict) -> set[str]:
+    linked: set[str] = set()
+    for product in (doc.get("products") or {}).values():
+        top_level = str((product or {}).get("qb_item_id") or "").strip()
+        if top_level:
+            linked.add(top_level)
+        for pn in (product or {}).get("part_numbers") or []:
+            qb_item_id = str((pn or {}).get("qb_item_id") or "").strip()
+            if qb_item_id:
+                linked.add(qb_item_id)
+    return linked
+
+
+def _qb_cached_item(paths: AppPaths, qb_item_id: str) -> dict:
+    from ..services.qb_sync_service import get_cached_items
+
+    wanted = str(qb_item_id or "").strip()
+    item = next(
+        (entry for entry in (get_cached_items(paths).get("items") or [])
+         if str(entry.get("qb_item_id") or "").strip() == wanted),
+        None,
+    )
+    if item is None:
+        raise ValueError("QuickBooks item is not present in the latest synced cache")
+    return item
+
+
+def _qb_item_part_number(item: dict) -> str:
+    return str(item.get("sku") or item.get("name") or "").strip()
+
+
+def _apply_qb_item_to_sku(pn: dict, item: dict, *, now_iso: str) -> None:
+    """Attach authoritative cache fields while preserving user-curated SKU metadata."""
+    part_number = _qb_item_part_number(item)
+    if not part_number:
+        raise ValueError("QuickBooks item has no usable Name or SKU")
+    pn.setdefault("part_number", part_number)
+    if not str(pn.get("friendly_name") or "").strip() and item.get("description"):
+        pn["friendly_name"] = str(item.get("description") or "").strip()
+    pn["qb_item_id"] = str(item.get("qb_item_id") or "").strip()
+    pn["qb_sku"] = str(item.get("sku") or "").strip()
+    pn["qb_sales_description"] = str(item.get("description") or "").strip()
+    pn["qb_unit_price"] = item.get("unit_price")
+    pn["qb_last_synced"] = now_iso
+    pn.pop("qb_pending", None)
+    pn.pop("qb_inactive", None)
+    pn.pop("price_usd", None)
+
+
+def _qb_catalog_matches(doc: dict, item: dict) -> list[dict]:
+    keys = {
+        str(value or "").strip().casefold()
+        for value in (item.get("name"), item.get("sku"))
+        if str(value or "").strip()
+    }
+    if not keys:
+        return []
+    manufacturers = doc.get("manufacturers") or {}
+    matches: list[dict] = []
+    for product_id, product in (doc.get("products") or {}).items():
+        for index, pn in enumerate(product.get("part_numbers") or []):
+            if str(pn.get("part_number") or "").strip().casefold() not in keys:
+                continue
+            manufacturer_id = product.get("manufacturer_id") or ""
+            matches.append({
+                "product_id": product_id,
+                "product_model": product.get("model") or product_id,
+                "manufacturer_id": manufacturer_id,
+                "manufacturer_label": (manufacturers.get(manufacturer_id) or {}).get("label", manufacturer_id),
+                "index": index,
+                "part_number": pn.get("part_number") or "",
+                "already_linked": bool(pn.get("qb_item_id")),
+            })
+    return matches
+
+
+def _qb_suggested_manufacturer_id(doc: dict, item: dict) -> str:
+    """Infer only an obvious leading brand; never silently classify the item."""
+    texts = [
+        str(value or "").strip() for value in (item.get("name"), item.get("description"))
+        if str(value or "").strip()
+    ]
+    candidates = []
+    for manufacturer_id, spec in (doc.get("manufacturers") or {}).items():
+        label = str((spec or {}).get("label") or manufacturer_id).strip()
+        folded = label.casefold()
+        if folded and any(
+            text.casefold() == folded
+            or text.casefold().startswith(folded + ":")
+            or text.casefold().startswith(folded + " ")
+            for text in texts
+        ):
+            candidates.append((len(folded), manufacturer_id))
+    return max(candidates, default=(0, ""))[1]
+
+
+def _qb_inbox_payload(svc, paths: AppPaths) -> dict:
+    from ..services.qb_sync_service import get_cached_items
+
+    doc = svc.raw_doc()
+    cache = get_cached_items(paths)
+    linked = _qb_linked_item_ids(doc)
+    ignored = _qb_inbox_ignored_ids(doc)
+    items = []
+    for item in cache.get("items") or []:
+        qb_item_id = str(item.get("qb_item_id") or "").strip()
+        if not qb_item_id or qb_item_id in linked:
+            continue
+        items.append({
+            **item,
+            "ignored": qb_item_id in ignored,
+            "suggested_manufacturer_id": _qb_suggested_manufacturer_id(doc, item),
+            "catalog_matches": _qb_catalog_matches(doc, item),
+        })
+    items.sort(key=lambda entry: (
+        bool(entry.get("ignored")),
+        str(entry.get("description") or entry.get("name") or "").casefold(),
+    ))
+    return {
+        "ok": True,
+        "last_sync_utc": cache.get("last_sync_utc"),
+        "open_count": sum(not item["ignored"] for item in items),
+        "ignored_count": sum(bool(item["ignored"]) for item in items),
+        "items": items,
+    }
 
 
 def _handle_edit(svc, paths, sub: str, body: dict) -> dict:
     def products_of(doc):
         return doc.setdefault("products", {})
+
+    if sub == "qb-inbox-import-new":
+        qb_item_id = str(body.get("qb_item_id") or "").strip()
+        item = _qb_cached_item(paths, qb_item_id)
+        model = str(body.get("model") or _qb_item_part_number(item)).strip()
+        manufacturer_id = str(body.get("manufacturer_id") or "").strip()
+        part_type_id = str(body.get("part_type_id") or "").strip()
+        if not model:
+            raise ValueError("model is required")
+
+        def m(doc):
+            if qb_item_id in _qb_linked_item_ids(doc):
+                raise ValueError("QuickBooks item is already linked")
+            matches = _qb_catalog_matches(doc, item)
+            if matches:
+                match = matches[0]
+                raise ValueError(
+                    f"SKU already exists under {match['manufacturer_label']} {match['product_model']}; "
+                    "use Add to product to link it without creating a duplicate"
+                )
+            if manufacturer_id and manufacturer_id not in (doc.get("manufacturers") or {}):
+                raise ValueError(f"unknown manufacturer_id: {manufacturer_id}")
+            if part_type_id and part_type_id not in (doc.get("part_types") or {}):
+                raise ValueError(f"unknown part_type_id: {part_type_id}")
+            products = products_of(doc)
+            base = (_slugify(manufacturer_id) + "_" + _slugify(model)) if manufacturer_id else _slugify(model)
+            product_id = _unique_key(base, products)
+            pn: dict = {"part_number": _qb_item_part_number(item)}
+            _apply_qb_item_to_sku(pn, item, now_iso=datetime.now(timezone.utc).isoformat())
+            products[product_id] = {
+                "manufacturer_id": manufacturer_id,
+                "model": model,
+                "description": "",
+                "fits_part_types": [part_type_id] if part_type_id else [],
+                "tag_ids": [],
+                "part_numbers": [pn],
+                "reviewed": False,
+            }
+            ignored = _qb_inbox_ignored_ids(doc)
+            ignored.discard(qb_item_id)
+            _set_qb_inbox_ignored_ids(doc, ignored)
+            return {"product_id": product_id, "index": 0, "created_product": True}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub == "qb-inbox-add-to-product":
+        qb_item_id = str(body.get("qb_item_id") or "").strip()
+        product_id = str(body.get("product_id") or "").strip()
+        item = _qb_cached_item(paths, qb_item_id)
+
+        def m(doc):
+            if qb_item_id in _qb_linked_item_ids(doc):
+                raise ValueError("QuickBooks item is already linked")
+            products = products_of(doc)
+            product = products.get(product_id)
+            if product is None:
+                raise ValueError(f"unknown product_id: {product_id}")
+            matches = _qb_catalog_matches(doc, item)
+            elsewhere = [match for match in matches if match["product_id"] != product_id]
+            local = [match for match in matches if match["product_id"] == product_id]
+            if elsewhere and not local:
+                match = elsewhere[0]
+                raise ValueError(
+                    f"SKU already exists under {match['manufacturer_label']} {match['product_model']}; "
+                    "add it to that product instead"
+                )
+            if local:
+                index = local[0]["index"]
+                pn = product.setdefault("part_numbers", [])[index]
+                if pn.get("qb_item_id"):
+                    raise ValueError("matching SKU is already linked to another QuickBooks item")
+            else:
+                pn = {"part_number": _qb_item_part_number(item)}
+                product.setdefault("part_numbers", []).append(pn)
+                index = len(product["part_numbers"]) - 1
+            _apply_qb_item_to_sku(pn, item, now_iso=datetime.now(timezone.utc).isoformat())
+            ignored = _qb_inbox_ignored_ids(doc)
+            ignored.discard(qb_item_id)
+            _set_qb_inbox_ignored_ids(doc, ignored)
+            return {"product_id": product_id, "index": index, "created_product": False}
+        return _mutate_parts_db(svc, paths, m)
+
+    if sub in {"qb-inbox-ignore", "qb-inbox-restore"}:
+        qb_item_id = str(body.get("qb_item_id") or "").strip()
+        if not qb_item_id:
+            raise ValueError("qb_item_id is required")
+        if sub == "qb-inbox-ignore":
+            _qb_cached_item(paths, qb_item_id)
+
+        def m(doc):
+            if qb_item_id in _qb_linked_item_ids(doc):
+                raise ValueError("QuickBooks item is already linked")
+            ignored = _qb_inbox_ignored_ids(doc)
+            if sub == "qb-inbox-ignore":
+                ignored.add(qb_item_id)
+            else:
+                ignored.discard(qb_item_id)
+            _set_qb_inbox_ignored_ids(doc, ignored)
+            return {"qb_item_id": qb_item_id, "ignored": sub == "qb-inbox-ignore"}
+        return _mutate_parts_db(svc, paths, m)
 
     if sub == "product-update":
         pid, fields = body.get("product_id", ""), (body.get("fields") or {})
@@ -1297,6 +1539,10 @@ def route_parts_db(
 
     if method == "GET" and path == _PREFIX:
         send_json(handler, svc.raw_doc())
+        return True
+
+    if method == "GET" and path == _QB_INBOX_PATH:
+        send_json(handler, _qb_inbox_payload(svc, paths))
         return True
 
     if method == "GET" and path == _TYPES_PATH:
@@ -1980,8 +2226,27 @@ def route_parts_db(
     # POST endpoints ──────────────────────────────────────────────────────
 
     if method == "POST" and path == _PREFIX:
-        result = save_config_file("parts_db.json", body, paths)
-        svc.invalidate()
+        with parts_db_mutation_lock():
+            current = svc.raw_doc()
+            current_meta = current.get("metadata") or {}
+            current_revision = str(
+                current_meta.get("edit_revision") or current_meta.get("last_updated") or ""
+            )
+            incoming = copy.deepcopy(body)
+            expected_revision = str(incoming.pop("_expected_revision", "") or "")
+            if current_revision and expected_revision != current_revision:
+                send_json(handler, {
+                    "ok": False,
+                    "conflict": True,
+                    "error": (
+                        "The parts database changed after this editor loaded it. "
+                        "Reload the tab and apply this edit again."
+                    ),
+                })
+                return True
+            result = save_config_file("parts_db.json", incoming, paths)
+            if result.get("ok"):
+                svc.invalidate()
         send_json(handler, result)
         return True
 

@@ -20,6 +20,7 @@ another app process or the settings sync replaces the file on disk.
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import asdict
 from typing import Optional
 
@@ -545,6 +546,18 @@ def _hyd_color(cid: str, spec: dict) -> Color:
 
 
 _instance: PartsDbService | None = None
+_mutation_lock = threading.RLock()
+
+
+def parts_db_mutation_lock() -> threading.RLock:
+    """Serialize catalog read-modify-write cycles across UI/background threads.
+
+    The desktop HTTP server is threaded and QuickBooks reconciliation runs in
+    another worker.  Callers that copy the whole catalog before saving must
+    hold this lock from the initial read through cache invalidation; locking
+    only the final file write cannot prevent an older snapshot from winning.
+    """
+    return _mutation_lock
 
 
 def get_parts_db_service(paths: AppPaths) -> PartsDbService:

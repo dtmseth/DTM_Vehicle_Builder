@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 const SIZE_VIEWS = ["front", "rear", "side", "top"];
 let _sizePartsDb = null;
+let _sizePartsDbRevision = "";
 let _sizePartsDbDirty = false;
 let _sizeExpandedTargets = new Set();
 let _sizeRulesInitialized = false;
@@ -50,6 +51,7 @@ async function loadSizePartsDb(){
   const status = $("sr-db-status");
   try {
     _sizePartsDb = await api("/api/parts-db");
+    _sizePartsDbRevision = _sizePartsDb?.metadata?.edit_revision || _sizePartsDb?.metadata?.last_updated || "";
     _sizePartsDbDirty = false;
     if(status) status.textContent = "Parts database loaded";
     renderSizeAssignments();
@@ -432,8 +434,13 @@ async function saveSizeRules(){
       _sizePartsDb.metadata = _sizePartsDb.metadata || {};
       _sizePartsDb.metadata.last_updated = new Date().toISOString();
       _sizePartsDb.metadata.updated_by = "size-rules-ui";
-      const dbResult = await apiSave("/api/parts-db", _sizePartsDb);
+      const dbResult = await apiSave("/api/parts-db", {
+        ..._sizePartsDb,
+        _expected_revision: _sizePartsDbRevision,
+      });
       if(!dbResult?.ok) throw new Error(`Profiles saved, but parts database save failed: ${dbResult?.error || "unknown error"}`);
+      _sizePartsDbRevision = dbResult.edit_revision || _sizePartsDbRevision;
+      if(_sizePartsDb?.metadata && dbResult.edit_revision) _sizePartsDb.metadata.edit_revision = dbResult.edit_revision;
       _sizePartsDbDirty = false;
     }
     if($("sr-db-status")) $("sr-db-status").textContent = "All changes saved";

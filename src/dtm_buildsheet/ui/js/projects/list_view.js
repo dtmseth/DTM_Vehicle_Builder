@@ -83,22 +83,88 @@ function _ptProjectActiveSort(project) {
   };
 }
 
-function _ptSortActiveProjects(left, right) {
-  const a = _ptProjectActiveSort(left);
-  const b = _ptProjectActiveSort(right);
-  if (a.arrived !== b.arrived) return a.arrived ? -1 : 1;
-  const byDelivery = a.mustDeliverBy.localeCompare(b.mustDeliverBy);
-  if (byDelivery) return byDelivery;
-  return _ptProjName(left).localeCompare(_ptProjName(right), undefined, { numeric: true });
-}
-
 function _ptProjectDateLabel(value) {
-  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
   if (!match) return "";
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).toLocaleDateString(
     undefined,
     { month: "short", day: "numeric", year: "numeric" },
   );
+}
+
+const _PT_PROJECT_SORT_KEY = "dtm-project-sort-v1";
+const _PT_PROJECT_LAST_OPENED_KEY = "dtm-project-last-opened-v1";
+const _PT_PROJECT_SORT_MODES = new Set(["created", "az", "za", "last-opened", "scheduled"]);
+
+function _ptRestoreProjectListPreferences() {
+  try {
+    const savedSort = localStorage.getItem(_PT_PROJECT_SORT_KEY);
+    if (_PT_PROJECT_SORT_MODES.has(savedSort)) _PT.sortMode = savedSort;
+    const savedLastOpened = JSON.parse(localStorage.getItem(_PT_PROJECT_LAST_OPENED_KEY) || "{}");
+    if (savedLastOpened && typeof savedLastOpened === "object" && !Array.isArray(savedLastOpened)) {
+      _PT.lastOpenedByProject = Object.fromEntries(Object.entries(savedLastOpened)
+        .filter(([projectId, timestamp]) => projectId && Number.isFinite(Number(timestamp)))
+        .map(([projectId, timestamp]) => [projectId, Number(timestamp)]));
+    }
+  } catch {
+    _PT.lastOpenedByProject = {};
+  }
+}
+
+function _ptSaveProjectSortPreference() {
+  try {
+    localStorage.setItem(_PT_PROJECT_SORT_KEY, _PT.sortMode);
+  } catch {}
+}
+
+function _ptRememberProjectOpened(projectId) {
+  _PT.lastOpenedByProject[projectId] = Date.now();
+  try {
+    localStorage.setItem(_PT_PROJECT_LAST_OPENED_KEY, JSON.stringify(_PT.lastOpenedByProject));
+  } catch {}
+}
+
+function _ptProjectCreatedTimestamp(project) {
+  const timestamp = Date.parse(String(project.created_at || ""));
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function _ptProjectScheduledDate(project) {
+  return _ptProjectOperations(project)
+    .map(vehicle => String(vehicle.scheduled_week_of || "").trim())
+    .filter(value => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    .sort()[0] || "9999-12-31";
+}
+
+function _ptCompareProjectNames(left, right) {
+  return _ptProjName(left).localeCompare(_ptProjName(right), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function _ptCompareProjects(left, right) {
+  const mode = _PT_PROJECT_SORT_MODES.has(_PT.sortMode) ? _PT.sortMode : "created";
+  if (mode === "az") return _ptCompareProjectNames(left, right);
+  if (mode === "za") return _ptCompareProjectNames(right, left);
+  if (mode === "last-opened") {
+    const byLastOpened = Number(_PT.lastOpenedByProject[right.project_id] || 0) -
+      Number(_PT.lastOpenedByProject[left.project_id] || 0);
+    if (byLastOpened) return byLastOpened;
+  }
+  if (mode === "scheduled") {
+    const bySchedule = _ptProjectScheduledDate(left).localeCompare(_ptProjectScheduledDate(right));
+    if (bySchedule) return bySchedule;
+  }
+  const byCreation = _ptProjectCreatedTimestamp(right) - _ptProjectCreatedTimestamp(left);
+  return byCreation || _ptCompareProjectNames(left, right);
+}
+
+function _ptCompareProjectGroups(leftProjects, rightProjects) {
+  const left = [...leftProjects].sort(_ptCompareProjects)[0];
+  const right = [...rightProjects].sort(_ptCompareProjects)[0];
+  if (!left || !right) return Number(Boolean(right)) - Number(Boolean(left));
+  return _ptCompareProjects(left, right);
 }
 
 function _ptProjectEstimateVehicles(project) {
@@ -180,12 +246,6 @@ function _ptProjectProgress(project) {
 }
 
 function _ptRenderList() {
-  if(!$('proj-type-filter')){
-    _PT.typeFilter='build';const label=document.createElement('label');label.className='project-type-filter';label.textContent='Project type ';
-    const select=document.createElement('select');select.id='proj-type-filter';select.setAttribute('aria-label','Filter project type');
-    select.innerHTML='<option value="build">Builds</option><option value="all">All projects</option><option value="service">Service</option><option value="offsite">Off-Site Service</option>';
-    label.append(select);$('proj-list-search').closest('label').before(label);select.onchange=()=>{_PT.typeFilter=select.value;_ptRenderList();};
-  }
   const statuses = ["started", "active", "inactive", "completed"];
   const mode = statuses.includes(_PT.listMode) ? _PT.listMode : "active";
   const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
@@ -221,7 +281,7 @@ function _ptRenderList() {
   const projects = _PT.projects.filter(project => _ptMatchesType(project) &&
     _ptProjectListStatus(project) === mode && _ptProjectMatchesSearch(project, query)
   );
-  if (mode === "active") projects.sort(_ptSortActiveProjects);
+  projects.sort(_ptCompareProjects);
   if (!projects.length) {
     $("proj-list-empty").textContent = query
       ? `No ${mode} projects match this search.`
@@ -241,6 +301,7 @@ function _ptRenderList() {
     const name = projectName + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
     const pid  = esc(p.project_id);
+    const createdLabel = _ptProjectDateLabel(p.created_at);
     const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p) : null;
     const activeSort = mode === "active" ? _ptProjectActiveSort(p) : null;
     const deliveryLabel = activeSort && activeSort.mustDeliverBy !== "9999-12-31"
@@ -255,6 +316,7 @@ function _ptRenderList() {
         <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}${deliveryLabel ? ` · Must Deliver On ${esc(deliveryLabel)}` : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
       </div>
       <div class="proj-row-actions" onclick="event.stopPropagation()">
+        ${createdLabel ? `<span class="proj-created-tag">Created ${esc(createdLabel)}</span>` : ""}
         <button class="btn btn-primary btn-sm" onclick="PT_open('${pid}')">Open</button>
         ${_ptCanEditProjects() || _ptCanUpdateProjectLifecycle() ? `<details class="proj-row-menu">
           <summary aria-label="More actions for ${projectName.replace(/"/g, "&quot;")}" title="More actions">⋯</summary>
@@ -293,16 +355,24 @@ function _ptRenderArchive(query = "") {
     years.get(year).push(project);
   });
 
-  const agencyEntries = Array.from(agencies.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const agencyEntries = Array.from(agencies.entries()).sort(([a, aYears], [b, bYears]) => {
+    const aProjects = Array.from(aYears.values()).flat();
+    const bProjects = Array.from(bYears.values()).flat();
+    return _ptCompareProjectGroups(aProjects, bProjects) || a.localeCompare(b);
+  });
   $("proj-archive-tree").innerHTML = agencyEntries.map(([agency, years]) => {
     const count = Array.from(years.values()).reduce((total, entries) => total + entries.length, 0);
     const yearRows = Array.from(years.entries())
-      .sort(([a], [b]) => b.localeCompare(a, undefined, { numeric: true }))
+      .sort(([a, aEntries], [b, bEntries]) =>
+        _ptCompareProjectGroups(aEntries, bEntries) ||
+        b.localeCompare(a, undefined, { numeric: true })
+      )
       .map(([year, entries]) => {
         const projectRows = entries
-          .sort((a, b) => String(b.completed_at || b.updated_at || "").localeCompare(String(a.completed_at || a.updated_at || "")))
+          .sort(_ptCompareProjects)
           .map(project => {
             const pid = esc(project.project_id);
+            const createdLabel = _ptProjectDateLabel(project.created_at);
             const unitCount = (project.build_units || []).reduce((sum, unit) => sum + (unit.quantity || 1), 0);
             const builds = (project.build_units || []).map(unit => {
               return [_ptVehicleModelLabel(unit), unit.build_type].filter(Boolean).join(" — ");
@@ -316,6 +386,7 @@ function _ptRenderArchive(query = "") {
                 ${_ptCompletedPhotoButtonMarkup(project.project_id)}
                 <button class="btn btn-secondary btn-sm" onclick="PT_openPhotoGallery('${pid}','reference')">Project photos</button>
                 ${project.shop_year_folder_path ? `<button class="btn btn-secondary btn-sm" data-library-target="shop" data-folder-path="${esc(project.shop_year_folder_path)}" onclick="PT_openCloudFolder(this)">Open Shop folder</button>` : ""}
+                ${createdLabel ? `<span class="proj-created-tag">Created ${esc(createdLabel)}</span>` : ""}
                 <button class="btn btn-primary btn-sm" onclick="PT_openArchived('${pid}')">Open</button>
                 ${_ptCanUpdateProjectLifecycle() ? `<button class="btn btn-secondary btn-sm" onclick="PT_setProjectCompleted('${pid}', false)">Reopen</button>` : ""}
               </div>
@@ -344,7 +415,10 @@ function _ptRenderArchive(query = "") {
 // Public entry: open project from list
 window.PT_open = function (pid) {
   const p = _PT.projects.find(x => x.project_id === pid);
-  if (p) _ptShowDetail(p);
+  if (p) {
+    _ptRememberProjectOpened(pid);
+    _ptShowDetail(p);
+  }
 };
 
 window.PT_openArchived = function (pid) {
@@ -476,6 +550,7 @@ function _ptRefreshCompletionConflictChoice() {
   if (apply) {
     apply.disabled = !choice || (choice === "overwrite" && confirmation?.value.trim() !== "OVERWRITE");
     apply.textContent = choice === "merge" ? "Merge & Complete" :
+      choice === "separate" ? "Keep Separate & Complete" :
       choice === "overwrite" ? "Overwrite & Complete" : "Complete Project";
     apply.className = `btn ${choice === "overwrite" ? "btn-danger" : "btn-primary"}`;
   }
@@ -516,6 +591,8 @@ async function _ptRequestProjectCompletion(pid, completed, extra = {}) {
     _PT.viewProject = null;
     const completionMessage = result.resolution === "merge"
       ? "Projects merged and moved to Completed"
+      : result.resolution === "separate"
+        ? "Project kept separate and moved to Completed"
       : result.resolution === "overwrite"
         ? "Completed project replaced with the active project"
         : completed ? "Project moved to Completed" : "Project reopened";
@@ -539,7 +616,8 @@ window.PT_applyCompletionConflict = async function () {
   const apply = $("project-completion-conflict-apply");
   const status = $("project-completion-conflict-status");
   apply.disabled = true;
-  apply.textContent = resolution === "overwrite" ? "Overwriting…" : "Merging…";
+  apply.textContent = resolution === "overwrite" ? "Overwriting…" :
+    resolution === "separate" ? "Completing separately…" : "Merging…";
   status.hidden = false;
   status.textContent = "Updating the project and Operations records…";
   await _ptRequestProjectCompletion(context.pid, true, {

@@ -11,6 +11,7 @@ items cache.
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 
 import pytest
 
@@ -313,6 +314,37 @@ def test_reconcile_updates_linked_part_price_and_sku(paths, _link_fakes):
     assert product["qb_unit_price"] == 1399.0
     assert product["qb_sku"] == "WL-LIB2-NEW"
     assert product["qb_sales_description"] == "WHELEN QB SALES DESCRIPTION"
+
+
+def test_reconcile_locks_before_reading_catalog(paths, _link_fakes, monkeypatch):
+    import dtm_buildsheet.app.services.parts_db_service as pdb
+
+    state = {"locked": False, "entries": 0}
+
+    @contextmanager
+    def guarded_lock():
+        assert state["locked"] is False
+        state["locked"] = True
+        state["entries"] += 1
+        try:
+            yield
+        finally:
+            state["locked"] = False
+
+    original_raw_doc = _link_fakes["svc"].raw_doc
+
+    def guarded_raw_doc():
+        assert state["locked"] is True
+        return original_raw_doc()
+
+    monkeypatch.setattr(pdb, "parts_db_mutation_lock", guarded_lock)
+    monkeypatch.setattr(_link_fakes["svc"], "raw_doc", guarded_raw_doc)
+    _link_fakes["doc"]["products"]["whelen_lib2"]["qb_item_id"] = "1"
+
+    result = sync.reconcile_linked_parts(paths)
+
+    assert result["ok"] is True
+    assert state == {"locked": False, "entries": 1}
 
 
 def test_reconcile_flags_missing_item_inactive(paths, _link_fakes):

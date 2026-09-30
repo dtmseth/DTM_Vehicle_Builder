@@ -7,17 +7,21 @@
 // ═══════════════════════════════════════════════════════
 
 let _pdb = null;              // full parts_db.json document
+let _pdbRevision = "";        // optimistic-concurrency token from the last load
 let _pdbSelected = null;      // {kind, id} of the currently-shown node
 let _pdbModalDraft = null;    // editing scratchpad — committed only on Save
 
 async function initPartsDbTab(){
-  if(!_pdb) await _pdbLoad();
+  // Review edits and QB reconciliation can change the catalog while this
+  // legacy whole-document editor is hidden. Always start from a fresh copy.
+  await _pdbLoad();
   _pdbRender();
 }
 
 async function _pdbLoad(){
   try{
     _pdb = await api("/api/parts-db");
+    _pdbRevision = _pdb?.metadata?.edit_revision || _pdb?.metadata?.last_updated || "";
   }catch(e){
     _pdb = null;
     toast("Failed to load parts_db.json: " + (e?.message||e), "error");
@@ -734,8 +738,10 @@ async function _pdbSaveModal(){
     _pdb.metadata.last_updated = new Date().toISOString();
     _pdb.metadata.updated_by = "part-manager-ui";
 
-    const res = await apiSave("/api/parts-db", _pdb);
+    const res = await apiSave("/api/parts-db", { ..._pdb, _expected_revision: _pdbRevision });
     if(!res?.ok) throw new Error(res?.error || "Save failed");
+    _pdbRevision = res.edit_revision || _pdbRevision;
+    if(_pdb?.metadata && res.edit_revision) _pdb.metadata.edit_revision = res.edit_revision;
     toast("Saved", "success");
     $("pdb-modal").classList.remove("open");
     // Reload from server so we render whatever the validator normalized.

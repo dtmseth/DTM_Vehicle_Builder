@@ -17,6 +17,24 @@ from ..adapters.wiring import delete_via_proposal, save_via_proposal
 _log = logging.getLogger(__name__)
 
 
+_SALES_REP_ID_NAMESPACE = uuid.UUID("86d44c7c-0981-4efc-98b1-91cf523d9c03")
+
+
+def _normalized_rep_name(value: object) -> str:
+    return " ".join(str(value or "").split()).casefold()
+
+
+def _new_rep_id(name: str) -> str:
+    """Return one stable ID for the same rep name on every Builder device.
+
+    The local duplicate check remains the user-facing guard.  A deterministic
+    ID closes the cross-device race where two offline/stale devices both pass
+    that check and later upload two UUID-named files for the same person.
+    Existing rep IDs remain unchanged.
+    """
+    return str(uuid.uuid5(_SALES_REP_ID_NAMESPACE, _normalized_rep_name(name)))
+
+
 # ── paths ──────────────────────────────────────────────────────────────────────
 
 def _reps_dir(paths: AppPaths) -> Path:
@@ -259,13 +277,17 @@ def handle_save_rep(body: dict, paths: AppPaths) -> dict:
         if not email:
             return {"ok": False, "error": "Email is required"}
 
-        rep_id = str(body.get("rep_id", "")).strip() or str(uuid.uuid4())
+        requested_rep_id = str(body.get("rep_id", "")).strip()
+        rep_id = requested_rep_id or _new_rep_id(name)
         now = _utcnow()
 
         records = _records(paths)
         duplicate = next((
             record for record in records.values()
-            if record.rep_id != rep_id and record.name.strip().casefold() == name.casefold()
+            if (
+                (not requested_rep_id or record.rep_id != rep_id)
+                and _normalized_rep_name(record.name) == _normalized_rep_name(name)
+            )
         ), None)
         if duplicate is not None:
             return {
@@ -329,10 +351,74 @@ def handle_delete_rep(rep_id: str, paths: AppPaths) -> dict:
         )
         # Belt-and-suspenders direct delete (see agency_service comment).
         from .shared_work_service import delete_setting_from_cloud
-        delete_setting_from_cloud(f"sales_reps/{rep_id}.json")
-        return {"ok": True, **proposal_result}
+        cloud_ok = delete_setting_from_cloud(f"sales_reps/{rep_id}.json")
+        result = {"ok": True, **proposal_result}
+        if cloud_ok is False:
+            result["cloud_warning"] = (
+                "Removed locally, but the cloud copy could not be deleted "
+                "(it may reappear on the next sync). Try deleting it again."
+            )
+        return result
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
     except Exception as exc:
         _log.exception("Failed to delete sales rep %s", rep_id)
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_merge_reps(body: dict, paths: AppPaths) -> dict:
+    """Rebind every project to one identical sales-rep record, then delete the duplicate."""
+    source_id = str(body.get("source_rep_id") or "").strip()
+    target_id = str(body.get("target_rep_id") or "").strip()
+    if not source_id or not target_id or source_id == target_id:
+        return {"ok": False, "error": "Choose two different sales reps to merge"}
+    try:
+        records = _records(paths)
+        source = records.get(source_id)
+        target = records.get(target_id)
+        if source is None or target is None:
+            return {"ok": False, "error": "Source or surviving sales rep was not found"}
+
+        conflicts: list[str] = []
+        if _normalized_rep_name(source.name) != _normalized_rep_name(target.name):
+            conflicts.append("name")
+        if source.phone.strip() != target.phone.strip():
+            conflicts.append("phone")
+        if source.email.strip().casefold() != target.email.strip().casefold():
+            conflicts.append("email")
+        if conflicts:
+            return {
+                "ok": False,
+                "error_code": "sales_rep_profile_conflict",
+                "error": "Sales-rep contact data differs; review it before merging",
+                "conflicting_fields": conflicts,
+            }
+
+        from ...inputs.project_entry import list_projects, save_project
+
+        updated_project_ids: list[str] = []
+        for project in list_projects(paths):
+            if str(project.customer.sales_rep_id or "").strip() != source_id:
+                continue
+            project.customer.sales_rep_id = target.rep_id
+            project.customer.sales_rep = target.name
+            save_project(project, paths)
+            updated_project_ids.append(project.project_id)
+
+        deleted = handle_delete_rep(source_id, paths)
+        if not deleted.get("ok"):
+            return deleted
+        result = {
+            "ok": True,
+            "source_rep_id": source_id,
+            "target_rep_id": target_id,
+            "updated_project_ids": updated_project_ids,
+        }
+        if deleted.get("cloud_warning"):
+            result["cloud_warning"] = deleted["cloud_warning"]
+        return result
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        _log.exception("Failed to merge sales rep %s into %s", source_id, target_id)
         return {"ok": False, "error": str(exc)}

@@ -363,6 +363,20 @@ def _validate_parts_db(normalized: dict) -> None:
     if not isinstance(products, dict):
         raise ValueError("parts_db.json 'products' must be an object keyed by product_id")
 
+    qb_inbox = normalized.get("qb_inbox")
+    if qb_inbox is not None:
+        if not isinstance(qb_inbox, dict):
+            raise ValueError("parts_db.json qb_inbox must be an object")
+        ignored_item_ids = qb_inbox.get("ignored_item_ids", [])
+        if (
+            not isinstance(ignored_item_ids, list)
+            or any(not isinstance(item_id, str) or not item_id.strip() for item_id in ignored_item_ids)
+            or len(set(ignored_item_ids)) != len(ignored_item_ids)
+        ):
+            raise ValueError(
+                "parts_db.json qb_inbox.ignored_item_ids must be a list of unique non-empty strings"
+            )
+
     customer_pricing = normalized.get("customer_pricing")
     if customer_pricing is not None:
         if not isinstance(customer_pricing, dict):

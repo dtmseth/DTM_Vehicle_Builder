@@ -604,11 +604,11 @@ def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -
             resolution = str(body.get("conflict_resolution") or "").strip().lower()
             if not resolution:
                 return _completion_conflict_result(project, conflict)
-            if resolution not in {"merge", "overwrite"}:
+            if resolution not in {"merge", "overwrite", "separate"}:
                 return {
                     "ok": False,
                     "error_code": "invalid_completion_resolution",
-                    "error": "Choose merge, overwrite, or cancel.",
+                    "error": "Choose merge, keep separate, overwrite, or cancel.",
                 }
             if resolution == "overwrite" and str(
                 body.get("overwrite_confirmation") or ""
@@ -618,13 +618,14 @@ def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -
                     "error_code": "overwrite_confirmation_required",
                     "error": "Type OVERWRITE to confirm replacing the completed project.",
                 }
-            return _resolve_completed_project_conflict(
-                project,
-                conflict,
-                resolution=resolution,
-                actor=str(body.get("actor") or "").strip(),
-                paths=paths,
-            )
+            if resolution != "separate":
+                return _resolve_completed_project_conflict(
+                    project,
+                    conflict,
+                    resolution=resolution,
+                    actor=str(body.get("actor") or "").strip(),
+                    paths=paths,
+                )
 
     now = datetime.now(timezone.utc).isoformat()
     actor = str(body.get("actor") or "").strip()
@@ -660,12 +661,17 @@ def handle_set_project_lifecycle(project_id: str, body: dict, paths: AppPaths) -
         "reason": reason,
     })
     path = save_project(project, paths)
-    return {
+    result = {
         "ok": True,
         "unchanged": False,
         "project": asdict(project),
         "path": str(path),
     }
+    if target_status == "completed" and str(
+        body.get("conflict_resolution") or ""
+    ).strip().lower() == "separate":
+        result["resolution"] = "separate"
+    return result
 
 
 def handle_set_project_completion(project_id: str, body: dict, paths: AppPaths) -> dict:
@@ -822,6 +828,106 @@ def _project_vehicle_comparison(project) -> dict:
     }
 
 
+def _creation_conflict_result(candidate, existing, *, merge_allowed: bool = True) -> dict:
+    existing_vins = {
+        _canonical_actual_vin(individual.vin)
+        for unit in existing.build_units
+        for individual in unit.individuals
+        if _canonical_actual_vin(individual.vin)
+    }
+    candidate_vins = {
+        _canonical_actual_vin(individual.vin)
+        for unit in candidate.build_units
+        for individual in unit.individuals
+        if _canonical_actual_vin(individual.vin)
+    }
+    return {
+        "ok": False,
+        "error_code": "project_exists_for_agency_year",
+        "error": (
+            f"A {candidate.customer.build_year.strip()} project already exists for "
+            f"{candidate.customer.agency.strip() or 'this agency'}. Compare both projects, "
+            "then merge the new vehicles or keep a separate project."
+        ),
+        "existing_project_id": existing.project_id,
+        "existing_project": _project_vehicle_comparison(existing),
+        "proposed_project": _project_vehicle_comparison(candidate),
+        "duplicate_vins": sorted(existing_vins.intersection(candidate_vins)),
+        "merge_allowed": merge_allowed,
+    }
+
+
+def _merge_creation_candidate(existing, candidate) -> dict | None:
+    """Append a reviewed new-project payload without replacing existing work."""
+    existing_unit_ids = {unit.unit_id for unit in existing.build_units}
+    candidate_unit_ids = {unit.unit_id for unit in candidate.build_units}
+    existing_vehicle_ids = {
+        individual.individual_id
+        for unit in existing.build_units
+        for individual in unit.individuals
+    }
+    candidate_vehicle_ids = {
+        individual.individual_id
+        for unit in candidate.build_units
+        for individual in unit.individuals
+    }
+    if existing_unit_ids.intersection(candidate_unit_ids) or existing_vehicle_ids.intersection(
+        candidate_vehicle_ids
+    ):
+        return {
+            "ok": False,
+            "error_code": "project_merge_identity_conflict",
+            "error": (
+                "The projects reuse an internal build or vehicle ID, so they cannot be merged "
+                "safely. Keep them separate and review the duplicated entries."
+            ),
+        }
+
+    duplicate_vin = _duplicate_project_vin(
+        [*existing.build_units, *candidate.build_units]
+    )
+    if duplicate_vin:
+        return {
+            "ok": False,
+            "error_code": "project_merge_vehicle_conflict",
+            "error": (
+                f"VIN {duplicate_vin} already exists in the other project. Keep the projects "
+                "separate and review that vehicle before merging."
+            ),
+            "vin": duplicate_vin,
+        }
+
+    existing.build_units.extend(candidate.build_units)
+    existing.project_notes = _merged_notes(
+        existing.project_notes, candidate.project_notes,
+    )
+    existing.reference_assets.extend(
+        asset for asset in candidate.reference_assets
+        if asset.reference_id not in {
+            current.reference_id for current in existing.reference_assets
+        }
+    )
+    existing.reference_source_exclusions = _unique_strings(
+        existing.reference_source_exclusions,
+        candidate.reference_source_exclusions,
+    )
+    existing.quote_numbers = _unique_strings(
+        existing.quote_numbers,
+        candidate.quote_numbers,
+        [candidate.customer.quote_number],
+    )
+    existing_project_estimates = {
+        reference.qb_estimate_id or reference.quote_number.casefold()
+        for reference in existing.project_quote_references
+    }
+    existing.project_quote_references.extend(
+        reference for reference in candidate.project_quote_references
+        if (reference.qb_estimate_id or reference.quote_number.casefold())
+        not in existing_project_estimates
+    )
+    return None
+
+
 def _completion_conflict_result(source, completed) -> dict:
     return {
         "ok": False,
@@ -976,6 +1082,9 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 is_new_project = True
         else:
             project = new_project()
+        creation_conflict = None
+        creation_resolution = ""
+        creation_merge_allowed = True
 
         if not is_new_project:
             expected_record_revision = str(
@@ -1049,6 +1158,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                 raise ValueError('A Build project already exists for this agency and year')
 
         if "customer" in body:
+            original_identity = _normalized_agency_year(project.customer)
             candidate_customer = customer_from_dict(body["customer"])
             identity_error = _canonicalize_customer_identities(
                 candidate_customer,
@@ -1063,24 +1173,27 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                     "error_code": "build_year_required",
                     "error": "Build year is required for a new project.",
                 }
-            conflict = _agency_year_conflict(
-                candidate_customer,
-                paths,
-                exclude_project_id=project.project_id,
-                statuses={"active"},
-                work_type=project.project_type,
-            )
-            if conflict is not None:
-                return {
-                    "ok": False,
-                    "error_code": "project_exists_for_agency_year",
-                    "error": (
-                        f"A {candidate_customer.build_year.strip()} project already exists for "
-                        f"{candidate_customer.agency.strip() or 'this agency'}. Open that project "
-                        "and add the new builds there."
-                    ),
-                    "existing_project_id": conflict.project_id,
-                }
+            candidate_identity = _normalized_agency_year(candidate_customer)
+            # An explicitly separate project must remain editable. Re-check
+            # only a new project or an existing project's actual identity move.
+            if is_new_project or candidate_identity != original_identity:
+                creation_conflict = _agency_year_conflict(
+                    candidate_customer,
+                    paths,
+                    exclude_project_id=project.project_id,
+                    statuses={"active"},
+                    work_type=project.project_type,
+                )
+                if creation_conflict is not None and not is_new_project:
+                    # Build the comparison from the identity the user actually
+                    # proposed, not the project's still-loaded former agency/year.
+                    project.customer = candidate_customer
+                    # This project already exists on disk. Treating it like an
+                    # unsaved creation candidate would append its vehicles to
+                    # the target without safely removing the source record.
+                    # A reviewed identity move may stay separate; merging is a
+                    # distinct project-management operation.
+                    creation_merge_allowed = False
             project.customer = candidate_customer
 
         if project.customer.quote_number:
@@ -1178,6 +1291,33 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         if project_note_error is not None:
             return project_note_error
 
+        if creation_conflict is not None:
+            creation_resolution = str(body.get("conflict_resolution") or "").strip().lower()
+            if not creation_resolution:
+                return _creation_conflict_result(
+                    project, creation_conflict, merge_allowed=creation_merge_allowed,
+                )
+            if creation_resolution not in {"merge", "separate"}:
+                return {
+                    "ok": False,
+                    "error_code": "invalid_project_resolution",
+                    "error": "Choose merge, keep separate, or cancel.",
+                }
+            if creation_resolution == "merge" and not creation_merge_allowed:
+                return {
+                    "ok": False,
+                    "error_code": "existing_project_merge_not_supported",
+                    "error": (
+                        "This existing project can be kept separate after the agency/year change, "
+                        "but it cannot be merged from the edit form."
+                    ),
+                }
+            if creation_resolution == "merge":
+                merge_error = _merge_creation_candidate(creation_conflict, project)
+                if merge_error is not None:
+                    return merge_error
+                project = creation_conflict
+
         from .vehicle_folder_provisioning_service import (
             mark_project_folder_provisioning_pending,
         )
@@ -1270,7 +1410,7 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
         except Exception:
             _log.exception("Failed to create output folder for project %s", project.project_id)
 
-        return {
+        result = {
             "ok": True,
             "project_id": project.project_id,
             "path": str(path),
@@ -1278,6 +1418,9 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             "record_revision": project.record_revision,
             "folder_provisioning_scheduled": folder_provisioning_scheduled,
         }
+        if creation_resolution:
+            result["resolution"] = creation_resolution
+        return result
     except ProjectWriteConflict:
         return {
             "ok": False,

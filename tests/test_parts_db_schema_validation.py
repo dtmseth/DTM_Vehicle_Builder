@@ -33,6 +33,22 @@ class TestPartsDbValidator:
                     "services", "system_cable_refreshes", "preference_filters", "color_palette", "naming_rules"):
             assert key in result
 
+    def test_accepts_qb_inbox_ignore_state(self):
+        result = validate_config_payload("parts_db.json", {
+            "products": {},
+            "qb_inbox": {"ignored_item_ids": ["15", "900"]},
+        })
+
+        assert result["qb_inbox"] == {"ignored_item_ids": ["15", "900"]}
+
+    @pytest.mark.parametrize("ignored_ids", [[""], ["15", "15"], [15]])
+    def test_rejects_invalid_qb_inbox_ignore_state(self, ignored_ids):
+        with pytest.raises(ValueError, match="qb_inbox.ignored_item_ids"):
+            validate_config_payload("parts_db.json", {
+                "products": {},
+                "qb_inbox": {"ignored_item_ids": ignored_ids},
+            })
+
     def test_rejects_system_cable_refresh_without_live_qb_sku(self):
         with pytest.raises(ValueError, match="must be live and QB-linked"):
             validate_config_payload("parts_db.json", {

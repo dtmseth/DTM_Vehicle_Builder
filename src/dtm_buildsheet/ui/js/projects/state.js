@@ -34,7 +34,11 @@ window._PT = {
   isWizard:       false,    // true when creating a new project
   listMode:       "active", // started | active | inactive | completed
   listSearch:     { started: "", active: "", inactive: "", completed: "" },
+  typeFilter:     "all",
+  sortMode:       "created",
+  lastOpenedByProject: {},
   inactiveProjectId: null,
+  creationConflict: null,
   completionConflict: null,
   vehicleCreateTarget: null,
 

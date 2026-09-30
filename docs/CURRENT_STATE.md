@@ -1,6 +1,6 @@
 # DTM Vehicle Builder — Current State
 
-**Last updated:** 2026-09-10
+**Last updated:** 2026-09-29
 
 **Current release:** [v3.7.0](https://github.com/dtmseth/DTM_Vehicle_Builder/releases/tag/v3.7.0)
 
@@ -18,7 +18,11 @@ columns have been added to the shared Operations list. Local release verificatio
 and rerun). Existing contract snapshots were reviewed and refreshed for the already-committed
 QuickBooks prices, inactive flag, sync timestamps and cable-description update; no catalog or
 rendering golden files were changed. Schema-document and photo-discovery assertions now match the
-current documented behavior. GitHub checks and publication remain pending.
+current documented behavior. GitHub checks and publication remain pending. That verification
+describes the earlier release-candidate baseline. A later, still-uncommitted QBO Inbox/catalog
+curation batch intentionally changed catalog data again; its semantic catalog review and focused
+contract-snapshot update were completed on September 29, and all 47 parts-DB contract cases pass.
+The full release gate has not been rerun.
 
 ## Current local work — Azure Stages 1–2 (unreleased)
 
@@ -172,7 +176,9 @@ have an explicit review path; transient failures retry without locking Calendar.
 above the grid on the right. Latest changed gate: **798 passed, 1 skipped; 8/8 browser flows**,
 including 14 outbox tests. The full release gate was attempted and stopped on the pre-existing
 `test_parts_db_contract[root_doc]` catalog/snapshot mismatch; no catalog or golden snapshot was
-changed. No release or live-data mutation occurred. Restart the app to load the Python changes.
+changed during that historical attempt. The later September 29 catalog review intentionally
+resolved that mismatch and the focused contract file now passes; the full release gate still has
+not been rerun. No release or live-data mutation occurred. Restart the app to load the Python changes.
 
 ## Current desktop work — project types (unreleased)
 
@@ -189,8 +195,9 @@ separate file names/folders. The optional Previous Build Design link searches VI
 reference IDs only; it opens a read-only parts/locations/notes view plus the prior PDF when available.
 No source parts, Estimate links, statuses or folder IDs are copied into service work. Further historical
 inventory/version tracking is deferred. Final changed gate: **914 passed, 1 skipped; 10/10 browser
-flows**, with a visually reviewed service PDF. The release gate remains blocked by the existing parts
-catalog contract mismatch.
+flows**, with a visually reviewed service PDF. That gate was historically blocked by the later
+parts-catalog batch; the reviewed contract mismatch is now cleared, but the full release gate has
+not been rerun.
 
 ## What is live
 
@@ -662,7 +669,7 @@ catalog contract mismatch.
 | Phase 0 — foundation | Complete | Preserve the guardrails while retiring remaining shims deliberately. |
 | Phase 1 — cloud readiness | Complete | No new foundation work required. |
 | Phase 2/2.5 — cloud collaboration/distribution | Complete and live | Operational hardening only; monitor cross-instance sync/export behavior. |
-| Phase 3 — canonical parts DB + intelligent picker | Substantially complete and live | Curate the 43 unhomed products, finish low-priority picker polish, and add a reviewed queue for future QBO catalog changes. |
+| Phase 3 — canonical parts DB + intelligent picker | Substantially complete and live | Curate the 44 unresolved unhomed products in the current reviewed working catalog, finish low-priority picker polish, and complete the reviewed queue for future QBO catalog changes. |
 | QuickBooks production track | Complete and live | Manual QBO Project creation remains; bank-transfer fee remains a documented QBO follow-up because the Accounting API cannot set it. |
 | Phase 4 — remaining consumer migration | Next architectural milestone | Move the remaining workbook-era domain consumers to `parts_db`, then reduce `workbook_rules.json` to layout-only data. |
 | Kit/component modeling | Partly expressed by guided builds, not generalized | After the parts-DB repository seam, define generic SKU-kit storage and Estimate expansion/billing behavior. |

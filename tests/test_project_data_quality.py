@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from types import SimpleNamespace
 
 import pytest
@@ -18,8 +19,10 @@ from dtm_buildsheet.app.services.project_service import (
     handle_list_projects,
     handle_save_individual_notes,
     handle_save_project,
+    handle_set_project_completion,
 )
 from dtm_buildsheet.app.services.sales_rep_service import (
+    handle_merge_reps,
     handle_save_rep,
     reconcile_project_rep_links,
 )
@@ -162,6 +165,55 @@ def test_builder_agency_merge_rebinds_projects_without_losing_them(paths):
     assert agency_service.get_agency(paths, source["agency_id"]) is None
 
 
+def test_builder_agency_merge_can_keep_same_year_projects_separate(paths):
+    source = agency_service.handle_save_agency({"name": "ICE duplicate"}, paths)["agency"]
+    target = agency_service.handle_save_agency({
+        "name": "US Immigration & Customs Enforcement (ICE)",
+        "abbreviation": "ICE",
+        "customer_since": "2026",
+    }, paths)["agency"]
+    agency_service.set_qb_customer_id(paths, source["agency_id"], "443")
+    agency_service.set_qb_customer_id(paths, target["agency_id"], "443")
+    source_project = project_entry.new_project(
+        customer=CustomerInfo(
+            agency_id=source["agency_id"], agency=source["name"], build_year="2026",
+        ),
+        build_units=[BuildUnit(unit_id="source-group", individuals=[
+            IndividualUnit(individual_id="source-vehicle", vin="1FT7W2BA5TEC31935"),
+        ])],
+    )
+    target_project = project_entry.new_project(
+        customer=CustomerInfo(
+            agency_id=target["agency_id"], agency=target["name"], build_year="2026",
+        ),
+        build_units=[BuildUnit(unit_id="target-group", individuals=[
+            IndividualUnit(individual_id="target-vehicle", vin="1FM5K8AB6SGC43753"),
+        ])],
+    )
+    project_entry.save_project(source_project, paths)
+    project_entry.save_project(target_project, paths)
+
+    result = agency_service.handle_merge_agencies({
+        "source_agency_id": source["agency_id"],
+        "target_agency_id": target["agency_id"],
+        "keep_projects_separate": True,
+    }, paths)
+
+    assert result["ok"] is True
+    assert result["updated_project_ids"] == [source_project.project_id]
+    assert result["kept_project_ids_separate"] == [source_project.project_id]
+    saved_projects = {
+        project.project_id: project for project in project_entry.list_projects(paths)
+    }
+    assert set(saved_projects) == {source_project.project_id, target_project.project_id}
+    assert saved_projects[source_project.project_id].customer.agency_id == target["agency_id"]
+    assert saved_projects[target_project.project_id].customer.agency_id == target["agency_id"]
+    assert saved_projects[source_project.project_id].build_units[0].individuals[0].individual_id == (
+        "source-vehicle"
+    )
+    assert agency_service.get_agency(paths, source["agency_id"]) is None
+
+
 def test_project_form_requires_real_agency_and_sales_rep_selection(paths):
     rejected = handle_save_project({
         "require_selected_identities": True,
@@ -197,6 +249,157 @@ def test_project_form_requires_real_agency_and_sales_rep_selection(paths):
     assert duplicate["error_code"] == "sales_rep_already_exists"
 
 
+def _reviewed_project_body(agency: dict, rep: dict, *, unit_id: str, vehicle_id: str,
+                           vin: str, quote: str) -> dict:
+    return {
+        "require_selected_identities": True,
+        "customer": {
+            "agency": agency["name"],
+            "agency_id": agency["agency_id"],
+            "sales_rep": rep["name"],
+            "sales_rep_id": rep["rep_id"],
+            "build_year": "2026",
+            "quote_number": quote,
+        },
+        "build_units": [{
+            "unit_id": unit_id,
+            "vehicle_model": "PIU",
+            "build_type": "Patrol",
+            "quantity": 1,
+            "individuals": [{"individual_id": vehicle_id, "vin": vin}],
+        }],
+    }
+
+
+def test_same_agency_year_creation_compares_then_allows_separate_editable_projects(paths):
+    agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
+    rep = handle_save_rep({
+        "name": "Alex Rep", "phone": "555-0100", "email": "alex@example.com",
+    }, paths)["rep"]
+    first_body = _reviewed_project_body(
+        agency, rep, unit_id="group-1", vehicle_id="vehicle-1",
+        vin="1FM5K8AB1SGA00001", quote="Q-100",
+    )
+    first = handle_save_project(first_body, paths)
+    second_body = _reviewed_project_body(
+        agency, rep, unit_id="group-2", vehicle_id="vehicle-2",
+        vin="1FM5K8AB1SGA00002", quote="Q-200",
+    )
+
+    warning = handle_save_project(second_body, paths)
+
+    assert warning["error_code"] == "project_exists_for_agency_year"
+    assert warning["existing_project"]["vehicle_count"] == 1
+    assert warning["proposed_project"]["vehicles"][0]["vin"] == "1FM5K8AB1SGA00002"
+    assert warning["duplicate_vins"] == []
+
+    second = handle_save_project({**second_body, "conflict_resolution": "separate"}, paths)
+    assert second["ok"] is True and second["resolution"] == "separate"
+    assert second["project_id"] != first["project_id"]
+
+    saved_second = project_entry.load_project(second["project_id"], paths)
+    edited = handle_save_project({
+        **asdict(saved_second),
+        "expected_updated_at": saved_second.updated_at,
+        "expected_record_revision": saved_second.record_revision,
+    }, paths)
+    assert edited["ok"] is True
+
+    assert handle_set_project_completion(
+        first["project_id"], {"completed": True}, paths,
+    )["ok"] is True
+    completion_warning = handle_set_project_completion(
+        second["project_id"], {"completed": True}, paths,
+    )
+    assert completion_warning["error_code"] == "completed_project_exists_for_agency_year"
+    completed_separately = handle_set_project_completion(
+        second["project_id"], {"completed": True, "conflict_resolution": "separate"}, paths,
+    )
+    assert completed_separately["ok"] is True
+    assert completed_separately["resolution"] == "separate"
+
+
+def test_same_agency_year_creation_can_merge_distinct_units_and_blocks_duplicate_vin(paths):
+    agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
+    rep = handle_save_rep({
+        "name": "Alex Rep", "phone": "555-0100", "email": "alex@example.com",
+    }, paths)["rep"]
+    first_body = _reviewed_project_body(
+        agency, rep, unit_id="group-1", vehicle_id="vehicle-1",
+        vin="1FM5K8AB1SGA00001", quote="Q-100",
+    )
+    first = handle_save_project(first_body, paths)
+    duplicate_body = _reviewed_project_body(
+        agency, rep, unit_id="group-duplicate", vehicle_id="vehicle-duplicate",
+        vin="1FM5K8AB1SGA00001", quote="Q-DUP",
+    )
+    duplicate_warning = handle_save_project(duplicate_body, paths)
+    assert duplicate_warning["duplicate_vins"] == ["1FM5K8AB1SGA00001"]
+    duplicate_merge = handle_save_project({
+        **duplicate_body, "conflict_resolution": "merge",
+    }, paths)
+    assert duplicate_merge["error_code"] == "project_merge_vehicle_conflict"
+
+    distinct_body = _reviewed_project_body(
+        agency, rep, unit_id="group-2", vehicle_id="vehicle-2",
+        vin="1FM5K8AB1SGA00002", quote="Q-200",
+    )
+    merged = handle_save_project({**distinct_body, "conflict_resolution": "merge"}, paths)
+
+    assert merged["ok"] is True and merged["resolution"] == "merge"
+    assert merged["project_id"] == first["project_id"]
+    projects = project_entry.list_projects(paths)
+    assert len(projects) == 1
+    assert {unit.unit_id for unit in projects[0].build_units} == {"group-1", "group-2"}
+    assert projects[0].quote_numbers == ["Q-100", "Q-200"]
+
+
+def test_existing_project_identity_move_can_stay_separate_but_cannot_merge(paths):
+    first_agency = agency_service.handle_save_agency({"name": "First Police Department"}, paths)["agency"]
+    second_agency = agency_service.handle_save_agency({"name": "Second Police Department"}, paths)["agency"]
+    rep = handle_save_rep({
+        "name": "Alex Rep", "phone": "555-0100", "email": "alex@example.com",
+    }, paths)["rep"]
+    first = handle_save_project(_reviewed_project_body(
+        first_agency, rep, unit_id="group-1", vehicle_id="vehicle-1",
+        vin="1FM5K8AB1SGA00001", quote="Q-100",
+    ), paths)
+    second = handle_save_project(_reviewed_project_body(
+        second_agency, rep, unit_id="group-2", vehicle_id="vehicle-2",
+        vin="1FM5K8AB1SGA00002", quote="Q-200",
+    ), paths)
+    saved_second = project_entry.load_project(second["project_id"], paths)
+    edit_body = {
+        **asdict(saved_second),
+        "expected_updated_at": saved_second.updated_at,
+        "expected_record_revision": saved_second.record_revision,
+        "customer": {
+            **asdict(saved_second.customer),
+            "agency": first_agency["name"],
+            "agency_id": first_agency["agency_id"],
+        },
+    }
+
+    warning = handle_save_project(edit_body, paths)
+    assert warning["error_code"] == "project_exists_for_agency_year"
+    assert warning["merge_allowed"] is False
+
+    rejected_merge = handle_save_project({
+        **edit_body, "conflict_resolution": "merge",
+    }, paths)
+    assert rejected_merge["error_code"] == "existing_project_merge_not_supported"
+    assert project_entry.load_project(second["project_id"], paths).customer.agency_id == second_agency["agency_id"]
+
+    kept_separate = handle_save_project({
+        **edit_body, "conflict_resolution": "separate",
+    }, paths)
+    assert kept_separate["ok"] is True
+    assert kept_separate["resolution"] == "separate"
+    projects = {project.project_id: project for project in project_entry.list_projects(paths)}
+    assert set(projects) == {first["project_id"], second["project_id"]}
+    assert projects[second["project_id"]].customer.agency_id == first_agency["agency_id"]
+
+
 def test_deleted_duplicate_rep_link_is_repaired_by_exact_name(paths):
     agency = agency_service.handle_save_agency({"name": "Example Police Department"}, paths)["agency"]
     current = handle_save_rep({
@@ -218,6 +421,66 @@ def test_deleted_duplicate_rep_link_is_repaired_by_exact_name(paths):
     saved = project_entry.load_project(project.project_id, paths)
     assert saved.customer.sales_rep_id == current["rep_id"]
     assert saved.customer.sales_rep == "Dan Orth"
+
+
+def test_identical_duplicate_rep_merge_rebinds_projects(paths):
+    target = handle_save_rep({
+        "name": "Dan Orth", "phone": "555-0100", "email": "dan@example.com",
+    }, paths)["rep"]
+    source = {**target, "rep_id": "duplicate-dan"}
+    (paths.workspace_dir / "sales_reps" / "duplicate-dan.json").write_text(
+        json.dumps(source), encoding="utf-8",
+    )
+    from dtm_buildsheet.app.services import sales_rep_service
+    sales_rep_service.warmup_cache(paths, force=True)
+    project = project_entry.new_project(customer=CustomerInfo(
+        build_year="2027", sales_rep_id=source["rep_id"], sales_rep=source["name"],
+    ))
+    project_entry.save_project(project, paths)
+
+    result = handle_merge_reps({
+        "source_rep_id": source["rep_id"],
+        "target_rep_id": target["rep_id"],
+    }, paths)
+
+    assert result["ok"] is True
+    assert result["updated_project_ids"] == [project.project_id]
+    saved = project_entry.load_project(project.project_id, paths)
+    assert saved.customer.sales_rep_id == target["rep_id"]
+    assert not (paths.workspace_dir / "sales_reps" / "duplicate-dan.json").exists()
+
+
+def test_cross_device_rep_and_qbo_import_ids_are_deterministic(tmp_path):
+    roots = [tmp_path / "device-a", tmp_path / "device-b"]
+    device_paths = []
+    for root in roots:
+        for name in ("config", "projects", "drafts", "agencies", "sales_reps", "output"):
+            (root / name).mkdir(parents=True, exist_ok=True)
+        device_paths.append(AppPaths(
+            workspace_dir=root,
+            workspace_config_dir=root / "config",
+            workspace_projects_dir=root / "projects",
+            workspace_drafts_dir=root / "drafts",
+            workspace_output_dir=root / "output",
+        ))
+
+    rep_ids = [
+        handle_save_rep({
+            "name": "  Don   Starry ", "phone": "555", "email": "don@example.com",
+        }, device)["rep"]["rep_id"]
+        for device in device_paths
+    ]
+    agency_ids = []
+    for device in device_paths:
+        imported = agency_service.upsert_agencies_from_qb([{
+            "qb_customer_id": "customer-42",
+            "name": "Example Police Department",
+        }], device)
+        assert imported["created"] == 1
+        agency_ids.append(agency_service.load_agencies(device)[0].agency_id)
+
+    assert rep_ids[0] == rep_ids[1]
+    assert agency_ids[0] == agency_ids[1]
 
 
 def test_stale_project_agency_link_is_repaired_by_canonical_name(paths):

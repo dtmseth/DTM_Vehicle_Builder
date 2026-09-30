@@ -1130,7 +1130,7 @@ def test_t_series_uses_declared_warning_light_picker_flow_from_every_lights_entr
     assert product["primary_category_id"] == "warning"
 
 
-def test_setina_rear_window_barriers_are_one_product_with_all_variants():
+def test_setina_rear_window_barriers_are_one_steel_product_with_both_orientations():
     h = FakeHandler("/api/parts-db/category-skus?type=structural&part_type=rear_window_bars")
     route_parts_db(h, "GET", "/api/parts-db/category-skus", {}, AppPaths())
 
@@ -1140,15 +1140,14 @@ def test_setina_rear_window_barriers_are_one_product_with_all_variants():
     assert len(setina_products) == 1
     barrier = setina_products[0]
     assert barrier["product_id"] == "setina_steel_vertical"
-    assert barrier["model"] == "Window Barrier"
+    assert barrier["model"] == "Steel Window Barrier"
     assert barrier["fixed_location"] == "REAR WINDOWS"
     part_numbers = {sku["part_number"] for sku in barrier["skus"]}
     assert {
         "WK0514TAH21",   # steel vertical
         "WK0514TAH21H",  # steel horizontal
-        "WK0595TAH21",   # polycarbonate
-        "WK1491TAH21T",  # tinted polycarbonate
     }.issubset(part_numbers)
+    assert {"WK0595TAH21", "WK1491TAH21T"}.isdisjoint(part_numbers)
 
 
 def test_cage_family_uses_a_fixed_prisoner_area_location_with_product_overrides():

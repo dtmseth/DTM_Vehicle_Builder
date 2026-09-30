@@ -163,6 +163,18 @@ function _ptBind() {
   document.querySelectorAll("[data-project-list-status]").forEach(button => {
     button.addEventListener("click", () => _ptShowList(button.dataset.projectListStatus));
   });
+  _ptRestoreProjectListPreferences();
+  $("proj-type-filter").value = _PT.typeFilter;
+  $("proj-type-filter").addEventListener("change", event => {
+    _PT.typeFilter = event.target.value;
+    _ptRenderList();
+  });
+  $("proj-sort").value = _PT.sortMode;
+  $("proj-sort").addEventListener("change", event => {
+    _PT.sortMode = event.target.value;
+    _ptSaveProjectSortPreference();
+    _ptRenderList();
+  });
   $("proj-list-search").addEventListener("input", event => {
     _PT.listSearch[_PT.listMode] = event.target.value;
     _ptRenderList();
@@ -175,6 +187,17 @@ function _ptBind() {
   $("project-inactive-cancel").addEventListener("click", _ptCloseInactiveProjectModal);
   $("project-inactive-modal").addEventListener("click", event => {
     if (event.target === $("project-inactive-modal")) _ptCloseInactiveProjectModal();
+  });
+  document.querySelectorAll('input[name="project-creation-resolution"]').forEach(input => {
+    input.addEventListener("change", _ptRefreshCreationConflictChoice);
+  });
+  $("project-creation-conflict-close").addEventListener("click", _ptCloseCreationConflictModal);
+  $("project-creation-conflict-cancel").addEventListener("click", _ptCloseCreationConflictModal);
+  $("project-creation-conflict-apply").addEventListener("click", PT_applyCreationConflict);
+  $("project-creation-conflict-modal").addEventListener("click", event => {
+    if (event.target === $("project-creation-conflict-modal")) {
+      _ptCloseCreationConflictModal();
+    }
   });
   document.querySelectorAll('input[name="project-completion-resolution"]').forEach(input => {
     input.addEventListener("change", _ptRefreshCompletionConflictChoice);

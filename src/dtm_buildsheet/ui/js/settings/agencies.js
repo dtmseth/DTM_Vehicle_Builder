@@ -37,6 +37,14 @@
     }
   }
 
+  function _syncTaxExemptionReasonState() {
+    const reason = $("ac-tax-exemption-reason");
+    const group = $("ac-tax-exemption-reason-group");
+    const exempt = $("ac-taxable")?.value !== "true";
+    if (reason) reason.disabled = !exempt;
+    if (group) group.hidden = !exempt;
+  }
+
   async function _populateDefaultPreferences(agency) {
     const token = ++_preferenceLoadToken;
     const options = await api("/api/project-options").catch(() => null);
@@ -186,6 +194,8 @@
       if (input) input.value = agency?.[field] || "";
     }
     $("ac-taxable").value       = agency?.taxable === true ? "true" : "false";
+    $("ac-tax-exemption-reason").value = agency?.tax_exemption_reason_id || "3";
+    _syncTaxExemptionReasonState();
     $("ac-ship-same").checked   = _shippingMatchesBilling(agency);
     $("ac-since").value         = agency?.customer_since || "";
     _populateDefaultPreferences(agency);
@@ -233,6 +243,7 @@
   $("ac-ship-same")?.addEventListener("change", (event) => {
     if (event.target.checked) _copyBillingToShipping();
   });
+  $("ac-taxable")?.addEventListener("change", _syncTaxExemptionReasonState);
   $("ac-pricing-use-default")?.addEventListener("change", (event) => {
     const panel = $("ac-pricing-overrides");
     if (panel) panel.hidden = event.target.checked;
@@ -261,6 +272,7 @@
       contact_email: $("ac-contact-email").value.trim(),
       customer_since: $("ac-since").value.trim(),
       taxable: $("ac-taxable").value === "true",
+      tax_exemption_reason_id: $("ac-tax-exemption-reason").value || "3",
       default_preferences: _ptPreferencePayload("ac"),
       pricing_overrides: {},
     };
