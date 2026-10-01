@@ -32,7 +32,11 @@ from ..services.reference_photo_service import (
     handle_remove_gallery_references,
     handle_save_reference,
 )
-from ..services.reference_library_service import handle_discover_references
+from ..services.reference_library_service import (
+    handle_discover_references,
+    handle_open_reference_video,
+    handle_preview_reference_video,
+)
 from ..services.photo_gallery_service import handle_photo_gallery
 from ..services.shop_publication_service import handle_republish_vehicle_package
 from ..services.vehicle_naming_migration_service import build_vehicle_naming_migration_report
@@ -248,6 +252,12 @@ def route_projects(
                     paths,
                     agency=str(body.get("agency") or "") if method == "POST" else "",
                 ))
+                return True
+            if method == "POST" and action == "/video-open":
+                send_json(handler, handle_open_reference_video(project_id, body))
+                return True
+            if method == "POST" and action == "/video-preview":
+                send_json(handler, handle_preview_reference_video(project_id, body))
                 return True
             if method == "POST" and action == "/import-gallery":
                 send_json(handler, handle_import_gallery_references(project_id, body, paths))

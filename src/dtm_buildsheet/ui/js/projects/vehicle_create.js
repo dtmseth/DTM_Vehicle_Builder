@@ -63,7 +63,7 @@ async function _ptCreateProjectVehicle() {
     }
     _ptSelectCreatedVehicle(vehicleId);
     toast(
-      result.created ? `${make} ${model} added with artwork pending` : `${make} ${model} already existed and was selected`,
+      result.created ? `${make} ${model} added; vehicle layout needed` : `${make} ${model} already existed and was selected`,
       "success",
     );
     _ptCloseProjectVehicleCreate();

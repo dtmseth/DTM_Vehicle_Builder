@@ -174,6 +174,28 @@ class IndividualUnit:
 
 
 @dataclass
+class VehicleIdentity:
+    """Catalog or custom identity for a build unit.
+
+    ``layout_id`` is the bridge to the existing artwork/layout system.  The
+    legacy ``BuildUnit.vehicle_model`` field remains populated during the
+    migration so older clients and saved projects continue to work.
+    """
+
+    source: str = "legacy"
+    model_year: str = ""
+    make: str = ""
+    model: str = ""
+    package: str = ""
+    category: str = "automobile"
+    catalog_source: str = ""
+    catalog_make_id: str = ""
+    catalog_model_id: str = ""
+    layout_id: str = ""
+    display_name: str = ""
+
+
+@dataclass
 class BuildUnit:
     unit_id: str
     vehicle_model: str = ""
@@ -203,6 +225,8 @@ class BuildUnit:
     company_group_folder_path: str = ""
     shop_group_folder_id: str = ""
     shop_group_folder_path: str = ""
+    # Appended to preserve the positional signature of the legacy dataclass.
+    vehicle_identity: VehicleIdentity = field(default_factory=VehicleIdentity)
 
 
 @dataclass

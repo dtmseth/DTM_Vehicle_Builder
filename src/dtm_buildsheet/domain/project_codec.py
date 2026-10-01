@@ -17,6 +17,7 @@ from .project_models import (
     IndividualUnit,
     ProjectRecord,
     QuoteReference,
+    VehicleIdentity,
 )
 
 
@@ -25,6 +26,8 @@ _REFERENCE_MEDIA_TYPES = {"photo", "video"}
 _REFERENCE_SOURCE_KINDS = {"company_reference", "shop_completed"}
 _QUOTE_REFERENCE_STATES = {"current", "obsolete"}
 _QUOTE_MATCH_STATUSES = {"pending", "linked", "not_found", "multiple", "linked_elsewhere"}
+_VEHICLE_SOURCES = {"catalog", "custom", "legacy"}
+_VEHICLE_CATEGORIES = {"automobile", "snowmobile", "atv_utv", "trailer", "boat", "other"}
 
 
 def _utcnow() -> str:
@@ -249,6 +252,48 @@ def individual_unit_from_dict(d: Any) -> IndividualUnit:
     )
 
 
+def vehicle_identity_from_dict(d: Any, legacy_vehicle_model: str = "") -> VehicleIdentity:
+    """Parse the richer identity while translating legacy layout-only units."""
+
+    legacy = str(legacy_vehicle_model or "").strip()
+    if not isinstance(d, dict):
+        return VehicleIdentity(
+            source="legacy",
+            model=legacy,
+            layout_id=legacy,
+            display_name=legacy,
+        )
+    source = str(d.get("source", "legacy") or "legacy").strip().lower()
+    if source not in _VEHICLE_SOURCES:
+        source = "legacy"
+    category = str(d.get("category", "automobile") or "automobile").strip().lower()
+    if category not in _VEHICLE_CATEGORIES:
+        category = "other"
+    layout_id = str(d.get("layout_id", "") or "").strip() or legacy
+    model = str(d.get("model", "") or "").strip()
+    display_name = str(d.get("display_name", "") or "").strip()
+    if not display_name:
+        display_name = " ".join(value for value in (
+            str(d.get("model_year", "") or "").strip(),
+            str(d.get("make", "") or "").strip(),
+            model,
+            str(d.get("package", "") or "").strip(),
+        ) if value) or legacy
+    return VehicleIdentity(
+        source=source,
+        model_year=str(d.get("model_year", "") or "").strip(),
+        make=str(d.get("make", "") or "").strip(),
+        model=model,
+        package=str(d.get("package", "") or "").strip(),
+        category=category,
+        catalog_source=str(d.get("catalog_source", "") or "").strip(),
+        catalog_make_id=str(d.get("catalog_make_id", "") or "").strip(),
+        catalog_model_id=str(d.get("catalog_model_id", "") or "").strip(),
+        layout_id=layout_id,
+        display_name=display_name,
+    )
+
+
 def build_unit_from_dict(d: Any) -> BuildUnit:
     if not isinstance(d, dict):
         raise ValueError("BuildUnit must be a dict")
@@ -259,9 +304,27 @@ def build_unit_from_dict(d: Any) -> BuildUnit:
     draft_id = d.get("draft_id")
     individuals_raw = d.get("individuals", [])
     individuals = [individual_unit_from_dict(i) for i in individuals_raw if isinstance(i, dict)]
+    legacy_vehicle_model = str(d.get("vehicle_model", "") or "").strip()
+    vehicle_identity = vehicle_identity_from_dict(d.get("vehicle_identity"), legacy_vehicle_model)
+    if not isinstance(d.get("vehicle_identity"), dict) and individuals:
+        years = {item.year.strip() for item in individuals if item.year.strip()}
+        makes = {item.make.strip() for item in individuals if item.make.strip()}
+        models = {item.model.strip() for item in individuals if item.model.strip()}
+        if len(years) == 1:
+            vehicle_identity.model_year = next(iter(years))
+        if len(makes) == 1:
+            vehicle_identity.make = next(iter(makes))
+        if len(models) == 1:
+            vehicle_identity.model = next(iter(models))
+        vehicle_identity.display_name = " ".join(value for value in (
+            vehicle_identity.model_year,
+            vehicle_identity.make,
+            vehicle_identity.model,
+        ) if value) or legacy_vehicle_model
     return BuildUnit(
         unit_id=unit_id,
-        vehicle_model=str(d.get("vehicle_model", "")),
+        vehicle_model=legacy_vehicle_model or vehicle_identity.layout_id,
+        vehicle_identity=vehicle_identity,
         build_type=str(d.get("build_type", "")),
         preset_id=str(d.get("preset_id", "")),
         quantity=quantity,

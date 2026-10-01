@@ -21,6 +21,7 @@ function _ptLoadForm(project) {
   _PT.units = (project?.build_units || []).map(u => ({
     uid:           u.unit_id       || _ptUuid(),
     vehicle_model: u.vehicle_model || "",
+    vehicle_identity: _ptVehicleIdentity(u),
     build_type:    u.build_type    || "Patrol",
     quantity:      u.quantity      || 1,
     preset_id:     u.preset_id     || "",
@@ -55,9 +56,11 @@ function _ptApplyAgencyDefaults(agency) {
 }
 
 function _ptAddUnit() {
+  const vehicleModel = _PT.vehicles[0] || "";
   _PT.units.push({
     uid:           _ptUuid(),
-    vehicle_model: _PT.vehicles[0] || "",
+    vehicle_model: vehicleModel,
+    vehicle_identity: _ptNewVehicleIdentity(vehicleModel, $("proj-build-year")?.value || ""),
     build_type:    "Patrol",
     quantity:      1,
     preset_id:     "",
@@ -72,7 +75,8 @@ function _ptCollectUnits() {
   _PT.units.forEach(u => {
     const row = document.querySelector(`.proj-unit-row[data-uid="${u.uid}"]`);
     if (!row) return;
-    u.vehicle_model = row.querySelector(".proj-u-vehicle").value;
+    _ptReadVehiclePicker(row, u);
+    u.vehicle_model = row.querySelector(".proj-u-vehicle").value || u.vehicle_identity?.layout_id || "";
     const buildType = row.querySelector(".proj-u-buildtype");
     if (buildType?.value === _PT_CUSTOM_BUILD_TYPE) {
       u._customBuildTypeOpen = true;
@@ -86,15 +90,16 @@ function _ptCollectUnits() {
     const indRows = row.querySelectorAll(".proj-ind-row");
     if (indRows.length) {
       const vm = _ptVehicleConfig(u.vehicle_model);
+      const identity = _ptVehicleIdentity(u);
       u.individuals = Array.from(indRows).map(ir => {
         const existing = u.individuals.find(ind => ind.individual_id === ir.dataset.iid) || {};
         return {
         ...existing,
         individual_id:        ir.dataset.iid,
         unit_number:          ir.querySelector(".ind-unit-number")?.value.trim()    || "",
-        year:                 ir.querySelector(".ind-year")?.value.trim()           || "",
-        make:                 vm.make  || "",
-        model:                vm.model || "",
+        year:                 ir.querySelector(".ind-year")?.value.trim()           || identity.model_year || "",
+        make:                 identity.make || vm.make  || "",
+        model:                identity.model || vm.model || "",
         color:                ir.querySelector(".ind-color")?.value.trim()          || "",
         vin:                  ir.querySelector(".ind-vin")?.value.trim()            || "",
         existing_year:        ir.querySelector(".ind-existing-year")?.value.trim() || "",
@@ -140,18 +145,13 @@ function _ptRenderUnits() {
     return `<div class="proj-unit-row" data-uid="${esc(u.uid)}">
       <div class="proj-unit-header">
         <span class="proj-unit-label">Unit Group ${i + 1}</span>
+        <span class="proj-unit-vehicle-summary">${esc(_ptVehicleDisplayName(u))}</span>
         ${_PT.units.length > 1
           ? `<button class="btn btn-danger btn-sm" onclick="PT_rmUnit('${esc(u.uid)}')">Remove</button>`
           : ""}
       </div>
-      <div class="form-row">
-        <div class="form-group proj-vehicle-group">
-          <label>Vehicle Model</label>
-          <div class="proj-vehicle-picker">
-            <select class="proj-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="PT_openProjectVehicleCreate('${esc(u.uid)}','wizard')">+ New vehicle</button>
-          </div>
-        </div>
+      ${_ptVehiclePickerMarkup(u, "proj")}
+      <div class="form-row vehicle-build-row">
         <div class="form-group proj-buildtype-group">
           <label>Build Type</label>
           <select class="proj-u-buildtype">${btOpts}</select>
@@ -196,6 +196,7 @@ function _ptRenderUnits() {
     const row = document.querySelector(`.proj-unit-row[data-uid="${u.uid}"]`);
     if (!row) return;
     row.querySelector(".proj-u-vehicle").value = _ptCanonicalVehicleType(u.vehicle_model);
+    _ptWireVehiclePicker(row, u);
     const qtyInput = row.querySelector(".proj-u-qty");
     const indBtn   = row.querySelector(".proj-ind-toggle-btn");
     const btSelect = row.querySelector(".proj-u-buildtype");
@@ -325,8 +326,7 @@ function _ptRenderReview() {
   const unitRows = _PT.units.map((u, i) => {
     const preset  = _PT.presets.find(p => p.preset_id === u.preset_id);
     const pLabel  = preset ? preset.label : (u.preset_id || "No Preset");
-    const vm      = _ptVehicleConfig(u.vehicle_model);
-    const vmLabel = vm.make ? `${vm.make} ${vm.model}` : u.vehicle_model;
+    const vmLabel = _ptVehicleDisplayName(u);
     _ptEnsureIndividuals(u);
     const indBtns = u.individuals.slice(0, u.quantity).map((ind, j) =>
       `<button class="btn btn-secondary btn-sm"
@@ -364,6 +364,8 @@ function _ptRenderReview() {
 
 function _ptBuildPayload() {
   _ptCollectUnits();
+  const vehicleError = _PT.units.map(_ptVehicleIdentityError).find(Boolean);
+  if (vehicleError) throw new Error(vehicleError);
 
   const p = {
     require_selected_identities: true,
@@ -379,6 +381,7 @@ function _ptBuildPayload() {
     build_units: _PT.units.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,
+      vehicle_identity: u.vehicle_identity,
       build_type:    u.build_type,
       quantity:      u.quantity,
       preset_id:     u.preset_id,

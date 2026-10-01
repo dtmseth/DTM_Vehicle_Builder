@@ -126,7 +126,9 @@ never creates a new operations row.
 | `AcceptanceSource` | Choice | no | no | `qbo`, `manual`, or `migration` |
 | `AcceptanceChangedAtUtc` | Date/time | no | no | Most recent acceptance correction/change |
 
-`partially_accepted` is a project-card summary and is not stored on a vehicle row.
+`partially_accepted` is a project-card summary and is not stored on a vehicle row. A partially
+accepted project is represented in both Started and Active views; each view contains only its
+unaccepted or accepted vehicle rows, respectively.
 
 #### Vehicle availability
 

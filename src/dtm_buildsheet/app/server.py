@@ -33,6 +33,7 @@ from .routes import quickbooks as quickbooks_routes
 from .routes import templates as template_routes
 from .routes import updates as update_routes
 from .routes import validation as validation_routes
+from .routes import vehicle_catalog as vehicle_catalog_routes
 from .services.template_service import pick_folder as _pick_folder
 from .services.request_access_service import authorize_request
 
@@ -126,6 +127,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/api/quickbooks/"):
             if not quickbooks_routes.route_quickbooks(self, "GET", path, {}, self.paths):
+                self._send(404, b"Not found", "text/plain")
+        elif path.startswith(vehicle_catalog_routes.ROUTE_PREFIX):
+            if not vehicle_catalog_routes.route_vehicle_catalog(self, "GET", path):
                 self._send(404, b"Not found", "text/plain")
         elif path.startswith("/ui/"):
             self._serve_static(path[len("/ui/"):])

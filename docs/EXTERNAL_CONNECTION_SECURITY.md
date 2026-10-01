@@ -78,6 +78,7 @@ remain mandatory. Hosted compliance remains **unverified** until isolated platfo
 | Microsoft 365 / SharePoint | OAuth 2.0 via MSAL + OS keychain | ✅ Compliant |
 | GitHub | GitHub Actions secrets (server-side only) | ✅ Compliant |
 | QuickBooks Online | OAuth 2.0; per-user tokens in OS keychain; app secret in stateless Netlify broker environment | ✅ Compliant |
+| NHTSA vPIC / Products | Public read-only HTTPS APIs; no credentials | ✅ Compliant |
 
 ## Credential Storage
 
@@ -271,6 +272,17 @@ Data from external APIs that flows into document generation (python-pptx, lxml, 
 | HTTPS relay for production redirect URI | ✅ | Deployed `qb-callback` relay on the verified Netlify origin; 302-only and stateless |
 | Isolated production catalog preview | ✅ | Separate metadata/keychain/cache; preview cannot reconcile, poll, or write Builder catalog data |
 | Safe QB data rendering in UI | ✅ | QB/catalog values use DOM text nodes/`textContent`; smoke coverage rejects unsafe external requests and console failures |
+
+### NHTSA Vehicle Catalog
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Authentication / credentials | ✅ | Public read-only API; the application sends no credential or user data |
+| HTTPS only | ✅ | Fixed allowlist: `https://vpic.nhtsa.dot.gov` and `https://api.nhtsa.gov` |
+| Bounded requests | ✅ | Eight-second timeout and 5 MiB response-size limit |
+| No external data in logs | ✅ | Provider response bodies, URLs, and exception text are not logged |
+| Cache-Control: no-store | ✅ | Every local `/api/vehicle-catalog/*` response is no-store |
+| Safe UI rendering | ✅ | Provider make/model strings are inserted with DOM `Option`/`textContent`, never raw HTML |
 
 ---
 

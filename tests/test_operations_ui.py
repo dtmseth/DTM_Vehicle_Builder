@@ -6,11 +6,11 @@ import subprocess
 import pytest
 
 
-def run_ui(script):
+def run_ui(script, relative_source="operations.js"):
     node = shutil.which("node")
     if not node:
         pytest.skip("Node is needed for isolated UI function checks")
-    source = Path(__file__).parents[1] / "src/dtm_buildsheet/ui/js/operations.js"
+    source = Path(__file__).parents[1] / "src/dtm_buildsheet/ui/js" / relative_source
     result = subprocess.run([node, "-e", script, str(source)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
@@ -55,7 +55,7 @@ vm.runInContext(`
 `,context);
 context.anchor=anchor;
 const vehicle=(id,acceptance='accepted',state='active')=>({vehicle_id:id,project_id:'p',agency_name:'Agency',acceptance_status:acceptance,project_state:state,schedule_bucket:'unscheduled'});
-async function refresh(){await vm.runInContext('initOperationsTab({followVehicleId:"v1",anchor})',context);}
+async function refresh(vehicleId='v1'){context.vehicleId=vehicleId;await vm.runInContext('initOperationsTab({followVehicleId:vehicleId,anchor})',context);}
 const get=expression=>vm.runInContext(expression,context);
 (async()=>{
  incoming={ok:true,vehicles:[vehicle('v1'),vehicle('v2')]};await refresh();
@@ -70,13 +70,67 @@ const get=expression=>vm.runInContext(expression,context);
  assert.equal(rowNodes.at(-1).getBoundingClientRect().top,350);
  context.anchor=rowNodes.at(-1);
  incoming={ok:true,vehicles:[vehicle('v1'),vehicle('v2','not_accepted')]};await refresh();
- assert.equal(get('_OPERATIONS.filter'),'started'); // One accepted unit does not move a partly accepted project.
+ assert.equal(get('_OPERATIONS.filter'),'active');
+ assert.deepEqual(rendered[0].ids,['v1']);
+ assert.equal($('operations-active-count').textContent,1);
+ assert.equal($('operations-started-count').textContent,1);
+ await refresh('v2');
+ assert.equal(get('_OPERATIONS.filter'),'started');
+ assert.deepEqual(rendered[0].ids,['v2']);
  assert.equal(get('_OPERATIONS.search.started'),'Agency');
  const previous=rendered,scroll=window.scrollY;failed=true;await refresh();
  assert.equal(rendered,previous);assert.equal(window.scrollY,scroll);assert.equal($('operations-content').hidden,false);
  assert.equal(notices.at(-1)[0],'Offline');assert.equal(get('_OPERATIONS.loading'),false);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 """)
+
+
+def test_partial_acceptance_creates_started_and_active_vehicle_views():
+    run_ui(r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const document={addEventListener(){}};
+const context=vm.createContext({document,window:{},console,Set,Map});
+vm.runInContext(source,context);
+vm.runInContext(`
+  _OPERATIONS.payload={vehicles:[
+    {vehicle_id:'accepted',project_id:'p',project_state:'active',acceptance_status:'accepted'},
+    {vehicle_id:'waiting',project_id:'p',project_state:'active',acceptance_status:'not_accepted'}
+  ]};
+`,context);
+const views=vm.runInContext(`_operationsProjectViews({projectId:'p',vehicles:_OPERATIONS.payload.vehicles})`,context);
+assert.equal(views.length,2);
+assert.deepEqual(Array.from(views, view=>view.mode),['active','started']);
+assert.deepEqual(Array.from(views[0].vehicles, vehicle=>vehicle.vehicle_id),['accepted']);
+assert.deepEqual(Array.from(views[1].vehicles, vehicle=>vehicle.vehicle_id),['waiting']);
+const activeButton={dataset:{operationsStatusScope:'project',operationsStatusId:'p',operationsStatusMode:'active'}};
+const startedButton={dataset:{operationsStatusScope:'project',operationsStatusId:'p',operationsStatusMode:'started'}};
+context.activeButton=activeButton;context.startedButton=startedButton;
+assert.deepEqual(Array.from(vm.runInContext('_operationsQuickVehicles(activeButton)',context), vehicle=>vehicle.vehicle_id),['accepted']);
+assert.deepEqual(Array.from(vm.runInContext('_operationsQuickVehicles(startedButton)',context), vehicle=>vehicle.vehicle_id),['waiting']);
+""")
+
+
+def test_projects_partial_acceptance_belongs_to_both_lists():
+    run_ui(r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const context=vm.createContext({window:{},document:{addEventListener(){}},console,Set,Map});
+vm.runInContext(source,context);
+vm.runInContext(`
+  _PT={operationsSnapshotReady:true,projectListStatusById:{},operationsByProject:{p:[
+    {vehicle_id:'accepted',acceptance_status:'accepted'},
+    {vehicle_id:'waiting',acceptance_status:'not_accepted'}
+  ]}};
+  project={project_id:'p',project_status:'active',build_units:[{individuals:[
+    {individual_id:'accepted'},{individual_id:'waiting'}
+  ]}]};
+`,context);
+assert.deepEqual(Array.from(vm.runInContext('_ptProjectListStatuses(project)',context)),['started','active']);
+assert.equal(vm.runInContext('_ptProjectListStatus(project)',context),'started');
+assert.deepEqual(Array.from(vm.runInContext('_ptProjectVehiclesForList(project,"active")',context), vehicle=>vehicle.vehicle_id),['accepted']);
+assert.deepEqual(Array.from(vm.runInContext('_ptProjectVehiclesForList(project,"started")',context), vehicle=>vehicle.vehicle_id),['waiting']);
+""", "projects/list_view.js")
 
 
 def test_quick_and_modal_status_saves_pass_the_original_vehicle_and_anchor():

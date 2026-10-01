@@ -39,13 +39,28 @@ class EquipmentPreferences:
     lens: str = ""              # clear | colored | smoked
 ```
 
-## BuildUnit
+## VehicleIdentity and BuildUnit
 
 ```python
 @dataclass
+class VehicleIdentity:
+    source: str = "legacy"       # catalog | custom | legacy
+    model_year: str = ""
+    make: str = ""
+    model: str = ""
+    package: str = ""            # Pursuit, PPV, SSV, Police Responder, etc.
+    category: str = "automobile" # automobile | snowmobile | atv_utv | trailer | boat | other
+    catalog_source: str = ""
+    catalog_make_id: str = ""
+    catalog_model_id: str = ""
+    layout_id: str = ""          # FK to vehicle_layouts.json
+    display_name: str = ""
+
+@dataclass
 class BuildUnit:
     unit_id: str
-    vehicle_model: str = ""
+    vehicle_model: str = ""      # legacy-compatible layout ID
+    vehicle_identity: VehicleIdentity = field(default_factory=VehicleIdentity)
     build_type: str = ""
     quantity: int = 1
     preset_id: str = ""
@@ -55,6 +70,12 @@ class BuildUnit:
     shop_group_folder_id: str = ""
     shop_group_folder_path: str = ""
 ```
+
+`VehicleIdentity` separates the real vehicle selection from its Builder artwork/layout. Catalog
+vehicles retain NHTSA IDs and optional police-package names; custom specialty vehicles retain a
+category and human-readable name. `vehicle_model` remains populated with `layout_id` during the
+migration so presets, drafts, generated output, and older clients continue to resolve the same
+layout. The codec translates a layout-only legacy unit into `source="legacy"` automatically.
 
 ## IndividualUnit
 

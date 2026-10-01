@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
+
+from dtm_buildsheet.app.adapters.cloud.graph_drive_gateway import GraphDriveGateway
+from dtm_buildsheet.app.services import reference_library_service as library
+from dtm_buildsheet.app.services.request_access_service import required_capabilities
 from dtm_buildsheet.app.services.reference_library_service import (
     _BrowseRoot,
     discover_agency_reference_media,
 )
+from dtm_buildsheet.domain.operations_policy import Capability
 from dtm_buildsheet.domain.project_models import BuildUnit, IndividualUnit
 from dtm_buildsheet.inputs.project_entry import new_project, save_project
 from dtm_buildsheet.paths import AppPaths
@@ -105,6 +112,118 @@ def test_cloud_off_discovery_is_a_safe_empty_state(tmp_path):
     assert result["available"] is False
     assert result["references"] == []
     assert "cloud-off" in result["warnings"][0]
+
+
+def test_discovered_video_can_open_in_browser_and_request_microsoft_preview(
+    tmp_path, monkeypatch,
+):
+    paths = _paths(tmp_path)
+    enriched = library._enrich_thumbnails("project-1", {  # noqa: SLF001
+        "references": [{
+            "file_name": "walkaround.mp4",
+            "media_type": "video",
+            "source_kind": "company_reference",
+            "source_drive_id": "company-drive",
+            "source_item_id": "video-1",
+            "source_path": "Agency/Reference Photos & Videos/walkaround.mp4",
+            "source_web_url": "https://tenant.sharepoint.com/walkaround.mp4",
+            "source_etag": "etag-video-1",
+        }],
+    }, paths)
+    video = enriched["references"][0]
+    opened = []
+    monkeypatch.setattr(library.webbrowser, "open", lambda url, new=0: opened.append((url, new)) or True)
+
+    class PreviewGateway:
+        def __init__(self, *, token, drive_id):
+            assert (token, drive_id) == ("TOKEN", "company-drive")
+
+        def preview_item(self, item_id):
+            assert item_id == "video-1"
+            return "https://tenant.sharepoint.com/preview/video-1"
+
+    bundle = SimpleNamespace(
+        identity=SimpleNamespace(is_signed_in=lambda: True),
+        storage=SimpleNamespace(_token_provider=lambda: "TOKEN"),
+    )
+    monkeypatch.setattr(library.wiring, "_cloud_flag_enabled", lambda: True)
+    monkeypatch.setattr(library.wiring, "get_active_bundle", lambda: bundle)
+    monkeypatch.setattr(library, "GraphDriveGateway", PreviewGateway)
+
+    opened_result = library.handle_open_reference_video(
+        "project-1", {"video_token": video["video_token"]},
+    )
+    preview_result = library.handle_preview_reference_video(
+        "project-1", {"video_token": video["video_token"]},
+    )
+
+    assert opened_result == {"ok": True}
+    assert opened == [("https://tenant.sharepoint.com/walkaround.mp4", 2)]
+    assert preview_result == {
+        "ok": True,
+        "preview_url": "https://tenant.sharepoint.com/preview/video-1",
+        "file_name": "walkaround.mp4",
+    }
+    assert library.handle_open_reference_video(
+        "other-project", {"video_token": video["video_token"]},
+    )["ok"] is False
+
+
+def test_graph_gateway_requests_short_lived_drive_item_preview():
+    class Response:
+        status_code = 200
+
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        @staticmethod
+        def json():
+            return {"getUrl": "https://tenant.sharepoint.com/short-lived-preview"}
+
+    class Session:
+        def __init__(self):
+            self.calls = []
+
+        def post(self, url, **kwargs):
+            self.calls.append((url, kwargs))
+            return Response()
+
+    session = Session()
+    gateway = GraphDriveGateway(token="TOKEN", drive_id="company-drive", session=session)
+
+    assert gateway.preview_item("video/item") == "https://tenant.sharepoint.com/short-lived-preview"
+    url, kwargs = session.calls[0]
+    assert url.endswith("/drives/company-drive/items/video%2Fitem/preview")
+    assert kwargs["json"] == {}
+    assert kwargs["headers"]["Authorization"] == "Bearer TOKEN"
+
+
+def test_reference_video_ui_and_routes_are_read_only():
+    root = Path(__file__).parents[1]
+    script = (root / "src/dtm_buildsheet/ui/js/projects/reference_photos.js").read_text("utf-8")
+    html = (root / "src/dtm_buildsheet/ui/index.html").read_text("utf-8")
+
+    assert "Play here" in script
+    assert "Play in browser" in script
+    assert "PT_previewReferenceVideo" in script
+    assert "PT_openGalleryVideo" in script
+    assert "_ptLoadCurrentProjectVideos" in script
+    assert "data-project-reference-summary" in script
+    assert "_ptSetProjectVideoCount(sourceProject, videos.length)" in script
+    assert "checking videos…" in script
+    assert 'data-reference-media-type="${esc(asset.media_type || "photo")}"' in script
+    assert 'row.dataset.referenceMediaType !== "video"' in script
+    assert 'galleryItems = [...galleryItems, ...videos]' in script
+    assert 'item.media_type === "video" ? -1 : itemIndex' in script
+    assert 'id="reference-video-frame"' in html
+    assert 'referrerpolicy="no-referrer"' in html
+    assert required_capabilities(
+        "POST", "/api/project/project-1/references/video-open",
+    ) == frozenset({Capability.PROJECTS_VIEW})
+    assert required_capabilities(
+        "POST", "/api/project/project-1/references/video-preview",
+    ) == frozenset({Capability.PROJECTS_VIEW})
 
 
 def test_discovers_photos_in_nested_completed_subfolders(tmp_path):

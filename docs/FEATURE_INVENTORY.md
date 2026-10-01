@@ -557,7 +557,7 @@ mirrored to SharePoint as shared work records.
 | `project_id` | str | Derived from agency/quote via `safe_project_id()` |
 | `customer` | CustomerInfo | Agency name + agency_id + sales_rep_id + quote + year + notes |
 | `preferences` | EquipmentPreferences | Lighting brand plus DUO/TRIO default, camera, bumper, cage, slick top, notes |
-| `build_units` | list[BuildUnit] | Each unit group has a vehicle model, build type, quantity, preset, and individual list |
+| `build_units` | list[BuildUnit] | Each unit group has a vehicle identity plus legacy-compatible layout ID, build type, quantity, preset, and individual list |
 | `quote_numbers` | list[str] | Every quote/reference number associated with the single agency/build-year project |
 | `reference_assets` | list[BuildReferenceAsset] | Portable Company/Shop source identities; zero assignments means an unassigned project photo, while new shop references use unit-group assignments (legacy project/individual assignments remain compatible) |
 | `project_status` | str | `active`, `inactive`, or `completed`; controls the Projects status tab |
@@ -582,7 +582,9 @@ verified. The Completed tab organizes those records under Agency → Build Year 
 Started, Active, Inactive, and Completed share one search control whose query is retained independently per
 tab; completed search results automatically expand their matching Agency → Build Year branches.
 Mark Inactive uses an in-app dialog with an optional reason so it remains reliable inside pywebview.
-Started and Active rows show one derived workflow badge instead of another editable status. Mark Inactive and
+Started and Active rows show one derived workflow badge instead of another editable status. A partially
+accepted project appears in both tabs with accepted and unaccepted counts; Operations shows and bulk-edits
+only the vehicles belonging to the selected tab. Mark Inactive and
 Delete live under a three-dot menu; Delete also removes that project's Operations records/history.
 Inactive projects and their Operations history are retained but hidden from Operations until
 reactivated. Active Operations adds All / Unscheduled / Scheduled subfilters, with Scheduled ordered
@@ -590,10 +592,24 @@ by Scheduled Week. At DTM is the green completed
 Vehicle Availability state; Delivered is the last Final Finish state, and all vehicles reaching it
 moves the project to Completed automatically.
 
-The new-project wizard and existing-project editor can create a missing vehicle directly from either
-vehicle selector. Make and Model are required; the server creates or reuses a shared, collision-safe
-vehicle ID and stores a no-image `placeholder: true` layout. The new option is selected immediately
-and remains labeled **artwork pending** until its artwork is completed in Vehicle Manager.
+The new-project wizard and existing-project editor share a guided Year / Make / Model / Package
+picker backed by NHTSA vPIC and NHTSA Products data, with persistent quick choices for Ford PIU, Dodge Durango Pursuit,
+Chevrolet Tahoe PPV, and the upcoming Dodge Charger PPV. Quick choices automatically move to a supported
+model year instead of disappearing, then apply the already-loaded, year-bounded police catalog entry without
+an external request. Common makes and maintained police models use the same canonical casing in shortcuts and
+search results. PIU is represented as Ford's purpose-built Police Interceptor Utility
+model rather than an Explorer package. All four controls use large searchable comboboxes with type-tagged results. Makes
+without models in the selected year are omitted, and Package appears only for exact year/make/model
+combinations with a verified police or special-service offering. The
+default make menu is limited to common car, truck, and SUV/MPV brands; broader NHTSA manufacturers
+remain available through typed search and are tagged Motorcycle, Trailer, Bus, Low-speed vehicle,
+Incomplete vehicle, Off-road vehicle, or Specialty as applicable. Automobile makes return only
+passenger-car, truck, and SUV/MPV models. A maintained package overlay includes current and legacy police/special-service
+variants. Custom categories cover snowmobiles, ATVs/UTVs, trailers, boats, and other equipment.
+Every selection saves a richer `vehicle_identity` while retaining `vehicle_model` as the compatible
+layout ID. Missing layouts are created as no-image `placeholder: true` entries and labeled
+**Vehicle layout needed** until completed in Vehicle Manager. Full-width navy Unit Group bars make
+the boundary between groups visible in both creation and editing views.
 
 ### Project Detail View
 The project detail view centers the Overview/build-card workflow, with editing available from the
@@ -842,6 +858,9 @@ Load Preset next to Save as New Preset in both action areas.
 | `/api/presets/{id}/export-workbook` | Download preset as filled `.xlsx` |
 | `/api/projects` | List all projects |
 | `/api/project/{project_id}` | Get single project |
+| `/api/vehicle-catalog/makes?year=…&query=…` | Common automobile makes by default; broader type-tagged NHTSA make search (no-store) |
+| `/api/vehicle-catalog/models?year=…&make=…` | NHTSA vPIC models for a make/year (no-store) |
+| `/api/vehicle-catalog/police` | Maintained police/special-service package overlay (no-store) |
 | `/favicon.ico` | Serves app icon |
 
 ### POST Routes
@@ -851,7 +870,7 @@ Load Preset next to Save as New Preset in both action areas.
 | `/generate` | Run full pipeline on last-uploaded workbook, return result paths |
 | `/api/catalog/save` | Validate and save `part_catalog.json` |
 | `/api/layouts/save` | Validate and save `vehicle_layouts.json` |
-| `/api/layouts/vehicles/create` | Create or reuse a Make/Model vehicle placeholder with artwork pending |
+| `/api/layouts/vehicles/create` | Create or reuse a catalog/custom vehicle placeholder with vehicle layout needed |
 | `/api/manifest/save` | Validate and save `asset_manifest.json` |
 | `/api/parts-library/save` | Validate and save `parts_library.json` |
 | `/api/workbook-rules/save` | Validate and save `workbook_rules.json` |

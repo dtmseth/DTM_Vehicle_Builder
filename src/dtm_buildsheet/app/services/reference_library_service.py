@@ -7,10 +7,12 @@ import hashlib
 import json
 import threading
 import time
+import webbrowser
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from ...domain.vehicle_naming import safe_vehicle_folder_name, vehicle_display_name, vehicle_model_label
 from ...inputs.project_entry import list_projects, load_project
@@ -28,6 +30,7 @@ _CACHE_REFRESH_SECONDS = 300
 _DISCOVERY_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="dtm-reference")
 _DISCOVERY_LOCK = threading.RLock()
 _DISCOVERY_JOBS: dict[str, Future] = {}
+_VIDEO_SOURCES: dict[str, "_VideoSource"] = {}
 
 
 class ReferenceBrowseGateway(Protocol):
@@ -40,6 +43,62 @@ class _BrowseRoot:
     gateway: ReferenceBrowseGateway
     path: str
     source_kind: str
+
+
+@dataclass(frozen=True)
+class _VideoSource:
+    project_id: str
+    file_name: str
+    drive_id: str
+    item_id: str
+    web_url: str
+
+
+def _safe_https_url(value: str) -> str:
+    value = str(value or "").strip()
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return ""
+    if (
+        parsed.scheme.casefold() != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return ""
+    return value
+
+
+def _register_video_source(project_id: str, item: dict) -> str:
+    identity = "|".join((
+        project_id,
+        str(item.get("source_drive_id") or ""),
+        str(item.get("source_item_id") or item.get("source_path") or ""),
+        str(item.get("source_etag") or ""),
+    ))
+    token = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+    source = _VideoSource(
+        project_id=project_id,
+        file_name=PurePosixPath(str(item.get("file_name") or "video")).name,
+        drive_id=str(item.get("source_drive_id") or "").strip(),
+        item_id=str(item.get("source_item_id") or "").strip(),
+        web_url=_safe_https_url(str(item.get("source_web_url") or "")),
+    )
+    with _DISCOVERY_LOCK:
+        _VIDEO_SOURCES[token] = source
+        while len(_VIDEO_SOURCES) > 3000:
+            _VIDEO_SOURCES.pop(next(iter(_VIDEO_SOURCES)))
+    return token
+
+
+def _video_source(project_id: str, body: dict) -> _VideoSource | None:
+    token = str(body.get("video_token") or "").strip()
+    if len(token) != 32 or any(character not in "0123456789abcdef" for character in token):
+        return None
+    with _DISCOVERY_LOCK:
+        source = _VIDEO_SOURCES.get(token)
+    return source if source is not None and source.project_id == project_id else None
 
 
 def _agency_segment(value: str) -> str:
@@ -272,7 +331,61 @@ def _enrich_thumbnails(project_id: str, result: dict, paths: AppPaths) -> dict:
     )
     for index, gallery_item in zip(photo_indexes, decorated):
         references[index] = {**references[index], **gallery_item}
+    for index, item in enumerate(references):
+        if item.get("media_type") == "video":
+            references[index] = {
+                **item,
+                "video_token": _register_video_source(project_id, item),
+            }
     return {**result, "references": references}
+
+
+def handle_open_reference_video(project_id: str, body: dict) -> dict:
+    """Open an authorized discovered video in the user's default browser."""
+    source = _video_source(project_id, body)
+    if source is None:
+        return {"ok": False, "error": "This video link expired. Reopen the media browser."}
+    if not source.web_url:
+        return {"ok": False, "error": "This video does not have a SharePoint browser link."}
+    try:
+        if not webbrowser.open(source.web_url, new=2):
+            return {"ok": False, "error": "The default browser could not be opened."}
+    except Exception:
+        logger.exception("Could not open reference video in the default browser")
+        return {"ok": False, "error": "The default browser could not be opened."}
+    return {"ok": True}
+
+
+def handle_preview_reference_video(project_id: str, body: dict) -> dict:
+    """Return a fresh Microsoft preview URL for an authorized discovered video."""
+    source = _video_source(project_id, body)
+    if source is None:
+        return {"ok": False, "error": "This video link expired. Reopen the media browser."}
+    if not source.drive_id or not source.item_id:
+        return {"ok": False, "error": "This video has no SharePoint item identity."}
+    if not wiring._cloud_flag_enabled():  # noqa: SLF001
+        return {"ok": False, "error": "Video preview is unavailable while cloud mode is off."}
+    try:
+        bundle = wiring.get_active_bundle()
+        if not bundle.identity.is_signed_in():
+            return {"ok": False, "error": "Sign in to Microsoft to preview this video."}
+        token_provider = getattr(bundle.storage, "_token_provider", None)
+        if token_provider is None:
+            return {"ok": False, "error": "SharePoint video preview is unavailable."}
+        preview_url = GraphDriveGateway(
+            token=token_provider(), drive_id=source.drive_id,
+        ).preview_item(source.item_id)
+    except FileNotFoundError:
+        return {"ok": False, "error": f"Reference video is missing: {source.file_name}"}
+    except Exception as exc:
+        logger.warning(
+            "Could not create reference-video preview (%s)", type(exc).__name__,
+        )
+        return {"ok": False, "error": "Microsoft could not prepare this video preview."}
+    preview_url = _safe_https_url(preview_url)
+    if not preview_url:
+        return {"ok": False, "error": "Microsoft returned an invalid video preview link."}
+    return {"ok": True, "preview_url": preview_url, "file_name": source.file_name}
 
 
 def _refresh_source_context(agency: str, result: dict, paths: AppPaths) -> dict:

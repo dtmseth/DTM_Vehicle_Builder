@@ -45,30 +45,45 @@ function _ptProjectOperations(project) {
     : allOperations;
 }
 
-function _ptProjectIsAccepted(project) {
-  const vehicles = _ptProjectOperations(project);
-  return vehicles.length > 0 && vehicles.every(vehicle =>
-    String(vehicle.acceptance_status || "") === "accepted"
-  );
-}
-
-function _ptProjectListStatus(project) {
+function _ptProjectListStatuses(project) {
   const storedStatus = String(project.project_status || "active");
-  if (storedStatus === "inactive" || storedStatus === "completed") return storedStatus;
+  if (storedStatus === "inactive" || storedStatus === "completed") return [storedStatus];
   if (!_PT.operationsSnapshotReady) {
     // A temporary Operations/auth failure must not reclassify every accepted
     // project as Started. Keep the last derived answer; on a first-run failure,
     // the durable Builder state is a safer neutral fallback than inventing a
     // missing acceptance result.
-    return _PT.projectListStatusById?.[project.project_id] || "active";
+    const cached = _PT.projectListStatusById?.[project.project_id] || "active";
+    return Array.isArray(cached) ? cached : [cached];
   }
-  const derived = _ptProjectIsAccepted(project) ? "active" : "started";
+  const vehicles = _ptProjectOperations(project);
+  const accepted = vehicles.filter(vehicle =>
+    String(vehicle.acceptance_status || "") === "accepted"
+  ).length;
+  const derived = accepted > 0 && accepted < vehicles.length
+    ? ["started", "active"]
+    : [accepted === vehicles.length && vehicles.length ? "active" : "started"];
   _PT.projectListStatusById[project.project_id] = derived;
   return derived;
 }
 
-function _ptProjectActiveSort(project) {
+function _ptProjectListStatus(project) {
+  const statuses = _ptProjectListStatuses(project);
+  return statuses.includes("started") ? "started" : statuses[0];
+}
+
+function _ptProjectVehiclesForList(project, mode) {
   const vehicles = _ptProjectOperations(project);
+  if (mode === "active") {
+    return vehicles.filter(vehicle => String(vehicle.acceptance_status || "") === "accepted");
+  }
+  if (mode === "started") {
+    return vehicles.filter(vehicle => String(vehicle.acceptance_status || "") !== "accepted");
+  }
+  return vehicles;
+}
+
+function _ptProjectActiveSort(project, vehicles = _ptProjectOperations(project)) {
   const arrived = vehicles.length > 0 && vehicles.every(vehicle =>
     ["received", "parts_ready"].includes(String(vehicle.parts_status || "")) &&
     String(vehicle.vehicle_availability_status || "") === "at_dtm"
@@ -180,8 +195,7 @@ function _ptProjectEstimateVehicles(project) {
   }) : operations;
 }
 
-function _ptProjectProgress(project) {
-  const vehicles = _ptProjectOperations(project);
+function _ptProjectProgress(project, vehicles = _ptProjectOperations(project)) {
   if (!vehicles.length) return estimateGroupStatus(_ptProjectEstimateVehicles(project));
 
   const all = (field, values) => vehicles.every(vehicle => values.includes(String(vehicle[field] || "")));
@@ -251,7 +265,9 @@ function _ptRenderList() {
   const query = String(_PT.listSearch?.[mode] || "").trim().toLowerCase();
   const counts = Object.fromEntries(statuses.map(status => [
     status,
-    _PT.projects.filter(project => _ptMatchesType(project) && _ptProjectListStatus(project) === status).length,
+    _PT.projects.filter(project =>
+      _ptMatchesType(project) && _ptProjectListStatuses(project).includes(status)
+    ).length,
   ]));
   statuses.forEach(status => {
     const count = $(`proj-${status}-count`);
@@ -279,7 +295,7 @@ function _ptRenderList() {
   }
 
   const projects = _PT.projects.filter(project => _ptMatchesType(project) &&
-    _ptProjectListStatus(project) === mode && _ptProjectMatchesSearch(project, query)
+    _ptProjectListStatuses(project).includes(mode) && _ptProjectMatchesSearch(project, query)
   );
   projects.sort(_ptCompareProjects);
   if (!projects.length) {
@@ -300,10 +316,19 @@ function _ptRenderList() {
     const projectName = esc(_ptProjName(p));
     const name = projectName + ` <span class="project-type-badge">${esc(_ptTypeLabel(p))}</span>`;
     const n    = (p.build_units || []).reduce((s, u) => s + (u.quantity || 1), 0);
+    const listStatuses = _ptProjectListStatuses(p);
+    const listVehicles = _ptProjectVehiclesForList(p, mode);
+    const split = listStatuses.includes("started") && listStatuses.includes("active");
+    const otherCount = Math.max(0, _ptProjectOperations(p).length - listVehicles.length);
+    const unitMeta = split
+      ? mode === "active"
+        ? `${listVehicles.length} accepted unit${listVehicles.length === 1 ? "" : "s"} · ${otherCount} not accepted unit${otherCount === 1 ? " remains" : "s remain"}`
+        : `${listVehicles.length} not accepted unit${listVehicles.length === 1 ? "" : "s"} · ${otherCount} accepted and active`
+      : `${n} unit${n !== 1 ? "s" : ""}`;
     const pid  = esc(p.project_id);
     const createdLabel = _ptProjectDateLabel(p.created_at);
-    const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p) : null;
-    const activeSort = mode === "active" ? _ptProjectActiveSort(p) : null;
+    const progress = ["started", "active"].includes(mode) ? _ptProjectProgress(p, listVehicles) : null;
+    const activeSort = mode === "active" ? _ptProjectActiveSort(p, listVehicles) : null;
     const deliveryLabel = activeSort && activeSort.mustDeliverBy !== "9999-12-31"
       ? _ptProjectDateLabel(activeSort.mustDeliverBy)
       : "";
@@ -313,7 +338,7 @@ function _ptRenderList() {
           <div class="proj-row-agency">${name}</div>
           ${progress ? `<span class="proj-progress-badge proj-progress-badge-${progress.key}">${esc(progress.label)}</span>` : ""}
         </div>
-        <div class="proj-row-meta">${n} unit${n !== 1 ? "s" : ""}${deliveryLabel ? ` · Must Deliver On ${esc(deliveryLabel)}` : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
+        <div class="proj-row-meta">${unitMeta}${deliveryLabel ? ` · Must Deliver On ${esc(deliveryLabel)}` : ""}${mode === "inactive" && p.inactive_reason ? ` · ${esc(p.inactive_reason)}` : ""}</div>
       </div>
       <div class="proj-row-actions" onclick="event.stopPropagation()">
         ${createdLabel ? `<span class="proj-created-tag">Created ${esc(createdLabel)}</span>` : ""}

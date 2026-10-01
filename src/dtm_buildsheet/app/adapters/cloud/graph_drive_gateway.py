@@ -508,6 +508,34 @@ class GraphDriveGateway:
         self._raise_for_status(response, operation="item download")
         return bytes(response.content)
 
+    def preview_item(self, item_id: str, *, timeout_seconds: float = 30) -> str:
+        """Return Graph's short-lived embeddable preview URL for one item."""
+        safe_item_id = quote(str(item_id or "").strip(), safe="")
+        if not safe_item_id:
+            raise FileNotFoundError(item_id)
+        try:
+            response = self._session.post(
+                f"{_GRAPH}/drives/{quote(self._drive_id, safe='')}/items/"
+                f"{safe_item_id}/preview",
+                headers={**self._headers, "Content-Type": "application/json"},
+                json={},
+                timeout=max(1.0, min(float(timeout_seconds), 120.0)),
+            )
+        except requests.RequestException as exc:
+            raise GraphDriveError(
+                f"Graph item preview failed ({type(exc).__name__})"
+            ) from None
+        if response.status_code == 404:
+            raise FileNotFoundError(item_id)
+        self._raise_for_status(response, operation="item preview")
+        try:
+            preview_url = str(response.json().get("getUrl") or "").strip()
+        except (AttributeError, TypeError, ValueError):
+            preview_url = ""
+        if not preview_url:
+            raise GraphDriveError("Graph item preview did not return an embeddable URL")
+        return preview_url
+
     def download_thumbnail(
         self,
         item_id: str,

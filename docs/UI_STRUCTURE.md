@@ -89,8 +89,8 @@ without changing the current view, so a project or draft opened during loading s
     status search       — searches only the selected tab and remembers one query per tab
     list controls       — all project types by default; creation date, A–Z, Z–A, last-opened,
                           or earliest scheduled-week sorting; cards show their creation date
-    Started             — durable-active projects whose current Operations vehicles are not all accepted
-    Active              — all current vehicles accepted
+    Started             — durable-active projects with current unaccepted Operations vehicles
+    Active              — durable-active projects with current accepted Operations vehicles
     Inactive            — optional note plus a three-dot Reactivate/Delete menu
     Completed           — Agency → Build Year tree, galleries/folders, Open/Reopen
 #proj-detail-view      — detail view with two sub-tabs:
@@ -108,8 +108,9 @@ without changing the current view, so a project or draft opened during loading s
 ```
 
 The durable project lifecycle remains `active`, `inactive`, or `completed`; `started` is a derived
-list view, not a fourth stored state. A durable-active project stays in Started until every current
-vehicle's Operations row is accepted, then appears in Active. Lists default to newest creation date;
+list view, not a fourth stored state. A partially accepted durable-active project appears in both
+Started and Active: each card shows the relevant vehicle count plus the count in the other view,
+and Operations expands only that view's vehicle subset. Lists default to newest creation date;
 scheduled-date sorting uses the earliest Operations Scheduled Week and places unscheduled projects
 last. Last-opened sorting is remembered locally on the workstation and does not mutate project
 records. The selected list tab is preserved when opening and returning from a project. Marking a
@@ -124,10 +125,23 @@ combined Parts/Vehicle progress, Ready to Build, Build in Progress, Ready to Del
 Project saves create/update their Operations projections; project deletion also removes the exact
 project's Operations rows and immutable status history after explicit confirmation.
 
-Both new-project and existing-project vehicle selectors include **+ New vehicle**. The in-app dialog
-requires only Make and Model, saves a shared `vehicle_layouts.json` placeholder with no image files,
-marks it **artwork pending**, and immediately selects it for that unit. Artwork can be completed later
-through Vehicle Manager.
+Both the new-project wizard and existing-project editor use the same guided Year → Make → Model →
+Package picker. Ford PIU, Dodge Durango Pursuit, Chevrolet Tahoe PPV, and the clearly marked upcoming
+Dodge Charger PPV are persistent quick choices; choosing one moves Year to a supported model year when
+needed and immediately applies a locally validated police-catalog entry without waiting for NHTSA. Common
+make names and maintained police-model names are normalized identically in shortcuts and searchable results.
+PIU is stored as Ford's purpose-built Police Interceptor Utility model, not as an Explorer package.
+All four controls are large searchable comboboxes. Makes are filtered by the selected year so a make
+with no models for that year is omitted; the Package control appears only when the exact selected
+year/make/model has a verified police or special-service offering. Default make menus show common passenger
+car, truck, and SUV/MPV choices, while typed make search can reach the broader NHTSA vPIC catalog.
+Every result carries vehicle-type tags, and motorcycle, trailer, bus, incomplete, low-speed, and
+off-road manufacturers are visibly marked as specialty results instead of crowding the default
+menu. A maintained overlay supplies police-package names. A Custom vehicle tab covers snowmobiles,
+ATVs/UTVs, trailers, boats, and other specialty
+equipment. Each Unit Group is separated by a full-width navy heading bar. The picker reports
+**Vehicle layout available** or **Vehicle layout needed**; missing layouts are saved as assignable
+placeholders that can be completed later through Vehicle Manager.
 
 **There is no Generate button** on build cards. Preview and Export both auto-regenerate when
 source changed since `last_rendered_at`; a manual-edit-detection modal warns before discarding

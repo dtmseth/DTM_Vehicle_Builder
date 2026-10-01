@@ -138,7 +138,11 @@ The year-level Company Files **Reference Photos & Videos** folder is also the pr
 photo inbox. When the project opens, a bounded background check reconciles supported JPG/PNG files
 from that exact folder into `reference_assets` with zero assignments. This makes photos dropped
 through OneDrive or SharePoint appear as unassigned Project Photos without a second import step.
-Videos remain Company-only browsing material and are not auto-attached or published. Removing an
+Videos remain Company-only browsing material and are not auto-attached or published. Users can open
+their exact SharePoint page in the default browser or play them in the app through a fresh,
+short-lived Microsoft preview URL. Videos from the current project's exact year-level reference
+folder also appear as view-only cards in Project Photos and remain visible regardless of the source
+browser's make/model/build-type filters; the app does not download or proxy video bytes. Removing an
 auto-discovered photo from the app records its stable source identity in
 `reference_source_exclusions`; the source file is not deleted and may be explicitly added again.
 

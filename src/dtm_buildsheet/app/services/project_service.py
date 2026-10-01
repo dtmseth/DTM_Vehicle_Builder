@@ -353,6 +353,11 @@ def _preserve_server_owned_build_state(
         for unit in existing_units
         for individual in unit.individuals
     }
+    raw_units_by_id = {
+        str(unit.get("unit_id") or ""): unit
+        for unit in (raw_units or [])
+        if isinstance(unit, dict) and unit.get("unit_id")
+    }
     raw_individuals = {
         str(individual.get("individual_id") or ""): individual
         for unit in (raw_units or [])
@@ -363,6 +368,12 @@ def _preserve_server_owned_build_state(
     for incoming_unit in incoming_units:
         old_unit = old_units.get(incoming_unit.unit_id)
         if old_unit is not None:
+            raw_unit = raw_units_by_id.get(incoming_unit.unit_id, {})
+            if (
+                "vehicle_identity" not in raw_unit
+                and incoming_unit.vehicle_model == old_unit.vehicle_model
+            ):
+                incoming_unit.vehicle_identity = old_unit.vehicle_identity
             for field in _BUILD_UNIT_OPERATIONAL_FIELDS:
                 setattr(incoming_unit, field, getattr(old_unit, field))
         for incoming_individual in incoming_unit.individuals:

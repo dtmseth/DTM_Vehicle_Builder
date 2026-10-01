@@ -51,7 +51,7 @@ def _vehicle_type_token(value: str) -> str:
     return " ".join(token.split()).strip(" -")
 
 
-def _placeholder_vehicle_layout(make: str, model: str) -> dict:
+def _placeholder_vehicle_layout(make: str, model: str, metadata: dict | None = None) -> dict:
     """Create an assignable vehicle without pretending artwork exists."""
 
     labels = {"front": "Front", "side": "Side", "top": "Top", "rear": "Rear"}
@@ -102,7 +102,7 @@ def _placeholder_vehicle_layout(make: str, model: str) -> dict:
         },
     })
     aliases = list(dict.fromkeys(value for value in (model, f"{make} {model}") if value))
-    return {
+    vehicle = {
         "make": make,
         "model": model,
         "aliases": aliases,
@@ -111,17 +111,25 @@ def _placeholder_vehicle_layout(make: str, model: str) -> dict:
         "views": views,
         "view_order": [*labels, "internal.console", "internal.cargo", "internal.rear_seat"],
     }
+    if metadata:
+        vehicle["vehicle_identity"] = metadata
+    return vehicle
 
 
 def post_create_placeholder_vehicle(body: dict, paths: AppPaths) -> dict:
-    """Create or select a make/model vehicle entry with artwork pending."""
+    """Create or select a vehicle entry whose visual layout may still be needed."""
 
     if not isinstance(body, dict):
         return {"ok": False, "error": "Vehicle details must be an object"}
+    source = _clean_vehicle_text(body.get("source") or "catalog").lower()
+    category = _clean_vehicle_text(body.get("category") or "automobile").lower()
     make = _clean_vehicle_text(body.get("make"))
     model = _clean_vehicle_text(body.get("model"))
-    if not make or not model:
-        return {"ok": False, "error": "Make and model are required"}
+    display_name = _clean_vehicle_text(body.get("display_name"))
+    if source == "custom" and not model:
+        model = display_name
+    if (source != "custom" and not make) or not model:
+        return {"ok": False, "error": "Make and model are required" if source != "custom" else "A custom vehicle name is required"}
     if len(make) > 80 or len(model) > 80:
         return {"ok": False, "error": "Make and model must be 80 characters or fewer"}
 
@@ -157,7 +165,14 @@ def post_create_placeholder_vehicle(body: dict, paths: AppPaths) -> dict:
             vehicle_id = f"{base_id} {suffix}"
             suffix += 1
 
-        vehicle = _placeholder_vehicle_layout(make, model)
+        identity_metadata = {
+            "source": source if source in {"catalog", "custom", "legacy"} else "catalog",
+            "category": category if category in {"automobile", "snowmobile", "atv_utv", "trailer", "boat", "other"} else "other",
+            "catalog_source": _clean_vehicle_text(body.get("catalog_source")),
+            "catalog_make_id": _clean_vehicle_text(body.get("catalog_make_id")),
+            "catalog_model_id": _clean_vehicle_text(body.get("catalog_model_id")),
+        }
+        vehicle = _placeholder_vehicle_layout(make, model, identity_metadata)
         vehicles[vehicle_id] = vehicle
         saved = save_config_file("vehicle_layouts.json", layouts, paths)
         if not saved.get("ok"):

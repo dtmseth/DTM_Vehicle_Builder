@@ -54,8 +54,9 @@ A **Preset** is a reusable parts template that seeds a new BuildDraft. Applying 
 
 1. **Create project** — user fills 4-step wizard (`#proj-editor`). API: `POST /api/project/save`.
    Project record written to `workspace/projects/{project_id}.json`. While it is not inactive or
-   completed, it appears in Started until every current vehicle is accepted in Operations, then
-   moves automatically to Active without changing its stored lifecycle value.
+   completed, its unaccepted vehicles appear in Started and its accepted vehicles appear in Active.
+   A partially accepted project therefore appears in both views with split unit counts, without
+   changing its stored lifecycle value.
 
 2. **Add fleet units** — each `BuildUnit` specifies a vehicle model, build type, and optional preset.
    `IndividualUnit` entries are created within each `BuildUnit` (one per physical vehicle).

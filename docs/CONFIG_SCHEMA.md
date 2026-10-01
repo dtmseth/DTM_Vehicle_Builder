@@ -177,7 +177,8 @@ Defines, per vehicle type, the fixture coordinates and named location points use
 not allowed. A `layout_source` entry inherits missing `views`, `fixtures`, and `view_order` at the
 validated config boundary so planners/renderers still receive the ordinary expanded shape. Cycles
 and missing sources are rejected. `placeholder: true` is surfaced in Settings and project vehicle
-selectors as **artwork pending**. The UI clears it after front/side/top/rear PNGs are all present.
+selectors as **Vehicle layout needed**. The UI changes this to **Vehicle layout available** after
+front/side/top/rear PNGs are all present.
 Project vehicle selectors may create these placeholders from Make and Model alone through the narrow
 `POST /api/layouts/vehicles/create` route. That route creates no image assets, reuses an exact existing
 make/model match, and resolves ID collisions without asking project users to edit configuration JSON.

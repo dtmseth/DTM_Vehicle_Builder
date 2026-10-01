@@ -7,6 +7,9 @@ window._PT = {
   presets:        [],
   vehicles:       [],
   vehicleMap:     {},
+  vehiclePoliceCatalog: null,
+  vehicleMakeRequests: {},
+  vehicleModelRequests: {},
   projects:       [],
   agencies:       [],
   operationsByProject: {},
@@ -236,7 +239,7 @@ function _ptVehicleOptionsMarkup(currentValue = "") {
   const options = _PT.vehicles.map(vehicleId => {
     const vehicle = _PT.vehicleMap[vehicleId] || {};
     const details = [vehicle.make, vehicle.model].filter(Boolean).join(" ");
-    const pending = vehicle.placeholder ? " · artwork pending" : "";
+    const pending = vehicle.placeholder ? " · vehicle layout needed" : "";
     const label = details ? `${vehicleId} — ${details}${pending}` : `${vehicleId}${pending}`;
     return `<option value="${esc(vehicleId)}"${vehicleId === canonical ? " selected" : ""}>${esc(label)}</option>`;
   });

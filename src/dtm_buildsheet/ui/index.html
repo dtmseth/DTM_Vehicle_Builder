@@ -1850,7 +1850,7 @@
       <span id="project-vehicle-create-title">Add a Vehicle</span>
       <button class="modal-close" id="project-vehicle-create-close" type="button" aria-label="Close add vehicle dialog">×</button>
     </div>
-    <p class="project-modal-intro">Add the vehicle now and use it on this project. It will be marked <strong>artwork pending</strong>; images and placement details can be added later in Vehicle Manager.</p>
+    <p class="project-modal-intro">Add the vehicle now and use it on this project. It will be marked <strong>Vehicle layout needed</strong>; images and placement details can be added later in Vehicle Manager.</p>
     <form id="project-vehicle-create-form">
       <div class="form-row">
         <div class="form-group">
@@ -1894,6 +1894,27 @@
     <div id="photo-gallery-body"></div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="photo-gallery-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reference-video-modal" role="dialog" aria-modal="true" aria-labelledby="reference-video-title" hidden>
+  <div class="modal reference-video-modal">
+    <div class="modal-title">
+      <span id="reference-video-title">Reference Video</span>
+      <button class="modal-close" id="reference-video-close" aria-label="Close reference video">✕</button>
+    </div>
+    <div class="reference-video-player">
+      <div class="reference-video-loading" id="reference-video-loading">
+        <span class="dtm-loading-spinner"></span>
+        <strong>Preparing Microsoft video player…</strong>
+      </div>
+      <iframe id="reference-video-frame" title="Reference video player" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer" hidden></iframe>
+    </div>
+    <p class="reference-video-status" id="reference-video-status" role="status" hidden></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="reference-video-browser" type="button">Play in browser</button>
+      <button class="btn btn-primary" id="reference-video-done" type="button">Done</button>
     </div>
   </div>
 </div>
@@ -2795,6 +2816,7 @@
 <script src="/ui/js/projects/state.js"></script>
 <script src="/ui/js/projects/api.js"></script>
 <script src="/ui/js/projects/vehicle_create.js"></script>
+<script src="/ui/js/projects/vehicle_picker.js"></script>
 <script src="/ui/js/projects/reference_photos.js"></script>
 <script src="/ui/js/projects/combo_search.js"></script>
 <script src="/ui/js/projects/list_view.js"></script>

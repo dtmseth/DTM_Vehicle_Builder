@@ -54,6 +54,8 @@ def required_capabilities(method: str, raw_path: str) -> frozenset[Capability]:
             path.endswith("/photo-gallery")
             or path.endswith("/references/discover")
             or path.endswith("/references/effective")
+            or path.endswith("/references/video-open")
+            or path.endswith("/references/video-preview")
         ):
             return frozenset({Capability.PROJECTS_VIEW})
         if path.startswith("/api/project/") and (

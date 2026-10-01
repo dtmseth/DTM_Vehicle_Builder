@@ -3,8 +3,7 @@
 function _ptProjectBuildSummary(project) {
   const groups = new Map();
   for (const unit of (project.build_units || [])) {
-    const vm = _ptVehicleConfig(unit.vehicle_model);
-    const vehicle = vm.make ? `${vm.make} ${vm.model}` : (unit.vehicle_model || "—");
+    const vehicle = _ptVehicleDisplayName(unit) || "—";
     const buildType = unit.build_type || "—";
     const key = `${vehicle}\u0000${buildType}`;
     const count = (unit.individuals || []).length || unit.quantity || 1;
@@ -105,6 +104,7 @@ function _ptRenderEditTab(project, editable) {
     _PT.editTabUnits = (project.build_units || []).map(u => ({
       uid:           u.unit_id,
       vehicle_model: u.vehicle_model || "",
+      vehicle_identity: _ptVehicleIdentity(u),
       build_type:    u.build_type    || "Patrol",
       quantity:      u.quantity      || 1,
       preset_id:     u.preset_id     || "",
@@ -250,18 +250,13 @@ function _ptRenderEditUnits() {
     return `<div class="proj-edit-unit-row" data-et-uid="${esc(u.uid)}">
       <div class="proj-edit-unit-hdr">
         <span class="proj-unit-label">Unit Group ${i + 1}</span>
+        <span class="proj-unit-vehicle-summary">${esc(_ptVehicleDisplayName(u))}</span>
         ${_PT.editTabUnits.length > 1
           ? `<button class="btn btn-danger btn-sm" onclick="PT_rmEditUnit('${esc(u.uid)}')">Remove</button>`
           : ""}
       </div>
-      <div class="form-row">
-        <div class="form-group proj-vehicle-group">
-          <label>Vehicle Model</label>
-          <div class="proj-vehicle-picker">
-            <select class="et-u-vehicle">${_ptVehicleOptionsMarkup(u.vehicle_model)}</select>
-            <button class="btn btn-secondary btn-sm" type="button" onclick="PT_openProjectVehicleCreate('${esc(u.uid)}','detail')">+ New vehicle</button>
-          </div>
-        </div>
+      ${_ptVehiclePickerMarkup(u, "et")}
+      <div class="form-row vehicle-build-row">
         <div class="form-group proj-buildtype-group">
           <label>Build Type</label>
           <select class="et-u-buildtype">${btOpts}</select>
@@ -313,9 +308,9 @@ function _ptRenderEditUnits() {
     const row = listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"]`);
     if (!row) return;
     row.querySelector(".et-u-vehicle").value = _ptCanonicalVehicleType(u.vehicle_model);
+    _ptWireVehiclePicker(row, u);
     const qtyInput  = row.querySelector(".et-u-qty");
     const indBtn    = row.querySelector(".proj-ind-toggle-btn");
-    const vehSelect = row.querySelector(".et-u-vehicle");
     const btSelect  = row.querySelector(".et-u-buildtype");
 
     // Vehicle / build-type changes invalidate the compatible-preset list. Commit
@@ -337,7 +332,6 @@ function _ptRenderEditUnits() {
         listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"] .et-u-buildtype-custom`)?.focus();
       }
     };
-    vehSelect?.addEventListener("change", onUnitContextChange);
     btSelect?.addEventListener("change", onUnitContextChange);
 
     qtyInput?.addEventListener("input", () => {
@@ -358,7 +352,8 @@ function _ptCollectEditUnits() {
   _PT.editTabUnits.forEach(u => {
     const row = listEl.querySelector(`.proj-edit-unit-row[data-et-uid="${u.uid}"]`);
     if (!row) return;
-    u.vehicle_model = row.querySelector(".et-u-vehicle").value;
+    _ptReadVehiclePicker(row, u);
+    u.vehicle_model = row.querySelector(".et-u-vehicle").value || u.vehicle_identity?.layout_id || "";
     const buildType = row.querySelector(".et-u-buildtype");
     if (buildType?.value === _PT_CUSTOM_BUILD_TYPE) {
       u._customBuildTypeOpen = true;
@@ -371,6 +366,7 @@ function _ptCollectEditUnits() {
     const indRows = row.querySelectorAll(".proj-ind-row");
     if (indRows.length) {
       const vm = _ptVehicleConfig(u.vehicle_model);
+      const identity = _ptVehicleIdentity(u);
       u.individuals = Array.from(indRows).map(ir => {
         const iid      = ir.dataset.iid;
         const existing = u.individuals.find(i => i.individual_id === iid) || {};
@@ -378,9 +374,9 @@ function _ptCollectEditUnits() {
           ...existing,
           individual_id:        iid,
           unit_number:          ir.querySelector(".ind-unit-number")?.value.trim()    || "",
-          year:                 ir.querySelector(".ind-year")?.value.trim()           || "",
-          make:                 vm.make  || existing.make  || "",
-          model:                vm.model || existing.model || "",
+          year:                 ir.querySelector(".ind-year")?.value.trim()           || identity.model_year || "",
+          make:                 identity.make || vm.make  || existing.make  || "",
+          model:                identity.model || vm.model || existing.model || "",
           color:                ir.querySelector(".ind-color")?.value.trim()          || "",
           vin:                  ir.querySelector(".ind-vin")?.value.trim()            || "",
           existing_year:        ir.querySelector(".ind-existing-year")?.value.trim() || "",
@@ -399,6 +395,8 @@ function _ptCollectEditUnits() {
 
 function _ptCollectEditForm() {
   _ptCollectEditUnits();
+  const vehicleError = _PT.editTabUnits.map(_ptVehicleIdentityError).find(Boolean);
+  if (vehicleError) throw new Error(vehicleError);
   _PT.editTabUnits.forEach(u => _ptEnsureIndividuals(u));
   return {
     project_id: _PT.viewProject?.project_id,
@@ -419,6 +417,7 @@ function _ptCollectEditForm() {
     build_units: _PT.editTabUnits.map(u => ({
       unit_id:       u.uid,
       vehicle_model: u.vehicle_model,
+      vehicle_identity: u.vehicle_identity,
       build_type:    u.build_type,
       quantity:      u.quantity,
       preset_id:     u.preset_id,
@@ -644,9 +643,11 @@ window.PT_saveEditForm = async function () {
 
 window.PT_addEditUnit = function () {
   _ptCollectEditUnits();
+  const vehicleModel = _PT.vehicles[0] || "";
   _PT.editTabUnits.push({
     uid:           _ptUuid(),
-    vehicle_model: _PT.vehicles[0] || "",
+    vehicle_model: vehicleModel,
+    vehicle_identity: _ptNewVehicleIdentity(vehicleModel, $("et-build-year")?.value || ""),
     build_type:    "Patrol",
     quantity:      1,
     preset_id:     "",

@@ -207,10 +207,11 @@ function _operationsFollowVehicle(vehicleId) {
   const vehicles = _OPERATIONS.payload?.vehicles || [];
   const vehicle = vehicles.find(item => item.vehicle_id === vehicleId);
   if (!vehicle) return;
-  const project = { vehicles: vehicle.project_id
-    ? vehicles.filter(item => item.project_id === vehicle.project_id) : [vehicle] };
-  const mode = _operationsProjectMode(project);
+  const mode = _operationsVehicleMode(vehicle);
   if (!["started", "active", "completed"].includes(mode)) return;
+  const project = { vehicles: vehicle.project_id
+    ? vehicles.filter(item => item.project_id === vehicle.project_id &&
+      _operationsVehicleMode(item) === mode) : [vehicle] };
   _OPERATIONS.filter = mode;
   if (!_operationsMatchesSearch(project, String(_OPERATIONS.search[mode] || "").trim().toLowerCase())) {
     _OPERATIONS.search[mode] = "";
@@ -344,9 +345,10 @@ function _operationsRenderRows() {
   });
   const allProjects = [...grouped.entries()]
     .map(([projectId, projectVehicles]) => ({ projectId, vehicles: projectVehicles }));
+  const projectViews = allProjects.flatMap(_operationsProjectViews);
   const counts = Object.fromEntries(statuses.map(status => [
     status,
-    allProjects.filter(project => _operationsProjectMode(project) === status).length,
+    projectViews.filter(project => _operationsProjectMode(project) === status).length,
   ]));
   statuses.forEach(status => {
     const count = $(`operations-${status}-count`);
@@ -365,14 +367,14 @@ function _operationsRenderRows() {
     }
   }
 
-  const projects = allProjects
+  const projects = projectViews
     .filter(project => _operationsProjectMode(project) === mode)
     .filter(project => mode !== "active" || _OPERATIONS.activeScheduleFilter === "all" ||
       _operationsProjectScheduleMode(project) === _OPERATIONS.activeScheduleFilter)
     .filter(project => _operationsMatchesSearch(project, needle));
   if (mode === "active") projects.sort(_operationsSortActiveProjects);
 
-  const activeProjects = allProjects.filter(project => _operationsProjectMode(project) === "active");
+  const activeProjects = projectViews.filter(project => _operationsProjectMode(project) === "active");
   const scheduleCounts = {
     all: activeProjects.length,
     unscheduled: activeProjects.filter(project => _operationsProjectScheduleMode(project) === "unscheduled").length,
@@ -413,9 +415,31 @@ function _operationsRenderRows() {
 }
 
 function _operationsProjectMode(project) {
+  if (project.mode) return project.mode;
   const state = _operationsCommonValue(project.vehicles, "project_state", "active");
   if (state === "inactive" || state === "completed") return state;
   return _operationsProjectAcceptance(project.vehicles) === "accepted" ? "active" : "started";
+}
+
+function _operationsVehicleMode(vehicle) {
+  const state = String(vehicle.project_state || "active");
+  if (state === "inactive" || state === "completed") return state;
+  return vehicle.acceptance_status === "accepted" ? "active" : "started";
+}
+
+function _operationsProjectViews(project) {
+  const modes = new Map();
+  (project.vehicles || []).forEach(vehicle => {
+    const mode = _operationsVehicleMode(vehicle);
+    if (!modes.has(mode)) modes.set(mode, []);
+    modes.get(mode).push(vehicle);
+  });
+  return [...modes.entries()].map(([mode, vehicles]) => ({
+    projectId: project.projectId,
+    mode,
+    vehicles,
+    allVehicles: project.vehicles,
+  }));
 }
 
 function _operationsProjectScheduleMode(project) {
@@ -521,6 +545,7 @@ function _operationsProjectProgress(vehicles) {
 
 function _operationsProjectGroupMarkup(project, open) {
   const vehicles = project.vehicles;
+  const allVehicles = project.allVehicles || vehicles;
   const first = vehicles[0] || {};
   const projectName = [first.build_year, first.agency_name || "Unnamed project"]
     .filter(Boolean).join(" · ");
@@ -530,8 +555,15 @@ function _operationsProjectGroupMarkup(project, open) {
     ? _operationsProjectProgress(vehicles)
     : null;
   const deadline = _operationsProjectSortInfo(project).deadline;
+  const split = allVehicles.length > vehicles.length;
+  const otherCount = Math.max(0, allVehicles.length - vehicles.length);
+  const vehicleCount = split
+    ? mode === "active"
+      ? `${vehicles.length} accepted vehicle${vehicles.length === 1 ? "" : "s"} · ${otherCount} not accepted vehicle${otherCount === 1 ? " remains" : "s remain"}`
+      : `${vehicles.length} not accepted vehicle${vehicles.length === 1 ? "" : "s"} · ${otherCount} accepted and active`
+    : `${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`;
   const meta = [
-    `${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`,
+    vehicleCount,
     _operationsLabel(schedule),
     deadline === "9999-12-31" ? "" : `Must Deliver On ${_operationsDate(deadline)}`,
   ].filter(Boolean).join(" · ");
@@ -552,12 +584,12 @@ function _operationsProjectGroupMarkup(project, open) {
           <strong>Project status</strong>
           <span>Click a status to apply it to all ${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}</span>
         </div>
-        ${_operationsQuickStatusMarkup(vehicles, "project", project.projectId)}
+        ${_operationsQuickStatusMarkup(vehicles, "project", project.projectId, mode)}
       </div>` : ""}
       <div class="operations-project-actions">
         <span>Vehicle details and exceptions</span>
         <div>
-          ${canSchedule ? `<button class="btn btn-secondary btn-sm" type="button" data-operations-schedule-project="${_operationsEscAttr(project.projectId)}">Delivery deadlines</button>` : ""}
+          ${canSchedule ? `<button class="btn btn-secondary btn-sm" type="button" data-operations-schedule-project="${_operationsEscAttr(project.projectId)}" data-operations-schedule-mode="${_operationsEscAttr(mode)}">Delivery deadlines</button>` : ""}
         </div>
       </div>
       <div class="operations-project-vehicles">${vehicles.map(_operationsVehicleMarkup).join("")}</div>
@@ -593,8 +625,10 @@ function _operationsBindRowActions() {
   document.querySelectorAll("[data-operations-schedule-project]").forEach(button => {
     button.addEventListener("click", () => {
       const projectId = button.dataset.operationsScheduleProject;
+      const mode = button.dataset.operationsScheduleMode;
       const vehicles = (_OPERATIONS.payload?.vehicles || [])
-        .filter(vehicle => vehicle.project_id === projectId);
+        .filter(vehicle => vehicle.project_id === projectId &&
+          (!mode || _operationsVehicleMode(vehicle) === mode));
       const first = vehicles[0] || {};
       const label = [first.build_year, first.agency_name || "Project"].filter(Boolean).join(" · ");
       _operationsOpenScheduleEditor(vehicles, `${label} — ${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`);
@@ -851,7 +885,7 @@ function _operationsStatus(key, label, value, completedAt = "") {
   return `<div class="operations-status operations-status-tone-${_operationsStatusTone(key, value)}"><span>${esc(label)}</span><strong>${esc(_operationsLabel(value))}</strong>${completedAt ? `<small>${esc(_operationsDate(completedAt))}</small>` : ""}</div>`;
 }
 
-function _operationsQuickStatusMarkup(vehicles, scope, id) {
+function _operationsQuickStatusMarkup(vehicles, scope, id, mode = "") {
   return `<div class="operations-quick-statuses">${_operationsEditableWorkstreams().filter(definition=>vehicles.every(v=>!["parts","tray","programming_qc"].includes(definition.key)||!v.applicable_workstreams||v.applicable_workstreams.includes(definition.key))).map(definition => {
     const current = _operationsCommonValue(vehicles, definition.field);
     const buttons = definition.values.map(([value, label]) => {
@@ -860,13 +894,15 @@ function _operationsQuickStatusMarkup(vehicles, scope, id) {
       return `<button type="button" class="operations-quick-status${active ? " active" : ""}${tone}"
         data-operations-quick-status data-operations-status-scope="${_operationsEscAttr(scope)}"
         data-operations-status-id="${_operationsEscAttr(id)}"
+        data-operations-status-mode="${_operationsEscAttr(mode)}"
         data-operations-status-workstream="${_operationsEscAttr(definition.key)}"
         data-operations-status-value="${_operationsEscAttr(value)}"${active ? " disabled" : ""}>${esc(label)}</button>`;
     }).join("");
     const dateEditor = definition.key === "availability"
       ? `<button type="button" class="operations-quick-date" data-operations-status-date-editor
           data-operations-status-scope="${_operationsEscAttr(scope)}"
-          data-operations-status-id="${_operationsEscAttr(id)}">Set date…</button>`
+          data-operations-status-id="${_operationsEscAttr(id)}"
+          data-operations-status-mode="${_operationsEscAttr(mode)}">Set date…</button>`
       : "";
     return `<div class="operations-quick-row" data-operations-view-key="${_operationsEscAttr(JSON.stringify([scope, id, definition.key]))}">
       <b>${esc(definition.label)}</b>
@@ -877,8 +913,11 @@ function _operationsQuickStatusMarkup(vehicles, scope, id) {
 
 function _operationsQuickVehicles(button) {
   const id = button.dataset.operationsStatusId;
+  const mode = button.dataset.operationsStatusMode;
   return button.dataset.operationsStatusScope === "project"
-    ? (_OPERATIONS.payload?.vehicles || []).filter(vehicle => vehicle.project_id === id)
+    ? (_OPERATIONS.payload?.vehicles || []).filter(vehicle =>
+      vehicle.project_id === id && (!mode || _operationsVehicleMode(vehicle) === mode)
+    )
     : (_OPERATIONS.payload?.vehicles || []).filter(vehicle => vehicle.vehicle_id === id);
 }
 
