@@ -1004,7 +1004,10 @@ def flow_project_manager_all_presets_unfiltered(page, base_url: str) -> None:
     page.wait_for_selector("#proj-etab-preferences.active")
     page.click("#proj-btn-next")
     page.wait_for_selector("#proj-etab-fleet.active")
-    page.select_option(".proj-u-vehicle", "PIU")
+    page.locator('[data-police-quick="Ford|Police Interceptor Utility|"]').first.click()
+    page.wait_for_function(
+        "document.querySelector('.proj-u-vehicle')?.value === 'PIU'"
+    )
     page.select_option(".proj-u-buildtype", "Patrol")
     page.click(".proj-preset-btns button[onclick^='PT_togglePresetDD']")
     wizard_dd = page.locator(".proj-preset-dropdown").first
@@ -1671,20 +1674,20 @@ def flow_overview_unit_notes_and_preconfig_qb(page, base_url: str) -> None:
     page.evaluate("projectId => PT_open(projectId)", project_id)
     page.locator('.proj-dtab[data-ptab="edit"]').click()
     page.locator('#proj-ptab-edit button[onclick="PT_enterEditMode()"]').click()
-    page.locator(".proj-vehicle-picker").first.get_by_role(
-        "button", name="New vehicle"
-    ).click()
-    page.wait_for_selector("#project-vehicle-create-modal.open")
-    page.fill("#project-vehicle-create-make", "Rivian")
-    page.fill("#project-vehicle-create-model", "R1T")
-    page.click("#project-vehicle-create-save")
-    page.wait_for_selector("#project-vehicle-create-modal.open", state="hidden")
-    assert page.locator(".et-u-vehicle").first.input_value() == "R1T"
-    assert "artwork pending" in page.locator(".et-u-vehicle").first.inner_text()
+    picker = page.locator("#proj-edit-units-list .vehicle-guided-picker").first
+    picker.get_by_role("button", name="Custom vehicle").click()
+    picker.locator(".vehicle-category").select_option("other")
+    picker.locator(".vehicle-custom-name").fill("Rivian R1T")
+    picker.locator(".vehicle-custom-name").press("Tab")
+    page.wait_for_function(
+        "document.querySelector('#proj-edit-units-list .et-u-vehicle')?.value === 'RIVIAN R1T'"
+    )
+    assert page.locator(".et-u-vehicle").first.input_value() == "RIVIAN R1T"
+    assert "Vehicle layout needed" in picker.locator(".vehicle-layout-status").inner_text()
     layouts = _api(base_url, "/api/layouts")
-    created_vehicle = layouts["vehicles"]["R1T"]
-    assert created_vehicle["make"] == "Rivian"
-    assert created_vehicle["model"] == "R1T"
+    created_vehicle = layouts["vehicles"]["RIVIAN R1T"]
+    assert created_vehicle["make"] == ""
+    assert created_vehicle["model"] == "Rivian R1T"
     assert created_vehicle["placeholder"] is True
     assert all(not view.get("image") for view in created_vehicle["views"].values())
     page.locator('#proj-ptab-edit button[onclick="PT_cancelEditMode()"]').click()

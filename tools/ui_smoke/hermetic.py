@@ -143,7 +143,12 @@ def boot_server(paths) -> str:
     assert NETGUARD_VIOLATIONS is not None  # netguard module state exists
 
     from dtm_buildsheet.app import server as app_server
-    from dtm_buildsheet.app.services import agency_service, qb_sync_service, sales_rep_service
+    from dtm_buildsheet.app.services import (
+        agency_service,
+        qb_sync_service,
+        sales_rep_service,
+        vehicle_catalog_service,
+    )
 
     app_server._setup_logging(paths.workspace_dir)
     agency_service.warmup_cache(paths)
@@ -156,6 +161,29 @@ def boot_server(paths) -> str:
         "ok": True,
         "skipped": "ui_smoke",
     }
+
+    # The guided project vehicle picker normally reads public NHTSA data.
+    # Browser smoke is deliberately hermetic, so give it a small deterministic
+    # catalog that exercises the same route/UI contract without external DNS.
+    catalog_makes = [
+        {"id": "460", "name": "Ford", "vehicle_types": ["Car", "Truck", "SUV / MPV"], "is_specialty": False},
+        {"id": "441", "name": "Chevrolet", "vehicle_types": ["Car", "Truck", "SUV / MPV"], "is_specialty": False},
+        {"id": "498", "name": "Dodge", "vehicle_types": ["Car", "SUV / MPV"], "is_specialty": False},
+        {"id": "10623", "name": "Rivian", "vehicle_types": ["Truck", "SUV / MPV"], "is_specialty": False},
+    ]
+    catalog_models = {
+        "chevrolet": [{"id": "1858", "name": "Tahoe", "vehicle_types": ["SUV / MPV"], "is_specialty": False}],
+        "dodge": [{"id": "3553", "name": "Durango", "vehicle_types": ["SUV / MPV"], "is_specialty": False}],
+        "ford": [{"id": "1813", "name": "Police Interceptor Utility", "vehicle_types": ["SUV / MPV"], "is_specialty": False}],
+        "rivian": [{"id": "27267", "name": "R1T", "vehicle_types": ["Truck"], "is_specialty": False}],
+    }
+    vehicle_catalog_service.list_makes = lambda _year, query="": [
+        item for item in catalog_makes
+        if not query or str(query).casefold() in item["name"].casefold()
+    ]
+    vehicle_catalog_service.list_models = lambda _year, make: list(
+        catalog_models.get(str(make).casefold(), [])
+    )
 
     app_server.Handler.paths = paths
     server = app_server._ReuseHTTPServer(("127.0.0.1", 0), app_server.Handler)
