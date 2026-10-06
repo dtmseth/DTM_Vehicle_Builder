@@ -2,20 +2,34 @@
 from __future__ import annotations
 
 import json
+import logging
+import ssl
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
+
+from requests.certs import where as requests_ca_bundle
+
+from ...storage.local import LocalStorageProvider
 
 _BASE_URL = "https://vpic.nhtsa.dot.gov/api/vehicles"
 _PRODUCTS_BASE_URL = "https://api.nhtsa.gov/products/vehicle"
 _ALLOWED_HOSTS = {"vpic.nhtsa.dot.gov", "api.nhtsa.gov"}
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 _CACHE_SECONDS = 24 * 60 * 60
-_CACHE: dict[str, tuple[float, list[dict[str, str]]]] = {}
+_MAX_PROJECT_YEAR = 2040
+_PERSISTENT_CACHE_SCHEMA = 1
+_MAX_PERSISTENT_CACHE_BYTES = 64 * 1024 * 1024
+_MAX_PERSISTENT_ENTRIES = 512
+_CACHE: dict[str, tuple[float, list[dict]]] = {}
 _CACHE_LOCK = threading.Lock()
+_REFRESHING: set[tuple[str, str]] = set()
+_log = logging.getLogger(__name__)
+_HTTPS_CONTEXT = ssl.create_default_context(cafile=requests_ca_bundle())
 
 _AUTOMOTIVE_TYPES = {
     "Passenger Car": "Car",
@@ -83,20 +97,81 @@ def _valid_year(value: object) -> int:
         year = int(str(value).strip())
     except (TypeError, ValueError) as exc:
         raise ValueError("A valid model year is required") from exc
-    if year < 1995 or year > datetime.now().year + 2:
+    if year < 1995 or year > _MAX_PROJECT_YEAR:
         raise ValueError("Model year is outside the supported range")
     return year
 
 
-def _fetch_results(path: str, *, base_url: str = _BASE_URL) -> list[dict]:
-    url = f"{base_url}/{path}"
-    cached = _CACHE.get(url)
-    now = time.monotonic()
-    if cached and now - cached[0] < _CACHE_SECONDS:
-        return cached[1]
+def _catalog_year(value: object) -> int:
+    """Use the newest available catalog for farther-future project years."""
+    return min(_valid_year(value), datetime.now().year + 2)
+
+
+def _read_persistent_cache(path: Path) -> dict:
+    try:
+        if not path.is_file() or path.stat().st_size > _MAX_PERSISTENT_CACHE_BYTES:
+            return {"schema_version": _PERSISTENT_CACHE_SCHEMA, "entries": {}}
+        payload = json.loads(LocalStorageProvider().read_text(str(path)))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"schema_version": _PERSISTENT_CACHE_SCHEMA, "entries": {}}
+    if not isinstance(payload, dict) or not isinstance(payload.get("entries"), dict):
+        return {"schema_version": _PERSISTENT_CACHE_SCHEMA, "entries": {}}
+    return payload
+
+
+def _persistent_result(cache_path: Path | None, url: str) -> tuple[float, list[dict]] | None:
+    if cache_path is None:
+        return None
+    with _CACHE_LOCK:
+        entry = _read_persistent_cache(cache_path).get("entries", {}).get(url)
+    if not isinstance(entry, dict):
+        return None
+    try:
+        fetched_at = float(entry.get("fetched_at") or 0)
+    except (TypeError, ValueError):
+        return None
+    results = entry.get("results")
+    if not isinstance(results, list) or not all(isinstance(item, dict) for item in results):
+        return None
+    return fetched_at, results
+
+
+def _remember_results(cache_path: Path | None, url: str, results: list[dict]) -> None:
+    now = time.time()
+    with _CACHE_LOCK:
+        _CACHE[url] = (time.monotonic(), results)
+        if cache_path is None:
+            return
+        payload = _read_persistent_cache(cache_path)
+        entries = payload.setdefault("entries", {})
+        entries[url] = {"fetched_at": now, "results": results}
+        if len(entries) > _MAX_PERSISTENT_ENTRIES:
+            def fetched_at(key: str) -> float:
+                try:
+                    return float((entries.get(key) or {}).get("fetched_at") or 0)
+                except (AttributeError, TypeError, ValueError):
+                    return 0.0
+
+            oldest = sorted(
+                entries, key=fetched_at,
+            )[:len(entries) - _MAX_PERSISTENT_ENTRIES]
+            for key in oldest:
+                entries.pop(key, None)
+        payload["schema_version"] = _PERSISTENT_CACHE_SCHEMA
+        try:
+            LocalStorageProvider().write_text(
+                str(cache_path), json.dumps(payload, separators=(",", ":")) + "\n",
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            _log.warning("Vehicle catalog cache write failed: %s", type(exc).__name__)
+
+
+def _fetch_remote(url: str) -> list[dict]:
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "DTM-Vehicle-Builder"})
     try:
-        with urlopen(request, timeout=8) as response:  # nosec B310 - HTTPS host allowlist above
+        with urlopen(  # nosec B310 - HTTPS host allowlist above
+            request, timeout=8, context=_HTTPS_CONTEXT,
+        ) as response:
             final_url = urlparse(response.geturl())
             if final_url.scheme != "https" or final_url.hostname not in _ALLOWED_HOSTS:
                 raise VehicleCatalogError("The vehicle catalog returned an unsafe redirect")
@@ -110,22 +185,71 @@ def _fetch_results(path: str, *, base_url: str = _BASE_URL) -> list[dict]:
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise VehicleCatalogError("The vehicle catalog returned an invalid response") from exc
     results = payload.get("Results", payload.get("results", [])) if isinstance(payload, dict) else []
-    clean = [item for item in results if isinstance(item, dict)]
+    return [item for item in results if isinstance(item, dict)]
+
+
+def _refresh_in_background(cache_path: Path, url: str) -> None:
+    key = (str(cache_path), url)
     with _CACHE_LOCK:
-        _CACHE[url] = (now, clean)
-    return clean
+        if key in _REFRESHING:
+            return
+        _REFRESHING.add(key)
+
+    def refresh() -> None:
+        try:
+            _remember_results(cache_path, url, _fetch_remote(url))
+        except VehicleCatalogError as exc:
+            _log.warning("Vehicle catalog background refresh failed: %s", type(exc).__name__)
+        finally:
+            with _CACHE_LOCK:
+                _REFRESHING.discard(key)
+
+    threading.Thread(target=refresh, name="vehicle-catalog-refresh", daemon=True).start()
 
 
-def _make_rows_for_type(vehicle_type: str) -> list[dict]:
-    return _fetch_results(f"GetMakesForVehicleType/{quote(vehicle_type, safe='')}?format=json")
+def _fetch_results(
+    path: str,
+    *,
+    base_url: str = _BASE_URL,
+    cache_path: Path | None = None,
+) -> list[dict]:
+    url = f"{base_url}/{path}"
+    cached = _CACHE.get(url)
+    now = time.monotonic()
+    if cached and now - cached[0] < _CACHE_SECONDS:
+        return cached[1]
+
+    persisted = _persistent_result(cache_path, url)
+    if persisted is not None:
+        fetched_at, results = persisted
+        age = max(0.0, time.time() - fetched_at)
+        with _CACHE_LOCK:
+            _CACHE[url] = (now - min(age, _CACHE_SECONDS + 1), results)
+        if age >= _CACHE_SECONDS and cache_path is not None:
+            _refresh_in_background(cache_path, url)
+        return results
+
+    results = _fetch_remote(url)
+    _remember_results(cache_path, url, results)
+    return results
 
 
-def _classified_makes(include_specialty: bool) -> dict[str, dict]:
+def _make_rows_for_type(vehicle_type: str, cache_path: Path | None = None) -> list[dict]:
+    return _fetch_results(
+        f"GetMakesForVehicleType/{quote(vehicle_type, safe='')}?format=json",
+        cache_path=cache_path,
+    )
+
+
+def _classified_makes(include_specialty: bool, cache_path: Path | None = None) -> dict[str, dict]:
     type_labels = dict(_AUTOMOTIVE_TYPES)
     if include_specialty:
         type_labels.update(_OTHER_TYPES)
     with ThreadPoolExecutor(max_workers=min(3, len(type_labels))) as pool:
-        results = list(pool.map(_make_rows_for_type, type_labels))
+        results = list(pool.map(
+            lambda vehicle_type: _make_rows_for_type(vehicle_type, cache_path),
+            type_labels,
+        ))
     classified: dict[str, dict] = {}
     for (type_name, label), rows in zip(type_labels.items(), results):
         for row in rows:
@@ -143,11 +267,14 @@ def _classified_makes(include_specialty: bool) -> dict[str, dict]:
     return classified
 
 
-def _active_make_names(year: int) -> set[str]:
+def _active_make_names(year: int, cache_path: Path | None = None) -> set[str]:
     paths = [f"makes?modelYear={year}&issueType=r", f"makes?modelYear={year}&issueType=c"]
     with ThreadPoolExecutor(max_workers=2) as pool:
         result_sets = list(pool.map(
-            lambda path: _fetch_results(path, base_url=_PRODUCTS_BASE_URL), paths,
+            lambda path: _fetch_results(
+                path, base_url=_PRODUCTS_BASE_URL, cache_path=cache_path,
+            ),
+            paths,
         ))
     names: set[str] = set()
     for row in (item for rows in result_sets for item in rows):
@@ -165,9 +292,14 @@ def _active_make_names(year: int) -> set[str]:
     return names
 
 
-def list_makes(year: object, query: object = "") -> list[dict]:
-    model_year = _valid_year(year)
-    rows = _fetch_results("GetAllMakes?format=json")
+def list_makes(
+    year: object,
+    query: object = "",
+    *,
+    cache_path: Path | None = None,
+) -> list[dict]:
+    model_year = _catalog_year(year)
+    rows = _fetch_results("GetAllMakes?format=json", cache_path=cache_path)
     values: dict[str, dict] = {}
     for row in rows:
         name = " ".join(str(row.get("Make_Name", "")).strip().split())
@@ -179,8 +311,8 @@ def list_makes(year: object, query: object = "") -> list[dict]:
                 "vehicle_types": [], "is_specialty": True,
             }
     search = " ".join(str(query or "").strip().split()).casefold()
-    active_names = _active_make_names(model_year)
-    classified = _classified_makes(include_specialty=bool(search))
+    active_names = _active_make_names(model_year, cache_path)
+    classified = _classified_makes(include_specialty=bool(search), cache_path=cache_path)
     for key, classified_item in classified.items():
         target = values.setdefault(key, classified_item)
         target["vehicle_types"] = list(classified_item["vehicle_types"])
@@ -207,14 +339,23 @@ def list_makes(year: object, query: object = "") -> list[dict]:
     return sorted(common, key=lambda item: common_order[item["name"].casefold()])
 
 
-def list_models(year: object, make: object) -> list[dict]:
-    model_year = _valid_year(year)
+def list_models(
+    year: object,
+    make: object,
+    *,
+    cache_path: Path | None = None,
+) -> list[dict]:
+    model_year = _catalog_year(year)
     make_name = " ".join(str(make or "").strip().split())
     if not make_name or len(make_name) > 80:
         raise ValueError("A valid make is required")
-    classification = _classified_makes(include_specialty=False).get(make_name.casefold(), {})
+    classification = _classified_makes(
+        include_specialty=False, cache_path=cache_path,
+    ).get(make_name.casefold(), {})
     if not classification:
-        classification = _classified_makes(include_specialty=True).get(make_name.casefold(), {})
+        classification = _classified_makes(
+            include_specialty=True, cache_path=cache_path,
+        ).get(make_name.casefold(), {})
     make_types = list(classification.get("vehicle_types", []))
     automotive_queries = [
         type_name for type_name, label in _AUTOMOTIVE_TYPES.items() if label in make_types
@@ -226,10 +367,15 @@ def list_models(year: object, make: object) -> list[dict]:
             for type_name in automotive_queries
         ]
         with ThreadPoolExecutor(max_workers=len(paths)) as pool:
-            result_sets = list(pool.map(_fetch_results, paths))
+            result_sets = list(pool.map(
+                lambda path: _fetch_results(path, cache_path=cache_path), paths,
+            ))
         typed_results = zip(automotive_queries, result_sets)
     else:
-        rows = _fetch_results(f"GetModelsForMakeYear/make/{quote(make_name, safe='')}/modelyear/{model_year}?format=json")
+        rows = _fetch_results(
+            f"GetModelsForMakeYear/make/{quote(make_name, safe='')}/modelyear/{model_year}?format=json",
+            cache_path=cache_path,
+        )
         typed_results = [("", rows)]
     for type_name, rows in typed_results:
         label = _AUTOMOTIVE_TYPES.get(type_name, "")

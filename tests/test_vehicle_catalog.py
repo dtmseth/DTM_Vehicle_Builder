@@ -145,6 +145,69 @@ def test_nhtsa_results_are_deduplicated_and_normalized(monkeypatch):
     ]
 
 
+def test_nhtsa_requests_use_bundled_certificate_context(monkeypatch):
+    vehicle_catalog_service._CACHE.clear()
+    contexts = []
+
+    def capture_context(_request, **kwargs):
+        contexts.append(kwargs.get("context"))
+        return _Response({"Results": []})
+
+    monkeypatch.setattr(vehicle_catalog_service, "urlopen", capture_context)
+
+    vehicle_catalog_service._fetch_results("CertificateContext?format=json")
+
+    assert contexts == [vehicle_catalog_service._HTTPS_CONTEXT]
+
+
+def test_nhtsa_results_survive_restart_in_workspace_cache(tmp_path, monkeypatch):
+    vehicle_catalog_service._CACHE.clear()
+    cache_path = tmp_path / "vehicle_catalog_cache.json"
+    payload = {"Results": [{"Make_ID": 460, "Make_Name": "Ford"}]}
+    monkeypatch.setattr(
+        vehicle_catalog_service, "urlopen", lambda *_args, **_kwargs: _Response(payload),
+    )
+
+    first = vehicle_catalog_service._fetch_results(
+        "PersistedMakes?format=json", cache_path=cache_path,
+    )
+    vehicle_catalog_service._CACHE.clear()
+
+    def fail_network(*_args, **_kwargs):
+        raise AssertionError("network must not be used")
+
+    monkeypatch.setattr(vehicle_catalog_service, "urlopen", fail_network)
+
+    assert vehicle_catalog_service._fetch_results(
+        "PersistedMakes?format=json", cache_path=cache_path,
+    ) == first
+    saved = json.loads(cache_path.read_text())
+    assert saved["schema_version"] == 1
+    assert len(saved["entries"]) == 1
+
+
+def test_stale_workspace_catalog_is_served_while_refresh_starts(tmp_path, monkeypatch):
+    vehicle_catalog_service._CACHE.clear()
+    cache_path = tmp_path / "vehicle_catalog_cache.json"
+    url = "https://vpic.nhtsa.dot.gov/api/vehicles/StaleMakes?format=json"
+    rows = [{"Make_ID": 460, "Make_Name": "Ford"}]
+    cache_path.write_text(json.dumps({
+        "schema_version": 1,
+        "entries": {url: {"fetched_at": 1, "results": rows}},
+    }))
+    refreshes = []
+    monkeypatch.setattr(
+        vehicle_catalog_service,
+        "_refresh_in_background",
+        lambda path, refresh_url: refreshes.append((path, refresh_url)),
+    )
+
+    assert vehicle_catalog_service._fetch_results(
+        "StaleMakes?format=json", cache_path=cache_path,
+    ) == rows
+    assert refreshes == [(cache_path, url)]
+
+
 def test_make_search_keeps_specialty_manufacturers_searchable_and_tagged(monkeypatch):
     vehicle_catalog_service._CACHE.clear()
 
@@ -203,6 +266,33 @@ def test_make_menu_omits_automotive_make_without_models_for_year(monkeypatch):
     monkeypatch.setattr(vehicle_catalog_service, "urlopen", fake_urlopen)
 
     assert [item["name"] for item in vehicle_catalog_service.list_makes(2026)] == ["Ford"]
+
+
+def test_future_project_year_uses_newest_available_catalog(monkeypatch):
+    requested_years = []
+    monkeypatch.setattr(
+        vehicle_catalog_service,
+        "_fetch_results",
+        lambda *_args, **_kwargs: [{"Make_ID": 460, "Make_Name": "Ford"}],
+    )
+    monkeypatch.setattr(
+        vehicle_catalog_service,
+        "_active_make_names",
+        lambda year, _cache_path=None: requested_years.append(year) or {"ford"},
+    )
+    monkeypatch.setattr(
+        vehicle_catalog_service,
+        "_classified_makes",
+        lambda **_kwargs: {
+            "ford": {
+                "id": "460", "name": "Ford",
+                "vehicle_types": ["Car", "Truck", "SUV / MPV"],
+            },
+        },
+    )
+
+    assert [item["name"] for item in vehicle_catalog_service.list_makes(2031)] == ["Ford"]
+    assert requested_years == [vehicle_catalog_service.datetime.now().year + 2]
 
 
 def test_models_for_automotive_make_use_vehicle_type_filtered_endpoint(monkeypatch):

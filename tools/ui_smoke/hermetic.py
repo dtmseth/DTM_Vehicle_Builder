@@ -177,11 +177,11 @@ def boot_server(paths) -> str:
         "ford": [{"id": "1813", "name": "Police Interceptor Utility", "vehicle_types": ["SUV / MPV"], "is_specialty": False}],
         "rivian": [{"id": "27267", "name": "R1T", "vehicle_types": ["Truck"], "is_specialty": False}],
     }
-    vehicle_catalog_service.list_makes = lambda _year, query="": [
+    vehicle_catalog_service.list_makes = lambda _year, query="", **_kwargs: [
         item for item in catalog_makes
         if not query or str(query).casefold() in item["name"].casefold()
     ]
-    vehicle_catalog_service.list_models = lambda _year, make: list(
+    vehicle_catalog_service.list_models = lambda _year, make, **_kwargs: list(
         catalog_models.get(str(make).casefold(), [])
     )
 

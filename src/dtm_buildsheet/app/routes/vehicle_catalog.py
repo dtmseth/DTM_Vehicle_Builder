@@ -13,16 +13,19 @@ def route_vehicle_catalog(handler, method: str, path: str) -> bool:
         return False
     parsed = urlparse(handler.path)
     query = parse_qs(parsed.query)
+    cache_path = handler.paths.workspace_dir / "vehicle_catalog_cache.json"
     try:
         if path == f"{ROUTE_PREFIX}police":
             data = vehicle_catalog_service.list_police_vehicles(query.get("year", [""])[0])
         elif path == f"{ROUTE_PREFIX}makes":
             data = vehicle_catalog_service.list_makes(
                 query.get("year", [""])[0], query.get("query", [""])[0],
+                cache_path=cache_path,
             )
         elif path == f"{ROUTE_PREFIX}models":
             data = vehicle_catalog_service.list_models(
                 query.get("year", [""])[0], query.get("make", [""])[0],
+                cache_path=cache_path,
             )
         else:
             return False
