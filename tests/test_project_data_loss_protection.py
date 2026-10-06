@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ from dtm_buildsheet.inputs.project_entry import (
     load_project,
     new_project,
     save_project,
+    save_project_operational_state,
 )
 from dtm_buildsheet.paths import AppPaths, BUNDLED_PRESETS_DIR
 
@@ -176,6 +178,34 @@ def test_stale_project_revision_blocks_all_whole_record_changes(tmp_path):
     saved = load_project(created["project_id"], paths)
     assert saved.customer.agency == "Test PD"
     assert saved.build_units[0].individuals[0].notes == "Newer note"
+
+
+def test_operational_revision_does_not_block_project_edit(tmp_path):
+    paths = _paths(tmp_path)
+    created = handle_save_project(_body(), paths)
+    edit_copy = load_project(created["project_id"], paths)
+
+    operational = load_project(created["project_id"], paths)
+    operational.company_folder_status = "provisioned"
+    save_project_operational_state(operational, paths)
+    assert operational.updated_at == edit_copy.updated_at
+    assert operational.record_revision != edit_copy.record_revision
+
+    edit_payload = asdict(edit_copy)
+    edit_payload.update({
+        "expected_updated_at": edit_copy.updated_at,
+        "expected_record_revision": edit_copy.record_revision,
+    })
+    edit_payload["customer"]["contact"] = "Updated while provisioning finished"
+    edit_payload["build_units"][0]["individuals"][0]["unit_number"] = "Unit 42"
+
+    result = handle_save_project(edit_payload, paths)
+
+    assert result["ok"] is True
+    saved = load_project(created["project_id"], paths)
+    assert saved.customer.contact == "Updated while provisioning finished"
+    assert saved.build_units[0].individuals[0].unit_number == "Unit 42"
+    assert saved.company_folder_status == "provisioned"
 
 
 def test_storage_rejects_stale_background_writer_and_archives_prior_version(tmp_path):

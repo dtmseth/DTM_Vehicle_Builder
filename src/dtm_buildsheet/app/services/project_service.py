@@ -1101,6 +1101,9 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
             expected_record_revision = str(
                 body.get("expected_record_revision") or body.get("record_revision") or ""
             ).strip()
+            expected_updated_at = str(
+                body.get("expected_updated_at") or body.get("updated_at") or ""
+            ).strip()
             if project.record_revision:
                 if not expected_record_revision:
                     return {
@@ -1112,20 +1115,6 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                         ),
                         "current_record_revision": project.record_revision,
                     }
-                if expected_record_revision != project.record_revision:
-                    return {
-                        "ok": False,
-                        "error_code": "stale_project_revision",
-                        "error": (
-                            "This project was updated elsewhere after this screen was loaded. "
-                            "No changes were written; refresh and review the latest version."
-                        ),
-                        "current_record_revision": project.record_revision,
-                        "current_updated_at": project.updated_at,
-                    }
-            expected_updated_at = str(
-                body.get("expected_updated_at") or body.get("updated_at") or ""
-            ).strip()
             if not expected_updated_at:
                 return {
                     "ok": False,
@@ -1146,6 +1135,15 @@ def handle_save_project(body: dict, paths: AppPaths) -> dict:
                     ),
                     "current_updated_at": project.updated_at,
                 }
+            # Operational bookkeeping (folder provisioning, publication state,
+            # photo metadata, and QuickBooks link refreshes) advances the record
+            # revision without advancing ``updated_at``.  The edit screen can
+            # therefore hold an older record revision even though no user-authored
+            # project data changed.  We loaded the latest record above and the
+            # save path updates only user-editable fields while preserving
+            # server-owned build state, so this metadata-only mismatch is safe to
+            # merge.  A real project edit always advances ``updated_at`` and was
+            # rejected by the timestamp check immediately above.
 
         from ...domain.project_types import project_type, service_details
         old_type = project.project_type
